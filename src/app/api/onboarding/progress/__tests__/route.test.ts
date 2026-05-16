@@ -1,88 +1,94 @@
 /**
  * Tests for Onboarding Progress API
+ *
+ * Route wrapped in withAuth (TASK-AUTH-03f); auth resolves via
+ * jwtValidation.validateFromHeaders + resolveRoleFromDb.
  */
 
 import { NextRequest } from "next/server";
-import { GET, POST } from "../route";
 
-// Mock Supabase
+const mockValidateFromHeaders = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
+const mockSingle = jest.fn();
+const mockUpsertSingle = jest.fn();
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
+}));
 jest.mock("@/lib/supabase/server", () => ({
-  createClient: jest.fn(() => ({
-    auth: {
-      getUser: jest.fn(),
-    },
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          single: jest.fn(),
-        })),
-      })),
-      upsert: jest.fn(() => ({
-        select: jest.fn(() => ({
-          single: jest.fn(),
-        })),
-      })),
-    })),
-  })),
+  createClient: () =>
+    Promise.resolve({
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: (...args: unknown[]) => mockSingle(...args),
+          }),
+        }),
+        upsert: () => ({
+          select: () => ({
+            single: (...args: unknown[]) => mockUpsertSingle(...args),
+          }),
+        }),
+      }),
+    }),
 }));
 
-describe("/api/onboarding/progress", () => {
-  const mockUser = {
-    id: "test-user-id",
-    email: "test@example.com",
-  };
+import { GET, POST } from "../route";
 
+const mockUser = { id: "test-user-id", email: "test@example.com" };
+
+function makeRequest(method = "GET", body?: unknown): NextRequest {
+  const url = "http://localhost:3000/api/onboarding/progress";
+  return {
+    url,
+    method,
+    json: jest.fn().mockResolvedValue(body ?? {}),
+    headers: new Headers(),
+    nextUrl: new URL(url),
+  } as unknown as NextRequest;
+}
+
+describe("/api/onboarding/progress", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({ valid: true, user: mockUser });
+    mockResolveRoleFromDb.mockResolvedValue("user");
+  });
+
+  describe("negative-auth", () => {
+    it("GET returns 401 when the request is not authenticated", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+      const response = await GET(makeRequest("GET"));
+      expect(response.status).toBe(401);
+    });
+
+    it("POST returns 401 when the request is not authenticated", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+      const response = await POST(
+        makeRequest("POST", {
+          current_step: 2,
+          completed_steps: [1],
+          form_data: {},
+        }),
+      );
+      expect(response.status).toBe(401);
+    });
   });
 
   describe("GET", () => {
-    it("should return 401 if user is not authenticated", async () => {
-      const { createClient } = require("@/lib/supabase/server");
-      createClient.mockReturnValue({
-        auth: {
-          getUser: jest.fn().mockResolvedValue({
-            data: { user: null },
-            error: new Error("Not authenticated"),
-          }),
-        },
-      });
-
-      const request = new NextRequest(
-        "http://localhost:3000/api/onboarding/progress",
-      );
-      const response = await GET(request);
-      const data = await response.json();
-
-      expect(response.status).toBe(401);
-      expect(data.error).toBe("Unauthorized");
-    });
-
     it("should return default progress if no saved progress exists", async () => {
-      const { createClient } = require("@/lib/supabase/server");
-      createClient.mockReturnValue({
-        auth: {
-          getUser: jest.fn().mockResolvedValue({
-            data: { user: mockUser },
-            error: null,
-          }),
-        },
-        from: jest.fn(() => ({
-          select: jest.fn(() => ({
-            eq: jest.fn(() => ({
-              single: jest.fn().mockResolvedValue({
-                data: null,
-                error: { code: "PGRST116" }, // Not found error
-              }),
-            })),
-          })),
-        })),
+      mockSingle.mockResolvedValue({
+        data: null,
+        error: { code: "PGRST116" },
       });
 
-      const request = new NextRequest(
-        "http://localhost:3000/api/onboarding/progress",
-      );
-      const response = await GET(request);
+      const response = await GET(makeRequest("GET"));
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -100,31 +106,9 @@ describe("/api/onboarding/progress", () => {
         form_data: { step_1: { name: "John" } },
         last_updated: "2026-01-07T12:00:00Z",
       };
+      mockSingle.mockResolvedValue({ data: mockProgress, error: null });
 
-      const { createClient } = require("@/lib/supabase/server");
-      createClient.mockReturnValue({
-        auth: {
-          getUser: jest.fn().mockResolvedValue({
-            data: { user: mockUser },
-            error: null,
-          }),
-        },
-        from: jest.fn(() => ({
-          select: jest.fn(() => ({
-            eq: jest.fn(() => ({
-              single: jest.fn().mockResolvedValue({
-                data: mockProgress,
-                error: null,
-              }),
-            })),
-          })),
-        })),
-      });
-
-      const request = new NextRequest(
-        "http://localhost:3000/api/onboarding/progress",
-      );
-      const response = await GET(request);
+      const response = await GET(makeRequest("GET"));
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -133,60 +117,14 @@ describe("/api/onboarding/progress", () => {
   });
 
   describe("POST", () => {
-    it("should return 401 if user is not authenticated", async () => {
-      const { createClient } = require("@/lib/supabase/server");
-      createClient.mockReturnValue({
-        auth: {
-          getUser: jest.fn().mockResolvedValue({
-            data: { user: null },
-            error: new Error("Not authenticated"),
-          }),
-        },
-      });
-
-      const request = new NextRequest(
-        "http://localhost:3000/api/onboarding/progress",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            current_step: 2,
-            completed_steps: [1],
-            form_data: {},
-          }),
-        },
-      );
-
-      const response = await POST(request);
-      const data = await response.json();
-
-      expect(response.status).toBe(401);
-      expect(data.error).toBe("Unauthorized");
-    });
-
     it("should validate current_step is between 1 and 5", async () => {
-      const { createClient } = require("@/lib/supabase/server");
-      createClient.mockReturnValue({
-        auth: {
-          getUser: jest.fn().mockResolvedValue({
-            data: { user: mockUser },
-            error: null,
-          }),
-        },
-      });
-
-      const request = new NextRequest(
-        "http://localhost:3000/api/onboarding/progress",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            current_step: 10,
-            completed_steps: [],
-            form_data: {},
-          }),
-        },
+      const response = await POST(
+        makeRequest("POST", {
+          current_step: 10,
+          completed_steps: [],
+          form_data: {},
+        }),
       );
-
-      const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(400);

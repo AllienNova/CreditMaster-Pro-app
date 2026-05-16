@@ -6,8 +6,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const searchParams = request.nextUrl.searchParams;
     const range = searchParams.get("range") || "6m";
@@ -53,39 +54,29 @@ export async function GET(request: NextRequest) {
       successRate: 75,
     };
 
-    // Try to get real data if Supabase is configured
+    // Try to get real data if Supabase is configured. The dispute query is
+    // scoped to the authenticated user's id from the guard — never a
+    // client-supplied identifier.
     if (supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-      // Get user from auth header (simplified - in production use proper auth)
-      const authHeader = request.headers.get("authorization");
-      if (authHeader) {
-        const token = authHeader.replace("Bearer ", "");
-        const {
-          data: { user },
-        } = await supabase.auth.getUser(token);
+      const { data: disputes } = await supabase
+        .from("disputes")
+        .select("status")
+        .eq("user_id", user.id);
 
-        if (user) {
-          // Fetch real dispute stats
-          const { data: disputes } = await supabase
-            .from("disputes")
-            .select("status")
-            .eq("user_id", user.id);
-
-          if (disputes && disputes.length > 0) {
-            const resolved = disputes.filter(
-              (d) => d.status === "resolved",
-            ).length;
-            disputeStats = {
-              total: disputes.length,
-              resolved,
-              pending: disputes.filter(
-                (d) => d.status !== "resolved" && d.status !== "rejected",
-              ).length,
-              successRate: Math.round((resolved / disputes.length) * 100),
-            };
-          }
-        }
+      if (disputes && disputes.length > 0) {
+        const resolved = disputes.filter(
+          (d) => d.status === "resolved",
+        ).length;
+        disputeStats = {
+          total: disputes.length,
+          resolved,
+          pending: disputes.filter(
+            (d) => d.status !== "resolved" && d.status !== "rejected",
+          ).length,
+          successRate: Math.round((resolved / disputes.length) * 100),
+        };
       }
     }
 
@@ -122,4 +113,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

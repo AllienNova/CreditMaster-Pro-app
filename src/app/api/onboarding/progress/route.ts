@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { createClient } from "@/lib/supabase/server";
 
 export interface OnboardingProgress {
@@ -22,19 +23,10 @@ export interface OnboardingProgress {
  * GET /api/onboarding/progress
  * Retrieve user's onboarding progress
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
     const supabase = await createClient();
-
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     // Fetch onboarding progress
     const { data, error } = await supabase
@@ -70,25 +62,16 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * POST /api/onboarding/progress
  * Save or update user's onboarding progress
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const supabase = await createClient();
-
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     // Parse request body
     const body = await request.json();
@@ -159,4 +142,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
