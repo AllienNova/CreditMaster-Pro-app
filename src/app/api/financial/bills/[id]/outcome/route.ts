@@ -12,6 +12,8 @@ import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
 } from "@/lib/api/financial-api-middleware";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -35,14 +37,11 @@ const recordOutcomeSchema = z.object({
 // POST /api/financial/bills/[id]/outcome
 // ============================================================================
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const startTime = Date.now();
-
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    // Apply middleware (auth, RBAC, rate limiting, etc.)
+    // Apply middleware (rate limiting, CORS, logging). Auth is already
+    // enforced by withAuth; the middleware re-validates as defence in depth.
     const middlewareResult = await applyFinancialAPIMiddleware(request, {
       requireAuth: true,
       rateLimit: true,
@@ -54,7 +53,8 @@ export async function POST(
       return middlewareResult.error;
     }
 
-    const { id: billId } = await params;
+    // Path is /api/financial/bills/<id>/outcome — id is the segment before "outcome".
+    const billId = request.nextUrl.pathname.split("/").slice(-2)[0] as string;
     const { userId, startTime: middlewareStartTime } = middlewareResult;
 
     // Parse and validate request body
@@ -155,4 +155,5 @@ export async function POST(
       { status: 500 },
     );
   }
-}
+},
+);

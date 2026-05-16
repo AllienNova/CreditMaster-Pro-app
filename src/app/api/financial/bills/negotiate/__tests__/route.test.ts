@@ -10,6 +10,9 @@
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("user"),
+}));
 jest.mock("@/lib/financial/bill-negotiation-service");
 jest.mock("@/lib/financial/bill-detection-service");
 
@@ -177,5 +180,23 @@ describe("POST /api/financial/bills/negotiate", () => {
 
     expect(res.status).toBe(500);
     expect(data.error).toBe("Failed to create negotiation");
+  });
+});
+
+describe("negative-auth – /api/financial/bills/negotiate", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("GET returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+    const res = await GET(createMockRequest("http://localhost:3000/api/financial/bills/negotiate"));
+    expect(res.status).toBe(401);
+  });
+
+  it("POST returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+    const res = await POST(createMockRequest("http://localhost:3000/api/financial/bills/negotiate", { method: "POST" }));
+    expect(res.status).toBe(401);
   });
 });

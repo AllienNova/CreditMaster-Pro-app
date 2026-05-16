@@ -5,32 +5,17 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * GET /api/financial/bills/optimizations
  * Get negotiation opportunities, subscription optimizations, and due date recommendations
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (_request: NextRequest, _user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json(
-        { error: "Forbidden - Premium feature" },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
-
     // Bill optimization data from bill-service with AI analysis
     // Returns negotiation opportunities, subscription analysis, and due date optimization
 
@@ -170,4 +155,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

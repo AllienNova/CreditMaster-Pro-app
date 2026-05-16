@@ -10,6 +10,9 @@
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("user"),
+}));
 jest.mock("@/lib/auth/rbac");
 jest.mock("@/lib/financial/bill-detection-service");
 
@@ -59,7 +62,7 @@ describe("GET /api/financial/bills/[id]", () => {
 
   it("should return a bill by ID", async () => {
     const req = createMockRequest("http://localhost:3000/api/financial/bills/bill-1");
-    const res = await GET(req, mockParams);
+    const res = await GET(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
@@ -70,7 +73,7 @@ describe("GET /api/financial/bills/[id]", () => {
   it("should return 404 when bill not found", async () => {
     (billDetectionService.getBillById as jest.Mock).mockResolvedValue(null);
     const req = createMockRequest("http://localhost:3000/api/financial/bills/bill-999");
-    const res = await GET(req, mockParams);
+    const res = await GET(req);
     const data = await res.json();
 
     expect(res.status).toBe(404);
@@ -80,7 +83,7 @@ describe("GET /api/financial/bills/[id]", () => {
   it("should return 401 for unauthenticated request", async () => {
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
     const req = createMockRequest("http://localhost:3000/api/financial/bills/bill-1");
-    const res = await GET(req, mockParams);
+    const res = await GET(req);
     const data = await res.json();
 
     expect(res.status).toBe(401);
@@ -90,7 +93,7 @@ describe("GET /api/financial/bills/[id]", () => {
   it("should return 403 for user without permission", async () => {
     (rbac.hasPermission as jest.Mock).mockReturnValue(false);
     const req = createMockRequest("http://localhost:3000/api/financial/bills/bill-1");
-    const res = await GET(req, mockParams);
+    const res = await GET(req);
     const data = await res.json();
 
     expect(res.status).toBe(403);
@@ -100,7 +103,7 @@ describe("GET /api/financial/bills/[id]", () => {
   it("should return 500 on service error", async () => {
     (billDetectionService.getBillById as jest.Mock).mockRejectedValue(new Error("DB error"));
     const req = createMockRequest("http://localhost:3000/api/financial/bills/bill-1");
-    const res = await GET(req, mockParams);
+    const res = await GET(req);
     const data = await res.json();
 
     expect(res.status).toBe(500);
@@ -125,7 +128,7 @@ describe("PATCH /api/financial/bills/[id]", () => {
       method: "PATCH",
       body: { amount: "19.99", merchantName: "Netflix Premium" },
     });
-    const res = await PATCH(req, mockParams);
+    const res = await PATCH(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
@@ -142,7 +145,7 @@ describe("PATCH /api/financial/bills/[id]", () => {
       method: "PATCH",
       body: { amount: "abc" },
     });
-    const res = await PATCH(req, mockParams);
+    const res = await PATCH(req);
     const data = await res.json();
 
     expect(res.status).toBe(400);
@@ -154,7 +157,7 @@ describe("PATCH /api/financial/bills/[id]", () => {
       method: "PATCH",
       body: { amount: "-5" },
     });
-    const res = await PATCH(req, mockParams);
+    const res = await PATCH(req);
     const data = await res.json();
 
     expect(res.status).toBe(400);
@@ -166,7 +169,7 @@ describe("PATCH /api/financial/bills/[id]", () => {
       method: "PATCH",
       body: { nextDueDate: "not-a-date" },
     });
-    const res = await PATCH(req, mockParams);
+    const res = await PATCH(req);
     const data = await res.json();
 
     expect(res.status).toBe(400);
@@ -179,7 +182,7 @@ describe("PATCH /api/financial/bills/[id]", () => {
       method: "PATCH",
       body: { amount: "10" },
     });
-    const res = await PATCH(req, mockParams);
+    const res = await PATCH(req);
     expect(res.status).toBe(401);
   });
 
@@ -189,7 +192,7 @@ describe("PATCH /api/financial/bills/[id]", () => {
       method: "PATCH",
       body: { amount: "10" },
     });
-    const res = await PATCH(req, mockParams);
+    const res = await PATCH(req);
     expect(res.status).toBe(403);
   });
 
@@ -199,7 +202,7 @@ describe("PATCH /api/financial/bills/[id]", () => {
       method: "PATCH",
       body: { merchantName: "test" },
     });
-    const res = await PATCH(req, mockParams);
+    const res = await PATCH(req);
     const data = await res.json();
 
     expect(res.status).toBe(500);
@@ -221,7 +224,7 @@ describe("DELETE /api/financial/bills/[id]", () => {
 
   it("should delete a bill successfully", async () => {
     const req = createMockRequest("http://localhost:3000/api/financial/bills/bill-1", { method: "DELETE" });
-    const res = await DELETE(req, mockParams);
+    const res = await DELETE(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
@@ -232,24 +235,48 @@ describe("DELETE /api/financial/bills/[id]", () => {
   it("should return 401 for unauthenticated request", async () => {
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
     const req = createMockRequest("http://localhost:3000/api/financial/bills/bill-1", { method: "DELETE" });
-    const res = await DELETE(req, mockParams);
+    const res = await DELETE(req);
     expect(res.status).toBe(401);
   });
 
   it("should return 403 for user without permission", async () => {
     (rbac.hasPermission as jest.Mock).mockReturnValue(false);
     const req = createMockRequest("http://localhost:3000/api/financial/bills/bill-1", { method: "DELETE" });
-    const res = await DELETE(req, mockParams);
+    const res = await DELETE(req);
     expect(res.status).toBe(403);
   });
 
   it("should return 500 on service error", async () => {
     (billDetectionService.deleteBill as jest.Mock).mockRejectedValue(new Error("DB error"));
     const req = createMockRequest("http://localhost:3000/api/financial/bills/bill-1", { method: "DELETE" });
-    const res = await DELETE(req, mockParams);
+    const res = await DELETE(req);
     const data = await res.json();
 
     expect(res.status).toBe(500);
     expect(data.error).toBe("Failed to delete bill");
+  });
+});
+
+describe("negative-auth – /api/financial/bills/bill-1", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("GET returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+    const res = await GET(createMockRequest("http://localhost:3000/api/financial/bills/bill-1"));
+    expect(res.status).toBe(401);
+  });
+
+  it("PATCH returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+    const res = await PATCH(createMockRequest("http://localhost:3000/api/financial/bills/bill-1", { method: "PATCH" }));
+    expect(res.status).toBe(401);
+  });
+
+  it("DELETE returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+    const res = await DELETE(createMockRequest("http://localhost:3000/api/financial/bills/bill-1", { method: "DELETE" }));
+    expect(res.status).toBe(401);
   });
 });
