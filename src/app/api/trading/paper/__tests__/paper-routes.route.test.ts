@@ -500,7 +500,11 @@ describe("Paper Trading - Orders", () => {
 
     it("cancels order successfully", async () => {
       const cancelledOrder = { ...mockOrder, status: "cancelled" };
+      // DELETE now verifies the order belongs to the caller's account
+      // (AUTH-03e HIGH #5) — the engine mock must support getAccount/getOrders.
       const mockEngine = {
+        getAccount: jest.fn().mockResolvedValue(mockAccount),
+        getOrders: jest.fn().mockResolvedValue([mockOrder]),
         cancelOrder: jest.fn().mockResolvedValue(cancelledOrder),
       };
       (getPaperTradingEngine as jest.Mock).mockReturnValue(mockEngine);
@@ -511,12 +515,32 @@ describe("Paper Trading - Orders", () => {
 
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
+      expect(mockEngine.getOrders).toHaveBeenCalledWith(mockAccount.id);
       expect(mockEngine.cancelOrder).toHaveBeenCalledWith("order_1");
+    });
+
+    it("returns 404 when the order is not in the caller's account (AUTH-03e HIGH #5)", async () => {
+      const mockEngine = {
+        getAccount: jest.fn().mockResolvedValue(mockAccount),
+        getOrders: jest.fn().mockResolvedValue([]), // order_1 not owned
+        cancelOrder: jest.fn(),
+      };
+      (getPaperTradingEngine as jest.Mock).mockReturnValue(mockEngine);
+
+      const req = createRequest("/api/trading/paper/orders?id=order_1", "DELETE");
+      const res = await ordersDELETE(req);
+
+      expect(res.status).toBe(404);
+      expect(mockEngine.cancelOrder).not.toHaveBeenCalled();
     });
 
     it("returns error for already-filled orders", async () => {
       const mockEngine = {
-        cancelOrder: jest.fn().mockRejectedValue(new Error("Cannot cancel filled order")),
+        getAccount: jest.fn().mockResolvedValue(mockAccount),
+        getOrders: jest.fn().mockResolvedValue([mockOrder]),
+        cancelOrder: jest
+          .fn()
+          .mockRejectedValue(new Error("Cannot cancel filled order")),
       };
       (getPaperTradingEngine as jest.Mock).mockReturnValue(mockEngine);
 
@@ -804,5 +828,69 @@ describe("Paper Trading - Reset", () => {
     const res = await resetPOST(createRequest("/api/trading/paper/reset", "POST"));
 
     expect(res.status).toBe(500);
+  });
+});
+
+// ============================================================================
+// negative-auth (TASK-AUTH-03e) — tagged so `npm run test:auth-negative`
+// counts every paper-trading handler's 401 path.
+// ============================================================================
+
+describe("negative-auth – /api/trading/paper (all routes)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    setupAuth(false);
+  });
+
+  it("GET /api/trading/paper returns 401 when unauthenticated", async () => {
+    const res = await accountGET(createRequest("/api/trading/paper"));
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /api/trading/paper returns 401 when unauthenticated", async () => {
+    const res = await accountPOST(
+      createRequest("/api/trading/paper", "POST", {}),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("GET /api/trading/paper/orders returns 401 when unauthenticated", async () => {
+    const res = await ordersGET(createRequest("/api/trading/paper/orders"));
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /api/trading/paper/orders returns 401 when unauthenticated", async () => {
+    const res = await ordersPOST(
+      createRequest("/api/trading/paper/orders", "POST", {}),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("DELETE /api/trading/paper/orders returns 401 when unauthenticated", async () => {
+    const res = await ordersDELETE(
+      createRequest("/api/trading/paper/orders?id=ord-1", "DELETE"),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("GET /api/trading/paper/positions returns 401 when unauthenticated", async () => {
+    const res = await positionsGET(
+      createRequest("/api/trading/paper/positions"),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("GET /api/trading/paper/performance returns 401 when unauthenticated", async () => {
+    const res = await performanceGET(
+      createRequest("/api/trading/paper/performance"),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /api/trading/paper/reset returns 401 when unauthenticated", async () => {
+    const res = await resetPOST(
+      createRequest("/api/trading/paper/reset", "POST"),
+    );
+    expect(res.status).toBe(401);
   });
 });

@@ -711,3 +711,60 @@ describe("Trading Journal - Stats", () => {
     expect(res.status).toBe(500);
   });
 });
+
+// ============================================================================
+// negative-auth (TASK-AUTH-03e) — tagged so `npm run test:auth-negative`
+// counts every journal handler's 401 path.
+// ============================================================================
+
+describe("negative-auth – /api/trading/journal (all routes)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    setupAuth(false);
+  });
+
+  it("GET /api/trading/journal returns 401 when unauthenticated", async () => {
+    const res = await journalListGET(createRequest("/api/trading/journal"));
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /api/trading/journal returns 401 when unauthenticated", async () => {
+    const res = await journalPOST(
+      createRequest("/api/trading/journal", "POST", { symbol: "AAPL" }),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("GET /api/trading/journal/[id] returns 401 when unauthenticated", async () => {
+    const res = await journalGetGET(
+      createRequest("/api/trading/journal/trade_1"),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("PUT /api/trading/journal/[id] returns 401 when unauthenticated", async () => {
+    const res = await journalPUT(
+      createRequest("/api/trading/journal/trade_1", "PUT", {}),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("DELETE /api/trading/journal/[id] returns 401 when unauthenticated", async () => {
+    const res = await journalDELETE(
+      createRequest("/api/trading/journal/trade_1", "DELETE"),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /api/trading/journal/[id]/close returns 401 when unauthenticated", async () => {
+    const res = await closePOST(
+      createRequest("/api/trading/journal/trade_1/close", "POST", {}),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("GET /api/trading/journal/stats returns 401 when unauthenticated", async () => {
+    const res = await statsGET(createRequest("/api/trading/journal/stats"));
+    expect(res.status).toBe(401);
+  });
+});

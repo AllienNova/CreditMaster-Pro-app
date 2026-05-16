@@ -183,7 +183,7 @@ describe("Trading Modes API", () => {
   // Authentication Tests (shared across all routes)
   // --------------------------------------------------------------------------
 
-  describe("Authentication", () => {
+  describe("negative-auth – /api/trading/modes (all routes)", () => {
     it("GET /modes returns 401 when not authenticated", async () => {
       setupAuth(false);
       const response = await getStatus(modesRequest());
