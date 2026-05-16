@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
 import { billingProfileStore } from "@/lib/payment/billing-profile-store";
 import { SUBSCRIPTION_PLANS } from "@/lib/payment/stripe-service";
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "billing:read",
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!rbac.hasPermission(validation.user, "billing:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const profile = await billingProfileStore.getProfile(validation.user.id);
+    const profile = await billingProfileStore.getProfile(user.id);
     return NextResponse.json({
       plans: SUBSCRIPTION_PLANS,
       subscription: {
@@ -35,4 +27,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

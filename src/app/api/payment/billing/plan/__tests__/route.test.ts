@@ -10,12 +10,15 @@
 
 import { NextRequest } from "next/server";
 
+// Route wrapped in withPermission("billing:update") (TASK-AUTH-03f).
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role");
 jest.mock("@/lib/auth/rbac");
 jest.mock("@/lib/payment/billing-profile-store");
 
 import { POST } from "../route";
 import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { resolveRoleFromDb } from "@/lib/auth/resolve-role";
 import { rbac } from "@/lib/auth/rbac";
 import { billingProfileStore } from "@/lib/payment/billing-profile-store";
 
@@ -33,8 +36,12 @@ const mockProfile = {
 };
 
 function makeRequest(body: Record<string, unknown>): NextRequest {
+  const url = "http://localhost:3000/api/payment/billing/plan";
   return {
+    url,
+    method: "POST",
     headers: new Headers({ authorization: "Bearer valid.jwt.token" }),
+    nextUrl: new URL(url),
     json: jest.fn().mockResolvedValue(body),
   } as unknown as NextRequest;
 }
@@ -46,6 +53,7 @@ describe("POST /api/payment/billing/plan", () => {
       valid: true,
       user: mockUser,
     });
+    (resolveRoleFromDb as jest.Mock).mockResolvedValue("premium");
     (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (billingProfileStore.updatePlan as jest.Mock).mockResolvedValue(mockProfile);
     (billingProfileStore.cancelSubscription as jest.Mock).mockResolvedValue({
@@ -55,27 +63,29 @@ describe("POST /api/payment/billing/plan", () => {
     });
   });
 
-  // ── (a) Unauthenticated → 401 ────────────────────────────────────────────
-  it("returns 401 when JWT is missing or invalid", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    // ── (a) Unauthenticated → 401 ──────────────────────────────────────────
+    it("returns 401 when JWT is missing or invalid", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const res = await POST(makeRequest({ planId: "pro" }));
+      const json = await res.json();
+      expect(res.status).toBe(401);
+      expect(json.error).toMatch(/unauthorized/i);
+      expect(billingProfileStore.updatePlan).not.toHaveBeenCalled();
     });
-    const res = await POST(makeRequest({ planId: "pro" }));
-    const json = await res.json();
-    expect(res.status).toBe(401);
-    expect(json.error).toMatch(/unauthorized/i);
-    expect(billingProfileStore.updatePlan).not.toHaveBeenCalled();
-  });
 
-  // ── (b) Wrong role / missing permission → 403 ────────────────────────────
-  it("returns 403 when user lacks billing:update permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-    const res = await POST(makeRequest({ planId: "pro" }));
-    const json = await res.json();
-    expect(res.status).toBe(403);
-    expect(json.error).toMatch(/forbidden/i);
-    expect(billingProfileStore.updatePlan).not.toHaveBeenCalled();
+    // ── (b) Wrong role / missing permission → 403 ──────────────────────────
+    it("returns 403 when user lacks billing:update permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      const res = await POST(makeRequest({ planId: "pro" }));
+      const json = await res.json();
+      expect(res.status).toBe(403);
+      expect(json.error).toMatch(/forbidden/i);
+      expect(billingProfileStore.updatePlan).not.toHaveBeenCalled();
+    });
   });
 
   // ── (c) Valid update plan → 200 ──────────────────────────────────────────

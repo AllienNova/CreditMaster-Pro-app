@@ -1,24 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
 import { billingProfileStore } from "@/lib/payment/billing-profile-store";
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "billing:update",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!rbac.hasPermission(validation.user, "billing:update")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const { planId, cancelSubscription } = await request.json();
 
     const profile = cancelSubscription
-      ? await billingProfileStore.cancelSubscription(validation.user.id)
-      : await billingProfileStore.updatePlan(validation.user.id, planId);
+      ? await billingProfileStore.cancelSubscription(user.id)
+      : await billingProfileStore.updatePlan(user.id, planId);
 
     return NextResponse.json({
       subscription: {
@@ -37,4 +29,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

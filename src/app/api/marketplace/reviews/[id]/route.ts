@@ -1,19 +1,20 @@
 /**
  * Review Detail API
  *
- * POST /api/marketplace/reviews/[id]/helpful - Mark review as helpful
+ * POST /api/marketplace/reviews/[id] - Mark review as helpful
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/api-guard";
 import { reviewService } from "@/lib/marketplace";
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
-
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
-    const { id } = await params;
+    // The guard does not forward Next's route `params`; extract the id from
+    // the path (the last segment, or the segment before /helpful).
+    const segments = request.nextUrl.pathname.split("/");
+    const last = segments[segments.length - 1];
+    const id = last === "helpful" ? segments[segments.length - 2] : last;
 
     if (!id) {
       return NextResponse.json(
@@ -26,8 +27,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if this is a helpful action
-    const url = new URL(request.url);
-    if (url.pathname.endsWith("/helpful")) {
+    if (request.nextUrl.pathname.endsWith("/helpful")) {
       const success = await reviewService.markHelpful(id);
 
       if (!success) {
@@ -64,4 +64,4 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+});

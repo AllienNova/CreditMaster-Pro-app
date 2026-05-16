@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, getSupabase } from "@/lib/supabase/client";
+import { getSupabase } from "@/lib/supabase/client";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { subscriptionService } from "@/lib/subscriptions/subscription-service";
 import { stripeService } from "@/lib/payment/stripe-service";
 import type { Database } from "@/lib/supabase/types";
@@ -9,22 +10,8 @@ type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 // Helper to get typed table reference
 const profiles = () => getSupabase().from("profiles");
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Get authenticated user
-    const supabase = createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized - Please sign in to continue" },
-        { status: 401 },
-      );
-    }
-
     // Parse request body
     const body = await request.json();
     const { priceId, successUrl, cancelUrl, trialDays } = body;
@@ -45,7 +32,7 @@ export async function POST(request: NextRequest) {
     if (!stripeCustomerId) {
       // Create Stripe customer
       const customer = await stripeService.createCustomer(
-        user.email!,
+        user.email,
         profile?.fullName || undefined,
         { userId: user.id },
       );
@@ -82,4 +69,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
