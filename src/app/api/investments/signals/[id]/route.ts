@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { SignalGenerator } from "@/lib/investments/signal-generator";
-import { getUser } from "@/lib/auth/session";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { rateLimit } from "@/lib/security/redis-rate-limiting";
 import { z } from "zod";
 
@@ -31,16 +31,8 @@ const TrackOutcomeSchema = z.object({
  * GET /api/investments/signals/[id]
  * Get a specific signal by ID with current strength evaluation
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Rate limiting
     try {
       await limiter.check(100, user.id); // 100 requests per hour
@@ -51,7 +43,7 @@ export async function GET(
       );
     }
 
-    const { id } = await params;
+    const id = request.nextUrl.pathname.split("/").pop() ?? "";
 
     // Validate UUID format
     const uuidRegex =
@@ -87,7 +79,7 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * PATCH /api/investments/signals/[id]
@@ -100,16 +92,8 @@ export async function GET(
  *   status: 'executed' | 'expired' | 'cancelled' (required)
  * }
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const PATCH = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Rate limiting
     try {
       await limiter.check(100, user.id); // 100 requests per hour
@@ -120,7 +104,7 @@ export async function PATCH(
       );
     }
 
-    const { id } = await params;
+    const id = request.nextUrl.pathname.split("/").pop() ?? "";
 
     // Validate UUID format
     const uuidRegex =
@@ -162,4 +146,4 @@ export async function PATCH(
       { status: 500 },
     );
   }
-}
+});

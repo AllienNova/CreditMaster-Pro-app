@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { SignalGenerator } from "@/lib/investments/signal-generator";
-import { getUser } from "@/lib/auth/session";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { rateLimit } from "@/lib/security/redis-rate-limiting";
 import { z } from "zod";
 
@@ -30,13 +30,8 @@ const PeriodSchema = z.enum(["week", "month", "quarter", "year", "all"]);
  * Query Parameters:
  * - period: 'week' | 'month' | 'quarter' | 'year' | 'all' (default: 'month')
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Rate limiting
     try {
       await limiter.check(100, user.id); // 100 requests per hour
@@ -84,4 +79,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

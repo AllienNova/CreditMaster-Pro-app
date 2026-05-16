@@ -6,33 +6,20 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { aiStockAnalyst } from "@/lib/investments/ai-stock-analyst";
 import type {
   StockAnalysisRequest,
   AnalysisType,
 } from "@/lib/investments/types/stock-analysis.types";
 
-interface RouteParams {
-  params: Promise<{ symbol: string }>;
-}
-
 /**
  * GET /api/investments/analyze/[symbol]
  * Get comprehensive stock analysis with default options
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export const GET = withAuth(async (request: NextRequest, _user: AuthedUser) => {
   try {
-    // Validate JWT
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const { symbol } = await params;
+    const symbol = request.nextUrl.pathname.split("/").pop() ?? "";
 
     if (!symbol || symbol.length < 1 || symbol.length > 10) {
       return NextResponse.json(
@@ -77,24 +64,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/investments/analyze/[symbol]
  * Request custom analysis with specific options
  */
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    // Validate JWT
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const { symbol } = await params;
+    const symbol = request.nextUrl.pathname.split("/").pop() ?? "";
 
     if (!symbol || symbol.length < 1 || symbol.length > 10) {
       return NextResponse.json(
@@ -172,4 +151,5 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+  },
+);

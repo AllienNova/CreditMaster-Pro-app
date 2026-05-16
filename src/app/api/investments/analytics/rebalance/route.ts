@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { PortfolioAnalytics } from "@/lib/investments/portfolio-analytics";
-import { getUser } from "@/lib/auth/session";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { RiskLevel } from "@/lib/investments/types/advanced-analytics.types";
 import { z } from "zod";
 import { rateLimit } from "@/lib/security/redis-rate-limiting";
@@ -38,14 +38,8 @@ const RebalanceQuerySchema = z.object({
  * Returns:
  * - RebalancingRecommendation object with trade suggestions, expected impact, and reasons
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authentication
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Rate limiting
     try {
       await limiter.check(100, user.id); // 100 requests per hour
@@ -120,4 +114,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

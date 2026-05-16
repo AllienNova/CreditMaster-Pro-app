@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
@@ -16,26 +16,14 @@ import type {
   HoldingUpdateInput,
 } from "@/lib/investments/types/portfolio.types";
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const { id } = await params;
+    const id = request.nextUrl.pathname.split("/").pop() ?? "";
     const { data, error } = await supabase
       .from("investment_holdings")
       .select("*")
       .eq("id", id)
-      .eq("user_id", validation.user.id)
+      .eq("user_id", user.id)
       .single();
 
     if (error || !data) {
@@ -54,19 +42,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export const PATCH = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const { id } = await params;
+    const id = request.nextUrl.pathname.split("/").pop() ?? "";
     const body: HoldingUpdateInput = await request.json();
 
     // Verify ownership
@@ -74,7 +54,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .from("investment_holdings")
       .select("id")
       .eq("id", id)
-      .eq("user_id", validation.user.id)
+      .eq("user_id", user.id)
       .single();
 
     if (fetchError || !existing) {
@@ -114,26 +94,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export const DELETE = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const { id } = await params;
+    const id = request.nextUrl.pathname.split("/").pop() ?? "";
 
     // Verify ownership before delete
     const { data: existing, error: fetchError } = await supabase
       .from("investment_holdings")
       .select("id")
       .eq("id", id)
-      .eq("user_id", validation.user.id)
+      .eq("user_id", user.id)
       .single();
 
     if (fetchError || !existing) {
@@ -159,7 +132,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+  },
+);
 
 function transformHolding(h: Record<string, unknown>): Holding {
   const shares = h.shares as number;

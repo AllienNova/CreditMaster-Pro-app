@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { SignalGenerator } from "@/lib/investments/signal-generator";
-import { getUser } from "@/lib/auth/session";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import {
   AnalysisType,
   SignalFiltersSchema,
@@ -60,13 +60,8 @@ const GenerateSignalSchema = z.object({
  * - limit: number - Max results (default: 20, max: 100)
  * - offset: number - Pagination offset (default: 0)
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Rate limiting
     try {
       await limiter.check(100, user.id); // 100 requests per hour
@@ -156,7 +151,7 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/investments/signals
@@ -170,12 +165,8 @@ export async function GET(request: NextRequest) {
  *   timeframe: Timeframe (default: '1d')
  * }
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     // Rate limiting
     try {
@@ -232,4 +223,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

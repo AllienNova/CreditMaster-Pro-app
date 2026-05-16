@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { cryptoAnalyst } from "@/lib/investments/crypto-analyst";
-import { getUser } from "@/lib/auth/session";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { rateLimit } from "@/lib/security/redis-rate-limiting";
 import { z } from "zod";
 
@@ -22,20 +22,8 @@ const CryptoAnalysisQuerySchema = z.object({
   depth: z.enum(["basic", "full"]).default("full").optional(),
 });
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ coinId: string }> },
-) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authentication
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized. Please log in to access crypto analysis." },
-        { status: 401 },
-      );
-    }
-
     // Rate limiting
     try {
       await limiter.check(50, user.id);
@@ -50,7 +38,7 @@ export async function GET(
     }
 
     // Get and validate parameters
-    const { coinId } = await params;
+    const coinId = request.nextUrl.pathname.split("/").pop() ?? "";
 
     if (!coinId || typeof coinId !== "string") {
       return NextResponse.json(
@@ -131,4 +119,4 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+});
