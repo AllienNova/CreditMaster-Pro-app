@@ -8,8 +8,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSmartBudgetEngine } from "@/lib/financial/smart-budget-engine";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
@@ -46,7 +46,9 @@ import {
  *       500:
  *         description: Server error
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, _user: AuthedUser) => {
   const startTime = Date.now();
 
   try {
@@ -64,19 +66,7 @@ export async function GET(request: NextRequest) {
 
     const userId = middleware.userId!;
 
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json(
-        { error: "Forbidden - Premium feature required" },
-        { status: 403 },
-      );
-    }
 
     // Predict month-end spending
     const smartBudgetEngine = getSmartBudgetEngine();
@@ -107,4 +97,5 @@ export async function GET(request: NextRequest) {
 
     return finalizeResponse(request, response, startTime, "anonymous");
   }
-}
+},
+);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { plaidInvestmentsService } from "@/lib/financial/plaid-investments-service";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * GET /api/financial/plaid/investments
@@ -9,17 +9,11 @@ import { rbac } from "@/lib/auth/rbac";
  * Retrieve investment holdings for a linked Plaid account.
  * Requires `access_token` as a query parameter.
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const accessToken = request.nextUrl.searchParams.get("access_token");
 
@@ -43,7 +37,8 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * POST /api/financial/plaid/investments
@@ -51,17 +46,11 @@ export async function GET(request: NextRequest) {
  * Retrieve investment transactions for a linked Plaid account.
  * Request body: { access_token, start_date, end_date }
  */
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "financial:read",
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const body = await request.json();
     const { access_token: accessToken, start_date: startDate, end_date: endDate } = body;
@@ -106,4 +95,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

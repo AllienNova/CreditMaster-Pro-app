@@ -11,8 +11,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { financialAggregationService } from "@/lib/financial/financial-aggregation-service";
 import { TrendPeriod } from "@/lib/financial/types/aggregated-context.types";
 
@@ -20,26 +20,12 @@ import { TrendPeriod } from "@/lib/financial/types/aggregated-context.types";
  * GET /api/financial/aggregated
  * Returns the complete aggregated financial context for the authenticated user
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (
-      !rbac.hasPermission(
-        validation.user as Parameters<typeof rbac.hasPermission>[0],
-        "financial:read",
-      )
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const userId = validation.user.id;
     const searchParams = request.nextUrl.searchParams;
 
     // Parse query parameters
@@ -107,23 +93,21 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * DELETE /api/financial/aggregated/cache
  * Clear the aggregated context cache for the user
  */
-export async function DELETE(request: NextRequest) {
+export const DELETE = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     // Clear cache for user
-    financialAggregationService.clearCache(validation.user.id);
+    financialAggregationService.clearCache(user.id);
 
     return NextResponse.json({
       success: true,
@@ -136,4 +120,5 @@ export async function DELETE(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

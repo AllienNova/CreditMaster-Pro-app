@@ -60,8 +60,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { healthScoreCalculatorV2 } from "@/lib/financial/health-score-calculator-v2";
 import { financialAggregationService } from "@/lib/financial/financial-aggregation-service";
 import { getSupabase } from "@/lib/supabase/client";
@@ -72,38 +72,12 @@ const supabase = getSupabase();
  * GET /api/financial/health-score
  * Returns the current financial health score with optional caching
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized - Invalid or missing JWT token",
-        },
-        { status: 401 },
-      );
-    }
-
-    // Check permissions
-    if (
-      !rbac.hasPermission(
-        validation.user as Parameters<typeof rbac.hasPermission>[0],
-        "financial:read",
-      )
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Forbidden - Insufficient permissions to read health score",
-        },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
     const searchParams = request.nextUrl.searchParams;
 
     // Check if requesting history
@@ -242,46 +216,20 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * POST /api/financial/health-score
  * Calculate and save a new health score
  * Supports forceRecalculate parameter to bypass cache
  */
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "financial:write",
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized - Invalid or missing JWT token",
-        },
-        { status: 401 },
-      );
-    }
-
-    // Check permissions
-    if (
-      !rbac.hasPermission(
-        validation.user as Parameters<typeof rbac.hasPermission>[0],
-        "financial:write",
-      )
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Forbidden - Insufficient permissions to calculate health score",
-        },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
 
     // Parse request body
     const body = await request.json().catch(() => ({}));
@@ -410,4 +358,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

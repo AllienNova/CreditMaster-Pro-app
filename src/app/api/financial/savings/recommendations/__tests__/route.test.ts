@@ -12,6 +12,9 @@ import { NextRequest } from "next/server";
 jest.mock("@/lib/api/financial-api-middleware");
 jest.mock("@/lib/financial/savings-optimizer");
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/auth/rbac");
 
 import { GET } from "../route";

@@ -14,6 +14,18 @@ import { NextRequest } from "next/server";
 jest.mock("@/lib/supabase/server");
 jest.mock("@/lib/financial/gig-income-service");
 
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: jest.fn().mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    }),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
+
 import { GET, POST } from "../route";
 import { createClient } from "@/lib/supabase/server";
 import { gigIncomeService } from "@/lib/financial/gig-income-service";

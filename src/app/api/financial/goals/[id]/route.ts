@@ -8,8 +8,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { goalTracker } from "@/lib/financial/goal-tracker";
 import { getSupabase } from "@/lib/supabase/client";
 
@@ -42,34 +42,13 @@ interface RouteParams {
  * GET /api/financial/goals/[id]
  * Retrieve specific goal with detailed progress metrics
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export const GET = withPermission(
+  "financial:create_goals",
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized - Invalid or missing JWT token",
-        },
-        { status: 401 },
-      );
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:create_goals")) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Forbidden - Premium feature required",
-        },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
-    const { id: goalId } = await params;
+    const goalId = request.nextUrl.pathname.split("/").pop() as string;
 
     // Fetch goal from database
     const { data: goal, error } = await supabase
@@ -151,40 +130,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * PATCH /api/financial/goals/[id]
  * Update goal properties (partial updates)
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export const PATCH = withPermission(
+  "financial:create_goals",
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized - Invalid or missing JWT token",
-        },
-        { status: 401 },
-      );
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:create_goals")) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Forbidden - Premium feature required",
-        },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
-    const { id: goalId } = await params;
+    const goalId = request.nextUrl.pathname.split("/").pop() as string;
 
     // Verify goal ownership
     const { data: existingGoal, error: fetchError } = await supabase
@@ -310,40 +269,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * DELETE /api/financial/goals/[id]
  * Delete goal (soft delete by setting status to 'cancelled')
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export const DELETE = withPermission(
+  "financial:create_goals",
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized - Invalid or missing JWT token",
-        },
-        { status: 401 },
-      );
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:create_goals")) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Forbidden - Premium feature required",
-        },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
-    const { id: goalId } = await params;
+    const goalId = request.nextUrl.pathname.split("/").pop() as string;
 
     // Verify goal ownership
     const { data: existingGoal, error: fetchError } = await supabase
@@ -391,4 +330,5 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+},
+);

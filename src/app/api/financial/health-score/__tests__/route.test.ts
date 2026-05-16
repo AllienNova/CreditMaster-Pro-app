@@ -42,6 +42,9 @@ jest.mock("@/lib/supabase/client", () => ({
 }));
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/auth/rbac");
 jest.mock("@/lib/financial/health-score-calculator-v2");
 jest.mock("@/lib/financial/financial-aggregation-service");

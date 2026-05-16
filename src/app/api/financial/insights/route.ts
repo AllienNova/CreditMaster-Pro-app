@@ -8,8 +8,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { smartInsightsEngine } from "@/lib/financial/smart-insights-engine";
 import {
   InsightType,
@@ -41,25 +41,10 @@ const bulkOperationSchema = z.object({
  * - sort: sorting field (priority, created_at) (default: priority)
  * - order: sort order (asc, desc) (default: desc)
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (
-      !rbac.hasPermission(
-        validation.user as Parameters<typeof rbac.hasPermission>[0],
-        "financial:read",
-      )
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
 
     // Parse options from query params
@@ -98,7 +83,7 @@ export async function GET(request: NextRequest) {
 
     if (useStored) {
       let insights = await smartInsightsEngine.getStoredInsights(
-        validation.user.id,
+        user.id,
         options,
       );
 
@@ -150,7 +135,7 @@ export async function GET(request: NextRequest) {
 
     // Generate new insights
     const result = await smartInsightsEngine.generateInsights(
-      validation.user.id,
+      user.id,
       options,
     );
 
@@ -223,29 +208,16 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/financial/insights
  * Dismiss an insight or record an action
  */
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "financial:write",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (
-      !rbac.hasPermission(
-        validation.user as Parameters<typeof rbac.hasPermission>[0],
-        "financial:write",
-      )
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const body = await request.json();
     const { insightId, action } = body;
 
@@ -259,7 +231,7 @@ export async function POST(request: NextRequest) {
     if (action === "dismiss") {
       const success = await smartInsightsEngine.dismissInsight(
         insightId,
-        validation.user.id,
+        user.id,
       );
       return NextResponse.json({ success });
     }
@@ -267,7 +239,7 @@ export async function POST(request: NextRequest) {
     if (action) {
       const success = await smartInsightsEngine.recordAction(
         insightId,
-        validation.user.id,
+        user.id,
         action,
       );
       return NextResponse.json({ success });
@@ -293,41 +265,16 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * PATCH /api/financial/insights
  * Bulk operations on insights (mark_read, dismiss)
  */
-export async function PATCH(request: NextRequest) {
+export const PATCH = withPermission(
+  "financial:write",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized - Invalid or missing JWT token",
-        },
-        { status: 401 },
-      );
-    }
-
-    if (
-      !rbac.hasPermission(
-        validation.user as Parameters<typeof rbac.hasPermission>[0],
-        "financial:write",
-      )
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Forbidden - Insufficient permissions",
-        },
-        { status: 403 },
-      );
-    }
-
     // Parse and validate request body
     const body = await request.json();
     const validationResult = bulkOperationSchema.safeParse(body);
@@ -347,7 +294,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const { insightIds, action } = validationResult.data;
-    const userId = validation.user.id;
+    const userId = user.id;
 
     // Process bulk operation
     const results = await Promise.allSettled(
@@ -399,4 +346,4 @@ export async function PATCH(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { plaidIncomeService } from "@/lib/financial/plaid-income-service";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * GET /api/financial/plaid/income
@@ -12,17 +12,11 @@ import { rbac } from "@/lib/auth/rbac";
  *   - type (optional): "paystubs" | "taxforms" | "bank_income" (default: "paystubs")
  *   - user_token (required for bank_income type): Plaid user token
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const type = request.nextUrl.searchParams.get("type") || "paystubs";
     const accessToken = request.nextUrl.searchParams.get("access_token");
@@ -71,7 +65,8 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * POST /api/financial/plaid/income
@@ -82,17 +77,11 @@ export async function GET(request: NextRequest) {
  *   For "create": { webhook: string, access_tokens?: string[], precheck_id?: string }
  *   For "refresh": { user_token: string, days_requested?: number }
  */
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "financial:write",
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!rbac.hasPermission(validation.user, "financial:write")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const body = await request.json();
     const { action } = body;
@@ -154,4 +143,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

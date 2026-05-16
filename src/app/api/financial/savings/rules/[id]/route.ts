@@ -6,22 +6,18 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { savingsAutomationService } from "@/lib/financial/savings-automation-service";
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export const GET = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    const { id } = await params;
-    const rule = await savingsAutomationService.getRule(validation.user.id, id);
+
+    const id = request.nextUrl.pathname.split("/").pop() as string;
+    const rule = await savingsAutomationService.getRule(user.id, id);
 
     if (!rule) {
       return NextResponse.json({ error: "Rule not found" }, { status: 404 });
@@ -36,22 +32,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+},
+);
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export const PATCH = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    const { id } = await params;
+
+    const id = request.nextUrl.pathname.split("/").pop() as string;
     const body = await request.json();
 
     // Handle toggle action
     if (body.action === "toggle") {
       const rule = await savingsAutomationService.toggleRuleStatus(
-        validation.user.id,
+        user.id,
         id,
       );
       return NextResponse.json({ success: true, data: { rule } });
@@ -59,7 +54,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Regular update
     const rule = await savingsAutomationService.updateRule(
-      validation.user.id,
+      user.id,
       id,
       {
         name: body.name,
@@ -80,18 +75,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+},
+);
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export const DELETE = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    const { id } = await params;
+
+    const id = request.nextUrl.pathname.split("/").pop() as string;
     const success = await savingsAutomationService.deleteRule(
-      validation.user.id,
+      user.id,
       id,
     );
 
@@ -111,4 +105,5 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+},
+);

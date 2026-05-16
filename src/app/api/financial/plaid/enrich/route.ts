@@ -3,8 +3,8 @@ import {
   plaidEnrichService,
   EnrichTransactionInput,
 } from "@/lib/financial/plaid-enrich-service";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * POST /api/financial/plaid/enrich
@@ -21,17 +21,11 @@ import { rbac } from "@/lib/auth/rbac";
  *   - direction: "INFLOW" | "OUTFLOW"
  *   - iso_currency_code: string
  */
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "financial:read",
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const body = await request.json();
     const { transactions, account_type: accountType } = body;
@@ -116,4 +110,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

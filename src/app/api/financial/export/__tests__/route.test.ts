@@ -43,6 +43,9 @@ jest.mock("next/server", () => {
 });
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/financial/budget-service");
 jest.mock("@/lib/financial/bill-detection-service");
 jest.mock("@/lib/financial/spending-analysis-service");

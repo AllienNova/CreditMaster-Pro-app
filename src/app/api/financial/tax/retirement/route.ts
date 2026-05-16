@@ -78,6 +78,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { retirementAccountOptimizer } from "@/lib/tax/services/RetirementAccountOptimizer";
 import {
   FilingStatus,
@@ -166,25 +168,9 @@ function validatePostBody(body: Record<string, unknown>): {
 // GET HANDLER
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate user
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized",
-          message: "Please sign in to access retirement optimization.",
-        },
-        { status: 401 },
-      );
-    }
 
     // 2. Rate limiting
     if (!checkRateLimit(user.id)) {
@@ -247,31 +233,15 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 // ============================================================================
 // POST HANDLER
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate user
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized",
-          message: "Please sign in to access retirement optimization.",
-        },
-        { status: 401 },
-      );
-    }
 
     // 2. Rate limiting
     if (!checkRateLimit(user.id)) {
@@ -352,7 +322,7 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 // ============================================================================
 // HELPERS

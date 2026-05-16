@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { plaidLiabilitiesService } from "@/lib/financial/plaid-liabilities-service";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 const VALID_LIABILITY_TYPES = ["credit", "student", "mortgage"] as const;
 type LiabilityType = (typeof VALID_LIABILITY_TYPES)[number];
@@ -14,17 +14,11 @@ type LiabilityType = (typeof VALID_LIABILITY_TYPES)[number];
  *   - access_token (required): The Plaid access token
  *   - type (optional): Filter by liability type: credit, student, or mortgage
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const accessToken = request.nextUrl.searchParams.get("access_token");
 
@@ -92,4 +86,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

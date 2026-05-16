@@ -12,6 +12,18 @@
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/financial/spending-forecast-service");
+// TASK-AUTH-03c: route is now wrapped in withAuth.
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: jest.fn().mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    }),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 
 import { GET, POST } from "../route";
 import { spendingForecastService } from "@/lib/financial/spending-forecast-service";

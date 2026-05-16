@@ -7,8 +7,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { getSupabase } from "@/lib/supabase/client";
 import { goalInvestmentService } from "@/lib/goals/services";
 
@@ -47,26 +47,13 @@ const ALLOCATION_COLORS: Record<string, string> = {
   cash: "#F59E0B",
 };
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export const GET = withPermission(
+  "financial:create_goals",
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    if (!rbac.hasPermission(validation.user, "financial:create_goals")) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden - Premium feature required" },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
-    const { id: goalId } = await params;
+    const goalId = request.nextUrl.pathname.split("/").pop() as string;
 
     const { data: goal, error } = await supabase
       .from("financial_goals")
@@ -174,4 +161,5 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+},
+);

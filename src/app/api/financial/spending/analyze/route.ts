@@ -6,31 +6,19 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { spendingAnalysisService } from "@/lib/financial/spending-analysis-service";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * POST /api/financial/spending/analyze
  * Analyze spending patterns for a specific period
  */
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json(
-        { error: "Forbidden - Premium feature" },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
 
     const body = await request.json();
     const { startDate, endDate } = body;
@@ -83,4 +71,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

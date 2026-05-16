@@ -8,41 +8,23 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { budgetService } from "@/lib/financial/budget-service";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import {
   UpdateBudgetInput,
-  BudgetCategoryValue,
   BudgetPeriod,
-  BUDGET_CATEGORIES,
 } from "@/lib/financial/types/budget.types";
 
 /**
  * GET /api/financial/budgets/[id]
  * Get a specific budget by ID
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json(
-        { error: "Forbidden - Premium feature" },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
-    const { id: budgetId } = await params;
+    const userId = user.id;
+    const budgetId = request.nextUrl.pathname.split("/").pop() as string;
 
     const budget = await budgetService.getBudgetById(budgetId, userId);
 
@@ -64,34 +46,19 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * PATCH /api/financial/budgets/[id]
  * Update a budget
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const PATCH = withPermission(
+  "financial:create_budgets",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:create_budgets")) {
-      return NextResponse.json(
-        { error: "Forbidden - Premium feature" },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
-    const { id: budgetId } = await params;
+    const userId = user.id;
+    const budgetId = request.nextUrl.pathname.split("/").pop() as string;
 
     const body = await request.json();
     const {
@@ -176,34 +143,19 @@ export async function PATCH(
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * DELETE /api/financial/budgets/[id]
  * Delete a budget
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const DELETE = withPermission(
+  "financial:create_budgets",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:create_budgets")) {
-      return NextResponse.json(
-        { error: "Forbidden - Premium feature" },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
-    const { id: budgetId } = await params;
+    const userId = user.id;
+    const budgetId = request.nextUrl.pathname.split("/").pop() as string;
 
     const success = await budgetService.deleteBudget(budgetId, userId);
 
@@ -225,4 +177,5 @@ export async function DELETE(
       { status: 500 },
     );
   }
-}
+},
+);

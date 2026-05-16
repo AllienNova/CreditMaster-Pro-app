@@ -9,8 +9,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSpendingAnalyzer } from "@/lib/financial/spending-analyzer";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
@@ -82,10 +82,9 @@ const TrendsQuerySchema = z.object({
  *       500:
  *         description: Internal server error
  */
-export async function GET(request: NextRequest) {
-  const startTime = Date.now();
-
-  // Apply middleware (auth, rate limiting, CORS, logging)
+export const GET = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
+  // Apply middleware (rate limiting, CORS, logging). Auth is enforced by withAuth.
   const middleware = await applyFinancialAPIMiddleware(request, {
     requireAuth: true,
     rateLimit: true,
@@ -162,4 +161,5 @@ export async function GET(request: NextRequest) {
       userId,
     );
   }
-}
+},
+);

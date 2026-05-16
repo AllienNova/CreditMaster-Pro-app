@@ -9,24 +9,16 @@ import {
   incomeTrackingService,
   CreateIncomeSourceInput,
 } from "@/lib/financial/income-tracking-service";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * GET /api/financial/income
  * Get all income sources for the current user
  */
-export async function GET() {
+export const GET = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const sources = await incomeTrackingService.getIncomeSources(user.id);
     const stats = await incomeTrackingService.getMonthlyIncomeStats(user.id);
     const countdown = await incomeTrackingService.getPaydayCountdown(user.id);
@@ -44,24 +36,15 @@ export async function GET() {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * POST /api/financial/income
  * Create a new income source
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
 
     // Validate required fields
@@ -118,24 +101,14 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * PUT /api/financial/income
  * Update an existing income source
  */
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
 
     if (!body.id) {
@@ -191,24 +164,15 @@ export async function PUT(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * DELETE /api/financial/income
  * Delete an income source
  */
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -230,4 +194,5 @@ export async function DELETE(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

@@ -7,8 +7,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { spendingForecastService } from "@/lib/financial/spending-forecast-service";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const searchParams = request.nextUrl.searchParams;
 
@@ -47,8 +49,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // User ID from authenticated session - using demo fallback for unauthenticated requests
-    const userId = "demo-user";
+    const userId = user.id;
 
     // Generate forecast
     const forecast = await spendingForecastService.generateForecast(userId, {
@@ -82,20 +83,19 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
- * GET /api/financial/spending/forecast/summary
+ * POST /api/financial/spending/forecast
  * Returns a simplified forecast summary for dashboard widgets
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const body = await request.json();
     const { action } = body;
 
     if (action === "summary") {
-      // User ID from authenticated session - using demo fallback for unauthenticated requests
-      const userId = "demo-user";
+      const userId = user.id;
 
       const summary = await spendingForecastService.getForecastSummary(userId);
 
@@ -110,4 +110,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

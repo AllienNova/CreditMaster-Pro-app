@@ -9,8 +9,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSavingsOptimizer } from "@/lib/financial/savings-optimizer";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
@@ -69,7 +69,9 @@ const AnalyzeQuerySchema = z.object({
  *       500:
  *         description: Internal server error
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, _user: AuthedUser) => {
   const startTime = Date.now();
 
   // Apply middleware (auth, rate limiting, CORS, logging)
@@ -87,21 +89,7 @@ export async function GET(request: NextRequest) {
   const userId = middleware.userId!;
 
   try {
-    // Validate JWT and permissions
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
 
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden - Insufficient permissions" },
-        { status: 403 },
-      );
-    }
 
     // Parse and validate query parameters
     const { searchParams } = new URL(request.url);
@@ -158,4 +146,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

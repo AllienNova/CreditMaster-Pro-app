@@ -32,40 +32,20 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withRole } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import {
   getRequestLogs,
   getRequestStats,
 } from "@/lib/api/financial-api-middleware";
 
-export async function GET(request: NextRequest) {
+// TASK-AUTH-03c: the CSV proposed_guard was `withAuth`, but the route body
+// performed an inline `rbac.isAdmin` admin gate. Preserving that authorization
+// means promoting to `withRole("admin")`. See AUTH-03c report.
+export const GET = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized",
-          _meta: { timestamp: new Date().toISOString() },
-        },
-        { status: 401 },
-      );
-    }
-
-    // Check admin permission
-    if (!rbac.isAdmin(validation.user)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Forbidden - Admin access required",
-          _meta: { timestamp: new Date().toISOString() },
-        },
-        { status: 403 },
-      );
-    }
-
     // Get query parameters
     const { searchParams } = request.nextUrl;
     const limit = parseInt(searchParams.get("limit") || "100", 10);
@@ -103,4 +83,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

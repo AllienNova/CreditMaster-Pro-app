@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * GET /api/financial/credit-repair/ai-strategy
@@ -12,23 +12,11 @@ import { rbac } from "@/lib/auth/rbac";
  * - Strategy optimizations
  * - Quick wins and risk factors
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    // Check permissions
-    if (
-      !rbac.hasPermission(
-        validation.user as Parameters<typeof rbac.hasPermission>[0],
-        "credit:read",
-      )
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     // Note: Currently returns mock data. Future integration points:
     // - Credit repair service for real user data
@@ -367,4 +355,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

@@ -52,8 +52,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { financialContextEngine } from "@/lib/financial/financial-context-engine";
 import { FinancialContextOptions } from "@/lib/financial/types/financial-context.types";
 
@@ -93,24 +93,11 @@ function parseIntParam(value: string | null, defaultValue: number): number {
  * // Force refresh
  * GET /api/financial/context?refresh=true
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (
-      !rbac.hasPermission(
-        validation.user as Parameters<typeof rbac.hasPermission>[0],
-        "financial:read",
-      )
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const searchParams = request.nextUrl.searchParams;
 
@@ -147,7 +134,7 @@ export async function GET(request: NextRequest) {
       };
 
       const context = await financialContextEngine.getEnhancedFinancialContext(
-        validation.user.id,
+        user.id,
         options,
       );
 
@@ -163,7 +150,7 @@ export async function GET(request: NextRequest) {
 
     // Standard context (backward compatible)
     const context = await financialContextEngine.getFinancialContext(
-      validation.user.id,
+      user.id,
       forceRefresh,
     );
 
@@ -221,7 +208,8 @@ export async function GET(request: NextRequest) {
       { status: statusCode },
     );
   }
-}
+},
+);
 
 /**
  * POST /api/financial/context/refresh
@@ -245,42 +233,16 @@ export async function GET(request: NextRequest) {
  *       500:
  *         description: Internal server error
  */
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "financial:write",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized - Invalid or missing JWT token",
-        },
-        { status: 401 },
-      );
-    }
-
-    // Check permissions
-    if (
-      !rbac.hasPermission(
-        validation.user as Parameters<typeof rbac.hasPermission>[0],
-        "financial:write",
-      )
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Forbidden - Insufficient permissions to refresh financial context",
-        },
-        { status: 403 },
-      );
-    }
 
     // Clear cache and fetch fresh data
-    financialContextEngine.clearCache(validation.user.id);
+    financialContextEngine.clearCache(user.id);
     const context = await financialContextEngine.getFinancialContext(
-      validation.user.id,
+      user.id,
       true,
     );
 
@@ -290,7 +252,7 @@ export async function POST(request: NextRequest) {
       message: "Financial context refreshed successfully",
       _meta: {
         refreshedAt: new Date().toISOString(),
-        userId: validation.user.id,
+        userId: user.id,
       },
     });
   } catch (error) {
@@ -312,4 +274,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

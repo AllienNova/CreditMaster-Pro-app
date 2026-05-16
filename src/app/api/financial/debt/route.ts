@@ -5,7 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { debtPayoffService } from "@/lib/financial/debt-payoff-service";
 import type {
   Debt,
@@ -93,12 +94,10 @@ function getMockDebts(userId: string): Debt[] {
   ];
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+
 
     const { searchParams } = new URL(request.url);
     const strategy =
@@ -106,7 +105,7 @@ export async function GET(request: NextRequest) {
     const extraPayment = parseFloat(searchParams.get("extraPayment") || "0");
     const compare = searchParams.get("compare") === "true";
 
-    const debts = getMockDebts(validation.user.id);
+    const debts = getMockDebts(user.id);
     const overview = debtPayoffService.calculateOverview(debts, 5000); // Assume $5k monthly income
 
     const currentPlan = debtPayoffService.calculatePayoffPlan(
@@ -140,14 +139,13 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+
 
     const body = await request.json();
     const {
@@ -170,7 +168,7 @@ export async function POST(request: NextRequest) {
     // In production, save to database
     const newDebt: Debt = {
       id: `debt-${Date.now()}`,
-      userId: validation.user.id,
+      userId: user.id,
       name,
       type,
       balance,
@@ -196,4 +194,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

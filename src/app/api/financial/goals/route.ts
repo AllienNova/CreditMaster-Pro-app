@@ -7,8 +7,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { goalTracker } from "@/lib/financial/goal-tracker";
 import { getSupabase } from "@/lib/supabase/client";
 
@@ -39,33 +39,12 @@ const createGoalSchema = z.object({
     .default(0),
 });
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:create_goals",
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized - Invalid or missing JWT token",
-        },
-        { status: 401 },
-      );
-    }
-
-    // Check permissions (premium feature)
-    if (!rbac.hasPermission(validation.user, "financial:create_goals")) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Forbidden - Premium feature required",
-        },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
     const searchParams = request.nextUrl.searchParams;
 
     // Parse filter parameters
@@ -178,35 +157,15 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "financial:create_goals",
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized - Invalid or missing JWT token",
-        },
-        { status: 401 },
-      );
-    }
-
-    // Check permissions (premium feature)
-    if (!rbac.hasPermission(validation.user, "financial:create_goals")) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Forbidden - Premium feature required",
-        },
-        { status: 403 },
-      );
-    }
-
-    const userId = validation.user.id;
 
     // Parse and validate request body
     const body = await request.json();
@@ -293,4 +252,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
