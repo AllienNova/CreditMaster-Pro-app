@@ -7,6 +7,7 @@
 
 import crypto from "crypto";
 import { getSupabase } from "@/lib/supabase/client";
+import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -333,7 +334,7 @@ export class EmailPreferencesService {
         .update(payloadStr)
         .digest("base64url");
 
-      if (signature !== expectedSignature) {
+      if (!timingSafeEqual(signature, expectedSignature)) {
         return null;
       }
 

@@ -19,6 +19,8 @@
  *   TradingView Alert → This Handler → Log/Backup execution
  */
 
+import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -110,7 +112,7 @@ export class PCTTWebhookHandler {
       if (this.config.secretToken) {
         const authToken =
           headers?.["x-webhook-secret"] || headers?.["authorization"];
-        if (authToken !== this.config.secretToken) {
+        if (!timingSafeEqual(authToken ?? "", this.config.secretToken)) {
           return {
             success: false,
             error: "Unauthorized: Invalid secret token",

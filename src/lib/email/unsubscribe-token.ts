@@ -5,6 +5,7 @@
  */
 
 import crypto from "crypto";
+import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 
 const SECRET = process.env.EMAIL_UNSUBSCRIBE_SECRET || "default-secret";
 
@@ -20,7 +21,7 @@ export function generateUnsubscribeToken(userId: string): string {
  */
 export function verifyUnsubscribeToken(token: string, userId: string): boolean {
   const expectedToken = generateUnsubscribeToken(userId);
-  return token === expectedToken;
+  return timingSafeEqual(token, expectedToken);
 }
 
 /**

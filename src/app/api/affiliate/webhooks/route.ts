@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revenueTracker } from "@/lib/affiliate/revenue-tracker";
 import type { RevenueEventType } from "@/lib/affiliate/revenue-tracker";
+import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 
 /**
  * POST /api/affiliate/webhooks
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-    if (signature !== expectedHex) {
+    if (!timingSafeEqual(signature, expectedHex)) {
       return NextResponse.json(
         { error: "Invalid signature" },
         { status: 401 },

@@ -18,6 +18,7 @@ import * as jose from "jose";
 import { getPlaidClient } from "@/lib/financial/plaid-client";
 import { plaidService } from "@/lib/financial/plaid-service";
 import { getSupabase } from "@/lib/supabase/client";
+import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -234,7 +235,7 @@ class PlaidWebhookService {
       }
 
       const bodyHash = await this.sha256(body);
-      return bodyHash === requestBodyHash;
+      return timingSafeEqual(bodyHash, requestBodyHash);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`[PlaidWebhook] Signature verification failed: ${message}`);
