@@ -24,6 +24,7 @@
     "start": "next start",
     "test": "jest",
     "test:coverage": "jest --coverage",
+    "test:coverage:changed": "node scripts/check-changed-coverage.js",
     "test:watch": "jest --watch",
     "type-check": "tsc --noEmit"
   },
