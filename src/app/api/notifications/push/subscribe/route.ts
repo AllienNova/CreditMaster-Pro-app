@@ -47,19 +47,22 @@ export const POST = withAuth(
 
       const supabase = getSupabaseAdmin();
 
-      // Check if subscription already exists for this endpoint
+      // Check whether THIS user already has a row for this endpoint. The
+      // `user_id` filter is required: without it an attacker who knows a
+      // victim's (non-secret) push endpoint could hit the update branch and
+      // reassign `user_id`, hijacking the victim's subscription.
       const { data: existing } = await supabase
         .from("push_subscriptions")
         .select("id")
         .eq("endpoint", subscription.endpoint)
+        .eq("user_id", user.id)
         .single();
 
       if (existing) {
-        // Update existing subscription
+        // Update the caller's own existing subscription
         const { data, error } = await supabase
           .from("push_subscriptions")
           .update({
-            user_id: user.id,
             keys_p256dh: subscription.keys.p256dh,
             keys_auth: subscription.keys.auth,
             user_agent: userAgent || null,
@@ -67,6 +70,7 @@ export const POST = withAuth(
             updated_at: new Date().toISOString(),
           })
           .eq("id", existing.id)
+          .eq("user_id", user.id)
           .select()
           .single();
 
@@ -93,7 +97,18 @@ export const POST = withAuth(
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // A UNIQUE index on `endpoint` rejects an insert when the endpoint is
+        // already registered (to a different user). Surface a clean 409 — the
+        // caller may not take over another user's subscription.
+        if (error.code === "23505") {
+          return NextResponse.json(
+            { error: "Subscription endpoint already registered" },
+            { status: 409 },
+          );
+        }
+        throw error;
+      }
 
       return NextResponse.json({
         success: true,

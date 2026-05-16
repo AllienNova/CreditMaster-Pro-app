@@ -313,6 +313,51 @@ describe("Push Routes – POST /api/notifications/push/subscribe", () => {
     );
   });
 
+  it("cannot hijack another user's subscription by reusing their endpoint", async () => {
+    // The existence-check is scoped to (endpoint, user.id). For an endpoint the
+    // attacker does not own, that scoped query finds no row — so the update
+    // branch (which would reassign user_id) is never reached. The code falls
+    // through to INSERT, which the UNIQUE index on `endpoint` rejects (23505)
+    // → a clean 409, NOT a takeover.
+    const checkChain = createSupabaseChain({ data: null, error: null });
+    const insertChain = createSupabaseChain({
+      data: null,
+      error: { code: "23505", message: "duplicate key value" },
+    });
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      return callCount === 1 ? checkChain : insertChain;
+    });
+
+    const req = makeRequest("/api/notifications/push/subscribe", {
+      body: {
+        subscription: {
+          endpoint: "https://push.example.com/victim-endpoint",
+          keys: { p256dh: "attacker-key", auth: "attacker-auth" },
+        },
+      },
+    });
+    req.json = jest.fn().mockResolvedValue({
+      subscription: {
+        endpoint: "https://push.example.com/victim-endpoint",
+        keys: { p256dh: "attacker-key", auth: "attacker-auth" },
+      },
+    });
+
+    const res = await postSubscribe(req);
+    const body = await res.json();
+
+    // No takeover: the update branch is not reached for a foreign endpoint.
+    expect(insertChain.update).not.toHaveBeenCalled();
+    // The existence check was scoped to the authenticated user.
+    expect(checkChain.eq).toHaveBeenCalledWith("user_id", AUTH_USER_ID);
+    // UNIQUE-index rejection surfaces as a clean 409, not a 500.
+    expect(res.status).toBe(409);
+    expect(body.error).toBe("Subscription endpoint already registered");
+  });
+
   it("should update an existing subscription", async () => {
     const checkChain = createSupabaseChain({
       data: { id: "existing-sub" },
@@ -351,9 +396,14 @@ describe("Push Routes – POST /api/notifications/push/subscribe", () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe("Subscription updated");
     expect(body.subscriptionId).toBe("existing-sub");
-    expect(updateChain.update).toHaveBeenCalledWith(
-      expect.objectContaining({ user_id: AUTH_USER_ID }),
+    // The matched row is already proven to belong to the caller (the
+    // existence check is scoped to user.id), and the update is re-scoped via
+    // .eq("user_id", ...). The update no longer rewrites `user_id` — doing so
+    // was the reassignment vector for the endpoint-hijack IDOR.
+    expect(updateChain.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: expect.anything() }),
     );
+    expect(updateChain.eq).toHaveBeenCalledWith("user_id", AUTH_USER_ID);
   });
 
   it("should return 500 when Supabase insert throws", async () => {
