@@ -7,25 +7,15 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getPaperTradingEngine } from "@/lib/trading/paper/PaperTradingEngine";
 
 // ============================================================================
 // GET - List Orders
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const action = searchParams.get("action");
 
@@ -68,24 +58,14 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 // ============================================================================
 // POST - Place Order
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
 
     if (!body.symbol || !body.side || !body.quantity) {
@@ -121,24 +101,15 @@ export async function POST(request: NextRequest) {
       error instanceof Error ? error.message : "Failed to place paper order";
     return NextResponse.json({ error: message }, { status: 400 });
   }
-}
+});
 
 // ============================================================================
 // DELETE - Cancel Order
 // ============================================================================
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const orderId = searchParams.get("id");
 
@@ -158,4 +129,5 @@ export async function DELETE(request: NextRequest) {
       error instanceof Error ? error.message : "Failed to cancel paper order";
     return NextResponse.json({ error: message }, { status: 400 });
   }
-}
+  },
+);

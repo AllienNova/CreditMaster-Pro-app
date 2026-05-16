@@ -4,9 +4,18 @@
  * Tests for paper account, orders, positions, performance, and reset endpoints.
  */
 
-// Mock Supabase before imports
-jest.mock("@/lib/supabase/server", () => ({
-  createClient: jest.fn(),
+// Mock auth guard dependencies before imports
+const mockValidateFromHeaders = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 
 jest.mock("@/lib/trading/paper/PaperTradingEngine", () => ({
@@ -14,7 +23,6 @@ jest.mock("@/lib/trading/paper/PaperTradingEngine", () => ({
 }));
 
 import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { getPaperTradingEngine } from "@/lib/trading/paper/PaperTradingEngine";
 
 // Import route handlers
@@ -30,15 +38,18 @@ import { POST as resetPOST } from "../reset/route";
 
 const mockUser = { id: "user_123", email: "test@test.com" };
 
-function createMockSupabase(user: typeof mockUser | null = mockUser) {
-  return {
-    auth: {
-      getUser: jest.fn().mockResolvedValue({
-        data: { user },
-        error: user ? null : { message: "Unauthorized" },
-      }),
-    },
-  };
+// Paper routes are wrapped in withAuth; auth is mocked at the guard layer.
+function setupAuth(authenticated: boolean) {
+  if (authenticated) {
+    mockValidateFromHeaders.mockResolvedValue({ valid: true, user: mockUser });
+    mockResolveRoleFromDb.mockResolvedValue("user");
+  } else {
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: false,
+      user: null,
+      error: "Unauthorized",
+    });
+  }
 }
 
 function createRequest(
@@ -118,7 +129,7 @@ const mockPerformance = {
 describe("Paper Trading - Account", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase());
+    setupAuth(true);
   });
 
   // --------------------------------------------------------------------------
@@ -127,9 +138,9 @@ describe("Paper Trading - Account", () => {
 
   describe("GET /api/trading/paper", () => {
     it("returns 401 when not authenticated", async () => {
-      (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+      setupAuth(false);
 
-      const res = await accountGET();
+      const res = await accountGET(createRequest("/api/trading/paper"));
       const data = await res.json();
 
       expect(res.status).toBe(401);
@@ -142,7 +153,7 @@ describe("Paper Trading - Account", () => {
       };
       (getPaperTradingEngine as jest.Mock).mockReturnValue(mockEngine);
 
-      const res = await accountGET();
+      const res = await accountGET(createRequest("/api/trading/paper"));
       const data = await res.json();
 
       expect(res.status).toBe(200);
@@ -156,7 +167,7 @@ describe("Paper Trading - Account", () => {
       };
       (getPaperTradingEngine as jest.Mock).mockReturnValue(mockEngine);
 
-      const res = await accountGET();
+      const res = await accountGET(createRequest("/api/trading/paper"));
       const data = await res.json();
 
       expect(res.status).toBe(200);
@@ -172,7 +183,7 @@ describe("Paper Trading - Account", () => {
 
   describe("POST /api/trading/paper", () => {
     it("returns 401 when not authenticated", async () => {
-      (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+      setupAuth(false);
 
       const req = createRequest("/api/trading/paper", "POST", {});
       const res = await accountPOST(req);
@@ -248,7 +259,7 @@ describe("Paper Trading - Account", () => {
 describe("Paper Trading - Orders", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase());
+    setupAuth(true);
   });
 
   // --------------------------------------------------------------------------
@@ -257,7 +268,7 @@ describe("Paper Trading - Orders", () => {
 
   describe("GET /api/trading/paper/orders", () => {
     it("returns 401 when not authenticated", async () => {
-      (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+      setupAuth(false);
 
       const req = createRequest("/api/trading/paper/orders");
       const res = await ordersGET(req);
@@ -344,7 +355,7 @@ describe("Paper Trading - Orders", () => {
 
   describe("POST /api/trading/paper/orders", () => {
     it("returns 401 when not authenticated", async () => {
-      (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+      setupAuth(false);
 
       const req = createRequest("/api/trading/paper/orders", "POST", {
         symbol: "AAPL",
@@ -470,7 +481,7 @@ describe("Paper Trading - Orders", () => {
 
   describe("DELETE /api/trading/paper/orders", () => {
     it("returns 401 when not authenticated", async () => {
-      (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+      setupAuth(false);
 
       const req = createRequest("/api/trading/paper/orders?id=order_1", "DELETE");
       const res = await ordersDELETE(req);
@@ -526,11 +537,11 @@ describe("Paper Trading - Orders", () => {
 describe("Paper Trading - Positions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase());
+    setupAuth(true);
   });
 
   it("returns 401 when not authenticated", async () => {
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+    setupAuth(false);
 
     const req = createRequest("/api/trading/paper/positions");
     const res = await positionsGET(req);
@@ -605,11 +616,11 @@ describe("Paper Trading - Positions", () => {
 describe("Paper Trading - Performance", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase());
+    setupAuth(true);
   });
 
   it("returns 401 when not authenticated", async () => {
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+    setupAuth(false);
 
     const req = createRequest("/api/trading/paper/performance");
     const res = await performanceGET(req);
@@ -738,13 +749,13 @@ describe("Paper Trading - Performance", () => {
 describe("Paper Trading - Reset", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase());
+    setupAuth(true);
   });
 
   it("returns 401 when not authenticated", async () => {
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+    setupAuth(false);
 
-    const res = await resetPOST();
+    const res = await resetPOST(createRequest("/api/trading/paper/reset", "POST"));
 
     expect(res.status).toBe(401);
   });
@@ -755,7 +766,7 @@ describe("Paper Trading - Reset", () => {
     };
     (getPaperTradingEngine as jest.Mock).mockReturnValue(mockEngine);
 
-    const res = await resetPOST();
+    const res = await resetPOST(createRequest("/api/trading/paper/reset", "POST"));
 
     expect(res.status).toBe(404);
   });
@@ -774,7 +785,7 @@ describe("Paper Trading - Reset", () => {
     };
     (getPaperTradingEngine as jest.Mock).mockReturnValue(mockEngine);
 
-    const res = await resetPOST();
+    const res = await resetPOST(createRequest("/api/trading/paper/reset", "POST"));
     const data = await res.json();
 
     expect(res.status).toBe(200);
@@ -790,7 +801,7 @@ describe("Paper Trading - Reset", () => {
     };
     (getPaperTradingEngine as jest.Mock).mockReturnValue(mockEngine);
 
-    const res = await resetPOST();
+    const res = await resetPOST(createRequest("/api/trading/paper/reset", "POST"));
 
     expect(res.status).toBe(500);
   });

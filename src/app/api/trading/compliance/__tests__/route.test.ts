@@ -16,6 +16,19 @@ import { NextRequest } from "next/server";
 // MOCKS
 // ============================================================================
 
+const mockValidateFromHeaders = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
+}));
+
 jest.mock("@/lib/supabase/server", () => ({
   createClient: jest.fn(),
 }));
@@ -124,11 +137,16 @@ function createMockRequest(
 
 function setupAuth(authenticated: boolean) {
   if (authenticated) {
-    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: mockUser,
+    });
+    mockResolveRoleFromDb.mockResolvedValue("user");
   } else {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Invalid token" },
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: false,
+      user: null,
+      error: "Invalid token",
     });
   }
   (createClient as jest.Mock).mockResolvedValue({
@@ -180,7 +198,7 @@ describe("Trading Compliance API", () => {
   // Authentication Tests
   // --------------------------------------------------------------------------
 
-  describe("Authentication", () => {
+  describe("negative-auth – /api/trading/compliance", () => {
     it("GET returns 401 when not authenticated", async () => {
       setupAuth(false);
       const request = createMockRequest(

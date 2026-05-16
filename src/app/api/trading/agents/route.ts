@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { createClient } from "@/lib/supabase/server";
 import type { AgentType, AgentContext } from "@/lib/trading/agents/agent-types";
 import {
@@ -63,18 +64,9 @@ function createAgentByType(agentType: AgentType) {
 // GET - Retrieve Agent Logs
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
 
     const agentType = searchParams.get("agentType");
@@ -123,24 +115,14 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 // ============================================================================
 // POST - Execute Agent
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = (await request.json()) as Record<string, unknown>;
 
     const agentType = body.agentType as string | undefined;
@@ -221,4 +203,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
