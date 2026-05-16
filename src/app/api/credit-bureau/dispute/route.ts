@@ -5,30 +5,16 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { validateInput } from "@/lib/security/input-validation";
 import { CreditBureauService } from "@/lib/credit-bureau/credit-bureau-service";
 import type { DisputeSubmission, Bureau } from "@/lib/credit-bureau/types";
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "disputes:create",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate user
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
-    // 2. Check permission
-    if (!rbac.hasPermission(user, "disputes:create")) {
-      return NextResponse.json(
-        { error: "Forbidden - Insufficient permissions" },
-        { status: 403 },
-      );
-    }
-
     // 3. Parse and validate request body
     const body = await request.json();
     const {
@@ -103,4 +89,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
