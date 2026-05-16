@@ -232,7 +232,7 @@ Run in order after any code change:
 
 > **The live pass/fail status and exact counts for every gate are in `docs/ssot/health_metrics.md` § 8 — that file is canonical.** Do not hardcode results here.
 >
-> Current state (VERSION-015 re-baseline, 2026-05-16): mechanical gates (tests, types, lint) PASS. The **nine-domain audit is the authoritative signal and remains FAIL — 9/9 domains FAIL, 33 CRITICAL findings open** (see `docs/ssot/gap_analysis.md`). Passing tests/types/lint does NOT clear those findings.
+> Current state (VERSION-015 re-baseline, 2026-05-16): tests and type-check PASS; lint exits 1 with 15 pre-existing legacy errors + 3,193 warnings (non-blocking, not introduced by Wave 7). The **nine-domain audit is the authoritative signal and remains FAIL — 9/9 domains FAIL, 33 CRITICAL findings open** (see `docs/ssot/gap_analysis.md`). Passing tests/types does NOT clear those findings.
 >
 > **Overall: RED (audit-blocked)**. Ship: BLOCKED until Wave 7 closes.
 

@@ -11,11 +11,11 @@
 > | Tests | 547/549 suites · 14,587 cases · **35 failures** | 561 of 563 suites executed (2 skipped) · 14,986 cases · 14,967 pass · 19 skip · **0 failures** | **PASS** |
 > | Type Safety | 0 errors | **0 errors** | **PASS** |
 > | Build | SUCCESS, 560 kB | **Compiles successfully** (`✓ Compiled successfully in 23.6s`); page-data collection step requires live `AIML_API_KEY`/Stripe/Supabase env — not configured in this worktree | PASS (compile) / env-blocked (page-data) |
-> | Lint | 15 errors · 2,858 warnings | **0 errors** (1 non-blocking workspace-root warning only) | **PASS** |
+> | Lint | 15 errors · 2,858 warnings | **15 errors · 3,193 warnings** (all 15 errors pre-existing legacy, not introduced by Wave 7 — see § 4) | non-blocking (exit 1; build not gated) |
 > | npm audit (all) | 14 (1 high · 11 mod · 2 low) | **14 (6 high · 5 moderate · 3 low)** | unchanged total |
 > | npm audit (prod) | 9 moderate | see § 5 — re-measured | re-measured |
 >
-> Web overall is no longer RED on the basic gates: tests, types, and lint all PASS. The **9/9-domain audit (§0) is the authoritative quality signal** and remains FAIL — 33 CRITICAL findings open. **Ship: BLOCKED** until Wave 7 closes. The basic gates passing does NOT clear the audit findings; the 13,585→14,967 test growth did not detect any of the 33 CRITICALs (happy-path against mocked dependencies).
+> Web tests and type-check PASS. Lint exits 1 with **15 pre-existing legacy errors** (`react/display-name`, `prefer-const`, `no-unsafe-function-type`) and 3,193 warnings — none introduced by Wave 7, non-blocking for the build, scheduled for cleanup under TASK-PRE-05. The **9/9-domain audit (§0) is the authoritative quality signal** and remains FAIL — 33 CRITICAL findings open. **Ship: BLOCKED** until Wave 7 closes. Passing tests/types does NOT clear the audit findings; the 13,585→14,967 test growth detected none of the 33 CRITICALs (happy-path against mocked dependencies).
 >
 > See `docs/ssot/gap_analysis.md` for the 71-finding register and `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7 for remediation.
 >
@@ -116,17 +116,26 @@ All 19 skips are intentional — environment-dependent tests that require live A
 
 ---
 
-## 4. Lint (Re-baselined 2026-05-16)
+## 4. Lint (Re-baselined 2026-05-16 — corrected)
 
 | Metric | Value |
 |--------|-------|
 | **Linter** | ESLint via `next lint` (deprecated — migrate to ESLint CLI before Next.js 16) |
-| **Errors** | **0** |
-| **Warnings** | **1** — informational only: "Next.js inferred your workspace root" (multiple lockfiles: root + worktree). Not a code-quality violation. |
-| **Code-quality violations** | **0** |
-| **Exit Code** | 0 |
+| **Errors** | **15** — all pre-existing legacy issues, **not introduced by Wave 7** |
+| **Warnings** | **3,193** — overwhelmingly `@typescript-eslint/no-explicit-any` and `no-unused-vars` in legacy code |
+| **Exit Code** | 1 |
 
-**Assessment**: `npm run lint` reports no errors and no code-quality warnings in the `remediation/wave-7-foundation` worktree. The single warning emitted is the Next.js workspace-root inference notice caused by the worktree having its own `package-lock.json` alongside the repo root's — a tooling artifact of the worktree layout, harmless, silenceable via `outputFileTracingRoot`. VERSION-014's "15 errors / 2,858 warnings" figure is not reproduced here.
+### Error breakdown (all 15 pre-existing)
+
+| Rule | Count | Notes |
+|------|------:|-------|
+| `react/display-name` | 7 | Anonymous function components in legacy UI code |
+| `prefer-const` | 6 | `let` declarations never reassigned (legacy) |
+| `@typescript-eslint/no-unsafe-function-type` | 2 | Bare `Function` type in legacy code |
+
+**Assessment**: `npm run lint` exits **1** with **15 errors and 3,193 warnings**. All 15 errors are pre-existing legacy violations — the `remediation/wave-7-foundation` branch to date has only touched docs and one PCTT test file, so none of the 15 are introduced by Wave 7. They are non-blocking for the build (`eslint-config-next` does not fail the build on them) but should be cleaned as part of Wave 7 lint-hygiene work (TASK-PRE-05).
+
+> **Correction note (2026-05-16):** An earlier VERSION-015 draft of this section recorded "0 errors / 1 warning". That figure was wrong — it came from a lint run made before the ESLint config-cascade conflict was resolved (the nested worktree was loading the parent repo's `.eslintrc`, which suppressed the real rule set). With the config resolving correctly, the true counts are 15 errors / 3,193 warnings, as recorded above.
 
 ---
 
@@ -221,7 +230,7 @@ Based on test suite distribution and DICE v3.3 gap analysis:
 | 1 | Tests Pass | 14,967 passed / 0 failed / 19 skipped of 14,986 | PASS |
 | 2 | Type Safety | 0 errors (production + test) | PASS |
 | 3 | Build Succeeds | Compiles cleanly; page-data collection env-blocked in worktree | PASS (compile) — re-verify full build with secrets |
-| 4 | Lint Clean | 0 errors, 0 code-quality warnings | PASS |
+| 4 | Lint Clean | 15 errors (all pre-existing legacy), 3,193 warnings | NON-BLOCKING — build not gated; cleanup under TASK-PRE-05 |
 | 5 | Security Audit (prod) | 8 production vulns (3 high · 4 mod · 1 low), 0 critical | PROVISIONAL — non-breaking subset fixable via `npm audit fix` |
 | 6 | Coverage >= 80% (overall) | Per-suite numbers stale until coverage re-run | PROVISIONAL |
 | 7 | Coverage >= 80% (per-domain) | Stale until coverage re-run | PROVISIONAL |
@@ -230,7 +239,7 @@ Based on test suite distribution and DICE v3.3 gap analysis:
 
 ### Overall Health: **RED (audit-blocked)**
 
-The basic mechanical gates (tests, types, lint) now PASS — the VERSION-014 "five gates regressed" picture was driven mainly by the date-dependent PCTT flake (now fixed) and is not reproduced. **However, the §0 nine-domain audit remains the authoritative quality signal: 9/9 domains FAIL with 33 CRITICAL findings open.** Passing tests/types/lint does NOT clear those findings — the 14,967-test suite is structurally happy-path and detected none of the 33 CRITICALs. **Ship: BLOCKED** until Wave 7 (Security & Correctness Remediation) closes. Mobile coverage remains 0%.
+Tests and type-check PASS. Lint exits 1 with 15 pre-existing legacy errors (non-blocking for the build) and 3,193 warnings — none introduced by Wave 7. **The §0 nine-domain audit remains the authoritative quality signal: 9/9 domains FAIL with 33 CRITICAL findings open.** Passing tests/types does NOT clear those findings — the 14,967-test suite is structurally happy-path and detected none of the 33 CRITICALs. **Ship: BLOCKED** until Wave 7 (Security & Correctness Remediation) closes. Mobile coverage remains 0%.
 
 ---
 
@@ -329,4 +338,5 @@ _Updated 2026-03-01: VERSION-009 — Added 13 Wave 6 tasks (Plaid, DriveWealth, 
 _Updated 2026-03-01: VERSION-010 — Wave 6 complete. All 125 tasks DONE (100%). 13 Wave 6 tasks (PLD-01–05, TRD-15–18, AFF-01–04) completed. Test suite: 13,558 tests (+1,090), 501 suites (+28), 0 failures. Quality gates: all PASS._
 _Updated 2026-05-03: VERSION-013 — 9-domain audit (27 reviewer agents) opened 33 CRITICAL + 38 HIGH findings. Status FLIPPED TO RED. All prior "DONE / 100%" claims invalidated; Wave 7 (Security & Correctness Remediation, 59 tasks across 8 phases) opened. Static metrics not yet re-run._
 _Updated 2026-05-03: **VERSION-014 — TASK-PRE-01 honest re-baseline executed on `feat/asset-system-regen` @ `2877317`.** Live re-run results: tests 14,533 / 35 fail / 19 skip / 14,587 (REGRESSION — 35 PCTT trading-service failures); types 0 errors (PASS); lint 15 errors / 2,858 warnings (REGRESSION from 7 / 841); build SUCCESS, 560 kB shared, 294 API routes / 204 pages; npm audit 14 total (1 high dev / 11 mod / 2 low), prod-only 9 moderate (REGRESSION from 0). Five gates regressed; the prior commit-message "14,568/14,587 baseline still valid" claim was incorrect. Breadcrumb: `.claude/last-verification.json` (verdict: FAIL). Ship: BLOCKED._
-_Updated 2026-05-16: **VERSION-015 — TASK-PRE-01 honest re-baseline re-run in `remediation/wave-7-foundation` worktree @ `900d286`.** Live re-run results: tests 14,967 pass / 0 fail / 19 skip / 14,986 (561 of 563 suites; PASS); types 0 errors (PASS); lint 0 errors / 0 code-quality warnings (PASS — VERSION-014's 15/2,858 figure not reproduced); build compiles cleanly (`✓ Compiled successfully in 23.6s`), full page-data step env-blocked in worktree; npm audit 14 total (0 critical / 6 high / 5 mod / 3 low), prod-only 8 (3 high / 4 mod / 1 low). The VERSION-014 "35 PCTT failures" were a date-dependent weekend test artifact, fixed in commit `900d286`. Web mechanical gates now PASS; § 0 nine-domain audit (33 CRITICAL) remains FAIL and is the authoritative signal. Reconciled the Wave 7 Exit-Criterion-1 CRITICAL list: removed mis-severitied FND-018/FND-027 (both High), added omitted FND-065/066/067 (Critical) — explicit list now matches the 33-CRITICAL register. Ship: BLOCKED (audit)._
+_Updated 2026-05-16: **VERSION-015 — TASK-PRE-01 honest re-baseline re-run in `remediation/wave-7-foundation` worktree @ `900d286`.** Live re-run results: tests 14,967 pass / 0 fail / 19 skip / 14,986 (561 of 563 suites; PASS); types 0 errors (PASS); build compiles cleanly (`✓ Compiled successfully in 23.6s`), full page-data step env-blocked in worktree; npm audit 14 total (0 critical / 6 high / 5 mod / 3 low), prod-only 8 (3 high / 4 mod / 1 low). The VERSION-014 "35 PCTT failures" were a date-dependent weekend test artifact, fixed in commit `900d286`. § 0 nine-domain audit (33 CRITICAL) remains FAIL and is the authoritative signal. Reconciled the Wave 7 Exit-Criterion-1 CRITICAL list: removed mis-severitied FND-018/FND-027 (both High), added omitted FND-065/066/067 (Critical) — explicit list now matches the 33-CRITICAL register. Ship: BLOCKED (audit)._
+_Corrected 2026-05-16: **VERSION-015 lint figure corrected.** The initial VERSION-015 entry recorded "lint 0 errors / 0 warnings" — that was wrong, produced by a lint run made before the ESLint config-cascade conflict was resolved (the nested worktree loaded the parent repo's `.eslintrc`, suppressing the real rule set). True figures: **`npm run lint` exits 1 with 15 errors and 3,193 warnings**. All 15 errors are pre-existing legacy issues (7 `react/display-name`, 6 `prefer-const`, 2 `no-unsafe-function-type`) — none introduced by Wave 7; non-blocking for the build; scheduled for cleanup under TASK-PRE-05._
