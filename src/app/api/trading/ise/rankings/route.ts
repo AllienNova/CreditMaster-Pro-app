@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import {
   createRankingService,
   createRotationService,
@@ -15,14 +15,8 @@ import {
  * POST /api/trading/ise/rankings
  * Run a full ranking cycle with provided instrument data
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const {
       instruments,
@@ -69,7 +63,7 @@ export async function POST(request: NextRequest) {
     const performanceMap = new Map(Object.entries(performance || {}));
 
     // Ensure userId is set
-    constraints.userId = validation.user.id;
+    constraints.userId = user.id;
 
     // Create services
     const rankingService = createRankingService();
@@ -106,4 +100,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
