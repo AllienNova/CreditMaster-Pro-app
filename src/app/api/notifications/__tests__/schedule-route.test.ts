@@ -1,15 +1,19 @@
 /**
  * @jest-environment node
- */
-
-/**
- * Tests for the Push Notification Schedule API Route
+ *
+ * Tests for the Push Notification Schedule API Route (TASK-AUTH-03b,
+ * FND-041..044).
  *
  * Covers:
  * - POST: Direct notification scheduling
  * - POST: Template-based notification scheduling
- * - GET: Listing scheduled notifications
- * - DELETE: Cancelling scheduled notifications
+ * - GET: Listing scheduled notifications for the authenticated user
+ * - DELETE: Cancelling a scheduled notification owned by the authed user
+ *
+ * The route is wrapped in withAuth. The scheduled-notification owner is always
+ * the authenticated user (`user.id`); the request no longer carries a `userId`.
+ * Tests that previously sent a client `userId` were updated to the secure
+ * model — they encoded the FND-041..044 IDOR vulnerability.
  */
 
 import { describe, it, expect, beforeEach } from "@jest/globals";
@@ -19,6 +23,7 @@ const mockScheduleNotification = jest.fn();
 const mockCreateFromTemplate = jest.fn();
 const mockGetUserScheduledNotifications = jest.fn();
 const mockCancelNotification = jest.fn();
+const mockGetScheduledNotification = jest.fn();
 
 jest.mock("@/lib/notifications/notification-scheduler", () => ({
   notificationScheduler: {
@@ -26,7 +31,20 @@ jest.mock("@/lib/notifications/notification-scheduler", () => ({
     createFromTemplate: mockCreateFromTemplate,
     getUserScheduledNotifications: mockGetUserScheduledNotifications,
     cancelNotification: mockCancelNotification,
+    getScheduledNotification: mockGetScheduledNotification,
   },
+}));
+
+// Mock the auth guard dependencies
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRole(...args),
 }));
 
 // Import AFTER mocks
@@ -38,6 +56,8 @@ import {
 import { NextRequest } from "next/server";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+const AUTH_USER_ID = "auth-user-1";
 
 function makeRequest(
   url: string,
@@ -62,6 +82,14 @@ function makeFutureISO(minutesFromNow: number): string {
   return new Date(Date.now() + minutesFromNow * 60 * 1000).toISOString();
 }
 
+function authenticate(id: string = AUTH_USER_ID) {
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id, email: `${id}@example.com` },
+  });
+  mockResolveRole.mockResolvedValue("user");
+}
+
 // ── Setup ────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
@@ -69,9 +97,129 @@ beforeEach(() => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// negative-auth — 401 for anonymous callers
+// ═══════════════════════════════════════════════════════════════════════════════
+describe("Schedule Routes – negative-auth", () => {
+  beforeEach(() => {
+    mockValidate.mockResolvedValue({ valid: false, user: null });
+  });
+
+  it("POST returns 401 when not authenticated", async () => {
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        notification: { title: "Test", body: "body" },
+        scheduledAt: makeFutureISO(30),
+      },
+    });
+    req.json = jest.fn().mockResolvedValue({
+      notification: { title: "Test", body: "body" },
+      scheduledAt: makeFutureISO(30),
+    });
+    const res = await postSchedule(req);
+    expect(res.status).toBe(401);
+  });
+
+  it("GET returns 401 when not authenticated", async () => {
+    const res = await getSchedule(
+      makeRequest("/api/notifications/push/schedule"),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("DELETE returns 401 when not authenticated", async () => {
+    const res = await deleteSchedule(
+      makeRequest(
+        "/api/notifications/push/schedule?notificationId=sched_1",
+        { method: "DELETE" },
+      ),
+    );
+    expect(res.status).toBe(401);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ownership — schedule/list/cancel are scoped to the authed user
+// ═══════════════════════════════════════════════════════════════════════════════
+describe("Schedule Routes – ownership scoping", () => {
+  it("POST schedules for the authed user, ignoring a client-supplied userId", async () => {
+    authenticate();
+    mockScheduleNotification.mockReturnValue({
+      scheduled: true,
+      notificationId: "sched_1",
+      scheduledAt: new Date(),
+    });
+
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        userId: "victim-user",
+        notification: { title: "Test", body: "body" },
+        scheduledAt: makeFutureISO(30),
+      },
+    });
+    req.json = jest.fn().mockResolvedValue({
+      userId: "victim-user",
+      notification: { title: "Test", body: "body" },
+      scheduledAt: makeFutureISO(30),
+    });
+
+    await postSchedule(req);
+
+    expect(mockScheduleNotification).toHaveBeenCalledWith(
+      AUTH_USER_ID,
+      expect.anything(),
+      expect.any(Date),
+    );
+    expect(mockScheduleNotification).not.toHaveBeenCalledWith(
+      "victim-user",
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it("GET lists for the authed user, ignoring a client-supplied userId", async () => {
+    authenticate();
+    mockGetUserScheduledNotifications.mockReturnValue([]);
+
+    await getSchedule(
+      makeRequest("/api/notifications/push/schedule?userId=victim-user"),
+    );
+
+    expect(mockGetUserScheduledNotifications).toHaveBeenCalledWith(
+      AUTH_USER_ID,
+      undefined,
+    );
+    expect(mockGetUserScheduledNotifications).not.toHaveBeenCalledWith(
+      "victim-user",
+      undefined,
+    );
+  });
+
+  it("DELETE returns 404 and does not cancel a notification owned by another user", async () => {
+    authenticate();
+    mockGetScheduledNotification.mockReturnValue({
+      id: "sched_victim",
+      userId: "victim-user",
+      status: "pending",
+    });
+
+    const res = await deleteSchedule(
+      makeRequest(
+        "/api/notifications/push/schedule?notificationId=sched_victim",
+        { method: "DELETE" },
+      ),
+    );
+
+    expect(res.status).toBe(404);
+    expect(mockCancelNotification).not.toHaveBeenCalled();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // POST /api/notifications/push/schedule — Direct scheduling
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Schedule Routes – POST (direct scheduling)", () => {
+  beforeEach(() => authenticate());
+
   it("should schedule a notification and return success", async () => {
     const futureTime = makeFutureISO(30);
     mockScheduleNotification.mockReturnValue({
@@ -80,18 +228,13 @@ describe("Schedule Routes – POST (direct scheduling)", () => {
       scheduledAt: new Date(futureTime),
     });
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-1",
-          notification: { title: "Test", body: "Test body", type: "general" },
-          scheduledAt: futureTime,
-        },
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        notification: { title: "Test", body: "Test body", type: "general" },
+        scheduledAt: futureTime,
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       notification: { title: "Test", body: "Test body", type: "general" },
       scheduledAt: futureTime,
     });
@@ -106,41 +249,14 @@ describe("Schedule Routes – POST (direct scheduling)", () => {
     expect(mockScheduleNotification).toHaveBeenCalledTimes(1);
   });
 
-  it("should return 400 when userId is missing", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          notification: { title: "Test", body: "Test body" },
-          scheduledAt: makeFutureISO(30),
-        },
-      },
-    );
-    req.json = jest.fn().mockResolvedValue({
-      notification: { title: "Test", body: "Test body" },
-      scheduledAt: makeFutureISO(30),
-    });
-
-    const res = await postSchedule(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(400);
-    expect(body.error).toContain("userId");
-  });
-
   it("should return 400 when notification title is missing", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-1",
-          notification: { body: "Test body" },
-          scheduledAt: makeFutureISO(30),
-        },
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        notification: { body: "Test body" },
+        scheduledAt: makeFutureISO(30),
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       notification: { body: "Test body" },
       scheduledAt: makeFutureISO(30),
     });
@@ -153,18 +269,13 @@ describe("Schedule Routes – POST (direct scheduling)", () => {
   });
 
   it("should return 400 when notification body is missing", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-1",
-          notification: { title: "Test" },
-          scheduledAt: makeFutureISO(30),
-        },
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        notification: { title: "Test" },
+        scheduledAt: makeFutureISO(30),
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       notification: { title: "Test" },
       scheduledAt: makeFutureISO(30),
     });
@@ -177,17 +288,10 @@ describe("Schedule Routes – POST (direct scheduling)", () => {
   });
 
   it("should return 400 when scheduledAt is missing", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-1",
-          notification: { title: "Test", body: "body" },
-        },
-      },
-    );
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: { notification: { title: "Test", body: "body" } },
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       notification: { title: "Test", body: "body" },
     });
 
@@ -199,18 +303,13 @@ describe("Schedule Routes – POST (direct scheduling)", () => {
   });
 
   it("should return 400 for invalid date format", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-1",
-          notification: { title: "Test", body: "body" },
-          scheduledAt: "not-a-date",
-        },
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        notification: { title: "Test", body: "body" },
+        scheduledAt: "not-a-date",
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       notification: { title: "Test", body: "body" },
       scheduledAt: "not-a-date",
     });
@@ -230,18 +329,13 @@ describe("Schedule Routes – POST (direct scheduling)", () => {
       error: "Scheduled time must be in the future",
     });
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-1",
-          notification: { title: "Test", body: "body" },
-          scheduledAt: makeFutureISO(30),
-        },
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        notification: { title: "Test", body: "body" },
+        scheduledAt: makeFutureISO(30),
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       notification: { title: "Test", body: "body" },
       scheduledAt: makeFutureISO(30),
     });
@@ -259,6 +353,8 @@ describe("Schedule Routes – POST (direct scheduling)", () => {
 // POST /api/notifications/push/schedule — Template-based scheduling
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Schedule Routes – POST (template scheduling)", () => {
+  beforeEach(() => authenticate());
+
   it("should schedule from template and return success", async () => {
     const futureTime = makeFutureISO(30);
     mockCreateFromTemplate.mockReturnValue({
@@ -272,19 +368,14 @@ describe("Schedule Routes – POST (template scheduling)", () => {
       scheduledAt: new Date(futureTime),
     });
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-1",
-          templateKey: "bill_reminder",
-          variables: { billName: "Netflix", amount: 14.99, dueDate: "2026-03-01" },
-          scheduledAt: futureTime,
-        },
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        templateKey: "bill_reminder",
+        variables: { billName: "Netflix", amount: 14.99, dueDate: "2026-03-01" },
+        scheduledAt: futureTime,
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       templateKey: "bill_reminder",
       variables: { billName: "Netflix", amount: 14.99, dueDate: "2026-03-01" },
       scheduledAt: futureTime,
@@ -304,46 +395,17 @@ describe("Schedule Routes – POST (template scheduling)", () => {
     );
   });
 
-  it("should return 400 when userId is missing (template)", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          templateKey: "bill_reminder",
-          variables: {},
-          scheduledAt: makeFutureISO(30),
-        },
-      },
-    );
-    req.json = jest.fn().mockResolvedValue({
-      templateKey: "bill_reminder",
-      variables: {},
-      scheduledAt: makeFutureISO(30),
-    });
-
-    const res = await postSchedule(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(400);
-    expect(body.error).toContain("userId");
-  });
-
   it("should return 400 for unknown template key", async () => {
     mockCreateFromTemplate.mockReturnValue(null);
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-1",
-          templateKey: "nonexistent_template",
-          variables: {},
-          scheduledAt: makeFutureISO(30),
-        },
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        templateKey: "nonexistent_template",
+        variables: {},
+        scheduledAt: makeFutureISO(30),
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       templateKey: "nonexistent_template",
       variables: {},
       scheduledAt: makeFutureISO(30),
@@ -358,18 +420,10 @@ describe("Schedule Routes – POST (template scheduling)", () => {
   });
 
   it("should return 400 when scheduledAt is missing (template)", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-1",
-          templateKey: "bill_reminder",
-          variables: {},
-        },
-      },
-    );
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: { templateKey: "bill_reminder", variables: {} },
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       templateKey: "bill_reminder",
       variables: {},
     });
@@ -382,19 +436,14 @@ describe("Schedule Routes – POST (template scheduling)", () => {
   });
 
   it("should return 400 for invalid date format (template)", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-1",
-          templateKey: "bill_reminder",
-          variables: {},
-          scheduledAt: "invalid-date",
-        },
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        templateKey: "bill_reminder",
+        variables: {},
+        scheduledAt: "invalid-date",
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       templateKey: "bill_reminder",
       variables: {},
       scheduledAt: "invalid-date",
@@ -422,20 +471,15 @@ describe("Schedule Routes – POST (template scheduling)", () => {
 
     const overrides = { title: "Custom Title", url: "/custom" };
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-1",
-          templateKey: "bill_reminder",
-          variables: { billName: "Hulu" },
-          scheduledAt: futureTime,
-          overrides,
-        },
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        templateKey: "bill_reminder",
+        variables: { billName: "Hulu" },
+        scheduledAt: futureTime,
+        overrides,
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       templateKey: "bill_reminder",
       variables: { billName: "Hulu" },
       scheduledAt: futureTime,
@@ -468,19 +512,14 @@ describe("Schedule Routes – POST (template scheduling)", () => {
       error: "Push notifications disabled by user",
     });
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-disabled",
-          templateKey: "bill_reminder",
-          variables: { billName: "Spotify" },
-          scheduledAt: futureTime,
-        },
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        templateKey: "bill_reminder",
+        variables: { billName: "Spotify" },
+        scheduledAt: futureTime,
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-disabled",
       templateKey: "bill_reminder",
       variables: { billName: "Spotify" },
       scheduledAt: futureTime,
@@ -498,18 +537,15 @@ describe("Schedule Routes – POST (template scheduling)", () => {
 // POST — Error handling
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Schedule Routes – POST (error handling)", () => {
+  beforeEach(() => authenticate());
+
   it("should return 500 when an unexpected error occurs", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      {
-        body: {
-          userId: "user-1",
-          notification: { title: "Test", body: "body" },
-          scheduledAt: makeFutureISO(30),
-        },
+    const req = makeRequest("/api/notifications/push/schedule", {
+      body: {
+        notification: { title: "Test", body: "body" },
+        scheduledAt: makeFutureISO(30),
       },
-    );
-    // Simulate JSON parsing failure
+    });
     req.json = jest.fn().mockRejectedValue(new Error("Invalid JSON"));
 
     const res = await postSchedule(req);
@@ -524,25 +560,15 @@ describe("Schedule Routes – POST (error handling)", () => {
 // GET /api/notifications/push/schedule
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Schedule Routes – GET", () => {
-  it("should return 400 when userId is missing", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-    );
+  beforeEach(() => authenticate());
 
-    const res = await getSchedule(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(400);
-    expect(body.error).toContain("userId");
-  });
-
-  it("should return scheduled notifications for a user", async () => {
+  it("should return scheduled notifications for the authenticated user", async () => {
     const now = new Date();
     const future = new Date(Date.now() + 3600000);
     mockGetUserScheduledNotifications.mockReturnValue([
       {
         id: "sched_1",
-        userId: "user-1",
+        userId: AUTH_USER_ID,
         payload: { type: "general", title: "Test", body: "body" },
         scheduledAt: future,
         status: "pending",
@@ -553,11 +579,9 @@ describe("Schedule Routes – GET", () => {
       },
     ]);
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule?userId=user-1",
+    const res = await getSchedule(
+      makeRequest("/api/notifications/push/schedule"),
     );
-
-    const res = await getSchedule(req);
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -566,7 +590,7 @@ describe("Schedule Routes – GET", () => {
     expect(body.notifications[0].status).toBe("pending");
     expect(body.count).toBe(1);
     expect(mockGetUserScheduledNotifications).toHaveBeenCalledWith(
-      "user-1",
+      AUTH_USER_ID,
       undefined,
     );
   });
@@ -574,18 +598,16 @@ describe("Schedule Routes – GET", () => {
   it("should filter by status when provided", async () => {
     mockGetUserScheduledNotifications.mockReturnValue([]);
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule?userId=user-1&status=delivered",
+    const res = await getSchedule(
+      makeRequest("/api/notifications/push/schedule?status=delivered"),
     );
-
-    const res = await getSchedule(req);
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.notifications).toEqual([]);
     expect(body.count).toBe(0);
     expect(mockGetUserScheduledNotifications).toHaveBeenCalledWith(
-      "user-1",
+      AUTH_USER_ID,
       "delivered",
     );
   });
@@ -593,11 +615,9 @@ describe("Schedule Routes – GET", () => {
   it("should return empty array when no notifications found", async () => {
     mockGetUserScheduledNotifications.mockReturnValue([]);
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule?userId=user-no-notifs",
+    const res = await getSchedule(
+      makeRequest("/api/notifications/push/schedule"),
     );
-
-    const res = await getSchedule(req);
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -613,7 +633,7 @@ describe("Schedule Routes – GET", () => {
     mockGetUserScheduledNotifications.mockReturnValue([
       {
         id: "sched_date",
-        userId: "user-1",
+        userId: AUTH_USER_ID,
         payload: { type: "general", title: "Dates", body: "body" },
         scheduledAt,
         status: "delivered",
@@ -624,11 +644,9 @@ describe("Schedule Routes – GET", () => {
       },
     ]);
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule?userId=user-1",
+    const res = await getSchedule(
+      makeRequest("/api/notifications/push/schedule"),
     );
-
-    const res = await getSchedule(req);
     const body = await res.json();
 
     expect(body.notifications[0].scheduledAt).toBe(
@@ -647,28 +665,32 @@ describe("Schedule Routes – GET", () => {
 // DELETE /api/notifications/push/schedule
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Schedule Routes – DELETE", () => {
-  it("should return 400 when notificationId is missing", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule",
-      { method: "DELETE" },
-    );
+  beforeEach(() => authenticate());
 
-    const res = await deleteSchedule(req);
+  it("should return 400 when notificationId is missing", async () => {
+    const res = await deleteSchedule(
+      makeRequest("/api/notifications/push/schedule", { method: "DELETE" }),
+    );
     const body = await res.json();
 
     expect(res.status).toBe(400);
     expect(body.error).toContain("notificationId");
   });
 
-  it("should cancel a notification and return success", async () => {
+  it("should cancel a notification owned by the authed user and return success", async () => {
+    mockGetScheduledNotification.mockReturnValue({
+      id: "sched_cancel_1",
+      userId: AUTH_USER_ID,
+      status: "pending",
+    });
     mockCancelNotification.mockReturnValue(true);
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule?notificationId=sched_cancel_1",
-      { method: "DELETE" },
+    const res = await deleteSchedule(
+      makeRequest(
+        "/api/notifications/push/schedule?notificationId=sched_cancel_1",
+        { method: "DELETE" },
+      ),
     );
-
-    const res = await deleteSchedule(req);
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -678,30 +700,36 @@ describe("Schedule Routes – DELETE", () => {
     expect(mockCancelNotification).toHaveBeenCalledWith("sched_cancel_1");
   });
 
-  it("should return 404 when notification is not found", async () => {
-    mockCancelNotification.mockReturnValue(false);
+  it("should return 404 when the notification does not exist", async () => {
+    mockGetScheduledNotification.mockReturnValue(null);
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule?notificationId=nonexistent",
-      { method: "DELETE" },
+    const res = await deleteSchedule(
+      makeRequest(
+        "/api/notifications/push/schedule?notificationId=nonexistent",
+        { method: "DELETE" },
+      ),
     );
-
-    const res = await deleteSchedule(req);
     const body = await res.json();
 
     expect(res.status).toBe(404);
     expect(body.error).toContain("not found or already processed");
+    expect(mockCancelNotification).not.toHaveBeenCalled();
   });
 
-  it("should return 404 when notification is already delivered", async () => {
+  it("should return 404 when cancel fails (already delivered)", async () => {
+    mockGetScheduledNotification.mockReturnValue({
+      id: "sched_delivered",
+      userId: AUTH_USER_ID,
+      status: "delivered",
+    });
     mockCancelNotification.mockReturnValue(false);
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/schedule?notificationId=sched_delivered",
-      { method: "DELETE" },
+    const res = await deleteSchedule(
+      makeRequest(
+        "/api/notifications/push/schedule?notificationId=sched_delivered",
+        { method: "DELETE" },
+      ),
     );
-
-    const res = await deleteSchedule(req);
     const body = await res.json();
 
     expect(res.status).toBe(404);

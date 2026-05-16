@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 interface NotificationPreferences {
   userId: string;
@@ -44,86 +46,84 @@ const defaultPreferences: Omit<NotificationPreferences, "userId"> = {
   },
 };
 
-export async function GET(request: NextRequest) {
-  const userId = request.headers.get("x-user-id") || "demo-user";
-
-  const preferences = preferencesStore[userId] || {
-    userId,
-    ...defaultPreferences,
-  };
-
-  return NextResponse.json({ preferences });
-}
-
-export async function PUT(request: NextRequest) {
-  try {
-    const userId = request.headers.get("x-user-id") || "demo-user";
-    const body = await request.json();
-
-    const currentPreferences = preferencesStore[userId] || {
-      userId,
+export const GET = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
+    const preferences = preferencesStore[user.id] || {
+      userId: user.id,
       ...defaultPreferences,
     };
 
-    const updatedPreferences: NotificationPreferences = {
-      ...currentPreferences,
-      ...body,
-      userId, // Ensure userId cannot be changed
-      channels: {
-        ...currentPreferences.channels,
-        ...(body.channels || {}),
-      },
-      quietHours: {
-        ...currentPreferences.quietHours,
-        ...(body.quietHours || {}),
-      },
-    };
+    return NextResponse.json({ preferences });
+  },
+);
 
-    preferencesStore[userId] = updatedPreferences;
+export const PUT = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
+    try {
+      const body = await request.json();
 
-    return NextResponse.json({
-      success: true,
-      preferences: updatedPreferences,
-    });
-  } catch (_error) {
-    // NotificationPreferencesAPI error: Error updating notification preferences
-    void _error;
-    return NextResponse.json(
-      { error: "Failed to update preferences" },
-      { status: 500 },
-    );
-  }
-}
+      const currentPreferences = preferencesStore[user.id] || {
+        userId: user.id,
+        ...defaultPreferences,
+      };
 
-export async function POST(request: NextRequest) {
-  try {
-    const userId = request.headers.get("x-user-id") || "demo-user";
-    const body = await request.json();
-    const { action, subscription } = body;
+      const updatedPreferences: NotificationPreferences = {
+        ...currentPreferences,
+        ...body,
+        userId: user.id, // userId is the authenticated user, never client-supplied
+        channels: {
+          ...currentPreferences.channels,
+          ...(body.channels || {}),
+        },
+        quietHours: {
+          ...currentPreferences.quietHours,
+          ...(body.quietHours || {}),
+        },
+      };
 
-    if (action === "subscribe" && subscription) {
-      // NotificationPreferencesAPI: Push subscription registered for user
+      preferencesStore[user.id] = updatedPreferences;
+
       return NextResponse.json({
         success: true,
-        message: "Subscribed to push notifications",
+        preferences: updatedPreferences,
       });
+    } catch (_error) {
+      void _error;
+      return NextResponse.json(
+        { error: "Failed to update preferences" },
+        { status: 500 },
+      );
     }
+  },
+);
 
-    if (action === "unsubscribe") {
-      // NotificationPreferencesAPI: Push subscription removed for user
-      return NextResponse.json({
-        success: true,
-        message: "Unsubscribed from push notifications",
-      });
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
+    try {
+      const body = await request.json();
+      const { action, subscription } = body;
+
+      if (action === "subscribe" && subscription) {
+        return NextResponse.json({
+          success: true,
+          message: "Subscribed to push notifications",
+        });
+      }
+
+      if (action === "unsubscribe") {
+        return NextResponse.json({
+          success: true,
+          message: "Unsubscribed from push notifications",
+        });
+      }
+
+      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    } catch (_error) {
+      void _error;
+      return NextResponse.json(
+        { error: "Failed to process request" },
+        { status: 500 },
+      );
     }
-
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (_error) {
-    // NotificationPreferencesAPI error: Error processing notification action
-    void _error;
-    return NextResponse.json(
-      { error: "Failed to process request" },
-      { status: 500 },
-    );
-  }
-}
+  },
+);

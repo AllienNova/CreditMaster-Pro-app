@@ -1,5 +1,10 @@
 /**
  * @jest-environment node
+ *
+ * Covers /api/notifications (TASK-AUTH-03b, FND-041..044).
+ * All four handlers are wrapped in withAuth; the handler scopes every
+ * notification-service call to the authenticated user's id — a client-supplied
+ * `userId` in the query/body is ignored.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -24,11 +29,25 @@ jest.mock("@/lib/notifications/notification-service", () => ({
   },
 }));
 
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRole(...args),
+}));
+
 // Import AFTER mocks are registered
 import { GET, POST, PATCH, DELETE } from "../route";
 import { NextRequest } from "next/server";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+const AUTH_USER_ID = "auth-user-1";
 
 function makeRequest(
   url: string,
@@ -46,6 +65,14 @@ function makeRequest(
   return new NextRequest(absoluteUrl, init as never);
 }
 
+function authenticate(id: string = AUTH_USER_ID) {
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id, email: `${id}@example.com` },
+  });
+  mockResolveRole.mockResolvedValue("user");
+}
+
 // ── Setup ────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
@@ -53,24 +80,144 @@ beforeEach(() => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// negative-auth — 401 for anonymous callers
+// ═══════════════════════════════════════════════════════════════════════════════
+describe("Notifications CRUD API – negative-auth", () => {
+  beforeEach(() => {
+    mockValidate.mockResolvedValue({ valid: false, user: null });
+  });
+
+  it("GET returns 401 when not authenticated", async () => {
+    const res = await GET(makeRequest("/api/notifications"));
+    expect(res.status).toBe(401);
+  });
+
+  it("POST returns 401 when not authenticated", async () => {
+    const res = await POST(
+      makeRequest("/api/notifications", {
+        body: { type: "welcome", title: "Hi", message: "Hello" },
+      }),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("PATCH returns 401 when not authenticated", async () => {
+    const res = await PATCH(
+      makeRequest("/api/notifications", {
+        method: "PATCH",
+        body: { action: "mark_all_read" },
+      }),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("DELETE returns 401 when not authenticated", async () => {
+    const res = await DELETE(
+      makeRequest("/api/notifications?notificationId=n1", {
+        method: "DELETE",
+      }),
+    );
+    expect(res.status).toBe(401);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ownership — handler uses user.id, ignores a client-supplied userId
+// ═══════════════════════════════════════════════════════════════════════════════
+describe("Notifications CRUD API – ownership scoping", () => {
+  it("GET ignores a client-supplied userId and scopes to the authed user", async () => {
+    authenticate();
+    mockGetUserNotifications.mockReturnValue([]);
+    mockGetUnreadCount.mockReturnValue(0);
+
+    await GET(makeRequest("/api/notifications?userId=victim-user"));
+
+    expect(mockGetUserNotifications).toHaveBeenCalledWith(AUTH_USER_ID, 50);
+    expect(mockGetUnreadCount).toHaveBeenCalledWith(AUTH_USER_ID);
+    expect(mockGetUserNotifications).not.toHaveBeenCalledWith(
+      "victim-user",
+      expect.anything(),
+    );
+  });
+
+  it("POST ignores a client-supplied userId in the body", async () => {
+    authenticate();
+    mockCreateNotification.mockReturnValue({ id: "n1" });
+
+    const req = makeRequest("/api/notifications", {
+      body: {
+        userId: "victim-user",
+        type: "welcome",
+        title: "Hi",
+        message: "Hello",
+      },
+    });
+    req.json = jest.fn().mockResolvedValue({
+      userId: "victim-user",
+      type: "welcome",
+      title: "Hi",
+      message: "Hello",
+    });
+
+    await POST(req);
+
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      AUTH_USER_ID,
+      "welcome",
+      "Hi",
+      "Hello",
+      undefined,
+    );
+  });
+
+  it("PATCH mark_read ignores a client-supplied userId", async () => {
+    authenticate();
+    mockMarkAsRead.mockReturnValue(true);
+
+    const req = makeRequest("/api/notifications", {
+      method: "PATCH",
+      body: {
+        userId: "victim-user",
+        notificationId: "n1",
+        action: "mark_read",
+      },
+    });
+    req.json = jest.fn().mockResolvedValue({
+      userId: "victim-user",
+      notificationId: "n1",
+      action: "mark_read",
+    });
+
+    await PATCH(req);
+
+    expect(mockMarkAsRead).toHaveBeenCalledWith(AUTH_USER_ID, "n1");
+  });
+
+  it("DELETE ignores a client-supplied userId in the query", async () => {
+    authenticate();
+    mockDeleteNotification.mockReturnValue(true);
+
+    await DELETE(
+      makeRequest("/api/notifications?userId=victim-user&notificationId=n1", {
+        method: "DELETE",
+      }),
+    );
+
+    expect(mockDeleteNotification).toHaveBeenCalledWith(AUTH_USER_ID, "n1");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // GET /api/notifications
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Notifications CRUD API – GET /api/notifications", () => {
-  it("should return 400 when userId is missing", async () => {
-    const res = await GET(
-      makeRequest("http://localhost:3000/api/notifications"),
-    );
-    const body = await res.json();
+  beforeEach(() => authenticate());
 
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("Missing userId parameter");
-  });
-
-  it("should return notifications and unreadCount for valid userId", async () => {
+  it("should return notifications and unreadCount for the authed user", async () => {
     const fakeNotifications = [
       {
         id: "n1",
-        userId: "user-1",
+        userId: AUTH_USER_ID,
         type: "welcome",
         title: "Welcome",
         message: "Hello!",
@@ -81,40 +228,32 @@ describe("Notifications CRUD API – GET /api/notifications", () => {
     mockGetUserNotifications.mockReturnValue(fakeNotifications);
     mockGetUnreadCount.mockReturnValue(1);
 
-    const res = await GET(
-      makeRequest("http://localhost:3000/api/notifications?userId=user-1"),
-    );
+    const res = await GET(makeRequest("/api/notifications"));
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.notifications).toEqual(fakeNotifications);
     expect(body.unreadCount).toBe(1);
-    expect(mockGetUserNotifications).toHaveBeenCalledWith("user-1", 50);
-    expect(mockGetUnreadCount).toHaveBeenCalledWith("user-1");
+    expect(mockGetUserNotifications).toHaveBeenCalledWith(AUTH_USER_ID, 50);
+    expect(mockGetUnreadCount).toHaveBeenCalledWith(AUTH_USER_ID);
   });
 
   it("should pass custom limit when provided", async () => {
     mockGetUserNotifications.mockReturnValue([]);
     mockGetUnreadCount.mockReturnValue(0);
 
-    await GET(
-      makeRequest(
-        "http://localhost:3000/api/notifications?userId=user-1&limit=10",
-      ),
-    );
+    await GET(makeRequest("/api/notifications?limit=10"));
 
-    expect(mockGetUserNotifications).toHaveBeenCalledWith("user-1", 10);
+    expect(mockGetUserNotifications).toHaveBeenCalledWith(AUTH_USER_ID, 10);
   });
 
   it("should default limit to 50 when not specified", async () => {
     mockGetUserNotifications.mockReturnValue([]);
     mockGetUnreadCount.mockReturnValue(0);
 
-    await GET(
-      makeRequest("http://localhost:3000/api/notifications?userId=user-1"),
-    );
+    await GET(makeRequest("/api/notifications"));
 
-    expect(mockGetUserNotifications).toHaveBeenCalledWith("user-1", 50);
+    expect(mockGetUserNotifications).toHaveBeenCalledWith(AUTH_USER_ID, 50);
   });
 
   it("should return 500 when service throws", async () => {
@@ -122,9 +261,7 @@ describe("Notifications CRUD API – GET /api/notifications", () => {
       throw new Error("DB error");
     });
 
-    const res = await GET(
-      makeRequest("http://localhost:3000/api/notifications?userId=user-1"),
-    );
+    const res = await GET(makeRequest("/api/notifications"));
     const body = await res.json();
 
     expect(res.status).toBe(500);
@@ -136,26 +273,11 @@ describe("Notifications CRUD API – GET /api/notifications", () => {
 // POST /api/notifications
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Notifications CRUD API – POST /api/notifications", () => {
+  beforeEach(() => authenticate());
+
   it("should return 400 when required fields are missing", async () => {
-    const req = makeRequest("http://localhost:3000/api/notifications", {
-      body: { userId: "user-1" },
-    });
-    req.json = jest.fn().mockResolvedValue({ userId: "user-1" });
-
-    const res = await POST(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("Missing required fields");
-  });
-
-  it("should return 400 when userId is missing", async () => {
-    const req = makeRequest("http://localhost:3000/api/notifications", {
-      body: { type: "welcome", title: "Hi", message: "Hello" },
-    });
-    req.json = jest
-      .fn()
-      .mockResolvedValue({ type: "welcome", title: "Hi", message: "Hello" });
+    const req = makeRequest("/api/notifications", { body: {} });
+    req.json = jest.fn().mockResolvedValue({});
 
     const res = await POST(req);
     const body = await res.json();
@@ -167,7 +289,7 @@ describe("Notifications CRUD API – POST /api/notifications", () => {
   it("should create notification and return it", async () => {
     const fakeNotification = {
       id: "n1",
-      userId: "user-1",
+      userId: AUTH_USER_ID,
       type: "welcome",
       title: "Welcome",
       message: "Hello!",
@@ -176,16 +298,10 @@ describe("Notifications CRUD API – POST /api/notifications", () => {
     };
     mockCreateNotification.mockReturnValue(fakeNotification);
 
-    const req = makeRequest("http://localhost:3000/api/notifications", {
-      body: {
-        userId: "user-1",
-        type: "welcome",
-        title: "Welcome",
-        message: "Hello!",
-      },
+    const req = makeRequest("/api/notifications", {
+      body: { type: "welcome", title: "Welcome", message: "Hello!" },
     });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       type: "welcome",
       title: "Welcome",
       message: "Hello!",
@@ -197,7 +313,7 @@ describe("Notifications CRUD API – POST /api/notifications", () => {
     expect(res.status).toBe(200);
     expect(body.notification).toEqual(fakeNotification);
     expect(mockCreateNotification).toHaveBeenCalledWith(
-      "user-1",
+      AUTH_USER_ID,
       "welcome",
       "Welcome",
       "Hello!",
@@ -208,9 +324,8 @@ describe("Notifications CRUD API – POST /api/notifications", () => {
   it("should pass data when provided", async () => {
     mockCreateNotification.mockReturnValue({ id: "n1" });
 
-    const req = makeRequest("http://localhost:3000/api/notifications", {
+    const req = makeRequest("/api/notifications", {
       body: {
-        userId: "user-1",
         type: "welcome",
         title: "Title",
         message: "Msg",
@@ -218,7 +333,6 @@ describe("Notifications CRUD API – POST /api/notifications", () => {
       },
     });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       type: "welcome",
       title: "Title",
       message: "Msg",
@@ -228,7 +342,7 @@ describe("Notifications CRUD API – POST /api/notifications", () => {
     await POST(req);
 
     expect(mockCreateNotification).toHaveBeenCalledWith(
-      "user-1",
+      AUTH_USER_ID,
       "welcome",
       "Title",
       "Msg",
@@ -237,13 +351,8 @@ describe("Notifications CRUD API – POST /api/notifications", () => {
   });
 
   it("should return 500 when service throws", async () => {
-    const req = makeRequest("http://localhost:3000/api/notifications", {
-      body: {
-        userId: "user-1",
-        type: "welcome",
-        title: "Hi",
-        message: "Hello",
-      },
+    const req = makeRequest("/api/notifications", {
+      body: { type: "welcome", title: "Hi", message: "Hello" },
     });
     req.json = jest.fn().mockRejectedValue(new Error("Parse error"));
 
@@ -259,12 +368,14 @@ describe("Notifications CRUD API – POST /api/notifications", () => {
 // PATCH /api/notifications
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Notifications CRUD API – PATCH /api/notifications", () => {
-  it("should return 400 when userId or action is missing", async () => {
-    const req = makeRequest("http://localhost:3000/api/notifications", {
+  beforeEach(() => authenticate());
+
+  it("should return 400 when action is missing", async () => {
+    const req = makeRequest("/api/notifications", {
       method: "PATCH",
-      body: { userId: "user-1" },
+      body: {},
     });
-    req.json = jest.fn().mockResolvedValue({ userId: "user-1" });
+    req.json = jest.fn().mockResolvedValue({});
 
     const res = await PATCH(req);
     const body = await res.json();
@@ -276,16 +387,11 @@ describe("Notifications CRUD API – PATCH /api/notifications", () => {
   it("should mark a single notification as read", async () => {
     mockMarkAsRead.mockReturnValue(true);
 
-    const req = makeRequest("http://localhost:3000/api/notifications", {
+    const req = makeRequest("/api/notifications", {
       method: "PATCH",
-      body: {
-        userId: "user-1",
-        notificationId: "n1",
-        action: "mark_read",
-      },
+      body: { notificationId: "n1", action: "mark_read" },
     });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       notificationId: "n1",
       action: "mark_read",
     });
@@ -295,36 +401,32 @@ describe("Notifications CRUD API – PATCH /api/notifications", () => {
 
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(mockMarkAsRead).toHaveBeenCalledWith("user-1", "n1");
+    expect(mockMarkAsRead).toHaveBeenCalledWith(AUTH_USER_ID, "n1");
   });
 
   it("should mark all notifications as read", async () => {
     mockMarkAllAsRead.mockReturnValue(5);
 
-    const req = makeRequest("http://localhost:3000/api/notifications", {
+    const req = makeRequest("/api/notifications", {
       method: "PATCH",
-      body: { userId: "user-1", action: "mark_all_read" },
+      body: { action: "mark_all_read" },
     });
-    req.json = jest
-      .fn()
-      .mockResolvedValue({ userId: "user-1", action: "mark_all_read" });
+    req.json = jest.fn().mockResolvedValue({ action: "mark_all_read" });
 
     const res = await PATCH(req);
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.count).toBe(5);
-    expect(mockMarkAllAsRead).toHaveBeenCalledWith("user-1");
+    expect(mockMarkAllAsRead).toHaveBeenCalledWith(AUTH_USER_ID);
   });
 
   it("should return 400 for invalid action", async () => {
-    const req = makeRequest("http://localhost:3000/api/notifications", {
+    const req = makeRequest("/api/notifications", {
       method: "PATCH",
-      body: { userId: "user-1", action: "invalid_action" },
+      body: { action: "invalid_action" },
     });
-    req.json = jest
-      .fn()
-      .mockResolvedValue({ userId: "user-1", action: "invalid_action" });
+    req.json = jest.fn().mockResolvedValue({ action: "invalid_action" });
 
     const res = await PATCH(req);
     const body = await res.json();
@@ -334,26 +436,23 @@ describe("Notifications CRUD API – PATCH /api/notifications", () => {
   });
 
   it("should return 400 for mark_read without notificationId", async () => {
-    const req = makeRequest("http://localhost:3000/api/notifications", {
+    const req = makeRequest("/api/notifications", {
       method: "PATCH",
-      body: { userId: "user-1", action: "mark_read" },
+      body: { action: "mark_read" },
     });
-    req.json = jest
-      .fn()
-      .mockResolvedValue({ userId: "user-1", action: "mark_read" });
+    req.json = jest.fn().mockResolvedValue({ action: "mark_read" });
 
     const res = await PATCH(req);
     const body = await res.json();
 
-    // Without notificationId, mark_read falls through to the else branch
     expect(res.status).toBe(400);
     expect(body.error).toBe("Invalid action");
   });
 
   it("should return 500 when service throws", async () => {
-    const req = makeRequest("http://localhost:3000/api/notifications", {
+    const req = makeRequest("/api/notifications", {
       method: "PATCH",
-      body: { userId: "user-1", action: "mark_all_read" },
+      body: { action: "mark_all_read" },
     });
     req.json = jest.fn().mockRejectedValue(new Error("Parse error"));
 
@@ -369,24 +468,11 @@ describe("Notifications CRUD API – PATCH /api/notifications", () => {
 // DELETE /api/notifications
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Notifications CRUD API – DELETE /api/notifications", () => {
-  it("should return 400 when userId is missing", async () => {
-    const res = await DELETE(
-      makeRequest(
-        "http://localhost:3000/api/notifications?notificationId=n1",
-        { method: "DELETE" },
-      ),
-    );
-    const body = await res.json();
-
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("Missing required parameters");
-  });
+  beforeEach(() => authenticate());
 
   it("should return 400 when notificationId is missing", async () => {
     const res = await DELETE(
-      makeRequest("http://localhost:3000/api/notifications?userId=user-1", {
-        method: "DELETE",
-      }),
+      makeRequest("/api/notifications", { method: "DELETE" }),
     );
     const body = await res.json();
 
@@ -398,26 +484,24 @@ describe("Notifications CRUD API – DELETE /api/notifications", () => {
     mockDeleteNotification.mockReturnValue(true);
 
     const res = await DELETE(
-      makeRequest(
-        "http://localhost:3000/api/notifications?userId=user-1&notificationId=n1",
-        { method: "DELETE" },
-      ),
+      makeRequest("/api/notifications?notificationId=n1", {
+        method: "DELETE",
+      }),
     );
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(mockDeleteNotification).toHaveBeenCalledWith("user-1", "n1");
+    expect(mockDeleteNotification).toHaveBeenCalledWith(AUTH_USER_ID, "n1");
   });
 
   it("should return false when notification not found", async () => {
     mockDeleteNotification.mockReturnValue(false);
 
     const res = await DELETE(
-      makeRequest(
-        "http://localhost:3000/api/notifications?userId=user-1&notificationId=n999",
-        { method: "DELETE" },
-      ),
+      makeRequest("/api/notifications?notificationId=n999", {
+        method: "DELETE",
+      }),
     );
     const body = await res.json();
 
@@ -431,10 +515,9 @@ describe("Notifications CRUD API – DELETE /api/notifications", () => {
     });
 
     const res = await DELETE(
-      makeRequest(
-        "http://localhost:3000/api/notifications?userId=user-1&notificationId=n1",
-        { method: "DELETE" },
-      ),
+      makeRequest("/api/notifications?notificationId=n1", {
+        method: "DELETE",
+      }),
     );
     const body = await res.json();
 

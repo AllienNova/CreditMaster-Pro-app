@@ -1,122 +1,122 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { notificationService } from "@/lib/notifications/notification-service";
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-    const limit = parseInt(searchParams.get("limit") || "50");
+export const GET = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
+    try {
+      const { searchParams } = new URL(request.url);
+      const limit = parseInt(searchParams.get("limit") || "50");
 
-    if (!userId) {
+      const notifications = notificationService.getUserNotifications(
+        user.id,
+        limit,
+      );
+      const unreadCount = notificationService.getUnreadCount(user.id);
+
+      return NextResponse.json({ notifications, unreadCount });
+    } catch (_error) {
+      void _error;
       return NextResponse.json(
-        { error: "Missing userId parameter" },
-        { status: 400 },
+        { error: "Failed to get notifications" },
+        { status: 500 },
       );
     }
+  },
+);
 
-    const notifications = notificationService.getUserNotifications(
-      userId,
-      limit,
-    );
-    const unreadCount = notificationService.getUnreadCount(userId);
+export const POST = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
+    try {
+      const body = await request.json();
+      const { type, title, message, data } = body;
 
-    return NextResponse.json({ notifications, unreadCount });
-  } catch (_error) {
-    // NotificationsAPI error: Get notifications error
-    void _error;
-    return NextResponse.json(
-      { error: "Failed to get notifications" },
-      { status: 500 },
-    );
-  }
-}
+      if (!type || !title || !message) {
+        return NextResponse.json(
+          { error: "Missing required fields" },
+          { status: 400 },
+        );
+      }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { userId, type, title, message, data } = body;
+      const notification = notificationService.createNotification(
+        user.id,
+        type,
+        title,
+        message,
+        data,
+      );
 
-    if (!userId || !type || !title || !message) {
+      return NextResponse.json({ notification });
+    } catch (_error) {
+      void _error;
       return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 },
+        { error: "Failed to create notification" },
+        { status: 500 },
       );
     }
+  },
+);
 
-    const notification = notificationService.createNotification(
-      userId,
-      type,
-      title,
-      message,
-      data,
-    );
+export const PATCH = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
+    try {
+      const body = await request.json();
+      const { notificationId, action } = body;
 
-    return NextResponse.json({ notification });
-  } catch (_error) {
-    // NotificationsAPI error: Create notification error
-    void _error;
-    return NextResponse.json(
-      { error: "Failed to create notification" },
-      { status: 500 },
-    );
-  }
-}
+      if (!action) {
+        return NextResponse.json(
+          { error: "Missing required fields" },
+          { status: 400 },
+        );
+      }
 
-export async function PATCH(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { userId, notificationId, action } = body;
-
-    if (!userId || !action) {
+      if (action === "mark_read" && notificationId) {
+        const success = notificationService.markAsRead(
+          user.id,
+          notificationId,
+        );
+        return NextResponse.json({ success });
+      } else if (action === "mark_all_read") {
+        const count = notificationService.markAllAsRead(user.id);
+        return NextResponse.json({ count });
+      } else {
+        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+      }
+    } catch (_error) {
+      void _error;
       return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 },
+        { error: "Failed to update notification" },
+        { status: 500 },
       );
     }
+  },
+);
 
-    if (action === "mark_read" && notificationId) {
-      const success = notificationService.markAsRead(userId, notificationId);
+export const DELETE = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
+    try {
+      const { searchParams } = new URL(request.url);
+      const notificationId = searchParams.get("notificationId");
+
+      if (!notificationId) {
+        return NextResponse.json(
+          { error: "Missing required parameters" },
+          { status: 400 },
+        );
+      }
+
+      const success = notificationService.deleteNotification(
+        user.id,
+        notificationId,
+      );
       return NextResponse.json({ success });
-    } else if (action === "mark_all_read") {
-      const count = notificationService.markAllAsRead(userId);
-      return NextResponse.json({ count });
-    } else {
-      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-    }
-  } catch (_error) {
-    // NotificationsAPI error: Update notification error
-    void _error;
-    return NextResponse.json(
-      { error: "Failed to update notification" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-    const notificationId = searchParams.get("notificationId");
-
-    if (!userId || !notificationId) {
+    } catch (_error) {
+      void _error;
       return NextResponse.json(
-        { error: "Missing required parameters" },
-        { status: 400 },
+        { error: "Failed to delete notification" },
+        { status: 500 },
       );
     }
-
-    const success = notificationService.deleteNotification(
-      userId,
-      notificationId,
-    );
-    return NextResponse.json({ success });
-  } catch (_error) {
-    // NotificationsAPI error: Delete notification error
-    void _error;
-    return NextResponse.json(
-      { error: "Failed to delete notification" },
-      { status: 500 },
-    );
-  }
-}
+  },
+);
