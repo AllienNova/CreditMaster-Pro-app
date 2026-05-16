@@ -72,7 +72,7 @@ beforeEach(() => {
     select: jest.fn().mockReturnValue({
       eq: jest.fn().mockReturnValue({
         single: jest.fn().mockResolvedValue({
-          data: { subscription_tier: "admin" },
+          data: { role: "admin" },
           error: null,
         }),
       }),
@@ -137,16 +137,17 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
     expect(res.status).toBe(401);
   });
 
-  it("should return isAdmin=true for whitelisted admin email", async () => {
+  it("should return isAdmin=true when profiles.role is admin", async () => {
     const res = await GET(makeRequest());
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.isAdmin).toBe(true);
     expect(body.user).toBeDefined();
+    expect(body.user.role).toBe("admin");
   });
 
-  it("should return isAdmin=false for non-admin email without admin tier", async () => {
+  it("should return isAdmin=false for non-admin role", async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-1", email: "regular@example.com" } },
       error: null,
@@ -156,7 +157,7 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
           single: jest.fn().mockResolvedValue({
-            data: { subscription_tier: "basic" },
+            data: { role: "user" },
             error: null,
           }),
         }),
@@ -170,9 +171,13 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
     expect(body.isAdmin).toBe(false);
   });
 
-  it("should return isAdmin=true for non-whitelisted email with enterprise tier", async () => {
+  // FND-003: a formerly-whitelisted email must NOT grant admin — role is the
+  // only trusted source. This test previously asserted the vulnerable behavior
+  // (whitelisted email => isAdmin: true); updated per Test Integrity Rule
+  // exception (requirements changed) to encode the secure behavior.
+  it("should return isAdmin=false for formerly-whitelisted email when role is user", async () => {
     mockGetUser.mockResolvedValue({
-      data: { user: { id: "user-1", email: "other@example.com" } },
+      data: { user: { id: "user-1", email: "khonour@yahoo.com" } },
       error: null,
     });
 
@@ -180,7 +185,7 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
           single: jest.fn().mockResolvedValue({
-            data: { subscription_tier: "enterprise" },
+            data: { role: "user" },
             error: null,
           }),
         }),
@@ -191,6 +196,60 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.isAdmin).toBe(true);
+    expect(body.isAdmin).toBe(false);
+    expect(body.user.role).toBe("user");
+  });
+
+  // FND-004: enterprise subscription tier must NOT grant admin. This test
+  // previously asserted the vulnerable behavior (enterprise tier => isAdmin:
+  // true); updated per Test Integrity Rule exception (requirements changed) to
+  // encode the secure behavior.
+  it("should return isAdmin=false for enterprise tier when role is not admin", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-1", email: "other@example.com" } },
+      error: null,
+    });
+
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: { role: "user", subscription_tier: "enterprise" },
+            error: null,
+          }),
+        }),
+      }),
+    });
+
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.isAdmin).toBe(false);
+  });
+
+  it("should reflect the real profiles.role and never a manufactured value", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-1", email: "other@example.com" } },
+      error: null,
+    });
+
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: { role: "premium", subscription_tier: "enterprise" },
+            error: null,
+          }),
+        }),
+      }),
+    });
+
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.user.role).toBe("premium");
+    expect(body.user.role).not.toBe("enterprise");
   });
 });

@@ -13,13 +13,6 @@ import {
   createAuthResponse,
 } from "@/lib/security/auth-middleware";
 
-// Admin email whitelist (in production, use database roles)
-const ADMIN_EMAILS = [
-  "admin@fynvita.com",
-  "khonour@yahoo.com",
-  "kimhons@gmail.com",
-];
-
 export async function GET(request: NextRequest) {
   // SECURITY: Require admin role to check admin status
   const authResult = await requireRole(request, "admin");
@@ -70,25 +63,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if user is admin
-    const isAdmin = ADMIN_EMAILS.includes(user.email || "");
-
-    // Also check profile for admin role (future enhancement)
+    // Admin status comes solely from the trusted profiles.role column.
     const { data: profile } = await supabase
       .from("profiles")
-      .select("subscription_tier")
+      .select("role")
       .eq("id", user.id)
       .single();
 
-    // Enterprise tier users also get admin access
-    const hasAdminTier = profile?.subscription_tier === "enterprise";
+    const role = profile?.role ?? "user";
+    const isAdmin = role === "admin";
 
     return NextResponse.json({
-      isAdmin: isAdmin || hasAdminTier,
+      isAdmin,
       user: {
         id: user.id,
         email: user.email,
-        role: isAdmin ? "admin" : hasAdminTier ? "enterprise" : "user",
+        role,
       },
     });
   } catch (_error) {

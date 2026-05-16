@@ -75,7 +75,7 @@ function unauthenticated(errorMsg = "Not authenticated") {
 
 function setupSupabaseClient(
   user: { id: string; email: string } | null,
-  profile: { subscription_tier: string } | null = null,
+  profile: { role: string } | null = null,
   userError: any = null,
 ) {
   mockFromSelectEqSingle.mockResolvedValue({
@@ -198,8 +198,12 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
     });
   });
 
-  describe("Admin email whitelist check", () => {
-    it("should return isAdmin=true for whitelisted admin email", async () => {
+  // FND-003 / FND-004: admin status comes solely from profiles.role.
+  // The describe blocks below previously encoded the now-removed email
+  // whitelist and enterprise-tier grant; updated per Test Integrity Rule
+  // exception (requirements changed) to encode the secure behavior.
+  describe("Admin role check", () => {
+    it("should return isAdmin=true when profiles.role is admin", async () => {
       authenticatedAdmin();
       mockCookiesGet.mockImplementation((name: string) => {
         if (name === "sb-access-token") return { value: "valid-token" };
@@ -207,7 +211,7 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
       });
       setupSupabaseClient(
         { id: "user-1", email: "admin@fynvita.com" },
-        { subscription_tier: "basic" },
+        { role: "admin" },
       );
 
       const res = await GET(makeRequest());
@@ -219,7 +223,7 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
       expect(body.user.email).toBe("admin@fynvita.com");
     });
 
-    it("should return isAdmin=true for kimhons@gmail.com", async () => {
+    it("should return isAdmin=false for a formerly-whitelisted email when role is user", async () => {
       authenticatedAdmin();
       mockCookiesGet.mockImplementation((name: string) => {
         if (name === "sb-access-token") return { value: "valid-token" };
@@ -227,17 +231,18 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
       });
       setupSupabaseClient(
         { id: "user-2", email: "kimhons@gmail.com" },
-        { subscription_tier: "premium" },
+        { role: "user" },
       );
 
       const res = await GET(makeRequest());
       const body = await res.json();
 
-      expect(body.isAdmin).toBe(true);
-      expect(body.user.role).toBe("admin");
+      expect(res.status).toBe(200);
+      expect(body.isAdmin).toBe(false);
+      expect(body.user.role).toBe("user");
     });
 
-    it("should return isAdmin=false for non-admin, non-enterprise email", async () => {
+    it("should return isAdmin=false for a non-admin role", async () => {
       authenticatedAdmin();
       mockCookiesGet.mockImplementation((name: string) => {
         if (name === "sb-access-token") return { value: "valid-token" };
@@ -245,7 +250,7 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
       });
       setupSupabaseClient(
         { id: "user-3", email: "regular@user.com" },
-        { subscription_tier: "basic" },
+        { role: "user" },
       );
 
       const res = await GET(makeRequest());
@@ -257,8 +262,8 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
     });
   });
 
-  describe("Enterprise tier access", () => {
-    it("should grant admin access to enterprise tier users", async () => {
+  describe("Enterprise tier does not grant admin", () => {
+    it("should return isAdmin=false for enterprise tier when role is not admin", async () => {
       authenticatedAdmin();
       mockCookiesGet.mockImplementation((name: string) => {
         if (name === "sb-access-token") return { value: "valid-token" };
@@ -266,18 +271,18 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
       });
       setupSupabaseClient(
         { id: "user-4", email: "enterprise@corp.com" },
-        { subscription_tier: "enterprise" },
+        { role: "premium" },
       );
 
       const res = await GET(makeRequest());
       const body = await res.json();
 
       expect(res.status).toBe(200);
-      expect(body.isAdmin).toBe(true);
-      expect(body.user.role).toBe("enterprise");
+      expect(body.isAdmin).toBe(false);
+      expect(body.user.role).toBe("premium");
     });
 
-    it("should set role to 'enterprise' when user is not in whitelist but has enterprise tier", async () => {
+    it("should reflect the real profiles.role, never a manufactured 'enterprise' value", async () => {
       authenticatedAdmin();
       mockCookiesGet.mockImplementation((name: string) => {
         if (name === "sb-access-token") return { value: "valid-token" };
@@ -285,18 +290,19 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
       });
       setupSupabaseClient(
         { id: "user-5", email: "bigcorp@company.com" },
-        { subscription_tier: "enterprise" },
+        { role: "premium" },
       );
 
       const res = await GET(makeRequest());
       const body = await res.json();
 
-      expect(body.user.role).toBe("enterprise");
+      expect(body.user.role).toBe("premium");
+      expect(body.user.role).not.toBe("enterprise");
     });
   });
 
   describe("Profile lookup", () => {
-    it("should handle null profile gracefully (no subscription_tier)", async () => {
+    it("should handle null profile gracefully (no role)", async () => {
       authenticatedAdmin();
       mockCookiesGet.mockImplementation((name: string) => {
         if (name === "sb-access-token") return { value: "valid-token" };
@@ -341,7 +347,7 @@ describe("Admin Auth API – GET /api/admin/auth", () => {
       });
       setupSupabaseClient(
         { id: "user-7", email: "admin@fynvita.com" },
-        { subscription_tier: "basic" },
+        { role: "user" },
       );
 
       const res = await GET(makeRequest());
