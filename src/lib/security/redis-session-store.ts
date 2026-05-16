@@ -71,7 +71,10 @@ export class RedisSessionStore {
 
   async set(token: string, session: SessionRecord): Promise<void> {
     const ttlMs = session.expiresAt - Date.now();
-    if (this.redisAvailable && ttlMs > 0) {
+
+    if (this.redisAvailable) {
+      // Already-expired session: do not persist to either store.
+      if (ttlMs <= 0) return;
       await redisRequest(
         "set",
         [`${KEY_PREFIX}${token}`, "PX", String(ttlMs)],
