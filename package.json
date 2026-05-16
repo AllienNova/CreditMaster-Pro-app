@@ -26,7 +26,7 @@
     "test:coverage": "jest --coverage",
     "test:coverage:changed": "node scripts/check-changed-coverage.js",
     "test:watch": "jest --watch",
-    "test:auth-negative": "jest --testPathPattern='api/.*/__tests__/.*route\\.test\\.ts$' -t 'negative-auth'",
+    "test:auth-negative": "jest --testPathPatterns='api/.*/__tests__/.*route\\.test\\.ts$' -t 'negative-auth'",
     "audit:auth": "tsx scripts/verify-auth-coverage.ts",
     "type-check": "tsc --noEmit"
   },
