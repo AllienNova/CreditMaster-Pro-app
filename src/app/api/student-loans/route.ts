@@ -1,17 +1,15 @@
 import { FederalIntegrationService } from "@/lib/federal-integration-service";
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 
 const federalIntegrationService = new FederalIntegrationService();
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url, "http://localhost");
-  const userId = searchParams.get("userId");
+export const GET = withAuth(
+  async (_req: NextRequest, user: AuthedUser) => {
+    // NSLDS data is always retrieved for the authenticated user — a
+    // client-supplied `userId` query param is never trusted.
+    const result = await federalIntegrationService.retrieveNSLDSData(user.id);
 
-  if (!userId) {
-    return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-  }
-
-  const result = await federalIntegrationService.retrieveNSLDSData(userId);
-
-  return NextResponse.json(result);
-}
+    return NextResponse.json(result);
+  },
+);

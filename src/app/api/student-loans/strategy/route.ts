@@ -6,9 +6,10 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/api-guard";
 import { getAIOrchestrator, LoanStrategyInput } from "@/lib/ai-orchestrator";
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -89,9 +90,9 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function GET() {
+export const GET = withAuth(async () => {
   return NextResponse.json({
     message: "Student Loan Strategy API",
     method: "POST",
@@ -100,4 +101,4 @@ export async function GET() {
     optionalFields: ["goals"],
     model: "deepseek/deepseek-v3.1-terminus",
   });
-}
+});

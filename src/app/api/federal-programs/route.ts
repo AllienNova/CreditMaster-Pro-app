@@ -1,10 +1,10 @@
 import { FederalIntegrationService } from "@/lib/federal-integration-service";
 import { NextRequest, NextResponse } from "next/server";
-import { FederalProgramApplication } from "@/types/student-loan";
+import { withAuth } from "@/lib/auth/api-guard";
 
 const federalIntegrationService = new FederalIntegrationService();
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest) => {
   const body = await req.json();
   const { programType, applicationData } = body;
 
@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json(result);
-}
+});
 
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url, "http://localhost");
   const applicationId = searchParams.get("applicationId");
 
@@ -54,4 +54,4 @@ export async function GET(req: NextRequest) {
     await federalIntegrationService.trackApplicationStatus(applicationId);
 
   return NextResponse.json(result);
-}
+});

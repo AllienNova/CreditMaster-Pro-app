@@ -6,9 +6,10 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/api-guard";
 import { getAIMLService } from "@/lib/aiml-service";
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -80,9 +81,9 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function GET() {
+export const GET = withAuth(async () => {
   return NextResponse.json({
     message: "Voice Synthesis API",
     method: "POST",
@@ -93,4 +94,4 @@ export async function GET() {
     availableModels: ["tts-1", "tts-1-hd"],
     maxTextLength: 4096,
   });
-}
+});

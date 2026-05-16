@@ -5,29 +5,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
 import { federalIntegrationService } from "@/lib/federal-integration-service";
 import { logAIInteraction } from "@/lib/security/audit-logging";
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "federal_programs:track_application",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (
-      !rbac.hasPermission(validation.user, "federal_programs:track_application")
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const user = validation.user;
-
     // Get application ID from query params
     const { searchParams } = new URL(request.url);
     const applicationId = searchParams.get("application_id");
@@ -80,9 +65,12 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
-export async function POST() {
+export const POST = withPermission(
+  "federal_programs:track_application",
+  async () => {
   return NextResponse.json({
     message: "Federal Program Application Tracking API",
     method: "GET",
@@ -90,4 +78,5 @@ export async function POST() {
     requiredParams: ["application_id"],
     description: "Tracks status of federal student loan program applications",
   });
-}
+},
+);

@@ -5,27 +5,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
 import { servicerIntelligenceEngine } from "@/lib/servicer-intelligence-engine";
 import { logAIInteraction } from "@/lib/security/audit-logging";
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "servicers:detect_errors",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "servicers:detect_errors")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const user = validation.user;
-
     // Parse request body
     const body = await request.json();
     const { loan, payment_history, servicer_communications } = body;
@@ -83,9 +70,10 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
-export async function GET() {
+export const GET = withPermission("servicers:detect_errors", async () => {
   return NextResponse.json({
     message: "Servicer Error Detection API",
     method: "POST",
@@ -94,4 +82,4 @@ export async function GET() {
     optionalFields: ["payment_history", "servicer_communications"],
     description: "Detects errors in servicer records using pattern matching",
   });
-}
+});
