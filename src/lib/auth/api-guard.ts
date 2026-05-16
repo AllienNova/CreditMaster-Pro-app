@@ -21,6 +21,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { type Role, isAtLeast, isRole } from "./roles";
 import { jwtValidation, JWTUser } from "./jwt-validation";
 import { rbac } from "./rbac";
 
@@ -101,7 +102,7 @@ export function withPermission(
  * Returns 401 if not authenticated, 403 if missing role.
  */
 export function withRole(
-  requiredRole: "user" | "premium" | "enterprise" | "admin",
+  requiredRole: Role,
   handler: AuthenticatedHandler,
 ): RouteHandler {
   return async (request: NextRequest) => {
@@ -120,11 +121,11 @@ export function withRole(
       );
     }
 
-    const roleHierarchy = ["user", "premium", "enterprise", "admin"];
-    const userRoleLevel = roleHierarchy.indexOf(validation.user.role || "user");
-    const requiredRoleLevel = roleHierarchy.indexOf(requiredRole);
+    const userRole: Role = isRole(validation.user.role)
+      ? validation.user.role
+      : "user";
 
-    if (userRoleLevel < requiredRoleLevel) {
+    if (!isAtLeast(userRole, requiredRole)) {
       return NextResponse.json(
         {
           error: "Forbidden",

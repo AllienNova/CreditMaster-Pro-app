@@ -113,14 +113,20 @@ describe("Auth Middleware – hasPermission", () => {
     expect(hasPermission(userObj, "users", "read")).toBe(true);
   });
 
-  it("should return true for enterprise user (wildcard)", () => {
+  it("should deny wildcard access for a non-canonical role", () => {
     const userObj = { role: "enterprise" } as any;
-    expect(hasPermission(userObj, "anything", "read")).toBe(true);
+    expect(hasPermission(userObj, "anything", "read")).toBe(false);
   });
 
   it("should return true for admin user (wildcard)", () => {
     const userObj = { role: "admin" } as any;
     expect(hasPermission(userObj, "anything", "read")).toBe(true);
+  });
+
+  it("should return true for super_admin user (wildcard)", () => {
+    const userObj = { role: "super_admin" } as any;
+    expect(hasPermission(userObj, "anything", "read")).toBe(true);
+    expect(hasPermission(userObj, "anything", "admin")).toBe(true);
   });
 
   it("should return false for user without matching permission", () => {

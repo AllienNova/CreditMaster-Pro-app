@@ -19,6 +19,7 @@
  */
 
 import jwt from "jsonwebtoken";
+import { type Role, isAtLeast } from "@/lib/auth/roles";
 import { logger } from "@/lib/monitoring/logger";
 
 // Re-export preferred utilities for migration path
@@ -38,7 +39,7 @@ export interface JWTPayload {
   userId: string;
   email: string;
   name?: string;
-  role?: "user" | "admin" | "premium" | "enterprise";
+  role?: Role;
   iat?: number;
   exp?: number;
 }
@@ -47,7 +48,7 @@ export interface User {
   id: string;
   email: string;
   name?: string;
-  role: "user" | "admin" | "premium" | "enterprise";
+  role: Role;
   permissions: string[];
   createdAt: Date;
   lastLogin?: Date;
@@ -90,11 +91,13 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     { resource: "images", action: "read" },
     { resource: "images", action: "write" },
   ],
-  enterprise: [
+  admin: [
     { resource: "*", action: "read" },
     { resource: "*", action: "write" },
+    { resource: "*", action: "delete" },
+    { resource: "*", action: "admin" },
   ],
-  admin: [
+  super_admin: [
     { resource: "*", action: "read" },
     { resource: "*", action: "write" },
     { resource: "*", action: "delete" },
@@ -162,7 +165,7 @@ export async function requireAuth(request: Request): Promise<AuthResult> {
  */
 export async function requireRole(
   request: Request,
-  requiredRole: "user" | "premium" | "enterprise" | "admin",
+  requiredRole: Role,
 ): Promise<AuthResult> {
   const authResult = await requireAuth(request);
 
@@ -170,11 +173,7 @@ export async function requireRole(
     return authResult;
   }
 
-  const roleHierarchy = ["user", "premium", "enterprise", "admin"];
-  const userRoleLevel = roleHierarchy.indexOf(authResult.user.role);
-  const requiredRoleLevel = roleHierarchy.indexOf(requiredRole);
-
-  if (userRoleLevel < requiredRoleLevel) {
+  if (!isAtLeast(authResult.user.role, requiredRole)) {
     return {
       authenticated: false,
       error: `Requires ${requiredRole} role or higher`,
@@ -292,7 +291,7 @@ export async function validateAPIKey(apiKey: string): Promise<AuthResult> {
         user: {
           id: "api-user",
           email: "api@system",
-          role: "enterprise",
+          role: "premium",
           permissions: [],
           createdAt: new Date(),
         },

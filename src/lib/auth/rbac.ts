@@ -7,7 +7,9 @@
 
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
-export type Role = "user" | "premium" | "admin" | "super_admin";
+import { type Role, isAtLeast } from "@/lib/auth/roles";
+
+export type { Role };
 
 // User type that works with both Supabase User and custom User
 export interface RBACUser {
@@ -376,11 +378,7 @@ class RBAC {
    * Check if user has a specific role or higher
    */
   hasRole(user: User, requiredRole: Role): boolean {
-    const roleHierarchy: Role[] = ["user", "premium", "admin", "super_admin"];
-    const userRole = getUserRole(user);
-    const userRoleIndex = roleHierarchy.indexOf(userRole);
-    const requiredRoleIndex = roleHierarchy.indexOf(requiredRole);
-    return userRoleIndex >= requiredRoleIndex;
+    return isAtLeast(getUserRole(user), requiredRole);
   }
 
   /**

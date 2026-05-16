@@ -63,16 +63,16 @@ describe("getRoleLevel", () => {
     expect(getRoleLevel("premium")).toBe(1);
   });
 
-  it("should return 2 for enterprise", () => {
-    expect(getRoleLevel("enterprise")).toBe(2);
+  it("should return 2 for admin", () => {
+    expect(getRoleLevel("admin")).toBe(2);
   });
 
-  it("should return 3 for admin", () => {
-    expect(getRoleLevel("admin")).toBe(3);
+  it("should return 3 for super_admin", () => {
+    expect(getRoleLevel("super_admin")).toBe(3);
   });
 
   it("should return ascending levels for role hierarchy", () => {
-    const roles: RequiredRole[] = ["user", "premium", "enterprise", "admin"];
+    const roles: RequiredRole[] = ["user", "premium", "admin", "super_admin"];
     for (let i = 1; i < roles.length; i++) {
       expect(getRoleLevel(roles[i])).toBeGreaterThan(getRoleLevel(roles[i - 1]));
     }
@@ -86,8 +86,8 @@ describe("meetsRoleRequirement", () => {
   it("should allow admin to access any role-protected resource", () => {
     expect(meetsRoleRequirement("admin", "user")).toBe(true);
     expect(meetsRoleRequirement("admin", "premium")).toBe(true);
-    expect(meetsRoleRequirement("admin", "enterprise")).toBe(true);
     expect(meetsRoleRequirement("admin", "admin")).toBe(true);
+    expect(meetsRoleRequirement("super_admin", "admin")).toBe(true);
   });
 
   it("should deny user from accessing admin resources", () => {
@@ -102,16 +102,16 @@ describe("meetsRoleRequirement", () => {
     expect(meetsRoleRequirement("premium", "user")).toBe(true);
   });
 
-  it("should allow enterprise to access premium resources", () => {
-    expect(meetsRoleRequirement("enterprise", "premium")).toBe(true);
+  it("should allow admin to access premium resources", () => {
+    expect(meetsRoleRequirement("admin", "premium")).toBe(true);
   });
 
-  it("should deny premium from accessing enterprise resources", () => {
-    expect(meetsRoleRequirement("premium", "enterprise")).toBe(false);
+  it("should deny premium from accessing admin resources", () => {
+    expect(meetsRoleRequirement("premium", "admin")).toBe(false);
   });
 
   it("should allow same-role access", () => {
-    const roles: RequiredRole[] = ["user", "premium", "enterprise", "admin"];
+    const roles: RequiredRole[] = ["user", "premium", "admin", "super_admin"];
     for (const role of roles) {
       expect(meetsRoleRequirement(role, role)).toBe(true);
     }
