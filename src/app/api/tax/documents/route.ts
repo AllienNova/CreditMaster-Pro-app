@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
@@ -27,21 +28,8 @@ interface TaxDocumentRecord {
   updated_at: string;
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authenticate user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: "Please sign in to view documents." },
-        { status: 401 },
-      );
-    }
-
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const year = searchParams.get("year");
@@ -114,26 +102,11 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authenticate user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          error: "Unauthorized",
-          message: "Please sign in to delete documents.",
-        },
-        { status: 401 },
-      );
-    }
-
     // Get document ID from query params
     const searchParams = request.nextUrl.searchParams;
     const documentId = searchParams.get("id");
@@ -211,4 +184,5 @@ export async function DELETE(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

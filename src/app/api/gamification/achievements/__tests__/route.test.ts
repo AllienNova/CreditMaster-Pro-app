@@ -5,11 +5,20 @@
  */
 
 import { NextRequest } from "next/server";
-import { GET, POST } from "../route";
 
-// Mock Supabase server
-jest.mock("@/lib/supabase/server", () => ({
-  createClient: jest.fn(),
+// Route wrapped in withAuth (TASK-AUTH-03f); auth resolves via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidateFromHeaders = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 
 // Mock Achievement Service
@@ -35,6 +44,8 @@ jest.mock("@/lib/gamification", () => ({
   }),
 }));
 
+import { GET, POST } from "../route";
+
 const mockUser = { id: "user-123", email: "test@example.com" };
 
 function makeRequest(
@@ -57,20 +68,37 @@ function makeRequest(
 }
 
 function mockAuth(authenticated: boolean) {
-  const { createClient } = require("@/lib/supabase/server");
-  createClient.mockResolvedValue({
-    auth: {
-      getUser: jest.fn().mockResolvedValue({
-        data: { user: authenticated ? mockUser : null },
-        error: authenticated ? null : new Error("Not authenticated"),
-      }),
-    },
-  });
+  if (authenticated) {
+    mockValidateFromHeaders.mockResolvedValue({ valid: true, user: mockUser });
+    mockResolveRoleFromDb.mockResolvedValue("user");
+  } else {
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+  }
 }
 
 describe("/api/gamification/achievements", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe("negative-auth", () => {
+    it("GET returns 401 when the request is not authenticated", async () => {
+      mockAuth(false);
+      const response = await GET(
+        makeRequest("/api/gamification/achievements"),
+      );
+      expect(response.status).toBe(401);
+    });
+
+    it("POST returns 401 when the request is not authenticated", async () => {
+      mockAuth(false);
+      const response = await POST(
+        makeRequest("/api/gamification/achievements", "POST", {
+          action: "award",
+        }),
+      );
+      expect(response.status).toBe(401);
+    });
   });
 
   // ======================================================================

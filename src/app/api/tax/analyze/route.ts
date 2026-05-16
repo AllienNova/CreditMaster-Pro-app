@@ -12,6 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { createClient } from "@/lib/supabase/server";
 import { taxOptimizationEngine } from "@/lib/tax";
 import {
@@ -44,24 +45,9 @@ function checkRateLimit(userId: string): boolean {
   return true;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate user
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          error: "Unauthorized",
-          message: "Please sign in to access tax optimization.",
-        },
-        { status: 401 },
-      );
-    }
 
     // 2. Rate limiting
     if (!checkRateLimit(user.id)) {
@@ -116,7 +102,7 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 async function fetchTaxProfile(
   supabase: Awaited<ReturnType<typeof createClient>>,
