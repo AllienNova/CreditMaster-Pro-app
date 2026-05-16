@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
 import { productMatcher } from "@/lib/affiliate/product-matcher";
 import { creditCardMatcher } from "@/lib/affiliate/credit-card-matcher";
 import { insuranceMatcher } from "@/lib/affiliate/insurance-matcher";
@@ -21,18 +20,11 @@ import type { LoanType } from "@/lib/affiliate/loan-matcher";
  *   subType   - Sub-category filter (e.g., loan type "personal", insurance type "auto")
  *   limit     - Max results per category (default: 10)
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category") || "all";
     const subType = searchParams.get("subType") || undefined;
@@ -96,7 +88,8 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * POST /api/affiliate/offers
@@ -105,18 +98,11 @@ export async function GET(request: NextRequest) {
  *
  * Body: { productId, partnerId, source?, referrer? }
  */
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
     const body = await request.json();
 
     if (!body.productId || !body.partnerId) {
@@ -160,4 +146,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
