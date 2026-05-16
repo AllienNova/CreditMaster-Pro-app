@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 
 function getSupabaseClient() {
   return createClient(
@@ -24,7 +25,7 @@ interface AnalyticsEvent {
   userAgent?: string;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   const supabase = getSupabaseClient();
   try {
     const { events } = (await request.json()) as { events: AnalyticsEvent[] };
@@ -36,10 +37,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Transform events for database insertion
+    // Transform events for database insertion. The event is always attributed
+    // to the authenticated user — a client-supplied `userId` is never trusted.
     const rows = events.map((event) => ({
       event_type: event.event,
-      user_id: event.userId || null,
+      user_id: user.id,
       session_id: event.sessionId,
       properties: event.properties || {},
       page: event.page,
@@ -66,12 +68,12 @@ export async function POST(request: NextRequest) {
     void _error;
     return NextResponse.json({ success: true }); // Don't fail client requests
   }
-}
+});
 
 /**
- * GET - Retrieve analytics summary (admin only)
+ * GET - Retrieve analytics summary
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   const supabase = getSupabaseClient();
   try {
     const { searchParams } = new URL(request.url);
@@ -135,4 +137,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

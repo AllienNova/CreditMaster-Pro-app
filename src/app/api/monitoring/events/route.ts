@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import {
   RealtimeMonitoringService,
   type EventType,
@@ -9,15 +9,8 @@ import {
  * GET /api/monitoring/events
  * Server-Sent Events (SSE) endpoint for real-time updates
  */
-export async function GET(request: NextRequest) {
-  // Validate JWT token
-  const validation = await jwtValidation.validateFromHeaders(request);
-
-  if (!validation.valid || !validation.user) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  const userId = validation.user.id;
+export const GET = withAuth((request: NextRequest, user: AuthedUser) => {
+  const userId = user.id;
 
   // Get event types from query params
   const { searchParams } = new URL(request.url);
@@ -90,11 +83,11 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  return new Response(stream, {
+  return new NextResponse(stream, {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
     },
   });
-}
+});

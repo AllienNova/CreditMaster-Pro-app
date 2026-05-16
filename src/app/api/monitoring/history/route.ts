@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import {
   RealtimeMonitoringService,
   type EventType,
@@ -9,16 +9,9 @@ import {
  * GET /api/monitoring/history
  * Get event history for authenticated user
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
     const { searchParams } = new URL(request.url);
 
     // Get query parameters
@@ -49,22 +42,16 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * DELETE /api/monitoring/history
  * Clear event history for authenticated user
  */
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
 
     // Clear event history
     RealtimeMonitoringService.clearEventHistory(userId);
@@ -80,4 +67,5 @@ export async function DELETE(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

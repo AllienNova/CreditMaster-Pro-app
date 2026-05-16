@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withRole, type AuthedUser } from "@/lib/auth/api-guard";
 import { AnalyticsEngine } from "@/lib/analytics";
 
 /**
  * GET /api/analytics/timeseries
- * Get time series data for analytics
+ * Get time series data for analytics (admin only)
  */
-export async function GET(request: NextRequest) {
+export const GET = withRole(
+  "admin",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
     const { searchParams } = new URL(request.url);
 
     const metric = searchParams.get("metric") as
@@ -39,13 +33,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check permissions for system-wide data
-    if (
-      scope === "system" &&
-      !rbac.hasPermission(validation.user, "admin:analytics")
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    // The route is admin-gated by withRole("admin"); both user-scoped and
+    // system-wide time series are available to the authenticated admin.
 
     // Get time series data
     const data = await AnalyticsEngine.getTimeSeriesData(
@@ -59,9 +48,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data });
   } catch (_error) {
     // Error logged
+    void _error;
     return NextResponse.json(
       { error: "Failed to fetch time series data" },
       { status: 500 },
     );
   }
-}
+},
+);

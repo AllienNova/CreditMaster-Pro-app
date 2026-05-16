@@ -1,50 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { subscriptionService } from "@/lib/subscriptions/subscription-service";
+import { withRole, type AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * Test Database Connections
  *
+ * Diagnostic endpoint — admin-gated (TASK-AUTH-03f). SECURITY: this route
+ * should be removed before launch; it is gated with withRole("admin") at a
+ * minimum so it cannot leak data to ordinary users.
+ *
  * This endpoint tests:
  * 1. Supabase client connection
- * 2. User authentication
- * 3. Profile query
- * 4. Database types
+ * 2. Profile query
+ * 3. Database types
  */
-export async function GET(request: NextRequest) {
+export const GET = withRole(
+  "admin",
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
     // Test 1: Supabase client creation
     const supabase = createClient();
-
-    // Test 2: Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError) {
-      return NextResponse.json(
-        {
-          success: false,
-          test: "authentication",
-          error: authError.message,
-          hint: "Make sure you are logged in",
-        },
-        { status: 401 },
-      );
-    }
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          test: "authentication",
-          error: "No user found",
-          hint: "Visit /login to sign in",
-        },
-        { status: 401 },
-      );
-    }
 
     // Test 3: Query profile
     const profile = await subscriptionService.getUserProfile(user.id);
@@ -88,7 +64,6 @@ export async function GET(request: NextRequest) {
         user: {
           id: user.id,
           email: user.email,
-          created_at: user.created_at,
         },
         profile: {
           id: profile.id,
@@ -117,4 +92,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
