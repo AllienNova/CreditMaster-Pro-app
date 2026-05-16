@@ -5,6 +5,7 @@
  * Provides unified access to user's insurance policies across carriers.
  */
 
+import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 import {
   BaseConnector,
   ConnectorConfig,
@@ -781,7 +782,7 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
       .update(payload)
       .digest("hex");
 
-    return signature === expectedSignature;
+    return timingSafeEqual(signature, expectedSignature);
   }
 
   /**

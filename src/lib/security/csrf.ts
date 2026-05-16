@@ -7,6 +7,7 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 
 const CSRF_COOKIE_NAME = "__csrf_token";
 const CSRF_HEADER_NAME = "x-csrf-token";
@@ -108,8 +109,8 @@ export async function validateCSRFRequest(
   const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
   if (!cookieToken) return false;
 
-  // Tokens must match and be valid
-  if (headerToken !== cookieToken) return false;
+  // Tokens must match and be valid (constant-time to avoid leaking the token)
+  if (!timingSafeEqual(headerToken, cookieToken)) return false;
 
   return verifyCSRFToken(headerToken);
 }
