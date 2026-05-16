@@ -28,7 +28,8 @@
       "Bash(dir /b \"C:\\\\Githhub\\\\Fynvita\\\\src\\\\lib\")",
       "Bash(taskkill:*)",
       "Bash(netstat:*)",
-      "Bash(ipconfig:*)"
+      "Bash(ipconfig:*)",
+      "Bash(rm -f .git/CHERRY_PICK_HEAD)"
     ],
     "deny": [],
     "ask": []
