@@ -79,6 +79,10 @@ class BackupCodesService {
 
   /**
    * Verify a backup code
+   *
+   * Redemption goes through the atomic `redeem_backup_code` RPC, which takes
+   * a FOR UPDATE row lock so a code cannot be consumed twice by concurrent
+   * requests (FND-010). The previous check-then-update pair had a TOCTOU race.
    */
   async verifyBackupCode(
     userId: string,
@@ -87,35 +91,27 @@ class BackupCodesService {
     try {
       const hashedCode = this.hashCode(code);
 
-      // Find unused backup code
-      const { data, error } = await supabase
-        .from("backup_codes")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("code", hashedCode)
-        .eq("used", false)
-        .single();
+      const { data, error } = await supabase.rpc("redeem_backup_code", {
+        p_user_id: userId,
+        p_code_hash: hashedCode,
+      });
 
-      if (error || !data) {
+      if (error) {
         return {
           success: false,
-          error: "Invalid or already used backup code",
+          error: error.message,
         };
       }
 
-      // Mark code as used
-      const { error: updateError } = await supabase
-        .from("backup_codes")
-        .update({
-          used: true,
-          used_at: new Date().toISOString(),
-        })
-        .eq("id", data.id);
+      // The RPC returns a single row { redeemed: boolean }.
+      const redeemed = Array.isArray(data)
+        ? data[0]?.redeemed === true
+        : (data as { redeemed?: boolean } | null)?.redeemed === true;
 
-      if (updateError) {
+      if (!redeemed) {
         return {
           success: false,
-          error: updateError.message,
+          error: "Invalid or already used backup code",
         };
       }
 
