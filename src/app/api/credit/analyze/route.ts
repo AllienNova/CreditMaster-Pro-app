@@ -7,8 +7,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAIOrchestrator, CreditAnalysisInput } from "@/lib/ai-orchestrator";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
     const body = await request.json();
 
@@ -56,15 +59,17 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function GET() {
-  return NextResponse.json({
-    message: "Credit Analysis API",
-    method: "POST",
-    endpoint: "/api/credit/analyze",
-    requiredFields: ["creditReport"],
-    optionalFields: ["creditScore", "goals"],
-    model: "deepseek/deepseek-r1",
-  });
-}
+export const GET = withAuth(
+  async (_request: NextRequest, _user: AuthedUser) => {
+    return NextResponse.json({
+      message: "Credit Analysis API",
+      method: "POST",
+      endpoint: "/api/credit/analyze",
+      requiredFields: ["creditReport"],
+      optionalFields: ["creditScore", "goals"],
+      model: "deepseek/deepseek-r1",
+    });
+  },
+);

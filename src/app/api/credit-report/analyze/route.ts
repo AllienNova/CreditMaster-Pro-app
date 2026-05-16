@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 interface DisputeableItem {
   id: string;
@@ -28,7 +30,8 @@ interface AnalysisResult {
   overallHealth: "excellent" | "good" | "fair" | "poor";
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
@@ -149,15 +152,17 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function GET() {
-  return NextResponse.json({
-    message: "Credit Report Analysis API",
-    endpoints: {
-      "POST /api/credit-report/analyze": "Upload and analyze a credit report",
-    },
-    supportedFormats: ["PDF", "JPG", "PNG", "TXT"],
-    maxFileSize: "10MB",
-  });
-}
+export const GET = withAuth(
+  async (_request: NextRequest, _user: AuthedUser) => {
+    return NextResponse.json({
+      message: "Credit Report Analysis API",
+      endpoints: {
+        "POST /api/credit-report/analyze": "Upload and analyze a credit report",
+      },
+      supportedFormats: ["PDF", "JPG", "PNG", "TXT"],
+      maxFileSize: "10MB",
+    });
+  },
+);
