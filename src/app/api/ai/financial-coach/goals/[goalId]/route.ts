@@ -3,33 +3,20 @@
  *
  * GET /api/ai/financial-coach/goals/[goalId] - Get goal details
  * PATCH /api/ai/financial-coach/goals/[goalId] - Update goal progress
- * POST /api/ai/financial-coach/goals/[goalId]/simulate - Simulate goal scenarios
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { goalPlanner } from "@/lib/financial/goal-planner";
 
-interface RouteParams {
-  params: Promise<{ goalId: string }>;
+// The guard does not forward Next's route `params`; extract the id from the path.
+function goalIdFrom(request: NextRequest): string {
+  return request.nextUrl.pathname.split("/").pop() as string;
 }
 
-async function getUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const { goalId } = await params;
-    const user = await getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const goalId = goalIdFrom(request);
 
     const goals = await goalPlanner.getUserGoals(user.id);
     const goal = goals.find((g) => g.id === goalId);
@@ -53,44 +40,41 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { goalId } = await params;
-    const user = await getUser();
+export const PATCH = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
+    try {
+      const goalId = goalIdFrom(request);
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+      const body = await request.json();
+      const { currentAmount } = body;
 
-    const body = await request.json();
-    const { currentAmount } = body;
+      if (currentAmount === undefined) {
+        return NextResponse.json(
+          { error: "Missing required field: currentAmount" },
+          { status: 400 },
+        );
+      }
 
-    if (currentAmount === undefined) {
+      const updatedGoal = await goalPlanner.updateGoalProgress(
+        user.id,
+        goalId,
+        parseFloat(currentAmount),
+      );
+
+      if (!updatedGoal) {
+        return NextResponse.json({ error: "Goal not found" }, { status: 404 });
+      }
+
+      return NextResponse.json(updatedGoal);
+    } catch (_error) {
+      // GoalDetailRoute error: Failed to update goal
+      void _error;
       return NextResponse.json(
-        { error: "Missing required field: currentAmount" },
-        { status: 400 },
+        { error: "Failed to update goal" },
+        { status: 500 },
       );
     }
-
-    const updatedGoal = await goalPlanner.updateGoalProgress(
-      user.id,
-      goalId,
-      parseFloat(currentAmount),
-    );
-
-    if (!updatedGoal) {
-      return NextResponse.json({ error: "Goal not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(updatedGoal);
-  } catch (_error) {
-    // GoalDetailRoute error: Failed to update goal
-    void _error;
-    return NextResponse.json(
-      { error: "Failed to update goal" },
-      { status: 500 },
-    );
-  }
-}
+  },
+);

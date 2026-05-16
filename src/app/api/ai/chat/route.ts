@@ -6,29 +6,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getAIMLService, ChatMessage } from "@/lib/aiml-service";
-import { createClient } from "@/lib/supabase/server";
 import { creditService, CREDIT_COSTS } from "@/lib/credits";
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // AUTHENTICATION CHECK - Required for all AI endpoints
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized - Authentication required",
-        },
-        { status: 401 },
-      );
-    }
-
     const body = await request.json();
 
     // Validate required fields
@@ -46,7 +29,10 @@ export async function POST(request: NextRequest) {
 
     // Credit check before expensive LLM call
     const chatCost = CREDIT_COSTS.chat_message;
-    const hasChatCredits = await creditService.checkSufficientCredits(user.id, chatCost);
+    const hasChatCredits = await creditService.checkSufficientCredits(
+      user.id,
+      chatCost,
+    );
     if (!hasChatCredits) {
       return NextResponse.json(
         {
@@ -102,9 +88,9 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function GET() {
+export const GET = withAuth(async () => {
   return NextResponse.json({
     message: "AI Chat API",
     method: "POST",
@@ -112,4 +98,4 @@ export async function GET() {
     requiredFields: ["model", "messages"],
     optionalFields: ["temperature", "max_tokens"],
   });
-}
+});

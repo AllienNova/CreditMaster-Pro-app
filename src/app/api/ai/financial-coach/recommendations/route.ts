@@ -6,26 +6,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { recommendationEngine } from "@/lib/financial/recommendation-engine";
 import { RecommendationType } from "@/lib/financial/types/ai-coach.types";
 
-async function getUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
-
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const user = await getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const types = searchParams.get("types")?.split(",") as
       | RecommendationType[]
@@ -49,16 +35,10 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const user = await getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { types, limit = 10, includeAI = true, focusArea } = body;
 
@@ -79,4 +59,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

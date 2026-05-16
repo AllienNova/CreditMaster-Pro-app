@@ -6,29 +6,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getChatEngine } from "@/lib/ai/chat-engine";
 import type { SendMessageRequest } from "@/lib/ai/types/chat.types";
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // AUTHENTICATION CHECK - Required for all AI endpoints
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { code: "UNAUTHORIZED", message: "Authentication required" },
-        },
-        { status: 401 },
-      );
-    }
-
     const userId = user.id;
 
     // Parse request body
@@ -78,4 +61,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

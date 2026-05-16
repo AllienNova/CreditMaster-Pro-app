@@ -8,38 +8,20 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { chatDbService } from "@/lib/ai/chat-db-service";
 import type { UpdateSessionRequest } from "@/lib/ai/types/chat.types";
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
+// The guard does not forward Next's route `params`; extract the id from the path.
+function sessionIdFrom(request: NextRequest): string {
+  return request.nextUrl.pathname.split("/").pop() as string;
 }
 
 // Get session
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const { id } = await params;
-
-    // AUTHENTICATION CHECK - Required for all AI endpoints
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { code: "UNAUTHORIZED", message: "Authentication required" },
-        },
-        { status: 401 },
-      );
-    }
-
     const userId = user.id;
-    const sessionId = id;
+    const sessionId = sessionIdFrom(request);
 
     // Get session
     const session = await chatDbService.getSession(sessionId, userId);
@@ -66,38 +48,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         error: {
           code: "GET_SESSION_ERROR",
           message:
-            _error instanceof Error ? _error.message : "Unknown error occurred",
+            _error instanceof Error
+              ? _error.message
+              : "Unknown error occurred",
         },
       },
       { status: 500 },
     );
   }
-}
+});
 
 // Update session
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export const PUT = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const { id } = await params;
-
-    // AUTHENTICATION CHECK - Required for all AI endpoints
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { code: "UNAUTHORIZED", message: "Authentication required" },
-        },
-        { status: 401 },
-      );
-    }
-
     const userId = user.id;
-    const sessionId = id;
+    const sessionId = sessionIdFrom(request);
 
     // Parse request body
     const body: UpdateSessionRequest = await request.json();
@@ -117,58 +82,45 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         error: {
           code: "UPDATE_SESSION_ERROR",
           message:
-            _error instanceof Error ? _error.message : "Unknown error occurred",
+            _error instanceof Error
+              ? _error.message
+              : "Unknown error occurred",
         },
       },
       { status: 500 },
     );
   }
-}
+});
 
 // Delete session
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params;
+export const DELETE = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
+    try {
+      const userId = user.id;
+      const sessionId = sessionIdFrom(request);
 
-    // AUTHENTICATION CHECK - Required for all AI endpoints
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+      // Delete session
+      await chatDbService.deleteSession(sessionId, userId);
 
-    if (authError || !user) {
+      return NextResponse.json({
+        success: true,
+        data: { deleted: true },
+      });
+    } catch (_error) {
+      // ChatSessionDetailRoute error: Failed to delete session
       return NextResponse.json(
         {
           success: false,
-          error: { code: "UNAUTHORIZED", message: "Authentication required" },
+          error: {
+            code: "DELETE_SESSION_ERROR",
+            message:
+              _error instanceof Error
+                ? _error.message
+                : "Unknown error occurred",
+          },
         },
-        { status: 401 },
+        { status: 500 },
       );
     }
-
-    const userId = user.id;
-    const sessionId = id;
-
-    // Delete session
-    await chatDbService.deleteSession(sessionId, userId);
-
-    return NextResponse.json({
-      success: true,
-      data: { deleted: true },
-    });
-  } catch (_error) {
-    // ChatSessionDetailRoute error: Failed to delete session
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "DELETE_SESSION_ERROR",
-          message:
-            _error instanceof Error ? _error.message : "Unknown error occurred",
-        },
-      },
-      { status: 500 },
-    );
-  }
-}
+  },
+);

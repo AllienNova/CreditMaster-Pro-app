@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { financialContextEngine } from "@/lib/financial/financial-context-engine";
 import { recommendationEngine } from "@/lib/financial/recommendation-engine";
 import { goalPlanner } from "@/lib/financial/goal-planner";
@@ -15,22 +15,9 @@ import {
 } from "@/lib/financial/types/ai-coach.types";
 import type { FinancialContext } from "@/lib/financial/types/financial-context.types";
 
-async function getUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
-
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const user = await getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Fetch all data in parallel
     const [context, recommendations, goals] = await Promise.all([
       financialContextEngine.getFinancialContext(user.id),
@@ -139,7 +126,8 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 function generateCoachMessage(
   context: FinancialContext,
