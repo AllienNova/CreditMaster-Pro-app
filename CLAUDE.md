@@ -210,30 +210,7 @@ cd mobile-app && npx expo start  # Start Expo dev server
 
 ## 8. Testing
 
-### Current State (2026-03-02)
-
-| Metric | Value |
-|--------|-------|
-| **Test Suites** | 504 passed, 2 skipped, 506 total |
-| **Test Cases** | 13,585 passed, 19 skipped, 13,604 total |
-| **Pass Rate** | 99.86% |
-| **Failures** | 0 |
-| **Execution Time** | ~15s |
-
-### Coverage by Domain
-
-| Domain | Status | Notes |
-|--------|--------|-------|
-| Financial Services | PASS (>=80%) | 45+ test files |
-| Trading Engine | PASS (>=80%) | 15+ test files (was ~60%, TASK-TRD-07 DONE) |
-| Credit Services | PASS (>=80%) | 8+ test files |
-| Investment Services | PASS (>=80%) | 6+ test files |
-| Security/Auth | PASS (>=80%) | 10+ test files |
-| Notifications | PASS (>=80%) | 5+ test files (was ~50%, TASK-NTF-03 DONE) |
-| Admin | PASS (>=80%) | 8+ test files (was ~50%, TASK-ADM-03 DONE) |
-| Components (UI) | PASS (>=70%) | 40+ test files |
-| API Routes | PASS (>=80%) | 80+ test files |
-| Mobile App | NOT STARTED (0%) | TASK-MOB-01 (Wave 4) |
+> **Live test/lint/build/audit numbers live in `docs/ssot/health_metrics.md` — that file is canonical and re-baselined per Wave 7 task TASK-PRE-01.** Do not hardcode counts here; they drift. As of the 2026-05-16 re-baseline (VERSION-015): 14,967 tests pass, 0 fail, 19 skip; mobile coverage 0%.
 
 ### Test File Location
 Tests are co-located: `src/**/__tests__/*.test.ts(x)` alongside their source modules.
@@ -245,30 +222,19 @@ Tests are co-located: `src/**/__tests__/*.test.ts(x)` alongside their source mod
 Run in order after any code change:
 
 ```
-1. LINT     npm run lint              # 0 blocking errors (7 non-blocking, 841 warnings)
-2. TYPES    npx tsc --noEmit          # 0 errors (production + test)
-3. TEST     npm test                  # 13,585 passing, 0 failures
-4. BUILD    npm run build             # SUCCESS, 539 kB first load JS
-5. SECURITY npm audit                 # 0 production vulns (2 low dev-only)
+1. LINT     npm run lint              # ESLint via next lint
+2. TYPES    npm run type-check        # tsc --noEmit (strict)
+3. TEST     npm test                  # Jest
+4. BUILD    npm run build             # next build
+5. SECURITY npm audit                 # dependency scan
 6. AUDIT    9-domain code review      # FAIL — 33 CRITICAL + 38 HIGH (Wave 7)
 ```
 
-### Quality Scorecard (VERSION-013, 2026-05-03)
-
-| Gate | Status | Notes |
-|------|--------|-------|
-| Tests Pass (0 failures) | PASS | But did not catch any of the 33 CRITICAL audit findings |
-| Type Safety (0 prod errors) | PASS | |
-| Build Succeeds | PASS | |
-| Lint Clean (0 blocking) | PASS | |
-| Security (0 prod vulns) | PASS | npm audit clean; audit-driven CRITICALs are code-level not deps |
-| Coverage >=80% (overall) | PASS | Coverage measures presence of tests, not negative-auth tests |
-| Coverage >=80% (per-domain) | PASS (web domains) | |
-| Mobile Coverage | FAIL (0%) | TASK-MOB-01..07 in Wave 7 |
-| **Per-domain audit (NEW)** | **FAIL (9/9)** | **Auth, Payments, Commerce, Financial, Investments, Notifications, Admin, AI+Compliance, Mobile** |
-| **33 CRITICAL findings open** | **FAIL** | **See `docs/ssot/gap_analysis.md`** |
-
-**Overall: RED (web + mobile)**. Ship: BLOCKED until Wave 7 closes.
+> **The live pass/fail status and exact counts for every gate are in `docs/ssot/health_metrics.md` § 8 — that file is canonical.** Do not hardcode results here.
+>
+> Current state (VERSION-015 re-baseline, 2026-05-16): mechanical gates (tests, types, lint) PASS. The **nine-domain audit is the authoritative signal and remains FAIL — 9/9 domains FAIL, 33 CRITICAL findings open** (see `docs/ssot/gap_analysis.md`). Passing tests/types/lint does NOT clear those findings.
+>
+> **Overall: RED (audit-blocked)**. Ship: BLOCKED until Wave 7 closes.
 
 ---
 

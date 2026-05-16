@@ -1,8 +1,10 @@
 # Fynvita — Single Source of Truth (SSOT)
 
-> **VERSION-013 — AUDIT-DRIVEN RE-BASELINE** (2026-05-03)
+> **VERSION-015 — WAVE 7 IN FLIGHT** (2026-05-16)
 >
-> **The prior "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010 to VERSION-012) is invalidated.** A 9-domain comprehensive code review (27 reviewer agents, 2026-05-01 to 2026-05-03) opened **33 CRITICAL** + 38 HIGH findings. Wave 7 (Security & Correctness Remediation) has been opened to close them. No new feature work begins until Wave 7 closes per `build_order_blueprint.md`.
+> **Wave 7 (Security & Correctness Remediation) is in flight.** The prior "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010 to VERSION-012) was invalidated by a 9-domain comprehensive code review (27 reviewer agents) that opened **33 CRITICAL** + 38 HIGH findings. Wave 7 Phase 0 (Foundation) is underway on branch `remediation/wave-7-foundation`; TASK-PRE-01 (honest re-baseline) completed 2026-05-16. No new feature work begins until Wave 7 closes per `build_order_blueprint.md`.
+>
+> Current quality (TASK-PRE-01 re-baseline @ `900d286`): mechanical gates PASS — tests 14,967 pass / 0 fail / 19 skip; types 0 errors; lint 0 errors. The **nine-domain audit remains the authoritative signal and is FAIL — 33 CRITICAL findings open.** Ship: **BLOCKED** until Wave 7 closes. See `docs/ssot/health_metrics.md` for the full scorecard.
 >
 > Pre-launch status (no live users yet) means there is **no current GDPR Art. 33 / CCPA disclosure obligation**, but every finding must close before public launch.
 >
