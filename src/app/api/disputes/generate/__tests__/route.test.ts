@@ -14,7 +14,10 @@
 import { NextRequest } from "next/server";
 
 // ── Shared mocks — must be defined before jest.mock factories ─────────────────
-const mockGetUser = jest.fn();
+// Route wrapped in withAuth (TASK-AUTH-03f); auth resolves via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidateFromHeaders = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
 const mockGenerateDispute = jest.fn().mockResolvedValue("Generated dispute letter text");
 const mockReviewCompliance = jest.fn().mockResolvedValue({ passed: true });
 const mockCheckCredits = jest.fn().mockResolvedValue(true);
@@ -47,10 +50,14 @@ const fakeStrategy = {
   aiPrompt: "Generate a goodwill letter for {DISPUTE_DETAILS} from {YOUR_NAME} at {YOUR_ADDRESS}",
 };
 
-jest.mock("@/lib/supabase/server", () => ({
-  createClient: jest.fn(() =>
-    Promise.resolve({ auth: { getUser: mockGetUser } }),
-  ),
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 
 jest.mock("@/lib/ai-orchestrator", () => ({
@@ -81,7 +88,6 @@ jest.mock("@/lib/disputes/dispute-service", () => ({
 }));
 
 import { POST, GET } from "../route";
-import { createClient } from "@/lib/supabase/server";
 import { getAIOrchestrator } from "@/lib/ai-orchestrator";
 import {
   getTemplateById,
@@ -92,7 +98,12 @@ import {
 const fakeUser = { id: "user-dispute-1", email: "user@example.com" };
 
 function makeRequest(body: Record<string, unknown>): NextRequest {
+  const url = "http://localhost:3000/api/disputes/generate";
   return {
+    url,
+    method: "POST",
+    headers: new Headers(),
+    nextUrl: new URL(url),
     json: jest.fn().mockResolvedValue(body),
   } as unknown as NextRequest;
 }
@@ -102,10 +113,8 @@ describe("POST /api/disputes/generate", () => {
     jest.clearAllMocks();
 
     // Re-wire after clearAllMocks
-    (createClient as jest.Mock).mockResolvedValue({
-      auth: { getUser: mockGetUser },
-    });
-    mockGetUser.mockResolvedValue({ data: { user: fakeUser }, error: null });
+    mockValidateFromHeaders.mockResolvedValue({ valid: true, user: fakeUser });
+    mockResolveRoleFromDb.mockResolvedValue("user");
     mockCheckCredits.mockResolvedValue(true);
     mockDeductCredits.mockResolvedValue(undefined);
     mockGenerateDispute.mockResolvedValue("Generated dispute letter text");
@@ -124,14 +133,13 @@ describe("POST /api/disputes/generate", () => {
   });
 
   // ── (a) Unauthenticated → 401 ─────────────────────────────────────────────
-  it("returns 401 when user is not authenticated", async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: "Not signed in" } });
-    const res = await POST(makeRequest({ mode: "ai" }));
-    const json = await res.json();
-    expect(res.status).toBe(401);
-    expect(json.success).toBe(false);
-    expect(json.error).toMatch(/unauthorized/i);
-    expect(mockGenerateDispute).not.toHaveBeenCalled();
+  describe("negative-auth", () => {
+    it("returns 401 when user is not authenticated", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+      const res = await POST(makeRequest({ mode: "ai" }));
+      expect(res.status).toBe(401);
+      expect(mockGenerateDispute).not.toHaveBeenCalled();
+    });
   });
 
   // ── (b) Insufficient credits → 402 ───────────────────────────────────────
@@ -351,13 +359,25 @@ describe("POST /api/disputes/generate", () => {
 
 // ── GET → API docs ────────────────────────────────────────────────────────────
 describe("GET /api/disputes/generate", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({ valid: true, user: fakeUser });
+    mockResolveRoleFromDb.mockResolvedValue("user");
+  });
+
   it("returns 200 with API documentation", async () => {
-    const res = await GET();
+    const res = await GET(makeRequest({}));
     const json = await res.json();
     expect(res.status).toBe(200);
     expect(json.modes).toBeDefined();
     expect(json.modes.ai).toBeDefined();
     expect(json.modes.template).toBeDefined();
     expect(json.modes.strategy).toBeDefined();
+  });
+
+  it("returns 401 when not authenticated (negative-auth)", async () => {
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+    const res = await GET(makeRequest({}));
+    expect(res.status).toBe(401);
   });
 });

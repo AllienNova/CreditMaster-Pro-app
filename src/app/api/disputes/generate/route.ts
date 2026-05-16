@@ -23,29 +23,15 @@ import {
   getStrategyById,
   recommendStrategy,
 } from "@/lib/disputes/dispute-service";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { creditService, CREDIT_COSTS } from "@/lib/credits";
 
 // ============================================================================
 // MAIN POST HANDLER
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authentication check
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized - Authentication required" },
-        { status: 401 },
-      );
-    }
-
     const body = await request.json();
     const { mode = "ai" } = body;
 
@@ -95,7 +81,7 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 // ============================================================================
 // AI-POWERED GENERATION (Original)
@@ -392,7 +378,7 @@ async function handleStrategyGeneration(body: Record<string, unknown>) {
 // GET HANDLER - API Documentation
 // ============================================================================
 
-export async function GET() {
+export const GET = withAuth(async () => {
   return NextResponse.json({
     message: "Enhanced Dispute Generation API",
     version: "2.0.0",
@@ -431,4 +417,4 @@ export async function GET() {
     },
     model: "anthropic/claude-4.5-sonnet",
   });
-}
+});

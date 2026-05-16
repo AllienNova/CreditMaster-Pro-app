@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
 
 const DISPUTE_REASONS = [
   {
@@ -108,16 +108,8 @@ const DISPUTE_REASONS = [
   },
 ];
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
 
@@ -137,4 +129,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
