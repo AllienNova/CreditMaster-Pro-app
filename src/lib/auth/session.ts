@@ -8,10 +8,12 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
+import { resolveRoleFromDb } from "./resolve-role";
+import type { Role } from "./roles";
+
 export interface User {
   id: string;
   email: string;
-  role?: string;
   user_metadata?: Record<string, any>;
 }
 
@@ -56,7 +58,6 @@ export async function getUser(): Promise<User | null> {
     return {
       id: user.id,
       email: user.email!,
-      role: user.user_metadata?.role,
       user_metadata: user.user_metadata,
     };
   } catch (_error) {
@@ -87,13 +88,17 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 /**
- * Get user role from session
+ * Get user role from the database (`profiles.role`).
+ *
+ * The role is always resolved from the database — never from the JWT claim
+ * or `user_metadata` (FND-005).
  *
  * @returns User role if authenticated, null otherwise
  */
-export async function getUserRole(): Promise<string | null> {
+export async function getUserRole(): Promise<Role | null> {
   const user = await getUser();
-  return user?.role || null;
+  if (!user) return null;
+  return resolveRoleFromDb(user.id);
 }
 
 /**
@@ -102,7 +107,7 @@ export async function getUserRole(): Promise<string | null> {
  * @param role - Role to check
  * @returns true if user has the role, false otherwise
  */
-export async function hasRole(role: string): Promise<boolean> {
+export async function hasRole(role: Role): Promise<boolean> {
   const userRole = await getUserRole();
   return userRole === role;
 }

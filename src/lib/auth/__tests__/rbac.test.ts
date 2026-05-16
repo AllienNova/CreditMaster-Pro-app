@@ -32,12 +32,15 @@ describe("RBAC – getRole", () => {
     expect(rbac.getRole(user("admin"))).toBe("admin");
   });
 
-  it("should return role from app_metadata", () => {
-    expect(rbac.getRole(appMeta("premium"))).toBe("premium");
+  // AUTH-01 (FND-005): RBAC no longer trusts app_metadata/user_metadata —
+  // the role must be the DB-resolved role on the `role` property. A role
+  // present ONLY in metadata is ignored and falls back to 'user'.
+  it("ignores app_metadata role (not a trusted source)", () => {
+    expect(rbac.getRole(appMeta("premium"))).toBe("user");
   });
 
-  it("should return role from user_metadata", () => {
-    expect(rbac.getRole(userMeta("super_admin"))).toBe("super_admin");
+  it("ignores user_metadata role (not a trusted source)", () => {
+    expect(rbac.getRole(userMeta("super_admin"))).toBe("user");
   });
 
   it("should default to 'user' for invalid role string", () => {
@@ -54,13 +57,15 @@ describe("RBAC – getRole", () => {
     ).toBe("admin");
   });
 
-  it("should prioritize app_metadata over user_metadata", () => {
+  // AUTH-01 (FND-005): neither metadata field is trusted — with no `role`
+  // property the result is the safe default 'user', regardless of metadata.
+  it("ignores both metadata fields, defaulting to 'user'", () => {
     expect(
       rbac.getRole({
         app_metadata: { role: "premium" },
         user_metadata: { role: "admin" },
       } as any),
-    ).toBe("premium");
+    ).toBe("user");
   });
 
   it.each(["user", "premium", "admin", "super_admin"] as Role[])(
