@@ -260,4 +260,26 @@ describe("Redis Rate Limiting — rateLimit() compat factory", () => {
       limiter.getRemaining(50, `compat-remaining-${Date.now()}`),
     ).resolves.toBe(50);
   });
+
+  // Regression guard: the factory creates a fresh RedisRateLimiter per check()
+  // call. This is only safe because the in-memory fallback store is MODULE-scoped
+  // (shared across all instances), so the counter still accumulates with Redis
+  // unset. If the store were ever moved to instance scope, this test fails — each
+  // check() would see an empty store and rate limiting would become a silent
+  // no-op in every non-Redis environment (local dev, CI).
+  it("blocks the (N+1)th call in the in-memory fallback path with Redis unset", async () => {
+    expect(process.env.KV_REST_API_URL).toBeUndefined();
+    expect(process.env.UPSTASH_REDIS_REST_URL).toBeUndefined();
+
+    const limiter = rateLimit({ interval: 60000 });
+    const token = `fallback-persist-${Date.now()}`;
+
+    for (let i = 0; i < 4; i++) {
+      await expect(limiter.check(4, token)).resolves.toBeUndefined();
+    }
+
+    await expect(limiter.check(4, token)).rejects.toThrow(
+      /Rate limit exceeded/,
+    );
+  });
 });
