@@ -446,3 +446,31 @@ describe("POST /api/trading/strategies", () => {
     expect(insertArg.is_public).toBe(true);
   });
 });
+
+// ============================================================================
+// TESTS: negative-auth (TASK-AUTH-03e)
+// ============================================================================
+
+describe("negative-auth – /api/trading/strategies", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    setupAuth(false);
+  });
+
+  it("GET returns 401 when the request is not authenticated (TASK-AUTH-03e)", async () => {
+    const res = await GET(
+      createMockRequest("http://localhost/api/trading/strategies"),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("POST returns 401 when the request is not authenticated (TASK-AUTH-03e)", async () => {
+    const res = await POST(
+      createMockRequest("http://localhost/api/trading/strategies", {
+        method: "POST",
+        body: { name: "X", category: "momentum", config: {} },
+      }),
+    );
+    expect(res.status).toBe(401);
+  });
+});

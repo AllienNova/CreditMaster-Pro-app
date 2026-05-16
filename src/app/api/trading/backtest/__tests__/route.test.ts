@@ -716,3 +716,31 @@ describe("POST /api/trading/backtest action=walk-forward", () => {
     expect(res.status).toBe(404);
   });
 });
+
+// ============================================================================
+// TESTS: negative-auth (TASK-AUTH-03e)
+// ============================================================================
+
+describe("negative-auth – /api/trading/backtest", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    setupAuth(false);
+  });
+
+  it("GET returns 401 when the request is not authenticated (TASK-AUTH-03e)", async () => {
+    const res = await GET(
+      createMockRequest("http://localhost/api/trading/backtest"),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("POST returns 401 when the request is not authenticated (TASK-AUTH-03e)", async () => {
+    const res = await POST(
+      createMockRequest("http://localhost/api/trading/backtest", {
+        method: "POST",
+        body: { action: "run" },
+      }),
+    );
+    expect(res.status).toBe(401);
+  });
+});

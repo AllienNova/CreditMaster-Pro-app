@@ -500,3 +500,40 @@ describe("DELETE /api/trading/strategies/[id]", () => {
     expect(updateMock).toHaveBeenCalledWith({ is_active: false });
   });
 });
+
+// ============================================================================
+// TESTS: negative-auth (TASK-AUTH-03e)
+// ============================================================================
+
+describe("negative-auth – /api/trading/strategies/[id]", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    setupAuth(false);
+  });
+
+  it("GET returns 401 when the request is not authenticated (TASK-AUTH-03e)", async () => {
+    const res = await GET(
+      createMockRequest("http://localhost/api/trading/strategies/strat-001"),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("PUT returns 401 when the request is not authenticated (TASK-AUTH-03e)", async () => {
+    const res = await PUT(
+      createMockRequest("http://localhost/api/trading/strategies/strat-001", {
+        method: "PUT",
+        body: {},
+      }),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("DELETE returns 401 when the request is not authenticated (TASK-AUTH-03e)", async () => {
+    const res = await DELETE(
+      createMockRequest("http://localhost/api/trading/strategies/strat-001", {
+        method: "DELETE",
+      }),
+    );
+    expect(res.status).toBe(401);
+  });
+});
