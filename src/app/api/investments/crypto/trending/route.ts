@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { CoinGeckoClient } from "@/lib/integrations/coingecko";
 import { cryptoAnalyst } from "@/lib/investments/crypto-analyst";
 import { getUser } from "@/lib/auth/session";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/security/redis-rate-limiting";
 import { z } from "zod";
 import { CryptoCategory } from "@/lib/investments/types/crypto-analysis.types";
 

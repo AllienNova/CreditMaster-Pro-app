@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SignalGenerator } from "@/lib/investments/signal-generator";
 import { getUser } from "@/lib/auth/session";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/security/redis-rate-limiting";
 import { z } from "zod";
 
 // Initialize signal generator

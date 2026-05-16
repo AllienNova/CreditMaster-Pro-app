@@ -5,7 +5,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { RateLimitResult } from "../security/rate-limiting";
+import { RateLimitResult } from "../security/redis-rate-limiting";
 
 /**
  * Standard rate limit header names

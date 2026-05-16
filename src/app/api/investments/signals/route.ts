@@ -16,7 +16,7 @@ import {
 } from "@/lib/investments/types/trading-signals.types";
 import { Timeframe } from "@/lib/investments/types/investment.types";
 import { z } from "zod";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/security/redis-rate-limiting";
 
 // Initialize signal generator
 const signalGenerator = new SignalGenerator();

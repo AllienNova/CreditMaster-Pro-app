@@ -10,7 +10,7 @@ import { PortfolioAnalytics } from "@/lib/investments/portfolio-analytics";
 import { getUser } from "@/lib/auth/session";
 import { RiskLevel } from "@/lib/investments/types/advanced-analytics.types";
 import { z } from "zod";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/security/redis-rate-limiting";
 
 // Initialize portfolio analytics service
 const portfolioAnalytics = new PortfolioAnalytics();

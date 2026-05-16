@@ -4,11 +4,6 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-// Mock rate-limiting module for type imports
-jest.mock("../rate-limiting", () => ({
-  // We only need the types, which are not actually imported at runtime
-}));
-
 // Mock fetch for Redis REST API calls
 const mockFetch = jest.fn();
 global.fetch = mockFetch as any;
@@ -40,6 +35,7 @@ import {
   authRateLimiter,
   aiRateLimiter,
   bureauRateLimiter,
+  rateLimit,
 } from "../redis-rate-limiting";
 
 beforeEach(() => {
@@ -198,5 +194,70 @@ describe("Redis Rate Limiting — window behavior", () => {
 
     const result = await limiter.check(`no-retry-${Date.now()}`);
     expect(result.retryAfter).toBeUndefined();
+  });
+
+  it("should allow the first N calls and block the (N+1)th once the window limit is exceeded", async () => {
+    const id = `nth-plus-one-${Date.now()}`;
+    const max = 5;
+    const limiter = new RedisRateLimiter(
+      { windowMs: 60000, maxRequests: max },
+      "test-nth",
+    );
+
+    for (let i = 0; i < max; i++) {
+      const result = await limiter.check(id);
+      expect(result.allowed).toBe(true);
+    }
+
+    const blocked = await limiter.check(id);
+    expect(blocked.allowed).toBe(false);
+    expect(blocked.remaining).toBe(0);
+    expect(blocked.retryAfter).toBeGreaterThan(0);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  rateLimit() compatibility factory
+// ═══════════════════════════════════════════════════════════════════════════════
+describe("Redis Rate Limiting — rateLimit() compat factory", () => {
+  it("should allow the first N calls then throw on the (N+1)th", async () => {
+    const limiter = rateLimit({ interval: 60000 });
+    const token = `compat-throw-${Date.now()}`;
+
+    for (let i = 0; i < 3; i++) {
+      await expect(limiter.check(3, token)).resolves.toBeUndefined();
+    }
+
+    await expect(limiter.check(3, token)).rejects.toThrow(
+      /Rate limit exceeded/,
+    );
+  });
+
+  it("should honor the per-call limit independently of the window config", async () => {
+    const limiter = rateLimit({ interval: 60000 });
+    const token = `compat-percall-${Date.now()}`;
+
+    await expect(limiter.check(1, token)).resolves.toBeUndefined();
+    await expect(limiter.check(1, token)).rejects.toThrow(
+      /Rate limit exceeded/,
+    );
+  });
+
+  it("should allow calls again after reset", async () => {
+    const limiter = rateLimit({ interval: 60000 });
+    const token = `compat-reset-${Date.now()}`;
+
+    await limiter.check(1, token);
+    await expect(limiter.check(1, token)).rejects.toThrow();
+
+    await limiter.reset(token);
+    await expect(limiter.check(1, token)).resolves.toBeUndefined();
+  });
+
+  it("getRemaining should report the configured limit", async () => {
+    const limiter = rateLimit({ interval: 60000 });
+    await expect(
+      limiter.getRemaining(50, `compat-remaining-${Date.now()}`),
+    ).resolves.toBe(50);
   });
 });
