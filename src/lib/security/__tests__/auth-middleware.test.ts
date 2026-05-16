@@ -322,38 +322,39 @@ describe("Auth Middleware – response helpers", () => {
 //  Session management
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Auth Middleware – sessions", () => {
-  it("createSession should return a token string", () => {
-    const token = createSession("user-1");
+  it("createSession should return a token string", async () => {
+    const token = await createSession("user-1");
     expect(token).toBeDefined();
     expect(typeof token).toBe("string");
     expect(token.length).toBeGreaterThan(0);
   });
 
-  it("getSession should retrieve a created session", () => {
-    const token = createSession("user-1");
-    const retrieved = getSession(token);
+  it("getSession should retrieve a created session", async () => {
+    const token = await createSession("user-1");
+    const retrieved = await getSession(token);
     expect(retrieved).toBeDefined();
     expect(retrieved?.userId).toBe("user-1");
   });
 
-  it("getSession should return null for unknown token", () => {
-    expect(getSession("nonexistent-token")).toBeNull();
+  it("getSession should return null for unknown token", async () => {
+    expect(await getSession("nonexistent-token")).toBeNull();
   });
 
-  it("deleteSession should remove a session", () => {
-    const token = createSession("user-1");
-    deleteSession(token);
-    expect(getSession(token)).toBeNull();
+  it("deleteSession should remove a session", async () => {
+    const token = await createSession("user-1");
+    await deleteSession(token);
+    expect(await getSession(token)).toBeNull();
   });
 
-  it("cleanupExpiredSessions should remove expired sessions", () => {
-    const token = createSession("user-1");
+  it("expired sessions are not returned by getSession", async () => {
+    const token = await createSession("user-1");
 
-    // Advance time past session expiry (default 24h)
+    // Advance time past session expiry (default 24h). The Redis-backed store
+    // reclaims via per-key TTL; the in-memory fallback drops on read.
     jest.advanceTimersByTime(25 * 60 * 60 * 1000);
 
     cleanupExpiredSessions();
-    expect(getSession(token)).toBeNull();
+    expect(await getSession(token)).toBeNull();
   });
 });
 

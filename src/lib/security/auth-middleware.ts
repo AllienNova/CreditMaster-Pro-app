@@ -21,6 +21,10 @@
 import jwt from "jsonwebtoken";
 import { type Role, isAtLeast } from "@/lib/auth/roles";
 import { logger } from "@/lib/monitoring/logger";
+import {
+  RedisSessionStore,
+  type SessionRecord,
+} from "@/lib/security/redis-session-store";
 
 // Re-export preferred utilities for migration path
 export {
@@ -347,6 +351,9 @@ export async function getUserFromRequest(
 
 /**
  * Session management
+ *
+ * Backed by Redis (FND-007) so sessions survive process restarts and are
+ * shared across serverless instances. See `redis-session-store.ts`.
  */
 interface Session {
   userId: string;
@@ -356,57 +363,52 @@ interface Session {
   lastActivity: Date;
 }
 
-const sessions: Map<string, Session> = new Map();
+const sessionStore = new RedisSessionStore();
+
+function toSession(record: SessionRecord): Session {
+  return {
+    userId: record.userId,
+    token: record.token,
+    expiresAt: new Date(record.expiresAt),
+    createdAt: new Date(record.createdAt),
+    lastActivity: new Date(record.lastActivity),
+  };
+}
 
 /**
  * Create session
  */
-export function createSession(
+export async function createSession(
   userId: string,
   expiresIn: number = 24 * 60 * 60 * 1000,
-): string {
+): Promise<string> {
   const token = generateToken();
-  const now = new Date();
+  const now = Date.now();
 
-  const session: Session = {
+  await sessionStore.set(token, {
     userId,
     token,
-    expiresAt: new Date(now.getTime() + expiresIn),
+    expiresAt: now + expiresIn,
     createdAt: now,
     lastActivity: now,
-  };
+  });
 
-  sessions.set(token, session);
   return token;
 }
 
 /**
  * Get session
  */
-export function getSession(token: string): Session | null {
-  const session = sessions.get(token);
-
-  if (!session) {
-    return null;
-  }
-
-  // Check if expired
-  if (session.expiresAt < new Date()) {
-    sessions.delete(token);
-    return null;
-  }
-
-  // Update last activity
-  session.lastActivity = new Date();
-
-  return session;
+export async function getSession(token: string): Promise<Session | null> {
+  const record = await sessionStore.get(token);
+  return record ? toSession(record) : null;
 }
 
 /**
  * Delete session
  */
-export function deleteSession(token: string): void {
-  sessions.delete(token);
+export async function deleteSession(token: string): Promise<void> {
+  await sessionStore.delete(token);
 }
 
 /**
@@ -435,19 +437,11 @@ function generateToken(): string {
 
 /**
  * Cleanup expired sessions
+ *
+ * Retained for API compatibility. The Redis-backed store sets a per-key TTL
+ * (and the in-memory fallback drops expired records on read), so expired
+ * sessions are reclaimed automatically — no periodic sweep is required.
  */
 export function cleanupExpiredSessions(): void {
-  const now = new Date();
-  const tokensToDelete: string[] = [];
-
-  sessions.forEach((session, token) => {
-    if (session.expiresAt < now) {
-      tokensToDelete.push(token);
-    }
-  });
-
-  tokensToDelete.forEach((token) => sessions.delete(token));
+  // No-op: expiry is handled by the session store's per-key TTL.
 }
-
-// Run cleanup every hour
-setInterval(cleanupExpiredSessions, 60 * 60 * 1000);
