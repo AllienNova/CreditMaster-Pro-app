@@ -134,7 +134,7 @@ describe("GET /api/financial/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/goals/goal-1",
     );
-    const response = await GET(request, createParams("goal-1"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -161,7 +161,7 @@ describe("GET /api/financial/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/goals/goal-1",
     );
-    const response = await GET(request, createParams("goal-1"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -175,7 +175,7 @@ describe("GET /api/financial/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/goals/goal-nonexistent",
     );
-    const response = await GET(request, createParams("goal-nonexistent"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(404);
@@ -192,7 +192,7 @@ describe("GET /api/financial/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/goals/goal-1",
     );
-    const response = await GET(request, createParams("goal-1"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(401);
@@ -205,7 +205,7 @@ describe("GET /api/financial/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/goals/goal-1",
     );
-    const response = await GET(request, createParams("goal-1"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(403);
@@ -218,7 +218,7 @@ describe("GET /api/financial/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/goals/goal-1",
     );
-    const response = await GET(request, createParams("goal-1"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -262,7 +262,7 @@ describe("PATCH /api/financial/goals/[id]", () => {
         },
       },
     );
-    const response = await PATCH(request, createParams("goal-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -282,7 +282,7 @@ describe("PATCH /api/financial/goals/[id]", () => {
         },
       },
     );
-    await PATCH(request, createParams("goal-1"));
+    await PATCH(request);
 
     expect(goalTracker.updateGoalProgress).toHaveBeenCalledWith(
       "user-123",
@@ -301,7 +301,7 @@ describe("PATCH /api/financial/goals/[id]", () => {
         },
       },
     );
-    await PATCH(request, createParams("goal-1"));
+    await PATCH(request);
 
     expect(goalTracker.updateGoalProgress).not.toHaveBeenCalled();
   });
@@ -316,7 +316,7 @@ describe("PATCH /api/financial/goals/[id]", () => {
         },
       },
     );
-    const response = await PATCH(request, createParams("goal-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(400);
@@ -335,7 +335,7 @@ describe("PATCH /api/financial/goals/[id]", () => {
         },
       },
     );
-    const response = await PATCH(request, createParams("goal-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(400);
@@ -354,7 +354,7 @@ describe("PATCH /api/financial/goals/[id]", () => {
         body: { name: "Update" },
       },
     );
-    const response = await PATCH(request, createParams("goal-nonexistent"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(404);
@@ -375,7 +375,7 @@ describe("PATCH /api/financial/goals/[id]", () => {
         body: { name: "Test" },
       },
     );
-    const response = await PATCH(request, createParams("goal-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(401);
@@ -392,7 +392,7 @@ describe("PATCH /api/financial/goals/[id]", () => {
         body: { name: "Test" },
       },
     );
-    const response = await PATCH(request, createParams("goal-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(403);
@@ -414,7 +414,7 @@ describe("PATCH /api/financial/goals/[id]", () => {
         body: { name: "Test" },
       },
     );
-    const response = await PATCH(request, createParams("goal-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -445,7 +445,7 @@ describe("DELETE /api/financial/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/goals/goal-1",
     );
-    const response = await DELETE(request, createParams("goal-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -462,7 +462,7 @@ describe("DELETE /api/financial/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/goals/goal-nonexistent",
     );
-    const response = await DELETE(request, createParams("goal-nonexistent"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(404);
@@ -479,7 +479,7 @@ describe("DELETE /api/financial/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/goals/goal-1",
     );
-    const response = await DELETE(request, createParams("goal-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(401);
@@ -492,7 +492,7 @@ describe("DELETE /api/financial/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/goals/goal-1",
     );
-    const response = await DELETE(request, createParams("goal-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(403);
@@ -507,7 +507,7 @@ describe("DELETE /api/financial/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/goals/goal-1",
     );
-    const response = await DELETE(request, createParams("goal-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);

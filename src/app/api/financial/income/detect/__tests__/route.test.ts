@@ -252,7 +252,7 @@ describe("GET /api/financial/income/detect", () => {
   });
 
   it("should detect income from stored transactions", async () => {
-    const response = await GET();
+    const response = await GET(createMockRequest("http://localhost:3000/api/financial/income/detect"));
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -291,7 +291,7 @@ describe("GET /api/financial/income/detect", () => {
     };
     (createClient as jest.Mock).mockResolvedValue(supabaseEmpty);
 
-    const response = await GET();
+    const response = await GET(createMockRequest("http://localhost:3000/api/financial/income/detect"));
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -339,7 +339,7 @@ describe("GET /api/financial/income/detect", () => {
     };
     (createClient as jest.Mock).mockResolvedValue(supabaseError);
 
-    const response = await GET();
+    const response = await GET(createMockRequest("http://localhost:3000/api/financial/income/detect"));
     const data = await response.json();
 
     expect(response.status).toBe(500);

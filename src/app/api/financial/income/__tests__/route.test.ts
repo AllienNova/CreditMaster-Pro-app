@@ -80,7 +80,7 @@ describe("GET /api/financial/income", () => {
   });
 
   it("should return income sources, stats, and countdown", async () => {
-    const response = await GET();
+    const response = await GET(createMockRequest("http://localhost:3000/api/financial/income"));
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -95,7 +95,7 @@ describe("GET /api/financial/income", () => {
   it("should return 401 for unauthenticated request", async () => {
     mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const response = await GET();
+    const response = await GET(createMockRequest("http://localhost:3000/api/financial/income"));
     const data = await response.json();
 
     expect(response.status).toBe(401);
@@ -107,7 +107,7 @@ describe("GET /api/financial/income", () => {
       new Error("DB error"),
     );
 
-    const response = await GET();
+    const response = await GET(createMockRequest("http://localhost:3000/api/financial/income"));
     const data = await response.json();
 
     expect(response.status).toBe(500);

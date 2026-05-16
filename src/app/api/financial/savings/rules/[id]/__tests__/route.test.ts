@@ -66,7 +66,7 @@ describe("GET /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/rule-1",
     );
-    const response = await GET(request, createParams("rule-1"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -81,7 +81,7 @@ describe("GET /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/nonexistent",
     );
-    const response = await GET(request, createParams("nonexistent"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(404);
@@ -97,7 +97,7 @@ describe("GET /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/rule-1",
     );
-    const response = await GET(request, createParams("rule-1"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(401);
@@ -112,7 +112,7 @@ describe("GET /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/rule-1",
     );
-    const response = await GET(request, createParams("rule-1"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -142,7 +142,7 @@ describe("PATCH /api/financial/savings/rules/[id]", () => {
         body: { name: "Updated rule", config: { amount: 5 } },
       },
     );
-    const response = await PATCH(request, createParams("rule-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -163,7 +163,7 @@ describe("PATCH /api/financial/savings/rules/[id]", () => {
         body: { action: "toggle" },
       },
     );
-    const response = await PATCH(request, createParams("rule-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -182,7 +182,7 @@ describe("PATCH /api/financial/savings/rules/[id]", () => {
       "http://localhost:3000/api/financial/savings/rules/rule-1",
       { method: "PATCH", body: { name: "Test" } },
     );
-    const response = await PATCH(request, createParams("rule-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(401);
@@ -198,7 +198,7 @@ describe("PATCH /api/financial/savings/rules/[id]", () => {
       "http://localhost:3000/api/financial/savings/rules/rule-1",
       { method: "PATCH", body: { name: "Test" } },
     );
-    const response = await PATCH(request, createParams("rule-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -220,7 +220,7 @@ describe("DELETE /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/rule-1",
     );
-    const response = await DELETE(request, createParams("rule-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -234,7 +234,7 @@ describe("DELETE /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/rule-1",
     );
-    const response = await DELETE(request, createParams("rule-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -250,7 +250,7 @@ describe("DELETE /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/rule-1",
     );
-    const response = await DELETE(request, createParams("rule-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(401);
@@ -265,7 +265,7 @@ describe("DELETE /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/rule-1",
     );
-    const response = await DELETE(request, createParams("rule-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
