@@ -318,6 +318,9 @@ cross-cutting tracks (M, C, N) run in parallel and must all land before M1.
 - Confirm whether the closed-beta cohort is charged or comped (affects how hard Payments must be
   verified before M1 vs M2).
 - Per-vertical / per-track agent-hour estimates.
+- Re-baseline the Wave 7 task count: the new tasks above (4 orphan-finding tasks, 1 prod-`npm
+  audit` task, 1 PCTT-owner task, TASK-DEFER-COMPILE) grow Wave 7 beyond its current 59 to ~66;
+  TASK-PRE-01 should update the count.
 
 ---
 
@@ -354,6 +357,10 @@ FND-036/037/038 → V3 (IDR-03) · FND-039/040 → V3 (orphan, new task) · FND-
 FND-045 → Track N (orphan, new task) · FND-046 → Track N (IDR-04) · FND-054 → Track N (IDR-05) ·
 FND-059/060/061 → Track C (CMP-04) · FND-062/063 → Track C (CMP-05) ·
 FND-065/066/067/069/070/071 → V5 Mobile (MOB-W7-01..07).
+
+Remaining HIGHs not listed here (e.g. auth-theme FND-007–013, webhook FND-022/023) are closed by
+the full AUTH-01..12 / WBH-01..07 task lists per the master plan; the M2 gate verifies all HIGHs
+categorically, so no HIGH is unowned.
 
 ---
 
