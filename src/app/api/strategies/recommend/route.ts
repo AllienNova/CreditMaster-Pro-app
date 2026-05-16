@@ -21,17 +21,17 @@ import {
   CreditItem,
   UserProfile,
 } from "@/lib/strategies/ml-strategy-integration";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * POST /api/strategies/recommend
  * Get ML-powered strategy recommendations
  */
-export async function POST(request: NextRequest) {
-  try {
-    // Note: Authentication and audit logging can be added later
-    // For now, focusing on core functionality
-
-    // 2. Parse request body
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
+    try {
+    // Parse request body
     const body = await request.json();
     const { creditItem, userProfile, previousAttempts } = body;
 
@@ -169,27 +169,28 @@ export async function POST(request: NextRequest) {
         alternativeStrategies,
       },
     });
-  } catch (error) {
-    console.error("Error in strategy recommendation:", error);
+    } catch (error) {
+      console.error("Error in strategy recommendation:", error);
 
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to get strategy recommendations",
-      },
-      { status: 500 },
-    );
-  }
-}
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to get strategy recommendations",
+        },
+        { status: 500 },
+      );
+    }
+  },
+);
 
 /**
  * GET /api/strategies/recommend
  * Get information about the recommendation endpoint
  */
-export async function GET() {
+export const GET = withAuth(async (_request: NextRequest, _user: AuthedUser) => {
   return NextResponse.json({
     endpoint: "/api/strategies/recommend",
     method: "POST",
@@ -250,4 +251,4 @@ export async function GET() {
       previousAttempts: [],
     },
   });
-}
+});
