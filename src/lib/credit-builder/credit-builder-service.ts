@@ -853,7 +853,7 @@ class CreditBuilderService {
    */
   async analyzeUtilization(
     userId: string,
-    cards: CardUtilization[],
+    cards: Omit<CardUtilization, "status">[],
   ): Promise<UtilizationAnalysis> {
     const totalBalance = cards.reduce((sum, card) => sum + card.balance, 0);
     const totalLimit = cards.reduce((sum, card) => sum + card.limit, 0);
