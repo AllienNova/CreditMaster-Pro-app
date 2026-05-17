@@ -7,11 +7,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
+
+// ============================================================================
+// VALIDATION SCHEMAS
+// ============================================================================
+
+const HOLDINGS_MAX_LENGTH = 500;
+
+const holdingSchema = z.object({
+  symbol: z.string().min(1),
+  shares: z.number().finite().positive(),
+  costBasis: z.number().finite().nonnegative(),
+  currentPrice: z.number().finite().nonnegative(),
+  sector: z.string().optional(),
+  assetClass: z
+    .enum(["stock", "etf", "bond", "crypto", "commodity", "cash", "option", "reit"])
+    .optional(),
+});
+
+const analyzeBodySchema = z.object({
+  holdings: z.array(holdingSchema).min(1).max(HOLDINGS_MAX_LENGTH),
+  includeStressTest: z.boolean().optional().default(false),
+  includeRebalance: z.boolean().optional().default(false),
+  targetAllocation: z.record(z.string(), z.number()).optional(),
+});
 
 // ============================================================================
 // POST - Analyze Portfolio
@@ -20,20 +45,22 @@ const supabase = createClient(
 export const POST = withAuth(
   async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const body = await request.json();
-    const {
-      holdings,
-      includeStressTest = false,
-      includeRebalance = false,
-      targetAllocation,
-    } = body;
+    const rawBody = await request.json();
 
-    if (!holdings || !Array.isArray(holdings) || holdings.length === 0) {
+    const parsed = analyzeBodySchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Holdings array required" },
+        { error: "Invalid request body" },
         { status: 400 },
       );
     }
+
+    const {
+      holdings,
+      includeStressTest,
+      includeRebalance,
+      targetAllocation,
+    } = parsed.data;
 
     // Import portfolio analysis service
     const { PortfolioAnalysisService } =
