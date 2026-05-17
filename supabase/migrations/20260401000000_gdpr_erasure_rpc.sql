@@ -48,7 +48,6 @@ DECLARE
     'trading_accounts',
     'compliance_scores',
     'tax_documents',
-    'billing_profiles',
     'credit_score_history',
     'bureau_connections',
     'consent_records'

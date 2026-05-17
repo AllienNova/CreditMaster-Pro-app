@@ -1,27 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
-import { billingProfileStore } from "@/lib/payment/billing-profile-store";
+import { getBillingData } from "@/lib/payment/billing-data";
 import { SUBSCRIPTION_PLANS } from "@/lib/payment/stripe-service";
 
 export const GET = withPermission(
   "billing:read",
   async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const profile = await billingProfileStore.getProfile(user.id);
+    const billing = await getBillingData(user.id);
     return NextResponse.json({
       plans: SUBSCRIPTION_PLANS,
-      subscription: {
-        planId: profile.currentPlanId,
-        status: profile.status,
-        currentPeriodStart: profile.currentPeriodStart,
-        currentPeriodEnd: profile.currentPeriodEnd,
-        cancelAtPeriodEnd: profile.cancelAtPeriodEnd,
-      },
-      paymentMethods: profile.paymentMethods,
-      invoices: profile.invoices,
+      subscription: billing.subscription,
+      paymentMethods: billing.paymentMethods,
+      invoices: billing.invoices,
     });
   } catch (error) {
-    console.error("Billing profile error:", error);
+    console.error("Billing data error:", error);
     return NextResponse.json(
       { error: "Failed to load billing profile" },
       { status: 500 },

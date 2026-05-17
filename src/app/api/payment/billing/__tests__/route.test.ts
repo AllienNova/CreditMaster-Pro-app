@@ -19,7 +19,7 @@ jest.mock("@/lib/auth/resolve-role", () => ({
 jest.mock("@/lib/auth/rbac", () => ({
   rbac: { hasPermission: (...args: unknown[]) => mockHasPermission(...args) },
 }));
-jest.mock("@/lib/payment/billing-profile-store", () => ({ billingProfileStore: { getProfile: jest.fn() } }));
+jest.mock("@/lib/payment/billing-data", () => ({ getBillingData: jest.fn() }));
 jest.mock("@/lib/payment/stripe-service", () => ({ SUBSCRIPTION_PLANS: [] }));
 
 import { GET } from "../route";

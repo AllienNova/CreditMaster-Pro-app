@@ -1,27 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
-import { billingProfileStore } from "@/lib/payment/billing-profile-store";
+import { subscriptionService } from "@/lib/subscriptions/subscription-service";
+import { stripeService, SUBSCRIPTION_PLANS } from "@/lib/payment/stripe-service";
 
 export const POST = withPermission(
   "billing:update",
   async (request: NextRequest, user: AuthedUser) => {
   try {
-    const { planId, cancelSubscription } = await request.json();
+    const { planId, cancelSubscription } = await request.json() as {
+      planId?: string;
+      cancelSubscription?: boolean;
+    };
 
-    const profile = cancelSubscription
-      ? await billingProfileStore.cancelSubscription(user.id)
-      : await billingProfileStore.updatePlan(user.id, planId);
+    // ── Cancel path ──────────────────────────────────────────────────────────
+    if (cancelSubscription || planId === "free") {
+      const subscription = await subscriptionService.cancelSubscription(user.id);
+      return NextResponse.json({ status: "updated", subscription });
+    }
 
-    return NextResponse.json({
-      subscription: {
-        planId: profile.currentPlanId,
-        status: profile.status,
-        cancelAtPeriodEnd: profile.cancelAtPeriodEnd,
-        currentPeriodStart: profile.currentPeriodStart,
-        currentPeriodEnd: profile.currentPeriodEnd,
-      },
-      invoices: profile.invoices,
-    });
+    // ── Validate planId ──────────────────────────────────────────────────────
+    const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId);
+    if (!plan) {
+      return NextResponse.json(
+        { error: "Invalid plan id" },
+        { status: 400 },
+      );
+    }
+
+    // ── Check for existing subscription ──────────────────────────────────────
+    const existing = await subscriptionService.getUserSubscription(user.id);
+
+    if (existing) {
+      // Change plan on existing Stripe subscription
+      const subscription = await subscriptionService.changeSubscriptionPlan(
+        user.id,
+        plan.priceId,
+      );
+      return NextResponse.json({ status: "updated", subscription });
+    }
+
+    // ── New subscription — redirect to Stripe Checkout ────────────────────────
+    const profile = await subscriptionService.getUserProfile(user.id);
+    if (!profile?.stripeCustomerId) {
+      return NextResponse.json(
+        { error: "No Stripe customer found for this user" },
+        { status: 500 },
+      );
+    }
+
+    const baseUrl = request.nextUrl.origin;
+    const session = await stripeService.createCheckoutSession(
+      plan.priceId,
+      profile.stripeCustomerId,
+      `${baseUrl}/dashboard/billing?success=1`,
+      `${baseUrl}/dashboard/billing?canceled=1`,
+    );
+
+    return NextResponse.json({ status: "redirect", checkoutUrl: session.url });
   } catch (error) {
     console.error("Update plan error:", error);
     return NextResponse.json(
