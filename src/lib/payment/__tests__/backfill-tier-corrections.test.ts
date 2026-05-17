@@ -42,13 +42,14 @@ describe("computeTierCorrections", () => {
       const subscriptions: SubscriptionRow[] = [row("user-2", "price_pro")];
       const profiles: ProfileTierRow[] = [profile("user-2", "pro")];
 
-      const { corrections, unresolvable } = computeTierCorrections(
+      const { corrections, unresolvable, alreadyCorrect } = computeTierCorrections(
         subscriptions,
         profiles,
       );
 
       expect(corrections).toHaveLength(0);
       expect(unresolvable).toHaveLength(0);
+      expect(alreadyCorrect).toBe(1);
     });
 
     it("running on already-corrected data produces no further corrections", () => {
@@ -63,10 +64,52 @@ describe("computeTierCorrections", () => {
 
       const firstRun = computeTierCorrections(subscriptions, profiles);
       expect(firstRun.corrections).toHaveLength(0);
+      expect(firstRun.alreadyCorrect).toBe(2);
 
       // Simulate applying the (empty) corrections and running again — still no-op.
       const secondRun = computeTierCorrections(subscriptions, profiles);
       expect(secondRun.corrections).toHaveLength(0);
+      expect(secondRun.alreadyCorrect).toBe(2);
+    });
+  });
+
+  describe("status filter — canceled rows must never produce corrections", () => {
+    it("does not downgrade a Pro user when only the active row is passed (canceled standard row excluded by I/O shell)", () => {
+      // The I/O shell filters to status IN ('active','trialing') before calling
+      // computeTierCorrections. This test models that filtered input: only the
+      // active pro row is passed; the canceled standard row is absent.
+      const subscriptions: SubscriptionRow[] = [
+        // canceled standard row is NOT passed — filtered out by the query
+        row("user-20", "price_pro"), // active row
+      ];
+      const profiles: ProfileTierRow[] = [profile("user-20", "pro")];
+
+      const { corrections, unresolvable, alreadyCorrect } = computeTierCorrections(
+        subscriptions,
+        profiles,
+      );
+
+      expect(corrections).toHaveLength(0);
+      expect(unresolvable).toHaveLength(0);
+      expect(alreadyCorrect).toBe(1);
+    });
+
+    it("would generate a spurious downgrade if a canceled row were passed (documents the bug fixed by the status filter)", () => {
+      // If the I/O shell did NOT filter by status, both rows would be passed.
+      // The canceled standard row would resolve to 'standard', which differs
+      // from the profile's 'pro', producing a downgrade correction — wrong.
+      // This test asserts that behavior to document why the filter is critical.
+      const subscriptionsWithCanceled: SubscriptionRow[] = [
+        row("user-21", "price_standard"), // canceled — must be excluded in real run
+        row("user-21", "price_pro"),      // active
+      ];
+      const profiles: ProfileTierRow[] = [profile("user-21", "pro")];
+
+      const { corrections } = computeTierCorrections(subscriptionsWithCanceled, profiles);
+
+      // Without the status filter, the canceled row produces a spurious correction.
+      expect(corrections).toHaveLength(1);
+      expect((corrections[0] as TierCorrection).newTier).toBe("standard"); // downgrade — wrong
     });
   });
 
@@ -108,7 +151,7 @@ describe("computeTierCorrections", () => {
         profile("user-12", "free"),
       ];
 
-      const { corrections, unresolvable } = computeTierCorrections(
+      const { corrections, unresolvable, alreadyCorrect } = computeTierCorrections(
         subscriptions,
         profiles,
       );
@@ -118,6 +161,8 @@ describe("computeTierCorrections", () => {
 
       expect(unresolvable).toHaveLength(1);
       expect((unresolvable[0] as UnresolvableRow).userId).toBe("user-12");
+
+      expect(alreadyCorrect).toBe(1);
     });
 
     it("skips a user who has a subscription row but no profile row", () => {

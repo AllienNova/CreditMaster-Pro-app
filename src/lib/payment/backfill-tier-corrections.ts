@@ -43,6 +43,8 @@ export interface UnresolvableRow {
 export interface BackfillResult {
   corrections: TierCorrection[];
   unresolvable: UnresolvableRow[];
+  /** Rows that were already correct — no write needed. */
+  alreadyCorrect: number;
 }
 
 /**
@@ -66,6 +68,7 @@ export function computeTierCorrections(
 
   const corrections: TierCorrection[] = [];
   const unresolvable: UnresolvableRow[] = [];
+  let alreadyCorrect = 0;
 
   for (const sub of subscriptions) {
     let resolvedTier: SubscriptionTier;
@@ -96,8 +99,10 @@ export function computeTierCorrections(
         oldTier: currentTier,
         newTier: resolvedTier,
       });
+    } else {
+      alreadyCorrect += 1;
     }
   }
 
-  return { corrections, unresolvable };
+  return { corrections, unresolvable, alreadyCorrect };
 }

@@ -60,10 +60,14 @@ async function main(): Promise<void> {
     console.log("backfill-subscription-tiers: DRY RUN — no writes will occur.");
   }
 
-  // Fetch all subscriptions that carry a Stripe price ID.
+  // Fetch only active/trialing subscriptions — canceled rows must not produce
+  // corrections (a user with a canceled standard + active pro row would
+  // otherwise be spuriously downgraded). This matches the canonical filter in
+  // resolveActiveSubscriptionRow (billing-data.ts line 87).
   const { data: subscriptionData, error: subError } = await supabase
     .from("subscriptions")
-    .select("user_id, stripe_price_id");
+    .select("user_id, stripe_price_id")
+    .in("status", ["active", "trialing"]);
 
   if (subError) {
     console.error("backfill-subscription-tiers: failed to fetch subscriptions:", subError.message);
@@ -99,7 +103,7 @@ async function main(): Promise<void> {
   );
 
   // Pure computation — no DB I/O.
-  const { corrections, unresolvable } = computeTierCorrections(
+  const { corrections, unresolvable, alreadyCorrect } = computeTierCorrections(
     subscriptions,
     profiles,
   );
@@ -133,12 +137,14 @@ async function main(): Promise<void> {
     }
   }
 
-  // Summary.
+  // Summary — use the explicit alreadyCorrect count from computeTierCorrections,
+  // not arithmetic on raw row counts (which was misleading when profile rows
+  // were absent or a user appeared in multiple subscription rows).
   console.log(
     `backfill-subscription-tiers: DONE — ` +
       `${corrections.length} corrected, ` +
       `${unresolvable.length} unresolvable, ` +
-      `${subscriptions.length - corrections.length - unresolvable.length} already-correct` +
+      `${alreadyCorrect} already-correct` +
       (isDryRun ? " (DRY RUN — no writes made)" : ""),
   );
 }
