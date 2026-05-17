@@ -315,6 +315,36 @@ class PlaidService {
   }
 
   /**
+   * Fetch transactions for multiple accounts in a single DB round-trip (FND-040).
+   * Replaces the per-account serial loop pattern in financial-service.ts.
+   * Preserves the user_id scoping established by FIN-2 (FND-036).
+   */
+  async getTransactionsForAccounts(
+    accountIds: string[],
+    startDate: Date,
+    endDate: Date,
+    userId: string,
+  ): Promise<PlaidTransaction[]> {
+    if (accountIds.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("*")
+      .in("account_id", accountIds)
+      .eq("user_id", userId)
+      .gte("date", startDate.toISOString())
+      .lte("date", endDate.toISOString())
+      .order("date", { ascending: false });
+
+    if (error) {
+      throw new Error("Failed to fetch transactions");
+    }
+
+    const rows = (data ?? []) as PlaidTransactionRow[];
+    return rows.map((row) => this.mapDatabaseToTransaction(row));
+  }
+
+  /**
    * Sync transactions from Plaid
    */
   async syncTransactions(
