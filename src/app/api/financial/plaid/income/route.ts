@@ -82,10 +82,9 @@ export const GET = withPermission(
         );
       }
 
-      // Resolve the access token server-side — never from the request (FND-037 + FND-038)
-      // getAccessToken is private; we reach it via plaid-service's public syncAccounts,
-      // but for income we need the token directly. Since PlaidService exposes it via
-      // the private method, we use a dedicated public accessor added for this purpose.
+      // Resolve the access token server-side — never from the request (FND-037 + FND-038).
+      // getAccessTokenForUser is a public accessor on PlaidService that delegates to the
+      // private getAccessToken method, scoping the lookup to the authenticated user.
       const accessToken = await plaidService.getAccessTokenForUser(resolvedItemId, user.id);
 
       if (type === "taxforms") {

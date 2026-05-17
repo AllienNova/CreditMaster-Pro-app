@@ -2,6 +2,8 @@
  * Tests for /api/financial/plaid/investments
  *
  * Covers GET (holdings) and POST (investment transactions) handlers.
+ *
+ * FND-038b: GET handler must resolve access_token server-side — never from URL params.
  */
 
 import { NextRequest } from "next/server";
@@ -12,11 +14,13 @@ jest.mock("@/lib/auth/resolve-role", () => ({
 }));
 jest.mock("@/lib/auth/rbac");
 jest.mock("@/lib/financial/plaid-investments-service");
+jest.mock("@/lib/financial/plaid-service");
 
 import { GET, POST } from "../route";
 import { jwtValidation } from "@/lib/auth/jwt-validation";
 import { rbac } from "@/lib/auth/rbac";
 import { plaidInvestmentsService } from "@/lib/financial/plaid-investments-service";
+import { plaidService } from "@/lib/financial/plaid-service";
 
 const mockUser = {
   id: "user-123",
@@ -117,6 +121,14 @@ const mockTransactionsResult = {
   ],
 };
 
+// FND-038b: server-resolved token constant — never a URL param
+const RESOLVED_TOKEN = "access-sandbox-resolved";
+const OTHER_USER_ITEM_ID = "item-other-user";
+
+const mockAccounts = [
+  { accountId: "acc-1", itemId: "item-abc", userId: mockUser.id },
+];
+
 describe("GET /api/financial/plaid/investments", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -125,7 +137,10 @@ describe("GET /api/financial/plaid/investments", () => {
       valid: true,
       user: mockUser,
     });
-    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
+    (plaidService.getAccounts as jest.Mock).mockResolvedValue(mockAccounts);
+    (plaidService.getAccessTokenForUser as jest.Mock).mockResolvedValue(
+      RESOLVED_TOKEN,
+    );
     (plaidInvestmentsService.getHoldings as jest.Mock).mockResolvedValue(
       mockHoldingsResult,
     );
@@ -138,7 +153,7 @@ describe("GET /api/financial/plaid/investments", () => {
         user: null,
       });
       const request = createMockGetRequest(
-        "http://localhost:3000/api/financial/plaid/investments?access_token=tok-123",
+        "http://localhost:3000/api/financial/plaid/investments",
       );
       const response = await GET(request);
       expect(response.status).toBe(401);
@@ -152,7 +167,7 @@ describe("GET /api/financial/plaid/investments", () => {
         user: null,
       });
       const request = createMockGetRequest(
-        "http://localhost:3000/api/financial/plaid/investments?access_token=tok-123",
+        "http://localhost:3000/api/financial/plaid/investments",
       );
       const response = await GET(request);
       expect(response.status).toBe(401);
@@ -161,7 +176,7 @@ describe("GET /api/financial/plaid/investments", () => {
     it("should return 403 for user without financial:read permission", async () => {
       (rbac.hasPermission as jest.Mock).mockReturnValue(false);
       const request = createMockGetRequest(
-        "http://localhost:3000/api/financial/plaid/investments?access_token=tok-123",
+        "http://localhost:3000/api/financial/plaid/investments",
       );
       const response = await GET(request);
       expect(response.status).toBe(403);
@@ -174,19 +189,85 @@ describe("GET /api/financial/plaid/investments", () => {
     });
   });
 
-  it("should return 400 when access_token is missing", async () => {
+  describe("idor", () => {
+    it("idor: does not use access_token query param — resolves token server-side", async () => {
+      // Attacker supplies their own token as a URL param — must be ignored
+      const request = createMockGetRequest(
+        "http://localhost:3000/api/financial/plaid/investments?access_token=tok-attacker",
+      );
+      const response = await GET(request);
+      expect(response.status).toBe(200);
+      // Service must be called with the server-resolved token, not the URL param
+      expect(plaidInvestmentsService.getHoldings).toHaveBeenCalledWith(
+        RESOLVED_TOKEN,
+      );
+      expect(plaidInvestmentsService.getHoldings).not.toHaveBeenCalledWith(
+        "tok-attacker",
+      );
+    });
+
+    it("idor: resolves token via plaidService.getAccessTokenForUser scoped to user.id", async () => {
+      const request = createMockGetRequest(
+        "http://localhost:3000/api/financial/plaid/investments",
+      );
+      await GET(request);
+      expect(plaidService.getAccessTokenForUser).toHaveBeenCalledWith(
+        mockAccounts[0].itemId,
+        mockUser.id,
+      );
+    });
+
+    it("idor: returns 400 when supplied itemId belongs to another user", async () => {
+      const request = createMockGetRequest(
+        `http://localhost:3000/api/financial/plaid/investments?itemId=${OTHER_USER_ITEM_ID}`,
+      );
+      const response = await GET(request);
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.error).toBe(
+        "itemId does not belong to the authenticated user",
+      );
+      expect(plaidService.getAccessTokenForUser).not.toHaveBeenCalled();
+    });
+
+    it("idor: calls getAccounts with user.id — not a caller-supplied userId", async () => {
+      const request = createMockGetRequest(
+        "http://localhost:3000/api/financial/plaid/investments",
+      );
+      await GET(request);
+      expect(plaidService.getAccounts).toHaveBeenCalledWith(mockUser.id);
+      expect(plaidService.getAccounts).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("should return 400 when no linked accounts found", async () => {
+    (plaidService.getAccounts as jest.Mock).mockResolvedValue([]);
     const request = createMockGetRequest(
       "http://localhost:3000/api/financial/plaid/investments",
     );
     const response = await GET(request);
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("access_token query parameter is required");
+    expect(data.error).toBe("No linked Plaid accounts found for this user");
   });
 
-  it("should return holdings successfully", async () => {
+  it("should return 400 when multiple items found and no itemId provided", async () => {
+    (plaidService.getAccounts as jest.Mock).mockResolvedValue([
+      { accountId: "acc-1", itemId: "item-abc", userId: mockUser.id },
+      { accountId: "acc-2", itemId: "item-xyz", userId: mockUser.id },
+    ]);
     const request = createMockGetRequest(
-      "http://localhost:3000/api/financial/plaid/investments?access_token=tok-123",
+      "http://localhost:3000/api/financial/plaid/investments",
+    );
+    const response = await GET(request);
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toContain("Multiple linked items found");
+  });
+
+  it("should return holdings successfully using server-resolved token", async () => {
+    const request = createMockGetRequest(
+      "http://localhost:3000/api/financial/plaid/investments",
     );
     const response = await GET(request);
     expect(response.status).toBe(200);
@@ -194,17 +275,19 @@ describe("GET /api/financial/plaid/investments", () => {
     expect(data.success).toBe(true);
     expect(data.data).toEqual(mockHoldingsResult);
     expect(plaidInvestmentsService.getHoldings).toHaveBeenCalledWith(
-      "tok-123",
+      RESOLVED_TOKEN,
     );
   });
 
-  it("should pass access_token to service correctly", async () => {
+  it("should accept optional itemId param and use the specified item", async () => {
     const request = createMockGetRequest(
-      "http://localhost:3000/api/financial/plaid/investments?access_token=access-sandbox-abc123",
+      `http://localhost:3000/api/financial/plaid/investments?itemId=${mockAccounts[0].itemId}`,
     );
-    await GET(request);
-    expect(plaidInvestmentsService.getHoldings).toHaveBeenCalledWith(
-      "access-sandbox-abc123",
+    const response = await GET(request);
+    expect(response.status).toBe(200);
+    expect(plaidService.getAccessTokenForUser).toHaveBeenCalledWith(
+      mockAccounts[0].itemId,
+      mockUser.id,
     );
   });
 
@@ -213,7 +296,7 @@ describe("GET /api/financial/plaid/investments", () => {
       new Error("Plaid API error"),
     );
     const request = createMockGetRequest(
-      "http://localhost:3000/api/financial/plaid/investments?access_token=tok-123",
+      "http://localhost:3000/api/financial/plaid/investments",
     );
     const response = await GET(request);
     expect(response.status).toBe(500);
@@ -221,9 +304,20 @@ describe("GET /api/financial/plaid/investments", () => {
     expect(data.error).toBe("Failed to fetch investment holdings");
   });
 
+  it("should return 500 when getAccessTokenForUser throws", async () => {
+    (plaidService.getAccessTokenForUser as jest.Mock).mockRejectedValue(
+      new Error("token lookup failed"),
+    );
+    const request = createMockGetRequest(
+      "http://localhost:3000/api/financial/plaid/investments",
+    );
+    const response = await GET(request);
+    expect(response.status).toBe(500);
+  });
+
   it("should call jwtValidation.validateFromHeaders with the request", async () => {
     const request = createMockGetRequest(
-      "http://localhost:3000/api/financial/plaid/investments?access_token=tok-123",
+      "http://localhost:3000/api/financial/plaid/investments",
     );
     await GET(request);
     expect(jwtValidation.validateFromHeaders).toHaveBeenCalledWith(request);
