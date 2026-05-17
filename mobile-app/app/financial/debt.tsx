@@ -18,7 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-import { useFinancialStore } from "../../src/store/financialStore";
+import { useDebtStore } from "../../src/store/debtStore";
 
 interface Debt {
   id: string;
@@ -98,8 +98,11 @@ export default function DebtScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [debts, setDebts] = useState<Debt[]>([]);
 
-  const { debtOverview, fetchDebtOverview, isLoadingDebt } =
-    useFinancialStore();
+  const {
+    overview: debtOverview,
+    fetchOverview: fetchDebtOverview,
+    isLoadingOverview: isLoadingDebt,
+  } = useDebtStore();
 
   const loadDebts = useCallback(async () => {
     try {

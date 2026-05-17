@@ -49,10 +49,18 @@ jest.mock("../disputeStore", () => ({
   },
 }));
 
-jest.mock("../financialStore", () => ({
-  useFinancialStore: {
+// MOB-6: syncStore now uses modular stores (budgetStore/goalStore) not financialStore
+jest.mock("../budgetStore", () => ({
+  useBudgetStore: {
     getState: () => ({
       createBudget: (...args: unknown[]) => mockCreateBudget(...args),
+    }),
+  },
+}));
+
+jest.mock("../goalStore", () => ({
+  useGoalStore: {
+    getState: () => ({
       createGoal: (...args: unknown[]) => mockCreateGoal(...args),
     }),
   },
@@ -342,8 +350,9 @@ describe("Sync Store", () => {
     });
 
     it("should handle actions where processAction returns false", async () => {
-      // When processAction cannot process an action (e.g. dynamic import or entity not handled),
-      // it returns false and the action should be retried (retryCount incremented)
+      // When processAction cannot process an action (entity not handled),
+      // it returns false and the action should be retried (retryCount incremented).
+      // Use "transaction" — an entity in the union type with no handler yet.
       mockProcessOfflineQueue.mockResolvedValue({ processed: 0, failed: 0 });
 
       useSyncStore.setState({
@@ -352,8 +361,8 @@ describe("Sync Store", () => {
           {
             id: "1",
             type: "create",
-            entity: "goal",
-            data: { name: "Save 10K" },
+            entity: "transaction",
+            data: { amount: 100 },
             timestamp: Date.now(),
             retryCount: 0,
           },
@@ -971,4 +980,65 @@ describe("Sync Store", () => {
       expect(selectHasPendingChanges(useSyncStore.getState())).toBe(false);
     });
   });
+
+  // MOB-6: FND-066/067 — offline writes route to modular stores, not deprecated financialStore
+  describe("MOB-6: offline writes use modular stores (FND-066/067)", () => {
+    it("should call useBudgetStore.createBudget (not financialStore) when syncing a budget create action", async () => {
+      mockProcessOfflineQueue.mockResolvedValue({ processed: 0, failed: 0 });
+      mockCreateBudget.mockResolvedValue(true);
+
+      useSyncStore.setState({
+        isOnline: true,
+        pendingActions: [
+          {
+            id: "budget-1",
+            type: "create",
+            entity: "budget",
+            data: { category: "Food", limit: 500, period: "monthly" },
+            timestamp: Date.now(),
+            retryCount: 0,
+          },
+        ],
+      });
+
+      await act(async () => {
+        await useSyncStore.getState().syncAll();
+      });
+
+      expect(mockCreateBudget).toHaveBeenCalledWith({
+        category: "Food",
+        limit: 500,
+        period: "monthly",
+      });
+    });
+
+    it("should call useGoalStore.createGoal (not financialStore) when syncing a goal create action", async () => {
+      mockProcessOfflineQueue.mockResolvedValue({ processed: 0, failed: 0 });
+      mockCreateGoal.mockResolvedValue(true);
+
+      useSyncStore.setState({
+        isOnline: true,
+        pendingActions: [
+          {
+            id: "goal-1",
+            type: "create",
+            entity: "goal",
+            data: { name: "Emergency Fund", targetAmount: 10000 },
+            timestamp: Date.now(),
+            retryCount: 0,
+          },
+        ],
+      });
+
+      await act(async () => {
+        await useSyncStore.getState().syncAll();
+      });
+
+      expect(mockCreateGoal).toHaveBeenCalledWith({
+        name: "Emergency Fund",
+        targetAmount: 10000,
+      });
+    });
+  });
 });
+

@@ -8,6 +8,10 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo, { NetInfoState } from "@react-native-community/netinfo";
 import { processOfflineQueue } from "../services/api";
+import { useDisputeStore } from "./disputeStore";
+// MOB-6 (FND-066): offline writes route to modular stores, not deprecated financialStore
+import { useBudgetStore } from "./budgetStore";
+import { useGoalStore } from "./goalStore";
 
 interface PendingAction {
   id: string;
@@ -226,10 +230,6 @@ export const useSyncStore = create<SyncState>()(
 
 // Helper function to process individual actions
 async function processAction(action: PendingAction): Promise<boolean> {
-  // Import stores dynamically to avoid circular dependencies
-  const { useDisputeStore } = await import("./disputeStore");
-  const { useFinancialStore } = await import("./financialStore");
-
   switch (action.entity) {
     case "dispute":
       if (action.type === "create") {
@@ -241,16 +241,12 @@ async function processAction(action: PendingAction): Promise<boolean> {
       break;
     case "budget":
       if (action.type === "create") {
-        return await useFinancialStore
-          .getState()
-          .createBudget(action.data as never);
+        return await useBudgetStore.getState().createBudget(action.data as never);
       }
       break;
     case "goal":
       if (action.type === "create") {
-        return await useFinancialStore
-          .getState()
-          .createGoal(action.data as never);
+        return await useGoalStore.getState().createGoal(action.data as never);
       }
       break;
     default:

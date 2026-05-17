@@ -216,8 +216,6 @@ export type {
   LoanType,
 } from "./studentLoanStore";
 
-// DEPRECATED: For backward compatibility only - remove in next major version
-export { useDashboardStore as useFinancialStore } from "./dashboardStore";
 
 /**
  * Initialize all stores and listeners

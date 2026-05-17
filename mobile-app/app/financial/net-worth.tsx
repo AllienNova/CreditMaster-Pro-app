@@ -20,7 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { LineChart, PieChart } from "../../src/components/charts";
-import { useFinancialStore } from "../../src/store/financialStore";
+import { useAccountStore } from "../../src/store/accountStore";
 
 interface Asset {
   name: string;
@@ -84,7 +84,7 @@ export default function NetWorthScreen() {
   const [history, setHistory] = useState<NetWorthHistory[]>([]);
   const [showAssetBreakdown, setShowAssetBreakdown] = useState(false);
 
-  const { accounts, fetchAccounts } = useFinancialStore();
+  const { accounts, fetchAccounts } = useAccountStore();
 
   const loadNetWorthData = useCallback(async () => {
     try {

@@ -21,7 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-import { useFinancialStore } from "../../src/store/financialStore";
+import { useAccountStore } from "../../src/store/accountStore";
 import Svg, { Circle } from "react-native-svg";
 
 const { width } = Dimensions.get("window");
@@ -486,7 +486,7 @@ export default function FinancialIntelligenceDashboard() {
   );
   const [insights, setInsights] = useState<Insight[]>([]);
   const [accountsList, setAccountsList] = useState<Account[]>([]);
-  const { accounts } = useFinancialStore();
+  const { accounts } = useAccountStore();
 
   const fetchSnapshot = useCallback(async () => {
     try {

@@ -20,7 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { PieChart, LineChart, BarChart } from "../../src/components/charts";
-import { useFinancialStore } from "../../src/store/financialStore";
+import { useBudgetStore } from "../../src/store/budgetStore";
 import { financialOverviewApi } from "../../src/services/api/financial";
 
 interface SpendingCategory {
@@ -118,7 +118,7 @@ export default function SpendingScreen() {
   const [chartView, setChartView] = useState<"pie" | "bar">("pie");
   const [error, setError] = useState<string | null>(null);
 
-  const { budgets, fetchBudgets } = useFinancialStore();
+  const { budgets, fetchBudgets } = useBudgetStore();
 
   const loadSpendingData = useCallback(async () => {
     try {
