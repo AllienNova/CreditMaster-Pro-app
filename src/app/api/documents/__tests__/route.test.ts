@@ -4,8 +4,7 @@
  * Tests for /api/documents (TASK-CRD-4).
  *
  * GET and DELETE are re-wired to documentServiceDB (DB-backed, user-scoped).
- * PATCH (metadata/tags) still uses the in-memory documentService — the DB
- * schema has no metadata or tags columns.
+ * PATCH (metadata/tags) is also re-wired to documentServiceDB (gap fix).
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -14,7 +13,7 @@ const mockGetDocument = jest.fn();
 const mockGetUserDocuments = jest.fn();
 const mockGetDocumentStats = jest.fn();
 const mockDeleteDocument = jest.fn();
-const mockUpdateDocumentMetadata = jest.fn();
+const mockUpdateMetadata = jest.fn();
 const mockAddTags = jest.fn();
 const mockValidate = jest.fn();
 const mockResolveRole = jest.fn();
@@ -25,12 +24,7 @@ jest.mock("@/lib/documents/document-service-db", () => ({
     getUserDocuments: (...args: unknown[]) => mockGetUserDocuments(...args),
     getDocumentStats: (...args: unknown[]) => mockGetDocumentStats(...args),
     deleteDocument: (...args: unknown[]) => mockDeleteDocument(...args),
-  },
-}));
-jest.mock("@/lib/documents/document-service", () => ({
-  documentService: {
-    updateDocumentMetadata: (...args: unknown[]) =>
-      mockUpdateDocumentMetadata(...args),
+    updateMetadata: (...args: unknown[]) => mockUpdateMetadata(...args),
     addTags: (...args: unknown[]) => mockAddTags(...args),
   },
 }));
@@ -82,6 +76,8 @@ const sampleDocument = {
   url: "https://s3.example.com/file.pdf",
   s3Key: "users/user-1/credit_report/doc_123.pdf",
   uploadedAt: new Date(),
+  metadata: null,
+  tags: null,
 };
 
 const sampleStats = {
@@ -306,7 +302,7 @@ describe("Documents API – PATCH /api/documents", () => {
         ...sampleDocument,
         metadata: { source: "equifax", verified: true },
       };
-      mockUpdateDocumentMetadata.mockReturnValue(updatedDoc);
+      mockUpdateMetadata.mockResolvedValue(updatedDoc);
 
       const req = makeRequest("http://localhost:3000/api/documents", {
         method: "PATCH",
@@ -321,9 +317,8 @@ describe("Documents API – PATCH /api/documents", () => {
 
       expect(res.status).toBe(200);
       expect(body.document).toBeDefined();
-      expect(mockUpdateDocumentMetadata).toHaveBeenCalledWith("doc_123", {
-        verified: true,
-      });
+      // DB service called with documentId, authenticated userId, and metadata (IDOR defence).
+      expect(mockUpdateMetadata).toHaveBeenCalledWith("doc_123", "user-1", { verified: true });
     });
 
     it("should return 400 when metadata is missing for update_metadata", async () => {
@@ -342,7 +337,7 @@ describe("Documents API – PATCH /api/documents", () => {
     });
 
     it("should return 404 when document not found for update_metadata", async () => {
-      mockUpdateDocumentMetadata.mockReturnValue(null);
+      mockUpdateMetadata.mockResolvedValue(null);
 
       const req = makeRequest("http://localhost:3000/api/documents", {
         method: "PATCH",
@@ -358,6 +353,33 @@ describe("Documents API – PATCH /api/documents", () => {
       expect(res.status).toBe(404);
       expect(body.error).toBe("Document not found");
     });
+
+    it("idor: updateMetadata is always called with the authenticated user id", async () => {
+      const updatedDoc = { ...sampleDocument, metadata: { source: "test" } };
+      mockUpdateMetadata.mockResolvedValue(updatedDoc);
+
+      const req = makeRequest("http://localhost:3000/api/documents", {
+        method: "PATCH",
+      });
+      // Adversary supplies a victim documentId via the body
+      req.json = jest.fn().mockResolvedValue({
+        documentId: "victim-doc-id",
+        action: "update_metadata",
+        metadata: { injected: true },
+        // Adversary tries to supply a different userId — route must ignore it
+        userId: "victim-user-id",
+      });
+      const res = await PATCH(req);
+      // updateMetadata returns null for wrong owner → 404 prevents exploitation
+      // (the mock returns a doc here just to test that the userId arg is correct)
+      expect(mockUpdateMetadata).toHaveBeenCalledWith(
+        "victim-doc-id",
+        "user-1", // authenticated user, not victim-user-id from body
+        { injected: true },
+      );
+      // Ensure the client-supplied userId is never forwarded
+      expect(mockUpdateMetadata.mock.calls[0][1]).not.toBe("victim-user-id");
+    });
   });
 
   describe("add_tags action", () => {
@@ -366,7 +388,7 @@ describe("Documents API – PATCH /api/documents", () => {
         ...sampleDocument,
         tags: ["credit", "important"],
       };
-      mockAddTags.mockReturnValue(updatedDoc);
+      mockAddTags.mockResolvedValue(updatedDoc);
 
       const req = makeRequest("http://localhost:3000/api/documents", {
         method: "PATCH",
@@ -381,7 +403,8 @@ describe("Documents API – PATCH /api/documents", () => {
 
       expect(res.status).toBe(200);
       expect(body.document.tags).toContain("important");
-      expect(mockAddTags).toHaveBeenCalledWith("doc_123", ["important"]);
+      // DB service called with documentId, authenticated userId, and tags (IDOR defence).
+      expect(mockAddTags).toHaveBeenCalledWith("doc_123", "user-1", ["important"]);
     });
 
     it("should return 400 when tags is missing for add_tags", async () => {
@@ -416,7 +439,7 @@ describe("Documents API – PATCH /api/documents", () => {
     });
 
     it("should return 404 when document not found for add_tags", async () => {
-      mockAddTags.mockReturnValue(null);
+      mockAddTags.mockResolvedValue(null);
 
       const req = makeRequest("http://localhost:3000/api/documents", {
         method: "PATCH",
@@ -431,6 +454,27 @@ describe("Documents API – PATCH /api/documents", () => {
 
       expect(res.status).toBe(404);
       expect(body.error).toBe("Document not found");
+    });
+
+    it("idor: addTags is always called with the authenticated user id", async () => {
+      mockAddTags.mockResolvedValue(null); // wrong owner → null → 404
+
+      const req = makeRequest("http://localhost:3000/api/documents", {
+        method: "PATCH",
+      });
+      req.json = jest.fn().mockResolvedValue({
+        documentId: "victim-doc-id",
+        action: "add_tags",
+        tags: ["stolen"],
+        userId: "victim-user-id",
+      });
+      await PATCH(req);
+      expect(mockAddTags).toHaveBeenCalledWith(
+        "victim-doc-id",
+        "user-1",
+        ["stolen"],
+      );
+      expect(mockAddTags.mock.calls[0][1]).not.toBe("victim-user-id");
     });
   });
 

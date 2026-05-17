@@ -103,6 +103,8 @@ function makeDocumentRow(
     s3_key: "users/user-1/credit_report/1700000000000.pdf",
     s3_url: "https://signed-url.example.com/doc",
     uploaded_at: new Date().toISOString(),
+    metadata: null,
+    tags: null,
     ...overrides,
   };
 }

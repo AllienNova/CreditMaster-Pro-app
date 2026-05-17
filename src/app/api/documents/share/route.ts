@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { documentService } from "@/lib/documents/document-service";
+import { documentServiceDB } from "@/lib/documents/document-service-db";
 import { withAuth, withPermission } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
 import { notificationService } from "@/lib/notifications/notification-service";
@@ -16,15 +16,17 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
       );
     }
 
-    const document = await documentService.getDocument(documentId);
-    if (!document || document.userId !== user.id) {
+    // getDocument is user-scoped: returns null for wrong owner (IDOR safe — no existence leak).
+    const document = await documentServiceDB.getDocument(documentId, user.id);
+    if (!document) {
       return NextResponse.json(
         { error: "Document not found" },
         { status: 404 },
       );
     }
 
-    const links = documentService.listShareLinks(documentId, user.id);
+    // listShareLinks is user-scoped: only returns links owned by the authenticated user.
+    const links = await documentServiceDB.listShareLinks(documentId, user.id);
     return NextResponse.json({ links });
   } catch (_error) {
     // DocumentShareRoute error: Failed to list share links
@@ -49,8 +51,9 @@ export const POST = withPermission(
       );
     }
 
-    const document = await documentService.getDocument(documentId);
-    if (!document || document.userId !== user.id) {
+    // getDocument is user-scoped: returns null for wrong owner (IDOR safe).
+    const document = await documentServiceDB.getDocument(documentId, user.id);
+    if (!document) {
       return NextResponse.json(
         { error: "Document not found" },
         { status: 404 },
@@ -61,7 +64,8 @@ export const POST = withPermission(
       .map((email: string) => email.toLowerCase().trim())
       .filter(Boolean);
 
-    const link = documentService.createShareLink(
+    // createShareLink verifies ownership internally (defence in depth).
+    const link = await documentServiceDB.createShareLink(
       documentId,
       user.id,
       normalizedRecipients,
@@ -109,7 +113,8 @@ export const DELETE = withAuth(
       );
     }
 
-    const revoked = documentService.revokeShareLink(shareId, user.id);
+    // revokeShareLink is user-scoped: returns false for wrong owner (IDOR safe).
+    const revoked = await documentServiceDB.revokeShareLink(shareId, user.id);
     if (!revoked) {
       return NextResponse.json(
         { error: "Share link not found" },

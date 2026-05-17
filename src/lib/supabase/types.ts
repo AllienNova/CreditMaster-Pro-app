@@ -118,6 +118,8 @@ export interface Database {
           s3_key: string;
           s3_url: string | null;
           uploaded_at: string;
+          metadata: Json | null;
+          tags: string[] | null;
         };
         Insert: {
           id?: string;
@@ -130,6 +132,8 @@ export interface Database {
           s3_key: string;
           s3_url?: string | null;
           uploaded_at?: string;
+          metadata?: Json | null;
+          tags?: string[] | null;
         };
         Update: {
           id?: string;
@@ -142,6 +146,40 @@ export interface Database {
           s3_key?: string;
           s3_url?: string | null;
           uploaded_at?: string;
+          metadata?: Json | null;
+          tags?: string[] | null;
+        };
+      };
+      document_share_links: {
+        Row: {
+          id: string;
+          document_id: string;
+          user_id: string;
+          recipients: string[];
+          permissions: "view" | "download";
+          url: string;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          document_id: string;
+          user_id: string;
+          recipients?: string[];
+          permissions?: "view" | "download";
+          url: string;
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          document_id?: string;
+          user_id?: string;
+          recipients?: string[];
+          permissions?: "view" | "download";
+          url?: string;
+          expires_at?: string;
+          created_at?: string;
         };
       };
       notifications: {

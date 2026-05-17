@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { documentServiceDB } from "@/lib/documents/document-service-db";
 import type { DocumentType } from "@/lib/documents/document-service-db";
-import { documentService } from "@/lib/documents/document-service";
 import { withAuth } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
 
@@ -66,7 +65,7 @@ export const DELETE = withAuth(
 });
 
 export const PATCH = withAuth(
-  async (request: NextRequest, _user: AuthedUser) => {
+  async (request: NextRequest, user: AuthedUser) => {
   try {
     const body = await request.json();
     const { documentId, action, metadata, tags } = body;
@@ -88,7 +87,8 @@ export const PATCH = withAuth(
             { status: 400 },
           );
         }
-        document = documentService.updateDocumentMetadata(documentId, metadata);
+        // updateMetadata is user-scoped: returns null for wrong owner (IDOR safe).
+        document = await documentServiceDB.updateMetadata(documentId, user.id, metadata as Record<string, unknown>);
         break;
       case "add_tags":
         if (!tags || !Array.isArray(tags)) {
@@ -97,7 +97,8 @@ export const PATCH = withAuth(
             { status: 400 },
           );
         }
-        document = documentService.addTags(documentId, tags);
+        // addTags is user-scoped: returns null for wrong owner (IDOR safe).
+        document = await documentServiceDB.addTags(documentId, user.id, tags as string[]);
         break;
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });

@@ -3,10 +3,11 @@
  *
  * Integration tests for POST /api/disputes/generate
  * Covers: (a) unauthenticated → 401, (b) insufficient credits → 402,
- * (c) ai mode: missing fields → 400, valid → 200,
+ * (c) ai mode: missing fields → 400, valid → 200, persistence via disputeServiceDB,
+ *     IDOR: disputeId belongs to authenticated user not client-supplied id,
  * (d) template mode: missing templateId → 400, unknown templateId → 404, valid → 200,
  * (e) strategy mode: missing strategyId/scenario → 400, scenario only → 200,
- *     valid strategyId → 200,
+ *     valid strategyId → 200, persistence via disputeServiceDB,
  * (f) orchestrator error → 500.
  * GET handler → 200 with API docs.
  */
@@ -14,14 +15,13 @@
 import { NextRequest } from "next/server";
 
 // ── Shared mocks — must be defined before jest.mock factories ─────────────────
-// Route wrapped in withAuth (TASK-AUTH-03f); auth resolves via
-// jwtValidation.validateFromHeaders + resolveRoleFromDb.
 const mockValidateFromHeaders = jest.fn();
 const mockResolveRoleFromDb = jest.fn();
 const mockGenerateDispute = jest.fn().mockResolvedValue("Generated dispute letter text");
 const mockReviewCompliance = jest.fn().mockResolvedValue({ passed: true });
 const mockCheckCredits = jest.fn().mockResolvedValue(true);
 const mockDeductCredits = jest.fn().mockResolvedValue(undefined);
+const mockCreateDispute = jest.fn().mockResolvedValue({ id: "saved-dispute-id" });
 
 const fakeTemplate = {
   id: "template-001",
@@ -78,22 +78,43 @@ jest.mock("@/lib/credits", () => ({
   },
 }));
 
-jest.mock("@/lib/disputes/dispute-service", () => ({
-  disputeService: {},
+// Route now imports helpers from their actual source modules (not from dispute-service).
+jest.mock("@/lib/prompts/dispute-templates", () => ({
   ALL_DISPUTE_TEMPLATES: [fakeTemplate],
-  ALL_ADVANCED_STRATEGIES: [fakeStrategy],
   getTemplateById: jest.fn((id: string) => (id === fakeTemplate.id ? fakeTemplate : undefined)),
+}));
+
+jest.mock("@/lib/disputes/advanced-strategies", () => ({
+  ALL_ADVANCED_STRATEGIES: [fakeStrategy],
   getStrategyById: jest.fn((id: string) => (id === fakeStrategy.id ? fakeStrategy : undefined)),
   recommendStrategy: jest.fn(() => [fakeStrategy]),
 }));
 
+// DB-backed dispute service mock (TASK-CRD-3 gap).
+jest.mock("@/lib/disputes/dispute-service-db", () => ({
+  disputeServiceDB: {
+    createDispute: (...args: unknown[]) => mockCreateDispute(...args),
+  },
+}));
+
 import { POST, GET } from "../route";
 import { getAIOrchestrator } from "@/lib/ai-orchestrator";
+import { getTemplateById, ALL_DISPUTE_TEMPLATES } from "@/lib/prompts/dispute-templates";
 import {
-  getTemplateById,
   getStrategyById,
   recommendStrategy,
-} from "@/lib/disputes/dispute-service";
+  ALL_ADVANCED_STRATEGIES,
+} from "@/lib/disputes/advanced-strategies";
+
+// Suppress expected console noise from best-effort persist blocks in tests
+// that exercise failure paths.
+const originalConsoleError = console.error;
+beforeAll(() => {
+  console.error = jest.fn();
+});
+afterAll(() => {
+  console.error = originalConsoleError;
+});
 
 const fakeUser = { id: "user-dispute-1", email: "user@example.com" };
 
@@ -119,6 +140,7 @@ describe("POST /api/disputes/generate", () => {
     mockDeductCredits.mockResolvedValue(undefined);
     mockGenerateDispute.mockResolvedValue("Generated dispute letter text");
     mockReviewCompliance.mockResolvedValue({ passed: true });
+    mockCreateDispute.mockResolvedValue({ id: "saved-dispute-id" });
     (getAIOrchestrator as jest.Mock).mockReturnValue({
       generateDispute: mockGenerateDispute,
       reviewCompliance: mockReviewCompliance,
@@ -212,6 +234,59 @@ describe("POST /api/disputes/generate", () => {
     expect(mockCheckCredits).toHaveBeenCalledWith(fakeUser.id, 150);
   });
 
+  // ── (c) AI mode: persistence ─────────────────────────────────────────────
+  it("persists the generated dispute to the DB and returns disputeId", async () => {
+    const res = await POST(makeRequest({
+      mode: "ai",
+      creditReport: "late payment",
+      disputeReason: "Payment was on time",
+      userInfo: { name: "Jane Doe", address: "123 Main St" },
+      bureau: "equifax",
+    }));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.data.disputeId).toBe("saved-dispute-id");
+    expect(mockCreateDispute).toHaveBeenCalledTimes(1);
+    // First arg must be the authenticated userId — never a client-supplied value
+    expect(mockCreateDispute.mock.calls[0][0]).toBe(fakeUser.id);
+    // Bureau from request body is forwarded
+    expect(mockCreateDispute.mock.calls[0][1]).toBe("equifax");
+  });
+
+  // ── (c) AI mode: IDOR — disputeId is scoped to authenticated user ─────────
+  it("idor: createDispute is always called with the authenticated user id, not a client-supplied one", async () => {
+    // Adversary sends a different userId in the body — the route must ignore it
+    const res = await POST(makeRequest({
+      mode: "ai",
+      creditReport: "report",
+      disputeReason: "Wrong balance",
+      userInfo: { name: "Adversary", address: "456 Elm St" },
+      userId: "victim-user-id",  // client attempt to target another user
+    }));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    // DB was called with the authenticated user's id, not the client-supplied one
+    expect(mockCreateDispute).toHaveBeenCalledTimes(1);
+    expect(mockCreateDispute.mock.calls[0][0]).toBe(fakeUser.id);
+    expect(mockCreateDispute.mock.calls[0][0]).not.toBe("victim-user-id");
+    expect(json.data.disputeId).toBe("saved-dispute-id");
+  });
+
+  // ── (c) AI mode: DB persist failure is swallowed, still 200 ─────────────
+  it("returns 200 for ai mode even when createDispute throws", async () => {
+    mockCreateDispute.mockRejectedValueOnce(new Error("db unavailable"));
+    const res = await POST(makeRequest({
+      mode: "ai",
+      creditReport: "report",
+      disputeReason: "Wrong balance",
+      userInfo: { name: "Jane Doe", address: "123 Main St" },
+    }));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    // disputeId is absent when persist fails
+    expect(json.data.disputeId).toBeUndefined();
+  });
+
   // ── (d) Template mode: missing templateId → 400 ───────────────────────────
   it("returns 400 when template mode has no templateId", async () => {
     const res = await POST(makeRequest({ mode: "template" }));
@@ -290,6 +365,37 @@ describe("POST /api/disputes/generate", () => {
     expect(mockGenerateDispute).toHaveBeenCalledTimes(1);
   });
 
+  // ── (e) Strategy mode: persistence ───────────────────────────────────────
+  it("persists the strategy-generated dispute to the DB and returns disputeId", async () => {
+    const res = await POST(makeRequest({
+      mode: "strategy",
+      strategyId: fakeStrategy.id,
+      variables: { YOUR_NAME: "Jane Doe", YOUR_ADDRESS: "123 Main St" },
+      bureau: "transunion",
+    }));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.data.disputeId).toBe("saved-dispute-id");
+    expect(mockCreateDispute).toHaveBeenCalledTimes(1);
+    // Must use authenticated userId
+    expect(mockCreateDispute.mock.calls[0][0]).toBe(fakeUser.id);
+    // Bureau from request body is forwarded
+    expect(mockCreateDispute.mock.calls[0][1]).toBe("transunion");
+  });
+
+  // ── (e) Strategy mode: IDOR ───────────────────────────────────────────────
+  it("idor: strategy mode always calls createDispute with the authenticated user id", async () => {
+    const res = await POST(makeRequest({
+      mode: "strategy",
+      strategyId: fakeStrategy.id,
+      variables: { YOUR_NAME: "Adversary", YOUR_ADDRESS: "456 Elm St" },
+      userId: "victim-user-id",
+    }));
+    expect(res.status).toBe(200);
+    expect(mockCreateDispute.mock.calls[0][0]).toBe(fakeUser.id);
+    expect(mockCreateDispute.mock.calls[0][0]).not.toBe("victim-user-id");
+  });
+
   // ── (c) AI mode: object creditReport + compliance review ─────────────────
   it("accepts an object creditReport and runs compliance review when requested", async () => {
     const res = await POST(makeRequest({
@@ -339,9 +445,6 @@ describe("POST /api/disputes/generate", () => {
   });
 
   // ── (f) Orchestrator throws → 500 ───────────────────────────────────────
-  // The switch arms use `return await handler(body)`, so a rejection inside a
-  // handler is caught by the outer try/catch and returned as a 500 response
-  // instead of escaping as an unhandled rejection.
   it("returns 500 when AI orchestrator throws", async () => {
     mockGenerateDispute.mockRejectedValue(new Error("AIML API unavailable"));
     const res = await POST(makeRequest({
@@ -381,3 +484,8 @@ describe("GET /api/disputes/generate", () => {
     expect(res.status).toBe(401);
   });
 });
+
+// ── Unused variable guard ─────────────────────────────────────────────────────
+// These are imported to satisfy the mock factory pattern; keep them referenced.
+void ALL_DISPUTE_TEMPLATES;
+void ALL_ADVANCED_STRATEGIES;
