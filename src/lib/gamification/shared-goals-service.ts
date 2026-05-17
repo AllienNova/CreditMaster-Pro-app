@@ -233,12 +233,25 @@ export class SharedGoalsService {
     return (data || []).map(this.memberFromDb);
   }
 
+  private async assertMember(goalId: string, userId: string): Promise<void> {
+    const { data } = await this.supabase
+      .from("shared_goal_members")
+      .select("id")
+      .eq("goal_id", goalId)
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .single();
+    if (!data) throw new Error("Not a member of this goal");
+  }
+
   async inviteMember(
     goalId: string,
+    userId: string,
     inviterName: string,
     email: string,
     role: MemberRole = "contributor",
   ): Promise<GoalInvitation> {
+    await this.assertMember(goalId, userId);
     const goal = await this.getGoal(goalId);
     const inv = {
       id: crypto.randomUUID(),
@@ -293,11 +306,13 @@ export class SharedGoalsService {
 
   async recordContribution(
     goalId: string,
+    userId: string,
     memberId: string,
     memberName: string,
     amount: number,
     note?: string,
   ): Promise<Contribution> {
+    await this.assertMember(goalId, userId);
     const contrib = {
       id: crypto.randomUUID(),
       goal_id: goalId,
@@ -332,10 +347,12 @@ export class SharedGoalsService {
 
   async postUpdate(
     goalId: string,
+    userId: string,
     authorName: string,
     type: GoalUpdate["type"],
     content: string,
   ): Promise<void> {
+    await this.assertMember(goalId, userId);
     await this.supabase.from("shared_goal_updates").insert({
       id: crypto.randomUUID(),
       goal_id: goalId,
@@ -346,7 +363,8 @@ export class SharedGoalsService {
     });
   }
 
-  async getUpdates(goalId: string): Promise<GoalUpdate[]> {
+  async getUpdates(goalId: string, userId: string): Promise<GoalUpdate[]> {
+    await this.assertMember(goalId, userId);
     const { data } = await this.supabase
       .from("shared_goal_updates")
       .select("*")
@@ -358,11 +376,13 @@ export class SharedGoalsService {
 
   async sendNudge(
     goalId: string,
+    userId: string,
     senderName: string,
     message?: string,
   ): Promise<void> {
     await this.postUpdate(
       goalId,
+      userId,
       senderName,
       "nudge",
       message || `${senderName} sent a friendly nudge! `,

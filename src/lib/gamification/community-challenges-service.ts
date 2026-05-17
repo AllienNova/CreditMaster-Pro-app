@@ -371,7 +371,7 @@ export class CommunityChallengesService {
     };
 
     const { data, error } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .insert(this.participantToDb(participant))
       .select()
       .single();
@@ -389,13 +389,15 @@ export class CommunityChallengesService {
 
   async updateProgress(
     participantId: string,
+    userId: string,
     newProgress: number,
     currentValue?: number,
   ): Promise<ChallengeParticipant> {
     const { data: participant } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*, community_challenges(*)")
       .eq("id", participantId)
+      .eq("user_id", userId)
       .single();
 
     if (!participant) throw new Error("Participant not found");
@@ -419,7 +421,7 @@ export class CommunityChallengesService {
     }
 
     const { data, error } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .update(this.participantToDb(updates))
       .eq("id", participantId)
       .select()
@@ -431,7 +433,7 @@ export class CommunityChallengesService {
 
   async getUserParticipations(userId: string): Promise<ChallengeParticipant[]> {
     const { data, error } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*")
       .eq("user_id", userId)
       .order("joined_at", { ascending: false });
@@ -444,7 +446,7 @@ export class CommunityChallengesService {
     userId: string,
   ): Promise<{ challenge: Challenge; participation: ChallengeParticipant }[]> {
     const { data, error } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*, community_challenges(*)")
       .eq("user_id", userId)
       .in("status", ["joined", "active"]);
@@ -467,7 +469,7 @@ export class CommunityChallengesService {
     limit: number = 50,
   ): Promise<Leaderboard> {
     const { data, error } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*, profiles(display_name, avatar_url)")
       .eq("challenge_id", challengeId)
       .order("goal_progress", { ascending: false })
@@ -488,7 +490,7 @@ export class CommunityChallengesService {
 
     // Get total count
     const { count } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*", { count: "exact", head: true })
       .eq("challenge_id", challengeId);
 
@@ -505,7 +507,7 @@ export class CommunityChallengesService {
     userId: string,
   ): Promise<{ rank: number; total: number } | null> {
     const { data } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("goal_progress")
       .eq("challenge_id", challengeId)
       .eq("user_id", userId)
@@ -514,13 +516,13 @@ export class CommunityChallengesService {
     if (!data) return null;
 
     const { count: betterCount } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*", { count: "exact", head: true })
       .eq("challenge_id", challengeId)
       .gt("goal_progress", data.goal_progress);
 
     const { count: totalCount } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*", { count: "exact", head: true })
       .eq("challenge_id", challengeId);
 
