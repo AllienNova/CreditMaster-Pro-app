@@ -12,9 +12,6 @@ import { RiskLevel } from "@/lib/investments/types/advanced-analytics.types";
 import { z } from "zod";
 import { rateLimit } from "@/lib/security/redis-rate-limiting";
 
-// Initialize portfolio analytics service
-const portfolioAnalytics = new PortfolioAnalytics();
-
 // Rate limiter: 100 requests per hour per user
 const limiter = rateLimit({
   interval: 60 * 60 * 1000, // 1 hour
@@ -79,6 +76,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
     } = validationResult.data;
 
     // Generate rebalancing recommendations
+    const portfolioAnalytics = new PortfolioAnalytics(user.id);
     const recommendations = await portfolioAnalytics.suggestRebalancing(
       validPortfolioId,
       validTargetRiskLevel,

@@ -153,7 +153,7 @@ describe("PortfolioAnalytics Pipeline", () => {
   let mockHoldings: ReturnType<typeof createMockHoldings>;
 
   beforeEach(() => {
-    analytics = new PortfolioAnalytics();
+    analytics = new PortfolioAnalytics("user-001");
     mockPortfolio = createMockPortfolio(3);
     mockHoldings = createMockHoldings(3);
 

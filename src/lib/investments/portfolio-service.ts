@@ -136,21 +136,13 @@ function mapPortfolio(
 
 class PortfolioServiceFacade {
   /**
-   * Get a portfolio by ID (delegates to new service).
-   * The new service requires a userId — callers who previously passed only
-   * portfolioId now need to supply userId via the new service directly for
-   * user-scoped access. Here we perform an admin-level lookup by portfolioId.
+   * Get a portfolio by ID scoped to the requesting user.
+   * Returns null when portfolioId does not belong to userId.
    */
-  async getPortfolio(portfolioId: string): Promise<Portfolio | null> {
-    // We don't have a userId here, so we use the Supabase admin client directly
-    // via the new service's public getPortfolio which accepts portfolioId + userId.
-    // For analytics (the primary caller), we build a temporary service instance
-    // using a sentinel userId and rely on the database not filtering by user
-    // when called via the server-side admin client path.
-    //
-    // In practice, portfolio-analytics.ts calls this with a portfolioId that
-    // was already fetched for the authenticated user — so the row exists.
-    // We use a direct Supabase query here to avoid the userId constraint.
+  async getPortfolio(
+    portfolioId: string,
+    userId: string,
+  ): Promise<Portfolio | null> {
     const { getSupabase } = await import("@/lib/supabase/client");
     const supabase = getSupabase();
 
@@ -158,6 +150,7 @@ class PortfolioServiceFacade {
       .from("investment_portfolios")
       .select("*")
       .eq("id", portfolioId)
+      .eq("user_id", userId)
       .single();
 
     if (portfolioError) {
@@ -165,7 +158,7 @@ class PortfolioServiceFacade {
       throw new Error(`Failed to fetch portfolio: ${portfolioError.message}`);
     }
 
-    const holdings = await this.getHoldings(portfolioId);
+    const holdings = await this.getHoldings(portfolioId, userId);
     return mapPortfolio(
       portfolioData as unknown as Record<string, unknown>,
       holdings,
@@ -173,9 +166,13 @@ class PortfolioServiceFacade {
   }
 
   /**
-   * Get holdings for a portfolio from the investment_holdings table.
+   * Get holdings for a portfolio scoped to the requesting user.
+   * Returns [] when portfolioId does not belong to userId.
    */
-  async getHoldings(portfolioId: string): Promise<PortfolioHolding[]> {
+  async getHoldings(
+    portfolioId: string,
+    userId: string,
+  ): Promise<PortfolioHolding[]> {
     const { getSupabase } = await import("@/lib/supabase/client");
     const supabase = getSupabase();
 
@@ -183,6 +180,7 @@ class PortfolioServiceFacade {
       .from("investment_holdings")
       .select("*")
       .eq("portfolio_id", portfolioId)
+      .eq("user_id", userId)
       .order("current_value", { ascending: false, nullsFirst: false });
 
     if (error) {
@@ -197,8 +195,11 @@ class PortfolioServiceFacade {
   /**
    * Alias kept for backward-compat with older callers.
    */
-  async getPortfolioHoldings(portfolioId: string): Promise<PortfolioHolding[]> {
-    return this.getHoldings(portfolioId);
+  async getPortfolioHoldings(
+    portfolioId: string,
+    userId: string,
+  ): Promise<PortfolioHolding[]> {
+    return this.getHoldings(portfolioId, userId);
   }
 
   /**
@@ -210,7 +211,7 @@ class PortfolioServiceFacade {
 
     return Promise.all(
       portfolios.map(async (p) => {
-        const holdings = await this.getHoldings(p.id);
+        const holdings = await this.getHoldings(p.id, userId);
         return mapPortfolio(p as unknown as Record<string, unknown>, holdings);
       }),
     );
@@ -225,7 +226,7 @@ class PortfolioServiceFacade {
     if (portfolios.length === 0) return null;
 
     const first = portfolios[0];
-    const holdings = await this.getHoldings(first.id);
+    const holdings = await this.getHoldings(first.id, userId);
     return mapPortfolio(
       first as unknown as Record<string, unknown>,
       holdings,
@@ -246,12 +247,11 @@ class PortfolioServiceFacade {
   }
 
   /**
-   * Update a portfolio via the new service.
-   * The new service scopes updates by user_id, so we need userId.
-   * Callers passing only portfolioId + updates fall back to admin update.
+   * Update a portfolio scoped to the requesting user.
    */
   async updatePortfolio(
     portfolioId: string,
+    userId: string,
     updates: Partial<CreatePortfolioInput>,
   ): Promise<Portfolio> {
     const { getSupabase } = await import("@/lib/supabase/client");
@@ -266,6 +266,7 @@ class PortfolioServiceFacade {
       .from("investment_portfolios")
       .update(updateData)
       .eq("id", portfolioId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -273,14 +274,14 @@ class PortfolioServiceFacade {
       throw new Error(`Failed to update portfolio: ${error.message}`);
     }
 
-    const holdings = await this.getHoldings(portfolioId);
+    const holdings = await this.getHoldings(portfolioId, userId);
     return mapPortfolio(data as unknown as Record<string, unknown>, holdings);
   }
 
   /**
-   * Delete a portfolio.
+   * Delete a portfolio scoped to the requesting user.
    */
-  async deletePortfolio(portfolioId: string): Promise<boolean> {
+  async deletePortfolio(portfolioId: string, userId: string): Promise<boolean> {
     const { getSupabase } = await import("@/lib/supabase/client");
     const supabase = getSupabase();
 
@@ -289,12 +290,14 @@ class PortfolioServiceFacade {
     await supabase
       .from("investment_holdings")
       .delete()
-      .eq("portfolio_id", portfolioId);
+      .eq("portfolio_id", portfolioId)
+      .eq("user_id", userId);
 
     const { error } = await supabase
       .from("investment_portfolios")
       .delete()
-      .eq("id", portfolioId);
+      .eq("id", portfolioId)
+      .eq("user_id", userId);
 
     if (error) {
       throw new Error(`Failed to delete portfolio: ${error.message}`);
@@ -304,15 +307,16 @@ class PortfolioServiceFacade {
   }
 
   /**
-   * Update prices for all holdings in a portfolio.
+   * Update prices for all holdings in a portfolio scoped to the requesting user.
    */
   async updateHoldingPrices(
     portfolioId: string,
+    userId: string,
     prices: Record<string, number>,
   ): Promise<void> {
     const { getSupabase } = await import("@/lib/supabase/client");
     const supabase = getSupabase();
-    const holdings = await this.getHoldings(portfolioId);
+    const holdings = await this.getHoldings(portfolioId, userId);
 
     for (const holding of holdings) {
       if (holding.id && prices[holding.symbol]) {
@@ -322,7 +326,8 @@ class PortfolioServiceFacade {
         await supabase
           .from("investment_holdings")
           .update({ current_price: newPrice, current_value: newValue })
-          .eq("id", holding.id);
+          .eq("id", holding.id)
+          .eq("user_id", userId);
       }
     }
   }

@@ -36,6 +36,8 @@ import { createClient } from "@/lib/supabase/server";
 export class PortfolioAnalytics {
   private readonly CACHE_TTL = 1800; // 30 minutes
 
+  constructor(private readonly userId: string) {}
+
   /**
    * Calculate comprehensive risk metrics using Modern Portfolio Theory
    */
@@ -49,12 +51,12 @@ export class PortfolioAnalytics {
     if (cached) return cached;
 
     // Get portfolio holdings
-    const portfolio = await portfolioService.getPortfolio(portfolioId);
+    const portfolio = await portfolioService.getPortfolio(portfolioId, this.userId);
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
     }
 
-    const holdings = await portfolioService.getHoldings(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     if (holdings.length === 0) {
       throw new Error(`Portfolio ${portfolioId} has no holdings`);
     }
@@ -186,7 +188,7 @@ export class PortfolioAnalytics {
     const cached = await redisCache.get<DiversificationScore>(cacheKey);
     if (cached) return cached;
 
-    const holdings = await portfolioService.getHoldings(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     if (holdings.length === 0) {
       throw new Error(`Portfolio ${portfolioId} has no holdings`);
     }
@@ -332,7 +334,7 @@ export class PortfolioAnalytics {
     const cached = await redisCache.get<CorrelationMatrix>(cacheKey);
     if (cached) return cached;
 
-    const holdings = await portfolioService.getHoldings(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     if (holdings.length < 2) {
       throw new Error(
         `Portfolio ${portfolioId} needs at least 2 holdings for correlation analysis`,
@@ -417,7 +419,7 @@ export class PortfolioAnalytics {
    * Get sector exposure analysis
    */
   async getSectorExposure(portfolioId: string): Promise<SectorExposure[]> {
-    const holdings = await portfolioService.getHoldings(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0);
 
     const sectorMap = new Map<
@@ -458,7 +460,7 @@ export class PortfolioAnalytics {
     const cached = await redisCache.get<VolatilityAnalysis>(cacheKey);
     if (cached) return cached;
 
-    const holdings = await portfolioService.getHoldings(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     const days = this.timeHorizonToDays(timeHorizon);
     const historicalData = await this.getHistoricalDataForHoldings(
       holdings,
@@ -548,8 +550,8 @@ export class PortfolioAnalytics {
     const cached = await redisCache.get<RebalancingRecommendation>(cacheKey);
     if (cached) return cached;
 
-    const holdings = await portfolioService.getHoldings(portfolioId);
-    const portfolio = await portfolioService.getPortfolio(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
+    const portfolio = await portfolioService.getPortfolio(portfolioId, this.userId);
 
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
@@ -680,7 +682,7 @@ export class PortfolioAnalytics {
     const cached = await redisCache.get<PortfolioPerformance>(cacheKey);
     if (cached) return cached;
 
-    const holdings = await portfolioService.getHoldings(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     const days = this.timeHorizonToDays(timeHorizon);
     const historicalData = await this.getHistoricalDataForHoldings(
       holdings,

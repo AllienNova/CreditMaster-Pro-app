@@ -137,12 +137,31 @@ describe("IDOR – /api/investments/holdings/[id]", () => {
     expect(body.success).toBe(false);
   });
 
+  it("idor: user B cannot delete user A's holding — returns 404 (FND-034 regression)", async () => {
+    // user-B is already set in beforeEach; user-A owns holding-A.
+    const res = await DELETE(createMockRequest(URL_PATH, "DELETE"));
+    expect(res.status).toBe(404);
+    const body = await res.json();
+    expect(body.success).toBe(false);
+  });
+
   it("PATCH by the owner succeeds", async () => {
     mockValidateFromHeaders.mockResolvedValue({
       valid: true,
       user: { id: HOLDING_OWNER, email: "user-a@example.com" },
     });
     const res = await PATCH(createMockRequest(URL_PATH, "PATCH"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+  });
+
+  it("DELETE by the owner succeeds (FND-034 positive path)", async () => {
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: HOLDING_OWNER, email: "user-a@example.com" },
+    });
+    const res = await DELETE(createMockRequest(URL_PATH, "DELETE"));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);

@@ -12,9 +12,6 @@ import { TimeHorizonSchema } from "@/lib/investments/types/advanced-analytics.ty
 import { z } from "zod";
 import { rateLimit } from "@/lib/security/redis-rate-limiting";
 
-// Initialize portfolio analytics service
-const portfolioAnalytics = new PortfolioAnalytics();
-
 // Rate limiter: 100 requests per hour per user
 const limiter = rateLimit({
   interval: 60 * 60 * 1000, // 1 hour
@@ -75,6 +72,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
       validationResult.data;
 
     // Calculate risk metrics
+    const portfolioAnalytics = new PortfolioAnalytics(user.id);
     const riskMetrics = await portfolioAnalytics.calculateRiskMetrics(
       validPortfolioId,
       validTimeHorizon,

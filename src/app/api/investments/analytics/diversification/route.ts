@@ -11,9 +11,6 @@ import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { z } from "zod";
 import { rateLimit } from "@/lib/security/redis-rate-limiting";
 
-// Initialize portfolio analytics service
-const portfolioAnalytics = new PortfolioAnalytics();
-
 // Rate limiter: 100 requests per hour per user
 const limiter = rateLimit({
   interval: 60 * 60 * 1000, // 1 hour
@@ -69,6 +66,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
     const { portfolioId: validPortfolioId } = validationResult.data;
 
     // Calculate diversification score
+    const portfolioAnalytics = new PortfolioAnalytics(user.id);
     const diversificationScore =
       await portfolioAnalytics.getDiversificationScore(validPortfolioId);
 
