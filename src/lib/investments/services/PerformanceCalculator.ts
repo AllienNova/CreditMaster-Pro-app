@@ -9,18 +9,37 @@ import { PortfolioService } from "./PortfolioService";
 import { PortfolioPerformance } from "../types/portfolio-db.types";
 
 /**
- * Benchmark comparison result
+ * Benchmark comparison result.
+ *
+ * `dataAvailable` is false when no historical S&P 500 series is reachable from
+ * this service. In that case all benchmark-derived fields are null. The
+ * portfolio's own return (computed from real holdings) is always populated.
+ *
+ * NOTE: never fabricate constants for beta/correlation/benchmark_return —
+ * that was the FND-032 bug. When data is absent, callers must render "—" or
+ * "benchmark data unavailable", not display null as a number.
  */
 export interface BenchmarkComparison {
+  /** Always populated from real holdings data. */
   portfolio_return: number;
+  /** Always populated from real holdings data. */
   portfolio_return_percent: number;
-  benchmark_return: number;
-  benchmark_return_percent: number;
-  alpha: number; // Excess return vs benchmark
-  beta: number; // Volatility relative to benchmark
-  correlation: number;
-  tracking_error: number;
-  information_ratio: number;
+  /** False when no S&P 500 historical series was available. */
+  dataAvailable: boolean;
+  /** null when dataAvailable is false. */
+  benchmark_return: number | null;
+  /** null when dataAvailable is false. */
+  benchmark_return_percent: number | null;
+  /** null when dataAvailable is false. */
+  alpha: number | null;
+  /** null when dataAvailable is false. */
+  beta: number | null;
+  /** null when dataAvailable is false. */
+  correlation: number | null;
+  /** null when dataAvailable is false. */
+  tracking_error: number | null;
+  /** null when dataAvailable is false. */
+  information_ratio: number | null;
 }
 
 /**
@@ -262,11 +281,20 @@ export class PerformanceCalculator {
   }
 
   /**
-   * Benchmark portfolio performance against S&P 500
+   * Benchmark portfolio performance against S&P 500.
+   *
+   * Real beta/correlation/benchmark-return computation requires a historical
+   * S&P 500 daily-return series, which is not reachable from this class
+   * (MarketDataService is a separate service requiring API keys not injected
+   * here). The "data unavailable" pattern is applied: benchmark-derived fields
+   * are null and dataAvailable is false. The portfolio's own return, computed
+   * from real holdings, is always populated.
+   *
    * @param portfolioId Portfolio ID
    * @param startDate Start date for comparison
    * @param endDate End date for comparison
-   * @returns Benchmark comparison metrics
+   * @returns BenchmarkComparison with portfolio return populated; benchmark
+   *   fields null and dataAvailable false (no S&P series reachable).
    */
   async benchmarkAgainstSP500(
     portfolioId: string,
@@ -278,40 +306,20 @@ export class PerformanceCalculator {
       throw new Error(`Portfolio ${portfolioId} not found`);
     }
 
-    // Calculate portfolio return
     const { absolute: portfolioReturn, percentage: portfolioReturnPercent } =
       await this.calculateTotalReturn(portfolioId, startDate, endDate);
-
-    // Placeholder S&P 500 return (in production, fetch from market data API)
-    const benchmarkReturnPercent = 10; // Assume 10% annual return
-    const totalCost = portfolio.total_cost_basis;
-    const benchmarkReturn = (totalCost * benchmarkReturnPercent) / 100;
-
-    // Calculate alpha (excess return)
-    const alpha = portfolioReturnPercent - benchmarkReturnPercent;
-
-    // Calculate beta (placeholder - would need covariance calculation)
-    const beta = 1.0; // Market beta
-
-    // Calculate correlation (placeholder)
-    const correlation = 0.85;
-
-    // Calculate tracking error (std dev of difference in returns)
-    const trackingError = Math.abs(alpha) / 10; // Simplified
-
-    // Calculate information ratio (alpha / tracking error)
-    const informationRatio = trackingError > 0 ? alpha / trackingError : 0;
 
     return {
       portfolio_return: portfolioReturn,
       portfolio_return_percent: portfolioReturnPercent,
-      benchmark_return: benchmarkReturn,
-      benchmark_return_percent: benchmarkReturnPercent,
-      alpha,
-      beta,
-      correlation,
-      tracking_error: trackingError,
-      information_ratio: informationRatio,
+      dataAvailable: false,
+      benchmark_return: null,
+      benchmark_return_percent: null,
+      alpha: null,
+      beta: null,
+      correlation: null,
+      tracking_error: null,
+      information_ratio: null,
     };
   }
 }

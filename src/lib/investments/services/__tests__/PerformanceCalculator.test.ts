@@ -193,4 +193,97 @@ describe("PerformanceCalculator", () => {
       expect(result.maxDrawdown).toBeLessThan(0);
     });
   });
+
+  describe("benchmarkAgainstSP500", () => {
+    const startDate = new Date("2024-01-01");
+    const endDate = new Date("2024-12-31");
+
+    it("never returns fabricated constants beta=1.0 and correlation=0.85 as computed output (FND-032)", async () => {
+      const mockPortfolio = {
+        id: portfolioId,
+        user_id: userId,
+        total_cost_basis: 10000,
+      };
+      const mockHoldings = [
+        { current_value: 11000, quantity: 100, average_cost: 100 },
+      ];
+
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
+
+      const result = await calculator.benchmarkAgainstSP500(
+        portfolioId,
+        startDate,
+        endDate,
+      );
+
+      // Must not return the fabricated constant pair
+      expect(result.beta === 1.0 && result.correlation === 0.85).toBe(false);
+    });
+
+    it("returns dataAvailable=false and null benchmark fields when no S&P 500 series is available", async () => {
+      const mockPortfolio = {
+        id: portfolioId,
+        user_id: userId,
+        total_cost_basis: 10000,
+      };
+      const mockHoldings = [
+        { current_value: 11000, quantity: 100, average_cost: 100 },
+      ];
+
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
+
+      const result = await calculator.benchmarkAgainstSP500(
+        portfolioId,
+        startDate,
+        endDate,
+      );
+
+      expect(result.dataAvailable).toBe(false);
+      expect(result.beta).toBeNull();
+      expect(result.correlation).toBeNull();
+      expect(result.benchmark_return).toBeNull();
+      expect(result.benchmark_return_percent).toBeNull();
+      expect(result.alpha).toBeNull();
+      expect(result.tracking_error).toBeNull();
+      expect(result.information_ratio).toBeNull();
+    });
+
+    it("still populates portfolio_return and portfolio_return_percent from real holdings data", async () => {
+      const mockPortfolio = {
+        id: portfolioId,
+        user_id: userId,
+        total_cost_basis: 10000,
+      };
+      // cost = 100 * 100 = 10000, current = 12000 → +20%
+      const mockHoldings = [
+        { current_value: 12000, quantity: 100, average_cost: 100 },
+      ];
+
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
+
+      const result = await calculator.benchmarkAgainstSP500(
+        portfolioId,
+        startDate,
+        endDate,
+      );
+
+      expect(result.portfolio_return).toBe(2000);
+      expect(result.portfolio_return_percent).toBe(20);
+    });
+  });
 });
