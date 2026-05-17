@@ -9,10 +9,14 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Storage keys
-const BIOMETRIC_ENABLED_KEY = "@fynvita_biometric_enabled";
-const BIOMETRIC_TYPE_KEY = "@fynvita_biometric_type";
+// Storage keys — normalised to @fynvita/<domain>/<key>
+// Sensitive flags are stored in SecureStore (not AsyncStorage).
+const BIOMETRIC_ENABLED_KEY = "@fynvita/biometric/enabled";
+const BIOMETRIC_TYPE_KEY = "@fynvita/biometric/type";
 const SECURE_TOKEN_KEY = "fynvita_secure_token";
+
+// Legacy key used before TASK-MOB-W7-01; kept for the one-time read-fallback migration.
+const LEGACY_BIOMETRIC_ENABLED_KEY = "@fynvita_biometric_enabled";
 
 // Biometric types
 export enum BiometricType {
@@ -137,12 +141,27 @@ class BiometricService {
   }
 
   /**
-   * Check if biometric authentication is enabled for the app
+   * Check if biometric authentication is enabled for the app.
+   * Reads from SecureStore. If absent, performs a one-time migration from the
+   * legacy AsyncStorage key (@fynvita_biometric_enabled) so existing users
+   * are not silently re-prompted for biometrics after upgrading.
    */
   async isBiometricEnabled(): Promise<boolean> {
     try {
-      const enabled = await AsyncStorage.getItem(BIOMETRIC_ENABLED_KEY);
-      return enabled === "true";
+      const stored = await SecureStore.getItemAsync(BIOMETRIC_ENABLED_KEY);
+      if (stored !== null) {
+        return stored === "true";
+      }
+
+      // One-time migration: check legacy AsyncStorage key
+      const legacy = await AsyncStorage.getItem(LEGACY_BIOMETRIC_ENABLED_KEY);
+      if (legacy !== null) {
+        await SecureStore.setItemAsync(BIOMETRIC_ENABLED_KEY, legacy);
+        await AsyncStorage.removeItem(LEGACY_BIOMETRIC_ENABLED_KEY);
+        return legacy === "true";
+      }
+
+      return false;
     } catch {
       return false;
     }
@@ -163,10 +182,10 @@ class BiometricService {
         }
       }
 
-      await AsyncStorage.setItem(BIOMETRIC_ENABLED_KEY, String(enabled));
+      await SecureStore.setItemAsync(BIOMETRIC_ENABLED_KEY, String(enabled));
 
       if (this.capabilities) {
-        await AsyncStorage.setItem(
+        await SecureStore.setItemAsync(
           BIOMETRIC_TYPE_KEY,
           this.capabilities.biometricType,
         );
