@@ -109,6 +109,37 @@ describe("Auth Store", () => {
       expect(state.error).toBe("Auth error");
       expect(state.isAuthenticated).toBe(false);
     });
+
+    // FND-064 regression: __DEV__ auth bypass must not exist.
+    // initialize() must always call getCurrentUser (real Supabase path),
+    // never short-circuit with a hardcoded seedUser.
+    it("always calls getCurrentUser — no hardcoded bypass (FND-064)", async () => {
+      getCurrentUser.mockResolvedValueOnce({ user: null, error: null });
+
+      await act(async () => {
+        await useAuthStore.getState().initialize();
+      });
+
+      // Supabase path was reached: getCurrentUser called exactly once
+      expect(getCurrentUser).toHaveBeenCalledTimes(1);
+
+      const state = useAuthStore.getState();
+      // No hardcoded seed user leaked into auth state
+      expect(state.isAuthenticated).toBe(false);
+      expect(state.user).toBeNull();
+      expect(state.user?.email).not.toBe("marcus.johnson@gmail.com");
+    });
+
+    it("never sets seedUser id when no real session exists (FND-064)", async () => {
+      getCurrentUser.mockResolvedValueOnce({ user: null, error: null });
+
+      await act(async () => {
+        await useAuthStore.getState().initialize();
+      });
+
+      expect(useAuthStore.getState().user?.id).not.toBe("dev-user-001");
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    });
   });
 
   describe("login", () => {

@@ -7,7 +7,6 @@ import {
   getCurrentUser,
 } from "../services/supabase";
 import type { User } from "../types";
-import { seedUser } from "../data/dev-seed";
 
 interface AuthState {
   user: User | null;
@@ -40,17 +39,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   initialize: async () => {
     set({ isLoading: true });
-
-    // DEV-ONLY: bypass Supabase auth with a mock user for visual testing
-    if (__DEV__) {
-      set({
-        user: seedUser,
-        isAuthenticated: true,
-        isLoading: false,
-        onboardingCompleted: true,
-      });
-      return;
-    }
 
     try {
       const { user, error } = await getCurrentUser();
