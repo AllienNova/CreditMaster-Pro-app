@@ -215,9 +215,48 @@ describe("PortfolioAnalytics.calculateRiskMetrics — division-by-zero guards (T
     ).toBe(true);
   });
 
-  // ── 5. Happy-path: all ratios finite when denominators are non-zero ──────
+  // ── 5. beta/alpha/rSquared are null when benchmark is flat (benchmarkVariance = 0) ──
 
-  it("all four ratios are finite numbers when denominators are non-zero", async () => {
+  it("beta, alpha, rSquared, and informationRatio are null when benchmark is flat", async () => {
+    // Flat benchmark → benchmarkVariance = 0 → beta/alpha/rSquared undefined
+    // Portfolio has mixed returns so its own denominators are non-zero
+    const mixedPortfolio: Array<{ timestamp: Date; close: number }> = [];
+    let price = 100;
+    for (let i = 0; i < 60; i++) {
+      mixedPortfolio.push({
+        timestamp: new Date(Date.now() - (60 - i) * 86_400_000),
+        close: price,
+      });
+      price *= i % 3 === 0 ? 0.99 : 1.005;
+    }
+    const flatBenchmark = buildFlatHistory(60, 100, 0);
+
+    (redisCache.get as jest.Mock).mockResolvedValue(null);
+    (redisCache.set as jest.Mock).mockResolvedValue(undefined);
+    (portfolioService.getPortfolio as jest.Mock).mockResolvedValue(mockPortfolio);
+    (portfolioService.getHoldings as jest.Mock).mockResolvedValue(mockHoldings);
+    (marketDataService.getHistory as jest.Mock).mockImplementation(
+      (symbol: string) => {
+        if (symbol === BENCHMARK) return Promise.resolve(flatBenchmark);
+        return Promise.resolve({ data: mixedPortfolio });
+      },
+    );
+
+    const metrics = await analytics.calculateRiskMetrics(PORTFOLIO_ID, "1M");
+
+    // Flat benchmark → undefined ratio; never Infinity/NaN
+    expect(metrics.beta).toBeNull();
+    expect(metrics.alpha).toBeNull();
+    expect(metrics.rSquared).toBeNull();
+    // informationRatio must also be null because alpha is null
+    expect(metrics.informationRatio).toBeNull();
+    expect(metrics.beta).not.toBe(Infinity);
+    expect(metrics.alpha).not.toBe(Infinity);
+  });
+
+  // ── 6. Happy-path: all ratios are explicitly non-null finite numbers ───────
+
+  it("all four ratios are non-null finite numbers when denominators are non-zero", async () => {
     // Mixed up/down returns → non-zero volatility, non-zero downside deviation,
     // non-zero drawdown, and benchmark differs from portfolio → non-zero trackingError
     const days = 60;
@@ -257,18 +296,16 @@ describe("PortfolioAnalytics.calculateRiskMetrics — division-by-zero guards (T
 
     const metrics = await analytics.calculateRiskMetrics(PORTFOLIO_ID, "1M");
 
-    // When denominators are non-zero the ratios must be finite numbers, not null
-    if (metrics.sharpeRatio !== null) {
-      expect(Number.isFinite(metrics.sharpeRatio)).toBe(true);
-    }
-    if (metrics.sortinoRatio !== null) {
-      expect(Number.isFinite(metrics.sortinoRatio)).toBe(true);
-    }
-    if (metrics.calmarRatio !== null) {
-      expect(Number.isFinite(metrics.calmarRatio)).toBe(true);
-    }
-    if (metrics.informationRatio !== null) {
-      expect(Number.isFinite(metrics.informationRatio)).toBe(true);
-    }
+    // Guards must discriminate: non-zero denominators → explicitly non-null
+    expect(metrics.sharpeRatio).not.toBeNull();
+    expect(metrics.sortinoRatio).not.toBeNull();
+    expect(metrics.calmarRatio).not.toBeNull();
+    expect(metrics.informationRatio).not.toBeNull();
+
+    // And the values must be finite (not Infinity/NaN)
+    expect(Number.isFinite(metrics.sharpeRatio)).toBe(true);
+    expect(Number.isFinite(metrics.sortinoRatio)).toBe(true);
+    expect(Number.isFinite(metrics.calmarRatio)).toBe(true);
+    expect(Number.isFinite(metrics.informationRatio)).toBe(true);
   });
 });

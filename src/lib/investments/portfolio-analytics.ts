@@ -144,7 +144,9 @@ export class PortfolioAnalytics {
       benchmarkReturns,
     );
     const informationRatio =
-      trackingError === 0 || !Number.isFinite(trackingError)
+      alpha === null ||
+      trackingError === 0 ||
+      !Number.isFinite(trackingError)
         ? null
         : alpha / trackingError;
 
@@ -1027,7 +1029,7 @@ export class PortfolioAnalytics {
     portfolioReturns: number[],
     benchmarkReturns: number[],
     riskFreeRate: number,
-  ): { beta: number; alpha: number; rSquared: number } {
+  ): { beta: number | null; alpha: number | null; rSquared: number | null } {
     const minLength = Math.min(
       portfolioReturns.length,
       benchmarkReturns.length,
@@ -1040,6 +1042,11 @@ export class PortfolioAnalytics {
       this.calculateStandardDeviation(benchReturns),
       2,
     );
+
+    // Guard: flat benchmark → benchmarkVariance = 0 → beta is undefined (Infinity/NaN)
+    if (benchmarkVariance === 0 || !Number.isFinite(benchmarkVariance)) {
+      return { beta: null, alpha: null, rSquared: null };
+    }
 
     const beta = covariance / benchmarkVariance;
 

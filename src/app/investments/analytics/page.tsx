@@ -271,7 +271,7 @@ function RiskGauge({ riskMetrics }: RiskGaugeProps) {
         <div>
           <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">Beta</p>
           <p className="text-3xl font-bold text-gray-900 dark:text-white">
-            {riskMetrics.beta.toFixed(2)}
+            {riskMetrics.beta !== null ? riskMetrics.beta.toFixed(2) : '—'}
           </p>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
             Market correlation
@@ -284,9 +284,9 @@ function RiskGauge({ riskMetrics }: RiskGaugeProps) {
             Alpha
           </p>
           <p
-            className={`text-3xl font-bold ${riskMetrics.alpha >= 0 ? "text-green-600" : "text-red-600"}`}
+            className={`text-3xl font-bold ${riskMetrics.alpha !== null && riskMetrics.alpha >= 0 ? "text-green-600" : "text-red-600"}`}
           >
-            {(riskMetrics.alpha * 100).toFixed(2)}%
+            {riskMetrics.alpha !== null ? `${(riskMetrics.alpha * 100).toFixed(2)}%` : '—'}
           </p>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
             Excess return
