@@ -142,20 +142,22 @@ describe("GET /api/financial/debt", () => {
     expect(debtPayoffService.compareStrategies).not.toHaveBeenCalled();
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/debt",
+      );
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/debt",
-    );
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 500 on service error", async () => {
@@ -234,30 +236,32 @@ describe("POST /api/financial/debt", () => {
     expect(data.error).toBe("Missing required fields");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
-    });
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/debt",
-      {
-        method: "POST",
-        body: {
-          name: "Test",
-          type: "credit_card",
-          balance: 1000,
-          interestRate: 15,
-          minimumPayment: 30,
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/debt",
+        {
+          method: "POST",
+          body: {
+            name: "Test",
+            type: "credit_card",
+            balance: 1000,
+            interestRate: 15,
+            minimumPayment: 30,
+          },
         },
-      },
-    );
-    const response = await POST(request);
-    const data = await response.json();
+      );
+      const response = await POST(request);
+      const data = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on unexpected error", async () => {

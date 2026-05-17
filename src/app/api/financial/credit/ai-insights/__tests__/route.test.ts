@@ -39,21 +39,23 @@ describe("GET /api/financial/credit/ai-insights", () => {
     (rbac.hasPermission as jest.Mock).mockReturnValue(true);
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const request = createMockRequest("http://localhost:3000/api/financial/credit/ai-insights");
+      const response = await GET(request);
+      expect(response.status).toBe(401);
     });
-    const request = createMockRequest("http://localhost:3000/api/financial/credit/ai-insights");
-    const response = await GET(request);
-    expect(response.status).toBe(401);
-  });
 
-  it("should return 403 for user without permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-    const request = createMockRequest("http://localhost:3000/api/financial/credit/ai-insights");
-    const response = await GET(request);
-    expect(response.status).toBe(403);
+    it("should return 403 for user without permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      const request = createMockRequest("http://localhost:3000/api/financial/credit/ai-insights");
+      const response = await GET(request);
+      expect(response.status).toBe(403);
+    });
   });
 
   it("should return credit AI insights successfully", async () => {

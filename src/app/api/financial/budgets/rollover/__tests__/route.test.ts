@@ -71,14 +71,16 @@ describe("GET /api/financial/budgets/rollover", () => {
     expect(budgetService.getRolloverSummary).toHaveBeenCalledWith("user-123");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
-    const req = createMockRequest("http://localhost:3000/api/financial/budgets/rollover");
-    const res = await GET(req);
-    const data = await res.json();
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+      const req = createMockRequest("http://localhost:3000/api/financial/budgets/rollover");
+      const res = await GET(req);
+      const data = await res.json();
 
-    expect(res.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(res.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on service error", async () => {
@@ -130,16 +132,18 @@ describe("POST /api/financial/budgets/rollover", () => {
     expect(data.data.message).toBe("No budgets needed rollover processing");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
-    const req = createMockRequest("http://localhost:3000/api/financial/budgets/rollover", {
-      method: "POST",
-    });
-    const res = await POST(req);
-    const data = await res.json();
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+      const req = createMockRequest("http://localhost:3000/api/financial/budgets/rollover", {
+        method: "POST",
+      });
+      const res = await POST(req);
+      const data = await res.json();
 
-    expect(res.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(res.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on service error", async () => {
@@ -212,17 +216,19 @@ describe("PATCH /api/financial/budgets/rollover", () => {
     expect(data.message).toBe("rolloverAmount must be a non-negative number");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
-    const req = createMockRequest("http://localhost:3000/api/financial/budgets/rollover", {
-      method: "PATCH",
-      body: { budgetId: "b-1", rolloverAmount: 75.0 },
-    });
-    const res = await PATCH(req);
-    const data = await res.json();
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+      const req = createMockRequest("http://localhost:3000/api/financial/budgets/rollover", {
+        method: "PATCH",
+        body: { budgetId: "b-1", rolloverAmount: 75.0 },
+      });
+      const res = await PATCH(req);
+      const data = await res.json();
 
-    expect(res.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(res.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on service error with error message", async () => {

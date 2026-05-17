@@ -75,31 +75,33 @@ describe("POST /api/financial/plaid/hosted-link", () => {
     });
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/plaid/hosted-link",
+        { userId: "user-123" },
+      );
+      const response = await POST(request);
+      expect(response.status).toBe(401);
+      const data = await response.json();
+      expect(data.error).toBe("Unauthorized");
     });
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/plaid/hosted-link",
-      { userId: "user-123" },
-    );
-    const response = await POST(request);
-    expect(response.status).toBe(401);
-    const data = await response.json();
-    expect(data.error).toBe("Unauthorized");
-  });
 
-  it("should return 403 for user without financial:link_accounts permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/plaid/hosted-link",
-      { userId: "user-123" },
-    );
-    const response = await POST(request);
-    expect(response.status).toBe(403);
-    const data = await response.json();
-    expect(data.error).toBe("Forbidden");
+    it("should return 403 for user without financial:link_accounts permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/plaid/hosted-link",
+        { userId: "user-123" },
+      );
+      const response = await POST(request);
+      expect(response.status).toBe(403);
+      const data = await response.json();
+      expect(data.error).toBe("Forbidden");
+    });
   });
 
   it("should return 400 when userId is missing", async () => {

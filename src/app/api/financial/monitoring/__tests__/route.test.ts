@@ -81,31 +81,33 @@ describe("GET /api/financial/monitoring", () => {
     (getRequestStats as jest.Mock).mockReturnValue(mockStats);
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/monitoring",
+      );
+      const response = await GET(request);
+      expect(response.status).toBe(401);
     });
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/monitoring",
-    );
-    const response = await GET(request);
-    expect(response.status).toBe(401);
-  });
 
-  it("should return 403 for non-admin user", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: true,
-      user: mockRegularUser,
+    it("should return 403 for non-admin user", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: true,
+        user: mockRegularUser,
+      });
+      mockResolveRoleFromDb.mockResolvedValue("premium");
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/monitoring",
+      );
+      const response = await GET(request);
+      expect(response.status).toBe(403);
+      const data = await response.json();
+      expect(data.error).toContain("Forbidden");
     });
-    mockResolveRoleFromDb.mockResolvedValue("premium");
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/monitoring",
-    );
-    const response = await GET(request);
-    expect(response.status).toBe(403);
-    const data = await response.json();
-    expect(data.error).toContain("Forbidden");
   });
 
   it("should return monitoring data for admin user", async () => {

@@ -98,20 +98,22 @@ describe("GET /api/financial/spending/analysis", () => {
     );
   });
 
-  it("should return middleware error when auth fails", async () => {
-    const errorResponse = new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-    });
-    (applyFinancialAPIMiddleware as jest.Mock).mockResolvedValue({
-      error: errorResponse,
-    });
+  describe("negative-auth", () => {
+    it("should return middleware error when auth fails", async () => {
+      const errorResponse = new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+      });
+      (applyFinancialAPIMiddleware as jest.Mock).mockResolvedValue({
+        error: errorResponse,
+      });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/spending/analysis",
-    );
-    const response = await GET(request);
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/spending/analysis",
+      );
+      const response = await GET(request);
 
-    expect(response.status).toBe(401);
+      expect(response.status).toBe(401);
+    });
   });
 
   it("should return 500 on analyzer error", async () => {

@@ -132,17 +132,19 @@ describe("GET /api/financial/income/gig", () => {
     expect(data.error).toContain("Invalid type");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/income/gig",
-    );
-    const response = await GET(request);
-    const data = await response.json();
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/income/gig",
+      );
+      const response = await GET(request);
+      const data = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on service error", async () => {
@@ -320,26 +322,28 @@ describe("POST /api/financial/income/gig", () => {
     expect(data.income.type).toBe("refund");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/income/gig",
-      {
-        method: "POST",
-        body: {
-          platformId: "plat-1",
-          amount: 100,
-          date: "2026-02-01",
-          type: "payment",
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/income/gig",
+        {
+          method: "POST",
+          body: {
+            platformId: "plat-1",
+            amount: 100,
+            date: "2026-02-01",
+            type: "payment",
+          },
         },
-      },
-    );
-    const response = await POST(request);
-    const data = await response.json();
+      );
+      const response = await POST(request);
+      const data = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on service error", async () => {

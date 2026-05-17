@@ -6,7 +6,7 @@
  * - POST endpoint (forecast summary)
  * - Query parameter validation
  * - Error handling
- * Note: This route has NO authentication
+ * - negative-auth: 401 for unauthenticated requests (route is withAuth-wrapped)
  */
 
 import { NextRequest } from "next/server";
@@ -202,5 +202,30 @@ describe("POST /api/financial/spending/forecast", () => {
 
     expect(response.status).toBe(500);
     expect(data.error).toBe("Failed to process forecast request");
+  });
+});
+
+describe("negative-auth", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("GET returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+    const request = createMockRequest(
+      "http://localhost:3000/api/financial/spending/forecast",
+    );
+    const response = await GET(request);
+    expect(response.status).toBe(401);
+  });
+
+  it("POST returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+    const request = createMockRequest(
+      "http://localhost:3000/api/financial/spending/forecast",
+      { method: "POST", body: { action: "summary" } },
+    );
+    const response = await POST(request);
+    expect(response.status).toBe(401);
   });
 });

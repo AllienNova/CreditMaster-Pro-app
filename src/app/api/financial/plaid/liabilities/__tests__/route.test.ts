@@ -132,45 +132,47 @@ describe("GET /api/financial/plaid/liabilities", () => {
 
   // --- Authentication & Authorization ---
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/plaid/liabilities?access_token=tok-123",
+      );
+      const response = await GET(request);
+      expect(response.status).toBe(401);
+      const data = await response.json();
+      expect(data.error).toBe("Unauthorized");
     });
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/plaid/liabilities?access_token=tok-123",
-    );
-    const response = await GET(request);
-    expect(response.status).toBe(401);
-    const data = await response.json();
-    expect(data.error).toBe("Unauthorized");
-  });
 
-  it("should return 401 when user is missing from validation", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: true,
-      user: null,
+    it("should return 401 when user is missing from validation", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: true,
+        user: null,
+      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/plaid/liabilities?access_token=tok-123",
+      );
+      const response = await GET(request);
+      expect(response.status).toBe(401);
     });
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/plaid/liabilities?access_token=tok-123",
-    );
-    const response = await GET(request);
-    expect(response.status).toBe(401);
-  });
 
-  it("should return 403 for user without financial:read permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/plaid/liabilities?access_token=tok-123",
-    );
-    const response = await GET(request);
-    expect(response.status).toBe(403);
-    const data = await response.json();
-    expect(data.error).toBe("Forbidden");
-    expect(rbac.hasPermission).toHaveBeenCalledWith(
-      expect.objectContaining({ id: expect.any(String) }),
-      "financial:read",
-    );
+    it("should return 403 for user without financial:read permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/plaid/liabilities?access_token=tok-123",
+      );
+      const response = await GET(request);
+      expect(response.status).toBe(403);
+      const data = await response.json();
+      expect(data.error).toBe("Forbidden");
+      expect(rbac.hasPermission).toHaveBeenCalledWith(
+        expect.objectContaining({ id: expect.any(String) }),
+        "financial:read",
+      );
+    });
   });
 
   it("should call jwtValidation.validateFromHeaders with the request", async () => {

@@ -51,14 +51,16 @@ describe("GET /api/financial/health-score/v2", () => {
     (healthScoreCalculatorV2.calculateScore as jest.Mock).mockResolvedValue(mockHealthScore);
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const request = createMockRequest("http://localhost:3000/api/financial/health-score/v2");
+      const response = await GET(request);
+      expect(response.status).toBe(401);
     });
-    const request = createMockRequest("http://localhost:3000/api/financial/health-score/v2");
-    const response = await GET(request);
-    expect(response.status).toBe(401);
   });
 
   it("should return 403 when accessing another user's data", async () => {
@@ -117,17 +119,19 @@ describe("POST /api/financial/health-score/v2", () => {
     (healthScoreCalculatorV2.saveScore as jest.Mock).mockResolvedValue(undefined);
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const request = createMockRequest("http://localhost:3000/api/financial/health-score/v2", {
+        method: "POST",
+        body: {},
+      });
+      const response = await POST(request);
+      expect(response.status).toBe(401);
     });
-    const request = createMockRequest("http://localhost:3000/api/financial/health-score/v2", {
-      method: "POST",
-      body: {},
-    });
-    const response = await POST(request);
-    expect(response.status).toBe(401);
   });
 
   it("should return 403 when targeting another user", async () => {

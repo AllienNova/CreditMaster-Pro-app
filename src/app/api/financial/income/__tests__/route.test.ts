@@ -92,14 +92,16 @@ describe("GET /api/financial/income", () => {
     expect(incomeTrackingService.getPaydayCountdown).toHaveBeenCalledWith("user-123");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const response = await GET(createMockRequest("http://localhost:3000/api/financial/income"));
-    const data = await response.json();
+      const response = await GET(createMockRequest("http://localhost:3000/api/financial/income"));
+      const data = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on service error", async () => {
@@ -220,26 +222,28 @@ describe("POST /api/financial/income", () => {
     expect(data.error).toContain("Amount must be a positive number");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/income",
-      {
-        method: "POST",
-        body: {
-          name: "Job",
-          amount: 3000,
-          frequency: "monthly",
-          nextPayDate: "2025-02-01",
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/income",
+        {
+          method: "POST",
+          body: {
+            name: "Job",
+            amount: 3000,
+            frequency: "monthly",
+            nextPayDate: "2025-02-01",
+          },
         },
-      },
-    );
-    const response = await POST(request);
-    const data = await response.json();
+      );
+      const response = await POST(request);
+      const data = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on service error", async () => {
@@ -359,21 +363,23 @@ describe("PUT /api/financial/income", () => {
     expect(data.error).toContain("Amount must be a positive number");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/income",
-      {
-        method: "PUT",
-        body: { id: "src-1", name: "Test" },
-      },
-    );
-    const response = await PUT(request);
-    const data = await response.json();
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/income",
+        {
+          method: "PUT",
+          body: { id: "src-1", name: "Test" },
+        },
+      );
+      const response = await PUT(request);
+      const data = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on service error", async () => {
@@ -437,17 +443,19 @@ describe("DELETE /api/financial/income", () => {
     expect(data.error).toContain("Missing required parameter: id");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/income?id=src-1",
-    );
-    const response = await DELETE(request);
-    const data = await response.json();
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/income?id=src-1",
+      );
+      const response = await DELETE(request);
+      const data = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on service error", async () => {

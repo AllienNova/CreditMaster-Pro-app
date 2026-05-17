@@ -68,18 +68,20 @@ describe("GET /api/financial/budgets/alerts", () => {
     expect(budgetService.getAlerts).toHaveBeenCalledWith("user-123", { unreadOnly: true });
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
-    const req = createMockRequest("http://localhost:3000/api/financial/budgets/alerts");
-    const res = await GET(req);
-    expect(res.status).toBe(401);
-  });
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+      const req = createMockRequest("http://localhost:3000/api/financial/budgets/alerts");
+      const res = await GET(req);
+      expect(res.status).toBe(401);
+    });
 
-  it("should return 403 for user without permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-    const req = createMockRequest("http://localhost:3000/api/financial/budgets/alerts");
-    const res = await GET(req);
-    expect(res.status).toBe(403);
+    it("should return 403 for user without permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      const req = createMockRequest("http://localhost:3000/api/financial/budgets/alerts");
+      const res = await GET(req);
+      expect(res.status).toBe(403);
+    });
   });
 
   it("should return 500 on service error", async () => {
@@ -167,24 +169,26 @@ describe("PATCH /api/financial/budgets/alerts", () => {
     expect(data.error).toContain('action must be either "read" or "dismiss"');
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
-    const req = createMockRequest("http://localhost:3000/api/financial/budgets/alerts", {
-      method: "PATCH",
-      body: { alertIds: ["alert-1"], action: "read" },
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+      const req = createMockRequest("http://localhost:3000/api/financial/budgets/alerts", {
+        method: "PATCH",
+        body: { alertIds: ["alert-1"], action: "read" },
+      });
+      const res = await PATCH(req);
+      expect(res.status).toBe(401);
     });
-    const res = await PATCH(req);
-    expect(res.status).toBe(401);
-  });
 
-  it("should return 403 for user without permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-    const req = createMockRequest("http://localhost:3000/api/financial/budgets/alerts", {
-      method: "PATCH",
-      body: { alertIds: ["alert-1"], action: "read" },
+    it("should return 403 for user without permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      const req = createMockRequest("http://localhost:3000/api/financial/budgets/alerts", {
+        method: "PATCH",
+        body: { alertIds: ["alert-1"], action: "read" },
+      });
+      const res = await PATCH(req);
+      expect(res.status).toBe(403);
     });
-    const res = await PATCH(req);
-    expect(res.status).toBe(403);
   });
 
   it("should return 500 on service error", async () => {

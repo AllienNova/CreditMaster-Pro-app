@@ -169,21 +169,23 @@ describe("POST /api/financial/income/detect", () => {
     expect(data.error).toContain("Missing or invalid transactions array");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/income/detect",
-      {
-        method: "POST",
-        body: { transactions: [] },
-      },
-    );
-    const response = await POST(request);
-    const data = await response.json();
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/income/detect",
+        {
+          method: "POST",
+          body: { transactions: [] },
+        },
+      );
+      const response = await POST(request);
+      const data = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on service error", async () => {
@@ -300,16 +302,18 @@ describe("GET /api/financial/income/detect", () => {
     expect(data.message).toContain("No transactions found");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const response = await GET(
-      createMockRequest("http://localhost:3000/api/financial/income/detect"),
-    );
-    const data = await response.json();
+      const response = await GET(
+        createMockRequest("http://localhost:3000/api/financial/income/detect"),
+      );
+      const data = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 when transaction query fails", async () => {

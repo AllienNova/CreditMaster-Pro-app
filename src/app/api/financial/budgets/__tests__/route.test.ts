@@ -137,37 +137,39 @@ describe("GET /api/financial/budgets", () => {
     });
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/budgets",
+      );
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/budgets",
-    );
-    const response = await GET(request);
-    const data = await response.json();
+    it("should return 403 for user without permission", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: true,
+        user: mockUser,
+      });
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
-  });
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/budgets",
+      );
+      const response = await GET(request);
+      const data = await response.json();
 
-  it("should return 403 for user without permission", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: true,
-      user: mockUser,
+      expect(response.status).toBe(403);
+      expect(data.error).toContain("Forbidden");
     });
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/budgets",
-    );
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(403);
-    expect(data.error).toContain("Forbidden");
   });
 
   it("should handle service errors", async () => {
@@ -381,45 +383,47 @@ describe("POST /api/financial/budgets", () => {
     expect(data.error).toBe("Alert threshold must be between 0 and 100");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/budgets",
+        {
+          method: "POST",
+          body: {},
+        },
+      );
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/budgets",
-      {
-        method: "POST",
-        body: {},
-      },
-    );
-    const response = await POST(request);
-    const data = await response.json();
+    it("should return 403 for user without permission", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: true,
+        user: mockUser,
+      });
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
-  });
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/budgets",
+        {
+          method: "POST",
+          body: {},
+        },
+      );
+      const response = await POST(request);
+      const data = await response.json();
 
-  it("should return 403 for user without permission", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: true,
-      user: mockUser,
+      expect(response.status).toBe(403);
+      expect(data.error).toContain("Forbidden");
     });
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/budgets",
-      {
-        method: "POST",
-        body: {},
-      },
-    );
-    const response = await POST(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(403);
-    expect(data.error).toContain("Forbidden");
   });
 
   it("should handle service errors", async () => {

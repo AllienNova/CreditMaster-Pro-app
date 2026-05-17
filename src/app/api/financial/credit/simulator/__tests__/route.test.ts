@@ -84,52 +84,54 @@ describe("/api/financial/credit/simulator", () => {
   // ============================================================================
 
   describe("authentication and authorization", () => {
-    it("GET should return 401 for unauthenticated request", async () => {
-      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-        valid: false,
-        user: null,
+    describe("negative-auth", () => {
+      it("GET should return 401 for unauthenticated request", async () => {
+        (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+          valid: false,
+          user: null,
+        });
+
+        const request = createMockGetRequest(
+          "http://localhost:3000/api/financial/credit/simulator?type=optimal_path",
+        );
+        const response = await GET(request);
+        expect(response.status).toBe(401);
       });
 
-      const request = createMockGetRequest(
-        "http://localhost:3000/api/financial/credit/simulator?type=optimal_path",
-      );
-      const response = await GET(request);
-      expect(response.status).toBe(401);
-    });
+      it("POST should return 401 for unauthenticated request", async () => {
+        (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+          valid: false,
+          user: null,
+        });
 
-    it("POST should return 401 for unauthenticated request", async () => {
-      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-        valid: false,
-        user: null,
+        const request = createMockPostRequest(
+          "http://localhost:3000/api/financial/credit/simulator",
+          { profile: validProfile, actions: [{ type: "hard_inquiry" }] },
+        );
+        const response = await POST(request);
+        expect(response.status).toBe(401);
       });
 
-      const request = createMockPostRequest(
-        "http://localhost:3000/api/financial/credit/simulator",
-        { profile: validProfile, actions: [{ type: "hard_inquiry" }] },
-      );
-      const response = await POST(request);
-      expect(response.status).toBe(401);
-    });
+      it("GET should return 403 for user without credit:read permission", async () => {
+        (rbac.hasPermission as jest.Mock).mockReturnValue(false);
 
-    it("GET should return 403 for user without credit:read permission", async () => {
-      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+        const request = createMockGetRequest(
+          "http://localhost:3000/api/financial/credit/simulator?type=optimal_path",
+        );
+        const response = await GET(request);
+        expect(response.status).toBe(403);
+      });
 
-      const request = createMockGetRequest(
-        "http://localhost:3000/api/financial/credit/simulator?type=optimal_path",
-      );
-      const response = await GET(request);
-      expect(response.status).toBe(403);
-    });
+      it("POST should return 403 for user without credit:read permission", async () => {
+        (rbac.hasPermission as jest.Mock).mockReturnValue(false);
 
-    it("POST should return 403 for user without credit:read permission", async () => {
-      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-
-      const request = createMockPostRequest(
-        "http://localhost:3000/api/financial/credit/simulator",
-        { profile: validProfile, actions: [{ type: "hard_inquiry" }] },
-      );
-      const response = await POST(request);
-      expect(response.status).toBe(403);
+        const request = createMockPostRequest(
+          "http://localhost:3000/api/financial/credit/simulator",
+          { profile: validProfile, actions: [{ type: "hard_inquiry" }] },
+        );
+        const response = await POST(request);
+        expect(response.status).toBe(403);
+      });
     });
   });
 
