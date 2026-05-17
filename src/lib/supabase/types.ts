@@ -76,6 +76,7 @@ export interface Database {
           created_at: string;
           sent_at: string | null;
           resolved_at: string | null;
+          notes: string | null;
         };
         Insert: {
           id?: string;
@@ -90,6 +91,7 @@ export interface Database {
           created_at?: string;
           sent_at?: string | null;
           resolved_at?: string | null;
+          notes?: string | null;
         };
         Update: {
           id?: string;
@@ -104,6 +106,7 @@ export interface Database {
           created_at?: string;
           sent_at?: string | null;
           resolved_at?: string | null;
+          notes?: string | null;
         };
       };
       documents: {

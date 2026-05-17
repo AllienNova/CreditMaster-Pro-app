@@ -49,6 +49,7 @@ export interface Dispute {
   sentAt?: Date;
   resolvedAt?: Date;
   letterContent: string;
+  notes: string | null;
 }
 
 export interface DisputeStats {
@@ -152,9 +153,8 @@ class DisputeServiceDB {
       sent_at: now,
     };
 
-    const { data, error } = await disputes()
-      // @ts-ignore - Supabase types issue with update operations
-      .update(updateData)
+    const { data, error } = await (disputes() as ReturnType<typeof disputes>)
+      .update(updateData as DisputeUpdate)
       .eq("id", disputeId)
       .eq("user_id", userId)
       .select()
@@ -164,7 +164,7 @@ class DisputeServiceDB {
       throw new Error(`Failed to send dispute: ${error.message}`);
     }
 
-    return this.mapToDispute(data);
+    return this.mapToDispute(data as DisputeRow);
   }
 
   /**
@@ -181,9 +181,8 @@ class DisputeServiceDB {
       updates.resolved_at = new Date().toISOString();
     }
 
-    const { data, error } = await disputes()
-      // @ts-ignore - Supabase types issue with update operations
-      .update(updates)
+    const { data, error } = await (disputes() as ReturnType<typeof disputes>)
+      .update(updates as DisputeUpdate)
       .eq("id", disputeId)
       .eq("user_id", userId)
       .select()
@@ -193,7 +192,7 @@ class DisputeServiceDB {
       throw new Error(`Failed to update dispute status: ${error.message}`);
     }
 
-    return this.mapToDispute(data);
+    return this.mapToDispute(data as DisputeRow);
   }
 
   /**
@@ -210,9 +209,8 @@ class DisputeServiceDB {
       resolved_at: new Date().toISOString(),
     };
 
-    const { data, error } = await disputes()
-      // @ts-ignore - Supabase types issue with update operations
-      .update(updateData)
+    const { data, error } = await (disputes() as ReturnType<typeof disputes>)
+      .update(updateData as DisputeUpdate)
       .eq("id", disputeId)
       .eq("user_id", userId)
       .select()
@@ -222,12 +220,13 @@ class DisputeServiceDB {
       throw new Error(`Failed to resolve dispute: ${error.message}`);
     }
 
-    return this.mapToDispute(data);
+    return this.mapToDispute(data as DisputeRow);
   }
 
   /**
    * Add a note to a dispute — scoped to userId (IDOR defence).
-   * Uses a Postgres concat expression so no read-before-write is needed.
+   * Reads the current notes (user-scoped, so ownership is verified), appends
+   * the new note with a double-newline separator, then writes back.
    * Notes are separated by double newlines.
    */
   async addNote(
@@ -235,10 +234,20 @@ class DisputeServiceDB {
     userId: string,
     note: string,
   ): Promise<Dispute> {
-    // A single update scoped by both id and user_id — if it resolves to null
-    // (PGRST116), ownership failed (IDOR blocked).
-    const { data, error } = await disputes()
-      .update({ notes: note } as any)
+    // Read current state — this also enforces ownership (returns null for wrong user).
+    const existing = await this.getDispute(disputeId, userId);
+    if (!existing) {
+      throw new Error("Dispute not found");
+    }
+
+    const appended = existing.notes
+      ? `${existing.notes}\n\n${note}`
+      : note;
+
+    const updateData: DisputeUpdate = { notes: appended };
+
+    const { data, error } = await (disputes() as ReturnType<typeof disputes>)
+      .update(updateData)
       .eq("id", disputeId)
       .eq("user_id", userId)
       .select()
@@ -356,6 +365,7 @@ class DisputeServiceDB {
       createdAt: new Date(row.created_at),
       sentAt: row.sent_at ? new Date(row.sent_at) : undefined,
       resolvedAt: row.resolved_at ? new Date(row.resolved_at) : undefined,
+      notes: row.notes,
     };
   }
 }

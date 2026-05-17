@@ -342,11 +342,21 @@ class DocumentServiceDB {
   /**
    * Confirm upload and update document record
    */
-  async confirmUpload(documentId: string, size: number): Promise<Document> {
-    // Get document to get S3 key
+  /**
+   * Confirm a presigned upload and update document record.
+   * userId scoping prevents IDOR — a caller cannot confirm another user's
+   * pending upload (TASK-CRD-4 review fix).
+   */
+  async confirmUpload(
+    documentId: string,
+    userId: string,
+    size: number,
+  ): Promise<Document> {
+    // Fetch scoped to owner — returns null for wrong user (IDOR defence).
     const { data: doc, error: fetchError } = await documents()
       .select("*")
       .eq("id", documentId)
+      .eq("user_id", userId)
       .single();
 
     if (fetchError || !doc) {
@@ -363,23 +373,20 @@ class DocumentServiceDB {
 
     const url = await getSignedUrl(s3Client, getCommand, { expiresIn: 604800 });
 
-    // Update document with size and URL
+    // Update document with size and URL — dual-eq guards against TOCTOU.
     const updateData: DocumentUpdate = {
       size,
       s3_url: url,
     };
 
-    const query2 = documents();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateResult = await (query2 as any)
+    const { data, error } = await documents()
       .update(updateData)
       .eq("id", documentId)
+      .eq("user_id", userId)
       .select()
       .single();
-    const { data, error } = updateResult;
 
     if (error) {
-      // DocumentServiceDB error: Failed to confirm upload
       throw new Error(`Failed to confirm upload: ${error.message}`);
     }
 

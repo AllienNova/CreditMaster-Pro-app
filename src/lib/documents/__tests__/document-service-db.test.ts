@@ -466,7 +466,11 @@ describe("DocumentServiceDB.confirmUpload", () => {
     singleResults.push({ data: pendingRow, error: null });
     singleResults.push({ data: updatedRow, error: null });
 
-    const result = await documentServiceDB.confirmUpload("doc-abc-123", 4096);
+    const result = await documentServiceDB.confirmUpload(
+      "doc-abc-123",
+      "user-1",
+      4096,
+    );
 
     expect(result.id).toBe(updatedRow.id);
     expect(result.size).toBe(4096);
@@ -480,7 +484,7 @@ describe("DocumentServiceDB.confirmUpload", () => {
     });
 
     await expect(
-      documentServiceDB.confirmUpload("nonexistent", 1024),
+      documentServiceDB.confirmUpload("nonexistent", "user-1", 1024),
     ).rejects.toThrow("Document not found");
   });
 
@@ -490,8 +494,26 @@ describe("DocumentServiceDB.confirmUpload", () => {
     singleResults.push({ data: null, error: { message: "update failed" } });
 
     await expect(
-      documentServiceDB.confirmUpload("doc-abc-123", 4096),
+      documentServiceDB.confirmUpload("doc-abc-123", "user-1", 4096),
     ).rejects.toThrow("Failed to confirm upload: update failed");
+  });
+
+  it("idor: user B cannot confirm user A pending upload", async () => {
+    // Simulate the fetch returning null for a mismatched user_id (IDOR defence).
+    // The .eq("user_id", userId) filter means Supabase returns PGRST116 for
+    // a document that belongs to a different user.
+    singleResults.push({
+      data: null,
+      error: { message: "not found", code: "PGRST116" },
+    });
+
+    await expect(
+      documentServiceDB.confirmUpload(
+        "user-a-doc-id",
+        "user-b",  // user B tries to confirm user A's document
+        4096,
+      ),
+    ).rejects.toThrow("Document not found");
   });
 });
 

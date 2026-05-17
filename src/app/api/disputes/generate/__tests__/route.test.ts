@@ -272,8 +272,8 @@ describe("POST /api/disputes/generate", () => {
     expect(json.data.disputeId).toBe("saved-dispute-id");
   });
 
-  // ── (c) AI mode: DB persist failure is swallowed, still 200 ─────────────
-  it("returns 200 for ai mode even when createDispute throws", async () => {
+  // ── (c) AI mode: DB persist failure is swallowed, still 200 + persistenceWarning ──
+  it("returns 200 with persistenceWarning when ai mode createDispute throws", async () => {
     mockCreateDispute.mockRejectedValueOnce(new Error("db unavailable"));
     const res = await POST(makeRequest({
       mode: "ai",
@@ -285,6 +285,8 @@ describe("POST /api/disputes/generate", () => {
     expect(res.status).toBe(200);
     // disputeId is absent when persist fails
     expect(json.data.disputeId).toBeUndefined();
+    // caller is informed via persistenceWarning
+    expect(json.data.persistenceWarning).toBe(true);
   });
 
   // ── (d) Template mode: missing templateId → 400 ───────────────────────────
@@ -317,6 +319,52 @@ describe("POST /api/disputes/generate", () => {
     expect(json.data.disputeLetter).toContain("Bank Corp");
     expect(json.data.disputeLetter).toContain("Jane Doe");
     expect(mockGenerateDispute).not.toHaveBeenCalled();
+  });
+
+  // ── (d) Template mode: persistence ───────────────────────────────────────
+  it("persists the template-generated dispute to the DB and returns disputeId", async () => {
+    const res = await POST(makeRequest({
+      mode: "template",
+      templateId: fakeTemplate.id,
+      placeholders: { YOUR_NAME: "Jane Doe", CREDITOR_NAME: "Bank Corp" },
+      bureau: "experian",
+    }));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.data.disputeId).toBe("saved-dispute-id");
+    expect(mockCreateDispute).toHaveBeenCalledTimes(1);
+    // Must use authenticated userId — not any client-supplied value
+    expect(mockCreateDispute.mock.calls[0][0]).toBe(fakeUser.id);
+    // Item type is "template" to distinguish from ai/strategy records
+    expect(mockCreateDispute.mock.calls[0][2]).toBe("template");
+  });
+
+  // ── (d) Template mode: IDOR ───────────────────────────────────────────────
+  it("idor: template mode always calls createDispute with the authenticated user id", async () => {
+    const res = await POST(makeRequest({
+      mode: "template",
+      templateId: fakeTemplate.id,
+      placeholders: { YOUR_NAME: "Adversary", CREDITOR_NAME: "Bank Corp" },
+      userId: "victim-user-id",  // client attempt to target another user
+    }));
+    expect(res.status).toBe(200);
+    expect(mockCreateDispute).toHaveBeenCalledTimes(1);
+    expect(mockCreateDispute.mock.calls[0][0]).toBe(fakeUser.id);
+    expect(mockCreateDispute.mock.calls[0][0]).not.toBe("victim-user-id");
+  });
+
+  // ── (d) Template mode: DB persist failure → persistenceWarning ───────────
+  it("returns 200 with persistenceWarning when template mode createDispute throws", async () => {
+    mockCreateDispute.mockRejectedValueOnce(new Error("db unavailable"));
+    const res = await POST(makeRequest({
+      mode: "template",
+      templateId: fakeTemplate.id,
+      placeholders: { YOUR_NAME: "Jane Doe", CREDITOR_NAME: "Bank Corp" },
+    }));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.data.disputeId).toBeUndefined();
+    expect(json.data.persistenceWarning).toBe(true);
   });
 
   // ── (e) Strategy mode: missing both → 400 ────────────────────────────────
@@ -442,6 +490,20 @@ describe("POST /api/disputes/generate", () => {
     }));
     expect(res.status).toBe(200);
     expect(mockDeductCredits).toHaveBeenCalledTimes(1);
+  });
+
+  // ── (e) Strategy mode: DB persist failure → persistenceWarning ───────────
+  it("returns 200 with persistenceWarning when strategy mode createDispute throws", async () => {
+    mockCreateDispute.mockRejectedValueOnce(new Error("db unavailable"));
+    const res = await POST(makeRequest({
+      mode: "strategy",
+      strategyId: fakeStrategy.id,
+      variables: { YOUR_NAME: "Jane Doe", YOUR_ADDRESS: "123 Main St" },
+    }));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.data.disputeId).toBeUndefined();
+    expect(json.data.persistenceWarning).toBe(true);
   });
 
   // ── (f) Orchestrator throws → 500 ───────────────────────────────────────

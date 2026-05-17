@@ -193,6 +193,7 @@ async function handleAIGeneration(body: Record<string, unknown>, userId: string)
       model: "anthropic/claude-4.5-sonnet",
       complianceReview,
       disputeId: savedDisputeId,
+      persistenceWarning: savedDisputeId === undefined ? true : undefined,
       timestamp: new Date().toISOString(),
     },
   });
@@ -202,7 +203,7 @@ async function handleAIGeneration(body: Record<string, unknown>, userId: string)
 // TEMPLATE-BASED GENERATION
 // ============================================================================
 
-async function handleTemplateGeneration(body: Record<string, unknown>, _userId: string) {
+async function handleTemplateGeneration(body: Record<string, unknown>, userId: string) {
   const { templateId, placeholders } = body;
 
   if (!templateId) {
@@ -249,6 +250,24 @@ async function handleTemplateGeneration(body: Record<string, unknown>, _userId: 
     letterContent.includes(p),
   );
 
+  // Persist the generated dispute to the database (Fix 1 — template mode was missing this).
+  // Best-effort: a DB failure must not block letter delivery.
+  let savedDisputeId: string | undefined;
+  try {
+    const bureau = (body.bureau as Bureau | undefined) ?? "experian";
+    const saved = await disputeServiceDB.createDispute(
+      userId,
+      bureau,
+      "template",
+      template.name,
+      template.scenario,
+      letterContent,
+    );
+    savedDisputeId = saved.id;
+  } catch (persistErr) {
+    console.error("[Disputes] Failed to persist template dispute:", persistErr);
+  }
+
   return NextResponse.json({
     success: true,
     data: {
@@ -265,6 +284,8 @@ async function handleTemplateGeneration(body: Record<string, unknown>, _userId: 
       },
       missingPlaceholders:
         missingPlaceholders.length > 0 ? missingPlaceholders : undefined,
+      disputeId: savedDisputeId,
+      persistenceWarning: savedDisputeId === undefined ? true : undefined,
       timestamp: new Date().toISOString(),
     },
   });
@@ -411,6 +432,7 @@ async function handleStrategyGeneration(body: Record<string, unknown>, userId: s
         expectedOutcomes: strategy.expectedOutcomes,
       },
       disputeId: savedDisputeId,
+      persistenceWarning: savedDisputeId === undefined ? true : undefined,
       timestamp: new Date().toISOString(),
     },
   });
