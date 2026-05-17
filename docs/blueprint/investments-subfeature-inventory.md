@@ -129,12 +129,12 @@ All 28 routes are wrapped with `withAuth` from `@/lib/auth/api-guard`. No route 
 | Holdings management (CRUD) | `src/app/api/investments/holdings/route.ts` (GET/POST), `src/app/api/investments/holdings/[id]/route.ts` (GET/PATCH/DELETE), `src/lib/investments/services/PortfolioService.ts`, `src/components/investments/HoldingsManagement.tsx`, `src/app/investments/holdings/page.tsx` | WORKING |
 | Holdings DELETE authz | `src/app/api/investments/holdings/[id]/route.ts` DELETE handler — atomic `.delete().eq("id",id).eq("user_id",user.id)` | WORKING (verified closed — FND-034) |
 | Portfolio management | `src/app/api/investments/portfolio/route.ts`, `src/lib/investments/services/PortfolioService.ts`, `src/components/investments/PortfolioOverview.tsx`, `src/app/investments/page.tsx` | WORKING |
-| Portfolio analytics — risk metrics | `src/app/api/investments/analytics/risk/route.ts`, `src/lib/investments/portfolio-analytics.ts` (`calculateRiskMetrics`), `src/components/investments/analytics/PortfolioAnalyticsDashboard.tsx` | DEGRADED — FND-030 (unscoped `getPortfolio`/`getHoldings`), FND-031 (Sharpe/Sortino/Calmar/Information ratio divisions unguarded) |
-| Portfolio analytics — correlation | `src/app/api/investments/analytics/correlation/route.ts`, `src/lib/investments/portfolio-analytics.ts` (`analyzeCorrelations`) | DEGRADED — FND-030 (unscoped facade calls) |
-| Portfolio analytics — diversification | `src/app/api/investments/analytics/diversification/route.ts`, `src/lib/investments/portfolio-analytics.ts` (`analyzeDiversification`) | DEGRADED — FND-030 (unscoped facade calls) |
-| Portfolio analytics — rebalance | `src/app/api/investments/analytics/rebalance/route.ts`, `src/lib/investments/portfolio-analytics.ts` (`generateRebalancingRecommendations`) | DEGRADED — FND-030 (unscoped facade calls) |
-| Portfolio analytics — performance | `src/app/api/investments/analytics/performance/route.ts`, `src/lib/investments/portfolio-analytics.ts` (`calculatePerformance`), `src/lib/investments/services/PerformanceCalculator.ts` (`benchmarkAgainstSP500`) | DEGRADED — FND-030 (unscoped facade), FND-032 (hardcoded `benchmarkReturnPercent=10`, `beta=1.0`, `correlation=0.85`), FND-035 (volatility = `|dayChangePercent| × sqrt(period)`, not stddev) |
-| Portfolio analyze (ad-hoc holdings) | `src/app/api/investments/portfolio/analyze/route.ts`, `src/lib/investments/services/PortfolioAnalysisService.ts`, `src/app/investments/analytics/page.tsx` | DEGRADED — FND-033 (per-element schema validation + array-length cap missing; malformed elements reach engine) |
+| Portfolio analytics — risk metrics | `src/app/api/investments/analytics/risk/route.ts`, `src/lib/investments/portfolio-analytics.ts` (`calculateRiskMetrics`), `src/components/investments/analytics/PortfolioAnalyticsDashboard.tsx` | WORKING (verified closed — FND-030 user-scoped INV-2, FND-031 division guards INV-3) |
+| Portfolio analytics — correlation | `src/app/api/investments/analytics/correlation/route.ts`, `src/lib/investments/portfolio-analytics.ts` (`analyzeCorrelations`) | WORKING (verified closed — FND-030 user-scoped INV-2) |
+| Portfolio analytics — diversification | `src/app/api/investments/analytics/diversification/route.ts`, `src/lib/investments/portfolio-analytics.ts` (`analyzeDiversification`) | WORKING (verified closed — FND-030 user-scoped INV-2) |
+| Portfolio analytics — rebalance | `src/app/api/investments/analytics/rebalance/route.ts`, `src/lib/investments/portfolio-analytics.ts` (`generateRebalancingRecommendations`) | WORKING (verified closed — FND-030 user-scoped INV-2) |
+| Portfolio analytics — performance | `src/app/api/investments/analytics/performance/route.ts`, `src/lib/investments/portfolio-analytics.ts` (`calculatePerformance`), `src/lib/investments/services/PerformanceCalculator.ts` (`benchmarkAgainstSP500`) | WORKING (verified closed — FND-030 INV-2, FND-032 honest benchmark INV-4, FND-035 honest volatility INV-5) |
+| Portfolio analyze (ad-hoc holdings) | `src/app/api/investments/portfolio/analyze/route.ts`, `src/lib/investments/services/PortfolioAnalysisService.ts`, `src/app/investments/analytics/page.tsx` | WORKING (verified closed — FND-033 per-element Zod validation + 500-element cap INV-6) |
 | Portfolio analysis (saved) | `src/app/api/investments/portfolio-analysis/route.ts`, `src/lib/investments/services/PortfolioAnalysisService.ts`, `src/components/investments/PortfolioOverview.tsx` | WORKING |
 | AI stock analysis | `src/app/api/investments/analyze/[symbol]/route.ts` (GET/POST), `src/app/api/investments/analyze/[symbol]/fundamental/route.ts`, `src/app/api/investments/analyze/[symbol]/recommendation/route.ts`, `src/app/api/investments/analyze/[symbol]/sentiment/route.ts`, `src/app/api/investments/analyze/[symbol]/technical/route.ts`, `src/lib/investments/ai-stock-analyst.ts`, `src/lib/investments/services/FundamentalAnalysisService.ts`, `src/lib/investments/services/TechnicalAnalysisService.ts`, `src/lib/investments/services/SentimentAnalysisService.ts`, `src/components/investments/StockAnalysisView.tsx`, `src/app/investments/analyze/[symbol]/page.tsx` | WORKING |
 | Comprehensive analysis | `src/app/api/investments/comprehensive-analysis/route.ts`, `src/lib/investments/services/InvestmentAnalysisEngine.ts`, `src/components/investments/analysis/ComprehensiveAnalysisPanel.tsx`, `src/app/(dashboard)/investments/comprehensive-analysis/page.tsx` | WORKING |
@@ -146,7 +146,7 @@ All 28 routes are wrapped with `withAuth` from `@/lib/auth/api-guard`. No route 
 | AI recommendations | `src/app/api/investments/recommendations/route.ts`, `src/lib/investments/services/AIRecommendationEngine.ts`, `src/app/investments/research/page.tsx` | WORKING |
 | Pattern recognition | `src/app/api/investments/patterns/route.ts`, `src/lib/investments/services/PatternRecognitionService.ts`, `src/components/investments/patterns/PatternOverlay.tsx` | WORKING |
 | Portfolio rebalance (automated) | `src/lib/investments/services/PortfolioRebalanceService.ts`, `src/lib/investments/services/AutoRebalanceScheduler.ts`, `src/components/investments/rebalance/`, `src/app/investments/rebalance/page.tsx` | WORKING |
-| Performance benchmarking | `src/lib/investments/services/PerformanceCalculator.ts` (`benchmarkAgainstSP500`, `calculateVolatility`, `calculateSharpeRatio`), `src/app/api/investments/analytics/performance/route.ts` | DEGRADED — FND-032 (fabricated constants: `beta=1.0`, `correlation=0.85`, `benchmarkReturnPercent=10`), FND-035 (volatility formula wrong) |
+| Performance benchmarking | `src/lib/investments/services/PerformanceCalculator.ts` (`benchmarkAgainstSP500`, `calculateVolatility`, `calculateSharpeRatio`), `src/app/api/investments/analytics/performance/route.ts` | WORKING (verified closed — FND-032 honest benchmark `dataAvailable` INV-4, FND-035 honest volatility/Sharpe INV-5) |
 | Market data | `src/lib/investments/market-data-service.ts`, `src/lib/investments/services/MarketDataService.ts`, `src/lib/investments/services/MarketDataWebSocketService.ts` | WORKING |
 | Watchlist | `src/app/investments/watchlist/page.tsx` | WORKING |
 
@@ -156,13 +156,14 @@ All 28 routes are wrapped with `withAuth` from `@/lib/auth/api-guard`. No route 
 
 | Status | Count |
 |---|---|
-| WORKING | 16 |
-| WORKING (verified closed — FND-034) | 1 |
-| DEGRADED | 5 |
+| WORKING | 15 |
+| WORKING (verified closed — Wave 7 finding) | 8 |
+| DEGRADED | 0 |
 | MOCK | 0 |
 
-**DEGRADED rows and the findings that close them:**
+**Findings closed by the Investments vertical (all rows now `WORKING`):**
 
+- Holdings DELETE authz — FND-034 (verified already atomic; cross-user regression test added INV-2)
 - Portfolio analytics risk metrics — INV-2 (FND-030), INV-3 (FND-031)
 - Portfolio analytics correlation — INV-2 (FND-030)
 - Portfolio analytics diversification — INV-2 (FND-030)
@@ -171,6 +172,6 @@ All 28 routes are wrapped with `withAuth` from `@/lib/auth/api-guard`. No route 
 - Portfolio analyze ad-hoc — INV-6 (FND-033)
 - Performance benchmarking — INV-4 (FND-032), INV-5 (FND-035)
 
-After INV-2 through INV-6 close, every row in this table must show `WORKING`.
+All INV-1 through INV-6 tasks closed 2026-05-17. Every row shows `WORKING`; no sub-feature removed.
 
 **No MOCK rows found.** All spot-checked routes and services make real Supabase queries or real computations (even where the computation is mathematically wrong per FND-031/032/035 — those are correctness bugs, not fabricated data).
