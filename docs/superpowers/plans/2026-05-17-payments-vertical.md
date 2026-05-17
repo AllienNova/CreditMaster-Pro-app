@@ -11,7 +11,7 @@
 
 **Scope:** Payments vertical only — Phase 2 (`TASK-WBH-01..07` + `TASK-MOK-02`). The Phase 3 Money Correctness track (`TASK-MNY-*`) is a separate plan.
 
-**Closes — CRITICAL (4):** FND-014, FND-015 (`invoice.paid` / `invoice.payment_failed` swallow errors → no Stripe retry), FND-016 (fabricated billing data — fake Visa 4242 **and** fake paid-invoice history), FND-017 (`updatePlan` activates a plan with no Stripe call). **HIGH (5):** FND-018 (`getTierFromPriceId` → every paid sub lands on `free`), FND-019/020/021 (client-controlled `successUrl`/`cancelUrl`/`priceId`/`trialDays`), FND-022 + FND-023 (webhook replay / idempotency — confirm FND-023's exact scope in `gap_analysis.md`, see WBH-05).
+**Closes — CRITICAL (4):** FND-014, FND-015 (`invoice.paid` / `invoice.payment_failed` swallow errors → no Stripe retry), FND-016 (fabricated billing data — fake Visa 4242 **and** fake paid-invoice history), FND-017 (`updatePlan` activates a plan with no Stripe call). **HIGH (6):** FND-018 (`getTierFromPriceId` → every paid sub lands on `free`), FND-019, FND-020, FND-021 (client-controlled `successUrl`/`cancelUrl`/`priceId`/`trialDays`), FND-022, FND-023 (webhook replay / idempotency — confirm FND-023's exact scope in `gap_analysis.md`, see WBH-05).
 
 > Severity note: FND-018 is HIGH per the `TASK-PRE-01` reconciliation (2026-05-16), not CRITICAL as the roadmap-spec Appendix B listed.
 
@@ -65,6 +65,8 @@
 
 > **Idempotency semantics — decided: claim-AFTER-success.** A webhook handler does multiple network/HTTP side-effects; it cannot be wrapped in one Postgres transaction with the sentinel insert (unlike `add_credits`). So: *check* the sentinel before dispatch; run the handler; *mark* the sentinel only after the handler succeeds; on handler failure, do NOT mark — rethrow so the route 400s and Stripe retries. Consequence: this is **at-least-once**, not exactly-once — a handler that throws after a partial side-effect will replay that side-effect. Therefore each webhook handler's side-effects must themselves be idempotent (enforced in WBH-01b/WBH-04). This requires TWO RPCs (a check and a mark), not one check-and-insert.
 
+- [ ] **Step 0: Verify no migration-timestamp collision** — `ls supabase/migrations/2026051700000*` must be empty before you create the three new Phase 2 migrations; if a Foundation-block migration already claims a slot, bump the new timestamps.
+
 - [ ] **Step 1: Write the migration** `20260517000000_processed_webhook_events.sql`:
 ```sql
 create table if not exists public.processed_webhook_events (
@@ -103,7 +105,7 @@ grant execute on function public.mark_webhook_event_processed(text,text) to serv
 
 - [ ] **Step 4: Implement `webhook-idempotency.ts`** — module-level lazy service-role Supabase client; `isWebhookEventProcessed(provider,eventId)` and `markWebhookEventProcessed(provider,eventId)`; throw on RPC error.
 
-- [ ] **Step 5:** Add `"test:webhook-idempotency": "jest --testPathPatterns='payment/__tests__/.*\\.test\\.ts$' -t 'webhook-idempotency'"` to `package.json` (the Phase 2 gate references it; tag the relevant tests with a `describe("webhook-idempotency")` block). Run — expect PASS; `npm run type-check` 0 errors.
+- [ ] **Step 5:** Add `"test:webhook-idempotency": "jest -t 'wbh-phase2'"` to `package.json`. The master plan defines this gate as ONE test class — "webhook event-id replay ×100 **+ tier-map exhaustion**" — so the selector tag must cover both. Use the shared tag **`wbh-phase2`**: every gate-relevant test in this vertical goes in a `describe("wbh-phase2: ...")` block — the replay/idempotency tests here AND the tier-map exhaustion tests in WBH-02 Step 2. (WBH-02 Step 2 is instructed to use the same tag.) Run — expect PASS; `npm run type-check` 0 errors.
 
 - [ ] **Step 6: Commit** — `feat: TASK-WBH-01 processed_webhook_events table + check/mark helpers (FND-022)`.
 
@@ -123,7 +125,7 @@ alter table public.profiles add  constraint profiles_subscription_tier_check
 ```
 (Confirm the actual constraint name with `\d profiles` / the source migrations — `001_initial_schema.sql:14` and `20251217000001_*:16`; use the real name in `drop constraint`.)
 
-- [ ] **Step 2: Write the failing test** `tier-mapping.test.ts`: each of the 6 `SUBSCRIPTION_PLANS` price IDs → its plan `id`; unknown price ID → **throws** (`TierMappingError`, names the offending id); `"price_free"` → `"free"`.
+- [ ] **Step 2: Write the failing test** `tier-mapping.test.ts`: each of the 6 `SUBSCRIPTION_PLANS` price IDs → its plan `id`; unknown price ID → **throws** (`TierMappingError`, names the offending id); `"price_free"` → `"free"`. Put the exhaustive "every plan price ID resolves" test in a `describe("wbh-phase2: tier-map exhaustion")` block so it is selected by `npm run test:webhook-idempotency` (the gate counts it as part of that test class — see WBH-01 Step 5).
 
 - [ ] **Step 3: Run — expect FAIL.**
 
@@ -145,7 +147,7 @@ alter table public.profiles add  constraint profiles_subscription_tier_check
 
 - [ ] **Step 2: Run — expect FAIL.**
 
-- [ ] **Step 3: Fix the handlers** — replace every error-swallowing `catch` with: `logger.error(...)` (project logger; include `event.id`, type, cause) **then `throw`**. The subscription handlers' silent early-returns on insert error (`subscription-service.ts` ~532-535) must throw too. **Per-handler idempotency (required by WBH-01's at-least-once model):** `handleInvoicePaid` does an email send THEN a credit reset — if the credit reset throws, the retry must NOT re-send the email. Make each side-effect idempotent or ordered so a retry is safe (e.g. guard the email with a sent-marker, or do the retryable DB work first and the email last). Document the ordering choice in a comment.
+- [ ] **Step 3: Fix the handlers** — replace every error-swallowing `catch` with: `logger.error(...)` (project logger; include `event.id`, type, cause) **then `throw`**. The subscription handlers' silent early-returns on insert error (`subscription-service.ts` ~532-535) must throw too. **Per-handler idempotency (required by WBH-01's at-least-once model):** `handleInvoicePaid` does an email send THEN a credit reset — if the credit reset throws, the retry must NOT re-send the email. Fix by ordering: in `handleInvoicePaid`, do the retryable DB work (credit reset, analytics log) FIRST and the email send LAST — so a throw happens before the email, and a retry re-runs the DB work (idempotent) without re-sending. Do not introduce a new "sent-marker" table (unscoped state). Document the ordering in a comment.
 
 - [ ] **Step 4: Run — expect PASS;** full suite 0 failures.
 
@@ -155,7 +157,7 @@ alter table public.profiles add  constraint profiles_subscription_tier_check
 
 **Files:** Modify `src/lib/payment/stripe-service.ts` `handleWebhookEvent` (~508-546).
 
-- [ ] **Step 1: Write failing tests** (in `stripe-webhook-handlers.test.ts`, `describe("webhook-idempotency")`):
+- [ ] **Step 1: Write failing tests** (in `stripe-webhook-handlers.test.ts`, `describe("wbh-phase2: webhook idempotency")` — the shared gate tag from WBH-01 Step 5):
   - **Replay:** same `event.id` ×100, handler succeeds → side-effect runs **exactly once** (`isWebhookEventProcessed` true after the first → 99 no-ops).
   - **Lost-event guard (the H1 regression test):** delivery 1 → handler **throws** → sentinel NOT marked → delivery 2 → `isWebhookEventProcessed` false → handler runs and succeeds. (This test FAILS against a claim-before-dispatch design — it is the proof the semantics are right.)
   - `checkout.session.completed` now has a real handler.
@@ -239,7 +241,7 @@ alter table public.profiles add  constraint profiles_subscription_tier_check
 - `billing-profile-store.ts` deleted; `billing_profiles` table dropped + GDPR cascade RPC updated; `git grep "4242" src/` clean
 - Full suite 0 failures; type-check + project-wide `tsc` 0 errors; `test:coverage:changed` ≥85%
 - SEC sign-off on TASK-WBH-05
-- All 4 CRITICAL (FND-014/015/016/017) + 5 HIGH (FND-018/019/020/021/022/023) closed and evidenced
+- All 4 CRITICAL (FND-014/015/016/017) + 6 HIGH (FND-018/019/020/021/022/023) closed and evidenced
 - Tracked follow-up filed: billing-UI update for the new `billing/plan` response contract
 
 ---
