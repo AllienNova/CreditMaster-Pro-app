@@ -4,12 +4,10 @@
  * Replaces billing-profile-store.ts. All data sourced from Stripe API.
  * No fabricated card numbers. No fabricated invoices. No mock state.
  *
- * Resolution order for stripe_customer_id:
- *   1. profiles.stripe_customer_id
- *   2. subscriptions table (active/trialing row) — fallback in case profile
- *      is updated later by a webhook and profile column not yet set.
- * If neither has a customer id, the user is on the free plan with no Stripe
- * presence — return empty payment methods, free plan, empty invoices.
+ * stripe_customer_id is sourced from profiles.stripe_customer_id — the
+ * canonical location, set at customer-creation time before any checkout.
+ * A user with no customer id is on the free plan with no Stripe presence —
+ * return empty payment methods, free plan, empty invoices.
  */
 
 import { getSupabase } from "@/lib/supabase/client";
@@ -54,8 +52,7 @@ const FREE_SUBSCRIPTION: BillingSubscriptionInfo = {
 };
 
 /**
- * Resolve the Stripe customer id for the given user.
- * Checks profiles first, then the active/trialing subscriptions row.
+ * Resolve the Stripe customer id for the given user from profiles.
  * Returns null when the user has no Stripe presence.
  */
 async function resolveStripeCustomerId(userId: string): Promise<string | null> {
