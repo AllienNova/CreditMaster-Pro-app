@@ -9,6 +9,10 @@
  */
 
 import Stripe from "stripe";
+import {
+  isWebhookEventProcessed,
+  markWebhookEventProcessed,
+} from "@/lib/payment/webhook-idempotency";
 
 // Initialize Stripe with API key — lazy to allow graceful degradation
 let _stripe: Stripe | null = null;
@@ -503,9 +507,22 @@ class StripePaymentService {
   }
 
   /**
-   * Handle webhook event
+   * Handle webhook event — claim-after-success idempotency (FND-022).
+   *
+   * Sequence:
+   *   1. Check sentinel: if already processed → return (no-op; route returns 200).
+   *   2. Dispatch to the appropriate handler.
+   *   3. On success → mark sentinel (Stripe will not retry).
+   *   4. On handler throw → sentinel is NOT marked → route returns 400 → Stripe retries.
+   *
+   * Both isWebhookEventProcessed and markWebhookEventProcessed throw on RPC
+   * error — those throws propagate here so the route returns 400 and Stripe retries.
    */
   async handleWebhookEvent(event: Stripe.Event): Promise<void> {
+    if (await isWebhookEventProcessed("stripe", event.id)) {
+      return;
+    }
+
     switch (event.type) {
       case "customer.subscription.created":
         await this.handleSubscriptionCreated(
@@ -545,9 +562,17 @@ class StripePaymentService {
           event.id,
         );
         break;
+      case "checkout.session.completed":
+        await this.handleCheckoutSessionCompleted(
+          event.data.object as Stripe.Checkout.Session,
+          event.id,
+        );
+        break;
       default:
-      // Stripe: Unhandled event type
+      // Stripe: Unhandled event type — no sentinel marked; Stripe will not retry unknown types.
     }
+
+    await markWebhookEventProcessed("stripe", event.id);
   }
 
   // Webhook handlers
@@ -864,6 +889,42 @@ class StripePaymentService {
         lastPaymentError: paymentIntent.last_payment_error?.message,
       },
     );
+  }
+
+  /**
+   * Handle checkout.session.completed.
+   *
+   * A completed checkout session signals that a customer has finished the
+   * Stripe-hosted payment flow. For subscription mode sessions the subscription
+   * is already created via customer.subscription.created; this handler records
+   * the completion event with structured context for audit and observability.
+   *
+   * Errors propagate — the caller (handleWebhookEvent) will NOT mark the
+   * sentinel, so the route returns 400 and Stripe retries.
+   */
+  private async handleCheckoutSessionCompleted(
+    session: Stripe.Checkout.Session,
+    eventId: string,
+  ): Promise<void> {
+    const { logger } = await import("../monitoring/logger");
+
+    const customerId =
+      typeof session.customer === "string"
+        ? session.customer
+        : session.customer?.id ?? null;
+
+    const subscriptionId =
+      typeof session.subscription === "string"
+        ? session.subscription
+        : session.subscription?.id ?? null;
+
+    logger.info("checkout.session.completed", {
+      eventId,
+      sessionId: session.id,
+      customerId,
+      subscriptionId,
+      mode: session.mode,
+    });
   }
 
   /**

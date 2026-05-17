@@ -2,9 +2,11 @@
 
 /**
  * WBH-04: Webhook handler rethrow + idempotent side-effect ordering
+ * WBH-01b: claim-after-success idempotency wired into handleWebhookEvent (FND-022)
  *
  * FND-014: handleInvoicePaid swallows errors → Stripe never retries
  * FND-015: handleInvoicePaymentFailed swallows errors → Stripe never retries
+ * FND-022: no replay guard on handleWebhookEvent → duplicate side-effects on Stripe retry
  *
  * These tests target the private webhook handler methods via the public
  * handleWebhookEvent dispatcher. Every handler must THROW on downstream
@@ -24,6 +26,8 @@ const mockSupabaseFrom = jest.fn();
 const mockSubscriptionServiceCreated = jest.fn();
 const mockSubscriptionServiceUpdated = jest.fn();
 const mockSubscriptionServiceDeleted = jest.fn();
+const mockIsWebhookEventProcessed = jest.fn();
+const mockMarkWebhookEventProcessed = jest.fn();
 
 // Mock Stripe constructor so the lazy getStripe() returns a usable instance.
 // The `customers.retrieve` method on the instance is spied on separately
@@ -66,6 +70,11 @@ jest.mock("@/lib/subscriptions/subscription-service", () => ({
     handleSubscriptionUpdated: mockSubscriptionServiceUpdated,
     handleSubscriptionDeleted: mockSubscriptionServiceDeleted,
   },
+}));
+
+jest.mock("@/lib/payment/webhook-idempotency", () => ({
+  isWebhookEventProcessed: mockIsWebhookEventProcessed,
+  markWebhookEventProcessed: mockMarkWebhookEventProcessed,
 }));
 
 // ─── Import under test (after mocks) ─────────────────────────────────────────
@@ -136,6 +145,9 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
     getCustomerSpy = jest
       .spyOn(stripeService, "getCustomer")
       .mockImplementation(mockGetCustomer);
+    // Default: event not yet processed; mark succeeds.
+    mockIsWebhookEventProcessed.mockResolvedValue(false);
+    mockMarkWebhookEventProcessed.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -609,6 +621,195 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
           }),
         ),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  // ── WBH-01b: claim-after-success idempotency (FND-022) ────────────────────
+
+  describe("wbh-phase2: webhook idempotency (FND-022)", () => {
+    function makeCheckoutEvent(eventId: string): Stripe.Event {
+      return {
+        id: eventId,
+        type: "checkout.session.completed",
+        data: {
+          object: {
+            id: "cs_test_abc",
+            object: "checkout.session",
+            customer: "cus_test_123",
+            subscription: "sub_test_new",
+            mode: "subscription",
+          },
+        },
+      } as unknown as Stripe.Event;
+    }
+
+    it("replay: same event delivered 100 times → side-effect runs exactly once", async () => {
+      // First delivery: not processed → runs handler → marks
+      // Deliveries 2–100: already processed → no-op
+      mockIsWebhookEventProcessed
+        .mockResolvedValueOnce(false) // delivery 1 → run handler
+        .mockResolvedValue(true); // deliveries 2–100 → skip
+
+      const event = makeCheckoutEvent("evt_idempotency_replay");
+
+      for (let i = 0; i < 100; i++) {
+        await stripeService.handleWebhookEvent(event);
+      }
+
+      // isWebhookEventProcessed called 100 times
+      expect(mockIsWebhookEventProcessed).toHaveBeenCalledTimes(100);
+      expect(mockIsWebhookEventProcessed).toHaveBeenCalledWith("stripe", "evt_idempotency_replay");
+
+      // markWebhookEventProcessed called ONCE — only after the first successful dispatch
+      expect(mockMarkWebhookEventProcessed).toHaveBeenCalledTimes(1);
+      expect(mockMarkWebhookEventProcessed).toHaveBeenCalledWith("stripe", "evt_idempotency_replay");
+
+      // The logger was called with checkout info exactly once (first delivery only)
+      expect(mockLoggerInfo).toHaveBeenCalledTimes(1);
+    });
+
+    it("lost-event guard: handler throws on delivery 1 → sentinel NOT marked → delivery 2 succeeds", async () => {
+      // This test PROVES claim-after-success semantics. A claim-BEFORE-dispatch design
+      // would mark the sentinel before the handler runs, causing delivery 2 to skip the
+      // handler permanently — losing the event. This test must FAIL if the implementation
+      // marks before dispatch.
+      //
+      // Delivery 1: not processed, handler throws → sentinel must NOT be marked
+      // Delivery 2: not processed (sentinel was never marked), handler succeeds → sentinel marked
+
+      // Both deliveries start as "not processed" because delivery 1 never marked it.
+      mockIsWebhookEventProcessed.mockResolvedValue(false);
+
+      // Delivery 1: handler will throw (simulated via loggerInfo, which is called inside
+      // handleCheckoutSessionCompleted — we make it throw on first call only)
+      mockLoggerInfo
+        .mockImplementationOnce(() => {
+          throw new Error("transient failure on delivery 1");
+        })
+        .mockResolvedValue(undefined);
+
+      const event = makeCheckoutEvent("evt_lost_event_guard");
+
+      // Delivery 1: should throw and NOT mark sentinel
+      await expect(stripeService.handleWebhookEvent(event)).rejects.toThrow(
+        "transient failure on delivery 1",
+      );
+
+      // Sentinel must NOT have been marked because the handler threw
+      expect(mockMarkWebhookEventProcessed).not.toHaveBeenCalled();
+
+      // Delivery 2: not processed (sentinel never set) → handler runs and succeeds
+      await stripeService.handleWebhookEvent(event);
+
+      // Now the sentinel is marked after successful delivery
+      expect(mockMarkWebhookEventProcessed).toHaveBeenCalledTimes(1);
+      expect(mockMarkWebhookEventProcessed).toHaveBeenCalledWith("stripe", "evt_lost_event_guard");
+    });
+
+    it("returns immediately (no dispatch) when event is already processed", async () => {
+      mockIsWebhookEventProcessed.mockResolvedValue(true);
+
+      const event = makeCheckoutEvent("evt_already_done");
+      await stripeService.handleWebhookEvent(event);
+
+      // No side-effects: not marked again, no handler work
+      expect(mockMarkWebhookEventProcessed).not.toHaveBeenCalled();
+      expect(mockLoggerInfo).not.toHaveBeenCalled();
+    });
+
+    it("isWebhookEventProcessed check uses provider='stripe' and the event.id", async () => {
+      mockIsWebhookEventProcessed.mockResolvedValue(true);
+
+      await stripeService.handleWebhookEvent(makeCheckoutEvent("evt_check_args"));
+
+      expect(mockIsWebhookEventProcessed).toHaveBeenCalledWith("stripe", "evt_check_args");
+    });
+
+    it("propagates throw from isWebhookEventProcessed (ambiguous check → route 400 → retry)", async () => {
+      mockIsWebhookEventProcessed.mockRejectedValue(
+        new Error("RPC is_webhook_event_processed failed"),
+      );
+
+      await expect(
+        stripeService.handleWebhookEvent(makeCheckoutEvent("evt_check_fails")),
+      ).rejects.toThrow("RPC is_webhook_event_processed failed");
+
+      expect(mockMarkWebhookEventProcessed).not.toHaveBeenCalled();
+    });
+
+    it("propagates throw from markWebhookEventProcessed (sentinel write fail → route 400 → retry)", async () => {
+      mockIsWebhookEventProcessed.mockResolvedValue(false);
+      mockMarkWebhookEventProcessed.mockRejectedValue(
+        new Error("RPC mark_webhook_event_processed failed"),
+      );
+
+      await expect(
+        stripeService.handleWebhookEvent(makeCheckoutEvent("evt_mark_fails")),
+      ).rejects.toThrow("RPC mark_webhook_event_processed failed");
+    });
+  });
+
+  // ── checkout.session.completed ────────────────────────────────────────────
+
+  describe("wbh-phase2: checkout.session.completed handler", () => {
+    function makeCheckoutSessionEvent(overrides: Record<string, unknown> = {}): Stripe.Event {
+      return {
+        id: "evt_checkout_1",
+        type: "checkout.session.completed",
+        data: {
+          object: {
+            id: "cs_live_abc",
+            object: "checkout.session",
+            customer: "cus_checkout_123",
+            subscription: "sub_new_123",
+            mode: "subscription",
+            ...overrides,
+          },
+        },
+      } as unknown as Stripe.Event;
+    }
+
+    it("succeeds: logs the completed checkout session with structured context", async () => {
+      await stripeService.handleWebhookEvent(makeCheckoutSessionEvent());
+
+      expect(mockLoggerInfo).toHaveBeenCalledWith(
+        expect.stringContaining("checkout.session.completed"),
+        expect.objectContaining({
+          sessionId: "cs_live_abc",
+          customerId: "cus_checkout_123",
+          subscriptionId: "sub_new_123",
+          mode: "subscription",
+        }),
+      );
+      expect(mockMarkWebhookEventProcessed).toHaveBeenCalledWith("stripe", "evt_checkout_1");
+    });
+
+    it("succeeds: handles session with no subscription (one-time payment mode)", async () => {
+      await stripeService.handleWebhookEvent(
+        makeCheckoutSessionEvent({ subscription: null, mode: "payment" }),
+      );
+
+      expect(mockLoggerInfo).toHaveBeenCalledWith(
+        expect.stringContaining("checkout.session.completed"),
+        expect.objectContaining({
+          sessionId: "cs_live_abc",
+          mode: "payment",
+        }),
+      );
+    });
+
+    it("throws when handler throws → sentinel NOT marked", async () => {
+      // Make the logger throw to simulate a handler failure
+      mockLoggerInfo.mockImplementationOnce(() => {
+        throw new Error("handler failure");
+      });
+
+      await expect(
+        stripeService.handleWebhookEvent(makeCheckoutSessionEvent()),
+      ).rejects.toThrow("handler failure");
+
+      // Claim-after-success: sentinel not marked when handler threw
+      expect(mockMarkWebhookEventProcessed).not.toHaveBeenCalled();
     });
   });
 });
