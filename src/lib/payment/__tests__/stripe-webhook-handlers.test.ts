@@ -327,6 +327,54 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
         expect.objectContaining({ eventId: "evt_log_test" }),
       );
     });
+
+    it("resolves without calling getCustomer when invoice has no customer (customerless skip)", async () => {
+      const invoice = makeInvoice({ customer: null as unknown as string });
+
+      await stripeService.handleWebhookEvent({
+        id: "evt_paid_no_cust",
+        type: "invoice.paid",
+        data: { object: invoice },
+      } as unknown as Stripe.Event);
+
+      expect(getCustomerSpy).not.toHaveBeenCalled();
+      expect(mockLoggerWarn).toHaveBeenCalledWith(
+        expect.stringContaining("no customerId"),
+        expect.objectContaining({ invoiceId: "in_test_123", eventId: "evt_paid_no_cust" }),
+      );
+    });
+
+    it("warns and defaults to free tier when stripe_price_id has no matching plan", async () => {
+      const mockSelect = jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: { user_id: "user_5", stripe_price_id: "price_unknown_xyz" },
+            error: null,
+          }),
+        }),
+      });
+      mockSupabaseFrom.mockReturnValue({ select: mockSelect });
+      mockGetCustomer.mockResolvedValue({
+        id: "cus_test_123",
+        email: "user@example.com",
+        name: "Test User",
+      });
+      mockResetCreditsForTier.mockResolvedValue(undefined);
+      mockSendPaymentSuccessEmail.mockResolvedValue(undefined);
+
+      await stripeService.handleWebhookEvent({
+        id: "evt_unknown_tier",
+        type: "invoice.paid",
+        data: { object: makeInvoice() },
+      } as unknown as Stripe.Event);
+
+      expect(mockLoggerWarn).toHaveBeenCalledWith(
+        expect.stringContaining("no plan for stripe_price_id"),
+        expect.objectContaining({ stripePriceId: "price_unknown_xyz", eventId: "evt_unknown_tier" }),
+      );
+      // Defaults to free tier — does not throw
+      expect(mockResetCreditsForTier).toHaveBeenCalledWith("user_5", "free");
+    });
   });
 
   // ── handleInvoicePaymentFailed ─────────────────────────────────────────────
@@ -416,6 +464,22 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
         expect.stringContaining("invoice.payment_failed"),
         expect.any(Error),
         expect.objectContaining({ eventId: "evt_log_fail" }),
+      );
+    });
+
+    it("resolves without calling getCustomer when invoice has no customer (customerless skip)", async () => {
+      const invoice = makeInvoice({ customer: null as unknown as string });
+
+      await stripeService.handleWebhookEvent({
+        id: "evt_failed_no_cust",
+        type: "invoice.payment_failed",
+        data: { object: invoice },
+      } as unknown as Stripe.Event);
+
+      expect(getCustomerSpy).not.toHaveBeenCalled();
+      expect(mockLoggerWarn).toHaveBeenCalledWith(
+        expect.stringContaining("no customerId"),
+        expect.objectContaining({ invoiceId: "in_test_123", eventId: "evt_failed_no_cust" }),
       );
     });
   });

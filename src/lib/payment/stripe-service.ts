@@ -581,7 +581,7 @@ class StripePaymentService {
 
   private async handleInvoicePaid(
     invoice: Stripe.Invoice,
-    eventId: string = "",
+    eventId: string,
   ): Promise<void> {
     // Stripe: Invoice paid
 
@@ -592,6 +592,11 @@ class StripePaymentService {
         : invoice.customer?.id;
 
     if (!customerId) {
+      const { logger } = await import("../monitoring/logger");
+      logger.warn("invoice.paid: no customerId on invoice, skipping", {
+        invoiceId: invoice.id,
+        eventId,
+      });
       return;
     }
 
@@ -643,6 +648,16 @@ class StripePaymentService {
           const plan = SUBSCRIPTION_PLANS.find(
             (p) => p.priceId === subRecord.stripe_price_id,
           );
+          if (!plan) {
+            logger.warn(
+              "invoice.paid: no plan for stripe_price_id, defaulting tier to free",
+              {
+                stripePriceId: subRecord.stripe_price_id,
+                userId: subRecord.user_id,
+                eventId,
+              },
+            );
+          }
           const tier = plan?.id ?? "free";
 
           await resetCreditsForTier(subRecord.user_id, tier);
@@ -674,7 +689,7 @@ class StripePaymentService {
 
   private async handleInvoicePaymentFailed(
     invoice: Stripe.Invoice,
-    eventId: string = "",
+    eventId: string,
   ): Promise<void> {
     // Stripe: Invoice payment failed
 
@@ -685,6 +700,11 @@ class StripePaymentService {
         : invoice.customer?.id;
 
     if (!customerId) {
+      const { logger } = await import("../monitoring/logger");
+      logger.warn("invoice.payment_failed: no customerId on invoice, skipping", {
+        invoiceId: invoice.id,
+        eventId,
+      });
       return;
     }
 
@@ -823,9 +843,11 @@ class StripePaymentService {
 
   private async handlePaymentIntentFailed(
     paymentIntent: Stripe.PaymentIntent,
-    eventId: string = "",
+    eventId: string,
   ): Promise<void> {
-    // Stripe: Payment intent failed — log and rethrow so route returns 4xx
+    // Stripe: payment_intent.payment_failed. Pure logging — no retryable side-effect.
+    // The logger call is unguarded: a transient logging outage propagates and Stripe
+    // retries. The failed payment itself is permanent and must NOT throw (retry storm).
     const { logger } = await import("../monitoring/logger");
     logger.error(
       "Payment intent failed",
