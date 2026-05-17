@@ -12,13 +12,17 @@ import { api } from "../services/api/client";
 // TYPES
 // ============================================================================
 
+/**
+ * Shape returned by GET /api/credits/balance.
+ * Backend source: src/app/api/credits/balance/route.ts
+ * Returns: { balance: number, usage: { thisMonth: number, total: number } }
+ */
 interface CreditBalanceData {
-  creditBalance: number;
-  subscriptionAllowance: number;
-  purchasedCredits: number;
-  usedThisPeriod: number;
-  periodStart: string;
-  periodEnd: string;
+  balance: number;
+  usage: {
+    thisMonth: number;
+    total: number;
+  };
 }
 
 interface CreditTransaction {
@@ -45,7 +49,7 @@ interface CreditBalanceActions {
   fetchHistory: (limit?: number, offset?: number) => Promise<void>;
   purchasePack: (
     packType: CreditPackType,
-  ) => Promise<{ success: boolean; newBalance?: number; error?: string }>;
+  ) => Promise<{ success: boolean; checkoutUrl?: string; error?: string }>;
   clearError: () => void;
   resetStore: () => void;
 }
@@ -67,7 +71,7 @@ const initialState: CreditBalanceState = {
 
 export const useCreditBalanceStore = create<
   CreditBalanceState & CreditBalanceActions
->((set, get) => ({
+>((set) => ({
   ...initialState,
 
   fetchBalance: async () => {
@@ -123,7 +127,8 @@ export const useCreditBalanceStore = create<
   purchasePack: async (packType) => {
     set({ loading: true, error: null });
     try {
-      const res = await api.post<{ newBalance: number }>(
+      // POST /api/credits/purchase returns { checkoutUrl, sessionId }
+      const res = await api.post<{ checkoutUrl: string; sessionId: string }>(
         "/credits/purchase",
         { packType },
       );
@@ -132,22 +137,7 @@ export const useCreditBalanceStore = create<
         throw new Error(res.message ?? "Purchase failed");
       }
 
-      const data = res.data;
-
-      // Refresh balance after purchase
-      if (data?.newBalance !== undefined) {
-        const currentBalance = get().balance;
-        if (currentBalance) {
-          set({
-            balance: {
-              ...currentBalance,
-              creditBalance: data.newBalance,
-            },
-          });
-        }
-      }
-
-      return { success: true, newBalance: data?.newBalance };
+      return { success: true, checkoutUrl: res.data?.checkoutUrl };
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Purchase failed";
@@ -173,12 +163,15 @@ export const selectTransactions = (state: CreditBalanceState) =>
 export const selectCreditLoading = (state: CreditBalanceState) => state.loading;
 export const selectCreditError = (state: CreditBalanceState) => state.error;
 
+/**
+ * Returns true when remaining balance is below 20% of total usage this period.
+ * Uses usage.total as denominator (all-time consumed credits as a proxy for allowance).
+ */
 export const selectIsLow = (state: CreditBalanceState): boolean => {
   if (!state.balance) return false;
-  const totalAllowance =
-    state.balance.subscriptionAllowance + state.balance.purchasedCredits;
-  if (totalAllowance === 0) return false;
-  return state.balance.creditBalance / totalAllowance < 0.2;
+  const total = state.balance.usage.total;
+  if (total === 0) return false;
+  return state.balance.balance / total < 0.2;
 };
 
 export default useCreditBalanceStore;

@@ -137,9 +137,21 @@ export function useOrders(config: UseOrdersConfig = {}) {
           return { success: true, order: res.data!.order };
         }
 
+        // Surface the specific validation message when the trading backend
+        // returns { success: false, validation: { errors: [{message, ...}] } }.
+        // client.ts stashes the raw response body in error.details.
+        const validationErrors = (
+          res.error?.details as
+            | { validation?: { errors?: { message: string }[] } }
+            | undefined
+        )?.validation?.errors;
+        const specificError =
+          validationErrors?.[0]?.message ??
+          res.message ??
+          "Failed to create order";
         return {
           success: false,
-          error: res.message ?? "Failed to create order",
+          error: specificError,
         };
       } catch (error) {
         return {

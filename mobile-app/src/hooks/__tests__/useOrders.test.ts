@@ -110,6 +110,55 @@ describe("useOrders — authenticated API calls", () => {
     expect(cancelled!).toBe(true);
   });
 
+  it("createOrder surfaces validation error message from backend (Fix 2)", async () => {
+    // Initial fetch
+    mockApi.get.mockResolvedValueOnce({
+      success: true,
+      data: { orders: [], openOrders: [], todayOrderCount: 0, todayFillCount: 0 },
+    });
+    // Backend returns HTTP 400 with validation errors.
+    // client.ts stashes raw response body in error.details.
+    mockApi.post.mockResolvedValueOnce({
+      success: false,
+      message: "HTTP 400",
+      error: {
+        code: "HTTP_400",
+        message: "HTTP 400",
+        retryable: false,
+        details: {
+          success: false,
+          validation: {
+            isValid: false,
+            errors: [
+              { field: "quantity", message: "Quantity exceeds position limit", code: "LIMIT_EXCEEDED" },
+            ],
+            warnings: [],
+          },
+        },
+      },
+    });
+
+    const { result } = renderHook(() => useOrders({ autoRefresh: false }));
+
+    await waitFor(() => {
+      expect(mockApi.get).toHaveBeenCalledTimes(1);
+    });
+
+    let createResult: { success: boolean; order?: unknown; error?: string };
+    await act(async () => {
+      createResult = await result.current.createOrder({
+        symbol: "AAPL",
+        side: "buy",
+        type: "market",
+        quantity: 99999,
+      });
+    });
+
+    expect(createResult!.success).toBe(false);
+    // Must show the specific validation message, not the generic "HTTP 400" or "Failed to create order"
+    expect(createResult!.error).toBe("Quantity exceeds position limit");
+  });
+
   it("cancelAllOrders calls api.delete('/trading/orders?all=true') — not bare fetch", async () => {
     mockApi.get.mockResolvedValueOnce({
       success: true,

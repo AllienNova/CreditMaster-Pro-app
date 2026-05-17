@@ -163,7 +163,19 @@ export function OrderEntrySheet({
         onOrderCreated?.(res.data.order);
         onClose();
       } else {
-        setError(res.message || "Failed to create order");
+        // Surface specific validation message when backend returns
+        // { success: false, validation: { errors: [{message, ...}] } }.
+        // client.ts stashes the raw response body in error.details.
+        const validationErrors = (
+          res.error?.details as
+            | { validation?: { errors?: { message: string }[] } }
+            | undefined
+        )?.validation?.errors;
+        setError(
+          validationErrors?.[0]?.message ??
+            res.message ??
+            "Failed to create order",
+        );
       }
     } catch (err) {
       setError("Network error. Please try again.");

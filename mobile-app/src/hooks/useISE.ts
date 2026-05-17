@@ -60,7 +60,6 @@ export interface ISEConfig {
 }
 
 export interface UseISEOptions {
-  apiBaseUrl?: string;
   initialTier?: UserTier;
   initialMaxActiveSize?: number;
   autoRotate?: boolean;
@@ -86,8 +85,9 @@ export interface UseISEReturn {
 // HOOK IMPLEMENTATION
 // ============================================================================
 
+const ISE_BASE_URL = "/trading/ise";
+
 const DEFAULT_OPTIONS: Required<UseISEOptions> = {
-  apiBaseUrl: "/trading/ise",
   initialTier: "pro",
   initialMaxActiveSize: 5,
   autoRotate: true,
@@ -97,6 +97,7 @@ const DEFAULT_OPTIONS: Required<UseISEOptions> = {
 
 export function useISE(options: UseISEOptions = {}): UseISEReturn {
   const opts = { ...DEFAULT_OPTIONS, ...options };
+  const apiBaseUrl = ISE_BASE_URL;
 
   // State
   const [state, setState] = useState<ISEState>({
@@ -124,7 +125,7 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
     try {
       // Fetch rankings
       const rankingsRes = await api.get<{ rankings: RankedInstrument[] }>(
-        `${opts.apiBaseUrl}?action=rankings&limit=50`,
+        `${apiBaseUrl}?action=rankings&limit=50`,
       );
 
       if (!rankingsRes.success) {
@@ -133,7 +134,7 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
 
       // Fetch active set
       const activeRes = await api.get<{ activeSymbols: string[] }>(
-        `${opts.apiBaseUrl}?action=active`,
+        `${apiBaseUrl}?action=active`,
       );
 
       const activeSymbols = activeRes.success
@@ -142,7 +143,7 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
 
       // Fetch events
       const eventsRes = await api.get<{ events: RotationEvent[] }>(
-        `${opts.apiBaseUrl}?action=events&limit=10`,
+        `${apiBaseUrl}?action=events&limit=10`,
       );
 
       const events = eventsRes.success ? (eventsRes.data?.events ?? []) : [];
@@ -171,7 +172,7 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
         error: (error as Error).message,
       }));
     }
-  }, [opts.apiBaseUrl]);
+  }, [apiBaseUrl]);
 
   // Start/stop polling
   useEffect(() => {
@@ -202,7 +203,7 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
       setConfig((prev) => ({ ...prev, maxActiveSize: size }));
 
       try {
-        await api.post(opts.apiBaseUrl, {
+        await api.post(apiBaseUrl, {
           action: "updateConfig",
           maxActiveSize: size,
         });
@@ -210,7 +211,7 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
         console.error("Failed to update max active size:", error);
       }
     },
-    [opts.apiBaseUrl],
+    [apiBaseUrl],
   );
 
   const setAutoRotate = useCallback((enabled: boolean) => {
@@ -221,7 +222,7 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
     async (symbol: string): Promise<boolean> => {
       try {
         const res = await api.post<{ activeSymbols: string[] }>(
-          opts.apiBaseUrl,
+          apiBaseUrl,
           { action: "forceAdd", symbol },
         );
 
@@ -242,14 +243,14 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
         return false;
       }
     },
-    [opts.apiBaseUrl],
+    [apiBaseUrl],
   );
 
   const forceRemoveSymbol = useCallback(
     async (symbol: string): Promise<boolean> => {
       try {
         const res = await api.post<{ activeSymbols: string[] }>(
-          opts.apiBaseUrl,
+          apiBaseUrl,
           { action: "forceRemove", symbol },
         );
 
@@ -270,24 +271,37 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
         return false;
       }
     },
-    [opts.apiBaseUrl],
+    [apiBaseUrl],
   );
 
   const canTrade = useCallback(
     async (symbol: string): Promise<{ allowed: boolean; reason: string }> => {
       try {
         const res = await api.get<{ allowed: boolean; reason: string }>(
-          `${opts.apiBaseUrl}?action=canTrade&symbol=${encodeURIComponent(symbol)}`,
+          `${apiBaseUrl}?action=canTrade&symbol=${encodeURIComponent(symbol)}`,
         );
+        if (!res.success) {
+          // Transient failure (e.g. 429/503) — log so it's diagnosable;
+          // do NOT silently return allowed:false as if trading is prohibited.
+          console.warn(
+            "[useISE.canTrade] API check failed (transient); defaulting to not-allowed.",
+            res.error?.message ?? res.message,
+          );
+          return {
+            allowed: false,
+            reason: "Trade permission check unavailable — please retry",
+          };
+        }
         return {
-          allowed: res.data?.allowed ?? false,
-          reason: res.data?.reason ?? "Failed to check trade permission",
+          allowed: res.data!.allowed,
+          reason: res.data!.reason,
         };
       } catch (error) {
+        console.warn("[useISE.canTrade] Network error during permission check:", error);
         return { allowed: false, reason: "Failed to check trade permission" };
       }
     },
-    [opts.apiBaseUrl],
+    [apiBaseUrl],
   );
 
   const refresh = useCallback(async () => {

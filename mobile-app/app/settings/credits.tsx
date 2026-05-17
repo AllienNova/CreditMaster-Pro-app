@@ -83,7 +83,7 @@ export default function CreditsScreen() {
     if (result.success) {
       Alert.alert(
         "Purchase Successful",
-        `Your new balance is ${result.newBalance?.toLocaleString()} credits.`,
+        "Your credits have been added. Redirecting to checkout...",
       );
       fetchBalance();
     } else {
@@ -91,14 +91,13 @@ export default function CreditsScreen() {
     }
   };
 
-  const totalAllowance = balance
-    ? balance.subscriptionAllowance + balance.purchasedCredits
-    : 0;
+  // Real backend shape: { balance, usage: { thisMonth, total } }
+  // usedThisPeriod = usage.thisMonth; total allowance = usage.total
+  const totalAllowance = balance ? balance.usage.total : 0;
+  const usedThisPeriod = balance ? balance.usage.thisMonth : 0;
   const remainingPercent =
-    totalAllowance > 0 && balance
-      ? Math.round(
-          ((totalAllowance - balance.usedThisPeriod) / totalAllowance) * 100,
-        )
+    totalAllowance > 0
+      ? Math.round(((totalAllowance - usedThisPeriod) / totalAllowance) * 100)
       : 100;
 
   const barColor =
@@ -133,26 +132,26 @@ export default function CreditsScreen() {
             <>
               <Text style={styles.balanceLabel}>Available Credits</Text>
               <Text style={styles.balanceValue}>
-                {balance.creditBalance.toLocaleString()}
+                {balance.balance.toLocaleString()}
               </Text>
 
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Monthly</Text>
+                  <Text style={styles.statLabel}>Total</Text>
                   <Text style={styles.statValue}>
-                    {balance.subscriptionAllowance.toLocaleString()}
+                    {balance.usage.total.toLocaleString()}
                   </Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Purchased</Text>
+                  <Text style={styles.statLabel}>Used (Month)</Text>
                   <Text style={styles.statValue}>
-                    {balance.purchasedCredits.toLocaleString()}
+                    {balance.usage.thisMonth.toLocaleString()}
                   </Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Used</Text>
+                  <Text style={styles.statLabel}>Remaining</Text>
                   <Text style={styles.statValue}>
-                    {balance.usedThisPeriod.toLocaleString()}
+                    {balance.balance.toLocaleString()}
                   </Text>
                 </View>
               </View>
@@ -161,7 +160,7 @@ export default function CreditsScreen() {
               <View style={styles.progressContainer}>
                 <View style={styles.progressLabels}>
                   <Text style={styles.progressText}>
-                    {balance.usedThisPeriod.toLocaleString()} /{" "}
+                    {usedThisPeriod.toLocaleString()} /{" "}
                     {totalAllowance.toLocaleString()} used
                   </Text>
                   <Text style={styles.progressText}>
