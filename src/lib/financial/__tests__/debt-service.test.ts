@@ -119,6 +119,37 @@ import { debtService } from "@/lib/financial/debt-service";
 // ---------------------------------------------------------------------------
 
 describe("DebtService", () => {
+  describe("rowToDebt (null-field defaults)", () => {
+    it("maps null optional fields to their zero/empty defaults", async () => {
+      const nullRow = {
+        id: "null-debt-id",
+        user_id: USER_A,
+        name: null,
+        type: null,
+        balance: null,
+        original_balance: null,
+        interest_rate: null,
+        minimum_payment: null,
+        due_date: null,
+        creditor_name: null,
+        is_active: true,
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-01T00:00:00.000Z",
+      };
+      mockChain = makeChain({ resolveData: [nullRow] });
+      const result = await debtService.listDebts(USER_A);
+      const debt = result[0];
+      expect(debt.name).toBe("");
+      expect(debt.type).toBe("other");
+      expect(debt.balance).toBe(0);
+      expect(debt.originalBalance).toBe(0);
+      expect(debt.interestRate).toBe(0);
+      expect(debt.minimumPayment).toBe(0);
+      expect(debt.dueDate).toBeUndefined();
+      expect(debt.creditorName).toBeUndefined();
+    });
+  });
+
   describe("listDebts", () => {
     it("returns the user's own debt rows", async () => {
       mockChain = makeChain({ resolveData: [debtRow] });
@@ -140,6 +171,29 @@ describe("DebtService", () => {
       );
       mockChain = emptyChain;
       const result = await debtService.listDebts(USER_B);
+      expect(result).toEqual([]);
+    });
+
+    it("throws when the database returns an error", async () => {
+      const errorChain = makeChain({});
+      (errorChain["then"] as jest.Mock).mockImplementation(
+        (cb: (v: unknown) => unknown) =>
+          Promise.resolve({ data: null, error: { message: "connection timeout" } }).then(cb),
+      );
+      mockChain = errorChain;
+      await expect(debtService.listDebts(USER_A)).rejects.toThrow(
+        "Failed to list debts: connection timeout",
+      );
+    });
+
+    it("returns empty array when database returns null data and no error", async () => {
+      const nullDataChain = makeChain({});
+      (nullDataChain["then"] as jest.Mock).mockImplementation(
+        (cb: (v: unknown) => unknown) =>
+          Promise.resolve({ data: null, error: null }).then(cb),
+      );
+      mockChain = nullDataChain;
+      const result = await debtService.listDebts(USER_A);
       expect(result).toEqual([]);
     });
   });
@@ -183,6 +237,60 @@ describe("DebtService", () => {
         debtService.createDebt(USER_A, { name: "No balance" }),
       ).rejects.toThrow();
     });
+
+    it("throws when the database insert returns an error", async () => {
+      const errorChain = makeChain({});
+      (errorChain["then"] as jest.Mock).mockImplementation(
+        (cb: (v: unknown) => unknown) =>
+          Promise.resolve({ data: null, error: { message: "unique constraint violation" } }).then(cb),
+      );
+      mockChain = errorChain;
+      await expect(
+        debtService.createDebt(USER_A, {
+          name: "Dup Debt",
+          type: "personal_loan" as const,
+          balance: 1000,
+          interestRate: 8,
+          minimumPayment: 50,
+        }),
+      ).rejects.toThrow("Failed to create debt: unique constraint violation");
+    });
+
+    it("throws when the database insert returns no rows (empty array)", async () => {
+      const emptyInsertChain = makeChain({});
+      (emptyInsertChain["then"] as jest.Mock).mockImplementation(
+        (cb: (v: unknown) => unknown) =>
+          Promise.resolve({ data: [], error: null }).then(cb),
+      );
+      mockChain = emptyInsertChain;
+      await expect(
+        debtService.createDebt(USER_A, {
+          name: "Ghost Debt",
+          type: "medical" as const,
+          balance: 500,
+          interestRate: 0,
+          minimumPayment: 25,
+        }),
+      ).rejects.toThrow("Failed to create debt: no row returned");
+    });
+
+    it("throws when the database insert returns null data", async () => {
+      const nullDataChain = makeChain({});
+      (nullDataChain["then"] as jest.Mock).mockImplementation(
+        (cb: (v: unknown) => unknown) =>
+          Promise.resolve({ data: null, error: null }).then(cb),
+      );
+      mockChain = nullDataChain;
+      await expect(
+        debtService.createDebt(USER_A, {
+          name: "Null Data Debt",
+          type: "other" as const,
+          balance: 200,
+          interestRate: 5,
+          minimumPayment: 20,
+        }),
+      ).rejects.toThrow("Failed to create debt: no row returned");
+    });
   });
 
   describe("updateDebt", () => {
@@ -205,6 +313,37 @@ describe("DebtService", () => {
         debtService.updateDebt(DEBT_ID, USER_B, { balance: 1 }),
       ).rejects.toThrow(/not found/i);
     });
+
+    it("applies all patch fields when every optional field is provided", async () => {
+      const fullPatchChain = makeChain({ isSingle: true });
+      (fullPatchChain["single"] as jest.Mock)
+        .mockResolvedValueOnce({ data: debtRow, error: null })
+        .mockResolvedValueOnce({ data: { ...debtRow, balance: 1500 }, error: null });
+      mockChain = fullPatchChain;
+      const result = await debtService.updateDebt(DEBT_ID, USER_A, {
+        name: "Renamed Debt",
+        type: "auto_loan" as const,
+        balance: 1500,
+        originalBalance: 2000,
+        interestRate: 6.5,
+        minimumPayment: 120,
+        dueDate: "2026-03-01",
+        creditorName: "Ford Motor Credit",
+      });
+      expect(result).toBeDefined();
+    });
+
+    it("throws when the update query returns an error", async () => {
+      // First single() call = ownership check → succeeds; second = update result → fails
+      const updateErrorChain = makeChain({ isSingle: true });
+      (updateErrorChain["single"] as jest.Mock)
+        .mockResolvedValueOnce({ data: debtRow, error: null })
+        .mockResolvedValueOnce({ data: null, error: { code: "23505", message: "conflict" } });
+      mockChain = updateErrorChain;
+      await expect(
+        debtService.updateDebt(DEBT_ID, USER_A, { balance: 9999 }),
+      ).rejects.toThrow("Debt not found");
+    });
   });
 
   describe("deleteDebt", () => {
@@ -217,6 +356,18 @@ describe("DebtService", () => {
       // RLS + .eq("user_id") means the delete matches 0 rows — no error thrown
       mockChain = makeChain({ isDelete: true });
       await expect(debtService.deleteDebt(DEBT_ID, USER_B)).resolves.toBeUndefined();
+    });
+
+    it("throws when the database delete returns an error", async () => {
+      const errorChain = makeChain({ isDelete: true });
+      (errorChain["then"] as jest.Mock).mockImplementation(
+        (cb: (v: unknown) => unknown) =>
+          Promise.resolve({ data: null, error: { message: "foreign key violation" } }).then(cb),
+      );
+      mockChain = errorChain;
+      await expect(debtService.deleteDebt(DEBT_ID, USER_A)).rejects.toThrow(
+        "Failed to delete debt: foreign key violation",
+      );
     });
   });
 });
