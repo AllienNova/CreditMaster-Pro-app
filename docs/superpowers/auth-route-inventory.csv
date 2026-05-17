@@ -40,7 +40,7 @@ src/app/api/ai/recommend-strategy/route.ts,GET;POST,validateFromHeaders,"rbac.ha
 src/app/api/ai/spending-analysis/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/analytics/events/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - accepts event.userId from body; wrap in withAuth
 src/app/api/analytics/reports/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withRole(admin),f,admin analytics - promote to withRole(admin)
-src/app/api/analytics/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withRole(admin),f,admin analytics - promote to withRole(admin)
+src/app/api/analytics/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withAuth,f,"mixed route - 6 per-user sub-types scoped to user.id; `system` sub-type has an inline `rbac.hasPermission('admin:analytics')` check on the DB-resolved role."
 src/app/api/analytics/strategies/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
 src/app/api/analytics/timeseries/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withRole(admin),f,admin analytics - promote to withRole(admin)
 src/app/api/auth/webauthn/authenticate/route.ts,POST,none,none,PUBLIC,f,pre-auth webauthn challenge - genuinely public
