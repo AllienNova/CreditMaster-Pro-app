@@ -144,43 +144,59 @@ export class PerformanceCalculator {
   }
 
   /**
-   * Calculate portfolio volatility (standard deviation of returns)
+   * Calculate portfolio volatility (annualized standard deviation of returns).
+   *
+   * Real volatility requires a historical daily-return series for this portfolio.
+   * `PerformanceCalculator` only has access to `PortfolioService`, which exposes
+   * current holdings and portfolio snapshot — not a time-series of daily values.
+   * No real daily-return series is reachable from this class (the private
+   * return-series helpers live on the separate `PortfolioAnalytics` class).
+   *
+   * Honest output: returns `null` when no real series is available. Callers must
+   * render `null` as "n/a" or "data unavailable" — never display it as a number.
+   *
    * @param portfolioId Portfolio ID
-   * @param period Number of days to calculate over
-   * @returns Volatility as standard deviation percentage
+   * @param period Number of days (validated, but no series is currently reachable)
+   * @returns null — no real daily-return series is available from this class
    */
   async calculateVolatility(
     portfolioId: string,
     period: number = 30,
-  ): Promise<number> {
+  ): Promise<number | null> {
     if (period <= 1) {
       throw new Error("Period must be greater than 1");
     }
 
-    // For now, return a placeholder since we need historical price data
-    // In production, this would fetch daily portfolio values and calculate std dev
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
     }
 
-    // Placeholder: Use day_change_percent as a proxy for volatility
-    // In production, calculate from historical daily returns
-    const estimatedVolatility =
-      Math.abs(portfolio.day_change_percent || 0) * Math.sqrt(period);
-    return estimatedVolatility;
+    // No historical daily-return series is reachable from this class.
+    // Returning null is the honest signal — callers must treat this as
+    // "data unavailable", not as zero volatility or any fabricated estimate.
+    console.warn(
+      `[PerformanceCalculator] calculateVolatility: no historical daily-return series available for portfolio ${portfolioId}; returning null`,
+    );
+    return null;
   }
 
   /**
-   * Calculate Sharpe Ratio (risk-adjusted return)
+   * Calculate Sharpe Ratio (risk-adjusted return).
+   *
+   * Returns `null` when volatility is unavailable (`calculateVolatility` returns
+   * `null`). A null volatility would otherwise produce a NaN Sharpe ratio —
+   * recreating the FND-031 class of bug. Callers must treat `null` as
+   * "data unavailable".
+   *
    * @param portfolioId Portfolio ID
    * @param riskFreeRate Annual risk-free rate (e.g., 0.04 for 4%)
-   * @returns Sharpe ratio
+   * @returns Sharpe ratio, or null when volatility data is unavailable
    */
   async calculateSharpeRatio(
     portfolioId: string,
     riskFreeRate: number = 0.04,
-  ): Promise<number> {
+  ): Promise<number | null> {
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
@@ -192,11 +208,13 @@ export class PerformanceCalculator {
       1,
     );
 
-    // Calculate volatility (annualized)
+    // Calculate volatility (annualized). Returns null when no real series is available.
     const volatility = await this.calculateVolatility(portfolioId, 252); // 252 trading days
 
-    if (volatility === 0) {
-      return 0;
+    // Propagate null: a null volatility means Sharpe is undefined.
+    // Do not coerce to 0 (plausible wrong value) or allow null arithmetic (NaN).
+    if (volatility === null || volatility === 0) {
+      return null;
     }
 
     // Sharpe Ratio = (Portfolio Return - Risk Free Rate) / Volatility
