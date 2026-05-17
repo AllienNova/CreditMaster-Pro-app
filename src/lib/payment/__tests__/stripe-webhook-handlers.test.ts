@@ -747,6 +747,23 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
         stripeService.handleWebhookEvent(makeCheckoutEvent("evt_mark_fails")),
       ).rejects.toThrow("RPC mark_webhook_event_processed failed");
     });
+
+    it("default branch: unhandled event type resolves without throwing and does NOT mark sentinel", async () => {
+      // Covers the default: return; branch. An unknown Stripe event type must not
+      // be marked as processed — a handler added later must be able to receive a
+      // manual Stripe dashboard replay of the event.
+      const unhandledEvent = {
+        id: "evt_unhandled_radar",
+        type: "radar.early_fraud_warning.created",
+        data: { object: {} },
+      } as unknown as Stripe.Event;
+
+      await expect(
+        stripeService.handleWebhookEvent(unhandledEvent),
+      ).resolves.toBeUndefined();
+
+      expect(mockMarkWebhookEventProcessed).not.toHaveBeenCalled();
+    });
   });
 
   // ── checkout.session.completed ────────────────────────────────────────────

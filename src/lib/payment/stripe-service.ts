@@ -569,7 +569,9 @@ class StripePaymentService {
         );
         break;
       default:
-      // Stripe: Unhandled event type — no sentinel marked; Stripe will not retry unknown types.
+        // Unhandled event type — return WITHOUT marking the sentinel, so a handler
+        // added later can still process a manual Stripe replay of this event.
+        return;
     }
 
     await markWebhookEventProcessed("stripe", event.id);
