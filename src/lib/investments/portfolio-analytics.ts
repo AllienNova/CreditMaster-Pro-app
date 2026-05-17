@@ -111,16 +111,25 @@ export class PortfolioAnalytics {
       portfolioReturns.reduce((acc, r) => acc * (1 + r), 1) - 1;
     const annualizedReturn = Math.pow(1 + totalReturn, 252 / days) - 1;
 
-    // Calculate risk-adjusted return metrics
+    // Calculate risk-adjusted return metrics — null when denominator is 0 (mathematically undefined)
     const sharpeRatio =
-      (annualizedReturn - riskFreeRate) / annualizedVolatility;
+      annualizedVolatility === 0 || !Number.isFinite(annualizedVolatility)
+        ? null
+        : (annualizedReturn - riskFreeRate) / annualizedVolatility;
+    const sortinoRatioDenom = downsideDeviation * Math.sqrt(252);
     const sortinoRatio =
-      (annualizedReturn - riskFreeRate) / (downsideDeviation * Math.sqrt(252));
+      sortinoRatioDenom === 0 || !Number.isFinite(sortinoRatioDenom)
+        ? null
+        : (annualizedReturn - riskFreeRate) / sortinoRatioDenom;
 
     // Calculate drawdowns
     const { maxDrawdown, currentDrawdown, averageDrawdown } =
       this.calculateDrawdowns(portfolioReturns);
-    const calmarRatio = annualizedReturn / Math.abs(maxDrawdown);
+    const absMaxDrawdown = Math.abs(maxDrawdown);
+    const calmarRatio =
+      absMaxDrawdown === 0 || !Number.isFinite(absMaxDrawdown)
+        ? null
+        : annualizedReturn / absMaxDrawdown;
 
     // Calculate beta and alpha vs benchmark
     const { beta, alpha, rSquared } = this.calculateBetaAlpha(
@@ -134,7 +143,10 @@ export class PortfolioAnalytics {
       portfolioReturns,
       benchmarkReturns,
     );
-    const informationRatio = alpha / trackingError;
+    const informationRatio =
+      trackingError === 0 || !Number.isFinite(trackingError)
+        ? null
+        : alpha / trackingError;
 
     const riskMetrics: RiskMetrics = {
       portfolioId,

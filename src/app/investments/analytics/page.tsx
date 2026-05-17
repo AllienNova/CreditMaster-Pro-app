@@ -202,8 +202,14 @@ interface RiskGaugeProps {
 
 function RiskGauge({ riskMetrics }: RiskGaugeProps) {
   const getRiskLevel = (
-    sharpe: number,
+    sharpe: number | null,
   ): { level: string; color: string; bgColor: string } => {
+    if (sharpe === null)
+      return {
+        level: "N/A",
+        color: "text-gray-500",
+        bgColor: "bg-gray-100",
+      };
     if (sharpe >= 2)
       return {
         level: "Low Risk",
@@ -254,7 +260,7 @@ function RiskGauge({ riskMetrics }: RiskGaugeProps) {
             Sharpe Ratio
           </p>
           <p className="text-3xl font-bold text-gray-900 dark:text-white">
-            {riskMetrics.sharpeRatio.toFixed(2)}
+            {riskMetrics.sharpeRatio !== null ? riskMetrics.sharpeRatio.toFixed(2) : '—'}
           </p>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
             Risk-adjusted return

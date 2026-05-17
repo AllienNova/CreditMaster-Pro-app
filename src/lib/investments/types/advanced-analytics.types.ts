@@ -89,10 +89,10 @@ export const RiskMetricsSchema = z.object({
     expectedShortfall: z.number(),
   }),
 
-  // Risk-adjusted return metrics
-  sharpeRatio: z.number(), // (Return - RiskFreeRate) / StdDev
-  sortinoRatio: z.number(), // (Return - RiskFreeRate) / DownsideDeviation
-  calmarRatio: z.number(), // AnnualizedReturn / MaxDrawdown
+  // Risk-adjusted return metrics — null when the denominator is 0 (mathematically undefined)
+  sharpeRatio: z.number().nullable(), // null when annualizedVolatility = 0
+  sortinoRatio: z.number().nullable(), // null when downsideDeviation = 0
+  calmarRatio: z.number().nullable(), // null when maxDrawdown = 0
 
   // Market risk metrics
   beta: z.number(), // Volatility relative to market
@@ -113,7 +113,7 @@ export const RiskMetricsSchema = z.object({
 
   // Additional metrics
   trackingError: z.number(), // Deviation from benchmark
-  informationRatio: z.number(), // Alpha / TrackingError
+  informationRatio: z.number().nullable(), // null when trackingError = 0
 
   metadata: z.object({
     riskFreeRate: z.number(),
@@ -423,12 +423,12 @@ export const PortfolioPerformanceSchema = z.object({
     ),
   }),
 
-  // Risk-adjusted returns
+  // Risk-adjusted returns — fields are null when denominators are 0 (see RiskMetricsSchema)
   riskAdjustedReturns: z.object({
-    sharpeRatio: z.number(),
-    sortinoRatio: z.number(),
-    calmarRatio: z.number(),
-    informationRatio: z.number(),
+    sharpeRatio: z.number().nullable(),
+    sortinoRatio: z.number().nullable(),
+    calmarRatio: z.number().nullable(),
+    informationRatio: z.number().nullable(),
   }),
 
   // Benchmark comparison
