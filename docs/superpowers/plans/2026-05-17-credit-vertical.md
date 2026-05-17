@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Bring the Credit workflow (credit scoring, credit-builder, credit-repair, disputes, documents) to launch quality via a verify-and-polish pass and an IDOR sweep — confirm every credit sub-feature works on real data, and prove every credit/dispute/document service method that takes a resource id is user-scoped, with a cross-user regression test.
+**Goal:** Bring the Credit workflow (credit scoring/builder/repair, disputes, documents, credits ledger) to launch quality — replace the non-persistent in-memory disputes & documents stores with real DB persistence, and run an IDOR sweep that proves every credit/dispute/document service query is user-scoped, closing the unscoped queries it finds.
 
-**Architecture:** Verification + IDOR-sweep vertical. The 2026-05-03 audit assigned **no findings** to the Credit domain ("already remediated" per the roadmap). This vertical does not fix a known-findings list — it *discovers and proves*. Two work types: (a) a verify-pass — open each credit/dispute/document route+service and confirm real DB/computation, no mock or stub; if a mock is found it becomes a fix; (b) an IDOR sweep — audit every Supabase `.from()` query chain in the credit/credit-builder/disputes/documents services for `.eq("user_id", …)` scoping (or a verified RLS policy), fix any unscoped query, and add a cross-user `*.idor.test.ts` for every service method that takes a resource id.
+**Architecture:** De-mock + IDOR-sweep vertical. The 2026-05-03 audit assigned **no findings** to the Credit domain — but "no findings" means "not audited", not "clean": discovery (below) found that `api/disputes/**` and `api/documents/**` are wired to **process-local `Map`-backed** services (`dispute-service.ts`, `document-service.ts`) that lose all data on every serverless cold start — an FND-047-class persistence bug, severe for a credit-repair product where a dropped dispute is a lost FCRA record. DB-backed siblings (`dispute-service-db.ts`, `document-service-db.ts`) and real `disputes`/`documents` tables already exist; the routes were simply never re-wired. Discovery also found unscoped IDOR queries in the credit services (`CreditBuilderLoanService.updateApplication`, `RentReportingService.updateAccount`/`getPaymentHistory` — service-role client, keyed only by resource id). This vertical: (1) inventory + persistence-aware verify-pass; (2) IDOR sweep of the credit/credit-builder/credits services, fixing the unscoped queries; (3) de-mock disputes onto the DB service; (4) de-mock documents onto the DB service.
 
 **Tech Stack:** Next.js 15 App Router, TypeScript 5.7 strict, Supabase (Postgres + RLS), Jest + ts-jest.
 
@@ -13,18 +13,21 @@
 ## Pre-state (verified against HEAD `50334a9` — `remediation/wave-7-foundation`)
 
 - Branch: `remediation/wave-7-foundation` (Foundation + Payments + Investments + Financial verticals merged & pushed). AUTH-03 wrapped all 294 API routes — credit/dispute/document routes already resolve an `AuthedUser`.
-- `test:idor` npm script exists (INV-1) — `jest -t idor`. This vertical reuses it; the sweep adds many `idor`-named tests.
+- `test:idor` npm script exists — `jest -t idor`. This vertical reuses it.
 - Full suite green at 15,652 passing / 0 failures (post-Financial).
-- **Surface (verified):** ~57 credit/credit-builder/credit-repair/credit-bureau/credit-monitoring/dispute/document/tradeline API routes; ~17 service files under `src/lib/credit/`, `src/lib/credit-builder/`, `src/lib/disputes/`, `src/lib/documents/`. A mock-pattern grep over those service files found **no mocks/stubs** (the only `mock`/`placeholder` hits are a `mapToDocument` mapper and dispute-letter template placeholders — both legitimate). So the verify-pass is not expected to surface de-mock work in the service layer — but the routes still get spot-checked.
-- **Scope boundary:** `src/app/api/admin/disputes/route.ts` carries FND-051 (CRITICAL) + FND-054 (HIGH) — those are assigned to **Track N / TASK-ADM-01/02**, NOT this vertical. The Credit vertical covers the *user-facing* dispute routes (`api/disputes/**`, `api/credit-repair/disputes/**`); it does **not** touch `admin/disputes`. FND-051/054 remain open under their Track-N owner — flagged here for visibility, not pulled in.
+- **Discovery (verified at HEAD — corrects the roadmap's "verify-pass only" billing):**
+  - `api/disputes/route.ts:3`, `disputes/[id]/route.ts:10`, `disputes/[id]/send/route.ts:8`, `disputes/stats/route.ts:8` all import `disputeService` from `@/lib/disputes/dispute-service` — the **in-memory** service (`dispute-service.ts:87` `private disputes: Map`). Its DB-backed sibling `dispute-service-db.ts` (`DisputeServiceDB`) is **not wired to any route**. A third service `src/lib/credit-repair/dispute-service.ts` is used by the credit-repair disputes route — CRD-1 must map all three and CRD-3 reconciles them.
+  - `api/documents/route.ts:2`, `documents/upload/route.ts:2`, `documents/share/route.ts:2` import `documentService` from `@/lib/documents/document-service` — the **in-memory** service (`document-service.ts:60` `private documents: Map`, `:374` `private shareLinks: Map`). Its DB-backed sibling `document-service-db.ts` is **not wired**.
+  - `disputes` and `documents` tables exist in `src/lib/supabase/types.ts` (lines 65, 109) — the DB services have real tables to target.
+  - Unscoped IDOR queries verified: `CreditBuilderLoanService.updateApplication` (`.eq("id", applicationId)` only), `RentReportingService.updateAccount` / `getPaymentHistory` (keyed on `account_id` only). These services build their Supabase client with `SUPABASE_SERVICE_ROLE_KEY` (`CreditBuilderLoanService.ts:685`, `RentReportingService.ts:635`, `GoodwillLetterService.ts:775`, `SecuredCardRecommendationService.ts:612`) — **the service-role key bypasses RLS**, so an explicit `.eq("user_id", …)` is the ONLY defense.
+- **No FND-* is assigned to the Credit domain.** Verified against `gap_analysis.md`: the only credit/dispute/document findings are FND-051/054 (`admin/disputes/route.ts` — Track N), FND-058 (GDPR cascade RPC — Track C), FND-061 (ModelRouter bypass — Track C). None is this vertical's. The persistence + IDOR work below is *discovered*, not from the register.
+- **Scope boundary:** `admin/disputes/route.ts` (FND-051/054 — Track N) is **out of scope**. AUTH-03 already closed FND-051's "zero auth" part (`admin/disputes` is now `withRole("admin")`-wrapped); the remaining mass-assignment is Track N / TASK-ADM-02. Do not touch `admin/disputes`.
 
 ## Scope
 
-**In scope:** verify-pass + IDOR sweep over the Credit domain — credit scoring/factors/analysis, credit-builder (loans, score, progress, recommendations, secured cards), credit-repair (cards, disputes, goodwill, negotiate, reports, impact, quick-wins), credit-bureau, credit-monitoring, the credits ledger (`api/credits/**`), user-facing disputes, and documents (incl. `tax/documents`).
+**In scope:** persistence-aware verify-pass of the whole Credit domain; IDOR sweep + fixes of `src/lib/credit/`, `src/lib/credit-builder/`, `src/lib/credits/`; de-mock of `api/disputes/**` and `api/documents/**` onto DB-backed persistence with an IDOR sweep of those DB services.
 
-**Out of scope:** `admin/disputes` (Track N); the AI/ModelRouter-bypass finding FND-061 (Track C / TASK-CMP-04); marketplace tradelines beyond a verify spot-check; mobile credit/dispute screens (Vertical 5).
-
-**If the sweep discovers an unscoped query (a real IDOR):** fix it in the same task (add `.eq("user_id", …)` or confirm a real RLS policy), and the cross-user test becomes a genuine regression test. If everything is already scoped, the tests are confirmation evidence. Either outcome is a passing task — the deliverable is *proven* scoping.
+**Out of scope:** `admin/disputes` (Track N); FND-061 ModelRouter bypass (Track C); mobile credit/dispute screens (Vertical 5); `marketplace/tradelines` (a CRD-1 verify spot-check only — not swept, not de-mocked).
 
 ---
 
@@ -32,94 +35,117 @@
 
 | File | Responsibility | Touched by |
 |---|---|---|
-| `docs/blueprint/credit-subfeature-inventory.md` | CREATE — the vertical's mandatory sub-feature checklist + verify-pass results | CRD-1 |
-| `src/lib/credit/services/*.ts`, `src/lib/credit-builder/*.ts` | IDOR sweep — confirm/fix `user_id` scoping | CRD-2 |
-| `src/lib/disputes/*.ts`, `src/lib/documents/*.ts` | IDOR sweep — confirm/fix `user_id` scoping | CRD-3 |
-| co-located `__tests__/*.idor.test.ts` | new cross-user tests per swept service | CRD-2, CRD-3 |
-| any route/service with an unscoped query the sweep finds | fix (`.eq("user_id", …)`) | CRD-2 / CRD-3 |
+| `docs/blueprint/credit-subfeature-inventory.md` | CREATE — sub-feature checklist + persistence-aware verify-pass | CRD-1 |
+| `src/lib/credit/services/*.ts`, `src/lib/credit-builder/*.ts`, `src/lib/credits/*.ts` | IDOR sweep — fix unscoped queries; add `userId` scoping | CRD-2 |
+| `src/lib/disputes/dispute-service-db.ts` | become canonical; gain any method the routes need; IDOR-scoped | CRD-3 |
+| `src/app/api/disputes/**/route.ts` | re-wire to the DB service; async-migrate handlers | CRD-3 |
+| `src/lib/disputes/dispute-service.ts` (in-memory) | retire / delete after re-wire | CRD-3 |
+| `src/lib/documents/document-service-db.ts` | become canonical; share-link persistence; IDOR-scoped | CRD-4 |
+| `src/app/api/documents/**/route.ts` | re-wire to the DB service; async-migrate handlers | CRD-4 |
+| `src/lib/documents/document-service.ts` (in-memory) | retire / delete after re-wire | CRD-4 |
+| co-located `__tests__/*.idor.test.ts` | new cross-user tests per swept/de-mocked service | CRD-2, CRD-3, CRD-4 |
 
 ---
 
-### Task CRD-1: Credit sub-feature inventory + verify-pass
+### Task CRD-1: Credit inventory + persistence-aware verify-pass
 
-**Files:**
-- Create: `docs/blueprint/credit-subfeature-inventory.md`
+**Files:** Create `docs/blueprint/credit-subfeature-inventory.md`
 
-The roadmap mandates the first task of every vertical enumerate the workflow's complete sub-feature checklist.
+- [ ] **Step 1: Enumerate.** All ~57 `src/app/api/{credit*,credits,disputes,documents,tax/documents,marketplace/tradelines}/**/route.ts` routes (path + methods + auth guard); all services under `src/lib/{credit,credit-builder,credits,disputes,documents}/`; credit/dispute/document pages and components. **Map the three dispute services** (`disputes/dispute-service.ts`, `disputes/dispute-service-db.ts`, `credit-repair/dispute-service.ts`) and the two document services — note which routes wire which.
 
-- [ ] **Step 1: Enumerate.** List every credit-domain artifact: all ~57 `src/app/api/{credit*,credits,disputes,documents,tax/documents,marketplace/tradelines}/**/route.ts` routes (path + methods + auth guard), all ~17 services under `src/lib/{credit,credit-builder,disputes,documents}/`, credit/dispute/document pages and components.
+- [ ] **Step 2: Persistence-aware verify-pass.** Group into sub-features. For each, open a representative route + service and judge: does it run on **real persistence** (a real Supabase table) and real computation? A service backed by a process-local `Map`/array is **`DEGRADED — non-persistent`**, NOT `WORKING` — an in-memory store is a structural mock even though it contains no hardcoded literals. Spot-check ≥12 routes.
 
-- [ ] **Step 2: Verify-pass.** Group into sub-features (Credit score & factors, Credit-builder loans, Credit-builder score/progress, Secured-card recommendations, Credit-repair disputes, Goodwill letters, Creditor negotiation, Credit reports & analysis, Credit-bureau connect/import, Credit monitoring & alerts, Credits ledger, Disputes generate/send/track, Documents upload/CRUD/share, Tax documents). For EACH, open a representative route + service and confirm it returns real data (real DB query / real computation / real external call) — NOT a stub, mock, or hardcoded response. Spot-check at least 12 routes across the groups.
+- [ ] **Step 3: Write the inventory** — `docs/blueprint/credit-subfeature-inventory.md`: Sub-feature | Key files | Status (`WORKING` / `DEGRADED — <reason>` / `MOCK`). Disputes and Documents are expected `DEGRADED — non-persistent (in-memory Map)`. Note the `admin/disputes` Track-N boundary. Header explains the doc is the vertical's before/after evidence.
 
-- [ ] **Step 3: Write the inventory** — `docs/blueprint/credit-subfeature-inventory.md`, a table: Sub-feature | Key files | Status (`WORKING` / `MOCK` / `DEGRADED — <reason>`). Be honest — if a verify-pass finds a stub/mock, mark it `MOCK` and describe it precisely; that becomes a CRD fix task (report it so the plan can be extended). Add a header explaining the doc is the vertical's before/after evidence, and note the `admin/disputes` FND-051/054 scope boundary.
+- [ ] **Step 4: Commit** — `docs: TASK-CRD-1 credit inventory + persistence-aware verify-pass`.
 
-- [ ] **Step 4: Commit** — `docs: TASK-CRD-1 credit sub-feature inventory + verify-pass`.
-
-- [ ] **Step 5: Report** any `MOCK`/`DEGRADED` row found so a fix task can be appended to this plan before CRD-2.
+- [ ] **Step 5: Report** every `DEGRADED`/`MOCK` row. If the verify-pass finds a degraded sub-feature beyond disputes/documents (already covered by CRD-3/CRD-4) and the credit-service IDORs (CRD-2), STOP and report so a task can be appended.
 
 ---
 
-### Task CRD-2: IDOR sweep — credit & credit-builder services
+### Task CRD-2: IDOR sweep + fix — credit, credit-builder & credits services
 
 **Files:**
-- Audit/modify: `src/lib/credit/services/CreditBuilderLoanService.ts`, `CreditScoreSimulator.ts`, `DisputeLetterGenerator.ts`, `GoodwillLetterService.ts`, `RentReportingService.ts`, `SecuredCardRecommendationService.ts`; `src/lib/credit-builder/credit-builder-service.ts`, `goal-tracker-service.ts`, `score-simulator-service.ts`
+- Audit/fix: `src/lib/credit/services/{CreditBuilderLoanService,CreditScoreSimulator,DisputeLetterGenerator,GoodwillLetterService,RentReportingService,SecuredCardRecommendationService}.ts`; `src/lib/credit-builder/{credit-builder-service,goal-tracker-service,score-simulator-service}.ts`; `src/lib/credits/*.ts` (the credits ledger — `credit-service.ts` etc., the surface behind `api/credits/{balance,history,purchase}`)
 - Test: a co-located `*.idor.test.ts` per service with resource-id methods (new)
 
-These services contain ~27 Supabase `.from()` query chains (RentReporting 6, GoodwillLetter 6, credit-builder-service 7, CreditBuilderLoan 3, SecuredCard 2, DisputeLetterGenerator 1, plus the simulator/goal-tracker services).
+- [ ] **Step 1: Audit every `.from()` chain.** For each service, read each query and classify: read/update/delete keyed by a resource id → MUST carry `.eq("user_id", …)`; insert → must write `user_id`; list-by-user → already scoped. **Service-role caveat:** `RentReportingService`, `GoodwillLetterService`, `SecuredCardRecommendationService`, `CreditBuilderLoanService` build their client with `SUPABASE_SERVICE_ROLE_KEY` — the service-role key **bypasses RLS**. For these four, a `Y-via-RLS` classification is FORBIDDEN — every resource-keyed query needs an explicit `.eq("user_id", …)` or it is an IDOR. (For the other services, `Y-via-RLS` is allowed only if you confirm the RLS policy exists in `supabase/migrations/`.) Produce an audit table in the commit body: service · method · table · scoped? (Y / Y-via-RLS / N-FIXED).
 
-- [ ] **Step 1: Audit every `.from()` chain.** For each service, grep `.from(` and read each query. Classify each:
-  - **Read/update/delete keyed by a resource id** (a loan id, letter id, report id, etc.) → MUST carry `.eq("user_id", …)` (the authenticated user threaded from the route) OR operate on a table with a verified RLS policy that scopes by `auth.uid()`. A query keyed only by the resource id with no `user_id` filter and no RLS = an IDOR.
-  - **Insert** → must write `user_id`.
-  - **List-by-user** (`.eq("user_id", userId)` already) → fine.
-  Produce a short audit table in the commit body: service · method · table · scoped? (Y / Y-via-RLS / N-FIXED).
+- [ ] **Step 2: Fix the unscoped queries.** Known targets confirmed during planning — fix at minimum these: `CreditBuilderLoanService.updateApplication` (`.eq("id", applicationId)` → add `.eq("user_id", userId)`), `RentReportingService.updateAccount` and `getPaymentHistory` (keyed on `account_id`/`id` only → add `user_id` scoping). For each: add a required `userId` param threaded from the route's `AuthedUser`, add `.eq("user_id", userId)`, update callers (tsc backstops). Fix any further unscoped query the Step-1 audit surfaces.
 
-- [ ] **Step 2: Fix any unscoped query.** For each IDOR found: add the required `userId` parameter to the method (threaded from the route's `AuthedUser`) and `.eq("user_id", userId)` to the query; update callers; tsc backstops. If a query is RLS-scoped, confirm the RLS policy actually exists (check `supabase/migrations/`) — if you cannot confirm a policy, treat it as unscoped and add the explicit `.eq`.
+- [ ] **Step 3: Cross-user `*.idor.test.ts`** for every service method that takes a resource id — `idor`-named describe blocks; user A's resource id under user B's `userId` → empty/null/throw. Mock Supabase.
 
-- [ ] **Step 3: Write cross-user `*.idor.test.ts`** for every service method that takes a resource id — describe block named `idor`: present user A's resource id with user B's `userId`, assert empty/null/throw (no cross-user data). Mock Supabase. These tests are the gate's evidence whether or not Step 2 found a bug.
+- [ ] **Step 4: Run** — `npm run test:idor` green; full suite (`npx jest --watchman=false`) 0 failures; `npx tsc --noEmit` 0 errors.
 
-- [ ] **Step 4: Run** — `npm run test:idor` includes the new tests. Full suite (`npx jest --watchman=false`) 0 failures. `npx tsc --noEmit` 0 errors.
-
-- [ ] **Step 5: Commit** — `test: TASK-CRD-2 IDOR sweep — credit & credit-builder services` (or `fix:` if Step 2 closed a real IDOR — name the finding(s) in the body).
+- [ ] **Step 5: Commit** — `fix: TASK-CRD-2 IDOR sweep — credit/credit-builder/credits services (close updateApplication + rent-reporting IDORs)`.
 
 ---
 
-### Task CRD-3: IDOR sweep — disputes & documents services
+### Task CRD-3: De-mock disputes onto DB persistence + IDOR sweep
 
 **Files:**
-- Audit/modify: `src/lib/disputes/dispute-service.ts`, `dispute-service-db.ts`, `advanced-strategies.ts`; `src/lib/documents/document-service.ts`, `document-service-db.ts`, `document-categorizer.ts`, `text-extraction-service.ts`, `ocr-bridge-service.ts`
-- Test: a co-located `*.idor.test.ts` per service with resource-id methods (new)
+- Modify: `src/lib/disputes/dispute-service-db.ts` (canonical), `src/app/api/disputes/{route,[id]/route,[id]/send/route,stats/route}.ts`; reconcile `src/lib/credit-repair/dispute-service.ts`
+- Delete/retire: `src/lib/disputes/dispute-service.ts` (in-memory)
+- Test: `dispute-service-db` test + `*.idor.test.ts`; rewrite the affected route tests
 
-Same sweep, for the disputes and documents services. Documents are especially IDOR-sensitive — a document is user-private; `document-service-db.ts` `getDocument`/`deleteDocument`/`shareDocument` keyed only by document id would leak/destroy another user's files.
+The `api/disputes/**` routes use the in-memory `dispute-service.ts` (`Map`-backed) — disputes vanish on every serverless cold start. A dispute is a legally meaningful FCRA record; this is a launch blocker.
 
-- [ ] **Step 1: Audit every `.from()` chain** in the disputes + documents services — same classification as CRD-2 Step 1. Pay special attention to `document-service-db.ts` (the `mapToDocument` path at lines ~123/170/196/363 — confirm the SELECT/DELETE/UPDATE feeding those mappers is `user_id`-scoped) and `dispute-service-db.ts`. Audit table in the commit body.
+- [ ] **Step 1: Method-parity audit.** List every `disputeService.*` method the four `api/disputes` routes call. Check `dispute-service-db.ts` (`DisputeServiceDB`) has each. Note gaps. Also determine the role of `credit-repair/dispute-service.ts` (a third service) — is it a duplicate, or a distinct credit-repair-specific store? Report which routes use it and whether it too needs de-mocking (if it is also in-memory and route-wired, fold its de-mock in; if it is DB-backed or unused, note and leave).
 
-- [ ] **Step 2: Fix any unscoped query** — same approach as CRD-2 Step 2.
+- [ ] **Step 2: Write failing tests** — for each `api/disputes` route, a test asserting it persists via the DB service (create a dispute, read it back through a fresh service instance — proving it survives, which an in-memory `Map` cannot). Plus `idor`-named cross-user tests on `dispute-service-db`'s resource-id methods.
 
-- [ ] **Step 3: Write cross-user `*.idor.test.ts`** for every disputes/documents service method that takes a resource id — `idor`-named describe blocks. A documents cross-user test must assert user B cannot `get`/`update`/`delete`/`share` user A's document.
+- [ ] **Step 3: Run — expect FAIL.**
 
-- [ ] **Step 4: Run** — `npm run test:idor` green; full suite 0 failures; `npx tsc --noEmit` 0 errors.
+- [ ] **Step 4: Implement.** Fill any `dispute-service-db.ts` method gap from Step 1 (every query `user_id`-scoped — verify `disputes.user_id` in `types.ts`). Re-wire the four `api/disputes` routes to import `dispute-service-db`'s service; the DB service is async — `await` every call and make handlers async. Delete `dispute-service.ts` (the in-memory one) once no route imports it (grep to confirm). IDOR-scope every `dispute-service-db` query.
 
-- [ ] **Step 5: Commit** — `test: TASK-CRD-3 IDOR sweep — disputes & documents services` (or `fix:` if a real IDOR was closed).
+- [ ] **Step 5: Run — expect PASS.** `npm run test:idor` green; full suite 0 failures; `npx tsc --noEmit` 0 errors. `git grep -n "disputes/dispute-service\b" src/` — no production import of the in-memory service remains.
+
+- [ ] **Step 6: Commit** — `fix: TASK-CRD-3 de-mock disputes onto DB persistence + IDOR scoping`.
+
+---
+
+### Task CRD-4: De-mock documents onto DB persistence + IDOR sweep
+
+**Files:**
+- Modify: `src/lib/documents/document-service-db.ts` (canonical), `src/app/api/documents/{route,upload/route,share/route}.ts`
+- Delete/retire: `src/lib/documents/document-service.ts` (in-memory)
+- Test: `document-service-db` test + `*.idor.test.ts`; rewrite the affected route tests
+
+The `api/documents/**` routes use the in-memory `document-service.ts` (`Map`-backed documents AND share-links) — uploaded documents and share links vanish on cold start.
+
+- [ ] **Step 1: Method-parity audit.** List every `documentService.*` method the three `api/documents` routes call (incl. share-link creation — `document-service.ts:379` `createShareLink`). Check `document-service-db.ts` has each; note gaps. Share links are in-memory in the current service — the DB version needs a persisted share-link path (a `document_shares` table, or share metadata on the `documents` row — verify what exists in `types.ts`/migrations; if neither, add a migration for share-link persistence).
+
+- [ ] **Step 2: Write failing tests** — each `api/documents` route persists via the DB service (upload a document, read it back through a fresh instance); `idor`-named cross-user tests — user B cannot `get`/`update`/`delete`/`share` user A's document.
+
+- [ ] **Step 3: Run — expect FAIL.**
+
+- [ ] **Step 4: Implement.** Fill `document-service-db.ts` method gaps (every query `user_id`-scoped — verify `documents.user_id` in `types.ts`). If share-link persistence needs a table, add `supabase/migrations/20260517000004_document_shares.sql` (RLS scoped to owner). Re-wire the three `api/documents` routes to the DB service; async-migrate handlers. Delete `document-service.ts` (in-memory) once unimported. IDOR-scope every query.
+
+- [ ] **Step 5: Run — expect PASS.** `npm run test:idor` green; full suite 0 failures; `npx tsc --noEmit` 0 errors. `git grep -n "documents/document-service\b" src/` — no production import of the in-memory service remains.
+
+- [ ] **Step 6: Commit** — `fix: TASK-CRD-4 de-mock documents onto DB persistence + IDOR scoping`.
 
 ---
 
 ## Vertical gate (Credit "done" criteria)
 
-- `npm run test:idor` — passes; includes a cross-user test for every credit/credit-builder/disputes/documents service method that takes a resource id; overall count does not regress (and rises by the new tests).
-- The CRD-2 + CRD-3 audit tables account for **every** `.from()` query chain in the swept services — each marked scoped (`.eq("user_id")` or verified RLS) or fixed.
-- Any IDOR the sweep discovered is closed and has a cross-user regression test proving it.
+- `npm run test:idor` — passes; includes a cross-user test for every credit/credit-builder/credits/disputes/documents service method that takes a resource id; count does not regress.
+- The CRD-2 audit table accounts for every `.from()` chain in the swept services; every unscoped query found is fixed (`CreditBuilderLoanService.updateApplication` + the `RentReportingService` IDORs at minimum).
+- `api/disputes/**` and `api/documents/**` persist to real DB tables — no production route imports `disputes/dispute-service.ts` or `documents/document-service.ts` (the in-memory services); both deleted. Proven by `git grep`.
 - Full suite 0 failures; `npm run type-check` + project-wide `tsc` 0 errors.
 - `BASE_REF=<vertical base> npm run test:coverage:changed` — ≥85% on every changed file's changed lines.
-- CRD-1 inventory shows every credit sub-feature `WORKING` (no row left `MOCK`/`DEGRADED`); no sub-feature removed. Any mock the verify-pass found is fixed (via an appended task) before the gate passes.
-- The `admin/disputes` FND-051/054 scope boundary is documented in the inventory (open under Track N — not a Credit-vertical regression).
+- CRD-1 inventory shows every credit sub-feature `WORKING` at close (Disputes and Documents flip `DEGRADED → WORKING` once CRD-3/CRD-4 land); no sub-feature removed.
+- The `admin/disputes` FND-051/054 boundary is documented in the inventory (open under Track N — not a Credit-vertical regression).
 
 ---
 
 ## Notes for the executor
 
-- This is a verify + sweep vertical — most tasks confirm rather than change. A task whose audit finds everything already scoped still delivers value: the cross-user tests are permanent regression evidence.
-- An IDOR cross-user test must present user A's resource id under user B's identity and assert no data crosses — that is the only evidence the gate accepts.
-- Before declaring a query "RLS-scoped" instead of adding an explicit `.eq("user_id")`, confirm the RLS policy genuinely exists in `supabase/migrations/` — do not assume. Migrations are known to be incomplete on this branch; if you cannot confirm a policy, add the explicit filter.
-- Do not touch `admin/disputes` — it is Track N's. Do not pull FND-051/054/061 into this vertical.
-- If the CRD-1 verify-pass finds a mock/stub, STOP and report it — the plan gets an appended fix task; do not silently leave a `MOCK` row or quietly fix scope creep.
-- Reviewers are advisory; a review CRITICAL that would force a regression should be challenged with reasoning.
+- This vertical de-mocks two persistence layers and sweeps for IDOR — it is real `fix:` work, not a verify pass. The roadmap's "already remediated" billing was wrong; "no findings" meant the domain was never audited.
+- An in-memory `Map`/array behind a route is a structural mock — judge persistence, not just hardcoded literals.
+- Service-role-key services (`RentReporting`, `Goodwill`, `SecuredCard`, `CreditBuilderLoan`) bypass RLS — every resource-keyed query needs an explicit `.eq("user_id", …)`; the RLS escape hatch does not apply to them.
+- Every IDOR fix needs a cross-user test (user A's resource id under user B) — the only evidence the gate accepts.
+- Verify a table/column exists in `types.ts` (and an RLS policy in `supabase/migrations/`) before relying on it — migrations are incomplete on this branch.
+- Before deleting an in-memory service, `git grep` to confirm no production code still imports it; update/retire its tests in the same commit.
+- CRD-3 → CRD-4 are independent of each other; both depend on CRD-1. CRD-2 is independent. Order: CRD-1 → CRD-2 → CRD-3 → CRD-4.
+- Do not touch `admin/disputes`. Reviewers are advisory; challenge a review CRITICAL that would force a regression.
