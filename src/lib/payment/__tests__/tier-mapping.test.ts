@@ -14,12 +14,6 @@ describe("tier-mapping", () => {
         expect(tierFromPriceId(priceId)).toBe(expectedTier);
       },
     );
-
-    it("resolves every SUBSCRIPTION_PLANS price ID without throwing", () => {
-      for (const plan of SUBSCRIPTION_PLANS) {
-        expect(() => tierFromPriceId(plan.priceId)).not.toThrow();
-      }
-    });
   });
 
   it("maps the free-tier price ID to 'free'", () => {

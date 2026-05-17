@@ -21,6 +21,15 @@ export type SubscriptionTier =
   | "family"
   | "family-plus";
 
+const VALID_TIERS: ReadonlySet<string> = new Set<SubscriptionTier>([
+  "free",
+  "standard",
+  "pro",
+  "family-duo",
+  "family",
+  "family-plus",
+]);
+
 export class TierMappingError extends Error {
   constructor(priceId: string) {
     super(
@@ -31,8 +40,18 @@ export class TierMappingError extends Error {
 }
 
 // Built once from SUBSCRIPTION_PLANS: priceId → plan id (the canonical tier).
+// Each plan id is validated against the SubscriptionTier union — a plan whose
+// id falls outside the six tiers is a provisioning bug and fails loud at load,
+// not a silent `as`-cast that corrupts the map's type guarantee.
 const PRICE_ID_TO_TIER: ReadonlyMap<string, SubscriptionTier> = new Map(
-  SUBSCRIPTION_PLANS.map((plan) => [plan.priceId, plan.id as SubscriptionTier]),
+  SUBSCRIPTION_PLANS.map((plan) => {
+    if (!VALID_TIERS.has(plan.id)) {
+      throw new Error(
+        `Invalid plan id "${plan.id}" in SUBSCRIPTION_PLANS — not a SubscriptionTier`,
+      );
+    }
+    return [plan.priceId, plan.id as SubscriptionTier];
+  }),
 );
 
 /**
