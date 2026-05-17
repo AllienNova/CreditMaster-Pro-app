@@ -518,8 +518,7 @@ class SubscriptionService {
     const { error } = await subscriptions().insert(insertData as any);
 
     if (error) {
-      // Subscription error:('Failed to save subscription from webhook:', error);
-      return;
+      throw new Error(`Failed to save subscription from webhook: ${error.message}`);
     }
 
     // Update profile

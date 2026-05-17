@@ -523,11 +523,15 @@ class StripePaymentService {
         );
         break;
       case "invoice.paid":
-        await this.handleInvoicePaid(event.data.object as Stripe.Invoice);
+        await this.handleInvoicePaid(
+          event.data.object as Stripe.Invoice,
+          event.id,
+        );
         break;
       case "invoice.payment_failed":
         await this.handleInvoicePaymentFailed(
           event.data.object as Stripe.Invoice,
+          event.id,
         );
         break;
       case "payment_intent.succeeded":
@@ -538,6 +542,7 @@ class StripePaymentService {
       case "payment_intent.payment_failed":
         await this.handlePaymentIntentFailed(
           event.data.object as Stripe.PaymentIntent,
+          event.id,
         );
         break;
       default:
@@ -574,7 +579,10 @@ class StripePaymentService {
     await subscriptionService.handleSubscriptionDeleted(subscription);
   }
 
-  private async handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
+  private async handleInvoicePaid(
+    invoice: Stripe.Invoice,
+    eventId: string = "",
+  ): Promise<void> {
     // Stripe: Invoice paid
 
     // Get customer email for notification
@@ -583,73 +591,90 @@ class StripePaymentService {
         ? invoice.customer
         : invoice.customer?.id;
 
-    if (customerId) {
-      try {
-        const customer = await this.getCustomer(customerId);
+    if (!customerId) {
+      return;
+    }
+
+    try {
+      const customer = await this.getCustomer(customerId);
+      const { logger } = await import("../monitoring/logger");
+
+      // Log successful payment for analytics
+      logger.info("Payment successful", {
+        invoiceId: invoice.id,
+        customerId,
+        amount: invoice.amount_paid,
+        currency: invoice.currency,
+      });
+
+      // ── Idempotency ordering: DB work FIRST, email LAST ───────────────────
+      // If the credit reset throws, Stripe retries this handler. The reset RPC
+      // is idempotent (same period → no-op), so re-running it is safe. The
+      // email is sent LAST so a retry after a failed reset does not re-send to
+      // the customer — the reset runs again (harmlessly) and only then the email
+      // is sent. Do not move the email above the credit reset.
+      // ─────────────────────────────────────────────────────────────────────
+
+      // Reset monthly credit allowance on subscription renewal
+      const subDetails = invoice.parent?.subscription_details;
+      if (subDetails?.subscription) {
+        const stripeSubId =
+          typeof subDetails.subscription === "string"
+            ? subDetails.subscription
+            : subDetails.subscription.id;
+
+        const { supabaseAdmin } = await import("../supabase/server");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const db = supabaseAdmin as any;
+
+        // Look up the user from the subscription record
+        const { data: subRecord } = await db
+          .from("subscriptions")
+          .select("user_id, stripe_price_id")
+          .eq("stripe_subscription_id", stripeSubId)
+          .single();
+
+        if (subRecord) {
+          const { resetCreditsForTier } = await import(
+            "../credits/credit-reset"
+          );
+
+          // Determine tier from price ID
+          const plan = SUBSCRIPTION_PLANS.find(
+            (p) => p.priceId === subRecord.stripe_price_id,
+          );
+          const tier = plan?.id ?? "free";
+
+          await resetCreditsForTier(subRecord.user_id, tier);
+        }
+      }
+
+      // Send payment confirmation email — always last so a retry after a
+      // transient DB failure re-runs the idempotent reset without re-sending.
+      if (customer.email) {
         const { notificationService } =
           await import("../notifications/notification-service");
-
-        // Send payment confirmation email
-        if (customer.email) {
-          await notificationService.sendPaymentSuccessEmail(
-            customer.email,
-            customer.name || "Customer",
-            invoice.amount_paid ? invoice.amount_paid / 100 : 0,
-            invoice.id,
-          );
-        }
-
-        // Log successful payment for analytics
-        const { logger } = await import("../monitoring/logger");
-        logger.info("Payment successful", {
-          invoiceId: invoice.id,
-          customerId,
-          amount: invoice.amount_paid,
-          currency: invoice.currency,
-        });
-
-        // Reset monthly credit allowance on subscription renewal
-        const subDetails = invoice.parent?.subscription_details;
-        if (subDetails?.subscription) {
-          const stripeSubId =
-            typeof subDetails.subscription === "string"
-              ? subDetails.subscription
-              : subDetails.subscription.id;
-
-          const { supabaseAdmin } = await import("../supabase/server");
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const db = supabaseAdmin as any;
-
-          // Look up the user from the subscription record
-          const { data: subRecord } = await db
-            .from("subscriptions")
-            .select("user_id, stripe_price_id")
-            .eq("stripe_subscription_id", stripeSubId)
-            .single();
-
-          if (subRecord) {
-            const { resetCreditsForTier } = await import(
-              "../credits/credit-reset"
-            );
-
-            // Determine tier from price ID
-            const plan = SUBSCRIPTION_PLANS.find(
-              (p) => p.priceId === subRecord.stripe_price_id,
-            );
-            const tier = plan?.id ?? "free";
-
-            await resetCreditsForTier(subRecord.user_id, tier);
-          }
-        }
-      } catch (error) {
-        // Stripe error: Failed to process invoice paid event
-        void error;
+        await notificationService.sendPaymentSuccessEmail(
+          customer.email,
+          customer.name || "Customer",
+          invoice.amount_paid ? invoice.amount_paid / 100 : 0,
+          invoice.id,
+        );
       }
+    } catch (error) {
+      const { logger } = await import("../monitoring/logger");
+      logger.error(
+        "Failed to process invoice.paid event",
+        error instanceof Error ? error : new Error(String(error)),
+        { eventId, invoiceId: invoice.id, customerId, eventType: "invoice.paid" },
+      );
+      throw error;
     }
   }
 
   private async handleInvoicePaymentFailed(
     invoice: Stripe.Invoice,
+    eventId: string = "",
   ): Promise<void> {
     // Stripe: Invoice payment failed
 
@@ -659,32 +684,40 @@ class StripePaymentService {
         ? invoice.customer
         : invoice.customer?.id;
 
-    if (customerId) {
-      try {
-        const customer = await this.getCustomer(customerId);
+    if (!customerId) {
+      return;
+    }
+
+    try {
+      const customer = await this.getCustomer(customerId);
+      const { logger } = await import("../monitoring/logger");
+
+      // Log payment failure for monitoring
+      logger.warn("Payment failed", {
+        invoiceId: invoice.id,
+        customerId,
+        amount: invoice.amount_due,
+        currency: invoice.currency,
+      });
+
+      // Send payment failure email
+      if (customer.email) {
         const { notificationService } =
           await import("../notifications/notification-service");
-
-        // Send payment failure email
-        if (customer.email) {
-          await notificationService.sendPaymentFailedEmail(
-            customer.email,
-            invoice.amount_due ? invoice.amount_due / 100 : 0,
-            `Invoice ${invoice.id} payment failed. Please update your payment method.`,
-          );
-        }
-
-        // Log payment failure for monitoring
-        const { logger } = await import("../monitoring/logger");
-        logger.warn("Payment failed", {
-          invoiceId: invoice.id,
-          customerId,
-          amount: invoice.amount_due,
-          currency: invoice.currency,
-        });
-      } catch (error) {
-        // Stripe error: Failed to process invoice payment failed event
+        await notificationService.sendPaymentFailedEmail(
+          customer.email,
+          invoice.amount_due ? invoice.amount_due / 100 : 0,
+          `Invoice ${invoice.id} payment failed. Please update your payment method.`,
+        );
       }
+    } catch (error) {
+      const { logger } = await import("../monitoring/logger");
+      logger.error(
+        "Failed to process invoice.payment_failed event",
+        error instanceof Error ? error : new Error(String(error)),
+        { eventId, invoiceId: invoice.id, customerId, eventType: "invoice.payment_failed" },
+      );
+      throw error;
     }
   }
 
@@ -790,29 +823,25 @@ class StripePaymentService {
 
   private async handlePaymentIntentFailed(
     paymentIntent: Stripe.PaymentIntent,
+    eventId: string = "",
   ): Promise<void> {
-    // Stripe: Payment intent failed
-
-    // Log payment failure for monitoring and alerting
-    try {
-      const { logger } = await import("../monitoring/logger");
-      logger.error(
-        "Payment intent failed",
-        new Error("Payment intent failed"),
-        {
-          paymentIntentId: paymentIntent.id,
-          amount: paymentIntent.amount,
-          currency: paymentIntent.currency,
-          customerId:
-            typeof paymentIntent.customer === "string"
-              ? paymentIntent.customer
-              : paymentIntent.customer?.id,
-          lastPaymentError: paymentIntent.last_payment_error?.message,
-        },
-      );
-    } catch (error) {
-      // Stripe error: Failed to log payment intent failure
-    }
+    // Stripe: Payment intent failed — log and rethrow so route returns 4xx
+    const { logger } = await import("../monitoring/logger");
+    logger.error(
+      "Payment intent failed",
+      new Error("Payment intent failed"),
+      {
+        eventId,
+        paymentIntentId: paymentIntent.id,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        customerId:
+          typeof paymentIntent.customer === "string"
+            ? paymentIntent.customer
+            : paymentIntent.customer?.id,
+        lastPaymentError: paymentIntent.last_payment_error?.message,
+      },
+    );
   }
 
   /**
