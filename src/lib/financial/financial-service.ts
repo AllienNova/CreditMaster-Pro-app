@@ -239,14 +239,10 @@ class FinancialService {
     const trends: MonthlyTrend[] = [];
     const accounts = await plaidService.getAccounts(userId);
 
+    const now = new Date();
     for (let i = months - 1; i >= 0; i--) {
-      const startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - i);
-      startDate.setDate(1);
-
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + 1);
-      endDate.setDate(0);
+      const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const endDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
 
       let income = 0;
       let expenses = 0;
