@@ -16,9 +16,12 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     const body = await request.json() as Record<string, unknown>;
     const { priceId } = body;
 
-    if (!priceId) {
+    // Fix 2: assert priceId is a string before any string-specific operations.
+    // body is Record<string, unknown> so priceId is unknown — a client could
+    // send a number, object, or array; reject those explicitly.
+    if (typeof priceId !== "string" || !priceId) {
       return NextResponse.json(
-        { error: "Missing required field: priceId" },
+        { error: "Invalid priceId: not a recognised subscription plan" },
         { status: 400 },
       );
     }
@@ -37,8 +40,18 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     // Client-supplied successUrl/cancelUrl are intentionally NOT read from the
     // request body. String-concatenating client values opens an open-redirect
     // via payloads like "//evil.com" or "@evil.com". The server owns these paths.
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ?? request.nextUrl.origin;
+    //
+    // Fix 1: NEXT_PUBLIC_APP_URL is authoritative — no fallback to
+    // request.nextUrl.origin, which can be influenced by a spoofed Host or
+    // X-Forwarded-Host header on reverse-proxied deployments.
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) {
+      console.error("Checkout misconfiguration: NEXT_PUBLIC_APP_URL is not set");
+      return NextResponse.json(
+        { error: "Failed to create checkout session" },
+        { status: 500 },
+      );
+    }
     const successUrl = `${appUrl}/payment/success`;
     const cancelUrl = `${appUrl}/pricing`;
 
@@ -70,7 +83,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     // client must not be able to manufacture a free trial period by injecting
     // a trialDays value. Always pass undefined.
     const session = await stripeService.createCheckoutSession(
-      priceId as string,
+      priceId,
       stripeCustomerId,
       successUrl,
       cancelUrl,

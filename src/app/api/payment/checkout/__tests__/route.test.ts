@@ -73,6 +73,10 @@ describe("/api/payment/checkout", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // Provide the required env var so happy-path tests reach createCheckoutSession.
+    // The misconfiguration test deletes this and restores it in a try/finally.
+    process.env.NEXT_PUBLIC_APP_URL = "https://app.fynvita.com";
+
     mockValidateFromHeaders.mockResolvedValue({
       valid: true,
       user: { id: "user-1", email: "user@example.com" },
@@ -172,6 +176,41 @@ describe("/api/payment/checkout", () => {
     // 5th positional arg (index 4) must not be the client value
     expect(callArgs[4]).not.toBe(9999);
     expect(callArgs[4]).toBeUndefined();
+  });
+
+  // ── WBH-06 review Fix 1: NEXT_PUBLIC_APP_URL must be set — no Host-spoofable fallback ──
+
+  it("returns 500 with generic message when NEXT_PUBLIC_APP_URL is unset", async () => {
+    const saved = process.env.NEXT_PUBLIC_APP_URL;
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    try {
+      const res = await POST(createMockRequest({ priceId: "price_standard" }));
+      expect(res.status).toBe(500);
+      const json = await res.json() as { error: string };
+      // Generic message only — no env var name, no internal detail leaked to client
+      expect(json.error).toBe("Failed to create checkout session");
+      expect(json.error).not.toContain("NEXT_PUBLIC_APP_URL");
+      // createCheckoutSession must NOT have been called with a Host-derived URL
+      expect(mockCreateCheckoutSession).not.toHaveBeenCalled();
+    } finally {
+      if (saved !== undefined) process.env.NEXT_PUBLIC_APP_URL = saved;
+    }
+  });
+
+  // ── WBH-06 review Fix 2: priceId must be a string before plan lookup ────────
+
+  it("returns 400 when priceId is a number (not a string)", async () => {
+    const res = await POST(createMockRequest({ priceId: 42 }));
+    expect(res.status).toBe(400);
+    const json = await res.json() as { error: string };
+    expect(json.error).toBeDefined();
+  });
+
+  it("returns 400 when priceId is an object (not a string)", async () => {
+    const res = await POST(createMockRequest({ priceId: { id: "price_standard" } }));
+    expect(res.status).toBe(400);
+    const json = await res.json() as { error: string };
+    expect(json.error).toBeDefined();
   });
 
   // ── WBH-06: no raw error message leak on 500 ────────────────────────────────
