@@ -29,6 +29,7 @@
     "test:auth-negative": "jest --testPathPatterns='api/.*/__tests__/.*route\\.test\\.ts$' -t 'negative-auth'",
     "test:webhook-idempotency": "jest -t 'wbh-phase2'",
     "audit:auth": "tsx scripts/verify-auth-coverage.ts",
+    "audit:tier-map": "tsx scripts/audit-tier-map.ts",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

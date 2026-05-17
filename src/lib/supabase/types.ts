@@ -19,7 +19,13 @@ export interface Database {
         Row: {
           id: string;
           full_name: string | null;
-          subscription_tier: "free" | "basic" | "premium" | "enterprise";
+          subscription_tier:
+            | "free"
+            | "standard"
+            | "pro"
+            | "family-duo"
+            | "family"
+            | "family-plus";
           subscription_status: "active" | "canceled" | "past_due" | null;
           stripe_customer_id: string | null;
           created_at: string;
@@ -28,7 +34,13 @@ export interface Database {
         Insert: {
           id: string;
           full_name?: string | null;
-          subscription_tier?: "free" | "basic" | "premium" | "enterprise";
+          subscription_tier?:
+            | "free"
+            | "standard"
+            | "pro"
+            | "family-duo"
+            | "family"
+            | "family-plus";
           subscription_status?: "active" | "canceled" | "past_due" | null;
           stripe_customer_id?: string | null;
           created_at?: string;
@@ -37,7 +49,13 @@ export interface Database {
         Update: {
           id?: string;
           full_name?: string | null;
-          subscription_tier?: "free" | "basic" | "premium" | "enterprise";
+          subscription_tier?:
+            | "free"
+            | "standard"
+            | "pro"
+            | "family-duo"
+            | "family"
+            | "family-plus";
           subscription_status?: "active" | "canceled" | "past_due" | null;
           stripe_customer_id?: string | null;
           created_at?: string;
