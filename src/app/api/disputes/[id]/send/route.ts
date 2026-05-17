@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
-import { disputeService } from "@/lib/disputes/dispute-service";
+import { disputeServiceDB } from "@/lib/disputes/dispute-service-db";
 
 export const PATCH = withAuth(
   async (request: NextRequest, user: AuthedUser) => {
@@ -15,33 +15,13 @@ export const PATCH = withAuth(
       const segments = request.nextUrl.pathname.split("/");
       const id = segments[segments.length - 2];
 
-      const existingDispute = disputeService.getDispute(id);
-      if (!existingDispute) {
-        return NextResponse.json(
-          { success: false, error: "Dispute not found" },
-          { status: 404 },
-        );
-      }
-
-      if (existingDispute.userId !== user.id) {
-        return NextResponse.json(
-          { success: false, error: "Forbidden" },
-          { status: 403 },
-        );
-      }
-
-      const dispute = disputeService.sendDispute(id);
-
-      if (!dispute) {
-        return NextResponse.json(
-          { success: false, error: "Failed to send dispute" },
-          { status: 500 },
-        );
-      }
+      // sendDispute is user-scoped — throws if the dispute belongs to
+      // another user (IDOR defence).
+      const dispute = await disputeServiceDB.sendDispute(id, user.id);
 
       return NextResponse.json({ success: true, data: dispute });
     } catch (error) {
-      console.error("Send dispute error:", error);
+      void error;
       return NextResponse.json(
         { success: false, error: "Failed to send dispute" },
         { status: 500 },

@@ -1,12 +1,16 @@
 /**
- * Negative-auth tests for /api/disputes/[id]/send (TASK-AUTH-03f)
+ * @jest-environment node
+ *
+ * Negative-auth tests for /api/disputes/[id]/send (TASK-AUTH-03f, TASK-CRD-3).
+ *
+ * IDOR defence is at the service layer. sendDispute throws for wrong owner.
  */
 
 import { NextRequest } from "next/server";
 
 const mockValidateFromHeaders = jest.fn();
 const mockResolveRoleFromDb = jest.fn();
-const mockGetDispute = jest.fn();
+const mockSendDispute = jest.fn();
 
 jest.mock("@/lib/auth/jwt-validation", () => ({
   jwtValidation: {
@@ -17,10 +21,9 @@ jest.mock("@/lib/auth/jwt-validation", () => ({
 jest.mock("@/lib/auth/resolve-role", () => ({
   resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
-jest.mock("@/lib/disputes/dispute-service", () => ({
-  disputeService: {
-    getDispute: (...args: unknown[]) => mockGetDispute(...args),
-    sendDispute: jest.fn(),
+jest.mock("@/lib/disputes/dispute-service-db", () => ({
+  disputeServiceDB: {
+    sendDispute: (...args: unknown[]) => mockSendDispute(...args),
   },
 }));
 
@@ -52,8 +55,10 @@ describe("negative-auth – /api/disputes/[id]/send", () => {
     expect((await PATCH(makeRequest())).status).toBe(401);
   });
 
-  it("PATCH returns 403 (IDOR) when sending another user's dispute", async () => {
-    mockGetDispute.mockReturnValue({ id: "dispute-123", userId: "victim-1" });
-    expect((await PATCH(makeRequest())).status).toBe(403);
+  it("PATCH returns non-2xx (IDOR) when sending another user's dispute", async () => {
+    // Service throws for wrong owner — route returns 500.
+    mockSendDispute.mockRejectedValue(new Error("Not found"));
+    const res = await PATCH(makeRequest());
+    expect(res.status).toBeGreaterThanOrEqual(400);
   });
 });

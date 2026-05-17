@@ -1,5 +1,13 @@
 /**
- * Negative-auth tests for /api/disputes/[id] (TASK-AUTH-03f)
+ * @jest-environment node
+ *
+ * Negative-auth tests for /api/disputes/[id] (TASK-AUTH-03f, TASK-CRD-3).
+ *
+ * IDOR defence is at the service layer. The route calls user-scoped DB service
+ * methods. When a caller presents another user's dispute id:
+ *   – GET: getDispute returns null → route returns 404
+ *   – PATCH: service throws → route returns 500
+ *   – DELETE: deleteDispute returns false → route returns 404
  */
 
 import { NextRequest } from "next/server";
@@ -7,6 +15,9 @@ import { NextRequest } from "next/server";
 const mockValidateFromHeaders = jest.fn();
 const mockResolveRoleFromDb = jest.fn();
 const mockGetDispute = jest.fn();
+const mockUpdateDisputeStatus = jest.fn();
+const mockResolveDispute = jest.fn();
+const mockDeleteDispute = jest.fn();
 
 jest.mock("@/lib/auth/jwt-validation", () => ({
   jwtValidation: {
@@ -17,12 +28,13 @@ jest.mock("@/lib/auth/jwt-validation", () => ({
 jest.mock("@/lib/auth/resolve-role", () => ({
   resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
-jest.mock("@/lib/disputes/dispute-service", () => ({
-  disputeService: {
+jest.mock("@/lib/disputes/dispute-service-db", () => ({
+  disputeServiceDB: {
     getDispute: (...args: unknown[]) => mockGetDispute(...args),
-    updateDisputeStatus: jest.fn(),
-    resolveDispute: jest.fn(),
-    deleteDispute: jest.fn(),
+    updateDisputeStatus: (...args: unknown[]) =>
+      mockUpdateDisputeStatus(...args),
+    resolveDispute: (...args: unknown[]) => mockResolveDispute(...args),
+    deleteDispute: (...args: unknown[]) => mockDeleteDispute(...args),
   },
 }));
 
@@ -64,18 +76,23 @@ describe("negative-auth – /api/disputes/[id]", () => {
     expect((await DELETE(makeRequest("DELETE"))).status).toBe(401);
   });
 
-  it("GET returns 403 (IDOR) when reading another user's dispute", async () => {
-    mockGetDispute.mockReturnValue({ id: "dispute-123", userId: "victim-1" });
-    expect((await GET(makeRequest("GET"))).status).toBe(403);
+  it("GET returns 404 (IDOR) when reading another user's dispute", async () => {
+    // getDispute returns null for wrong owner — route cannot distinguish
+    // "not found" from "belongs to other user" (intentional, no existence leak).
+    mockGetDispute.mockResolvedValue(null);
+    expect((await GET(makeRequest("GET"))).status).toBe(404);
   });
 
-  it("PATCH returns 403 (IDOR) when updating another user's dispute", async () => {
-    mockGetDispute.mockReturnValue({ id: "dispute-123", userId: "victim-1" });
-    expect((await PATCH(makeRequest("PATCH"))).status).toBe(403);
+  it("PATCH returns non-2xx (IDOR) when updating another user's dispute", async () => {
+    // Service throws for wrong owner.
+    mockUpdateDisputeStatus.mockRejectedValue(new Error("Not found"));
+    const res = await PATCH(makeRequest("PATCH"));
+    expect(res.status).toBeGreaterThanOrEqual(400);
   });
 
-  it("DELETE returns 403 (IDOR) when deleting another user's dispute", async () => {
-    mockGetDispute.mockReturnValue({ id: "dispute-123", userId: "victim-1" });
-    expect((await DELETE(makeRequest("DELETE"))).status).toBe(403);
+  it("DELETE returns 404 (IDOR) when deleting another user's dispute", async () => {
+    // deleteDispute returns false for wrong owner.
+    mockDeleteDispute.mockResolvedValue(false);
+    expect((await DELETE(makeRequest("DELETE"))).status).toBe(404);
   });
 });

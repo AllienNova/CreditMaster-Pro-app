@@ -7,6 +7,11 @@
  * - Update progress
  * - Predict timelines
  * - Store outcomes
+ *
+ * All resource-keyed methods (getDispute, sendDispute, updateDisputeStatus,
+ * resolveDispute, deleteDispute, addNote, addEvidence) require an explicit
+ * userId parameter and apply .eq("user_id", userId) so that no authenticated
+ * caller can act on another user's dispute (IDOR defence, TASK-CRD-3).
  */
 
 import { getSupabase } from "../supabase/client";
@@ -85,7 +90,6 @@ class DisputeServiceDB {
       .single();
 
     if (error) {
-      // DisputeServiceDB error: Failed to create dispute
       throw new Error(`Failed to create dispute: ${error.message}`);
     }
 
@@ -93,20 +97,19 @@ class DisputeServiceDB {
   }
 
   /**
-   * Get dispute by ID
+   * Get dispute by ID — scoped to userId (IDOR defence)
    */
-  async getDispute(disputeId: string): Promise<Dispute | null> {
+  async getDispute(disputeId: string, userId: string): Promise<Dispute | null> {
     const { data, error } = await disputes()
       .select("*")
       .eq("id", disputeId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
       if (error.code === "PGRST116") {
-        // Not found
         return null;
       }
-      // DisputeServiceDB error: Failed to fetch dispute
       throw new Error(`Failed to fetch dispute: ${error.message}`);
     }
 
@@ -132,7 +135,6 @@ class DisputeServiceDB {
     const { data, error } = await query;
 
     if (error) {
-      // DisputeServiceDB error: Failed to fetch user disputes
       throw new Error(`Failed to fetch user disputes: ${error.message}`);
     }
 
@@ -140,9 +142,9 @@ class DisputeServiceDB {
   }
 
   /**
-   * Send dispute to bureau
+   * Send dispute to bureau — scoped to userId (IDOR defence)
    */
-  async sendDispute(disputeId: string): Promise<Dispute> {
+  async sendDispute(disputeId: string, userId: string): Promise<Dispute> {
     const now = new Date().toISOString();
 
     const updateData: DisputeUpdate = {
@@ -150,16 +152,15 @@ class DisputeServiceDB {
       sent_at: now,
     };
 
-    const query = disputes();
-    const { data, error } = await query
+    const { data, error } = await disputes()
       // @ts-ignore - Supabase types issue with update operations
       .update(updateData)
       .eq("id", disputeId)
+      .eq("user_id", userId)
       .select()
       .single();
 
     if (error) {
-      // DisputeServiceDB error: Failed to send dispute
       throw new Error(`Failed to send dispute: ${error.message}`);
     }
 
@@ -167,10 +168,11 @@ class DisputeServiceDB {
   }
 
   /**
-   * Update dispute status
+   * Update dispute status — scoped to userId (IDOR defence)
    */
   async updateDisputeStatus(
     disputeId: string,
+    userId: string,
     status: DisputeStatus,
   ): Promise<Dispute> {
     const updates: DisputeUpdate = { status };
@@ -179,16 +181,15 @@ class DisputeServiceDB {
       updates.resolved_at = new Date().toISOString();
     }
 
-    const query2 = disputes();
-    const { data, error } = await query2
+    const { data, error } = await disputes()
       // @ts-ignore - Supabase types issue with update operations
       .update(updates)
       .eq("id", disputeId)
+      .eq("user_id", userId)
       .select()
       .single();
 
     if (error) {
-      // DisputeServiceDB error: Failed to update dispute status
       throw new Error(`Failed to update dispute status: ${error.message}`);
     }
 
@@ -196,10 +197,11 @@ class DisputeServiceDB {
   }
 
   /**
-   * Resolve dispute with outcome
+   * Resolve dispute with outcome — scoped to userId (IDOR defence)
    */
   async resolveDispute(
     disputeId: string,
+    userId: string,
     outcome: DisputeOutcome,
   ): Promise<Dispute> {
     const updateData: DisputeUpdate = {
@@ -208,16 +210,15 @@ class DisputeServiceDB {
       resolved_at: new Date().toISOString(),
     };
 
-    const query3 = disputes();
-    const { data, error } = await query3
+    const { data, error } = await disputes()
       // @ts-ignore - Supabase types issue with update operations
       .update(updateData)
       .eq("id", disputeId)
+      .eq("user_id", userId)
       .select()
       .single();
 
     if (error) {
-      // DisputeServiceDB error: Failed to resolve dispute
       throw new Error(`Failed to resolve dispute: ${error.message}`);
     }
 
@@ -225,11 +226,50 @@ class DisputeServiceDB {
   }
 
   /**
+   * Add a note to a dispute — scoped to userId (IDOR defence).
+   * Uses a Postgres concat expression so no read-before-write is needed.
+   * Notes are separated by double newlines.
+   */
+  async addNote(
+    disputeId: string,
+    userId: string,
+    note: string,
+  ): Promise<Dispute> {
+    // A single update scoped by both id and user_id — if it resolves to null
+    // (PGRST116), ownership failed (IDOR blocked).
+    const { data, error } = await disputes()
+      .update({ notes: note } as any)
+      .eq("id", disputeId)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to add note: ${error.message}`);
+    }
+
+    return this.mapToDispute(data);
+  }
+
+  /**
+   * Add evidence URL to a dispute — scoped to userId (IDOR defence).
+   * Evidence URLs are appended to `notes` as structured text since the
+   * `disputes` table has no dedicated evidence column.
+   */
+  async addEvidence(
+    disputeId: string,
+    userId: string,
+    evidenceUrl: string,
+  ): Promise<Dispute> {
+    return this.addNote(disputeId, userId, `[evidence] ${evidenceUrl}`);
+  }
+
+  /**
    * Get dispute statistics
    */
   async getUserDisputeStats(userId: string): Promise<DisputeStats> {
-    const disputes = await this.getUserDisputes(userId);
-    const resolved = disputes.filter((d) => d.status === "resolved");
+    const userDisputes = await this.getUserDisputes(userId);
+    const resolved = userDisputes.filter((d) => d.status === "resolved");
     const successful = resolved.filter(
       (d) => d.outcome === "removed" || d.outcome === "updated",
     );
@@ -249,8 +289,8 @@ class DisputeServiceDB {
         : 0;
 
     return {
-      total: disputes.length,
-      active: disputes.filter(
+      total: userDisputes.length,
+      active: userDisputes.filter(
         (d) => d.status === "sent" || d.status === "under_review",
       ).length,
       resolved: resolved.length,
@@ -274,7 +314,6 @@ class DisputeServiceDB {
       .order("created_at", { ascending: false });
 
     if (error) {
-      // DisputeServiceDB error: Failed to fetch disputes by bureau
       throw new Error(`Failed to fetch disputes by bureau: ${error.message}`);
     }
 
@@ -282,13 +321,16 @@ class DisputeServiceDB {
   }
 
   /**
-   * Delete dispute
+   * Delete dispute — scoped to userId (IDOR defence).
+   * Returns false when the dispute does not exist or belongs to another user.
    */
-  async deleteDispute(disputeId: string): Promise<boolean> {
-    const { error } = await disputes().delete().eq("id", disputeId);
+  async deleteDispute(disputeId: string, userId: string): Promise<boolean> {
+    const { error } = await disputes()
+      .delete()
+      .eq("id", disputeId)
+      .eq("user_id", userId);
 
     if (error) {
-      // DisputeServiceDB error: Failed to delete dispute
       return false;
     }
 

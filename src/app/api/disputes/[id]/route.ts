@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
-import { disputeService } from "@/lib/disputes/dispute-service";
+import { disputeServiceDB } from "@/lib/disputes/dispute-service-db";
 
 // The guard does not forward Next's route `params`; extract the id from the path.
 function disputeIdFrom(request: NextRequest): string {
@@ -17,7 +17,9 @@ function disputeIdFrom(request: NextRequest): string {
 export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const id = disputeIdFrom(request);
-    const dispute = disputeService.getDispute(id);
+    // getDispute is user-scoped — returns null if the dispute belongs to
+    // another user (no IDOR leakage of dispute existence).
+    const dispute = await disputeServiceDB.getDispute(id, user.id);
 
     if (!dispute) {
       return NextResponse.json(
@@ -26,16 +28,8 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
       );
     }
 
-    if (dispute.userId !== user.id) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 },
-      );
-    }
-
     return NextResponse.json({ success: true, data: dispute });
   } catch (_error) {
-    // DisputeByIdRoute error: Failed to get dispute
     void _error;
     return NextResponse.json(
       { success: false, error: "Failed to get dispute" },
@@ -50,41 +44,35 @@ export const PATCH = withAuth(
       const id = disputeIdFrom(request);
       const body = await request.json();
 
-      const existingDispute = disputeService.getDispute(id);
-      if (!existingDispute) {
-        return NextResponse.json(
-          { success: false, error: "Dispute not found" },
-          { status: 404 },
-        );
-      }
-
-      if (existingDispute.userId !== user.id) {
-        return NextResponse.json(
-          { success: false, error: "Forbidden" },
-          { status: 403 },
-        );
-      }
-
-      const { status, letterContent, outcome, responseDetails } = body;
-      void letterContent;
+      const { status, outcome, responseDetails } = body;
 
       let dispute;
       if (status) {
-        dispute = disputeService.updateDisputeStatus(
+        dispute = await disputeServiceDB.updateDisputeStatus(
           id,
+          user.id,
           status,
-          responseDetails,
         );
       } else if (outcome) {
-        dispute = disputeService.resolveDispute(id, outcome, responseDetails);
+        dispute = await disputeServiceDB.resolveDispute(
+          id,
+          user.id,
+          outcome,
+        );
       } else {
-        // Generic update - for now just return existing
-        dispute = existingDispute;
+        // No recognised mutation field — return the dispute as-is.
+        dispute = await disputeServiceDB.getDispute(id, user.id);
+        void responseDetails;
+        if (!dispute) {
+          return NextResponse.json(
+            { success: false, error: "Dispute not found" },
+            { status: 404 },
+          );
+        }
       }
 
       return NextResponse.json({ success: true, data: dispute });
     } catch (_error) {
-      // DisputeByIdRoute error: Failed to update dispute
       void _error;
       return NextResponse.json(
         { success: false, error: "Failed to update dispute" },
@@ -98,26 +86,18 @@ export const DELETE = withAuth(
   async (request: NextRequest, user: AuthedUser) => {
     try {
       const id = disputeIdFrom(request);
-      const existingDispute = disputeService.getDispute(id);
+      // deleteDispute is user-scoped — returns false if not owned.
+      const deleted = await disputeServiceDB.deleteDispute(id, user.id);
 
-      if (!existingDispute) {
+      if (!deleted) {
         return NextResponse.json(
           { success: false, error: "Dispute not found" },
           { status: 404 },
         );
       }
 
-      if (existingDispute.userId !== user.id) {
-        return NextResponse.json(
-          { success: false, error: "Forbidden" },
-          { status: 403 },
-        );
-      }
-
-      const success = disputeService.deleteDispute(id);
-      return NextResponse.json({ success: true, data: { deleted: success } });
+      return NextResponse.json({ success: true, data: { deleted } });
     } catch (_error) {
-      // DisputeByIdRoute error: Failed to delete dispute
       void _error;
       return NextResponse.json(
         { success: false, error: "Failed to delete dispute" },

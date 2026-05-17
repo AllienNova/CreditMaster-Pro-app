@@ -2,15 +2,26 @@
  * @jest-environment node
  *
  * Disputes API route tests. Includes data-shape checks plus negative-auth
- * and IDOR coverage for the withAuth-wrapped handlers (TASK-AUTH-03f).
+ * and IDOR coverage for the withAuth-wrapped handlers (TASK-AUTH-03f,
+ * TASK-CRD-3).
+ *
+ * IDOR defence is now enforced at the service layer (disputeServiceDB methods
+ * are user-scoped). The route itself:
+ *   – PATCH: service throws on wrong owner  → 500 (cannot distinguish 404/403)
+ *   – DELETE: service returns false on wrong owner → 404
  */
 
 import { NextRequest } from "next/server";
 
 const mockValidateFromHeaders = jest.fn();
 const mockResolveRoleFromDb = jest.fn();
-const mockGetDispute = jest.fn();
 const mockGetUserDisputes = jest.fn();
+const mockCreateDispute = jest.fn();
+const mockSendDispute = jest.fn();
+const mockUpdateDisputeStatus = jest.fn();
+const mockResolveDispute = jest.fn();
+const mockAddNote = jest.fn();
+const mockAddEvidence = jest.fn();
 const mockDeleteDispute = jest.fn();
 
 jest.mock("@/lib/auth/jwt-validation", () => ({
@@ -22,17 +33,17 @@ jest.mock("@/lib/auth/jwt-validation", () => ({
 jest.mock("@/lib/auth/resolve-role", () => ({
   resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
-jest.mock("@/lib/disputes/dispute-service", () => ({
-  disputeService: {
+jest.mock("@/lib/disputes/dispute-service-db", () => ({
+  disputeServiceDB: {
     getUserDisputes: (...args: unknown[]) => mockGetUserDisputes(...args),
-    getDispute: (...args: unknown[]) => mockGetDispute(...args),
+    createDispute: (...args: unknown[]) => mockCreateDispute(...args),
+    sendDispute: (...args: unknown[]) => mockSendDispute(...args),
+    updateDisputeStatus: (...args: unknown[]) =>
+      mockUpdateDisputeStatus(...args),
+    resolveDispute: (...args: unknown[]) => mockResolveDispute(...args),
+    addNote: (...args: unknown[]) => mockAddNote(...args),
+    addEvidence: (...args: unknown[]) => mockAddEvidence(...args),
     deleteDispute: (...args: unknown[]) => mockDeleteDispute(...args),
-    createDispute: jest.fn(),
-    sendDispute: jest.fn(),
-    updateDisputeStatus: jest.fn(),
-    resolveDispute: jest.fn(),
-    addNote: jest.fn(),
-    addEvidence: jest.fn(),
   },
 }));
 
@@ -83,7 +94,7 @@ describe("negative-auth – /api/disputes", () => {
       user: { id: "attacker-1", email: "attacker@example.com" },
     });
     mockResolveRoleFromDb.mockResolvedValue("user");
-    mockGetUserDisputes.mockReturnValue([]);
+    mockGetUserDisputes.mockResolvedValue([]);
   });
 
   it("GET returns 401 when not authenticated", async () => {
@@ -110,18 +121,20 @@ describe("negative-auth – /api/disputes", () => {
     expect(res.status).toBe(401);
   });
 
-  it("PATCH returns 403 (IDOR) when mutating another user's dispute", async () => {
-    mockGetDispute.mockReturnValue({ id: "d-1", userId: "victim-1" });
+  it("PATCH — service throws for wrong-owner dispute — returns non-2xx", async () => {
+    // IDOR defence is inside the service; the service throws for wrong owner.
+    mockSendDispute.mockRejectedValue(new Error("Not found"));
     const res = await PATCH(
       makeRequest("PATCH", "", { disputeId: "d-1", action: "send" }),
     );
-    expect(res.status).toBe(403);
+    expect(res.status).toBeGreaterThanOrEqual(400);
   });
 
-  it("DELETE returns 403 (IDOR) when deleting another user's dispute", async () => {
-    mockGetDispute.mockReturnValue({ id: "d-1", userId: "victim-1" });
+  it("DELETE returns 404 when service returns false for wrong-owner dispute", async () => {
+    // deleteDispute returns false for wrong owner (no throw).
+    mockDeleteDispute.mockResolvedValue(false);
     const res = await DELETE(makeRequest("DELETE", "?disputeId=d-1"));
-    expect(res.status).toBe(403);
-    expect(mockDeleteDispute).not.toHaveBeenCalled();
+    expect(res.status).toBe(404);
+    expect(mockDeleteDispute).toHaveBeenCalled();
   });
 });

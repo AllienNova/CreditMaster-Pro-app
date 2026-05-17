@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
-import { disputeService } from "@/lib/disputes/dispute-service";
+import { disputeServiceDB } from "@/lib/disputes/dispute-service-db";
 
 export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
@@ -13,9 +13,9 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
 
     // Disputes are always scoped to the authenticated user's id from the
     // guard — never a client-supplied `userId` query param.
-    const disputes = disputeService.getUserDisputes(
+    const disputes = await disputeServiceDB.getUserDisputes(
       user.id,
-      statusParam as Parameters<typeof disputeService.getUserDisputes>[1],
+      statusParam as Parameters<typeof disputeServiceDB.getUserDisputes>[1],
     );
 
     // Filter by bureau if specified
@@ -63,8 +63,6 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
       disputeReason,
       reason,
       letterContent,
-      documents,
-      evidence,
     } = body;
     void accountNumber;
 
@@ -72,7 +70,6 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     const finalItemType = itemType || "general";
     const finalDescription = itemDescription || creditorName || "";
     const finalReason = reason || disputeReason || "";
-    const finalEvidence = evidence || documents || [];
 
     if (!bureau || !finalDescription || !finalReason) {
       return NextResponse.json(
@@ -87,14 +84,13 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
 
     // The dispute is always created for the authenticated user — a
     // client-supplied `userId` in the body is never trusted.
-    const dispute = disputeService.createDispute(
+    const dispute = await disputeServiceDB.createDispute(
       user.id,
       bureau,
       finalItemType,
       finalDescription,
       finalReason,
       letterContent || "",
-      finalEvidence,
     );
 
     return NextResponse.json({ success: true, data: dispute });
@@ -112,15 +108,7 @@ export const PATCH = withAuth(
   async (request: NextRequest, user: AuthedUser) => {
     try {
       const body = await request.json();
-      const {
-        disputeId,
-        action,
-        status,
-        outcome,
-        note,
-        evidenceUrl,
-        description,
-      } = body;
+      const { disputeId, action, status, outcome, note, evidenceUrl } = body;
 
       if (!disputeId || !action) {
         return NextResponse.json(
@@ -129,23 +117,11 @@ export const PATCH = withAuth(
         );
       }
 
-      // Ownership check: the dispute must belong to the authenticated user.
-      const existing = disputeService.getDispute(disputeId);
-      if (!existing) {
-        return NextResponse.json(
-          { error: "Dispute not found" },
-          { status: 404 },
-        );
-      }
-      if (existing.userId !== user.id) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-
       let dispute;
 
       switch (action) {
         case "send":
-          dispute = disputeService.sendDispute(disputeId);
+          dispute = await disputeServiceDB.sendDispute(disputeId, user.id);
           break;
         case "update_status":
           if (!status) {
@@ -154,10 +130,10 @@ export const PATCH = withAuth(
               { status: 400 },
             );
           }
-          dispute = disputeService.updateDisputeStatus(
+          dispute = await disputeServiceDB.updateDisputeStatus(
             disputeId,
+            user.id,
             status,
-            description,
           );
           break;
         case "resolve":
@@ -167,7 +143,11 @@ export const PATCH = withAuth(
               { status: 400 },
             );
           }
-          dispute = disputeService.resolveDispute(disputeId, outcome, note);
+          dispute = await disputeServiceDB.resolveDispute(
+            disputeId,
+            user.id,
+            outcome,
+          );
           break;
         case "add_note":
           if (!note) {
@@ -176,7 +156,7 @@ export const PATCH = withAuth(
               { status: 400 },
             );
           }
-          dispute = disputeService.addNote(disputeId, note);
+          dispute = await disputeServiceDB.addNote(disputeId, user.id, note);
           break;
         case "add_evidence":
           if (!evidenceUrl) {
@@ -185,20 +165,17 @@ export const PATCH = withAuth(
               { status: 400 },
             );
           }
-          dispute = disputeService.addEvidence(disputeId, evidenceUrl);
+          dispute = await disputeServiceDB.addEvidence(
+            disputeId,
+            user.id,
+            evidenceUrl,
+          );
           break;
         default:
           return NextResponse.json(
             { error: "Invalid action" },
             { status: 400 },
           );
-      }
-
-      if (!dispute) {
-        return NextResponse.json(
-          { error: "Dispute not found" },
-          { status: 404 },
-        );
       }
 
       return NextResponse.json({ dispute });
@@ -226,19 +203,13 @@ export const DELETE = withAuth(
         );
       }
 
-      // Ownership check: the dispute must belong to the authenticated user.
-      const existing = disputeService.getDispute(disputeId);
-      if (!existing) {
+      const success = await disputeServiceDB.deleteDispute(disputeId, user.id);
+      if (!success) {
         return NextResponse.json(
           { error: "Dispute not found" },
           { status: 404 },
         );
       }
-      if (existing.userId !== user.id) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-
-      const success = disputeService.deleteDispute(disputeId);
       return NextResponse.json({ success });
     } catch (error) {
       // Error handled - returning 500

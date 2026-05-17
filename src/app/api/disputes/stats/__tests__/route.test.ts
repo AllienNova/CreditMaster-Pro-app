@@ -1,11 +1,14 @@
 /**
- * Negative-auth tests for /api/disputes/stats (TASK-AUTH-03f)
+ * @jest-environment node
+ *
+ * Negative-auth tests for /api/disputes/stats (TASK-AUTH-03f, TASK-CRD-3).
  */
 
 import { NextRequest } from "next/server";
 
 const mockValidateFromHeaders = jest.fn();
 const mockResolveRoleFromDb = jest.fn();
+const mockGetUserDisputeStats = jest.fn();
 
 jest.mock("@/lib/auth/jwt-validation", () => ({
   jwtValidation: {
@@ -16,8 +19,11 @@ jest.mock("@/lib/auth/jwt-validation", () => ({
 jest.mock("@/lib/auth/resolve-role", () => ({
   resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
-jest.mock("@/lib/disputes/dispute-service", () => ({
-  disputeService: { getUserDisputeStats: jest.fn() },
+jest.mock("@/lib/disputes/dispute-service-db", () => ({
+  disputeServiceDB: {
+    getUserDisputeStats: (...args: unknown[]) =>
+      mockGetUserDisputeStats(...args),
+  },
 }));
 
 import { GET } from "../route";
