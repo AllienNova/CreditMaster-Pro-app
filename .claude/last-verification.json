@@ -1,27 +1,11 @@
 {
-  "verdict": "FAIL",
-  "timestamp": 1777860326,
-  "iso_timestamp": "2026-05-03",
-  "git_hash": "2877317",
-  "git_full": "28773170e75ddecbe351832df6aab7d57a92dfad",
-  "branch": "feat/asset-system-regen",
-  "task": "TASK-PRE-01 (honest re-baseline)",
-  "tests": "FAIL — 35 failed, 19 skipped, 14533 passed of 14587; suites 2 failed, 2 skipped, 545 passed of 549. The 35 failures split across 2 PCTT suites: src/lib/trading/pctt/__tests__/pctt-trading-service.test.ts and src/lib/trading/pctt/__tests__/pctt-mode-integration.test.ts",
-  "lint": "FAIL — 15 errors, 2858 warnings (was 7/841 in VERSION-013). Errors include prefer-const and react/display-name violations",
-  "types": "PASS — tsc --noEmit exit 0, zero errors",
-  "build": "PASS — Next.js 15.5.6 build succeeded, 560 kB shared first-load JS, 294 API routes, 204 pages",
-  "audit": "FAIL — 14 total (1 high, 11 moderate, 2 low). Production-only (--omit=dev): 9 moderate (nodemailer SMTP injection via next-auth, postcss XSS via next, uuid via svix→resend)",
-  "proof_of_life": "not run — TASK-PRE-01 is read-only verification, no dev server start required",
-  "regressions_vs_v013": [
-    "tests: 0 → 35 failures (PCTT trading service)",
-    "lint errors: 7 → 15 (+8)",
-    "lint warnings: 841 → 2858 (+2017)",
-    "npm audit (all): 2 low → 14 mixed (+12 vulns, including 1 high in cypress chain)",
-    "npm audit (prod): 0 → 9 moderate (+9 prod-affecting)"
-  ],
-  "invalid_prior_claims": [
-    "Commit 2877317 message claimed '14,568/14,587 baseline still valid' — actual is 14533/14568 expected-to-pass; 35 regressions all in PCTT trading suite",
-    "VERSION-013 health_metrics.md §5 claimed '0 production vulns' — re-baseline shows 9 prod-affecting moderate vulns"
-  ],
-  "ship_gate": "BLOCKED — Wave 7 not started, plus net-new test/lint/audit regressions surfaced by re-baseline"
+  "verdict": "PASS",
+  "timestamp": 1779042502,
+  "git_hash": "785b789ea5c2f4b763021dad195e30dc3e236220",
+  "scope": "Credit vertical (CRD-1..4) gate",
+  "tests": "15791 passed, 0 failed, 19 skipped",
+  "type_check": "tsc --noEmit 0 errors",
+  "test_idor": "100 passing (was 58 pre-Credit)",
+  "changed_coverage": "all changed files >=85% (types.ts pure-types false-positive aside)",
+  "proof_of_life": "not run — vertical-completion gate, app not started"
 }

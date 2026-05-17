@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,13 @@ import {
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme, colors } from "../../src/constants/theme";
-import type { Dispute } from "../../src/types";
+import { useDisputeStore } from "../../src/store/disputeStore";
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   draft: { bg: "#F3F4F6", text: "#6B7280" },
+  pending: { bg: "#EDE9FE", text: "#7C3AED" },
   sent: { bg: "#DBEAFE", text: "#2563EB" },
+  in_progress: { bg: "#FEF3C7", text: "#D97706" },
   under_review: { bg: "#FEF3C7", text: "#D97706" },
   resolved: { bg: "#DCFCE7", text: "#16A34A" },
   rejected: { bg: "#FEE2E2", text: "#DC2626" },
@@ -22,62 +24,65 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 
 export default function DisputeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [dispute, setDispute] = useState<Dispute | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { currentDispute, isLoading, error, fetchDisputeById } =
+    useDisputeStore();
 
   useEffect(() => {
-    // Mock fetch
-    setTimeout(() => {
-      setDispute({
-        id: id || "1",
-        user_id: "1",
-        bureau: "experian",
-        status: "under_review",
-        item_type: "Late Payment",
-        item_description:
-          "Capital One late payment reported for March 2023. Account #XXXX-1234.",
-        dispute_reason:
-          "Payment was made on time via automatic payment. Bank records show payment cleared on March 1st, before the due date of March 5th.",
-        letter_content:
-          "Dear Experian,\n\nI am writing to dispute the following information...",
-        created_at: "2024-11-01T10:00:00Z",
-        updated_at: "2024-11-15T10:00:00Z",
-      });
-      setLoading(false);
-    }, 500);
+    if (id) {
+      fetchDisputeById(id);
+    }
   }, [id]);
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View testID="loading-indicator" style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
-  if (!dispute) {
+  if (!currentDispute || error) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Dispute not found</Text>
+        <Text style={styles.errorText}>
+          {error || "Dispute not found"}
+        </Text>
       </View>
     );
   }
 
+  const dispute = currentDispute;
+
   const timeline = [
     {
-      date: dispute.created_at,
+      date: dispute.createdAt,
       title: "Dispute Created",
       description: "You created this dispute",
     },
+    ...(dispute.sentAt
+      ? [
+          {
+            date: dispute.sentAt,
+            title: "Letter Sent",
+            description: "Dispute letter sent to bureau",
+          },
+        ]
+      : []),
+    ...(dispute.resolvedAt
+      ? [
+          {
+            date: dispute.resolvedAt,
+            title: "Resolved",
+            description: dispute.outcome
+              ? `Outcome: ${dispute.outcome}`
+              : "Dispute resolved",
+          },
+        ]
+      : []),
     {
-      date: dispute.updated_at,
-      title: "Letter Sent",
-      description: "Dispute letter sent to bureau",
-    },
-    {
-      date: new Date().toISOString(),
-      title: "Under Review",
-      description: "Bureau is reviewing your dispute",
+      date: dispute.updatedAt,
+      title: "Last Updated",
+      description: "Most recent activity",
     },
   ];
 
@@ -113,15 +118,15 @@ export default function DisputeDetailScreen() {
             </Text>
           </View>
         </View>
-        <Text style={styles.itemType}>{dispute.item_type}</Text>
-        <Text style={styles.itemDescription}>{dispute.item_description}</Text>
+        <Text style={styles.itemType}>{dispute.itemType}</Text>
+        <Text style={styles.creditorName}>{dispute.creditorName}</Text>
       </View>
 
       {/* Dispute Reason */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Dispute Reason</Text>
         <View style={styles.card}>
-          <Text style={styles.reasonText}>{dispute.dispute_reason}</Text>
+          <Text style={styles.reasonText}>{dispute.disputeReason}</Text>
         </View>
       </View>
 
@@ -162,14 +167,19 @@ export default function DisputeDetailScreen() {
             <Text style={styles.primaryButtonText}>Send Dispute</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => {}}>
-          <Ionicons
-            name="document-text"
-            size={20}
-            color={theme.colors.primary}
-          />
-          <Text style={styles.secondaryButtonText}>View Letter</Text>
-        </TouchableOpacity>
+        {dispute.letterContent && (
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => router.push(`/dispute/${dispute.id}`)}
+          >
+            <Ionicons
+              name="document-text"
+              size={20}
+              color={theme.colors.primary}
+            />
+            <Text style={styles.secondaryButtonText}>View Letter</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.secondaryButton} onPress={() => {}}>
           <Ionicons name="attach" size={20} color={theme.colors.primary} />
           <Text style={styles.secondaryButtonText}>Add Documents</Text>
@@ -204,9 +214,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     color: theme.colors.text,
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  itemDescription: {
+  creditorName: {
     fontSize: 14,
     color: theme.colors.textSecondary,
     lineHeight: 20,

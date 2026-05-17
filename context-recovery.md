@@ -1,58 +1,36 @@
-# Context Recovery — Compaction #161
-> Auto-generated at 2026-04-28T04:55:25Z by pre-compact hook. Read this to restore session state.
+# Context Recovery — Compaction #343
+> Auto-generated at 2026-05-17T20:20:10Z by pre-compact hook. Read this to restore session state.
 
 ## Working Directory
-`/Users/kimalhonourdjam/Documents/Projects/Github Projects/Fynvita`
+`/Users/kimalhonourdjam/Documents/Projects/Github Projects/Fynvita/.worktrees/wave-7-foundation`
 
 ## Git State
-- **Branch:** feat/asset-system-regen
-- **Last commit:** af105e4 feat(credits): add credit UI components, mobile store, pricing update, tests
+- **Branch:** n/a
+- **Last commit:** n/a
 
 ### Recent Commits
 ```
-af105e4 feat(credits): add credit UI components, mobile store, pricing update, tests
-3ec44fb feat(credits): add purchase, balance, history, addon APIs + webhook integration
-df25b2f feat(credits): integrate credit checks into trading signals, orders, backtest, chat, disputes
-105fbc5 feat(credits): add credit system foundation — schema, service, costs, types
-1854796 fix(ui): prevent pricing card overlap on XL screens
+
 ```
 
 ### Uncommitted Changes
 ```
- M TASK_TRACKER.md
- M context-recovery.md
- M mobile-app/.expo/types/router.d.ts
- M mobile-app/ios/Fynvita.xcodeproj/project.pbxproj
- M mobile-app/ios/Podfile.lock
-?? .playwright-mcp/page-2026-04-27T17-51-53-935Z.yml
-?? .playwright-mcp/page-2026-04-27T17-52-11-192Z.png
-?? .playwright-mcp/page-2026-04-27T17-52-48-355Z.png
-?? .playwright-mcp/page-2026-04-27T17-53-07-059Z.png
-?? .playwright-mcp/page-2026-04-27T17-53-26-809Z.png
-?? .playwright-mcp/page-2026-04-27T19-56-35-421Z.yml
-?? .playwright-mcp/page-2026-04-27T19-56-44-256Z.png
-?? .playwright-mcp/page-2026-04-27T19-57-01-250Z.yml
-?? .playwright-mcp/page-2026-04-27T19-57-26-759Z.png
-?? .playwright-mcp/page-2026-04-27T19-57-46-014Z.png
-?? .playwright-mcp/page-2026-04-27T19-57-59-768Z.yml
-?? .playwright-mcp/page-2026-04-27T19-58-12-150Z.yml
-?? .playwright-mcp/page-2026-04-27T19-58-20-679Z.png
-?? .playwright-mcp/page-2026-04-27T20-00-17-697Z.yml
-?? .playwright-mcp/page-2026-04-27T20-04-28-435Z.yml
+
 ```
 
 ### Modified Files
 ```
+.claude/last-verification.json
 context-recovery.md
-mobile-app/.expo/types/router.d.ts
-mobile-app/ios/Fynvita.xcodeproj/project.pbxproj
-mobile-app/ios/Podfile.lock
+mobile-app/src/hooks/useNudges.ts
+mobile-app/src/hooks/useOrders.ts
+mobile-app/src/store/creditBalanceStore.ts
 TASK_TRACKER.md
 ```
 
 ## Task State
 # Task Tracker
-> Auto-maintained by Claude Code hooks. Last updated: 2026-04-28T04:55:25Z
+> Auto-maintained by Claude Code hooks. Last updated: 2026-05-17T20:20:10Z
 
 ## In Progress
 

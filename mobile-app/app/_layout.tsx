@@ -71,6 +71,15 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen name="dispute/wizard" options={{ headerShown: false }} />
+        <Stack.Screen name="dispute/new" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="dispute/use-template"
+          options={{ headerShown: true, title: "Use Template", ...headerOptions }}
+        />
+        <Stack.Screen
+          name="dispute/use-strategy"
+          options={{ headerShown: true, title: "Use Strategy", ...headerOptions }}
+        />
         <Stack.Screen
           name="dispute/templates"
           options={{ headerShown: true, title: "Templates", ...headerOptions }}
@@ -148,9 +157,6 @@ export default function RootLayout() {
 
         {/* Credit Repair Screens */}
         <Stack.Screen name="credit-repair" options={{ headerShown: false }} />
-
-        {/* Disputes Hub */}
-        <Stack.Screen name="disputes" options={{ headerShown: false }} />
 
         {/* Documents Hub */}
         <Stack.Screen name="documents" options={{ headerShown: false }} />

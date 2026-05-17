@@ -194,7 +194,7 @@ describe("PushNotificationService", () => {
     });
 
     it("should include data in the notification", async () => {
-      const data = { screen: "/disputes", id: "dispute-123" };
+      const data = { screen: "/dispute", id: "dispute-123" };
 
       await pushNotificationService.scheduleLocalNotification(
         "Alert",
@@ -401,7 +401,7 @@ describe("PushNotificationService", () => {
           request: {
             content: {
               data: {
-                screen: "/disputes",
+                screen: "/dispute",
                 id: "dispute-123",
               },
             },
@@ -409,7 +409,7 @@ describe("PushNotificationService", () => {
         },
       });
 
-      expect(router.push).toHaveBeenCalledWith("/disputes/dispute-123");
+      expect(router.push).toHaveBeenCalledWith("/dispute/dispute-123");
     });
 
     it("should navigate to screen without id", async () => {

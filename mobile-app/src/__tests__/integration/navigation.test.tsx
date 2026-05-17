@@ -94,8 +94,8 @@ describe("Navigation Integration", () => {
   describe("Deep Linking", () => {
     it("should navigate to specific dispute", () => {
       const disputeId = "dispute-123";
-      mockPush(`/disputes/${disputeId}`);
-      expect(mockPush).toHaveBeenCalledWith("/disputes/dispute-123");
+      mockPush(`/dispute/${disputeId}`);
+      expect(mockPush).toHaveBeenCalledWith("/dispute/dispute-123");
     });
 
     it("should navigate to credit score details", () => {

@@ -52,7 +52,7 @@ const AI_RECOMMENDATIONS: Recommendation[] = [
     impact: 40,
     timeframe: "45 days",
     action: "Start Dispute",
-    route: "/disputes/new",
+    route: "/dispute/new",
   },
   {
     id: "3",

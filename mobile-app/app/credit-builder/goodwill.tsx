@@ -202,7 +202,7 @@ export default function GoodwillScreen() {
             </View>
             <TouchableOpacity
               style={styles.generateButton}
-              onPress={() => router.push("/disputes/new")}
+              onPress={() => router.push("/dispute/new")}
             >
               <Ionicons name="document-text" size={20} color="#fff" />
               <Text style={styles.generateButtonText}>Generate Letter</Text>

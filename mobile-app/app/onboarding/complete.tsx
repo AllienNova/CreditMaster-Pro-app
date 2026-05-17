@@ -25,7 +25,7 @@ const NEXT_STEPS = [
     icon: "document-text",
     title: "Start a Dispute",
     description: "Challenge inaccurate items",
-    route: "/disputes/new",
+    route: "/dispute/new",
   },
   {
     icon: "build",
