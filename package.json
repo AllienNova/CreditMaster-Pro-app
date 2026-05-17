@@ -27,6 +27,7 @@
     "test:coverage:changed": "node scripts/check-changed-coverage.js",
     "test:watch": "jest --watch",
     "test:auth-negative": "jest --testPathPatterns='api/.*/__tests__/.*route\\.test\\.ts$' -t 'negative-auth'",
+    "test:webhook-idempotency": "jest -t 'wbh-phase2'",
     "audit:auth": "tsx scripts/verify-auth-coverage.ts",
     "type-check": "tsc --noEmit"
   },
