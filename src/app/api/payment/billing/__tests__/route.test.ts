@@ -60,4 +60,40 @@ describe("negative-auth – /api/payment/billing", () => {
     expect(res.status).toBe(403);
   });
 
+  // WBH-03: GET handler sources from getBillingData (changed line coverage)
+
+  it("GET returns billing data from getBillingData on success", async () => {
+    const { getBillingData } = jest.requireMock("@/lib/payment/billing-data") as {
+      getBillingData: jest.Mock;
+    };
+    const fakeBilling = {
+      subscription: { planId: "pro", status: "active" },
+      paymentMethods: [{ id: "pm_1", brand: "visa", last4: "4242" }],
+      invoices: [{ id: "in_1", amount: 9999 }],
+    };
+    getBillingData.mockResolvedValue(fakeBilling);
+
+    const res = await GET(createMockRequest("GET"));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.subscription).toEqual(fakeBilling.subscription);
+    expect(json.paymentMethods).toEqual(fakeBilling.paymentMethods);
+    expect(json.invoices).toEqual(fakeBilling.invoices);
+    expect(json.plans).toEqual([]);
+  });
+
+  it("GET returns 500 when getBillingData throws", async () => {
+    const { getBillingData } = jest.requireMock("@/lib/payment/billing-data") as {
+      getBillingData: jest.Mock;
+    };
+    getBillingData.mockRejectedValue(new Error("DB unavailable"));
+
+    const res = await GET(createMockRequest("GET"));
+    const json = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(json.error).toMatch(/failed to load billing profile/i);
+  });
+
 });
