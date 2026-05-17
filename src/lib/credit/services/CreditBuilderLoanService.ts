@@ -575,6 +575,7 @@ export class CreditBuilderLoanService {
 
   async updateApplication(
     applicationId: string,
+    userId: string,
     updates: Partial<LoanApplication>,
   ): Promise<LoanApplication> {
     const { data, error } = await this.supabase
@@ -584,6 +585,7 @@ export class CreditBuilderLoanService {
         updated_at: new Date().toISOString(),
       })
       .eq("id", applicationId)
+      .eq("user_id", userId)
       .select()
       .single();
 

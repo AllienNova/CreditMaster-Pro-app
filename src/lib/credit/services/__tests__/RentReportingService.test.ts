@@ -347,7 +347,7 @@ describe("RentReportingIntegrationService", () => {
     it("throws when supabase returns an error", async () => {
       chain.single.mockResolvedValueOnce({ data: null, error: { message: "update error" } });
       await expect(
-        svc.updateAccount("acc-id", { status: "reporting" }),
+        svc.updateAccount("acc-id", "user-1", { status: "reporting" }),
       ).rejects.toMatchObject({ message: "update error" });
     });
   });
@@ -399,13 +399,13 @@ describe("RentReportingIntegrationService", () => {
   describe("getPaymentHistory", () => {
     it("returns empty array when no payments", async () => {
       chain.order.mockResolvedValueOnce({ data: [], error: null });
-      const result = await svc.getPaymentHistory("acc-1");
+      const result = await svc.getPaymentHistory("acc-1", "user-1");
       expect(result).toEqual([]);
     });
 
     it("throws when supabase returns an error", async () => {
       chain.order.mockResolvedValueOnce({ data: null, error: { message: "history error" } });
-      await expect(svc.getPaymentHistory("acc-1")).rejects.toMatchObject({
+      await expect(svc.getPaymentHistory("acc-1", "user-1")).rejects.toMatchObject({
         message: "history error",
       });
     });

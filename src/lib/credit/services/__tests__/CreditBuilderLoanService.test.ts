@@ -330,7 +330,7 @@ describe("CreditBuilderLoanService", () => {
     it("throws when supabase update returns an error", async () => {
       chain.single.mockResolvedValueOnce({ data: null, error: { message: "update error" } });
       await expect(
-        svc.updateApplication("app-id", { status: "approved" }),
+        svc.updateApplication("app-id", "user-1", { status: "approved" }),
       ).rejects.toMatchObject({ message: "update error" });
     });
   });
