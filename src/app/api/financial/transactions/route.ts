@@ -5,7 +5,7 @@ import type { AuthedUser } from "@/lib/auth/api-guard";
 
 export const GET = withPermission(
   "financial:read",
-  async (request: NextRequest, _user: AuthedUser) => {
+  async (request: NextRequest, user: AuthedUser) => {
   try {
 
 
@@ -25,6 +25,7 @@ export const GET = withPermission(
       accountId,
       new Date(startDate),
       new Date(endDate),
+      user.id,
     );
 
     return NextResponse.json({

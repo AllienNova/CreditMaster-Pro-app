@@ -109,10 +109,12 @@ describe("GET /api/financial/transactions", () => {
     expect(response.status).toBe(200);
     expect(data.success).toBe(true);
     expect(data.data).toEqual(mockTransactions);
+    // FND-036 fix: userId must be passed as 4th arg to prevent IDOR
     expect(plaidService.getTransactions).toHaveBeenCalledWith(
       "acc-1",
       expect.any(Date),
       expect.any(Date),
+      mockUser.id,
     );
   });
 

@@ -249,6 +249,7 @@ export class FinancialContextEngine {
           account.accountId,
           thirtyDaysAgo,
           new Date(),
+          userId,
         );
         allTransactions.push(
           ...txns.map((t) => ({

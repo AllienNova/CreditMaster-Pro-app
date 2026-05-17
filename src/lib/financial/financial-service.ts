@@ -147,6 +147,7 @@ class FinancialService {
           account.accountId,
           thirtyDaysAgo,
           new Date(),
+          userId,
         );
         allTransactions.push(...transactions);
       }
@@ -255,6 +256,7 @@ class FinancialService {
           account.accountId,
           startDate,
           endDate,
+          userId,
         );
 
         income += transactions
@@ -298,6 +300,7 @@ class FinancialService {
           account.accountId,
           startDate,
           new Date(),
+          userId,
         );
         allTransactions.push(...transactions.filter((t) => t.amount > 0));
       }
@@ -341,6 +344,7 @@ class FinancialService {
           account.accountId,
           previousMonthStart,
           startDate,
+          userId,
         );
         previousMonthSpending += transactions
           .filter((t) => t.amount > 0)

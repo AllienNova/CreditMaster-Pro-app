@@ -173,13 +173,23 @@ class PlaidService {
   }
 
   /**
-   * Get access token for item
+   * Public accessor for the Plaid access token scoped to the authenticated user.
+   * Used by routes that need the token server-side (e.g. income route — FND-038).
+   * Never expose this value to the client.
    */
-  private async getAccessToken(itemId: string): Promise<string> {
+  async getAccessTokenForUser(itemId: string, userId: string): Promise<string> {
+    return this.getAccessToken(itemId, userId);
+  }
+
+  /**
+   * Get access token for item — scoped to userId to prevent IDOR (FND-037)
+   */
+  private async getAccessToken(itemId: string, userId: string): Promise<string> {
     const { data, error } = await supabase
       .from("plaid_items")
       .select("access_token")
       .eq("item_id", itemId)
+      .eq("user_id", userId)
       .single();
 
     if (error || !data) {
@@ -212,7 +222,7 @@ class PlaidService {
    */
   async syncAccounts(itemId: string, userId: string): Promise<PlaidAccount[]> {
     try {
-      const accessToken = await this.getAccessToken(itemId);
+      const accessToken = await this.getAccessToken(itemId, userId);
       const client = getPlaidClient();
 
       const response = await client.accountsGet({
@@ -279,17 +289,19 @@ class PlaidService {
   }
 
   /**
-   * Get transactions for account
+   * Get transactions for account — scoped to userId to prevent IDOR (FND-036)
    */
   async getTransactions(
     accountId: string,
     startDate: Date,
     endDate: Date,
+    userId: string,
   ): Promise<PlaidTransaction[]> {
     const { data, error } = await supabase
       .from("transactions")
       .select("*")
       .eq("account_id", accountId)
+      .eq("user_id", userId)
       .gte("date", startDate.toISOString())
       .lte("date", endDate.toISOString())
       .order("date", { ascending: false });
@@ -311,7 +323,7 @@ class PlaidService {
     days: number = 30,
   ): Promise<PlaidTransaction[]> {
     try {
-      const accessToken = await this.getAccessToken(itemId);
+      const accessToken = await this.getAccessToken(itemId, userId);
       const client = getPlaidClient();
 
       const startDate = new Date();

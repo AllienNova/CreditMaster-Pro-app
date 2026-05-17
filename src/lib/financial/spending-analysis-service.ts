@@ -363,6 +363,7 @@ class SpendingAnalysisService {
           account.accountId,
           period.startDate,
           period.endDate,
+          userId,
         );
 
         for (const txn of transactions) {

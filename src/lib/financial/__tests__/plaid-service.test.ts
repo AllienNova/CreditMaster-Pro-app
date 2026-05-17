@@ -758,7 +758,7 @@ describe("PlaidService", () => {
       const start = new Date("2026-02-01");
       const end = new Date("2026-02-28");
 
-      await plaidService.getTransactions("acc1", start, end);
+      await plaidService.getTransactions("acc1", start, end, "user-123");
 
       expect(supabaseClient().from).toHaveBeenCalledWith("transactions");
       expect(chain.select).toHaveBeenCalledWith("*");
@@ -776,6 +776,7 @@ describe("PlaidService", () => {
         "acc1",
         new Date("2026-02-01"),
         new Date("2026-02-28"),
+        "user-123",
       );
 
       expect(transactions).toHaveLength(1);
@@ -808,6 +809,7 @@ describe("PlaidService", () => {
         "acc1",
         new Date("2026-02-01"),
         new Date("2026-02-28"),
+        "user-123",
       );
 
       expect(transactions[0].merchantName).toBeUndefined();
@@ -822,6 +824,7 @@ describe("PlaidService", () => {
         "acc1",
         new Date("2026-02-01"),
         new Date("2026-02-28"),
+        "user-123",
       );
 
       expect(transactions[0].category).toEqual([]);
@@ -836,6 +839,7 @@ describe("PlaidService", () => {
         "acc1",
         new Date("2026-02-01"),
         new Date("2026-02-28"),
+        "user-123",
       );
 
       expect(transactions[0].location).toBeUndefined();
@@ -849,6 +853,7 @@ describe("PlaidService", () => {
         "acc1",
         new Date("2026-02-01"),
         new Date("2026-02-28"),
+        "user-123",
       );
 
       expect(transactions).toEqual([]);
@@ -862,6 +867,7 @@ describe("PlaidService", () => {
         "acc1",
         new Date("2026-02-01"),
         new Date("2026-02-28"),
+        "user-123",
       );
 
       expect(transactions).toEqual([]);
@@ -879,6 +885,7 @@ describe("PlaidService", () => {
           "acc1",
           new Date("2026-02-01"),
           new Date("2026-02-28"),
+          "user-123",
         ),
       ).rejects.toThrow("Failed to fetch transactions");
     });
@@ -1346,6 +1353,7 @@ describe("PlaidService", () => {
         "acc1",
         new Date("2026-02-01"),
         new Date("2026-02-28"),
+        "user-123",
       );
 
       expect(transactions).toHaveLength(2);
