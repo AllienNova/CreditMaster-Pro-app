@@ -13,6 +13,11 @@
  * used in credit-builder-service.test.ts.
  */
 
+// Mark this file as a module so its top-level helpers (makeChain/loadSvc) are
+// module-scoped, not global — otherwise they collide with the same-named
+// helpers in credit-builder-service.test.ts (TS2393).
+export {};
+
 // ── Stripe mock (must be at top, hoisted before any import) ──────────────────
 
 jest.mock("stripe", () =>
