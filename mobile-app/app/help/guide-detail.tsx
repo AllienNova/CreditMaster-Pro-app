@@ -184,7 +184,7 @@ export default function GuideDetailScreen() {
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push("/disputes")}
+            onPress={() => router.push("/(tabs)/disputes")}
           >
             <Ionicons
               name="document-text"

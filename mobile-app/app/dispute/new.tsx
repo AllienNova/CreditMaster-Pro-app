@@ -316,7 +316,7 @@ export default function NewDisputeScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.submitButton}
-                  onPress={() => router.push("/disputes")}
+                  onPress={() => router.push("/(tabs)/disputes")}
                 >
                   <Text style={styles.submitButtonText}>Submit Dispute</Text>
                   <Ionicons name="send" size={18} color="#fff" />

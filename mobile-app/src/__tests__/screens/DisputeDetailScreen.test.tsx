@@ -70,4 +70,23 @@ describe("dispute/[id].tsx — de-mocked (TASK-MOK-05)", () => {
   it("has testID on the loading indicator for testability", () => {
     expect(source).toMatch(/testID\s*=\s*["']loading-indicator["']/);
   });
+
+  it("does NOT push to /dispute/:id from within the detail screen (no self-push)", () => {
+    // Fix 2: the old 'View Letter' button did router.push(`/dispute/${dispute.id}`)
+    // which pushes the current screen onto itself — a navigation bug.
+    // The fix displays the letter inline using a useState toggle instead.
+    expect(source).not.toMatch(/router\.push\s*\(\s*`\/dispute\/\$\{dispute\.id\}`\s*\)/);
+  });
+
+  it("shows letter content inline via a toggle (not by navigating away)", () => {
+    // Fix 2: letter is displayed via a useState showLetter toggle
+    expect(source).toMatch(/showLetter/);
+    expect(source).toMatch(/setShowLetter/);
+    expect(source).toMatch(/testID\s*=\s*["']letter-content["']/);
+  });
+
+  it("does NOT import router (no navigation from detail screen)", () => {
+    // After Fix 2, router is no longer needed in this file
+    expect(source).not.toMatch(/import.*router.*from\s+["']expo-router["']/);
+  });
 });

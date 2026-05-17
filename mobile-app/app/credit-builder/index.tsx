@@ -169,7 +169,7 @@ const TOOL_CATEGORIES = [
         icon: "document-text",
         title: "Dispute Center",
         subtitle: "Challenge inaccurate items",
-        route: "/disputes",
+        route: "/(tabs)/disputes",
         color: "#84CC16",
         priority: "high",
       },

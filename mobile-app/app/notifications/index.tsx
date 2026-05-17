@@ -133,7 +133,7 @@ export default function NotificationsScreen() {
     markAsRead(notification.id);
     // Navigate based on notification type
     if (notification.type === "dispute_update") {
-      router.push("/disputes");
+      router.push("/(tabs)/disputes");
     } else if (notification.type === "score_change") {
       router.push("/reports");
     }

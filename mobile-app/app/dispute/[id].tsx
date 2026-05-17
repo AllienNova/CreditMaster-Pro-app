@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme, colors } from "../../src/constants/theme";
 import { useDisputeStore } from "../../src/store/disputeStore";
@@ -26,6 +26,7 @@ export default function DisputeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { currentDispute, isLoading, error, fetchDisputeById } =
     useDisputeStore();
+  const [showLetter, setShowLetter] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -168,17 +169,26 @@ export default function DisputeDetailScreen() {
           </TouchableOpacity>
         )}
         {dispute.letterContent && (
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => router.push(`/dispute/${dispute.id}`)}
-          >
-            <Ionicons
-              name="document-text"
-              size={20}
-              color={theme.colors.primary}
-            />
-            <Text style={styles.secondaryButtonText}>View Letter</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => setShowLetter((v) => !v)}
+            >
+              <Ionicons
+                name="document-text"
+                size={20}
+                color={theme.colors.primary}
+              />
+              <Text style={styles.secondaryButtonText}>
+                {showLetter ? "Hide Letter" : "View Letter"}
+              </Text>
+            </TouchableOpacity>
+            {showLetter && (
+              <View testID="letter-content" style={styles.letterCard}>
+                <Text style={styles.letterText}>{dispute.letterContent}</Text>
+              </View>
+            )}
+          </>
         )}
         <TouchableOpacity style={styles.secondaryButton} onPress={() => {}}>
           <Ionicons name="attach" size={20} color={theme.colors.primary} />
@@ -291,5 +301,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     marginLeft: 8,
+  },
+  letterCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  letterText: {
+    fontSize: 13,
+    color: theme.colors.text,
+    lineHeight: 20,
   },
 });
