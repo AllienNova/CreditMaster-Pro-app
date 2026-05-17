@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { api } from "../services/api/client";
 
 type CoachingTopic =
   | "budgeting"
@@ -141,10 +142,11 @@ export function useCoaching(): UseCoachingReturn {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/ai/coaching/sessions");
-      if (response.ok) {
-        const data = await response.json();
-        setSessions(data.sessions || []);
+      const res = await api.get<{ sessions: CoachingSession[] }>(
+        "/ai/coaching/sessions",
+      );
+      if (res.success) {
+        setSessions(res.data?.sessions || []);
       } else {
         // Fallback to mock data if API unavailable
         setSessions(MOCK_SESSIONS);
@@ -215,30 +217,30 @@ export function useCoaching(): UseCoachingReturn {
       setIsLoading(true);
 
       try {
-        const response = await fetch("/api/ai/coaching/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message,
-            sessionId: currentSession?.id,
-            sessionTopic: currentSession?.topic,
-            conversationHistory: messages.slice(-10).map((m) => ({
-              role: m.role === "coach" ? "assistant" : "user",
-              content: m.content,
-            })),
-          }),
+        const res = await api.post<{
+          response: string;
+          suggestions: string[];
+        }>("/ai/coaching/chat", {
+          message,
+          sessionId: currentSession?.id,
+          sessionTopic: currentSession?.topic,
+          conversationHistory: messages.slice(-10).map((m) => ({
+            role: m.role === "coach" ? "assistant" : "user",
+            content: m.content,
+          })),
         });
 
         let coachResponse: CoachingMessage;
-        if (response.ok) {
-          const data = await response.json();
+        if (res.success) {
           coachResponse = {
             id: (Date.now() + 1).toString(),
             role: "coach",
-            content: data.response || getCoachResponse(message, currentSession),
+            content:
+              res.data?.response || getCoachResponse(message, currentSession),
             timestamp: new Date().toISOString(),
             suggestions:
-              data.suggestions || getCoachSuggestions(message, currentSession),
+              res.data?.suggestions ||
+              getCoachSuggestions(message, currentSession),
           };
         } else {
           // Fallback to local response generation

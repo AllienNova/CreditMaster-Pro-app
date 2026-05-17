@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useCallback } from "react";
+import { api } from "../../services/api/client";
 import {
   View,
   Text,
@@ -146,32 +147,23 @@ export function OrderEntrySheet({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/trading/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "create",
-          symbol: symbol.toUpperCase(),
-          side,
-          type: orderType,
-          quantity: qty,
-          limitPrice:
-            orderType === "limit" ? parseFloat(limitPrice) : undefined,
-          stopLossPrice: stopLoss ? parseFloat(stopLoss) : undefined,
-          takeProfitPrice: takeProfit ? parseFloat(takeProfit) : undefined,
-          timeInForce: "day",
-        }),
+      const res = await api.post<{ order: CreatedOrder }>("/trading/orders", {
+        action: "create",
+        symbol: symbol.toUpperCase(),
+        side,
+        type: orderType,
+        quantity: qty,
+        limitPrice: orderType === "limit" ? parseFloat(limitPrice) : undefined,
+        stopLossPrice: stopLoss ? parseFloat(stopLoss) : undefined,
+        takeProfitPrice: takeProfit ? parseFloat(takeProfit) : undefined,
+        timeInForce: "day",
       });
 
-      const data = await response.json();
-
-      if (data.success && data.data.order) {
-        onOrderCreated?.(data.data.order);
+      if (res.success && res.data?.order) {
+        onOrderCreated?.(res.data.order);
         onClose();
       } else {
-        setError(
-          data.validation?.errors?.[0]?.message || "Failed to create order",
-        );
+        setError(res.message || "Failed to create order");
       }
     } catch (err) {
       setError("Network error. Please try again.");

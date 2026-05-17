@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { api } from "../services/api/client";
 
 // ============================================================================
 // TYPES
@@ -86,7 +87,7 @@ export interface UseISEReturn {
 // ============================================================================
 
 const DEFAULT_OPTIONS: Required<UseISEOptions> = {
-  apiBaseUrl: "/api/trading/ise",
+  apiBaseUrl: "/trading/ise",
   initialTier: "pro",
   initialMaxActiveSize: 5,
   autoRotate: true,
@@ -115,50 +116,40 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
   });
 
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Fetch rankings and state
   const fetchISEState = useCallback(async () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
-
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
       // Fetch rankings
-      const rankingsRes = await fetch(
+      const rankingsRes = await api.get<{ rankings: RankedInstrument[] }>(
         `${opts.apiBaseUrl}?action=rankings&limit=50`,
-        { signal: abortControllerRef.current.signal },
       );
 
-      if (!rankingsRes.ok) {
-        throw new Error(`Rankings fetch failed: ${rankingsRes.status}`);
+      if (!rankingsRes.success) {
+        throw new Error("Rankings fetch failed");
       }
 
-      const rankingsData = await rankingsRes.json();
-
       // Fetch active set
-      const activeRes = await fetch(`${opts.apiBaseUrl}?action=active`, {
-        signal: abortControllerRef.current.signal,
-      });
-
-      const activeData = activeRes.ok
-        ? await activeRes.json()
-        : { activeSymbols: [] };
-
-      // Fetch events
-      const eventsRes = await fetch(
-        `${opts.apiBaseUrl}?action=events&limit=10`,
-        { signal: abortControllerRef.current.signal },
+      const activeRes = await api.get<{ activeSymbols: string[] }>(
+        `${opts.apiBaseUrl}?action=active`,
       );
 
-      const eventsData = eventsRes.ok ? await eventsRes.json() : { events: [] };
+      const activeSymbols = activeRes.success
+        ? (activeRes.data?.activeSymbols ?? [])
+        : [];
+
+      // Fetch events
+      const eventsRes = await api.get<{ events: RotationEvent[] }>(
+        `${opts.apiBaseUrl}?action=events&limit=10`,
+      );
+
+      const events = eventsRes.success ? (eventsRes.data?.events ?? []) : [];
 
       // Merge active status into rankings
-      const activeSet = new Set(activeData.activeSymbols || []);
-      const rankings = (rankingsData.rankings || []).map(
+      const activeSet = new Set(activeSymbols);
+      const rankings = (rankingsRes.data?.rankings || []).map(
         (r: RankedInstrument) => ({
           ...r,
           isActive: activeSet.has(r.symbol),
@@ -167,15 +158,13 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
 
       setState({
         rankings,
-        activeSymbols: activeData.activeSymbols || [],
-        recentEvents: eventsData.events || [],
+        activeSymbols,
+        recentEvents: events,
         lastUpdate: new Date(),
         isLoading: false,
         error: null,
       });
     } catch (error) {
-      if ((error as Error).name === "AbortError") return;
-
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -200,9 +189,6 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
       }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
     };
   }, [opts.enabled, config.pollingIntervalMs, fetchISEState]);
 
@@ -216,10 +202,9 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
       setConfig((prev) => ({ ...prev, maxActiveSize: size }));
 
       try {
-        await fetch(opts.apiBaseUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "updateConfig", maxActiveSize: size }),
+        await api.post(opts.apiBaseUrl, {
+          action: "updateConfig",
+          maxActiveSize: size,
         });
       } catch (error) {
         console.error("Failed to update max active size:", error);
@@ -235,26 +220,23 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
   const forceAddSymbol = useCallback(
     async (symbol: string): Promise<boolean> => {
       try {
-        const res = await fetch(opts.apiBaseUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "forceAdd", symbol }),
-        });
+        const res = await api.post<{ activeSymbols: string[] }>(
+          opts.apiBaseUrl,
+          { action: "forceAdd", symbol },
+        );
 
-        const data = await res.json();
-
-        if (data.success) {
+        if (res.success) {
           setState((prev) => ({
             ...prev,
-            activeSymbols: data.activeSymbols,
+            activeSymbols: res.data?.activeSymbols ?? prev.activeSymbols,
             rankings: prev.rankings.map((r) => ({
               ...r,
-              isActive: data.activeSymbols.includes(r.symbol),
+              isActive: (res.data?.activeSymbols ?? []).includes(r.symbol),
             })),
           }));
         }
 
-        return data.success;
+        return res.success;
       } catch (error) {
         console.error("Force add failed:", error);
         return false;
@@ -266,26 +248,23 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
   const forceRemoveSymbol = useCallback(
     async (symbol: string): Promise<boolean> => {
       try {
-        const res = await fetch(opts.apiBaseUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "forceRemove", symbol }),
-        });
+        const res = await api.post<{ activeSymbols: string[] }>(
+          opts.apiBaseUrl,
+          { action: "forceRemove", symbol },
+        );
 
-        const data = await res.json();
-
-        if (data.success) {
+        if (res.success) {
           setState((prev) => ({
             ...prev,
-            activeSymbols: data.activeSymbols,
+            activeSymbols: res.data?.activeSymbols ?? prev.activeSymbols,
             rankings: prev.rankings.map((r) => ({
               ...r,
-              isActive: data.activeSymbols.includes(r.symbol),
+              isActive: (res.data?.activeSymbols ?? []).includes(r.symbol),
             })),
           }));
         }
 
-        return data.success;
+        return res.success;
       } catch (error) {
         console.error("Force remove failed:", error);
         return false;
@@ -297,11 +276,13 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
   const canTrade = useCallback(
     async (symbol: string): Promise<{ allowed: boolean; reason: string }> => {
       try {
-        const res = await fetch(
+        const res = await api.get<{ allowed: boolean; reason: string }>(
           `${opts.apiBaseUrl}?action=canTrade&symbol=${encodeURIComponent(symbol)}`,
         );
-        const data = await res.json();
-        return { allowed: data.allowed, reason: data.reason };
+        return {
+          allowed: res.data?.allowed ?? false,
+          reason: res.data?.reason ?? "Failed to check trade permission",
+        };
       } catch (error) {
         return { allowed: false, reason: "Failed to check trade permission" };
       }

@@ -6,6 +6,7 @@
  */
 
 import { create } from "zustand";
+import { api } from "../services/api/client";
 
 // ============================================================================
 // TYPES
@@ -61,13 +62,6 @@ const initialState: CreditBalanceState = {
 };
 
 // ============================================================================
-// API BASE URL
-// ============================================================================
-
-const API_BASE =
-  process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
-
-// ============================================================================
 // STORE
 // ============================================================================
 
@@ -79,10 +73,11 @@ export const useCreditBalanceStore = create<
   fetchBalance: async () => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/api/credits/balance`);
-      if (!res.ok) throw new Error("Failed to fetch credit balance");
-      const data: CreditBalanceData = await res.json();
-      set({ balance: data });
+      const res = await api.get<CreditBalanceData>("/credits/balance");
+      if (!res.success) {
+        throw new Error(res.message ?? "Failed to fetch credit balance");
+      }
+      set({ balance: res.data });
     } catch (error) {
       set({
         error:
@@ -98,12 +93,13 @@ export const useCreditBalanceStore = create<
   fetchHistory: async (limit = 50, offset = 0) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch(
-        `${API_BASE}/api/credits/history?limit=${limit}&offset=${offset}`,
+      const res = await api.get<{ transactions: CreditTransaction[] }>(
+        `/credits/history?limit=${limit}&offset=${offset}`,
       );
-      if (!res.ok) throw new Error("Failed to fetch credit history");
-      const data = await res.json();
-      const items: CreditTransaction[] = data.transactions ?? [];
+      if (!res.success) {
+        throw new Error(res.message ?? "Failed to fetch credit history");
+      }
+      const items: CreditTransaction[] = res.data?.transactions ?? [];
 
       if (offset === 0) {
         set({ transactions: items });
@@ -127,21 +123,19 @@ export const useCreditBalanceStore = create<
   purchasePack: async (packType) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/api/credits/purchase`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packType }),
-      });
+      const res = await api.post<{ newBalance: number }>(
+        "/credits/purchase",
+        { packType },
+      );
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Purchase failed");
+      if (!res.success) {
+        throw new Error(res.message ?? "Purchase failed");
       }
 
-      const data = await res.json();
+      const data = res.data;
 
       // Refresh balance after purchase
-      if (data.newBalance !== undefined) {
+      if (data?.newBalance !== undefined) {
         const currentBalance = get().balance;
         if (currentBalance) {
           set({
@@ -153,7 +147,7 @@ export const useCreditBalanceStore = create<
         }
       }
 
-      return { success: true, newBalance: data.newBalance };
+      return { success: true, newBalance: data?.newBalance };
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Purchase failed";

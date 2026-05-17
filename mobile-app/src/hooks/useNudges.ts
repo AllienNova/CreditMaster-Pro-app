@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { api } from "../services/api/client";
 
 type NudgeType =
   | "motivational"
@@ -90,11 +91,10 @@ export function useNudges(): UseNudgesReturn {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/ai/nudges");
+      const res = await api.get<{ nudges: Nudge[] }>("/ai/nudges");
       let nudgesData: Nudge[];
-      if (response.ok) {
-        const data = await response.json();
-        nudgesData = data.nudges || [];
+      if (res.success && res.data) {
+        nudgesData = res.data.nudges || [];
       } else {
         // Fallback to mock data if API unavailable
         nudgesData = MOCK_NUDGES;
@@ -132,10 +132,9 @@ export function useNudges(): UseNudgesReturn {
         }
 
         // Persist response to API
-        await fetch("/api/ai/nudges/respond", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nudgeId, response: nudgeResponse }),
+        await api.post("/ai/nudges/respond", {
+          nudgeId,
+          response: nudgeResponse,
         });
       } catch (err) {
         // Don't revert UI - response was already recorded locally

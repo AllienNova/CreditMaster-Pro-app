@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { api } from "../services/api/client";
 
 // ============================================================================
 // TYPES
@@ -85,24 +86,25 @@ export function useOrders(config: UseOrdersConfig = {}) {
   // Fetch orders
   const fetchOrders = useCallback(async () => {
     try {
-      const response = await fetch("/api/trading/orders");
+      const res = await api.get<{
+        orders: Order[];
+        openOrders: Order[];
+        todayOrderCount: number;
+        todayFillCount: number;
+      }>("/trading/orders");
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch orders");
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
+      if (res.success && res.data) {
         setState((prev) => ({
           ...prev,
-          orders: data.data.orders || [],
-          openOrders: data.data.openOrders || [],
-          todayOrderCount: data.data.todayOrderCount || 0,
-          todayFillCount: data.data.todayFillCount || 0,
+          orders: res.data!.orders || [],
+          openOrders: res.data!.openOrders || [],
+          todayOrderCount: res.data!.todayOrderCount || 0,
+          todayFillCount: res.data!.todayFillCount || 0,
           isLoading: false,
           error: null,
         }));
+      } else {
+        throw new Error(res.message ?? "Failed to fetch orders");
       }
     } catch (error) {
       setState((prev) => ({
@@ -119,32 +121,25 @@ export function useOrders(config: UseOrdersConfig = {}) {
       request: OrderRequest,
     ): Promise<{ success: boolean; order?: Order; error?: string }> => {
       try {
-        const response = await fetch("/api/trading/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "create",
-            ...request,
-            timeInForce: request.timeInForce || "day",
-          }),
+        const res = await api.post<{ order: Order }>("/trading/orders", {
+          action: "create",
+          ...request,
+          timeInForce: request.timeInForce ?? "day",
         });
 
-        const data = await response.json();
-
-        if (data.success && data.data.order) {
+        if (res.success && res.data?.order) {
           // Add to local state immediately
           setState((prev) => ({
             ...prev,
-            orders: [data.data.order, ...prev.orders],
-            openOrders: [data.data.order, ...prev.openOrders],
+            orders: [res.data!.order, ...prev.orders],
+            openOrders: [res.data!.order, ...prev.openOrders],
           }));
-          return { success: true, order: data.data.order };
+          return { success: true, order: res.data!.order };
         }
 
         return {
           success: false,
-          error:
-            data.validation?.errors?.[0]?.message || "Failed to create order",
+          error: res.message ?? "Failed to create order",
         };
       } catch (error) {
         return {
@@ -159,13 +154,11 @@ export function useOrders(config: UseOrdersConfig = {}) {
   // Cancel order
   const cancelOrder = useCallback(async (orderId: string): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/trading/orders?id=${orderId}`, {
-        method: "DELETE",
-      });
+      const res = await api.delete<Record<string, unknown>>(
+        `/trading/orders?id=${orderId}`,
+      );
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (res.success) {
         // Update local state
         setState((prev) => ({
           ...prev,
@@ -186,13 +179,11 @@ export function useOrders(config: UseOrdersConfig = {}) {
   // Cancel all orders
   const cancelAllOrders = useCallback(async (): Promise<number> => {
     try {
-      const response = await fetch("/api/trading/orders?all=true", {
-        method: "DELETE",
-      });
+      const res = await api.delete<{ count: number }>(
+        "/trading/orders?all=true",
+      );
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (res.success) {
         const openOrderIds = new Set(state.openOrders.map((o) => o.id));
         const cancelledCount = openOrderIds.size;
         setState((prev) => ({
