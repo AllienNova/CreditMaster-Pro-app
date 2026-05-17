@@ -339,4 +339,104 @@ describe("idor — PortfolioServiceFacade user-scoping (FND-030)", () => {
       expect(mod._tracker.holdingsUpdateCallCount).toBe(1);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // getUserPortfolios / getDefaultPortfolio — cover the getHoldings(p.id, userId)
+  // calls added by the INV-2 IDOR fix (changed lines gate: 2 remaining points).
+  // ---------------------------------------------------------------------------
+
+  describe("getUserPortfolios", () => {
+    beforeEach(() => {
+      // Override PortfolioService.getPortfolios to return a real-looking portfolio row
+      const { PortfolioService } = jest.requireMock(
+        "@/lib/investments/services/PortfolioService",
+      ) as { PortfolioService: jest.Mock };
+      PortfolioService.mockImplementation(() => ({
+        getPortfolios: jest.fn().mockResolvedValue([
+          {
+            id: PORTFOLIO_ID,
+            user_id: USER_A,
+            name: "User A Portfolio",
+            total_value: 10000,
+            description: null,
+            created_at: "2026-01-01T00:00:00.000Z",
+            last_updated_at: "2026-01-01T00:00:00.000Z",
+          },
+        ]),
+        createPortfolio: jest.fn(),
+      }));
+    });
+
+    afterEach(() => {
+      // Restore the default empty mock so other tests are unaffected
+      const { PortfolioService } = jest.requireMock(
+        "@/lib/investments/services/PortfolioService",
+      ) as { PortfolioService: jest.Mock };
+      PortfolioService.mockImplementation(() => ({
+        getPortfolios: jest.fn().mockResolvedValue([]),
+        createPortfolio: jest.fn(),
+      }));
+    });
+
+    it("maps each portfolio using scoped getHoldings(p.id, userId)", async () => {
+      const result = await portfolioService.getUserPortfolios(USER_A);
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe(PORTFOLIO_ID);
+      // Holdings for USER_A should be populated (1 AAPL holding from mock)
+      expect(result[0].holdings).toHaveLength(1);
+    });
+  });
+
+  describe("getDefaultPortfolio", () => {
+    beforeEach(() => {
+      const { PortfolioService } = jest.requireMock(
+        "@/lib/investments/services/PortfolioService",
+      ) as { PortfolioService: jest.Mock };
+      PortfolioService.mockImplementation(() => ({
+        getPortfolios: jest.fn().mockResolvedValue([
+          {
+            id: PORTFOLIO_ID,
+            user_id: USER_A,
+            name: "User A Portfolio",
+            total_value: 10000,
+            description: null,
+            created_at: "2026-01-01T00:00:00.000Z",
+            last_updated_at: "2026-01-01T00:00:00.000Z",
+          },
+        ]),
+        createPortfolio: jest.fn(),
+      }));
+    });
+
+    afterEach(() => {
+      const { PortfolioService } = jest.requireMock(
+        "@/lib/investments/services/PortfolioService",
+      ) as { PortfolioService: jest.Mock };
+      PortfolioService.mockImplementation(() => ({
+        getPortfolios: jest.fn().mockResolvedValue([]),
+        createPortfolio: jest.fn(),
+      }));
+    });
+
+    it("returns the first portfolio using scoped getHoldings(first.id, userId)", async () => {
+      const result = await portfolioService.getDefaultPortfolio(USER_A);
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe(PORTFOLIO_ID);
+      expect(result?.holdings).toHaveLength(1);
+    });
+
+    it("returns null when user has no portfolios", async () => {
+      // Override to return empty list
+      const { PortfolioService } = jest.requireMock(
+        "@/lib/investments/services/PortfolioService",
+      ) as { PortfolioService: jest.Mock };
+      PortfolioService.mockImplementation(() => ({
+        getPortfolios: jest.fn().mockResolvedValue([]),
+        createPortfolio: jest.fn(),
+      }));
+
+      const result = await portfolioService.getDefaultPortfolio(USER_A);
+      expect(result).toBeNull();
+    });
+  });
 });

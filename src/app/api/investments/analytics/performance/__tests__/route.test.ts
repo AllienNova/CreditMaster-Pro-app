@@ -1,5 +1,5 @@
 /**
- * Negative-auth tests for /api/investments/analytics/performance (TASK-AUTH-03e)
+ * Auth tests for /api/investments/analytics/performance (TASK-AUTH-03e / TASK-INV coverage)
  */
 
 import { NextRequest } from "next/server";
@@ -17,13 +17,22 @@ jest.mock("@/lib/auth/resolve-role", () => ({
   resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 jest.mock("@/lib/investments/portfolio-analytics", () => ({
-  PortfolioAnalytics: jest.fn(() => ({})),
+  PortfolioAnalytics: jest.fn(),
 }));
 jest.mock("@/lib/security/redis-rate-limiting", () => ({
   rateLimit: jest.fn(() => ({ check: jest.fn() })),
 }));
 
 import { GET } from "../route";
+
+const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
+const AUTH_USER = { id: "user-123", email: "test@example.com" };
+
+function getPortfolioAnalyticsMock() {
+  return jest.requireMock("@/lib/investments/portfolio-analytics") as {
+    PortfolioAnalytics: jest.Mock;
+  };
+}
 
 function createMockRequest(url: string): NextRequest {
   return {
@@ -38,6 +47,7 @@ describe("negative-auth – /api/investments/analytics/performance", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+    getPortfolioAnalyticsMock().PortfolioAnalytics.mockImplementation(() => ({}));
   });
 
   it("GET returns 401 when the request is not authenticated (TASK-AUTH-03e)", async () => {
@@ -47,5 +57,40 @@ describe("negative-auth – /api/investments/analytics/performance", () => {
       ),
     );
     expect(res.status).toBe(401);
+  });
+});
+
+describe("authenticated – /api/investments/analytics/performance", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({ valid: true, user: AUTH_USER });
+    mockResolveRoleFromDb.mockResolvedValue("user");
+  });
+
+  it("GET instantiates PortfolioAnalytics with user.id and returns 200 on success", async () => {
+    const fakePerformance = { totalReturn: 0.12, annualizedReturn: 0.08 };
+    const mockGetPortfolioPerformance = jest
+      .fn()
+      .mockResolvedValue(fakePerformance);
+    const { PortfolioAnalytics } = getPortfolioAnalyticsMock();
+    PortfolioAnalytics.mockImplementation(() => ({
+      getPortfolioPerformance: mockGetPortfolioPerformance,
+    }));
+
+    const url = `http://localhost:3000/api/investments/analytics/performance?portfolioId=${VALID_UUID}`;
+    const res = await GET(createMockRequest(url));
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { success: boolean; data: unknown };
+    expect(body.success).toBe(true);
+    expect(body.data).toEqual(fakePerformance);
+    expect(PortfolioAnalytics).toHaveBeenCalledWith(AUTH_USER.id);
+  });
+
+  it("GET returns 400 when portfolioId is missing", async () => {
+    getPortfolioAnalyticsMock().PortfolioAnalytics.mockImplementation(() => ({}));
+    const url = "http://localhost:3000/api/investments/analytics/performance";
+    const res = await GET(createMockRequest(url));
+    expect(res.status).toBe(400);
   });
 });
