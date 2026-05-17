@@ -177,7 +177,7 @@ So all three IDOR fixes are a **direct `.eq("user_id", userId)`** — no owning-
 
 - [ ] **Step 7: Run — expect PASS.** Full suite 0 failures; `npx tsc --noEmit` 0 errors. `git grep -n "getMockDebts\|Chase Sapphire" src/` — clean.
 
-- [ ] **Step 8: Commit** — `feat: TASK-MOK-03 real debt persistence — debts table + debt-service (MOK-03)`.
+- [ ] **Step 8: Commit** — `feat: TASK-MOK-03 real debt persistence — debt_accounts table + debt-service (MOK-03)`.
 
 ---
 
