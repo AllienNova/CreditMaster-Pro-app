@@ -9,13 +9,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 export default function HelpScreen() {
   const helpItems = [
@@ -46,11 +46,11 @@ export default function HelpScreen() {
   ];
 
   const handleEmail = () => {
-    Linking.openURL("mailto:support@creditpro.com");
+    openExternalUrl("mailto:support@creditpro.com");
   };
 
   const handlePhone = () => {
-    Linking.openURL("tel:+18001234567");
+    openExternalUrl("tel:+18001234567");
   };
 
   return (

@@ -10,7 +10,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
   TextInput,
   ActivityIndicator,
 } from "react-native";
@@ -21,6 +20,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { useMarketplaceStore } from "../../src/store/marketplaceStore";
 import type { MarketplaceProvider } from "../../src/services/api/marketplace";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 export default function AttorneysScreen() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,7 +39,7 @@ export default function AttorneysScreen() {
 
   const handleContact = (provider: MarketplaceProvider) => {
     if (provider.website) {
-      Linking.openURL(provider.website);
+      openExternalUrl(provider.website);
     }
   };
 

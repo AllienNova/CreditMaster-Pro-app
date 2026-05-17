@@ -5,12 +5,12 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/hooks/useTheme";
 import { withOpacity } from "../../src/constants/theme";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 const FAQ_ITEMS = [
   {
@@ -89,10 +89,10 @@ export default function HelpScreen() {
 
   const handleContact = (optionId: string) => {
     if (optionId === "email") {
-      Linking.openURL("mailto:support@Fynvita.pro");
+      openExternalUrl("mailto:support@Fynvita.pro");
     } else if (optionId === "chat") {
       // Open live chat support via web interface
-      Linking.openURL("https://fynvita.pro/support/chat");
+      openExternalUrl("https://fynvita.pro/support/chat");
     }
   };
 
@@ -320,7 +320,7 @@ export default function HelpScreen() {
               padding: 16,
               marginBottom: 8,
             }}
-            onPress={() => Linking.openURL("https://Fynvita.pro/guides")}
+            onPress={() => openExternalUrl("https://Fynvita.pro/guides")}
           >
             <Ionicons name="book-outline" size={24} color={colors.primary} />
             <View style={{ flex: 1, marginLeft: 12 }}>
@@ -354,7 +354,7 @@ export default function HelpScreen() {
               padding: 16,
               marginBottom: 8,
             }}
-            onPress={() => Linking.openURL("https://Fynvita.pro/blog")}
+            onPress={() => openExternalUrl("https://Fynvita.pro/blog")}
           >
             <Ionicons
               name="newspaper-outline"
@@ -392,7 +392,7 @@ export default function HelpScreen() {
               padding: 16,
               marginBottom: 8,
             }}
-            onPress={() => Linking.openURL("https://www.youtube.com/@Fynvita")}
+            onPress={() => openExternalUrl("https://www.youtube.com/@Fynvita")}
           >
             <Ionicons name="logo-youtube" size={24} color="#FF0000" />
             <View style={{ flex: 1, marginLeft: 12 }}>

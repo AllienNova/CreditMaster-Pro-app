@@ -12,7 +12,6 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Linking,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,6 +20,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { useMarketplaceStore } from "../../src/store/marketplaceStore";
 import type { MarketplaceProduct } from "../../src/services/api/marketplace";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 export default function TradelinesScreen() {
   const { products, isLoadingProducts, error, fetchProducts, clearError } =
@@ -40,7 +40,7 @@ export default function TradelinesScreen() {
           text: "Continue",
           onPress: () => {
             if (product.provider?.website) {
-              Linking.openURL(product.provider.website);
+              openExternalUrl(product.provider.website);
             }
           },
         },

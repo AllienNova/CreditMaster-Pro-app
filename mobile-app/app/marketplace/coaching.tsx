@@ -10,7 +10,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
   ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
@@ -20,6 +19,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { useMarketplaceStore } from "../../src/store/marketplaceStore";
 import type { MarketplaceProvider } from "../../src/services/api/marketplace";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 export default function CoachingScreen() {
   const { providers, isLoadingProviders, error, fetchProviders, clearError } =
@@ -31,7 +31,7 @@ export default function CoachingScreen() {
 
   const handleBookCoach = (provider: MarketplaceProvider) => {
     if (provider.website) {
-      Linking.openURL(provider.website);
+      openExternalUrl(provider.website);
     }
   };
 

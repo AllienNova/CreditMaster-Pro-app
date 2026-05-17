@@ -10,7 +10,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
   ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
@@ -20,6 +19,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { useMarketplaceStore } from "../../src/store/marketplaceStore";
 import type { MarketplaceProduct } from "../../src/services/api/marketplace";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 export default function MonitoringServicesScreen() {
   const { products, isLoadingProducts, error, fetchProducts, clearError } =
@@ -31,7 +31,7 @@ export default function MonitoringServicesScreen() {
 
   const handleLearnMore = (product: MarketplaceProduct) => {
     if (product.provider?.website) {
-      Linking.openURL(product.provider.website);
+      openExternalUrl(product.provider.website);
     }
   };
 

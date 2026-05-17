@@ -12,13 +12,13 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Linking,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 const CONTACT_OPTIONS = [
   {
@@ -61,7 +61,7 @@ export default function ContactSupportScreen() {
     if (action === "chat") {
       router.push("/financial-intelligence/chat");
     } else {
-      Linking.openURL(action);
+      openExternalUrl(action);
     }
   };
 
