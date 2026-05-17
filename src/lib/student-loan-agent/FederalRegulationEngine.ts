@@ -86,11 +86,12 @@ export class FederalRegulationEngine {
       };
     }
 
-    // Mock compliance check - in production, this would perform detailed validation
+    // Automated compliance validation is not implemented — manual review is required.
     return {
-      isCompliant: true,
+      isCompliant: false,
       regulation: regulation.name,
-      message: `Compliance check passed for ${regulation.name}`,
+      message:
+        "Automated compliance validation is not yet available — manual review required.",
       violations: [],
     };
   }
@@ -137,10 +138,11 @@ export class FederalRegulationEngine {
       };
     }
 
-    // Mock validation - in production, this would perform detailed checks
+    // Automated compliance validation is not implemented — manual review is required.
     return {
-      isValid: true,
-      message: "Strategy is compliant",
+      isValid: false,
+      message:
+        "Automated compliance validation is not yet available — manual review required.",
       violations: [],
     };
   }
