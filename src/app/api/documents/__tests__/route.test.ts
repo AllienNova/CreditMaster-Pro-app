@@ -1,5 +1,11 @@
 /**
  * @jest-environment node
+ *
+ * Tests for /api/documents (TASK-CRD-4).
+ *
+ * GET and DELETE are re-wired to documentServiceDB (DB-backed, user-scoped).
+ * PATCH (metadata/tags) still uses the in-memory documentService — the DB
+ * schema has no metadata or tags columns.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -13,14 +19,19 @@ const mockAddTags = jest.fn();
 const mockValidate = jest.fn();
 const mockResolveRole = jest.fn();
 
+jest.mock("@/lib/documents/document-service-db", () => ({
+  documentServiceDB: {
+    getDocument: (...args: unknown[]) => mockGetDocument(...args),
+    getUserDocuments: (...args: unknown[]) => mockGetUserDocuments(...args),
+    getDocumentStats: (...args: unknown[]) => mockGetDocumentStats(...args),
+    deleteDocument: (...args: unknown[]) => mockDeleteDocument(...args),
+  },
+}));
 jest.mock("@/lib/documents/document-service", () => ({
   documentService: {
-    getDocument: mockGetDocument,
-    getUserDocuments: mockGetUserDocuments,
-    getDocumentStats: mockGetDocumentStats,
-    deleteDocument: mockDeleteDocument,
-    updateDocumentMetadata: mockUpdateDocumentMetadata,
-    addTags: mockAddTags,
+    updateDocumentMetadata: (...args: unknown[]) =>
+      mockUpdateDocumentMetadata(...args),
+    addTags: (...args: unknown[]) => mockAddTags(...args),
   },
 }));
 jest.mock("@/lib/auth/jwt-validation", () => ({
@@ -71,20 +82,18 @@ const sampleDocument = {
   url: "https://s3.example.com/file.pdf",
   s3Key: "users/user-1/credit_report/doc_123.pdf",
   uploadedAt: new Date(),
-  metadata: { source: "equifax" },
-  tags: ["credit"],
 };
 
 const sampleStats = {
   total: 3,
-  byType: { credit_report: 2, evidence: 1 },
+  byType: { credit_report: 2, supporting_doc: 1 },
   totalSize: 5120,
 };
 
 // ── Setup ────────────────────────────────────────────────────────────────────
 beforeEach(() => {
   jest.clearAllMocks();
-  // Default: authenticated as user-1 (the routes are now wrapped in withAuth).
+  // Default: authenticated as user-1.
   mockValidate.mockResolvedValue({
     valid: true,
     user: { id: "user-1", email: "user-1@example.com" },
@@ -96,11 +105,6 @@ beforeEach(() => {
 //  GET /api/documents
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Documents API – GET /api/documents", () => {
-  // TASK-AUTH-03c: the route is now wrapped in withAuth and derives the
-  // userId from the authenticated session — a client-supplied `userId` query
-  // param is no longer trusted (IDOR fix). The former
-  // "400 when userId is missing" test encoded the insecure query-param
-  // behavior and is replaced by the negative-auth coverage below.
   it("returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
     mockValidate.mockResolvedValue({ valid: false, user: null });
     const req = makeRequest("http://localhost:3000/api/documents");
@@ -113,37 +117,23 @@ describe("Documents API – GET /api/documents", () => {
     mockGetDocument.mockResolvedValue(sampleDocument);
 
     const req = makeRequest(
-      "http://localhost:3000/api/documents?userId=user-1&documentId=doc_123",
+      "http://localhost:3000/api/documents?documentId=doc_123",
     );
     const res = await GET(req);
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.document.id).toBe("doc_123");
-    expect(mockGetDocument).toHaveBeenCalledWith("doc_123");
+    // DB service is called with both documentId AND userId (IDOR defence).
+    expect(mockGetDocument).toHaveBeenCalledWith("doc_123", "user-1");
   });
 
-  it("should return 404 when document does not exist", async () => {
-    mockGetDocument.mockResolvedValue(undefined);
+  it("should return 404 when document does not exist or belongs to another user", async () => {
+    // DB service returns null for wrong owner (no existence leak).
+    mockGetDocument.mockResolvedValue(null);
 
     const req = makeRequest(
-      "http://localhost:3000/api/documents?userId=user-1&documentId=nonexistent",
-    );
-    const res = await GET(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(404);
-    expect(body.error).toBe("Document not found");
-  });
-
-  it("should return 404 when document belongs to different user", async () => {
-    mockGetDocument.mockResolvedValue({
-      ...sampleDocument,
-      userId: "other-user",
-    });
-
-    const req = makeRequest(
-      "http://localhost:3000/api/documents?userId=user-1&documentId=doc_123",
+      "http://localhost:3000/api/documents?documentId=nonexistent",
     );
     const res = await GET(req);
     const body = await res.json();
@@ -154,11 +144,11 @@ describe("Documents API – GET /api/documents", () => {
 
   it("should return user documents list and stats when no documentId", async () => {
     const docs = [sampleDocument];
-    mockGetUserDocuments.mockReturnValue(docs);
-    mockGetDocumentStats.mockReturnValue(sampleStats);
+    mockGetUserDocuments.mockResolvedValue(docs);
+    mockGetDocumentStats.mockResolvedValue(sampleStats);
 
     const req = makeRequest(
-      "http://localhost:3000/api/documents?userId=user-1",
+      "http://localhost:3000/api/documents",
     );
     const res = await GET(req);
     const body = await res.json();
@@ -171,25 +161,23 @@ describe("Documents API – GET /api/documents", () => {
   });
 
   it("should pass type filter to getUserDocuments", async () => {
-    mockGetUserDocuments.mockReturnValue([]);
-    mockGetDocumentStats.mockReturnValue(sampleStats);
+    mockGetUserDocuments.mockResolvedValue([]);
+    mockGetDocumentStats.mockResolvedValue(sampleStats);
 
     const req = makeRequest(
-      "http://localhost:3000/api/documents?userId=user-1&type=evidence",
+      "http://localhost:3000/api/documents?type=supporting_doc",
     );
     const res = await GET(req);
 
     expect(res.status).toBe(200);
-    expect(mockGetUserDocuments).toHaveBeenCalledWith("user-1", "evidence");
+    expect(mockGetUserDocuments).toHaveBeenCalledWith("user-1", "supporting_doc");
   });
 
   it("should return 500 when an unexpected error occurs", async () => {
-    mockGetUserDocuments.mockImplementation(() => {
-      throw new Error("DB connection failed");
-    });
+    mockGetUserDocuments.mockRejectedValue(new Error("DB connection failed"));
 
     const req = makeRequest(
-      "http://localhost:3000/api/documents?userId=user-1",
+      "http://localhost:3000/api/documents",
     );
     const res = await GET(req);
     const body = await res.json();
@@ -226,10 +214,12 @@ describe("Documents API – DELETE /api/documents", () => {
 
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(mockDeleteDocument).toHaveBeenCalledWith("doc_123");
+    // DB service called with both documentId AND userId (IDOR defence).
+    expect(mockDeleteDocument).toHaveBeenCalledWith("doc_123", "user-1");
   });
 
-  it("should return success=false when document not found in S3", async () => {
+  it("should return success=false when document not found or wrong owner", async () => {
+    // DB service returns false for wrong owner (IDOR safe — no 403/404 existence leak).
     mockDeleteDocument.mockResolvedValue(false);
 
     const req = makeRequest(
@@ -482,5 +472,31 @@ describe("negative-auth – /api/documents", () => {
     });
     const res = await PATCH(req);
     expect(res.status).toBe(401);
+  });
+
+  it("GET returns 404 (IDOR) when reading another user's document", async () => {
+    // DB service returns null for wrong owner — route cannot distinguish
+    // "not found" from "belongs to other user" (intentional, no existence leak).
+    mockGetDocument.mockResolvedValue(null);
+    const req = makeRequest(
+      "http://localhost:3000/api/documents?documentId=doc_other",
+    );
+    const res = await GET(req);
+    expect(res.status).toBe(404);
+    expect(mockGetDocument).toHaveBeenCalledWith("doc_other", "user-1");
+  });
+
+  it("DELETE returns success=false (IDOR) when deleting another user's document", async () => {
+    // DB service returns false for wrong owner.
+    mockDeleteDocument.mockResolvedValue(false);
+    const req = makeRequest(
+      "http://localhost:3000/api/documents?documentId=doc_other",
+      { method: "DELETE" },
+    );
+    const res = await DELETE(req);
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(false);
+    expect(mockDeleteDocument).toHaveBeenCalledWith("doc_other", "user-1");
   });
 });

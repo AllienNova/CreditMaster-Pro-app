@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { documentServiceDB } from "@/lib/documents/document-service-db";
+import type { DocumentType } from "@/lib/documents/document-service-db";
 import { documentService } from "@/lib/documents/document-service";
-import type { DocumentType } from "@/lib/documents/document-service";
 import { withAuth } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
 
@@ -13,8 +14,9 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
     const type = searchParams.get("type") as DocumentType | null;
 
     if (documentId) {
-      const document = await documentService.getDocument(documentId);
-      if (!document || document.userId !== userId) {
+      // getDocument is user-scoped: returns null for wrong owner (no existence leak).
+      const document = await documentServiceDB.getDocument(documentId, userId);
+      if (!document) {
         return NextResponse.json(
           { error: "Document not found" },
           { status: 404 },
@@ -23,8 +25,8 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
       return NextResponse.json({ document });
     }
 
-    const documents = documentService.getUserDocuments(userId, type ?? undefined);
-    const stats = documentService.getDocumentStats(userId);
+    const documents = await documentServiceDB.getUserDocuments(userId, type ?? undefined);
+    const stats = await documentServiceDB.getDocumentStats(userId);
 
     return NextResponse.json({ documents, stats });
   } catch (_error) {
@@ -38,7 +40,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
 });
 
 export const DELETE = withAuth(
-  async (request: NextRequest, _user: AuthedUser) => {
+  async (request: NextRequest, user: AuthedUser) => {
   try {
     const { searchParams } = new URL(request.url);
     const documentId = searchParams.get("documentId");
@@ -50,7 +52,8 @@ export const DELETE = withAuth(
       );
     }
 
-    const success = await documentService.deleteDocument(documentId);
+    // deleteDocument is user-scoped: returns false for wrong owner (IDOR safe).
+    const success = await documentServiceDB.deleteDocument(documentId, user.id);
     return NextResponse.json({ success });
   } catch (_error) {
     // DocumentsRoute error: Failed to delete document

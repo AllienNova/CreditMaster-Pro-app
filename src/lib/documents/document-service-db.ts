@@ -124,12 +124,14 @@ class DocumentServiceDB {
   }
 
   /**
-   * Get document by ID with refreshed URL
+   * Get document by ID with refreshed URL.
+   * userId scoping prevents IDOR — returns null for wrong owner.
    */
-  async getDocument(documentId: string): Promise<Document | null> {
+  async getDocument(documentId: string, userId: string): Promise<Document | null> {
     const { data, error } = await documents()
       .select("*")
       .eq("id", documentId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
@@ -197,13 +199,15 @@ class DocumentServiceDB {
   }
 
   /**
-   * Delete document from S3 and database
+   * Delete document from S3 and database.
+   * userId scoping prevents IDOR — returns false for wrong owner.
    */
-  async deleteDocument(documentId: string): Promise<boolean> {
-    // Get document first
+  async deleteDocument(documentId: string, userId: string): Promise<boolean> {
+    // Get document first, scoped to owner
     const { data: doc, error: fetchError } = await documents()
       .select("*")
       .eq("id", documentId)
+      .eq("user_id", userId)
       .single();
 
     if (fetchError || !doc) {
@@ -226,8 +230,11 @@ class DocumentServiceDB {
       // Continue with database deletion even if S3 fails
     }
 
-    // Delete from database
-    const { error: dbError } = await documents().delete().eq("id", documentId);
+    // Delete from database (dual-eq guards against TOCTOU)
+    const { error: dbError } = await documents()
+      .delete()
+      .eq("id", documentId)
+      .eq("user_id", userId);
 
     if (dbError) {
       // DocumentServiceDB error: Failed to delete document from database

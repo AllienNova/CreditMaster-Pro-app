@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { documentService } from "@/lib/documents/document-service";
-import type { DocumentType } from "@/lib/documents/document-service";
+import { documentServiceDB } from "@/lib/documents/document-service-db";
+import type { DocumentType } from "@/lib/documents/document-service-db";
 import { withAuth } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
 
@@ -21,7 +21,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     }
 
     // Validate file type
-    if (!documentService.validateFileType(file.type, documentType)) {
+    if (!documentServiceDB.validateFileType(file.type, documentType)) {
       return NextResponse.json(
         { error: `Invalid file type for ${documentType}` },
         { status: 400 },
@@ -29,7 +29,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     }
 
     // Validate file size
-    if (!documentService.validateFileSize(file.size)) {
+    if (!documentServiceDB.validateFileSize(file.size)) {
       return NextResponse.json(
         { error: "File size exceeds 10MB limit" },
         { status: 400 },
@@ -39,17 +39,16 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     // Convert file to buffer
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Parse metadata if provided
-    const metadata = metadataStr ? JSON.parse(metadataStr) : undefined;
+    // Parse metadata if provided (ignored by DB service — no metadata column)
+    void metadataStr;
 
     // Upload document
-    const document = await documentService.uploadDocument(
+    const document = await documentServiceDB.uploadDocument(
       userId,
       buffer,
       file.name,
       file.type,
       documentType,
-      metadata,
     );
 
     return NextResponse.json({ document });
@@ -80,7 +79,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
     }
 
     const { uploadUrl, documentId, s3Key } =
-      await documentService.generateUploadUrl(
+      await documentServiceDB.generateUploadUrl(
         userId,
         fileName,
         mimeType,

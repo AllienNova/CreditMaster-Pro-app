@@ -204,7 +204,7 @@ describe("DocumentServiceDB.getDocument", () => {
     const row = makeDocumentRow();
     singleResults.push({ data: row, error: null });
 
-    const result = await documentServiceDB.getDocument("doc-abc-123");
+    const result = await documentServiceDB.getDocument("doc-abc-123", "user-1");
 
     expect(result).not.toBeNull();
     expect(result!.id).toBe("doc-abc-123");
@@ -217,7 +217,7 @@ describe("DocumentServiceDB.getDocument", () => {
       error: { message: "not found", code: "PGRST116" },
     });
 
-    const result = await documentServiceDB.getDocument("nonexistent");
+    const result = await documentServiceDB.getDocument("nonexistent", "user-1");
     expect(result).toBeNull();
   });
 
@@ -228,7 +228,7 @@ describe("DocumentServiceDB.getDocument", () => {
     });
 
     await expect(
-      documentServiceDB.getDocument("doc-abc-123"),
+      documentServiceDB.getDocument("doc-abc-123", "user-1"),
     ).rejects.toThrow("Failed to fetch document: db connection error");
   });
 
@@ -244,7 +244,7 @@ describe("DocumentServiceDB.getDocument", () => {
     singleResults.push({ data: row, error: null });
     mockGetSignedUrl.mockResolvedValueOnce("https://refreshed-url.example.com/doc");
 
-    const result = await documentServiceDB.getDocument("doc-abc-123");
+    const result = await documentServiceDB.getDocument("doc-abc-123", "user-1");
 
     expect(result).not.toBeNull();
     expect(result!.url).toBe("https://refreshed-url.example.com/doc");
@@ -259,7 +259,7 @@ describe("DocumentServiceDB.getDocument", () => {
     singleResults.push({ data: row, error: null });
     mockGetSignedUrl.mockResolvedValueOnce("https://new-url.example.com/doc");
 
-    const result = await documentServiceDB.getDocument("doc-abc-123");
+    const result = await documentServiceDB.getDocument("doc-abc-123", "user-1");
 
     expect(result).not.toBeNull();
     expect(result!.url).toBe("https://new-url.example.com/doc");
@@ -338,7 +338,7 @@ describe("DocumentServiceDB.deleteDocument", () => {
     // DB delete chain resolves via thenable
     queryResult = { data: null, error: null };
 
-    const result = await documentServiceDB.deleteDocument("doc-abc-123");
+    const result = await documentServiceDB.deleteDocument("doc-abc-123", "user-1");
 
     expect(result).toBe(true);
     expect(mockS3Send).toHaveBeenCalledTimes(1); // DeleteObjectCommand
@@ -351,7 +351,7 @@ describe("DocumentServiceDB.deleteDocument", () => {
       error: { message: "not found", code: "PGRST116" },
     });
 
-    const result = await documentServiceDB.deleteDocument("nonexistent");
+    const result = await documentServiceDB.deleteDocument("nonexistent", "user-1");
     expect(result).toBe(false);
   });
 
@@ -361,7 +361,7 @@ describe("DocumentServiceDB.deleteDocument", () => {
     mockS3Send.mockRejectedValueOnce(new Error("S3 failure"));
     queryResult = { data: null, error: null };
 
-    const result = await documentServiceDB.deleteDocument("doc-abc-123");
+    const result = await documentServiceDB.deleteDocument("doc-abc-123", "user-1");
 
     // Should still return true because DB deletion succeeded
     expect(result).toBe(true);
@@ -372,7 +372,7 @@ describe("DocumentServiceDB.deleteDocument", () => {
     singleResults.push({ data: row, error: null });
     queryResult = { data: null, error: { message: "db delete failed" } };
 
-    const result = await documentServiceDB.deleteDocument("doc-abc-123");
+    const result = await documentServiceDB.deleteDocument("doc-abc-123", "user-1");
     expect(result).toBe(false);
   });
 });
