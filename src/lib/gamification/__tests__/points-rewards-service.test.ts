@@ -410,17 +410,17 @@ describe("PointsRewardsService", () => {
         .mockReturnValueOnce(createBuilder({ data: txnRow2, error: null })) // recordTransaction(in)
         .mockReturnValueOnce(createBuilder({ data: updatedTo, error: null })); // update to
 
-      const result = await service.transferPoints("from-user", "to-user", 100, "gift");
+      const result = await service.transferPoints("from-user", "from-user", "to-user", 100, "gift");
       expect(result.fromBalance).toBeDefined();
       expect(result.toBalance).toBeDefined();
     });
 
     it("throws on zero or negative amount", async () => {
       await expect(
-        service.transferPoints("a", "b", 0),
+        service.transferPoints("a", "a", "b", 0),
       ).rejects.toThrow("Transfer amount must be positive");
       await expect(
-        service.transferPoints("a", "b", -5),
+        service.transferPoints("a", "a", "b", -5),
       ).rejects.toThrow("Transfer amount must be positive");
     });
 
@@ -430,7 +430,7 @@ describe("PointsRewardsService", () => {
       );
 
       await expect(
-        service.transferPoints("a", "b", 50),
+        service.transferPoints("a", "a", "b", 50),
       ).rejects.toThrow("Sender has no points balance");
     });
 
@@ -441,7 +441,7 @@ describe("PointsRewardsService", () => {
       );
 
       await expect(
-        service.transferPoints("a", "b", 50),
+        service.transferPoints("a", "a", "b", 50),
       ).rejects.toThrow("Insufficient points");
     });
 
@@ -462,7 +462,7 @@ describe("PointsRewardsService", () => {
         .mockReturnValueOnce(createBuilder({ data: txnRow2, error: null })) // recordTxn(in)
         .mockReturnValueOnce(createBuilder({ data: updatedTo, error: null })); // update to
 
-      const result = await service.transferPoints("a", "b", 100);
+      const result = await service.transferPoints("a", "a", "b", 100);
       expect(result.fromBalance).toBeDefined();
       expect(result.toBalance).toBeDefined();
     });

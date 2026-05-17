@@ -590,12 +590,18 @@ export class FinancialJourneyService {
   }
 
   async updateProgress(
+    userId: string,
     journeyId: string,
     waypointId: string,
     requirementUpdates: { type: string; currentValue: number }[],
   ): Promise<FinancialJourney> {
     const journey = await this.getJourneyById(journeyId);
     if (!journey) throw new Error("Journey not found");
+
+    // Verify the caller owns this journey
+    if (journey.userId !== userId) {
+      throw new Error("Not authorized to update this journey");
+    }
 
     const waypointIndex = journey.waypoints.findIndex(
       (w) => w.id === waypointId,
