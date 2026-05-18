@@ -9,8 +9,7 @@ import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 import { PlaidTransaction } from "./plaid-service";
-import { AIMLService } from "@/lib/aiml-service";
-import { ModelRouter, TaskType } from "@/lib/model-router";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import {
   CategorizedTransaction as SmartCategorizedTransaction,
   CategoryCorrection,
@@ -124,8 +123,6 @@ const CATEGORY_ENHANCEMENTS: Record<
 // AI CONFIGURATION
 // ============================================================================
 
-const AI_MODEL =
-  process.env.AIML_DEFAULT_CHAT_MODEL || "anthropic/claude-4.5-sonnet";
 const AI_CATEGORIZATION_THRESHOLD = 80; // Use AI if confidence < 80%
 
 // Merchant category database (in-memory cache)
@@ -202,21 +199,6 @@ const MERCHANT_PATTERNS: Record<string, BudgetCategoryValue> = {
 // ============================================================================
 
 export class TransactionCategorizer {
-  private aiService: AIMLService | null = null;
-  private modelRouter: ModelRouter;
-
-  constructor() {
-    this.modelRouter = new ModelRouter();
-
-    // Initialize AI service if available
-    try {
-      if (process.env.AIML_API_KEY) {
-        this.aiService = new AIMLService();
-      }
-    } catch (error) {
-      // Transaction categorizer warning: AI service not available
-    }
-  }
   /**
    * Categorize a single transaction with enhanced categorization
    */
@@ -520,7 +502,7 @@ export class TransactionCategorizer {
     }
 
     // Second pass: Use AI for ambiguous transactions
-    if (ambiguousTransactions.length > 0 && this.aiService) {
+    if (ambiguousTransactions.length > 0) {
       try {
         const aiCategorized = await this.categorizeWithAI(
           ambiguousTransactions,
@@ -538,16 +520,6 @@ export class TransactionCategorizer {
             aiCategorized: false,
           });
         }
-      }
-    } else if (ambiguousTransactions.length > 0) {
-      // No AI available, use fallback
-      for (const transaction of ambiguousTransactions) {
-        categorized.push({
-          ...transaction,
-          category: "other",
-          categoryConfidence: 50,
-          aiCategorized: false,
-        });
       }
     }
 
@@ -653,14 +625,12 @@ export class TransactionCategorizer {
       // Transaction categorizer warning: Failed to fetch merchant category from database
     }
 
-    // 4. Use AI if available
-    if (this.aiService) {
-      try {
-        const aiSuggestion = await this.getAICategorySuggestion(merchant);
-        return aiSuggestion;
-      } catch (error) {
-        // Transaction categorizer warning: AI category suggestion failed
-      }
+    // 4. Use AI
+    try {
+      const aiSuggestion = await this.getAICategorySuggestion(merchant);
+      return aiSuggestion;
+    } catch (error) {
+      // Transaction categorizer warning: AI category suggestion failed
     }
 
     // 5. Fallback
@@ -769,10 +739,6 @@ export class TransactionCategorizer {
       date: Date;
     }>,
   ): Promise<SmartCategorizedTransaction[]> {
-    if (!this.aiService) {
-      throw new Error("AI service not available");
-    }
-
     // Build prompt for batch categorization
     const transactionList = transactions
       .map(
@@ -803,8 +769,8 @@ Respond in JSON format:
 `.trim();
 
     try {
-      const response = await this.aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.QUICK_RESPONSE,
         [
           {
             role: "system",
@@ -865,10 +831,6 @@ Respond in JSON format:
   private async getAICategorySuggestion(
     merchant: string,
   ): Promise<CategorySuggestion> {
-    if (!this.aiService) {
-      throw new Error("AI service not available");
-    }
-
     const categories = Object.values(BUDGET_CATEGORIES).join(", ");
 
     const prompt = `
@@ -888,8 +850,8 @@ Respond in JSON format:
 `.trim();
 
     try {
-      const response = await this.aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.QUICK_RESPONSE,
         [
           {
             role: "system",

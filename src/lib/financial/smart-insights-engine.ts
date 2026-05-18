@@ -13,7 +13,7 @@
  */
 
 import { getSupabase } from "@/lib/supabase/client";
-import { AIMLService } from "@/lib/aiml-service";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import {
   FinancialInsight,
   InsightType,
@@ -52,29 +52,11 @@ const PRIORITY_ORDER: Record<InsightPriority, number> = {
   info: 1,
 };
 
-const AI_MODEL = "anthropic/claude-4.5-sonnet";
-
 // ============================================================================
 // SMART INSIGHTS ENGINE
 // ============================================================================
 
 class SmartInsightsEngine {
-  private aimlService: AIMLService | null = null;
-
-  /**
-   * Get or create AIML service instance
-   */
-  private getAIService(): AIMLService | null {
-    if (!this.aimlService && process.env.AIML_API_KEY) {
-      try {
-        this.aimlService = new AIMLService();
-      } catch {
-        // SmartInsightsEngine warning: Failed to initialize AIML service for insights
-      }
-    }
-    return this.aimlService;
-  }
-
   /**
    * Generate all financial insights for a user
    */
@@ -133,7 +115,7 @@ class SmartInsightsEngine {
       insights,
       generatedAt: new Date(),
       processingTimeMs: Date.now() - startTime,
-      aiModelUsed: mergedOptions.includeAI ? AI_MODEL : undefined,
+      aiModelUsed: mergedOptions.includeAI ? getModelRouter().getModel(TaskType.REASONING) : undefined,
       dataSourcesUsed: [
         "accounts",
         "transactions",
@@ -675,8 +657,7 @@ class SmartInsightsEngine {
     insights: FinancialInsight[],
     context: FinancialContext,
   ): Promise<FinancialInsight[]> {
-    const aiService = this.getAIService();
-    if (!aiService || insights.length === 0) {
+    if (insights.length === 0) {
       return insights;
     }
 
@@ -684,7 +665,7 @@ class SmartInsightsEngine {
       const topInsights = insights.slice(0, 5);
       const prompt = this.buildAIPrompt(topInsights, context);
 
-      const response = await aiService.chat(AI_MODEL, [
+      const response = await getModelRouter().complete(TaskType.REASONING, [
         {
           role: "system",
           content:

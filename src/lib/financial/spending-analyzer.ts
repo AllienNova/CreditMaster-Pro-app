@@ -16,8 +16,7 @@
 import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import { AIMLService } from "@/lib/aiml-service";
-import { ModelRouter } from "@/lib/model-router";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import type {
   SpendingPatternAnalysis,
   DetectedPattern,
@@ -53,10 +52,6 @@ import type {
 // CONFIGURATION
 // ============================================================================
 
-const AI_MODEL =
-  process.env.AIML_DEFAULT_CHAT_MODEL || "anthropic/claude-4.5-sonnet";
-const AI_REASONING_MODEL =
-  process.env.AIML_REASONING_MODEL || "deepseek/deepseek-r1";
 const AI_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 // Anomaly detection thresholds
@@ -110,25 +105,8 @@ interface CategoryStats {
 // ============================================================================
 
 export class SpendingAnalyzer {
-  private aiService: AIMLService | null = null;
-  private modelRouter: ModelRouter;
   private aiCache: Map<string, { data: unknown; timestamp: number }> =
     new Map();
-
-  constructor() {
-    this.modelRouter = new ModelRouter();
-    this.initializeAIService();
-  }
-
-  private async initializeAIService(): Promise<void> {
-    try {
-      this.aiService = new AIMLService();
-    } catch (_error) {
-      // SpendingAnalyzer warning: AI service initialization failed, will use rule-based analysis
-      void _error;
-      this.aiService = null;
-    }
-  }
 
   // ============================================================================
   // PUBLIC METHODS
@@ -430,7 +408,7 @@ export class SpendingAnalyzer {
       summary,
       generatedAt: new Date(),
       processingTimeMs,
-      aiModelUsed: this.aiService ? AI_MODEL : undefined,
+      aiModelUsed: getModelRouter().getModel(TaskType.FINANCIAL_ADVICE),
     };
   }
 
@@ -1004,15 +982,13 @@ export class SpendingAnalyzer {
       });
     }
 
-    // Try AI-powered insights if available
-    if (this.aiService) {
-      try {
-        const aiInsights = await this.getAIInsights(userId, context);
-        insights.push(...aiInsights);
-      } catch (_error) {
-        // SpendingAnalyzer warning: AI insights generation failed
-        void _error;
-      }
+    // Try AI-powered insights
+    try {
+      const aiInsights = await this.getAIInsights(userId, context);
+      insights.push(...aiInsights);
+    } catch (_error) {
+      // SpendingAnalyzer warning: AI insights generation failed
+      void _error;
     }
 
     return insights;

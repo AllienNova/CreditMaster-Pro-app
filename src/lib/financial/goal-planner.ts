@@ -10,7 +10,7 @@
  */
 
 import { getSupabase } from "@/lib/supabase/client";
-import { AIMLService } from "@/lib/aiml-service";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import { financialContextEngine } from "./financial-context-engine";
 import { FinancialContext } from "./types/financial-context.types";
 import {
@@ -28,8 +28,6 @@ import {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-
-const AI_MODEL = "anthropic/claude-4.5-sonnet";
 
 const DEFAULT_MILESTONES = [
   {
@@ -75,19 +73,6 @@ const GOAL_TEMPLATES: Record<
 // ============================================================================
 
 class GoalPlanner {
-  private aimlService: AIMLService | null = null;
-
-  private getAIService(): AIMLService | null {
-    if (!this.aimlService && process.env.AIML_API_KEY) {
-      try {
-        this.aimlService = new AIMLService();
-      } catch {
-        // GoalPlanner warning: Failed to initialize AIML service for goal planning
-      }
-    }
-    return this.aimlService;
-  }
-
   /**
    * Create a new financial goal plan
    */
@@ -456,16 +441,11 @@ class GoalPlanner {
     months: number,
     context: FinancialContext,
   ): Promise<string[]> {
-    const aiService = this.getAIService();
-    if (!aiService) {
-      return this.getDefaultRecommendations(goalType);
-    }
-
     try {
       const prompt = `Generate 3 specific, actionable tips for achieving a ${goalType} goal of $${targetAmount} in ${months} months. User has: income $${context.transactions.totalIncome}/month, savings $${context.accounts.totalSavings}. Be concise.`;
 
-      const response = await aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [
           {
             role: "system",

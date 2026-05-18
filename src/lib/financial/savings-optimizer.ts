@@ -12,8 +12,7 @@
 import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import { AIMLService } from "@/lib/aiml-service";
-import { ModelRouter } from "@/lib/model-router";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import type {
   SavingsAnalysis,
   RecurringCharge,
@@ -30,10 +29,6 @@ import type { BudgetCategoryValue } from "./types/budget.types";
 // CONFIGURATION
 // ============================================================================
 
-const AI_MODEL =
-  process.env.AIML_DEFAULT_CHAT_MODEL || "anthropic/claude-4.5-sonnet";
-const AI_REASONING_MODEL =
-  process.env.AIML_REASONING_MODEL || "deepseek/deepseek-r1";
 const AI_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 // Recurring charge detection thresholds
@@ -103,21 +98,10 @@ interface RecurringPattern {
 // ============================================================================
 
 export class SavingsOptimizer {
-  private aiService: AIMLService | null = null;
-  private modelRouter: ModelRouter;
   private aiCache: Map<string, { data: unknown; timestamp: number }> =
     new Map();
 
-  constructor() {
-    this.modelRouter = new ModelRouter();
-    try {
-      if (process.env.AIML_API_KEY) {
-        this.aiService = new AIMLService();
-      }
-    } catch (error) {
-      // Savings optimizer warning: AI service not available, using fallback logic
-    }
-  }
+  constructor() {}
 
   /**
    * Analyze spending patterns to identify savings opportunities
@@ -284,8 +268,7 @@ export class SavingsOptimizer {
         };
       });
 
-    // Use AI to classify importance if available
-    if (this.aiService && recurringCharges.length > 0) {
+    if (recurringCharges.length > 0) {
       try {
         await this.classifyRecurringChargeImportance(userId, recurringCharges);
       } catch (error) {
@@ -324,8 +307,7 @@ export class SavingsOptimizer {
       }
     }
 
-    // Use AI for advanced recommendations if available
-    if (this.aiService && recommendations.length > 0) {
+    if (recommendations.length > 0) {
       try {
         await this.enhanceSubscriptionRecommendationsWithAI(
           userId,
@@ -514,20 +496,17 @@ export class SavingsOptimizer {
       });
     }
 
-    // Use AI to generate additional personalized recommendations
-    if (this.aiService) {
-      try {
-        const aiRecommendations =
-          await this.generateAISavingsGoalRecommendations(
-            userId,
-            monthlyIncome,
-            availableMonthlySavings,
-            existingGoals,
-          );
-        recommendations.push(...aiRecommendations);
-      } catch (error) {
-        // Savings optimizer warning: AI goal recommendations failed
-      }
+    try {
+      const aiRecommendations =
+        await this.generateAISavingsGoalRecommendations(
+          userId,
+          monthlyIncome,
+          availableMonthlySavings,
+          existingGoals,
+        );
+      recommendations.push(...aiRecommendations);
+    } catch (error) {
+      // Savings optimizer warning: AI goal recommendations failed
     }
 
     return recommendations.sort((a, b) => a.priority - b.priority);
@@ -865,8 +844,6 @@ export class SavingsOptimizer {
     userId: string,
     recurringCharges: RecurringCharge[],
   ): Promise<void> {
-    if (!this.aiService) return;
-
     const cacheKey = `recurring-importance-${userId}`;
     const cached = this.aiCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < AI_CACHE_TTL) {
@@ -889,8 +866,8 @@ ${recurringCharges.map((c, i) => `${i + 1}. ${c.merchantName} - $${c.amount.toFi
 Return JSON array with format: [{"merchant": "name", "importance": "essential|useful|optional|unnecessary", "reason": "brief explanation"}]`;
 
     try {
-      const response = await this.aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [{ role: "user", content: prompt }],
         { temperature: 0.3 },
       );
@@ -995,8 +972,6 @@ Return JSON array with format: [{"merchant": "name", "importance": "essential|us
     recommendations: SubscriptionRecommendation[],
     subscriptions: RecurringCharge[],
   ): Promise<void> {
-    if (!this.aiService) return;
-
     const prompt = `Analyze these subscriptions and provide enhanced recommendations:
 
 ${subscriptions.map((s, i) => `${i + 1}. ${s.merchantName} - $${s.amount.toFixed(2)}/${s.frequency}`).join("\n")}
@@ -1009,8 +984,8 @@ For each subscription, suggest:
 Return JSON array with format: [{"merchant": "name", "action": "cancel|downgrade|consolidate|negotiate", "alternatives": [{"name": "alt", "monthlyCost": 0, "savings": 0}], "reason": "explanation"}]`;
 
     try {
-      const response = await this.aiService.chat(
-        AI_REASONING_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [{ role: "user", content: prompt }],
         { temperature: 0.4 },
       );
@@ -1261,10 +1236,6 @@ Return JSON array with format: [{"merchant": "name", "action": "cancel|downgrade
     opportunities: SavingsOpportunity[],
     recurringCharges: RecurringCharge[],
   ): Promise<string[]> {
-    if (!this.aiService) {
-      return this.generateFallbackInsights(summary, opportunities);
-    }
-
     const cacheKey = `savings-insights-${userId}`;
     const cached = this.aiCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < AI_CACHE_TTL) {
@@ -1292,8 +1263,8 @@ Recurring Charges: ${recurringCharges.length} found
 Provide brief, actionable insights (1-2 sentences each).`;
 
     try {
-      const response = await this.aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [{ role: "user", content: prompt }],
         { temperature: 0.5 },
       );
@@ -1414,8 +1385,6 @@ Provide brief, actionable insights (1-2 sentences each).`;
     availableMonthlySavings: number,
     existingGoals: SavingsGoal[],
   ): Promise<SavingsGoalRecommendation[]> {
-    if (!this.aiService) return [];
-
     const prompt = `Based on this financial profile, suggest 2-3 personalized savings goals:
 
 Monthly Income: $${monthlyIncome.toFixed(2)}
@@ -1430,8 +1399,8 @@ Suggest goals that are:
 Return JSON array with format: [{"type": "vacation|major_purchase|education|custom", "title": "Goal Name", "description": "Brief description", "recommendedAmount": 0, "recommendedMonthlyContribution": 0, "priority": 1-5, "reasoning": "Why this goal"}]`;
 
     try {
-      const response = await this.aiService.chat(
-        AI_REASONING_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [{ role: "user", content: prompt }],
         { temperature: 0.5 },
       );

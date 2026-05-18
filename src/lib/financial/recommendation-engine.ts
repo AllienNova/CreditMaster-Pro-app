@@ -11,7 +11,7 @@
  * - Priority-based ranking
  */
 
-import { AIMLService } from "@/lib/aiml-service";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import { financialContextEngine } from "./financial-context-engine";
 import { FinancialContext } from "./types/financial-context.types";
 import {
@@ -26,8 +26,6 @@ import {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-
-const AI_MODEL = "anthropic/claude-4.5-sonnet";
 
 const RECOMMENDATION_GENERATORS: Record<
   RecommendationType,
@@ -48,21 +46,6 @@ const RECOMMENDATION_GENERATORS: Record<
 // ============================================================================
 
 class RecommendationEngine {
-  private aimlService: AIMLService | null = null;
-
-  /**
-   * Get or create AIML service instance
-   */
-  private getAIService(): AIMLService | null {
-    if (!this.aimlService && process.env.AIML_API_KEY) {
-      try {
-        this.aimlService = new AIMLService();
-      } catch {
-        // RecommendationEngine warning: Failed to initialize AIML service for recommendations
-      }
-    }
-    return this.aimlService;
-  }
 
   /**
    * Generate personalized recommendations for a user
@@ -118,7 +101,7 @@ class RecommendationEngine {
       recommendations: finalRecs,
       generatedAt: new Date(),
       processingTimeMs: Date.now() - startTime,
-      aiModelUsed: includeAI ? AI_MODEL : undefined,
+      aiModelUsed: includeAI ? getModelRouter().getModel(TaskType.FINANCIAL_ADVICE) : undefined,
     };
   }
 
@@ -129,16 +112,15 @@ class RecommendationEngine {
     recommendations: Recommendation[],
     context: FinancialContext,
   ): Promise<Recommendation[]> {
-    const aiService = this.getAIService();
-    if (!aiService || recommendations.length === 0) {
+    if (recommendations.length === 0) {
       return recommendations;
     }
 
     try {
       const prompt = this.buildAIPrompt(recommendations, context);
 
-      const response = await aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [
           {
             role: "system",

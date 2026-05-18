@@ -15,16 +15,17 @@ jest.mock("@/lib/supabase/client", () => {
 import { getSupabase } from "@/lib/supabase/client";
 const supabase = getSupabase() as any;
 
-jest.mock("@/lib/aiml-service", () => ({
-  AIMLService: jest.fn().mockImplementation(() => ({
-    chat: jest.fn(),
-  })),
-}));
-
+const mockRouter = {
+  complete: jest.fn().mockResolvedValue({ choices: [{ message: { content: "[]" } }] }),
+  getModel: jest.fn().mockReturnValue("anthropic/claude-4.5-sonnet"),
+};
 jest.mock("@/lib/model-router", () => ({
-  ModelRouter: jest.fn().mockImplementation(() => ({
-    getModel: jest.fn().mockReturnValue("anthropic/claude-4.5-sonnet"),
-  })),
+  getModelRouter: () => mockRouter,
+  TaskType: {
+    FINANCIAL_ADVICE: "financial_advice",
+    REASONING: "reasoning",
+    QUICK_RESPONSE: "quick_response",
+  },
 }));
 
 describe("SpendingAnalyzer", () => {
