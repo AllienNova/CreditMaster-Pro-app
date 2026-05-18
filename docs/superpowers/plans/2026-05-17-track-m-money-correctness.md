@@ -132,8 +132,13 @@ Two payout codepaths — `payout-service.ts` `processStripeConnectPayout` (Strip
 - [ ] **Step 2: Write the failing test** — the same logical payout issued twice (same payout id) results in ONE Stripe transfer. Assert the Stripe call carries `idempotencyKey` derived from a stable payout identifier (NOT a random per-call value).
 - [ ] **Step 3: Run — expect FAIL.**
 - [ ] **Step 4: Fix** — every Stripe transfer/payout call passes `{ idempotencyKey }`, the key a deterministic function of the payout (e.g. the payout row id). Collapse the duplicate codepath per Step 1. **`commission-calculator.ts:658`'s existing `Math.round(amount * 100)` is correct — when collapsing, keep exactly ONE cents conversion; do NOT stack it on top of MNY-1's `payout-service.ts` conversion (a double-conversion would send 100× the payout).**
-- [ ] **Step 5: Run — expect PASS.** Full suite 0 failures; `npm run type-check` 0 errors.
-- [ ] **Step 6: Commit** — `fix: TASK-MNY-04 Stripe idempotency keys + single payout codepath (FND-026)`.
+- [ ] **Step 5: FND-024-class unit sweep in `payout-service.ts`** — while in this file, fix the two same-class dollars-as-minor-units defects the MNY-1 review surfaced:
+  - `queueManualPayout` (~:404) stores `payout.netAmount` (dollars) into `manual_payout_queue.amount` — every Stripe path now stores cents, so this is a unit-inconsistent column. Convert to cents on write (`Math.round(payout.netAmount * 100)`) so a future PayPal/check integration reading that queue does not re-introduce FND-024; add a comment naming the unit.
+  - TrueLayer `createPayout` (~:306) passes `{ value: payout.netAmount }`. Verify the TrueLayer connector contract (`TrueLayerPaymentsConnector.createPayout`) — TrueLayer's payment API uses integer minor units for GBP/EUR. If so, apply `Math.round(payout.netAmount * 100)` here too; if the connector already converts internally, leave it and note that. Report the determination.
+  - Also tighten the MNY-1 rounding test (`payout-service.test.ts` ~:332): replace the tautological `amount: Math.round(10.015 * 100)` assertion with the literal `1002` so it is falsifiable against an alternative rounding strategy.
+  - Add/extend tests so every changed line is covered.
+- [ ] **Step 6: Run — expect PASS.** Full suite 0 failures; `npm run type-check` 0 errors.
+- [ ] **Step 7: Commit** — `fix: TASK-MNY-04 Stripe idempotency keys + single payout codepath + FND-024 unit sweep (FND-026)`.
 
 > Sequencing: MNY-4 AFTER MNY-1 (both edit `payout-service.ts`'s Stripe call; MNY-1's cents fix must be in place first).
 
