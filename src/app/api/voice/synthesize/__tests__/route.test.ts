@@ -117,6 +117,8 @@ describe("/api/voice/synthesize", () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.error).toMatch(/model/i);
+      // the whitelist guard must reject before any TTS/billing work
+      expect(mockGenerateSpeech).not.toHaveBeenCalled();
     });
 
     it("accepts the whitelisted model tts-1", async () => {
