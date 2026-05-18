@@ -9,7 +9,7 @@
  */
 
 import { Resend } from "resend";
-import { escapeHtml } from "@/lib/security/sanitize";
+import { escapeHtml, sanitizeUrl } from "@/lib/security/sanitize";
 import {
   webPushService,
   type PushNotificationPayload,
@@ -428,8 +428,17 @@ class NotificationService {
     const safeSenderName = escapeHtml(senderName);
     const safeDocumentName = escapeHtml(documentName);
 
+    const cleanUrl = sanitizeUrl(shareUrl);
+    if (!cleanUrl) {
+      // shareUrl is not a safe http/https URL (e.g. javascript: URI) — abort
+      return;
+    }
+    // Encode only the characters that can break out of a double-quoted href attribute.
+    // Full escapeHtml would percent-encode '/' and '=' which are valid URL characters.
+    const safeShareUrl = cleanUrl.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+
     for (const recipient of recipients) {
-      const subject = `${senderName} shared a document with you`;
+      const subject = `${safeSenderName} shared a document with you`;
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #4F46E5;">Document Shared With You</h1>
@@ -439,7 +448,7 @@ class NotificationService {
             <p><strong>Expires:</strong> ${expiresAt.toLocaleDateString()} at ${expiresAt.toLocaleTimeString()}</p>
           </div>
           <p style="margin-top: 30px;">
-            <a href="${shareUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+            <a href="${safeShareUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
               View Document
             </a>
           </p>

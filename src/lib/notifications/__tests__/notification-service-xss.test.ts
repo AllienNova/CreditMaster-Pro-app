@@ -245,5 +245,49 @@ describe("NotificationService — HTML escaping (FND-045 / NTF-5)", () => {
       expect(html).not.toContain("<script>");
       expect(html).toContain("&lt;script&gt;");
     });
+
+    it("rejects javascript: shareUrl — no email sent", async () => {
+      await notificationService.notifyDocumentShareLink({
+        ownerUserId: "owner-1",
+        ownerEmail: "owner@example.com",
+        documentName: "My Report",
+        recipients: ["recipient@example.com"],
+        shareUrl: "javascript:alert(1)",
+        expiresAt: new Date("2026-04-01T00:00:00Z"),
+      });
+
+      // sanitizeUrl returns null → email must NOT be sent
+      expect(mockSend).not.toHaveBeenCalled();
+    });
+
+    it("does not emit a live javascript: href for a crafted shareUrl", async () => {
+      // Even if a caller somehow passes a javascript: URL with mixed case,
+      // the rendered href must never contain it.
+      await notificationService.notifyDocumentShareLink({
+        ownerUserId: "owner-1",
+        ownerEmail: "owner@example.com",
+        documentName: "My Report",
+        recipients: ["recipient@example.com"],
+        shareUrl: "JaVaScRiPt:alert(document.cookie)",
+        expiresAt: new Date("2026-04-01T00:00:00Z"),
+      });
+
+      expect(mockSend).not.toHaveBeenCalled();
+    });
+
+    it("escapes markup in senderName in the email subject line", async () => {
+      await notificationService.notifyDocumentShareLink({
+        ownerUserId: "owner-1",
+        ownerEmail: '<b>Evil</b>',
+        documentName: "My Report",
+        recipients: ["recipient@example.com"],
+        shareUrl: "https://fynvita.com/share/abc",
+        expiresAt: new Date("2026-04-01T00:00:00Z"),
+      });
+
+      const call = mockSend.mock.calls[mockSend.mock.calls.length - 1][0] as Record<string, string>;
+      expect(call.subject).not.toContain("<b>");
+      expect(call.subject).toContain("&lt;b&gt;");
+    });
   });
 });
