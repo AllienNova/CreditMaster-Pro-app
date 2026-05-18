@@ -1,27 +1,30 @@
 /**
  * AI Chat API
  *
- * General purpose chat endpoint using AIML API
+ * General purpose chat endpoint using AIML API.
+ * The server selects the model via ModelRouter — clients cannot override it.
  * PROTECTED: Requires authentication
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
-import { getAIMLService, ChatMessage } from "@/lib/aiml-service";
+import { getModelRouter, TaskType } from "@/lib/model-router";
+import type { ChatMessage } from "@/lib/aiml-service";
 import { creditService, CREDIT_COSTS } from "@/lib/credits";
 
 export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const body = await request.json();
 
-    // Validate required fields
-    const { model, messages } = body;
+    // model is intentionally NOT accepted from the client — the server selects
+    // via ModelRouter (FND-059 / CMP-6).
+    const { messages } = body;
 
-    if (!model || !messages || !Array.isArray(messages)) {
+    if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
         {
           success: false,
-          error: "Missing required fields: model, messages",
+          error: "Missing required field: messages",
         },
         { status: 400 },
       );
@@ -46,19 +49,21 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
       );
     }
 
-    // Get AIML service
-    const aiml = getAIMLService();
-
-    // Call chat API
-    const response = await aiml.chat(model, messages as ChatMessage[], {
-      temperature: body.temperature ?? 0.7,
-      max_tokens: body.max_tokens ?? 1000,
-    });
+    // Route via ModelRouter — model selection is server-authoritative
+    const router = getModelRouter();
+    const response = await router.complete(
+      TaskType.GENERAL_CHAT,
+      messages as ChatMessage[],
+      {
+        temperature: body.temperature ?? 0.7,
+        max_tokens: body.max_tokens ?? 1000,
+      },
+    );
 
     // Deduct credits after successful chat response
     try {
       await creditService.deductCredits(user.id, "chat_message", {
-        model,
+        model: response.model,
         tokensUsed: response.usage?.total_tokens,
       });
     } catch (deductErr) {
@@ -95,7 +100,7 @@ export const GET = withAuth(async () => {
     message: "AI Chat API",
     method: "POST",
     endpoint: "/api/ai/chat",
-    requiredFields: ["model", "messages"],
+    requiredFields: ["messages"],
     optionalFields: ["temperature", "max_tokens"],
   });
 });

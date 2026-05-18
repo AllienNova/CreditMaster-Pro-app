@@ -11,6 +11,9 @@
  *   - src/lib/investments/signal-generator.ts  (multi-model signal engine)
  *   - src/lib/trading/engines/llm-trading-engine.ts  (multi-model trading engine)
  *   - src/lib/aiml-service.ts          (the module itself)
+ *   - src/app/api/voice/synthesize/route.ts  (TTS-only: calls audio.speech, not chat;
+ *                                              ModelRouter.complete() is chat-only and has
+ *                                              no speech execution path — CMP-6 exemption)
  *   - Test files (__tests__/, *.test.*, *.spec.*)
  */
 
@@ -22,6 +25,9 @@ const EXEMPT_SUFFIXES = [
   '/src/lib/investments/signal-generator.ts',
   '/src/lib/trading/engines/llm-trading-engine.ts',
   '/src/lib/aiml-service.ts',
+  // CMP-6 exemption: voice/synthesize uses audio.speech (TTS), not chat completions.
+  // ModelRouter.complete() is chat-only; there is no speech execution path in ModelRouter.
+  '/src/app/api/voice/synthesize/route.ts',
 ];
 
 /** @type {import('eslint').Rule.RuleModule} */
