@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revenueTracker } from "@/lib/affiliate/revenue-tracker";
 import type { RevenueEventType } from "@/lib/affiliate/revenue-tracker";
+import { commissionCalculator } from "@/lib/commerce/affiliate";
+import type { ConversionType } from "@/lib/commerce/affiliate";
 import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 
 /**
@@ -92,6 +94,14 @@ export async function POST(request: NextRequest) {
       "conversion.completed": "conversion",
     };
 
+    // Map revenue event types to ConversionType for commission calculation
+    const conversionTypeMap: Record<RevenueEventType, ConversionType> = {
+      click: "click",
+      application: "application",
+      approval: "approval",
+      conversion: "purchase",
+    };
+
     const eventType = eventMap[body.event];
     if (!eventType) {
       // Acknowledge unknown events without processing
@@ -99,13 +109,25 @@ export async function POST(request: NextRequest) {
     }
 
     const { data } = body;
+    const partnerId = String(data.partnerId || "");
+    const amount = typeof data.amount === "number" ? data.amount : 0;
+
+    // Recompute commission server-side from trusted inputs.
+    // The inbound data.commission is IGNORED — a signed webhook proves origin,
+    // not that the body's money values are correct.
+    // calculateCommission returns 0 for an unknown/missing partner rather than throwing.
+    const commissionAmount = await commissionCalculator.calculateCommission(
+      partnerId,
+      conversionTypeMap[eventType],
+      amount,
+    );
 
     await revenueTracker.trackEvent({
       eventType,
       productId: String(data.productId || ""),
-      partnerId: String(data.partnerId || ""),
+      partnerId,
       userId: String(data.userId || "anonymous"),
-      commissionAmount: typeof data.commission === "number" ? data.commission : undefined,
+      commissionAmount,
       timestamp: new Date(),
       metadata: {
         clickId: String(data.clickId || ""),
