@@ -286,7 +286,7 @@ class AffiliateService {
   }
 
   /**
-   * Apply a referral code (increment usage)
+   * Apply a referral code (atomic increment via RPC)
    */
   async applyReferralCode(userId: string, code: string): Promise<void> {
     const validation = await this.validateReferralCode(code);
@@ -295,13 +295,37 @@ class AffiliateService {
       throw new Error(validation.error);
     }
 
-    // Increment usage count
-    await supabase
-      .from("referral_codes")
-      .update({ uses_count: (validation.code!.usesCount || 0) + 1 })
-      .eq("code", code.toUpperCase());
+    // Service-layer self-referral guard (fast-fail before RPC round-trip).
+    // The RPC also enforces this; both guards must agree on the rejection signal.
+    if (validation.code!.userId === userId) {
+      throw new Error("Cannot apply your own referral code");
+    }
 
-    // Create attribution record
+    // Atomic increment via Postgres RPC — replaces the non-atomic read-modify-write.
+    // The RPC row-locks the referral_codes row, classifies the request, and only
+    // increments uses_count when the status is 'applied'.
+    const { data: status, error: rpcError } = await supabase.rpc(
+      "increment_referral_use",
+      { p_code: code.toUpperCase(), p_user_id: userId },
+    );
+
+    if (rpcError) {
+      throw new Error(`Failed to apply referral code: ${rpcError.message}`);
+    }
+
+    if (status === "self_referral") {
+      throw new Error("Cannot apply your own referral code");
+    }
+
+    if (status === "cap_reached") {
+      throw new Error("Referral code has reached maximum uses");
+    }
+
+    if (status === "invalid") {
+      throw new Error("Invalid or expired referral code");
+    }
+
+    // status === 'applied' — create attribution record
     await this.createAttribution({
       userId,
       referralCode: code.toUpperCase(),

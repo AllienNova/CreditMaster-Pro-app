@@ -747,35 +747,31 @@ describe("AffiliateService", () => {
   // =========================================================================
 
   describe("applyReferralCode", () => {
-    it("should increment uses and create attribution for valid code", async () => {
-      const codeRow = makeReferralCodeRow({ uses_count: 5 });
-      // First call (validate): returns code row
-      // Second call (create attribution): returns attribution row
-      let callCount = 0;
-      const origThen = (mockBuilder as any).then;
-      (mockBuilder as any).then = (onFulfilled?: (v: any) => any) => {
-        callCount++;
-        if (callCount === 1) {
-          return Promise.resolve(onFulfilled?.({ data: codeRow, error: null }));
-        } else if (callCount === 3) {
-          return Promise.resolve(onFulfilled?.({ data: makeAttributionRow({ user_id: "new-user" }), error: null }));
-        }
-        return Promise.resolve(onFulfilled?.({ data: null, error: null }));
-      };
+    it("should call increment_referral_use RPC and create attribution for valid code", async () => {
+      const codeRow = makeReferralCodeRow({ uses_count: 5, user_id: "owner-1" });
+      // validateReferralCode → .single()
+      mockBuilder.single.mockResolvedValueOnce({ data: codeRow, error: null });
+      // increment_referral_use RPC → applied
+      mockSupabase.rpc.mockResolvedValue({ data: "applied", error: null });
+      // createAttribution → .single()
+      mockBuilder.single.mockResolvedValueOnce({ data: makeAttributionRow({ user_id: "new-user" }), error: null });
 
       await affiliateService.applyReferralCode("new-user", "abcd1234");
 
-      // Restore original then
-      (mockBuilder as any).then = origThen;
-
-      // Verify update was called with incremented count
-      expect(mockBuilder.update).toHaveBeenCalledWith({ uses_count: 6 });
+      // Verify RPC called with correct args (atomic increment — no .update({ uses_count }))
+      expect(mockSupabase.rpc).toHaveBeenCalledWith(
+        "increment_referral_use",
+        { p_code: "ABCD1234", p_user_id: "new-user" },
+      );
+      expect(mockBuilder.update).not.toHaveBeenCalledWith(
+        expect.objectContaining({ uses_count: expect.anything() }),
+      );
       // Verify upsert was called for attribution
       expect(mockBuilder.upsert).toHaveBeenCalled();
       const upsertArg = mockBuilder.upsert.mock.calls[0][0];
       expect(upsertArg.user_id).toBe("new-user");
       expect(upsertArg.referral_code).toBe("ABCD1234");
-      expect(upsertArg.referrer_id).toBe("user-1");
+      expect(upsertArg.referrer_id).toBe("owner-1");
       expect(upsertArg.partner_id).toBe("partner-1");
       expect(upsertArg.campaign_id).toBe("campaign-1");
     });
@@ -798,6 +794,50 @@ describe("AffiliateService", () => {
       await expect(
         affiliateService.applyReferralCode("user-2", "ABCD1234"),
       ).rejects.toThrow("Referral code has expired");
+    });
+
+    // MNY-3: self-referral guard
+    it("should reject self-referral at the service layer", async () => {
+      // code owner is "user-1"; caller is also "user-1"
+      const row = makeReferralCodeRow({ user_id: "user-1" });
+      mockBuilder.single.mockResolvedValueOnce({ data: row, error: null });
+
+      await expect(
+        affiliateService.applyReferralCode("user-1", "ABCD1234"),
+      ).rejects.toThrow("Cannot apply your own referral code");
+    });
+
+    // MNY-3: null-cap code must succeed (guards NULL-comparison regression)
+    it("should apply a code with null max_uses (unlimited cap)", async () => {
+      // max_uses null means unlimited — must not be rejected as cap_reached
+      const row = makeReferralCodeRow({ max_uses: null, uses_count: 999, user_id: "owner-1" });
+      // validateReferralCode → .single() first call
+      mockBuilder.single.mockResolvedValueOnce({ data: row, error: null });
+      // createAttribution → .single() second call
+      mockBuilder.single.mockResolvedValueOnce({ data: makeAttributionRow({ user_id: "user-2" }), error: null });
+      // increment_referral_use RPC → returns "applied"
+      mockSupabase.rpc.mockResolvedValue({ data: "applied", error: null });
+
+      await expect(
+        affiliateService.applyReferralCode("user-2", "ABCD1234"),
+      ).resolves.toBeUndefined();
+
+      expect(mockSupabase.rpc).toHaveBeenCalledWith(
+        "increment_referral_use",
+        { p_code: "ABCD1234", p_user_id: "user-2" },
+      );
+    });
+
+    // MNY-3: concurrent cap enforcement — RPC returning cap_reached must throw
+    it("should throw when RPC returns cap_reached (concurrent exhaustion)", async () => {
+      const row = makeReferralCodeRow({ max_uses: 1, uses_count: 0, user_id: "owner-1" });
+      // validateReferralCode passes (uses_count=0 < max_uses=1), but RPC then reports cap_reached
+      mockBuilder.single.mockResolvedValueOnce({ data: row, error: null });
+      mockSupabase.rpc.mockResolvedValue({ data: "cap_reached", error: null });
+
+      await expect(
+        affiliateService.applyReferralCode("user-2", "ABCD1234"),
+      ).rejects.toThrow("Referral code has reached maximum uses");
     });
   });
 
