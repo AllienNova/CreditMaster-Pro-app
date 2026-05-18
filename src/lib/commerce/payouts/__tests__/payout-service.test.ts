@@ -436,10 +436,9 @@ describe("PayoutService", () => {
       expect(calls).toHaveLength(2);
       const key1 = (calls[0][1] as { idempotencyKey?: string })?.idempotencyKey;
       const key2 = (calls[1][1] as { idempotencyKey?: string })?.idempotencyKey;
-      // Key must be stable (derived from payout.id) — same payout row → same key
-      expect(key1).toBeDefined();
-      expect(key1).toBe(key2);
-      expect(key1).toContain(payoutId);
+      // Key must be the exact deterministic value derived from payout.id (FND-026)
+      expect(key1).toBe(`transfer-${payoutId}`);
+      expect(key2).toBe(`transfer-${payoutId}`);
     });
 
     it("should pass idempotencyKey in the Stripe request options (second arg)", async () => {
@@ -457,7 +456,7 @@ describe("PayoutService", () => {
       expect(mockStripe.transfers.create).toHaveBeenCalledWith(
         expect.any(Object),
         expect.objectContaining({
-          idempotencyKey: expect.stringContaining("po-idemp-check"),
+          idempotencyKey: "transfer-po-idemp-check",
         }),
       );
     });
@@ -494,8 +493,8 @@ describe("PayoutService", () => {
       );
 
       const achOptions = mockStripe.payouts.create.mock.calls[0][1] as Record<string, unknown>;
-      // idempotencyKey must be deterministically derived from payout.id — the key assertion (FND-026)
-      expect(achOptions.idempotencyKey).toEqual(expect.stringContaining(payoutId));
+      // Exact deterministic key derived from payout row id — no variation permitted (FND-026)
+      expect(achOptions.idempotencyKey).toBe(`payout-${payoutId}`);
       // stripeAccount is STRIPE_PLATFORM_ACCOUNT_ID — may be undefined in test env, just verify key present
       expect(Object.keys(achOptions)).toContain("stripeAccount");
     });
@@ -671,7 +670,8 @@ describe("PayoutService", () => {
         }),
       );
       setupPayoutRecordCreation(
-        makePayoutRow({ method: "bank_transfer", net_amount: 9950, currency: "GBP" }),
+        // net_amount is dollars ($99.50) — Math.round(99.50 * 100) = 9950 pence sent to TrueLayer
+        makePayoutRow({ method: "bank_transfer", net_amount: 99.50, currency: "GBP" }),
       );
 
       mockTrueLayerConnector.getMerchantAccounts.mockResolvedValue([
@@ -688,8 +688,7 @@ describe("PayoutService", () => {
 
       expect(mockTrueLayerConnector.createPayout).toHaveBeenCalledWith(
         "ma-gbp",
-        // net_amount:9950 dollars → Math.round(9950 * 100) = 995000 pence (FND-024 fix)
-        expect.objectContaining({ currency: "GBP", value: 995000 }),
+        expect.objectContaining({ currency: "GBP", value: 9950 }), // Math.round(99.50 * 100)
         expect.objectContaining({ type: "external_account" }),
         "PO-TEST-REF",
       );

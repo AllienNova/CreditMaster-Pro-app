@@ -765,7 +765,7 @@ describe("CommissionCalculatorService", () => {
           destination: "acct_stripe_1",
           description: "Fynvita affiliate commission payout",
         },
-        expect.objectContaining({ idempotencyKey: expect.stringContaining("payout-1") }),
+        expect.objectContaining({ idempotencyKey: "commission-transfer-payout-1" }),
       );
     });
 
@@ -872,7 +872,7 @@ describe("CommissionCalculatorService", () => {
           destination: "acct_stripe_1",
         }),
         expect.objectContaining({
-          idempotencyKey: expect.stringContaining(payoutId),
+          idempotencyKey: `commission-transfer-${payoutId}`,
         }),
       );
     });
