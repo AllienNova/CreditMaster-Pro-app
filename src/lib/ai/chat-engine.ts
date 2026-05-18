@@ -612,4 +612,12 @@ export function getChatEngine(): FinancialChatEngine {
   return chatEngineInstance;
 }
 
-export default getChatEngine();
+// Lazy proxy — safe to import during next build's page-data phase (no env vars).
+// Callers that use the default export unchanged will still work at runtime.
+export default new Proxy({} as FinancialChatEngine, {
+  get(_t, prop, recv) {
+    const instance = getChatEngine();
+    const v = Reflect.get(instance, prop, recv);
+    return typeof v === "function" ? v.bind(instance) : v;
+  },
+});

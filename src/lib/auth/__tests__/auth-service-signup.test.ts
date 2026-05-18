@@ -15,7 +15,7 @@ jest.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
-jest.mock("@/lib/supabase/server", () => ({
+jest.mock("@/lib/supabase/admin", () => ({
   supabaseAdmin: {
     auth: { admin: { deleteUser: mockDeleteUser } },
   },

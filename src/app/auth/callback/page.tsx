@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@/lib/supabase/client";
 
 /**
  * OAuth Callback Page
@@ -20,10 +20,7 @@ function AuthCallbackContent() {
     const handleCallback = async () => {
       try {
         // Create browser client for OAuth callback
-        const supabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        );
+        const supabase = createClient();
 
         // Handle PKCE code exchange (modern OAuth flow)
         const code = searchParams.get("code");

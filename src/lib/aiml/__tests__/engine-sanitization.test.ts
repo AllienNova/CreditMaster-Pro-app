@@ -33,19 +33,22 @@ const mockSupabase = {
   rpc: jest.fn(),
 };
 jest.mock("@/lib/supabase/client", () => ({
-  createClient: jest.fn(() => mockSupabase),
+  getSupabase: jest.fn(() => mockSupabase),
 }));
 
 import {
   FinancialChatEngine,
 } from "@/lib/ai/financial-chat-engine";
 import { IntentType } from "@/lib/ai/types/financial-chat.types";
+import { getSupabase } from "@/lib/supabase/client";
 
 describe("financial-chat-engine — no raw user text in system-prompt position", () => {
   let engine: FinancialChatEngine;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // resetMocks:true wipes jest.fn(() => ...) implementations — re-apply.
+    (getSupabase as jest.Mock).mockReturnValue(mockSupabase);
 
     const mockChain = {
       insert: jest.fn().mockReturnThis(),
@@ -87,7 +90,6 @@ describe("financial-chat-engine — no raw user text in system-prompt position",
     });
 
     engine = new FinancialChatEngine();
-    (engine as unknown as { supabase: typeof mockSupabase }).supabase = mockSupabase;
   });
 
   it("detectIntent: user message with SSN is redacted before reaching the AI call", async () => {

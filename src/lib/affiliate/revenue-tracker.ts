@@ -16,10 +16,20 @@ import { fromDollars } from "@/lib/money";
 // Supabase client (service role — no end-user RLS policies on revenue_events)
 // =============================================================================
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+// Lazy singleton: constructed on first use so module import during next build's
+// "collect page data" phase doesn't throw when env vars are absent.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- unparameterized admin client; table types are asserted at call sites
+let _supabase: ReturnType<typeof createClient<any>> | null = null;
+
+function getSupabase(): ReturnType<typeof createClient<any>> {
+  if (!_supabase) {
+    _supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+  }
+  return _supabase;
+}
 
 // =============================================================================
 // Types
@@ -116,7 +126,7 @@ class RevenueTracker {
         ? fromDollars(fullEvent.commissionAmount)
         : null;
 
-    const { error: insertError } = await supabase
+    const { error: insertError } = await getSupabase()
       .from("revenue_events")
       .insert({
         event_id: fullEvent.eventId,
@@ -252,7 +262,7 @@ class RevenueTracker {
    * Delete all tracked events from the DB.
    */
   async clear(): Promise<void> {
-    await supabase.from("revenue_events").delete().not("id", "is", null);
+    await getSupabase().from("revenue_events").delete().not("id", "is", null);
   }
 
   // ---------------------------------------------------------------------------
@@ -267,7 +277,7 @@ class RevenueTracker {
     productId?: string,
   ): Promise<RevenueEventRow[]> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase PostgrestFilterBuilder type changes on each chained method; typed at the `as RevenueEventRow[]` boundary
-    let query: any = supabase.from("revenue_events").select("*");
+    let query: any = getSupabase().from("revenue_events").select("*");
 
     if (period) {
       query = query

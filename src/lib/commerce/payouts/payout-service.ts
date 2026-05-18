@@ -5,7 +5,7 @@
  * Supports multiple payout methods and automated scheduling.
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { fromDollars, toStripeAmount } from "@/lib/money";
 import {
@@ -20,10 +20,24 @@ import {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Lazily constructed so `next build` page-data-collection (no runtime env)
+// does not abort on createClient's "supabaseUrl is required".
+let _supabase: SupabaseClient | null = null;
+const supabase = new Proxy({} as SupabaseClient, {
+  get(_t, prop, recv) {
+    if (!_supabase) _supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const v = Reflect.get(_supabase, prop, recv);
+    return typeof v === "function" ? v.bind(_supabase) : v;
+  },
+});
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-09-30.clover",
+let _stripe: Stripe | null = null;
+const stripe = new Proxy({} as Stripe, {
+  get(_t, prop, recv) {
+    if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-09-30.clover" });
+    const v = Reflect.get(_stripe, prop, recv);
+    return typeof v === "function" ? v.bind(_stripe) : v;
+  },
 });
 
 // =============================================================================

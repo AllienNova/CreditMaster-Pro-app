@@ -140,6 +140,9 @@ describe("RevenueTracker", () => {
   beforeEach(() => {
     tracker = new RevenueTracker();
     jest.clearAllMocks();
+    // resetMocks:true wipes mockCreateClient's return value — re-apply so the
+    // lazy getSupabase() inside revenue-tracker returns mockSupabase.
+    mockCreateClient.mockReturnValue(mockSupabase as unknown as ReturnType<typeof import("@supabase/supabase-js").createClient>);
     // Re-establish chainable defaults after clearAllMocks.
     for (const method of builderMethods) {
       mockBuilder[method].mockReturnValue(mockBuilder);

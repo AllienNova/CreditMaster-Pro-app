@@ -13,9 +13,7 @@ const mockSend = jest
   .mockResolvedValue({ data: { id: "email-123" }, error: null } as never);
 
 jest.mock("resend", () => ({
-  Resend: jest.fn().mockImplementation(() => ({
-    emails: { send: mockSend },
-  })),
+  Resend: jest.fn(),
 }));
 
 jest.mock("react-dom/server", () => ({
@@ -36,6 +34,7 @@ import {
   sendPaymentReceiptEmail,
 } from "../email-service";
 
+import { Resend } from "resend";
 import { renderToStaticMarkup } from "react-dom/server";
 import WelcomeEmail from "@/emails/WelcomeEmail";
 import DisputeStatusEmail from "@/emails/DisputeStatusEmail";
@@ -47,6 +46,10 @@ import PaymentReceiptEmail from "@/emails/PaymentReceiptEmail";
 describe("email-service", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // resetMocks:true wipes the Resend constructor impl — re-apply each test.
+    (Resend as jest.MockedClass<typeof Resend>).mockImplementation(
+      () => ({ emails: { send: mockSend } }) as never,
+    );
     mockSend.mockResolvedValue({
       data: { id: "email-123" },
       error: null,

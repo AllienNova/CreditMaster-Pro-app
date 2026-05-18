@@ -10,7 +10,7 @@
  */
 
 import { getSupabase } from "@/lib/supabase/client";
-import { supabaseAdmin } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logger } from "@/lib/monitoring/logger";
 
 const supabase = getSupabase();

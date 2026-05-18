@@ -11,9 +11,9 @@
  * - Spending insights
  */
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@/lib/supabase/client";
 import DonutChart from "@/components/charts/DonutChart";
 import {
   LineChartComponent as LineChart,
@@ -270,16 +270,9 @@ export default function SpendingDashboardPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const router = useRouter();
 
-  const supabase = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    return createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-  }, []);
+  const supabase = createClient();
 
   useEffect(() => {
-    if (!supabase) return;
 
     const checkAuth = async () => {
       const {

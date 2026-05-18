@@ -4,7 +4,7 @@
  * Manages affiliate partners, referral codes, and user attribution.
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   Partner,
   CreatePartnerInput,
@@ -22,8 +22,18 @@ import {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-// Use service role for admin operations
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Use service role for admin operations.
+// Lazily constructed: `next build`'s page-data-collection imports route
+// modules with no runtime env, and a module-scope createClient throws
+// "supabaseUrl is required". The Proxy defers construction to first use.
+let _supabase: SupabaseClient | null = null;
+const supabase = new Proxy({} as SupabaseClient, {
+  get(_t, prop, recv) {
+    if (!_supabase) _supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const v = Reflect.get(_supabase, prop, recv);
+    return typeof v === "function" ? v.bind(_supabase) : v;
+  },
+});
 
 // Referral code expiration (30 days default)
 const DEFAULT_REFERRAL_EXPIRATION_DAYS = 30;

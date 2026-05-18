@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@/lib/supabase/client";
 import { VitalityScoreWidget } from "@/components/financial/VitalityScoreWidget";
 import { SpendingOverview } from "@/components/financial/SpendingOverview";
 import { PaydayCountdown } from "@/components/financial/PaydayCountdown";
@@ -71,17 +71,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const { progress: gamificationProgress, checkIn } = useGamification();
 
-  // Create Supabase client lazily using useMemo to avoid SSR issues
-  const supabase = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    return createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-  }, []);
+  const supabase = createClient();
 
   useEffect(() => {
-    if (!supabase) return;
 
     const getUser = async () => {
       const {

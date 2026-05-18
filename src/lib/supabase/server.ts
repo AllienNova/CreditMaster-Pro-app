@@ -6,25 +6,18 @@
  */
 
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { Database } from "./types";
+import { supabaseAdmin } from "./admin";
 
 /**
- * Admin client for server-side operations that bypass RLS
- * This is a singleton that doesn't require cookies
+ * Re-export the service-role admin client from `./admin`.
+ * The definition lives in `./admin` (which does not import `next/headers`)
+ * so server-only code can keep importing `supabaseAdmin` from here, while
+ * modules reachable from a Client Component should import it from `./admin`
+ * directly to avoid pulling `next/headers` across the boundary.
  */
-export const supabaseAdmin = createSupabaseClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  },
-);
+export { supabaseAdmin };
 
 /**
  * Create a Supabase client for server-side operations with cookie support

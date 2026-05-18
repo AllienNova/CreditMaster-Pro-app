@@ -6,12 +6,20 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+let _supabase: SupabaseClient | null = null;
+const supabase = new Proxy({} as SupabaseClient, {
+  get(_t, prop, recv) {
+    if (!_supabase)
+      _supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      );
+    const v = Reflect.get(_supabase, prop, recv);
+    return typeof v === "function" ? v.bind(_supabase) : v;
+  },
+});
 
 // ============================================================================
 // GET - List user alerts

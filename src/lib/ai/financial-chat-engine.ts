@@ -7,7 +7,7 @@
  */
 
 import { v4 as uuidv4 } from "uuid";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabase } from "@/lib/supabase/client";
 import { getModelRouter, TaskType } from "@/lib/model-router";
 import {
   ChatSession,
@@ -48,7 +48,7 @@ import {
  * investment advice, and portfolio management
  */
 export class FinancialChatEngine {
-  private supabase = createClient();
+  private get supabase() { return getSupabase(); }
 
   /**
    * Create a new chat session

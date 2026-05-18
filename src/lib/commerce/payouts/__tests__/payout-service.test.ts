@@ -95,6 +95,7 @@ jest.mock("../../../connectors/payments", () => ({
 // Import under test — AFTER all jest.mock() calls
 // =============================================================================
 
+import Stripe from "stripe";
 import { PayoutService, PayoutRequest } from "../payout-service";
 
 // =============================================================================
@@ -164,6 +165,12 @@ let service: PayoutService;
 
 beforeEach(() => {
   jest.clearAllMocks();
+
+  // resetMocks:true wipes the Stripe constructor impl — re-apply so the lazy
+  // Stripe Proxy in payout-service returns mockStripe on first access.
+  (Stripe as unknown as jest.MockedClass<typeof Stripe>).mockImplementation(
+    () => mockStripe as unknown as Stripe,
+  );
 
   // Reset chainable builder — exclude 'then' to avoid infinite thenable loop
   Object.keys(mockBuilder).forEach((key) => {
