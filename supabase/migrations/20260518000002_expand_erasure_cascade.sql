@@ -8,24 +8,32 @@
 --
 -- EXCLUDED tables (with reason):
 --   audit_logs          — legally retained immutable audit trail; user_id is
---                         ON DELETE SET NULL (anonymised in the UPDATE below,
---                         not deleted)
---   tax_audit_log       — tax compliance retention; user_id ON DELETE SET NULL
+--                         ON DELETE SET NULL (anonymised via UPDATE below — also
+--                         nulls ip_address and user_agent which are PII).
+--                         NOTE: 20260217000000_infrastructure_persistence.sql is
+--                         authoritative (later migration, fresh-DB wins); that
+--                         schema defines user_id as TEXT, so the UPDATE uses
+--                         p_user_id::text to avoid type mismatch.
+--                         old_values / new_values JSONB columns are retained
+--                         for regulatory audit trail (no user-identifiable keys
+--                         in those columns by policy).
+--   tax_audit_log       — tax compliance retention; user_id UUID ON DELETE SET
+--                         NULL; also nulls ip_address (PII). old_values /
+--                         new_values JSONB retained (same policy as audit_logs).
 --   webauthn_challenges — user_id column is TEXT not UUID; the generic
 --                         EXECUTE format('... WHERE user_id = $1') USING p_user_id
 --                         would throw a type mismatch at runtime
 --   user_quotas         — user_id is TEXT PRIMARY KEY; same type mismatch
---   ml_models           — user_id is nullable SET NULL; system models
---                         (user_id IS NULL) must never be deleted by erasure
 --   billing_profiles    — dropped by migration 20260517000002_drop_billing_profiles.sql
---   strategy_library    — user_id is nullable (system content rows have NULL user_id);
---                         conservative exclusion to avoid deleting system strategies
 --
 -- INDIRECT-FK children handled by Postgres ON DELETE CASCADE (no explicit DELETE needed):
 --   investment_holdings      — portfolio_id → investment_portfolios (in v_tables)
 --   investment_transactions  — portfolio_id → investment_portfolios (in v_tables)
 --   financial_chat_messages  — session_id  → financial_chat_sessions (in v_tables)
 --   chat_messages            — session_id  → chat_sessions (in v_tables)
+--   bill_payments            — bill_id → bills (in v_tables; also has direct user_id —
+--                              listed explicitly in v_tables for idempotency / no hidden dep)
+--   bill_alerts              — bill_id → bills (in v_tables; same — listed explicitly)
 --
 -- Permission template from commit d64e8d5 (REVOKE PUBLIC / GRANT service_role).
 
@@ -221,7 +229,26 @@ DECLARE
     -- -----------------------------------------------------------------------
     -- Delta: 20260518000001_breach_notifications.sql (CMP-2)
     -- -----------------------------------------------------------------------
-    'breach_notifications'
+    'breach_notifications',
+    -- -----------------------------------------------------------------------
+    -- Delta: 20250208000000_bills_schema.sql
+    -- (also reachable via CASCADE from bills, but listed explicitly for
+    --  idempotency and to document the dependency clearly)
+    -- -----------------------------------------------------------------------
+    'bill_payments',
+    'bill_alerts',
+    -- -----------------------------------------------------------------------
+    -- Delta: 20260117_add_trading_tables.sql (ml_models)
+    -- user_id is nullable; DELETE WHERE user_id=$1 only matches rows belonging
+    -- to the target user; system models (user_id IS NULL) are untouched.
+    -- -----------------------------------------------------------------------
+    'ml_models',
+    -- -----------------------------------------------------------------------
+    -- Delta: 20260226_trading_modes_compliance.sql (strategy_library)
+    -- user_id is nullable ON DELETE CASCADE; DELETE WHERE user_id=$1 only
+    -- matches strategies belonging to the target user; system rows untouched.
+    -- -----------------------------------------------------------------------
+    'strategy_library'
   ];
   v_table TEXT;
 BEGIN
@@ -248,7 +275,21 @@ BEGIN
 
   -- Anonymize historical audit log entries (SET NULL, not DELETE — retained
   -- for regulatory audit trail per EXCLUDED table comment above).
-  UPDATE audit_logs SET user_id = NULL WHERE user_id = p_user_id;
+  -- user_id in the authoritative schema (20260217000000) is TEXT, so compare
+  -- via ::text to avoid a UUID vs TEXT type mismatch at runtime.
+  -- ip_address and user_agent are personal data under GDPR Art. 4(1) — nulled.
+  UPDATE audit_logs
+  SET user_id    = NULL,
+      ip_address = NULL,
+      user_agent = NULL
+  WHERE user_id = p_user_id::text;
+
+  -- Anonymize tax audit log entries (same retention policy; ip_address is PII).
+  -- user_id is UUID here (20260121000000_tax_optimization_schema.sql), so no cast.
+  UPDATE tax_audit_log
+  SET user_id    = NULL,
+      ip_address = NULL
+  WHERE user_id = p_user_id;
 
   -- Delete the profile last, after all FK-dependent tables are cleared.
   DELETE FROM profiles WHERE id = p_user_id;

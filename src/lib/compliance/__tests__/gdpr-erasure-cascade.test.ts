@@ -274,6 +274,13 @@ const DELTA_FULL = [
   "adverse_action_notices",
   // 20260518000001_breach_notifications.sql (CMP-2)
   "breach_notifications",
+  // 20250208000000_bills_schema.sql (also cascade via bills, listed explicitly)
+  "bill_payments",
+  "bill_alerts",
+  // 20260117_add_trading_tables.sql — user_id nullable; WHERE user_id=$1 safe
+  "ml_models",
+  // 20260226_trading_modes_compliance.sql — user_id nullable ON DELETE CASCADE
+  "strategy_library",
 ];
 
 /**
@@ -298,11 +305,6 @@ const EXCLUDED_TABLES: Array<{ table: string; reason: string }> = [
     table: "user_quotas",
     reason:
       "Excluded: user_id is TEXT PRIMARY KEY — type mismatch with generic $1::UUID filter",
-  },
-  {
-    table: "ml_models",
-    reason:
-      "Excluded: user_id is nullable SET NULL — system models (user_id IS NULL) must not be deleted",
   },
   {
     table: "billing_profiles",
@@ -392,6 +394,37 @@ describe("CMP-3: delete_user_data_cascade migration coverage (FND-058)", () => {
   test("migration GRANTs EXECUTE to service_role only", () => {
     expect(migrationSql).toMatch(/GRANT\s+EXECUTE\s+ON\s+FUNCTION/i);
     expect(migrationSql).toMatch(/TO\s+service_role/i);
+  });
+
+  // -------------------------------------------------------------------------
+  // Audit-log PII anonymisation — ip_address + user_agent must be nulled
+  // -------------------------------------------------------------------------
+
+  test("audit_logs UPDATE nulls ip_address (PII under GDPR Art. 4(1))", () => {
+    // Must contain SET ... ip_address = NULL inside the UPDATE audit_logs block
+    expect(migrationSql).toMatch(
+      /UPDATE\s+audit_logs[\s\S]*?ip_address\s*=\s*NULL/i,
+    );
+  });
+
+  test("audit_logs UPDATE nulls user_agent (PII)", () => {
+    expect(migrationSql).toMatch(
+      /UPDATE\s+audit_logs[\s\S]*?user_agent\s*=\s*NULL/i,
+    );
+  });
+
+  test("audit_logs UPDATE uses ::text cast to handle TEXT user_id column", () => {
+    // The authoritative audit_logs schema (20260217000000) defines user_id as TEXT.
+    // Without ::text the WHERE clause would throw a UUID vs TEXT type error.
+    expect(migrationSql).toMatch(
+      /UPDATE\s+audit_logs[\s\S]*?WHERE\s+user_id\s*=\s*p_user_id::text/i,
+    );
+  });
+
+  test("tax_audit_log UPDATE nulls ip_address (PII)", () => {
+    expect(migrationSql).toMatch(
+      /UPDATE\s+tax_audit_log[\s\S]*?ip_address\s*=\s*NULL/i,
+    );
   });
 
   // -------------------------------------------------------------------------
