@@ -7,6 +7,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { fromDollars, toStripeAmount } from "@/lib/money";
 import {
   TrueLayerPaymentsConnector,
   createTrueLayerPaymentsConnector,
@@ -261,8 +262,8 @@ export class PayoutService {
     // Create transfer to connected account
     const transfer = await stripe.transfers.create(
       {
-        // Stripe amount is integer cents; netAmount is dollars
-        amount: Math.round(payout.netAmount * 100),
+        // Stripe amount is integer cents; netAmount is dollars — convert via Cents type
+        amount: toStripeAmount(fromDollars(payout.netAmount)),
         currency: payout.currency.toLowerCase(),
         destination: recipient.stripeAccountId,
         description: payout.description,
@@ -307,8 +308,8 @@ export class PayoutService {
 
       const tlPayout = await this.truelayerConnector.createPayout(
         sourceAccount.id,
-        // TrueLayer PaymentAmount.value is in minor units (pence/cents) — see connector type (FND-024)
-        { currency: payout.currency, value: Math.round(payout.netAmount * 100) },
+        // TrueLayer PaymentAmount.value is in minor units (pence/cents) — convert via Cents type (FND-024)
+        { currency: payout.currency, value: toStripeAmount(fromDollars(payout.netAmount)) },
         {
           type: "external_account",
           accountHolderName: recipient.bankDetails.accountHolderName,
@@ -343,8 +344,8 @@ export class PayoutService {
       // Create payout
       const payout_ = await stripe.payouts.create(
         {
-          // Stripe amount is integer cents; netAmount is dollars
-          amount: Math.round(payout.netAmount * 100),
+          // Stripe amount is integer cents; netAmount is dollars — convert via Cents type
+          amount: toStripeAmount(fromDollars(payout.netAmount)),
           currency: payout.currency.toLowerCase(),
           destination: bankToken.id,
           description: payout.description,
@@ -411,7 +412,7 @@ export class PayoutService {
       recipient_email: recipient.email,
       method: payout.method,
       // Store as integer cents — manual_payout_queue.amount is in minor units (FND-024)
-      amount: Math.round(payout.netAmount * 100),
+      amount: toStripeAmount(fromDollars(payout.netAmount)),
       currency: payout.currency,
       bank_details: recipient.bankDetails,
       paypal_email: recipient.paypalEmail,

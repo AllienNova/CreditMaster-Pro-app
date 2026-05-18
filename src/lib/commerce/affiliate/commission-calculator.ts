@@ -5,6 +5,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { Cents, fromDollars, toDollars, toStripeAmount } from "@/lib/money";
 import {
   CommissionReport,
   CommissionType,
@@ -210,26 +211,31 @@ class CommissionCalculatorService {
 
     const conversionList = conversions || [];
 
-    // Calculate totals by status
-    let pendingCommission = 0;
-    let confirmedCommission = 0;
-    let paidCommission = 0;
+    // Accumulate in integer cents to avoid IEEE-754 float drift (FND-029).
+    // Convert once to dollars at the return boundary.
+    let pendingCents = 0;
+    let confirmedCents = 0;
+    let paidCents = 0;
 
     conversionList.forEach((conv) => {
-      const commission = conv.commission_earned || 0;
+      const commissionCents = fromDollars(conv.commission_earned || 0);
       switch (conv.status) {
         case "pending":
-          pendingCommission += commission;
+          pendingCents += commissionCents;
           break;
         case "confirmed":
         case "qualified":
-          confirmedCommission += commission;
+          confirmedCents += commissionCents;
           break;
         case "paid":
-          paidCommission += commission;
+          paidCents += commissionCents;
           break;
       }
     });
+
+    const pendingCommission = toDollars(pendingCents as Cents);
+    const confirmedCommission = toDollars(confirmedCents as Cents);
+    const paidCommission = toDollars(paidCents as Cents);
 
     return {
       partnerId,
@@ -237,7 +243,7 @@ class CommissionCalculatorService {
       pendingCommission,
       confirmedCommission,
       paidCommission,
-      totalCommission: pendingCommission + confirmedCommission + paidCommission,
+      totalCommission: toDollars((pendingCents + confirmedCents + paidCents) as Cents),
       conversions: conversionList.map((conv) => ({
         conversionId: conv.id,
         type: conv.type,
@@ -658,7 +664,7 @@ class CommissionCalculatorService {
     // Create a transfer to the connected account
     const transfer = await stripeClient.transfers.create(
       {
-        amount: Math.round(amount * 100), // Convert to cents — already correct, do not double-convert
+        amount: toStripeAmount(fromDollars(amount)), // Convert to integer cents via Cents type (FND-029)
         currency: "usd",
         destination: stripeAccountId,
         description: "Fynvita affiliate commission payout",

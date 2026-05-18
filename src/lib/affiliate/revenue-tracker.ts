@@ -10,6 +10,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
+import { fromDollars } from "@/lib/money";
 
 // =============================================================================
 // Supabase client (service role — no end-user RLS policies on revenue_events)
@@ -109,10 +110,10 @@ class RevenueTracker {
       eventId: `rev_${randomUUID().replace(/-/g, "")}`,
     };
 
-    // Convert dollars → integer cents for storage.
+    // Convert dollars → integer Cents for storage (FND-029 / TASK-MNY-06).
     const commissionAmountCents =
       fullEvent.commissionAmount !== undefined
-        ? Math.round(fullEvent.commissionAmount * 100)
+        ? fromDollars(fullEvent.commissionAmount)
         : null;
 
     const { error: insertError } = await supabase

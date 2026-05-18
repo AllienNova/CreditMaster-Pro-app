@@ -555,6 +555,30 @@ describe("CommissionCalculatorService", () => {
         commissionCalculator.getCommissionReport("partner-1", dateRange),
       ).rejects.toThrow("Failed to get commission report: report fail");
     });
+
+    it("FND-029: accumulates 1000 × $0.07 commissions with no float drift (exact total $70)", async () => {
+      // IEEE-754 proof: 0 + 0.07 repeated 1000× yields 69.9999...966, not 70.
+      // Integer-cents accumulation (7 cents × 1000 = 7000 cents = $70) is exact.
+      const conversions = Array.from({ length: 1000 }, (_, i) => ({
+        ...conversionRow,
+        id: `conv-drift-${i}`,
+        status: "pending",
+        commission_earned: 0.07, // $0.07 each
+      }));
+
+      mockBuilder.then.mockImplementationOnce((resolve: any) =>
+        resolve({ data: conversions, error: null }),
+      );
+
+      const result = await commissionCalculator.getCommissionReport(
+        "partner-1",
+        dateRange,
+      );
+
+      // Must be exactly 70, not 69.99999999999966
+      expect(result.pendingCommission).toBe(70);
+      expect(result.totalCommission).toBe(70);
+    });
   });
 
   // -------------------------------------------------------------------------
