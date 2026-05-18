@@ -96,33 +96,31 @@ describe("Admin Stats API – GET /api/admin/stats", () => {
     });
   });
 
-  describe("Mock data fallback (no env vars)", () => {
+  describe("DB not configured (no env vars)", () => {
+    // ADM-2 (FND-052/053): route no longer returns fabricated data; it returns
+    // 503 with an error message so the UI can show an honest "unavailable" state.
     beforeEach(() => {
       authenticatedAdmin();
-      // Remove env vars so route returns mock data
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
       delete process.env.SUPABASE_SERVICE_ROLE_KEY;
     });
 
     afterEach(() => {
-      // Restore for other tests
       process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
       process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
     });
 
-    it("should return mock stats when Supabase is not configured", async () => {
+    it("should return 503 with error when Supabase is not configured", async () => {
       const res = await getStats(
         makeRequest("http://localhost:3000/api/admin/stats"),
       );
       const body = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(body.totalUsers).toBe(1247);
-      expect(body.activeSubscriptions).toBe(892);
-      expect(body.totalDisputes).toBe(3456);
-      expect(body.resolvedDisputes).toBe(2891);
-      expect(body.monthlyRevenue).toBe(45670);
-      expect(body.userGrowth).toBe(12.5);
+      // Route must NOT return the old hardcoded fabricated stats (FND-052/053 fix)
+      expect(res.status).toBe(503);
+      expect(body.error).toBeDefined();
+      expect(body.totalUsers).toBeUndefined();
+      expect(body.monthlyRevenue).toBeUndefined();
     });
   });
 
@@ -146,13 +144,15 @@ describe("Admin Stats API – GET /api/admin/stats", () => {
       const resolvedEq = jest.fn().mockResolvedValue({ count: 120 });
       const resolvedSelect = jest.fn().mockReturnValue({ eq: resolvedEq });
 
-      // subscriptions for revenue
+      // subscriptions for revenue — ADM-2: route now reads `plan` column with the
+      // real 6-tier priceMap (standard=29.99, pro=99.99, family=199.99)
       const revenueSubsEq = jest.fn().mockResolvedValue({
         data: [
-          { stripe_price_id: "price_basic" },
-          { stripe_price_id: "price_premium" },
-          { stripe_price_id: "price_enterprise" },
+          { plan: "standard" },
+          { plan: "pro" },
+          { plan: "family" },
         ],
+        error: null,
       });
       const revenueSubsSelect = jest.fn().mockReturnValue({ eq: revenueSubsEq });
 
@@ -208,13 +208,16 @@ describe("Admin Stats API – GET /api/admin/stats", () => {
       expect(body.activeSubscriptions).toBe(300);
       expect(body.totalDisputes).toBe(150);
       expect(body.resolvedDisputes).toBe(120);
-      // Revenue: 29 (basic) + 79 (premium) + 199 (enterprise) = 307
-      expect(body.monthlyRevenue).toBe(307);
+      // Revenue: standard(29.99) + pro(99.99) + family(199.99) = 329.97
+      // ADM-2: 6-tier priceMap replaces old 3-tier (price_basic/premium/enterprise) prices
+      expect(body.monthlyRevenue).toBeCloseTo(329.97, 1);
       // User growth: (50 - 40) / 40 * 100 = 25.0
       expect(body.userGrowth).toBe(25);
     });
 
-    it("should return mock data on exception from Supabase", async () => {
+    it("should return 500 with error on exception from Supabase", async () => {
+      // ADM-2 (FND-052/053): route no longer falls back to hardcoded mock data;
+      // DB errors surface as 500 so callers know the data is unavailable.
       mockCreateClient.mockReturnValue({
         from: jest.fn().mockImplementation(() => {
           throw new Error("DB connection failed");
@@ -226,9 +229,9 @@ describe("Admin Stats API – GET /api/admin/stats", () => {
       );
       const body = await res.json();
 
-      // Falls back to mock data on error
-      expect(res.status).toBe(200);
-      expect(body.totalUsers).toBe(1247);
+      expect(res.status).toBe(500);
+      expect(body.error).toBeDefined();
+      expect(body.totalUsers).toBeUndefined();
     });
   });
 });

@@ -17,6 +17,13 @@ jest.mock("@/lib/auth/resolve-role", () => ({
   resolveRoleFromDb: (...args: unknown[]) => mockResolveRole(...args),
 }));
 
+// Analytics route calls Supabase directly — mock the client
+const mockFrom = jest.fn();
+const mockCreateClient = jest.fn();
+jest.mock("@supabase/supabase-js", () => ({
+  createClient: (...args: unknown[]) => mockCreateClient(...args),
+}));
+
 // Import AFTER mocks are registered
 import { GET as getSettings, POST as postSettings } from "../settings/route";
 import { GET as getAnalytics } from "../analytics/route";
@@ -53,6 +60,13 @@ function unauthenticated() {
 // ── Setup / Teardown ─────────────────────────────────────────────────────────
 beforeEach(() => {
   jest.clearAllMocks();
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
+});
+
+afterEach(() => {
+  delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -220,6 +234,61 @@ describe("Admin Analytics API – GET /api/admin/analytics", () => {
   describe("Successful retrieval", () => {
     beforeEach(() => {
       authenticatedAdmin();
+
+      // disputes: .select("status").range() — terminal
+      const disputeRangeMock = jest.fn().mockResolvedValue({
+        data: [
+          { status: "resolved" },
+          { status: "sent" },
+          { status: "draft" },
+          { status: "under_review" },
+          { status: "rejected" },
+        ],
+        error: null,
+      });
+
+      // subscriptions plan-counts: .select("plan").range() — terminal (1st subs call)
+      const subPlanRangeMock = jest.fn().mockResolvedValue({
+        data: [
+          { plan: "free" },
+          { plan: "standard" },
+          { plan: "pro" },
+          { plan: "family_duo" },
+        ],
+        error: null,
+      });
+
+      // profiles user-growth: .select().gte().lte() — terminal
+      const profileLteMock = jest.fn().mockResolvedValue({ count: 5, error: null });
+      const profileGteMock = jest.fn().mockReturnValue({ lte: profileLteMock });
+      const profileSelectMock = jest.fn().mockReturnValue({ gte: profileGteMock });
+
+      // subscriptions revenue: .select("plan").eq().gte().lte() — terminal (6 calls)
+      const revLteMock = jest.fn().mockResolvedValue({ data: [], error: null });
+      const revGteMock = jest.fn().mockReturnValue({ lte: revLteMock });
+      const revEqMock = jest.fn().mockReturnValue({ gte: revGteMock });
+      const revSelectMock = jest.fn().mockReturnValue({ eq: revEqMock });
+
+      // Dispatch by table; distinguish first subscriptions call (plan) from rest (revenue)
+      let subsCallCount = 0;
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "disputes") {
+          return { select: jest.fn().mockReturnValue({ range: disputeRangeMock }) };
+        }
+        if (table === "subscriptions") {
+          subsCallCount += 1;
+          if (subsCallCount === 1) {
+            return { select: jest.fn().mockReturnValue({ range: subPlanRangeMock }) };
+          }
+          return { select: revSelectMock };
+        }
+        if (table === "profiles") {
+          return { select: profileSelectMock };
+        }
+        return { select: jest.fn().mockResolvedValue({ data: [], error: null }) };
+      });
+
+      mockCreateClient.mockReturnValue({ from: mockFrom });
     });
 
     it("should return analytics data with 200 status", async () => {
@@ -308,14 +377,15 @@ describe("Admin Analytics API – GET /api/admin/analytics", () => {
       );
       const body = await res.json();
 
+      // Tiers reflect real 6-tier plan names from the seeded mock (not old Math.random names)
       expect(body.subscriptionsByTier.length).toBe(4);
       const tiers = body.subscriptionsByTier.map(
         (t: { tier: string }) => t.tier,
       );
       expect(tiers).toContain("free");
-      expect(tiers).toContain("basic");
-      expect(tiers).toContain("premium");
-      expect(tiers).toContain("enterprise");
+      expect(tiers).toContain("standard");
+      expect(tiers).toContain("pro");
+      expect(tiers).toContain("family_duo");
     });
 
     it("should return topFeatures as an array with feature and usage", async () => {

@@ -187,7 +187,7 @@ describe("Admin Audit API – GET /api/admin/audit", () => {
   });
 
   describe("Table does not exist (42P01)", () => {
-    it("should return mock audit logs when table does not exist", async () => {
+    it("should return 500 with error when audit_logs table is missing", async () => {
       authenticatedAdmin();
 
       const orderMock = jest.fn().mockResolvedValue({
@@ -205,15 +205,15 @@ describe("Admin Audit API – GET /api/admin/audit", () => {
       );
       const body = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(body.logs.length).toBe(50); // default limit
-      expect(body.total).toBe(100);
-      expect(body.totalPages).toBe(2);
+      // Route now returns an explicit error — no fabricated mock logs
+      expect(res.status).toBe(500);
+      expect(body.error).toBeDefined();
+      expect(body.logs).toBeUndefined();
     });
   });
 
   describe("Exception handling", () => {
-    it("should return mock data on unexpected exception", async () => {
+    it("should return 500 with error on unexpected exception", async () => {
       authenticatedAdmin();
       mockCreateClient.mockReturnValue({
         from: jest.fn().mockImplementation(() => {
@@ -226,10 +226,10 @@ describe("Admin Audit API – GET /api/admin/audit", () => {
       );
       const body = await res.json();
 
-      // Falls back to mock data
-      expect(res.status).toBe(200);
-      expect(body.logs.length).toBe(50);
-      expect(body.total).toBe(100);
+      // Route returns explicit 500 — no fabricated mock logs
+      expect(res.status).toBe(500);
+      expect(body.error).toBeDefined();
+      expect(body.logs).toBeUndefined();
     });
   });
 });
@@ -402,202 +402,53 @@ describe("Admin Logs API – GET /api/admin/logs", () => {
     });
   });
 
-  describe("Successful retrieval from Supabase", () => {
-    const logRows = [
-      {
-        id: "log-1",
-        level: "info",
-        message: "User login",
-        context: {},
-        created_at: "2024-11-01T10:00:00Z",
-      },
-      {
-        id: "log-2",
-        level: "error",
-        message: "DB timeout",
-        context: {},
-        created_at: "2024-11-01T11:00:00Z",
-      },
-    ];
+  // ADM-2 (FND-052/053): system_logs table does not exist. The route now returns
+  // an honest-unavailable response (dataAvailable:false) rather than fabricated
+  // log entries. Tests below verify the new contract across all call paths.
 
+  describe("Honest-unavailable response", () => {
     beforeEach(() => {
       authenticatedAdmin();
     });
 
-    function setupSuccessfulLogQuery(
-      data: unknown[],
-      count: number,
-      error: unknown = null,
-    ) {
-      const orderMock = jest.fn().mockResolvedValue({ data, count, error });
-      const rangeMock = jest.fn().mockReturnValue({ order: orderMock });
-      const lteMock = jest.fn().mockReturnValue({ range: rangeMock });
-      const gteMock = jest.fn().mockReturnValue({ lte: lteMock, range: rangeMock });
-      const ilikeMock = jest.fn().mockReturnValue({
-        gte: gteMock,
-        lte: lteMock,
-        range: rangeMock,
-      });
-      const eqMock = jest.fn().mockReturnValue({
-        ilike: ilikeMock,
-        gte: gteMock,
-        lte: lteMock,
-        range: rangeMock,
-      });
-      const selectMock = jest.fn().mockReturnValue({
-        eq: eqMock,
-        ilike: ilikeMock,
-        gte: gteMock,
-        lte: lteMock,
-        range: rangeMock,
-      });
-
-      mockFrom.mockReturnValue({ select: selectMock });
-      mockCreateClient.mockReturnValue({ from: mockFrom });
-    }
-
-    it("should return log entries with pagination", async () => {
-      setupSuccessfulLogQuery(logRows, 2);
-
+    it("should return dataAvailable:false and empty logs array", async () => {
       const res = await getLogs(
         makeRequest("http://localhost:3000/api/admin/logs"),
       );
       const body = await res.json();
 
       expect(res.status).toBe(200);
-      expect(body.logs).toEqual(logRows);
-      expect(body.total).toBe(2);
-      expect(body.page).toBe(1);
-      expect(body.limit).toBe(50);
-      expect(body.totalPages).toBe(1);
+      expect(body.dataAvailable).toBe(false);
+      expect(body.logs).toEqual([]);
+      expect(body.total).toBe(0);
     });
 
-    it("should use custom page and limit from query params", async () => {
-      setupSuccessfulLogQuery(logRows, 200);
-
+    it("should return dataAvailable:false regardless of page/limit params", async () => {
       const res = await getLogs(
         makeRequest("http://localhost:3000/api/admin/logs?page=3&limit=25"),
       );
       const body = await res.json();
 
-      expect(body.page).toBe(3);
-      expect(body.limit).toBe(25);
-      expect(body.totalPages).toBe(8); // ceil(200/25)
+      expect(res.status).toBe(200);
+      expect(body.dataAvailable).toBe(false);
+      expect(body.logs).toEqual([]);
     });
 
-    it("should query system_logs table", async () => {
-      setupSuccessfulLogQuery([], 0);
+    it("should include an informational message field", async () => {
+      const res = await getLogs(
+        makeRequest("http://localhost:3000/api/admin/logs"),
+      );
+      const body = await res.json();
 
+      expect(body.message).toBeDefined();
+      expect(typeof body.message).toBe("string");
+    });
+
+    it("should NOT query system_logs (table does not exist)", async () => {
       await getLogs(makeRequest("http://localhost:3000/api/admin/logs"));
 
-      expect(mockFrom).toHaveBeenCalledWith("system_logs");
-    });
-  });
-
-  describe("Table does not exist (42P01)", () => {
-    it("should return mock logs when table does not exist", async () => {
-      authenticatedAdmin();
-
-      const orderMock = jest.fn().mockResolvedValue({
-        data: null,
-        count: null,
-        error: { code: "42P01", message: "relation does not exist" },
-      });
-      const rangeMock = jest.fn().mockReturnValue({ order: orderMock });
-      const selectMock = jest.fn().mockReturnValue({ range: rangeMock });
-      mockFrom.mockReturnValue({ select: selectMock });
-      mockCreateClient.mockReturnValue({ from: mockFrom });
-
-      const res = await getLogs(
-        makeRequest("http://localhost:3000/api/admin/logs"),
-      );
-      const body = await res.json();
-
-      expect(res.status).toBe(200);
-      expect(body.logs.length).toBe(50);
-      expect(body.total).toBe(100);
-      expect(body.totalPages).toBe(2);
-    });
-
-    it("should use the requested limit for mock log generation", async () => {
-      authenticatedAdmin();
-
-      const orderMock = jest.fn().mockResolvedValue({
-        data: null,
-        count: null,
-        error: { code: "42P01" },
-      });
-      const rangeMock = jest.fn().mockReturnValue({ order: orderMock });
-      const selectMock = jest.fn().mockReturnValue({ range: rangeMock });
-      mockFrom.mockReturnValue({ select: selectMock });
-      mockCreateClient.mockReturnValue({ from: mockFrom });
-
-      const res = await getLogs(
-        makeRequest("http://localhost:3000/api/admin/logs?limit=10"),
-      );
-      const body = await res.json();
-
-      expect(body.logs.length).toBe(10);
-    });
-  });
-
-  describe("Mock log structure", () => {
-    it("should generate mock logs with required fields", async () => {
-      authenticatedAdmin();
-
-      const orderMock = jest.fn().mockResolvedValue({
-        data: null,
-        count: null,
-        error: { code: "42P01" },
-      });
-      const rangeMock = jest.fn().mockReturnValue({ order: orderMock });
-      const selectMock = jest.fn().mockReturnValue({ range: rangeMock });
-      mockFrom.mockReturnValue({ select: selectMock });
-      mockCreateClient.mockReturnValue({ from: mockFrom });
-
-      const res = await getLogs(
-        makeRequest("http://localhost:3000/api/admin/logs?limit=5"),
-      );
-      const body = await res.json();
-
-      body.logs.forEach(
-        (log: {
-          id: string;
-          level: string;
-          message: string;
-          context: unknown;
-          created_at: string;
-        }) => {
-          expect(log).toHaveProperty("id");
-          expect(log).toHaveProperty("level");
-          expect(log).toHaveProperty("message");
-          expect(log).toHaveProperty("context");
-          expect(log).toHaveProperty("created_at");
-          expect(["info", "warn", "error", "debug"]).toContain(log.level);
-        },
-      );
-    });
-  });
-
-  describe("Exception handling", () => {
-    it("should return mock data on unexpected exception", async () => {
-      authenticatedAdmin();
-      mockCreateClient.mockReturnValue({
-        from: jest.fn().mockImplementation(() => {
-          throw new Error("Unexpected failure");
-        }),
-      });
-
-      const res = await getLogs(
-        makeRequest("http://localhost:3000/api/admin/logs"),
-      );
-      const body = await res.json();
-
-      // Falls back to mock data
-      expect(res.status).toBe(200);
-      expect(body.logs.length).toBe(50);
-      expect(body.total).toBe(100);
-      expect(body.page).toBe(1);
+      // Route returns immediately; Supabase should never be called
+      expect(mockFrom).not.toHaveBeenCalled();
     });
   });
 });
