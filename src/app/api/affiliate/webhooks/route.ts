@@ -94,7 +94,10 @@ export async function POST(request: NextRequest) {
       "conversion.completed": "conversion",
     };
 
-    // Map revenue event types to ConversionType for commission calculation
+    // Map revenue event types to ConversionType for commission calculation.
+    // `conversion` -> `purchase`: a conversion.completed event is a fulfilled
+    // transaction (a sale), not a lead. cpl partners intentionally pay 0 for a
+    // `purchase` — fulfilment events belong to cpa/revenue_share/hybrid partners.
     const conversionTypeMap: Record<RevenueEventType, ConversionType> = {
       click: "click",
       application: "application",

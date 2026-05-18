@@ -280,7 +280,10 @@ describe("POST /api/affiliate/webhooks", () => {
     expect(res.status).toBe(200);
     expect(json.event).toBe("conversion.completed");
     expect(revenueTracker.trackEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: "conversion" }),
+      expect.objectContaining({
+        eventType: "conversion",
+        commissionAmount: 12.0,
+      }),
     );
   });
 
