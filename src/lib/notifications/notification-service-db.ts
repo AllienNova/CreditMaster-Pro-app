@@ -120,10 +120,16 @@ class NotificationServiceDB {
   /**
    * Mark notification as read
    */
-  async markAsRead(notificationId: string): Promise<boolean> {
+  async markAsRead(
+    notificationId: string,
+    userId: string,
+  ): Promise<boolean> {
     const updateData: NotificationUpdate = { read: true };
     const query = notifications();
-    const { error } = await query.update(updateData).eq("id", notificationId);
+    const { error } = await query
+      .update(updateData)
+      .eq("id", notificationId)
+      .eq("user_id", userId);
 
     if (error) {
       // NotificationServiceDB error: Failed to mark notification as read
@@ -157,8 +163,14 @@ class NotificationServiceDB {
   /**
    * Delete notification
    */
-  async deleteNotification(notificationId: string): Promise<boolean> {
-    const { error } = await notifications().delete().eq("id", notificationId);
+  async deleteNotification(
+    notificationId: string,
+    userId: string,
+  ): Promise<boolean> {
+    const { error } = await notifications()
+      .delete()
+      .eq("id", notificationId)
+      .eq("user_id", userId);
 
     if (error) {
       // NotificationServiceDB error: Failed to delete notification

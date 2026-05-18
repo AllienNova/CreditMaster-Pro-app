@@ -250,17 +250,18 @@ describe("NotificationServiceDB", () => {
     it("updates read to true and returns true on success", async () => {
       mockTerminalResult = { error: null };
 
-      const result = await notificationServiceDB.markAsRead("notif-1");
+      const result = await notificationServiceDB.markAsRead("notif-1", "user-1");
 
       expect(lastChain.update).toHaveBeenCalledWith({ read: true });
       expect(lastChain.eq).toHaveBeenCalledWith("id", "notif-1");
+      expect(lastChain.eq).toHaveBeenCalledWith("user_id", "user-1");
       expect(result).toBe(true);
     });
 
     it("returns false when Supabase update fails", async () => {
       mockTerminalResult = { error: { message: "Update failed" } };
 
-      const result = await notificationServiceDB.markAsRead("notif-1");
+      const result = await notificationServiceDB.markAsRead("notif-1", "user-1");
 
       expect(result).toBe(false);
     });
@@ -310,10 +311,11 @@ describe("NotificationServiceDB", () => {
       mockTerminalResult = { error: null };
 
       const result =
-        await notificationServiceDB.deleteNotification("notif-1");
+        await notificationServiceDB.deleteNotification("notif-1", "user-1");
 
       expect(lastChain.delete).toHaveBeenCalled();
       expect(lastChain.eq).toHaveBeenCalledWith("id", "notif-1");
+      expect(lastChain.eq).toHaveBeenCalledWith("user_id", "user-1");
       expect(result).toBe(true);
     });
 
@@ -321,7 +323,7 @@ describe("NotificationServiceDB", () => {
       mockTerminalResult = { error: { message: "Delete failed" } };
 
       const result =
-        await notificationServiceDB.deleteNotification("notif-1");
+        await notificationServiceDB.deleteNotification("notif-1", "user-1");
 
       expect(result).toBe(false);
     });
