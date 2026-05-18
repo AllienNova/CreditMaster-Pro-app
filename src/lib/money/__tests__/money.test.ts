@@ -43,8 +43,8 @@ describe("Money / Cents branded type", () => {
       expect(fromDollars(0.07)).toBe(7);
     });
 
-    it("rounds half-up: $10.015 → 1002 cents", () => {
-      // Falsifiable: 10.015 * 100 = 1001.4999... in IEEE-754; Math.round → 1002
+    it("rounds a sub-cent value to the nearest cent: $10.015 → 1002", () => {
+      // 10.015 * 100 underflows to 1001.4999... in IEEE-754; Math.round → 1002
       expect(fromDollars(10.015)).toBe(1002);
     });
 
@@ -55,6 +55,11 @@ describe("Money / Cents branded type", () => {
 
     it("converts $0 to 0 cents", () => {
       expect(fromDollars(0)).toBe(0);
+    });
+
+    it("throws on a non-finite input", () => {
+      expect(() => fromDollars(NaN)).toThrow(TypeError);
+      expect(() => fromDollars(Infinity)).toThrow(TypeError);
     });
   });
 

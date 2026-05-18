@@ -35,12 +35,17 @@ export function cents(n: number): Cents {
 /**
  * Convert a dollar-denominated float to integer Cents.
  * Uses Math.round to handle IEEE-754 imprecision at the boundary.
+ * Throws if dollars is not finite — the brand promise (never a float,
+ * never NaN/Infinity) holds for both constructors.
  *
  * fromDollars(12.34)  → 1234
  * fromDollars(0.07)   → 7
- * fromDollars(10.015) → 1002  (rounds half-up)
+ * fromDollars(10.015) → 1002
  */
 export function fromDollars(dollars: number): Cents {
+  if (!Number.isFinite(dollars)) {
+    throw new TypeError(`fromDollars() requires a finite number; received ${dollars}`);
+  }
   return Math.round(dollars * 100) as Cents;
 }
 
