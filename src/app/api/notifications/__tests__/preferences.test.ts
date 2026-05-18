@@ -5,11 +5,22 @@
  * Handlers are wrapped in withAuth. The preferences owner is the authenticated
  * user (`user.id`); the previously trusted `x-user-id` header is gone, so a
  * caller cannot read or mutate another user's preferences.
+ *
+ * NTF-4: preferences are now persisted via Supabase (notification_preferences
+ * table) — not a module-level Record. POST is removed; subscribe/unsubscribe
+ * lives in /api/notifications/push/subscribe.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
+
+const mockCreateClient = jest.fn();
+const mockFrom = jest.fn();
+
+jest.mock("@supabase/supabase-js", () => ({
+  createClient: mockCreateClient,
+}));
 
 const mockValidate = jest.fn();
 const mockResolveRole = jest.fn();
@@ -24,7 +35,7 @@ jest.mock("@/lib/auth/resolve-role", () => ({
 }));
 
 // Import AFTER mocks
-import { GET, PUT, POST } from "../../notifications/preferences/route";
+import { GET, PUT } from "../../notifications/preferences/route";
 import { NextRequest } from "next/server";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -62,10 +73,26 @@ function authenticate(id: string) {
   mockResolveRole.mockResolvedValue("user");
 }
 
+// ── Supabase chain helper ─────────────────────────────────────────────────────
+
+function createChain(resolvedValue: { data: unknown; error: unknown }) {
+  const chain: any = {};
+  chain.select = jest.fn().mockReturnValue(chain);
+  chain.eq = jest.fn().mockReturnValue(chain);
+  chain.upsert = jest.fn().mockReturnValue(chain);
+  chain.maybeSingle = jest.fn().mockReturnValue(chain);
+  chain.then = (resolve: any, reject: any) =>
+    Promise.resolve(resolvedValue).then(resolve, reject);
+  return chain;
+}
+
 // ── Setup ────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockCreateClient.mockReturnValue({ from: mockFrom });
+  // Default: no existing row in DB
+  mockFrom.mockReturnValue(createChain({ data: null, error: null }));
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -91,15 +118,8 @@ describe("Notification Preferences API – negative-auth", () => {
     expect(res.status).toBe(401);
   });
 
-  it("POST returns 401 when not authenticated", async () => {
-    const res = await POST(
-      makeRequest("/api/notifications/preferences", {
-        method: "POST",
-        body: { action: "unsubscribe" },
-      }),
-    );
-    expect(res.status).toBe(401);
-  });
+  // POST was removed (NTF-4) — subscribe/unsubscribe lives in
+  // /api/notifications/push/subscribe/route.ts
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -141,6 +161,8 @@ describe("Notification Preferences API – ownership scoping", () => {
   });
 
   it("a second user cannot read the first user's stored preferences", async () => {
+    // user-a: PUT with emailEnabled:false. mockFrom returns no-row for the
+    // existing-check and then accepts the upsert (all via default null chain).
     authenticate("user-a");
     const putReq = makeRequest("/api/notifications/preferences", {
       method: "PUT",
@@ -149,7 +171,8 @@ describe("Notification Preferences API – ownership scoping", () => {
     putReq.json = jest.fn().mockResolvedValue({ emailEnabled: false });
     await PUT(putReq);
 
-    // A different authenticated user gets their own defaults, not user-a's.
+    // user-b: GET returns no stored row → default preferences (emailEnabled=true).
+    // mockFrom is still returning { data: null, error: null } from beforeEach default.
     authenticate("user-b");
     const res = await GET(makeRequest("/api/notifications/preferences"));
     const body = await res.json();
@@ -280,12 +303,36 @@ describe("Notification Preferences API – PUT", () => {
   it("should persist preferences across requests for the same user", async () => {
     authenticate("persist-user");
 
+    // PUT: existing=null → merges defaults → upserts
     const req1 = makeRequest("/api/notifications/preferences", {
       method: "PUT",
       body: { emailEnabled: false },
     });
     req1.json = jest.fn().mockResolvedValue({ emailEnabled: false });
     await PUT(req1);
+
+    // After PUT, simulate the DB now having the stored row
+    mockFrom.mockReturnValue(
+      createChain({
+        data: {
+          user_id: "persist-user",
+          push_enabled: true,
+          email_enabled: false,
+          sms_enabled: false,
+          channels: {
+            dispute_update: true,
+            score_change: true,
+            payment_reminder: true,
+            document_processed: true,
+            recommendation: true,
+            system: true,
+            promotion: false,
+          },
+          quiet_hours: { enabled: false, start: "22:00", end: "08:00" },
+        },
+        error: null,
+      }),
+    );
 
     const res = await GET(makeRequest("/api/notifications/preferences"));
     const body = await res.json();
@@ -309,86 +356,6 @@ describe("Notification Preferences API – PUT", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// POST /api/notifications/preferences (subscribe/unsubscribe)
-// ═══════════════════════════════════════════════════════════════════════════════
-describe("Notification Preferences API – POST", () => {
-  beforeEach(() => authenticate("post-user"));
-
-  it("should handle subscribe action with subscription data", async () => {
-    const req = makeRequest("/api/notifications/preferences", {
-      method: "POST",
-      body: {
-        action: "subscribe",
-        subscription: { endpoint: "https://push.example.com" },
-      },
-    });
-    req.json = jest.fn().mockResolvedValue({
-      action: "subscribe",
-      subscription: { endpoint: "https://push.example.com" },
-    });
-
-    const res = await POST(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.message).toBe("Subscribed to push notifications");
-  });
-
-  it("should handle unsubscribe action", async () => {
-    const req = makeRequest("/api/notifications/preferences", {
-      method: "POST",
-      body: { action: "unsubscribe" },
-    });
-    req.json = jest.fn().mockResolvedValue({ action: "unsubscribe" });
-
-    const res = await POST(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.message).toBe("Unsubscribed from push notifications");
-  });
-
-  it("should return 400 for invalid action", async () => {
-    const req = makeRequest("/api/notifications/preferences", {
-      method: "POST",
-      body: { action: "unknown_action" },
-    });
-    req.json = jest.fn().mockResolvedValue({ action: "unknown_action" });
-
-    const res = await POST(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("Invalid action");
-  });
-
-  it("should return 400 for subscribe without subscription data", async () => {
-    const req = makeRequest("/api/notifications/preferences", {
-      method: "POST",
-      body: { action: "subscribe" },
-    });
-    req.json = jest.fn().mockResolvedValue({ action: "subscribe" });
-
-    const res = await POST(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("Invalid action");
-  });
-
-  it("should return 500 when request.json() throws", async () => {
-    const req = makeRequest("/api/notifications/preferences", {
-      method: "POST",
-    });
-    req.json = jest.fn().mockRejectedValue(new Error("Parse error"));
-
-    const res = await POST(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(500);
-    expect(body.error).toBe("Failed to process request");
-  });
-});
+// NTF-4: POST (/subscribe/unsubscribe) was removed from this route.
+// Real push subscribe/unsubscribe lives in /api/notifications/push/subscribe/route.ts.
+// POST tests are covered there; see push-routes.test.ts.

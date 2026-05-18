@@ -27,17 +27,15 @@
  * notifications/route.ts                   DELETE   CLEAN
  * notifications/preferences/route.ts       GET      CLEAN
  * notifications/preferences/route.ts       PUT      CLEAN
- * notifications/preferences/route.ts       POST     CLEAN (no-op stub, NTF-4 owns fix)
+ * notifications/preferences/route.ts       POST     REMOVED (NTF-4: stub deleted, subscribe in push/subscribe)
  * notifications/push/send/route.ts         POST     CLEAN
  * notifications/push/subscribe/route.ts    POST     CLEAN
  * notifications/push/subscribe/route.ts    DELETE   CLEAN
  * notifications/push/subscribe/route.ts    GET      CLEAN
  *
- * NOTE: preferences/route.ts POST (~line 100-129) is a no-op stub that
- * returns {success:true} for subscribe/unsubscribe actions without any DB
- * write or webPushService call. It IS withAuth-wrapped (CLEAN for auth/IDOR
- * purposes) but is functionally hollow. NTF-4 owns the implementation fix;
- * this task only verifies the auth property.
+ * NOTE: preferences/route.ts POST was a no-op stub (NTF-4 task). NTF-4 deleted
+ * the stub entirely — subscribe/unsubscribe lives in push/subscribe/route.ts.
+ * This file no longer imports or tests prefsPost.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -111,8 +109,9 @@ import {
 import {
   GET as prefsGet,
   PUT as prefsPut,
-  POST as prefsPost,
 } from "../../notifications/preferences/route";
+// POST was removed from preferences/route.ts in NTF-4; subscribe/unsubscribe
+// lives in /api/notifications/push/subscribe/route.ts.
 import { POST as sendPost } from "../../notifications/push/send/route";
 import {
   POST as subPost,
@@ -147,10 +146,12 @@ function chain(resolved: unknown): any {
     "select",
     "insert",
     "update",
+    "upsert",
     "delete",
     "eq",
     "in",
     "single",
+    "maybeSingle",
   ];
   for (const m of chainMethods) c[m] = jest.fn().mockReturnValue(c);
   c.then = (res: (v: unknown) => unknown) =>
@@ -233,15 +234,7 @@ describe("TASK-NTF-01 negative-auth — every verb returns 401 without a token",
     expect(res.status).toBe(401);
   });
 
-  it("preferences POST → 401", async () => {
-    const req = makeRequest("/api/notifications/preferences", {
-      method: "POST",
-      body: { action: "unsubscribe" },
-    });
-    req.json = jest.fn().mockResolvedValue({ action: "unsubscribe" });
-    const res = await prefsPost(req);
-    expect(res.status).toBe(401);
-  });
+  // preferences POST removed in NTF-4 — subscribe lives in push/subscribe route.
 
   it("push/send POST → 401", async () => {
     const req = makeRequest("/api/notifications/push/send", {
@@ -396,6 +389,9 @@ describe("TASK-NTF-01 session-keyed effects — handler uses session user.id, ne
 
   it("preferences GET — returns preferences keyed to session user.id", async () => {
     authenticate();
+    // preferences/route.ts now reads Supabase — return no existing row so
+    // the handler falls back to defaults keyed to the session user.id.
+    mockFrom.mockReturnValue(chain({ data: null, error: null }));
 
     const res = await prefsGet(makeRequest("/api/notifications/preferences"));
     const body = await res.json();
@@ -407,6 +403,9 @@ describe("TASK-NTF-01 session-keyed effects — handler uses session user.id, ne
 
   it("preferences PUT — writes preferences keyed to session user.id, body userId ignored", async () => {
     authenticate();
+    // preferences/route.ts reads existing row then upserts — return no
+    // existing row so merge starts from defaults.
+    mockFrom.mockReturnValue(chain({ data: null, error: null }));
     const req = makeRequest("/api/notifications/preferences", {
       method: "PUT",
       body: { userId: OTHER_USER_ID, smsEnabled: true },
@@ -423,32 +422,9 @@ describe("TASK-NTF-01 session-keyed effects — handler uses session user.id, ne
     expect(body.preferences.smsEnabled).toBe(true);
   });
 
-  it("preferences POST (no-op stub, NTF-4 fixes) — withAuth guard runs; authenticated succeeds, unauthenticated fails", async () => {
-    // The POST endpoint is a no-op stub — it returns {success:true} without
-    // writing to a DB. What NTF-1 verifies here is ONLY the auth property:
-    // an authenticated request passes the guard (200); an unauthenticated
-    // one is rejected (401). The stub's functional hollowness is noted and
-    // owned by NTF-4.
-    authenticate();
-    const authedReq = makeRequest("/api/notifications/preferences", {
-      method: "POST",
-      body: { action: "unsubscribe" },
-    });
-    authedReq.json = jest.fn().mockResolvedValue({ action: "unsubscribe" });
-
-    const authedRes = await prefsPost(authedReq);
-    expect(authedRes.status).toBe(200);
-
-    unauthenticate();
-    const anonReq = makeRequest("/api/notifications/preferences", {
-      method: "POST",
-      body: { action: "unsubscribe" },
-    });
-    anonReq.json = jest.fn().mockResolvedValue({ action: "unsubscribe" });
-
-    const anonRes = await prefsPost(anonReq);
-    expect(anonRes.status).toBe(401);
-  });
+  // NTF-4: preferences POST removed — the no-op subscribe/unsubscribe stub is
+  // gone. Real push subscribe/unsubscribe is in push/subscribe/route.ts,
+  // already tested in the push/subscribe tests above.
 
   // ── push/send/route.ts ───────────────────────────────────────────────────────
 
