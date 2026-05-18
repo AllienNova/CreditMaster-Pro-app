@@ -64,16 +64,16 @@ jest.mock("@/lib/auth/resolve-role", () => ({
 
 // ── Route-dependency mocks ────────────────────────────────────────────────────
 
-// notifications/route.ts → notification-service (in-memory)
-const mockGetUserNotifications = jest.fn().mockReturnValue([]);
-const mockGetUnreadCount = jest.fn().mockReturnValue(0);
-const mockCreateNotification = jest.fn().mockReturnValue({ id: "n1" });
-const mockMarkAsRead = jest.fn().mockReturnValue(true);
-const mockMarkAllAsRead = jest.fn().mockReturnValue(0);
-const mockDeleteNotification = jest.fn().mockReturnValue(true);
+// notifications/route.ts → notification-service-db (DB-backed, NTF-03)
+const mockGetUserNotifications = jest.fn().mockResolvedValue([]);
+const mockGetUnreadCount = jest.fn().mockResolvedValue(0);
+const mockCreateNotification = jest.fn().mockResolvedValue({ id: "n1" });
+const mockMarkAsRead = jest.fn().mockResolvedValue(true);
+const mockMarkAllAsRead = jest.fn().mockResolvedValue(0);
+const mockDeleteNotification = jest.fn().mockResolvedValue(true);
 
-jest.mock("@/lib/notifications/notification-service", () => ({
-  notificationService: {
+jest.mock("@/lib/notifications/notification-service-db", () => ({
+  notificationServiceDB: {
     getUserNotifications: mockGetUserNotifications,
     getUnreadCount: mockGetUnreadCount,
     createNotification: mockCreateNotification,
@@ -297,8 +297,8 @@ describe("TASK-NTF-01 session-keyed effects — handler uses session user.id, ne
 
   it("notifications GET — getUserNotifications called with session user.id", async () => {
     authenticate();
-    mockGetUserNotifications.mockReturnValue([]);
-    mockGetUnreadCount.mockReturnValue(0);
+    mockGetUserNotifications.mockResolvedValue([]);
+    mockGetUnreadCount.mockResolvedValue(0);
 
     await notifGet(
       makeRequest("/api/notifications?userId=" + OTHER_USER_ID),
@@ -335,11 +335,9 @@ describe("TASK-NTF-01 session-keyed effects — handler uses session user.id, ne
       "welcome",
       "Hi",
       "Hello",
-      undefined,
     );
     expect(mockCreateNotification).not.toHaveBeenCalledWith(
       OTHER_USER_ID,
-      expect.anything(),
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -360,8 +358,8 @@ describe("TASK-NTF-01 session-keyed effects — handler uses session user.id, ne
 
     await notifPatch(req);
 
-    expect(mockMarkAsRead).toHaveBeenCalledWith(AUTH_USER_ID, "n1");
-    expect(mockMarkAsRead).not.toHaveBeenCalledWith(OTHER_USER_ID, "n1");
+    expect(mockMarkAsRead).toHaveBeenCalledWith("n1", AUTH_USER_ID);
+    expect(mockMarkAsRead).not.toHaveBeenCalledWith("n1", OTHER_USER_ID);
   });
 
   it("notifications PATCH mark_all_read — markAllAsRead called with session user.id", async () => {
@@ -390,8 +388,8 @@ describe("TASK-NTF-01 session-keyed effects — handler uses session user.id, ne
       ),
     );
 
-    expect(mockDeleteNotification).toHaveBeenCalledWith(AUTH_USER_ID, "n1");
-    expect(mockDeleteNotification).not.toHaveBeenCalledWith(OTHER_USER_ID, "n1");
+    expect(mockDeleteNotification).toHaveBeenCalledWith("n1", AUTH_USER_ID);
+    expect(mockDeleteNotification).not.toHaveBeenCalledWith("n1", OTHER_USER_ID);
   });
 
   // ── notifications/preferences/route.ts ──────────────────────────────────────

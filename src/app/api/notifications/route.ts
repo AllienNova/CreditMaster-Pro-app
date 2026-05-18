@@ -1,7 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
-import { notificationService } from "@/lib/notifications/notification-service";
+import {
+  notificationServiceDB,
+  type NotificationType,
+} from "@/lib/notifications/notification-service-db";
+
+// Canonical set mirrors the DB CHECK constraint (migration 002).
+// Validated here so unknown types are rejected before hitting Supabase.
+const CANONICAL_TYPES = new Set<NotificationType>([
+  "dispute_update",
+  "payment_success",
+  "document_uploaded",
+  "tip",
+  "dispute_overdue",
+  "dispute_reminder",
+  "draft_reminder",
+  "score_reminder",
+  "subscription_expiring",
+  "welcome",
+  "system",
+]);
 
 export const GET = withAuth(
   async (request: NextRequest, user: AuthedUser) => {
@@ -9,11 +28,10 @@ export const GET = withAuth(
       const { searchParams } = new URL(request.url);
       const limit = parseInt(searchParams.get("limit") || "50");
 
-      const notifications = notificationService.getUserNotifications(
-        user.id,
-        limit,
-      );
-      const unreadCount = notificationService.getUnreadCount(user.id);
+      const [notifications, unreadCount] = await Promise.all([
+        notificationServiceDB.getUserNotifications(user.id, limit),
+        notificationServiceDB.getUnreadCount(user.id),
+      ]);
 
       return NextResponse.json({ notifications, unreadCount });
     } catch (_error) {
@@ -30,7 +48,7 @@ export const POST = withAuth(
   async (request: NextRequest, user: AuthedUser) => {
     try {
       const body = await request.json();
-      const { type, title, message, data } = body;
+      const { type, title, message } = body;
 
       if (!type || !title || !message) {
         return NextResponse.json(
@@ -39,12 +57,18 @@ export const POST = withAuth(
         );
       }
 
-      const notification = notificationService.createNotification(
+      if (!CANONICAL_TYPES.has(type as NotificationType)) {
+        return NextResponse.json(
+          { error: "Invalid notification type" },
+          { status: 400 },
+        );
+      }
+
+      const notification = await notificationServiceDB.createNotification(
         user.id,
-        type,
+        type as NotificationType,
         title,
         message,
-        data,
       );
 
       return NextResponse.json({ notification });
@@ -72,13 +96,13 @@ export const PATCH = withAuth(
       }
 
       if (action === "mark_read" && notificationId) {
-        const success = notificationService.markAsRead(
-          user.id,
+        const success = await notificationServiceDB.markAsRead(
           notificationId,
+          user.id,
         );
         return NextResponse.json({ success });
       } else if (action === "mark_all_read") {
-        const count = notificationService.markAllAsRead(user.id);
+        const count = await notificationServiceDB.markAllAsRead(user.id);
         return NextResponse.json({ count });
       } else {
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
@@ -106,9 +130,9 @@ export const DELETE = withAuth(
         );
       }
 
-      const success = notificationService.deleteNotification(
-        user.id,
+      const success = await notificationServiceDB.deleteNotification(
         notificationId,
+        user.id,
       );
       return NextResponse.json({ success });
     } catch (_error) {

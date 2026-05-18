@@ -14,31 +14,11 @@ import {
   type PushNotificationPayload,
 } from "./web-push-service";
 
+// Re-export canonical types from the DB service so UI consumers can import
+// from either service without breaking (FND-047 / TASK-NTF-03).
+export type { NotificationType, Notification } from "./notification-service-db";
+
 const resend = new Resend(process.env.RESEND_API_KEY || "dummy_key_for_build");
-
-export type NotificationType =
-  | "dispute_created"
-  | "dispute_updated"
-  | "dispute_resolved"
-  | "credit_score_changed"
-  | "payment_successful"
-  | "payment_failed"
-  | "subscription_renewed"
-  | "subscription_canceled"
-  | "document_uploaded"
-  | "welcome"
-  | "password_reset";
-
-export interface Notification {
-  id: string;
-  userId: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: Date;
-  data?: Record<string, any>;
-}
 
 export interface EmailTemplate {
   subject: string;
@@ -48,10 +28,10 @@ export interface EmailTemplate {
 
 /**
  * Notification Service Class
+ * Handles email templates and web push notifications only.
+ * In-app CRUD is owned by notification-service-db.ts (TASK-NTF-03 / FND-047).
  */
 class NotificationService {
-  private readonly notifications: Map<string, Notification[]> = new Map();
-
   /**
    * Send email notification
    */
@@ -74,98 +54,6 @@ class NotificationService {
       // Email send failed - rethrowing
       throw error;
     }
-  }
-
-  /**
-   * Create in-app notification
-   */
-  createNotification(
-    userId: string,
-    type: NotificationType,
-    title: string,
-    message: string,
-    data?: Record<string, any>,
-  ): Notification {
-    const notification: Notification = {
-      id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-      userId,
-      type,
-      title,
-      message,
-      read: false,
-      createdAt: new Date(),
-      data,
-    };
-
-    const userNotifications = this.notifications.get(userId) || [];
-    userNotifications.unshift(notification);
-    this.notifications.set(userId, userNotifications);
-
-    return notification;
-  }
-
-  /**
-   * Get user notifications
-   */
-  getUserNotifications(userId: string, limit: number = 50): Notification[] {
-    const notifications = this.notifications.get(userId) || [];
-    return notifications.slice(0, limit);
-  }
-
-  /**
-   * Mark notification as read
-   */
-  markAsRead(userId: string, notificationId: string): boolean {
-    const notifications = this.notifications.get(userId) || [];
-    const notification = notifications.find((n) => n.id === notificationId);
-
-    if (notification) {
-      notification.read = true;
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Mark all notifications as read
-   */
-  markAllAsRead(userId: string): number {
-    const notifications = this.notifications.get(userId) || [];
-    let count = 0;
-
-    notifications.forEach((n) => {
-      if (!n.read) {
-        n.read = true;
-        count++;
-      }
-    });
-
-    return count;
-  }
-
-  /**
-   * Delete notification
-   */
-  deleteNotification(userId: string, notificationId: string): boolean {
-    const notifications = this.notifications.get(userId) || [];
-    const index = notifications.findIndex((n) => n.id === notificationId);
-
-    if (index !== -1) {
-      notifications.splice(index, 1);
-      this.notifications.set(userId, notifications);
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Get unread count
-   */
-  getUnreadCount(userId: string): number {
-    const notifications = this.notifications.get(userId) || [];
-    return notifications.filter((n) => !n.read).length;
   }
 
   // Email templates

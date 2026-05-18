@@ -26,7 +26,14 @@ export type NotificationType =
   | "dispute_update"
   | "payment_success"
   | "document_uploaded"
-  | "tip";
+  | "tip"
+  | "dispute_overdue"
+  | "dispute_reminder"
+  | "draft_reminder"
+  | "score_reminder"
+  | "subscription_expiring"
+  | "welcome"
+  | "system";
 
 export interface Notification {
   id: string;
@@ -36,6 +43,7 @@ export interface Notification {
   message: string;
   read: boolean;
   createdAt: Date;
+  data?: Record<string, unknown>;
 }
 
 /**
@@ -84,7 +92,7 @@ class NotificationServiceDB {
     };
 
     const { data, error } = await notifications()
-      .insert(insertData as any)
+      .insert(insertData)
       .select()
       .single();
 

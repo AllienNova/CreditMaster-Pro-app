@@ -193,7 +193,14 @@ export interface Database {
             | "dispute_update"
             | "payment_success"
             | "document_uploaded"
-            | "tip";
+            | "tip"
+            | "dispute_overdue"
+            | "dispute_reminder"
+            | "draft_reminder"
+            | "score_reminder"
+            | "subscription_expiring"
+            | "welcome"
+            | "system";
           title: string;
           message: string;
           read: boolean;
@@ -206,7 +213,14 @@ export interface Database {
             | "dispute_update"
             | "payment_success"
             | "document_uploaded"
-            | "tip";
+            | "tip"
+            | "dispute_overdue"
+            | "dispute_reminder"
+            | "draft_reminder"
+            | "score_reminder"
+            | "subscription_expiring"
+            | "welcome"
+            | "system";
           title: string;
           message: string;
           read?: boolean;
@@ -219,7 +233,14 @@ export interface Database {
             | "dispute_update"
             | "payment_success"
             | "document_uploaded"
-            | "tip";
+            | "tip"
+            | "dispute_overdue"
+            | "dispute_reminder"
+            | "draft_reminder"
+            | "score_reminder"
+            | "subscription_expiring"
+            | "welcome"
+            | "system";
           title?: string;
           message?: string;
           read?: boolean;

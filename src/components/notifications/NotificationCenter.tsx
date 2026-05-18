@@ -152,9 +152,9 @@ export default function NotificationCenter() {
   const filterOptions: { value: FilterType; label: string }[] = [
     { value: "all", label: "All Notifications" },
     { value: "unread", label: "Unread" },
-    { value: "dispute_created", label: "Disputes" },
-    { value: "credit_score_changed", label: "Credit Score" },
-    { value: "payment_successful", label: "Payments" },
+    { value: "dispute_update", label: "Disputes" },
+    { value: "score_reminder", label: "Credit Score" },
+    { value: "payment_success", label: "Payments" },
     { value: "document_uploaded", label: "Documents" },
   ];
 
