@@ -6,6 +6,7 @@
  */
 
 import { getModelRouter, TaskType } from "@/lib/model-router";
+import { sanitizeUserInput } from "@/lib/aiml/sanitizer";
 import { chatDbService } from "./chat-db-service";
 import { getIntentRecognizer } from "./intent-recognizer";
 import { getEntityExtractor } from "./entity-extractor";
@@ -336,13 +337,13 @@ export class FinancialChatEngine {
       for (const msg of recentToInclude) {
         messages.push({
           role: msg.role as "user" | "assistant",
-          content: msg.content,
+          content: msg.role === "user" ? sanitizeUserInput(msg.content) : msg.content,
         });
       }
     }
 
-    // 3. Add current user message
-    messages.push({ role: "user", content: userMessage });
+    // 3. Add current user message (sanitized for PII and prompt injection — FND-062/063)
+    messages.push({ role: "user", content: sanitizeUserInput(userMessage) });
 
     // 4. Estimate tokens
     const tokenEstimate = messages.reduce(

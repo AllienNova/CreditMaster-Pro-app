@@ -32,10 +32,14 @@ import {
 } from "@/lib/cache/chat-cache";
 import {
   CHAT_SYSTEM_PROMPT,
-  INTENT_DETECTION_PROMPT,
-  RESPONSE_GENERATION_PROMPT,
+  INTENT_DETECTION_SYSTEM_PROMPT,
+  RESPONSE_GENERATION_SYSTEM_PROMPT,
   ACTION_EXECUTION_PROMPT,
 } from "./prompts/financial-chat-prompts";
+import {
+  sanitizeUserInput,
+  sanitizeContextValue,
+} from "@/lib/aiml/sanitizer";
 
 /**
  * Financial Chat Engine
@@ -201,15 +205,16 @@ export class FinancialChatEngine {
     message: string,
     context: ChatContext,
   ): Promise<ChatIntent> {
-    const prompt = INTENT_DETECTION_PROMPT.replace(
-      "{{MESSAGE}}",
-      message,
-    ).replace("{{CONTEXT}}", JSON.stringify(context, null, 2));
+    const sanitizedMessage = sanitizeUserInput(message);
+    const sanitizedContext = sanitizeContextValue(JSON.stringify(context, null, 2));
 
     try {
       const response = await getModelRouter().complete(
         TaskType.FINANCIAL_ADVICE,
-        [{ role: "user", content: prompt }],
+        [
+          { role: "system", content: INTENT_DETECTION_SYSTEM_PROMPT },
+          { role: "user", content: `User message:\n${sanitizedMessage}\n\nContext:\n${sanitizedContext}` },
+        ],
         {
           max_tokens: 500,
           temperature: 0.3,
@@ -238,15 +243,16 @@ export class FinancialChatEngine {
     intent: ChatIntent,
     context: ChatContext,
   ): Promise<string> {
-    const prompt = RESPONSE_GENERATION_PROMPT.replace(
-      "{{INTENT}}",
-      JSON.stringify(intent, null, 2),
-    ).replace("{{CONTEXT}}", JSON.stringify(context, null, 2));
+    const sanitizedIntent = sanitizeContextValue(JSON.stringify(intent, null, 2));
+    const sanitizedContext = sanitizeContextValue(JSON.stringify(context, null, 2));
 
     try {
       const response = await getModelRouter().complete(
         TaskType.FINANCIAL_ADVICE,
-        [{ role: "user", content: prompt }],
+        [
+          { role: "system", content: RESPONSE_GENERATION_SYSTEM_PROMPT },
+          { role: "user", content: `Intent:\n${sanitizedIntent}\n\nContext:\n${sanitizedContext}` },
+        ],
         {
           max_tokens: 1000,
           temperature: 0.7,
