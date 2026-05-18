@@ -11,6 +11,7 @@
  * - Data breach notification
  */
 
+import { Resend } from "resend";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 // Structural type for the subset of the Supabase client this module uses.
@@ -429,13 +430,105 @@ export class GDPRComplianceService {
     );
   }
 
+  /**
+   * Send a GDPR Art. 33 breach notification email to one user and record the
+   * outcome in `breach_notifications`.
+   *
+   * Failure path: if Resend throws, a status:failed row is written and the
+   * error is re-thrown so `notifyDataBreach` can surface it — no silent swallow.
+   */
   private async sendBreachNotification(
-    _userId: string,
-    _notification: DataBreachNotification,
+    userId: string,
+    notification: DataBreachNotification,
   ): Promise<void> {
-    // In production, send email via the notification pipeline.
-    // Intentionally a no-op placeholder until the email integration lands;
-    // the regulatory 72-hour notification requirement is tracked separately.
+    // Fetch email from profiles — avoid logging PII in the error path.
+    const { data: profile } = await this.db
+      .from("profiles")
+      .select("email, name")
+      .eq("id", userId)
+      .single();
+
+    const toEmail = (profile as { email?: string } | null)?.email;
+    if (!toEmail) {
+      // No profile email — record as failed and return without crashing the loop.
+      await this.db.from("breach_notifications").insert({
+        breach_id: notification.breachId,
+        user_id: userId,
+        notified_at: new Date().toISOString(),
+        channel: "email",
+        status: "failed",
+        error: "No email address found for user",
+      });
+      return;
+    }
+
+    const userName =
+      (profile as { name?: string } | null)?.name ?? "Valued Customer";
+    const dataList = notification.dataTypes.join(", ");
+    const steps = notification.mitigationSteps
+      .map((s) => `<li>${s}</li>`)
+      .join("");
+    const html = `
+      <h2>Important Security Notice — Data Breach Notification</h2>
+      <p>Dear ${userName},</p>
+      <p>
+        We are writing to inform you that Fynvita has detected a data security
+        incident (reference: <strong>${notification.breachId}</strong>) that may
+        have affected your account.
+      </p>
+      <p><strong>Severity:</strong> ${notification.severity}</p>
+      <p><strong>Discovered:</strong> ${notification.discoveredDate.toISOString()}</p>
+      <p><strong>Data types involved:</strong> ${dataList}</p>
+      <h3>What you should do</h3>
+      <ul>${steps}</ul>
+      <p>
+        If you have questions, please contact our support team at
+        support@fynvita.com.
+      </p>
+      <p>We apologise for any inconvenience caused.</p>
+      <p>The Fynvita Security Team</p>
+    `;
+
+    // Construct Resend lazily (at call time, not module scope) so that importing
+    // this module never throws when RESEND_API_KEY is not set.
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const fromEmail =
+      process.env.FROM_EMAIL || "Fynvita Security <noreply@fynvita.com>";
+
+    let sendError: string | null = null;
+    try {
+      const { error } = await resend.emails.send({
+        from: fromEmail,
+        to: toEmail,
+        subject: `[Action Required] Fynvita Security Incident — ${notification.breachId}`,
+        html,
+      });
+      if (error) {
+        throw new Error(String((error as { message?: unknown }).message ?? error));
+      }
+    } catch (err) {
+      sendError = err instanceof Error ? err.message : String(err);
+      // Write the failed record before re-throwing
+      await this.db.from("breach_notifications").insert({
+        breach_id: notification.breachId,
+        user_id: userId,
+        notified_at: new Date().toISOString(),
+        channel: "email",
+        status: "failed",
+        error: sendError,
+      });
+      throw err;
+    }
+
+    // Happy path — record the successful send
+    await this.db.from("breach_notifications").insert({
+      breach_id: notification.breachId,
+      user_id: userId,
+      notified_at: new Date().toISOString(),
+      channel: "email",
+      status: "sent",
+      error: null,
+    });
   }
 }
 
