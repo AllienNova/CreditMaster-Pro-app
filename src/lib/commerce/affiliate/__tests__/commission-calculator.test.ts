@@ -758,12 +758,15 @@ describe("CommissionCalculatorService", () => {
 
       expect(result.status).toBe("completed");
       expect(result.transactionId).toBe("tr_abc123");
-      expect(mockStripe.transfers.create).toHaveBeenCalledWith({
-        amount: 5500, // 55 * 100 cents
-        currency: "usd",
-        destination: "acct_stripe_1",
-        description: "Fynvita affiliate commission payout",
-      });
+      expect(mockStripe.transfers.create).toHaveBeenCalledWith(
+        {
+          amount: 5500, // 55 * 100 cents
+          currency: "usd",
+          destination: "acct_stripe_1",
+          description: "Fynvita affiliate commission payout",
+        },
+        expect.objectContaining({ idempotencyKey: expect.stringContaining("payout-1") }),
+      );
     });
 
     it("should throw when not eligible for payout", async () => {
@@ -830,6 +833,48 @@ describe("CommissionCalculatorService", () => {
 
       expect(result.status).toBe("failed");
       expect(result.error).toBe("Stripe transfer failed");
+    });
+
+    it("should pass idempotencyKey derived from payout id to stripe.transfers.create (FND-026)", async () => {
+      const payoutId = "payout-idemp-comm-1";
+      mockBuilder.then.mockImplementationOnce((resolve: any) =>
+        resolve({
+          data: [
+            { id: "c1", commission_earned: 30 },
+            { id: "c2", commission_earned: 25 },
+          ],
+          error: null,
+        }),
+      );
+      mockBuilder.single
+        .mockResolvedValueOnce({
+          data: { ...partnerRow, min_payout: 50 },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: { id: payoutId, partner_id: "partner-1", amount: 55, status: "pending" },
+          error: null,
+        });
+      mockStripe.transfers.create.mockResolvedValueOnce({ id: "tr_idemp_comm" });
+      mockBuilder.then.mockImplementationOnce((resolve: any) =>
+        resolve({ data: null, error: null }),
+      );
+      mockBuilder.then.mockImplementationOnce((resolve: any) =>
+        resolve({ data: null, error: null }),
+      );
+
+      await commissionCalculator.initiatePayout(payoutRequest);
+
+      expect(mockStripe.transfers.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 5500,
+          currency: "usd",
+          destination: "acct_stripe_1",
+        }),
+        expect.objectContaining({
+          idempotencyKey: expect.stringContaining(payoutId),
+        }),
+      );
     });
 
     it("should handle bank transfer payout method", async () => {

@@ -374,6 +374,7 @@ class CommissionCalculatorService {
         transactionId = await this.processStripePayout(
           request.stripeAccountId,
           request.amount,
+          payout.id,
         );
       } else if (
         request.paymentMethod === "bank_transfer" &&
@@ -648,18 +649,23 @@ class CommissionCalculatorService {
   private async processStripePayout(
     stripeAccountId: string,
     amount: number,
+    payoutId: string,
   ): Promise<string> {
     // Import Stripe service
     const stripe = await import("stripe");
     const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!);
 
     // Create a transfer to the connected account
-    const transfer = await stripeClient.transfers.create({
-      amount: Math.round(amount * 100), // Convert to cents
-      currency: "usd",
-      destination: stripeAccountId,
-      description: "Fynvita affiliate commission payout",
-    });
+    const transfer = await stripeClient.transfers.create(
+      {
+        amount: Math.round(amount * 100), // Convert to cents — already correct, do not double-convert
+        currency: "usd",
+        destination: stripeAccountId,
+        description: "Fynvita affiliate commission payout",
+      },
+      // Idempotency key derived from stable payout row id — prevents double-pay on retry (FND-026)
+      { idempotencyKey: `commission-transfer-${payoutId}` },
+    );
 
     return transfer.id;
   }

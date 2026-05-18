@@ -294,6 +294,7 @@ describe("PayoutService", () => {
           amount: 10000, // Math.round(100 * 100)
           currency: "usd",
         }),
+        expect.anything(),
       );
     });
 
@@ -313,6 +314,7 @@ describe("PayoutService", () => {
         expect.objectContaining({
           amount: 1234, // Math.round(12.34 * 100)
         }),
+        expect.anything(),
       );
     });
 
@@ -331,8 +333,9 @@ describe("PayoutService", () => {
 
       expect(mockStripe.transfers.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          amount: Math.round(10.015 * 100), // deterministic: whatever Math.round gives
+          amount: 1002, // Math.round(10.015 * 100) = 1002 (IEEE-754: 10.015 * 100 = 1001.5000...002)
         }),
+        expect.anything(),
       );
     });
   });
@@ -409,6 +412,182 @@ describe("PayoutService", () => {
   });
 
   // ===========================================================================
+  // processStripeConnectPayout — idempotency key (FND-026 / TASK-MNY-04)
+  // ===========================================================================
+
+  describe("processStripeConnectPayout — idempotency key (FND-026)", () => {
+    it("should pass idempotencyKey derived from payout.id so duplicate calls send only one transfer", async () => {
+      const payoutId = "po-idempotent-001";
+      setupRecipientLookup(
+        makePartnerRecipient({ stripe_account_id: "acct_idemp" }),
+      );
+      setupPayoutRecordCreation(
+        makePayoutRow({ id: payoutId, net_amount: 50, currency: "USD" }),
+      );
+
+      mockStripe.transfers.create.mockResolvedValue({ id: "tr_idemp" } as any);
+
+      // Issue the same payout twice
+      await service.createPayout(makePayoutRequest({ amount: 50 }));
+      await service.createPayout(makePayoutRequest({ amount: 50 }));
+
+      // Both calls carry the same idempotencyKey — Stripe deduplicates them
+      const calls = mockStripe.transfers.create.mock.calls;
+      expect(calls).toHaveLength(2);
+      const key1 = (calls[0][1] as { idempotencyKey?: string })?.idempotencyKey;
+      const key2 = (calls[1][1] as { idempotencyKey?: string })?.idempotencyKey;
+      // Key must be stable (derived from payout.id) — same payout row → same key
+      expect(key1).toBeDefined();
+      expect(key1).toBe(key2);
+      expect(key1).toContain(payoutId);
+    });
+
+    it("should pass idempotencyKey in the Stripe request options (second arg)", async () => {
+      setupRecipientLookup(
+        makePartnerRecipient({ stripe_account_id: "acct_idemp2" }),
+      );
+      setupPayoutRecordCreation(
+        makePayoutRow({ id: "po-idemp-check", net_amount: 75, currency: "USD" }),
+      );
+
+      mockStripe.transfers.create.mockResolvedValue({ id: "tr_idemp2" } as any);
+
+      await service.createPayout(makePayoutRequest({ amount: 75 }));
+
+      expect(mockStripe.transfers.create).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({
+          idempotencyKey: expect.stringContaining("po-idemp-check"),
+        }),
+      );
+    });
+  });
+
+  // ===========================================================================
+  // processBankPayout US ACH — idempotency key (FND-026 / TASK-MNY-04)
+  // ===========================================================================
+
+  describe("processBankPayout US ACH — idempotency key (FND-026)", () => {
+    it("should pass idempotencyKey derived from payout.id to stripe.payouts.create", async () => {
+      const payoutId = "po-ach-idemp-001";
+      setupRecipientLookup(
+        makePartnerRecipient({
+          payment_method: "bank_transfer",
+          stripe_account_id: undefined,
+          bank_details: {
+            accountHolderName: "ACH Idemp",
+            accountNumber: "000111222333",
+            routingNumber: "110000000",
+            country: "US",
+          },
+        }),
+      );
+      setupPayoutRecordCreation(
+        makePayoutRow({ id: payoutId, method: "bank_transfer", net_amount: 60, currency: "USD" }),
+      );
+
+      mockStripe.tokens.create.mockResolvedValue({ id: "btok_idemp" } as any);
+      mockStripe.payouts.create.mockResolvedValue({ id: "po_ach_idemp" } as any);
+
+      await service.createPayout(
+        makePayoutRequest({ method: "bank_transfer", amount: 60, currency: "USD" }),
+      );
+
+      const achOptions = mockStripe.payouts.create.mock.calls[0][1] as Record<string, unknown>;
+      // idempotencyKey must be deterministically derived from payout.id — the key assertion (FND-026)
+      expect(achOptions.idempotencyKey).toEqual(expect.stringContaining(payoutId));
+      // stripeAccount is STRIPE_PLATFORM_ACCOUNT_ID — may be undefined in test env, just verify key present
+      expect(Object.keys(achOptions)).toContain("stripeAccount");
+    });
+  });
+
+  // ===========================================================================
+  // queueManualPayout — FND-024 unit sweep (TASK-MNY-04 Step 5)
+  // ===========================================================================
+
+  describe("queueManualPayout — integer cents in manual_payout_queue (FND-024 sweep)", () => {
+    it("should store amount as integer cents in manual_payout_queue for PayPal fallback", async () => {
+      setupProfileRecipient({
+        id: "recip-001",
+        full_name: "PayPal User",
+        payout_method: "paypal",
+        stripe_connect_id: undefined,
+        bank_details: null,
+        paypal_email: "paypal@test.com",
+      });
+      setupPayoutRecordCreation(makePayoutRow({ method: "paypal", net_amount: 123.45 }));
+
+      let capturedQueueInsert: Record<string, unknown> | undefined;
+      const originalFrom = mockSupabase.from.getMockImplementation();
+      // Intercept manual_payout_queue insert
+      const existingImpl = mockSupabase.from.getMockImplementation();
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === "manual_payout_queue") {
+          const queueBuilder = {
+            ...mockBuilder,
+            insert: jest.fn().mockImplementation((data: unknown) => {
+              capturedQueueInsert = data as Record<string, unknown>;
+              return mockBuilder;
+            }),
+          };
+          return queueBuilder;
+        }
+        return existingImpl ? existingImpl(table) : mockBuilder;
+      });
+
+      await service.createPayout(makePayoutRequest({ method: "paypal" }));
+
+      expect(capturedQueueInsert).toBeDefined();
+      // amount must be integer cents, NOT dollars
+      expect(capturedQueueInsert!.amount).toBe(12345); // Math.round(123.45 * 100)
+    });
+  });
+
+  // ===========================================================================
+  // TrueLayer createPayout — FND-024 unit sweep (TASK-MNY-04 Step 5)
+  // ===========================================================================
+
+  describe("processBankPayout TrueLayer — integer minor units (FND-024 sweep)", () => {
+    it("should pass netAmount as integer minor units (pence) to TrueLayer for GB payout", async () => {
+      // TrueLayer PaymentAmount.value is 'In minor units (cents/pence)' — see connector type
+      setupRecipientLookup(
+        makePartnerRecipient({
+          payment_method: "bank_transfer",
+          stripe_account_id: undefined,
+          bank_details: {
+            accountHolderName: "GBP User",
+            sortCode: "200000",
+            accountNumber: "55779911",
+            country: "GB",
+          },
+        }),
+      );
+      setupPayoutRecordCreation(
+        makePayoutRow({ method: "bank_transfer", net_amount: 99.50, currency: "GBP" }),
+      );
+
+      mockTrueLayerConnector.getMerchantAccounts.mockResolvedValue([
+        { id: "ma-gbp-sweep", currency: "GBP" },
+      ]);
+      mockTrueLayerConnector.createPayout.mockResolvedValue({
+        id: "tl-sweep-001",
+        status: "executed",
+      });
+
+      await service.createPayout(
+        makePayoutRequest({ method: "bank_transfer", currency: "GBP", amount: 99.50 }),
+      );
+
+      expect(mockTrueLayerConnector.createPayout).toHaveBeenCalledWith(
+        "ma-gbp-sweep",
+        expect.objectContaining({ currency: "GBP", value: 9950 }), // Math.round(99.50 * 100)
+        expect.objectContaining({ type: "external_account" }),
+        expect.any(String),
+      );
+    });
+  });
+
+  // ===========================================================================
   // processStripeConnectPayout — other existing tests
   // ===========================================================================
 
@@ -431,6 +610,7 @@ describe("PayoutService", () => {
           currency: "usd",
           destination: "acct_xyz",
         }),
+        expect.anything(),
       );
       expect(result.providerPayoutId).toBe("tr_xyz");
     });
@@ -467,6 +647,7 @@ describe("PayoutService", () => {
             type: "referral",
           }),
         }),
+        expect.anything(),
       );
     });
   });
@@ -507,7 +688,8 @@ describe("PayoutService", () => {
 
       expect(mockTrueLayerConnector.createPayout).toHaveBeenCalledWith(
         "ma-gbp",
-        expect.objectContaining({ currency: "GBP", value: 9950 }),
+        // net_amount:9950 dollars → Math.round(9950 * 100) = 995000 pence (FND-024 fix)
+        expect.objectContaining({ currency: "GBP", value: 995000 }),
         expect.objectContaining({ type: "external_account" }),
         "PO-TEST-REF",
       );

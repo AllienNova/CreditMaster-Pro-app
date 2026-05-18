@@ -259,18 +259,22 @@ export class PayoutService {
     }
 
     // Create transfer to connected account
-    const transfer = await stripe.transfers.create({
-      // Stripe amount is integer cents; netAmount is dollars
-      amount: Math.round(payout.netAmount * 100),
-      currency: payout.currency.toLowerCase(),
-      destination: recipient.stripeAccountId,
-      description: payout.description,
-      metadata: {
-        payout_id: payout.id,
-        type: payout.type,
-        ...payout.metadata,
+    const transfer = await stripe.transfers.create(
+      {
+        // Stripe amount is integer cents; netAmount is dollars
+        amount: Math.round(payout.netAmount * 100),
+        currency: payout.currency.toLowerCase(),
+        destination: recipient.stripeAccountId,
+        description: payout.description,
+        metadata: {
+          payout_id: payout.id,
+          type: payout.type,
+          ...payout.metadata,
+        },
       },
-    });
+      // Idempotency key derived from stable payout row id — prevents double-pay on retry (FND-026)
+      { idempotencyKey: `transfer-${payout.id}` },
+    );
 
     return transfer.id;
   }
@@ -303,7 +307,8 @@ export class PayoutService {
 
       const tlPayout = await this.truelayerConnector.createPayout(
         sourceAccount.id,
-        { currency: payout.currency, value: payout.netAmount },
+        // TrueLayer PaymentAmount.value is in minor units (pence/cents) — see connector type (FND-024)
+        { currency: payout.currency, value: Math.round(payout.netAmount * 100) },
         {
           type: "external_account",
           accountHolderName: recipient.bankDetails.accountHolderName,
@@ -348,7 +353,11 @@ export class PayoutService {
             type: payout.type,
           },
         },
-        { stripeAccount: process.env.STRIPE_PLATFORM_ACCOUNT_ID },
+        {
+          stripeAccount: process.env.STRIPE_PLATFORM_ACCOUNT_ID,
+          // Idempotency key derived from stable payout row id — prevents double-pay on retry (FND-026)
+          idempotencyKey: `payout-${payout.id}`,
+        },
       );
 
       return payout_.id;
@@ -401,7 +410,8 @@ export class PayoutService {
       recipient_name: recipient.name,
       recipient_email: recipient.email,
       method: payout.method,
-      amount: payout.netAmount,
+      // Store as integer cents — manual_payout_queue.amount is in minor units (FND-024)
+      amount: Math.round(payout.netAmount * 100),
       currency: payout.currency,
       bank_details: recipient.bankDetails,
       paypal_email: recipient.paypalEmail,
