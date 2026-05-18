@@ -3,11 +3,25 @@ import { createClient } from "@supabase/supabase-js";
 import { withRole } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
 
+const MAX_LIMIT = 100;
+
 function getSupabaseClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
+}
+
+function clampLimit(raw: string | null): number {
+  const parsed = parseInt(raw ?? "50", 10);
+  const safe = Number.isNaN(parsed) ? 50 : parsed;
+  return Math.min(Math.max(safe, 1), MAX_LIMIT);
+}
+
+function clampPage(raw: string | null): number {
+  const parsed = parseInt(raw ?? "1", 10);
+  const safe = Number.isNaN(parsed) ? 1 : parsed;
+  return Math.max(safe, 1);
 }
 
 export const GET = withRole(
@@ -16,8 +30,8 @@ export const GET = withRole(
     const supabase = getSupabaseClient();
     try {
       const { searchParams } = new URL(request.url);
-      const page = parseInt(searchParams.get("page") || "1");
-      const limit = parseInt(searchParams.get("limit") || "50");
+      const page = clampPage(searchParams.get("page"));
+      const limit = clampLimit(searchParams.get("limit"));
       const action = searchParams.get("action") || "";
       const userId = searchParams.get("userId") || "";
       const startDate = searchParams.get("startDate");
