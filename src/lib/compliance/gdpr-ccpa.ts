@@ -286,7 +286,7 @@ export class GDPRComplianceService {
     userId: string,
     processingType: string,
   ): Promise<boolean> {
-    const { error } = await this.db.from("consent_records").upsert({
+    const { error } = await this.db.from("consent_records").insert({
       user_id: userId,
       consent_type: processingType,
       granted: false,
@@ -503,7 +503,7 @@ export class CCPAComplianceService {
    * User can opt-out of sale of personal information
    */
   async optOutOfSale(userId: string): Promise<boolean> {
-    const { error } = await this.db.from("consent_records").upsert({
+    const { error } = await this.db.from("consent_records").insert({
       user_id: userId,
       consent_type: "data_sharing",
       granted: false,
@@ -542,42 +542,66 @@ export class CCPAComplianceService {
 
 /**
  * Consent Management Service
+ *
+ * Persists consent as an append-only history in `consent_records`.
+ * GDPR Art. 7 requires demonstrable consent over time — every consent event
+ * is a new INSERT, never an UPDATE or upsert. "Current consent" for a given
+ * (user, type) is the latest row ordered by `timestamp DESC`.
  */
 export class ConsentManagementService {
-  private consents: Map<string, ConsentRecord[]> = new Map();
+  private db: DbClient;
 
-  /**
-   * Record user consent
-   */
-  recordConsent(consent: ConsentRecord): void {
-    const userConsents = this.consents.get(consent.userId) || [];
-    userConsents.push(consent);
-    this.consents.set(consent.userId, userConsents);
+  constructor(db?: DbClient) {
+    this.db = db ?? (supabaseAdmin as unknown as DbClient);
   }
 
   /**
-   * Check if user has given consent
+   * Record user consent — appends a new row; never overwrites history.
    */
-  hasConsent(
-    userId: string,
-    consentType: ConsentRecord["consentType"],
-  ): boolean {
-    const userConsents = this.consents.get(userId) || [];
-    const latestConsent = userConsents
-      .filter((c) => c.consentType === consentType)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+  async recordConsent(consent: ConsentRecord): Promise<void> {
+    const { error } = await this.db.from("consent_records").insert({
+      user_id: consent.userId,
+      consent_type: consent.consentType,
+      granted: consent.granted,
+      timestamp: consent.timestamp.toISOString(),
+      ip_address: consent.ipAddress ?? null,
+      user_agent: consent.userAgent ?? null,
+    });
 
-    return latestConsent?.granted || false;
+    if (error) {
+      throw new Error(`Failed to record consent: ${error.message}`);
+    }
   }
 
   /**
-   * Withdraw consent
+   * Check if user currently has consent for a given type.
+   * Returns the `granted` value of the most recent row by `timestamp`.
    */
-  withdrawConsent(
+  async hasConsent(
     userId: string,
     consentType: ConsentRecord["consentType"],
-  ): void {
-    this.recordConsent({
+  ): Promise<boolean> {
+    const { data, error } = await this.db
+      .from("consent_records")
+      .select("granted")
+      .eq("user_id", userId)
+      .eq("consent_type", consentType)
+      .order("timestamp", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !data) return false;
+    return (data as { granted: boolean }).granted;
+  }
+
+  /**
+   * Withdraw consent by appending a granted=false event.
+   */
+  async withdrawConsent(
+    userId: string,
+    consentType: ConsentRecord["consentType"],
+  ): Promise<void> {
+    await this.recordConsent({
       userId,
       consentType,
       granted: false,
@@ -586,17 +610,32 @@ export class ConsentManagementService {
   }
 
   /**
-   * Get all consents for user
+   * Get all consent events for user, ordered by timestamp descending.
    */
-  getUserConsents(userId: string): ConsentRecord[] {
-    return this.consents.get(userId) || [];
+  async getUserConsents(userId: string): Promise<ConsentRecord[]> {
+    const { data, error } = await this.db
+      .from("consent_records")
+      .select("user_id, consent_type, granted, timestamp, ip_address, user_agent")
+      .eq("user_id", userId)
+      .order("timestamp", { ascending: false });
+
+    if (error || !data) return [];
+
+    return (data as Array<Record<string, unknown>>).map((row) => ({
+      userId: row.user_id as string,
+      consentType: row.consent_type as ConsentRecord["consentType"],
+      granted: row.granted as boolean,
+      timestamp: new Date(row.timestamp as string),
+      ipAddress: (row.ip_address as string | null) ?? undefined,
+      userAgent: (row.user_agent as string | null) ?? undefined,
+    }));
   }
 
   /**
-   * Export consent history
+   * Export full consent history as a JSON string.
    */
-  exportConsentHistory(userId: string): string {
-    const consents = this.getUserConsents(userId);
+  async exportConsentHistory(userId: string): Promise<string> {
+    const consents = await this.getUserConsents(userId);
     return JSON.stringify(consents, null, 2);
   }
 }
