@@ -142,6 +142,67 @@ export const GET = withRole(
   },
 );
 
+const DISPUTE_STATUS_VALUES = [
+  "draft",
+  "sent",
+  "under_review",
+  "resolved",
+  "rejected",
+] as const;
+type DisputeStatus = (typeof DISPUTE_STATUS_VALUES)[number];
+
+const DISPUTE_OUTCOME_VALUES = ["removed", "updated", "verified"] as const;
+type DisputeOutcome = (typeof DISPUTE_OUTCOME_VALUES)[number];
+
+interface AdminDisputePatchPayload {
+  status?: DisputeStatus;
+  outcome?: DisputeOutcome | null;
+  notes?: string | null;
+  resolved_at?: string | null;
+  sent_at?: string | null;
+}
+
+function buildWhitelistedPayload(
+  updates: Record<string, unknown>,
+): AdminDisputePatchPayload | null {
+  const payload: AdminDisputePatchPayload = {};
+
+  if ("status" in updates) {
+    if (!DISPUTE_STATUS_VALUES.includes(updates.status as DisputeStatus)) {
+      return null;
+    }
+    payload.status = updates.status as DisputeStatus;
+  }
+
+  if ("outcome" in updates) {
+    const outcome = updates.outcome;
+    if (
+      outcome !== null &&
+      !DISPUTE_OUTCOME_VALUES.includes(outcome as DisputeOutcome)
+    ) {
+      return null;
+    }
+    payload.outcome = outcome as DisputeOutcome | null;
+  }
+
+  if ("notes" in updates) {
+    payload.notes =
+      updates.notes === null ? null : String(updates.notes);
+  }
+
+  if ("resolved_at" in updates) {
+    payload.resolved_at =
+      updates.resolved_at === null ? null : String(updates.resolved_at);
+  }
+
+  if ("sent_at" in updates) {
+    payload.sent_at =
+      updates.sent_at === null ? null : String(updates.sent_at);
+  }
+
+  return payload;
+}
+
 export const PATCH = withRole(
   "admin",
   async (request: NextRequest, _user: AuthedUser) => {
@@ -151,6 +212,24 @@ export const PATCH = withRole(
     if (!disputeId || !updates) {
       return NextResponse.json(
         { error: "Missing disputeId or updates" },
+        { status: 400 },
+      );
+    }
+
+    const safePayload = buildWhitelistedPayload(
+      updates as Record<string, unknown>,
+    );
+
+    if (safePayload === null) {
+      return NextResponse.json(
+        { error: "Invalid field value in updates" },
+        { status: 400 },
+      );
+    }
+
+    if (Object.keys(safePayload).length === 0) {
+      return NextResponse.json(
+        { error: "No valid fields to update" },
         { status: 400 },
       );
     }
@@ -169,7 +248,7 @@ export const PATCH = withRole(
 
     const { error } = await supabase
       .from("disputes")
-      .update(updates)
+      .update(safePayload)
       .eq("id", disputeId);
 
     if (error) {
