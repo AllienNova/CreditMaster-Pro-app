@@ -2,10 +2,11 @@
  * ModelRouter — Unit Tests
  *
  * Tests model selection, fallback logic, provider/cost filtering,
- * recommendation generation, and singleton management.
+ * recommendation generation, singleton management, and execution method.
  */
 
 import { ModelRouter, TaskType, getModelRouter, resetModelRouter } from "../model-router";
+import type { AIMLService, ChatMessage, ChatOptions } from "../aiml-service";
 
 describe("ModelRouter", () => {
   let router: ModelRouter;
@@ -399,6 +400,72 @@ describe("ModelRouter", () => {
         expect(rec.reasoning).toBeTruthy();
         expect(Array.isArray(rec.fallbacks)).toBe(true);
       }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // complete — execution method (CMP-4 / FND-061)
+  // ---------------------------------------------------------------------------
+
+  describe("complete", () => {
+    let mockChat: jest.Mock;
+    let mockAiml: AIMLService;
+
+    beforeEach(() => {
+      mockChat = jest.fn().mockResolvedValue({
+        choices: [{ message: { content: "test response" } }],
+        usage: { total_tokens: 42 },
+      });
+      mockAiml = { chat: mockChat } as unknown as AIMLService;
+    });
+
+    it("selects the primary model for the given TaskType and forwards messages to AIMLService.chat", async () => {
+      const routerWithAiml = new ModelRouter(mockAiml);
+      const messages: ChatMessage[] = [
+        { role: "user", content: "Help with my credit dispute" },
+      ];
+
+      await routerWithAiml.complete(TaskType.DISPUTE_GENERATION, messages);
+
+      // Router must have called AIMLService.chat with the primary model for DISPUTE_GENERATION
+      expect(mockChat).toHaveBeenCalledTimes(1);
+      const [calledModel, calledMessages] = mockChat.mock.calls[0] as [string, ChatMessage[], ChatOptions?];
+      expect(calledModel).toBe("anthropic/claude-4.5-sonnet");
+      expect(calledMessages).toBe(messages);
+    });
+
+    it("forwards chat options to AIMLService.chat", async () => {
+      const routerWithAiml = new ModelRouter(mockAiml);
+      const messages: ChatMessage[] = [{ role: "user", content: "analyse my finances" }];
+      const options: ChatOptions = { temperature: 0.3, max_tokens: 500 };
+
+      await routerWithAiml.complete(TaskType.FINANCIAL_ADVICE, messages, options);
+
+      const [, , calledOptions] = mockChat.mock.calls[0] as [string, ChatMessage[], ChatOptions?];
+      expect(calledOptions).toBe(options);
+    });
+
+    it("returns the result from AIMLService.chat unchanged", async () => {
+      const routerWithAiml = new ModelRouter(mockAiml);
+      const messages: ChatMessage[] = [{ role: "user", content: "hello" }];
+
+      const result = await routerWithAiml.complete(TaskType.GENERAL_CHAT, messages);
+
+      expect(result).toEqual({
+        choices: [{ message: { content: "test response" } }],
+        usage: { total_tokens: 42 },
+      });
+    });
+
+    it("uses router model selection (not a hardcoded model) for each TaskType", async () => {
+      const routerWithAiml = new ModelRouter(mockAiml);
+      const messages: ChatMessage[] = [{ role: "user", content: "reason about this" }];
+
+      await routerWithAiml.complete(TaskType.REASONING, messages);
+
+      const [calledModel] = mockChat.mock.calls[0] as [string, ChatMessage[], ChatOptions?];
+      // REASONING primary is deepseek/deepseek-r1 — not a chat/dispute model
+      expect(calledModel).toBe("deepseek/deepseek-r1");
     });
   });
 });

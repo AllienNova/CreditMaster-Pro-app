@@ -13,6 +13,13 @@
  * - xAI (Grok 4)
  */
 
+import type {
+  AIMLService,
+  ChatMessage,
+  ChatOptions,
+} from "./aiml-service";
+import type OpenAI from "openai";
+
 export enum TaskType {
   // Credit Repair Tasks
   DISPUTE_GENERATION = "dispute_generation",
@@ -64,9 +71,20 @@ export interface ModelRecommendation {
 /**
  * Model Router Class
  *
- * Intelligently routes tasks to the best AI model
+ * Intelligently routes tasks to the best AI model and executes calls via
+ * AIMLService. ModelRouter is the single legitimate owner of AIMLService —
+ * it selects the model AND runs the call. (CMP-4 / FND-061)
  */
 export class ModelRouter {
+  // AIMLService instance — lazily constructed on first use to avoid throwing
+  // when AIML_API_KEY is unset at module load time. Can be constructor-injected
+  // (e.g. for tests) to skip lazy construction entirely.
+  private aiml: AIMLService | null;
+
+  constructor(aiml?: AIMLService) {
+    this.aiml = aiml ?? null;
+  }
+
   // Model mapping for each task type
   private modelMap: Record<TaskType, string[]> = {
     // Credit Repair - Use Claude 4.5 Sonnet for legal writing, GPT-5 for compliance
@@ -427,6 +445,37 @@ export class ModelRouter {
     }
 
     return filtered[0];
+  }
+
+  /**
+   * Execute an AI call for the given task type.
+   *
+   * Selects the primary model via the router's existing routing logic, then
+   * calls AIMLService.chat with it. This is the single execution entry point
+   * that the ~20 engine files should call instead of constructing AIMLService
+   * directly (CMP-5 migration). Multi-model consensus paths (e.g. signal-generator,
+   * ai-orchestrator.multiModelConsensus) are exempt and continue using AIMLService
+   * directly with deliberate model arrays.
+   *
+   * @param taskType   - Task type used to select the model
+   * @param messages   - Chat messages to forward verbatim to the model
+   * @param options    - Optional ChatOptions passed through to AIMLService.chat
+   * @returns          - ChatCompletion from AIMLService.chat
+   */
+  async complete(
+    taskType: TaskType,
+    messages: ChatMessage[],
+    options?: ChatOptions,
+  ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
+    if (!this.aiml) {
+      // Lazy construction: only runs when AIML_API_KEY must be present.
+      // The import is deferred to avoid a module-load throw in environments
+      // where the env var is not set (e.g. test runs that don't inject a mock).
+      const { AIMLService: AIMLServiceClass } = await import("./aiml-service");
+      this.aiml = new AIMLServiceClass();
+    }
+    const model = this.getModel(taskType);
+    return this.aiml.chat(model, messages, options);
   }
 }
 
