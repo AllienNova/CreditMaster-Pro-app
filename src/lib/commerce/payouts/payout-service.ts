@@ -260,7 +260,8 @@ export class PayoutService {
 
     // Create transfer to connected account
     const transfer = await stripe.transfers.create({
-      amount: payout.netAmount,
+      // Stripe amount is integer cents; netAmount is dollars
+      amount: Math.round(payout.netAmount * 100),
       currency: payout.currency.toLowerCase(),
       destination: recipient.stripeAccountId,
       description: payout.description,
@@ -337,7 +338,8 @@ export class PayoutService {
       // Create payout
       const payout_ = await stripe.payouts.create(
         {
-          amount: payout.netAmount,
+          // Stripe amount is integer cents; netAmount is dollars
+          amount: Math.round(payout.netAmount * 100),
           currency: payout.currency.toLowerCase(),
           destination: bankToken.id,
           description: payout.description,

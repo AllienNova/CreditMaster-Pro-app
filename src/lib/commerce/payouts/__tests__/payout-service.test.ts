@@ -272,7 +272,144 @@ describe("PayoutService", () => {
   });
 
   // ===========================================================================
-  // processStripeConnectPayout
+  // processStripeConnectPayout — cents conversion (FND-024 / TASK-MNY-01)
+  // ===========================================================================
+
+  describe("processStripeConnectPayout — integer cents conversion (FND-024)", () => {
+    it("should pass netAmount converted to integer cents for $100 payout", async () => {
+      // $100 netAmount must arrive at Stripe as 10000 cents, NOT 100
+      setupRecipientLookup(
+        makePartnerRecipient({ stripe_account_id: "acct_cents_100" }),
+      );
+      setupPayoutRecordCreation(
+        makePayoutRow({ net_amount: 100, currency: "USD" }),
+      );
+
+      mockStripe.transfers.create.mockResolvedValue({ id: "tr_100" } as any);
+
+      await service.createPayout(makePayoutRequest({ amount: 100 }));
+
+      expect(mockStripe.transfers.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 10000, // Math.round(100 * 100)
+          currency: "usd",
+        }),
+      );
+    });
+
+    it("should pass fractional dollar netAmount ($12.34) as exact integer cents (1234)", async () => {
+      setupRecipientLookup(
+        makePartnerRecipient({ stripe_account_id: "acct_cents_frac" }),
+      );
+      setupPayoutRecordCreation(
+        makePayoutRow({ net_amount: 12.34, currency: "USD" }),
+      );
+
+      mockStripe.transfers.create.mockResolvedValue({ id: "tr_frac" } as any);
+
+      await service.createPayout(makePayoutRequest({ amount: 12.34 }));
+
+      expect(mockStripe.transfers.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 1234, // Math.round(12.34 * 100)
+        }),
+      );
+    });
+
+    it("should round sub-cent netAmount to nearest integer cent", async () => {
+      // $10.015 netAmount: IEEE-754 gives 10.015 * 100 = 1001.5000...002 → Math.round → 1002
+      setupRecipientLookup(
+        makePartnerRecipient({ stripe_account_id: "acct_cents_round" }),
+      );
+      setupPayoutRecordCreation(
+        makePayoutRow({ net_amount: 10.015, currency: "USD" }),
+      );
+
+      mockStripe.transfers.create.mockResolvedValue({ id: "tr_round" } as any);
+
+      await service.createPayout(makePayoutRequest({ amount: 10.015 }));
+
+      expect(mockStripe.transfers.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: Math.round(10.015 * 100), // deterministic: whatever Math.round gives
+        }),
+      );
+    });
+  });
+
+  // ===========================================================================
+  // processBankPayout (US ACH) — cents conversion (FND-024 / TASK-MNY-01)
+  // ===========================================================================
+
+  describe("processBankPayout US ACH — integer cents conversion (FND-024)", () => {
+    it("should pass netAmount converted to integer cents ($100) on stripe.payouts.create", async () => {
+      setupRecipientLookup(
+        makePartnerRecipient({
+          payment_method: "bank_transfer",
+          stripe_account_id: undefined,
+          bank_details: {
+            accountHolderName: "ACH User",
+            accountNumber: "000111222333",
+            routingNumber: "110000000",
+            country: "US",
+          },
+        }),
+      );
+      setupPayoutRecordCreation(
+        makePayoutRow({ method: "bank_transfer", net_amount: 100, currency: "USD" }),
+      );
+
+      mockStripe.tokens.create.mockResolvedValue({ id: "btok_ach" } as any);
+      mockStripe.payouts.create.mockResolvedValue({ id: "po_ach" } as any);
+
+      await service.createPayout(
+        makePayoutRequest({ method: "bank_transfer", amount: 100, currency: "USD" }),
+      );
+
+      expect(mockStripe.payouts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 10000, // Math.round(100 * 100)
+          currency: "usd",
+        }),
+        expect.anything(),
+      );
+    });
+
+    it("should pass fractional dollar netAmount ($12.34) as exact integer cents (1234) on stripe.payouts.create", async () => {
+      setupRecipientLookup(
+        makePartnerRecipient({
+          payment_method: "bank_transfer",
+          stripe_account_id: undefined,
+          bank_details: {
+            accountHolderName: "ACH Frac",
+            accountNumber: "000111222444",
+            routingNumber: "110000000",
+            country: "US",
+          },
+        }),
+      );
+      setupPayoutRecordCreation(
+        makePayoutRow({ method: "bank_transfer", net_amount: 12.34, currency: "USD" }),
+      );
+
+      mockStripe.tokens.create.mockResolvedValue({ id: "btok_ach2" } as any);
+      mockStripe.payouts.create.mockResolvedValue({ id: "po_ach2" } as any);
+
+      await service.createPayout(
+        makePayoutRequest({ method: "bank_transfer", amount: 12.34, currency: "USD" }),
+      );
+
+      expect(mockStripe.payouts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 1234, // Math.round(12.34 * 100)
+        }),
+        expect.anything(),
+      );
+    });
+  });
+
+  // ===========================================================================
+  // processStripeConnectPayout — other existing tests
   // ===========================================================================
 
   describe("processStripeConnectPayout", () => {
@@ -290,7 +427,7 @@ describe("PayoutService", () => {
 
       expect(mockStripe.transfers.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          amount: 9975,
+          amount: 997500, // Math.round(9975 * 100) — Stripe amount is integer cents
           currency: "usd",
           destination: "acct_xyz",
         }),
