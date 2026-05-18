@@ -116,8 +116,8 @@ export const GET = withAuth(async (_request: NextRequest, user: AuthedUser) => {
       : { userId: user.id, ...defaultPreferences };
 
     return NextResponse.json({ preferences });
-  } catch (_error) {
-    void _error;
+  } catch (error) {
+    console.error("GET /api/notifications/preferences failed:", error);
     return NextResponse.json(
       { error: "Failed to get preferences" },
       { status: 500 },
@@ -133,6 +133,24 @@ export const PUT = withAuth(
   async (request: NextRequest, user: AuthedUser) => {
     try {
       const body = await request.json();
+
+      // Validate the two JSONB fields at the boundary — a non-object value
+      // would throw on spread and surface as a misleading 500.
+      const isPlainObject = (v: unknown): boolean =>
+        typeof v === "object" && v !== null && !Array.isArray(v);
+      if (body.channels !== undefined && !isPlainObject(body.channels)) {
+        return NextResponse.json(
+          { error: "Invalid channels: expected an object" },
+          { status: 400 },
+        );
+      }
+      if (body.quietHours !== undefined && !isPlainObject(body.quietHours)) {
+        return NextResponse.json(
+          { error: "Invalid quietHours: expected an object" },
+          { status: 400 },
+        );
+      }
+
       const supabase = getSupabaseAdmin();
 
       // Read current row (or fall back to defaults) to support deep-merge.
@@ -180,8 +198,8 @@ export const PUT = withAuth(
       }
 
       return NextResponse.json({ success: true, preferences: merged });
-    } catch (_error) {
-      void _error;
+    } catch (error) {
+      console.error("PUT /api/notifications/preferences failed:", error);
       return NextResponse.json(
         { error: "Failed to update preferences" },
         { status: 500 },

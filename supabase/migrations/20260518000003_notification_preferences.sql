@@ -35,8 +35,7 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
     updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_notification_preferences_user_id
-    ON notification_preferences(user_id);
+-- (no separate user_id index — the PRIMARY KEY already provides a unique index on user_id)
 
 -- Row Level Security: owner-only access
 ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
@@ -75,5 +74,10 @@ CREATE TRIGGER notification_preferences_updated_at
     BEFORE UPDATE ON notification_preferences
     FOR EACH ROW
     EXECUTE FUNCTION update_notification_preferences_updated_at();
+
+-- Refuse direct PostgREST access; the route reaches this table via the
+-- service-role client only (matches the Wave 7 table-migration pattern).
+REVOKE ALL ON notification_preferences FROM public, anon, authenticated;
+GRANT ALL ON notification_preferences TO service_role;
 
 COMMENT ON TABLE notification_preferences IS 'Per-user notification preferences (durable, replaces process-local Record)';
