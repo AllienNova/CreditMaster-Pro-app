@@ -142,17 +142,31 @@ export const GET = withRole(
   },
 );
 
+// Mirrors the disputes-table CHECK constraint in
+// 20250204000000_credit_repair_schema.sql (the authoritative migration).
 const DISPUTE_STATUS_VALUES = [
   "draft",
   "sent",
   "under_review",
   "resolved",
   "rejected",
+  "escalated",
 ] as const;
 type DisputeStatus = (typeof DISPUTE_STATUS_VALUES)[number];
 
-const DISPUTE_OUTCOME_VALUES = ["removed", "updated", "verified"] as const;
+const DISPUTE_OUTCOME_VALUES = [
+  "removed",
+  "updated",
+  "verified",
+  "pending",
+] as const;
 type DisputeOutcome = (typeof DISPUTE_OUTCOME_VALUES)[number];
+
+// A TIMESTAMPTZ column rejects a non-date string at the DB layer (500);
+// validate at the boundary so a bad value is a clean 400.
+function isIsoDateString(v: unknown): boolean {
+  return typeof v === "string" && !Number.isNaN(Date.parse(v));
+}
 
 interface AdminDisputePatchPayload {
   status?: DisputeStatus;
@@ -191,11 +205,17 @@ function buildWhitelistedPayload(
   }
 
   if ("resolved_at" in updates) {
+    if (updates.resolved_at !== null && !isIsoDateString(updates.resolved_at)) {
+      return null;
+    }
     payload.resolved_at =
       updates.resolved_at === null ? null : String(updates.resolved_at);
   }
 
   if ("sent_at" in updates) {
+    if (updates.sent_at !== null && !isIsoDateString(updates.sent_at)) {
+      return null;
+    }
     payload.sent_at =
       updates.sent_at === null ? null : String(updates.sent_at);
   }
