@@ -310,20 +310,43 @@ export class GDPRComplianceService {
 
   /**
    * Data Breach Notification (GDPR Art. 33-34)
-   * Must notify within 72 hours
+   * Must notify within 72 hours.
+   *
+   * Each affected user is attempted independently — a failure for one user does
+   * not abort the remaining users. A summary `{ sent, failed }` is returned so
+   * callers can reflect partial failures in their response.
    */
   async notifyDataBreach(
     breach: Omit<DataBreachNotification, "notifiedDate">,
-  ): Promise<void> {
+  ): Promise<{ sent: number; failed: number }> {
     const notification: DataBreachNotification = {
       ...breach,
       notifiedDate: new Date(),
     };
 
-    // Send emails to affected users
+    let sent = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
     for (const userId of breach.affectedUsers) {
-      await this.sendBreachNotification(userId, notification);
+      try {
+        await this.sendBreachNotification(userId, notification);
+        sent++;
+      } catch (err) {
+        failed++;
+        errors.push(
+          `${userId}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     }
+
+    if (failed > 0) {
+      throw new Error(
+        `Breach notification partially failed: ${failed} of ${sent + failed} users not notified. Errors: ${errors.join("; ")}`,
+      );
+    }
+
+    return { sent, failed };
   }
 
   // Helper methods
@@ -437,10 +460,23 @@ export class GDPRComplianceService {
    * Failure path: if Resend throws, a status:failed row is written and the
    * error is re-thrown so `notifyDataBreach` can surface it — no silent swallow.
    */
+  private static escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
   private async sendBreachNotification(
     userId: string,
     notification: DataBreachNotification,
   ): Promise<void> {
+    // Guard misconfiguration with a clear message before constructing the client.
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY is not configured");
+    }
+
     // Fetch email from profiles — avoid logging PII in the error path.
     const { data: profile } = await this.db
       .from("profiles")
@@ -462,21 +498,23 @@ export class GDPRComplianceService {
       return;
     }
 
-    const userName =
-      (profile as { name?: string } | null)?.name ?? "Valued Customer";
-    const dataList = notification.dataTypes.join(", ");
+    const e = GDPRComplianceService.escapeHtml;
+    const userName = e(
+      (profile as { name?: string } | null)?.name ?? "Valued Customer",
+    );
+    const dataList = notification.dataTypes.map(e).join(", ");
     const steps = notification.mitigationSteps
-      .map((s) => `<li>${s}</li>`)
+      .map((s) => `<li>${e(s)}</li>`)
       .join("");
     const html = `
       <h2>Important Security Notice — Data Breach Notification</h2>
       <p>Dear ${userName},</p>
       <p>
         We are writing to inform you that Fynvita has detected a data security
-        incident (reference: <strong>${notification.breachId}</strong>) that may
+        incident (reference: <strong>${e(notification.breachId)}</strong>) that may
         have affected your account.
       </p>
-      <p><strong>Severity:</strong> ${notification.severity}</p>
+      <p><strong>Severity:</strong> ${e(notification.severity)}</p>
       <p><strong>Discovered:</strong> ${notification.discoveredDate.toISOString()}</p>
       <p><strong>Data types involved:</strong> ${dataList}</p>
       <h3>What you should do</h3>
@@ -495,7 +533,6 @@ export class GDPRComplianceService {
     const fromEmail =
       process.env.FROM_EMAIL || "Fynvita Security <noreply@fynvita.com>";
 
-    let sendError: string | null = null;
     try {
       const { error } = await resend.emails.send({
         from: fromEmail,
@@ -507,7 +544,7 @@ export class GDPRComplianceService {
         throw new Error(String((error as { message?: unknown }).message ?? error));
       }
     } catch (err) {
-      sendError = err instanceof Error ? err.message : String(err);
+      const sendError = err instanceof Error ? err.message : String(err);
       // Write the failed record before re-throwing
       await this.db.from("breach_notifications").insert({
         breach_id: notification.breachId,

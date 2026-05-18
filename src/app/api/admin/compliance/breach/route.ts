@@ -34,23 +34,27 @@ export const POST = withRole(
 
     // Validate required fields at the boundary
     const b = body as Record<string, unknown>;
+    const isStringArray = (v: unknown): v is string[] =>
+      Array.isArray(v) &&
+      (v as unknown[]).length > 0 &&
+      (v as unknown[]).every((e) => typeof e === "string");
+
     if (
       typeof b.breachId !== "string" ||
       !b.breachId ||
       typeof b.discoveredDate !== "string" ||
       !b.discoveredDate ||
-      !Array.isArray(b.affectedUsers) ||
-      (b.affectedUsers as unknown[]).length === 0 ||
-      !Array.isArray(b.dataTypes) ||
-      (b.dataTypes as unknown[]).length === 0 ||
+      !isStringArray(b.affectedUsers) ||
+      !isStringArray(b.dataTypes) ||
       typeof b.severity !== "string" ||
       !["low", "medium", "high", "critical"].includes(b.severity) ||
-      !Array.isArray(b.mitigationSteps)
+      !Array.isArray(b.mitigationSteps) ||
+      !(b.mitigationSteps as unknown[]).every((e) => typeof e === "string")
     ) {
       return NextResponse.json(
         {
           error:
-            "Missing or invalid required fields: breachId, discoveredDate, affectedUsers, dataTypes, severity, mitigationSteps",
+            "Missing or invalid required fields: breachId, discoveredDate, affectedUsers (string[]), dataTypes (string[]), severity, mitigationSteps (string[])",
         },
         { status: 400 },
       );
@@ -65,11 +69,11 @@ export const POST = withRole(
     }
 
     try {
-      await gdprService.notifyDataBreach({
+      const result = await gdprService.notifyDataBreach({
         breachId: b.breachId,
         discoveredDate,
-        affectedUsers: b.affectedUsers as string[],
-        dataTypes: b.dataTypes as string[],
+        affectedUsers: b.affectedUsers,
+        dataTypes: b.dataTypes,
         severity: b.severity as "low" | "medium" | "high" | "critical",
         mitigationSteps: b.mitigationSteps as string[],
       });
@@ -78,12 +82,27 @@ export const POST = withRole(
         {
           success: true,
           breachId: b.breachId,
-          notifiedCount: (b.affectedUsers as string[]).length,
+          sent: result.sent,
+          failed: result.failed,
         },
         { status: 200 },
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      // Misconfiguration (missing API key) → 503 Service Unavailable
+      if (message === "RESEND_API_KEY is not configured") {
+        return NextResponse.json(
+          { error: "Email service is not configured", detail: message },
+          { status: 503 },
+        );
+      }
+      // Partial failure — some users were notified, some were not
+      if (message.startsWith("Breach notification partially failed")) {
+        return NextResponse.json(
+          { error: "Breach notification partially failed", detail: message },
+          { status: 207 },
+        );
+      }
       return NextResponse.json(
         { error: "Breach notification failed", detail: message },
         { status: 500 },
