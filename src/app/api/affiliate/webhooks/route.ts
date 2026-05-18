@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     const { data } = body;
 
-    revenueTracker.trackEvent({
+    await revenueTracker.trackEvent({
       eventType,
       productId: String(data.productId || ""),
       partnerId: String(data.partnerId || ""),

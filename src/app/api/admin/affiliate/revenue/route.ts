@@ -45,9 +45,9 @@ export const GET = withRole(
         };
         const daysBack = periodDays[period] ?? 30;
         const start = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
-        const report = revenueTracker.getReport({ start, end: now });
-        const topProducts = revenueTracker.getTopProducts(10);
-        const topPartners = revenueTracker.getTopPartners(10);
+        const report = await revenueTracker.getReport({ start, end: now });
+        const topProducts = await revenueTracker.getTopProducts(10);
+        const topPartners = await revenueTracker.getTopPartners(10);
         const dashboardMetrics = revenueDashboardService.getMetrics();
 
         data.metrics = {

@@ -306,6 +306,17 @@ describe("RevenueTracker", () => {
       const insertCall = mockBuilder.insert.mock.calls[0][0] as Record<string, unknown>;
       expect(insertCall.commission_amount_cents).toBe(1234); // $12.34 → 1234 cents
     });
+
+    it("should throw when the Supabase insert returns an error", async () => {
+      mockBuilder.select.mockResolvedValueOnce({
+        data: null,
+        error: { message: "duplicate key value violates unique constraint" },
+      });
+
+      await expect(tracker.trackEvent(createEvent())).rejects.toThrow(
+        "revenue_events insert failed: duplicate key value violates unique constraint",
+      );
+    });
   });
 
   // ---------------------------------------------------------------------------

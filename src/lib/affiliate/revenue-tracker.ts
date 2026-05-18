@@ -115,7 +115,7 @@ class RevenueTracker {
         ? Math.round(fullEvent.commissionAmount * 100)
         : null;
 
-    await supabase
+    const { error: insertError } = await supabase
       .from("revenue_events")
       .insert({
         event_id: fullEvent.eventId,
@@ -130,6 +130,10 @@ class RevenueTracker {
         created_at: fullEvent.timestamp.toISOString(),
       })
       .select();
+
+    if (insertError) {
+      throw new Error(`revenue_events insert failed: ${insertError.message}`);
+    }
 
     return fullEvent;
   }
@@ -261,7 +265,7 @@ class RevenueTracker {
     period?: { start: Date; end: Date },
     productId?: string,
   ): Promise<RevenueEventRow[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase PostgrestFilterBuilder type changes on each chained method; typed at the `as RevenueEventRow[]` boundary
     let query: any = supabase.from("revenue_events").select("*");
 
     if (period) {

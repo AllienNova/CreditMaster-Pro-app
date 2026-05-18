@@ -14,7 +14,7 @@ if (!globalThis.crypto?.subtle) {
 // Mock revenue tracker
 jest.mock("@/lib/affiliate/revenue-tracker", () => ({
   revenueTracker: {
-    trackEvent: jest.fn(),
+    trackEvent: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -310,5 +310,30 @@ describe("POST /api/affiliate/webhooks", () => {
     expect(revenueTracker.trackEvent).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "anonymous" }),
     );
+  });
+
+  it("returns 500 when trackEvent throws (surfaces DB insert errors to MoneyLion for retry)", async () => {
+    (revenueTracker.trackEvent as jest.Mock).mockRejectedValueOnce(
+      new Error("revenue_events insert failed: connection timeout"),
+    );
+
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const payload = {
+      event: "click.created",
+      data: { clickId: "clk-err", productId: "prod-1", partnerId: "p-1", userId: "u-1" },
+    };
+    const body = JSON.stringify(payload);
+    const sig = await computeHmac(timestamp, body);
+
+    const req = createMockWebhookRequest(body, {
+      "x-moneylion-signature": sig,
+      "x-moneylion-timestamp": timestamp,
+    });
+    const res = await POST(req);
+    const json = await res.json();
+
+    // A non-200 response tells MoneyLion to retry — critical for FND-025 durability.
+    expect(res.status).toBe(500);
+    expect(json.error).toBe("Webhook processing failed");
   });
 });
