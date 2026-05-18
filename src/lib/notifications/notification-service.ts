@@ -9,6 +9,7 @@
  */
 
 import { Resend } from "resend";
+import { escapeHtml } from "@/lib/security/sanitize";
 import {
   webPushService,
   type PushNotificationPayload,
@@ -63,10 +64,11 @@ class NotificationService {
    */
   async sendWelcomeEmail(to: string, name: string): Promise<void> {
     const subject = "Welcome to Fynvita! ";
+    const safeName = escapeHtml(name);
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #4F46E5;">Welcome to Fynvita!</h1>
-        <p>Hi ${name},</p>
+        <p>Hi ${safeName},</p>
         <p>We're excited to have you on board! Fynvita uses advanced AI to help you repair your credit and achieve your financial goals.</p>
         <h2>Get Started:</h2>
         <ol>
@@ -98,13 +100,14 @@ class NotificationService {
     itemDescription: string,
   ): Promise<void> {
     const subject = "Dispute Created Successfully ";
+    const safeDescription = escapeHtml(itemDescription);
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #4F46E5;">Dispute Created</h1>
         <p>Your dispute has been created and sent to the credit bureau.</p>
         <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Dispute ID:</strong> ${disputeId}</p>
-          <p><strong>Item:</strong> ${itemDescription}</p>
+          <p><strong>Item:</strong> ${safeDescription}</p>
           <p><strong>Status:</strong> Sent to Bureau</p>
         </div>
         <p>We'll notify you when there's an update on your dispute.</p>
@@ -139,13 +142,14 @@ class NotificationService {
         ? "Great News! Dispute Resolved - Item Removed "
         : "Dispute Resolved";
 
+    const safeDescription = escapeHtml(itemDescription);
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: ${outcome === "removed" ? "#10B981" : "#4F46E5"};">Dispute Resolved</h1>
         <p>${outcomeText[outcome]}</p>
         <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Dispute ID:</strong> ${disputeId}</p>
-          <p><strong>Item:</strong> ${itemDescription}</p>
+          <p><strong>Item:</strong> ${safeDescription}</p>
           <p><strong>Outcome:</strong> ${outcome.charAt(0).toUpperCase() + outcome.slice(1)}</p>
         </div>
         ${outcome === "removed" ? "<p>This should positively impact your credit score!</p>" : ""}
@@ -238,13 +242,14 @@ class NotificationService {
     reason: string,
   ): Promise<void> {
     const subject = "Payment Failed - Action Required ";
+    const safeReason = escapeHtml(reason);
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #EF4444;">Payment Failed</h1>
         <p>We were unable to process your payment.</p>
         <div style="background-color: #FEE2E2; padding: 16px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Amount:</strong> $${amount.toFixed(2)}</p>
-          <p><strong>Reason:</strong> ${reason}</p>
+          <p><strong>Reason:</strong> ${safeReason}</p>
         </div>
         <p>Please update your payment method to continue using Fynvita.</p>
         <p style="margin-top: 30px;">
@@ -383,10 +388,11 @@ class NotificationService {
     invoiceId: string,
   ): Promise<void> {
     const subject = "Payment Received - Thank You! ";
+    const safeCustomerName = escapeHtml(customerName);
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #10B981;">Payment Successful</h1>
-        <p>Hi ${customerName},</p>
+        <p>Hi ${safeCustomerName},</p>
         <p>Thank you for your payment!</p>
         <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Amount:</strong> $${amount.toFixed(2)}</p>
@@ -419,15 +425,17 @@ class NotificationService {
     const { ownerEmail, documentName, recipients, shareUrl, expiresAt } =
       params;
     const senderName = ownerEmail || "A Fynvita user";
+    const safeSenderName = escapeHtml(senderName);
+    const safeDocumentName = escapeHtml(documentName);
 
     for (const recipient of recipients) {
       const subject = `${senderName} shared a document with you`;
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #4F46E5;">Document Shared With You</h1>
-          <p>${senderName} has shared a document with you.</p>
+          <p>${safeSenderName} has shared a document with you.</p>
           <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>Document:</strong> ${documentName}</p>
+            <p><strong>Document:</strong> ${safeDocumentName}</p>
             <p><strong>Expires:</strong> ${expiresAt.toLocaleDateString()} at ${expiresAt.toLocaleTimeString()}</p>
           </div>
           <p style="margin-top: 30px;">
