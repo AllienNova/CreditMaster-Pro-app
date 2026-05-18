@@ -5,7 +5,7 @@
  * Manages conversations, integrates with AI models, and coordinates all chat operations
  */
 
-import { AIMLService } from "@/lib/aiml-service";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import { chatDbService } from "./chat-db-service";
 import { getIntentRecognizer } from "./intent-recognizer";
 import { getEntityExtractor } from "./entity-extractor";
@@ -56,26 +56,12 @@ Guidelines:
 
 When you identify a clear user intent to perform an action (like creating a budget or goal), confirm the details and offer to execute it.`;
 
-const MODEL_CONFIG = {
-  chat: "openai/gpt-4o", // Fast, cost-effective for chat
-  chatAlternate: "google/gemini-2.0-flash", // Alternative chat model
-  intent: "openai/gpt-4o-mini", // Quick intent recognition
-  extract: "openai/gpt-4o-mini", // Entity extraction
-  complex: "anthropic/claude-4.5-sonnet", // Complex financial advice
-  complexAlternate: "x-ai/grok-2-1212", // Alternative complex reasoning
-  creative: "google/gemini-2.5-pro", // Creative financial planning
-};
-
 // ============================================================================
 // CHAT ENGINE
 // ============================================================================
 
 export class FinancialChatEngine {
-  private aimlService: AIMLService;
-
-  constructor() {
-    this.aimlService = new AIMLService();
-  }
+  constructor() {}
 
   // ==========================================================================
   // MAIN CHAT OPERATIONS
@@ -416,15 +402,15 @@ export class FinancialChatEngine {
     prompt: BuiltPrompt,
     sessionType: string,
   ): Promise<{ content: string; tokensUsed: number; model: string }> {
-    // Select model based on complexity
-    const model =
-      sessionType === "general" ? MODEL_CONFIG.chat : MODEL_CONFIG.complex;
-
     try {
-      const response = await this.aimlService.chat(model, prompt.messages, {
-        temperature: 0.7,
-        max_tokens: 2000,
-      });
+      const response = await getModelRouter().complete(
+        TaskType.GENERAL_CHAT,
+        prompt.messages,
+        {
+          temperature: 0.7,
+          max_tokens: 2000,
+        },
+      );
 
       const content = response.choices[0]?.message?.content || "";
       const tokensUsed = response.usage?.total_tokens || 0;
@@ -432,7 +418,7 @@ export class FinancialChatEngine {
       return {
         content,
         tokensUsed,
-        model,
+        model: getModelRouter().getModel(TaskType.GENERAL_CHAT),
       };
     } catch (error) {
       // ChatEngine error: AI response error

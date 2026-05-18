@@ -13,7 +13,8 @@
  * - Graceful fallbacks when AI service unavailable
  */
 
-import { AIMLService, ChatMessage } from "../aiml-service";
+import { getModelRouter, TaskType } from "../model-router";
+import type { ChatMessage } from "../aiml-service";
 import { RedisCacheService } from "../cache/redis-cache-service";
 import { marketDataService } from "./market-data-service";
 import {
@@ -77,7 +78,6 @@ import {
 // CONSTANTS
 // ============================================================================
 
-const AI_MODEL = "anthropic/claude-4.5-sonnet";
 const ANALYSIS_CACHE_TTL = 60 * 60; // 1 hour in seconds (for Redis)
 
 // Technical indicator thresholds
@@ -90,7 +90,6 @@ const ADX_TREND_THRESHOLD = 25;
 // ============================================================================
 
 export class AIStockAnalystService {
-  private aimlService: AIMLService;
   private redisCache: RedisCacheService;
   private analysisCache: Map<
     string,
@@ -98,7 +97,6 @@ export class AIStockAnalystService {
   >;
 
   constructor() {
-    this.aimlService = new AIMLService();
     this.redisCache = new RedisCacheService({
       ttl: ANALYSIS_CACHE_TTL,
       prefix: "stock-analysis:",
@@ -1608,10 +1606,14 @@ Format your response as JSON with the following structure:
         { role: "user", content: prompt },
       ];
 
-      const response = await this.aimlService.chat(AI_MODEL, messages, {
-        temperature: 0.3,
-        max_tokens: 2000,
-      });
+      const response = await getModelRouter().complete(
+        TaskType.REASONING,
+        messages,
+        {
+          temperature: 0.3,
+          max_tokens: 2000,
+        },
+      );
       const content = response.choices[0]?.message?.content || "";
 
       // Parse AI response
@@ -1620,7 +1622,7 @@ Format your response as JSON with the following structure:
       return {
         ...parsed,
         confidenceScore: 70 + Math.random() * 20,
-        analysisModel: AI_MODEL,
+        analysisModel: getModelRouter().getModel(TaskType.REASONING),
         generatedAt: new Date(),
       };
     } catch (error) {

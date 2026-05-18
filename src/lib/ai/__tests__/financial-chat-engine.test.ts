@@ -32,16 +32,17 @@ jest.mock("@/lib/supabase/client", () => ({
   createClient: jest.fn(() => mockSupabase),
 }));
 
-// Mock AIML service - must be defined before the mock
-const mockChat = jest.fn();
-const mockAIML = {
-  chat: mockChat,
-};
+// Mock ModelRouter - must be defined before the mock
+const mockComplete = jest.fn();
 
-jest.mock("@/lib/aiml-service", () => ({
-  getAIMLService: () => ({
-    chat: mockChat,
+jest.mock("@/lib/model-router", () => ({
+  getModelRouter: () => ({
+    complete: mockComplete,
+    getModel: jest.fn().mockReturnValue("anthropic/claude-financial-advice"),
   }),
+  TaskType: {
+    FINANCIAL_ADVICE: "FINANCIAL_ADVICE",
+  },
 }));
 
 // ============================================================================
@@ -100,7 +101,7 @@ describe("FinancialChatEngine", () => {
     // Clear individual mocks instead
     (mockSupabase.from as jest.Mock).mockClear();
     (mockSupabase.rpc as jest.Mock).mockClear();
-    (mockChat as jest.Mock).mockClear();
+    (mockComplete as jest.Mock).mockClear();
 
     // Setup default mock implementations
     const mockChain = {
@@ -118,8 +119,8 @@ describe("FinancialChatEngine", () => {
       data: null,
       error: null,
     });
-    // Mock chat to return OpenAI-style response format
-    (mockChat as jest.Mock).mockResolvedValue({
+    // Mock complete to return OpenAI-style response format
+    (mockComplete as jest.Mock).mockResolvedValue({
       choices: [{ message: { content: mockAIResponse } }],
     });
 
@@ -203,7 +204,7 @@ describe("FinancialChatEngine", () => {
 
   describe("Intent Detection", () => {
     it("should detect portfolio analysis intent", async () => {
-      mockAIML.chat.mockResolvedValue({
+      mockComplete.mockResolvedValue({
         choices: [{ message: { content: mockIntentResponse } }],
       });
 
@@ -229,7 +230,7 @@ describe("FinancialChatEngine", () => {
 }
 \`\`\``;
 
-      mockAIML.chat.mockResolvedValue({
+      mockComplete.mockResolvedValue({
         choices: [{ message: { content: investmentIntentResponse } }],
       });
 
@@ -255,7 +256,7 @@ describe("FinancialChatEngine", () => {
 }
 \`\`\``;
 
-      mockAIML.chat.mockResolvedValue({
+      mockComplete.mockResolvedValue({
         choices: [{ message: { content: budgetIntentResponse } }],
       });
 
@@ -280,7 +281,7 @@ describe("FinancialChatEngine", () => {
 }
 \`\`\``;
 
-      mockAIML.chat.mockResolvedValue({
+      mockComplete.mockResolvedValue({
         choices: [{ message: { content: debtIntentResponse } }],
       });
 
@@ -295,7 +296,7 @@ describe("FinancialChatEngine", () => {
     });
 
     it("should handle malformed AI response gracefully", async () => {
-      mockAIML.chat.mockResolvedValue({
+      mockComplete.mockResolvedValue({
         choices: [{ message: { content: "Invalid JSON response" } }],
       });
 
@@ -321,7 +322,7 @@ describe("FinancialChatEngine", () => {
 }
 \`\`\``;
 
-      mockAIML.chat.mockResolvedValue({
+      mockComplete.mockResolvedValue({
         choices: [{ message: { content: entityIntentResponse } }],
       });
 
@@ -382,7 +383,7 @@ describe("FinancialChatEngine", () => {
       const response = await chatEngine.generateResponse(intent, context);
 
       expect(response).toBeDefined();
-      expect(mockAIML.chat).toHaveBeenCalled();
+      expect(mockComplete).toHaveBeenCalled();
     });
   });
 
@@ -529,7 +530,7 @@ describe("FinancialChatEngine", () => {
           .mockResolvedValue({ data: mockSessionDB, error: null }),
       };
       mockSupabase.from.mockReturnValue(mockChain);
-      mockAIML.chat
+      mockComplete
         .mockResolvedValueOnce({
           choices: [{ message: { content: mockIntentResponse } }],
         })

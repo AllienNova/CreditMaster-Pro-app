@@ -12,6 +12,7 @@
     "import/no-anonymous-default-export": "warn",
     "no-math-random-in-prod": "warn",
     "no-raw-number-on-money-fields": "warn",
+    "no-direct-aiml-service": "error",
     "no-restricted-imports": [
       "warn",
       {

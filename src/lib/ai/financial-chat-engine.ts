@@ -8,7 +8,7 @@
 
 import { v4 as uuidv4 } from "uuid";
 import { createClient } from "@/lib/supabase/client";
-import { getAIMLService } from "@/lib/aiml-service";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import {
   ChatSession,
   ChatMessage,
@@ -45,7 +45,6 @@ import {
  */
 export class FinancialChatEngine {
   private supabase = createClient();
-  private aiml = getAIMLService();
 
   /**
    * Create a new chat session
@@ -140,8 +139,8 @@ export class FinancialChatEngine {
       educationalContent: this.generateEducationalContent(intent),
       metadata: {
         processingTime,
-        model: "claude-4.5-sonnet",
-        tokensUsed: 0, // Will be populated by AIML service
+        model: getModelRouter().getModel(TaskType.FINANCIAL_ADVICE),
+        tokensUsed: 0, // Will be populated by model router
         confidence: intent.confidence,
         disclaimer: this.getFinancialDisclaimer(),
       },
@@ -208,8 +207,8 @@ export class FinancialChatEngine {
     ).replace("{{CONTEXT}}", JSON.stringify(context, null, 2));
 
     try {
-      const response = await this.aiml.chat(
-        "claude-4.5-sonnet",
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [{ role: "user", content: prompt }],
         {
           max_tokens: 500,
@@ -245,8 +244,8 @@ export class FinancialChatEngine {
     ).replace("{{CONTEXT}}", JSON.stringify(context, null, 2));
 
     try {
-      const response = await this.aiml.chat(
-        "claude-4.5-sonnet",
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [{ role: "user", content: prompt }],
         {
           max_tokens: 1000,
