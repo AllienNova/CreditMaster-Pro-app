@@ -576,6 +576,15 @@ export class ConsentManagementService {
   /**
    * Check if user currently has consent for a given type.
    * Returns the `granted` value of the most recent row by `timestamp`.
+   *
+   * Uses `.maybeSingle()` rather than `.single()` so that "no rows" resolves
+   * to `{ data: null, error: null }` (→ false) instead of triggering PGRST116.
+   * A genuine DB error (non-zero `error` with data still null) is surfaced as a
+   * thrown exception rather than silently becoming `false`.
+   *
+   * Tie-break: two rows with identical `timestamp` have DB-defined ordering;
+   * in practice this should not occur because consent events are timestamped at
+   * call time and the UI prevents rapid double-submission.
    */
   async hasConsent(
     userId: string,
@@ -588,9 +597,12 @@ export class ConsentManagementService {
       .eq("consent_type", consentType)
       .order("timestamp", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (error || !data) return false;
+    if (error) {
+      throw new Error(`Failed to read consent: ${error.message}`);
+    }
+    if (!data) return false;
     return (data as { granted: boolean }).granted;
   }
 

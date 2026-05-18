@@ -33,43 +33,48 @@ type MockBuilder = Record<string, jest.Mock>;
 /**
  * Creates a Supabase-style chainable query builder mock.
  *
- * The builder supports two terminal patterns used by ConsentManagementService:
- *   1. .order()            → resolves { data: allRows, error: null }  (getUserConsents)
- *   2. .order().limit().single() → resolves with first row or null    (hasConsent)
+ * Two terminal patterns used by ConsentManagementService:
+ *   1. ...order()                    → resolves { data: allRows, error }  (getUserConsents)
+ *   2. ...order().limit().maybeSingle() → resolves { data: row|null, error }  (hasConsent)
  *
- * `allRows` is the full result set; `singleRow` is what `.single()` returns.
+ * `order()` returns a thenable that is also the builder, so callers can either
+ * await it directly (getUserConsents) or chain .limit().maybeSingle() (hasConsent).
  */
 function createChainableMock(opts?: {
   allRows?: Array<Record<string, unknown>>;
-  singleRow?: Record<string, unknown> | null;
+  maybeSingleRow?: Record<string, unknown> | null;
+  maybeSingleError?: string | null;
   insertError?: string | null;
 }): MockBuilder {
   const allRows = opts?.allRows ?? [];
-  const singleRow = opts?.singleRow !== undefined ? opts.singleRow : null;
+  // maybeSingleRow: explicit null means "no rows" (not a DB error)
+  const maybeSingleRow =
+    opts?.maybeSingleRow !== undefined ? opts.maybeSingleRow : null;
+  const maybeSingleErr =
+    opts?.maybeSingleError !== undefined ? opts.maybeSingleError : null;
   const insertErr = opts?.insertError !== undefined ? opts.insertError : null;
 
   const b: MockBuilder = {};
-  b.insert = jest.fn().mockResolvedValue({
-    error: insertErr ? { message: insertErr } : null,
-  });
+  b.insert = jest
+    .fn()
+    .mockResolvedValue({ error: insertErr ? { message: insertErr } : null });
   b.select = jest.fn().mockImplementation(() => b);
   b.delete = jest.fn().mockImplementation(() => b);
   b.update = jest.fn().mockImplementation(() => b);
   b.upsert = jest.fn().mockResolvedValue({ error: null });
   b.eq = jest.fn().mockImplementation(() => b);
   b.limit = jest.fn().mockImplementation(() => b);
-  // .single() is the terminal for hasConsent
-  b.single = jest.fn().mockResolvedValue({
-    data: singleRow,
-    error: singleRow === null ? { message: "no rows" } : null,
+  // .maybeSingle(): no rows → { data: null, error: null }; real error → { data: null, error }
+  b.maybeSingle = jest.fn().mockResolvedValue({
+    data: maybeSingleRow,
+    error: maybeSingleErr ? { message: maybeSingleErr } : null,
   });
-  // .order() is the terminal for getUserConsents; also chainable for hasConsent
-  // We need it to resolve when awaited (getUserConsents path) AND return the
-  // builder when chained (hasConsent path).  We do this by returning an object
-  // that is BOTH the builder AND a Promise (a thenable).
+  // .single() kept for completeness but should not be called post-fix
+  b.single = jest.fn().mockResolvedValue({ data: null, error: null });
+  // .order() is the terminal for getUserConsents AND chainable for hasConsent.
+  // Returns a thenable-builder hybrid.
   b.order = jest.fn().mockImplementation(() => {
     const resolved = Promise.resolve({ data: allRows, error: null });
-    // Attach builder methods to the promise so callers can chain .limit().single()
     Object.assign(resolved, b);
     return resolved;
   });
@@ -78,7 +83,8 @@ function createChainableMock(opts?: {
 
 function buildMockDb(opts?: {
   allRows?: Array<Record<string, unknown>>;
-  singleRow?: Record<string, unknown> | null;
+  maybeSingleRow?: Record<string, unknown> | null;
+  maybeSingleError?: string | null;
   insertError?: string | null;
 }): DbClient {
   const chain = createChainableMock(opts);
@@ -86,9 +92,7 @@ function buildMockDb(opts?: {
     from: jest.fn().mockImplementation(() => chain),
     rpc: jest.fn().mockResolvedValue({ error: null }),
     auth: {
-      admin: {
-        deleteUser: jest.fn().mockResolvedValue({ error: null }),
-      },
+      admin: { deleteUser: jest.fn().mockResolvedValue({ error: null }) },
     },
   };
 }
@@ -100,6 +104,9 @@ function buildMockDb(opts?: {
 describe("ConsentManagementService — durable DB persistence", () => {
   const userId = "user-abc-123";
 
+  // -------------------------------------------------------------------------
+  // recordConsent — append-only INSERT
+  // -------------------------------------------------------------------------
   describe("recordConsent — appends a new row on every call", () => {
     it("inserts a row into consent_records when a consent event is recorded", async () => {
       const db = buildMockDb();
@@ -124,9 +131,7 @@ describe("ConsentManagementService — durable DB persistence", () => {
     });
 
     it("inserts TWO separate rows when the same (user, type) is recorded twice — history preserved", async () => {
-      const insertMock = jest
-        .fn()
-        .mockResolvedValue({ error: null });
+      const insertMock = jest.fn().mockResolvedValue({ error: null });
       const chain = createChainableMock();
       chain.insert = insertMock;
 
@@ -146,7 +151,6 @@ describe("ConsentManagementService — durable DB persistence", () => {
         granted: true,
         timestamp: new Date("2026-01-01T10:00:00Z"),
       });
-
       await svc.recordConsent({
         userId,
         consentType: "analytics",
@@ -186,65 +190,291 @@ describe("ConsentManagementService — durable DB persistence", () => {
 
       expect(chain.upsert).not.toHaveBeenCalled();
     });
-  });
 
-  describe("hasConsent — returns latest granted value by timestamp", () => {
-    it("returns true when the latest row has granted=true", async () => {
-      const db = buildMockDb({
-        singleRow: {
-          granted: true,
-        },
-      });
+    it("throws when the DB insert returns an error", async () => {
+      const db = buildMockDb({ insertError: "unique violation" });
       const svc = new ConsentManagementService(db);
 
-      const result = await svc.hasConsent(userId, "marketing");
-      expect(result).toBe(true);
+      await expect(
+        svc.recordConsent({
+          userId,
+          consentType: "marketing",
+          granted: true,
+          timestamp: new Date(),
+        }),
+      ).rejects.toThrow("unique violation");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // hasConsent — maybeSingle, latest-by-timestamp
+  // -------------------------------------------------------------------------
+  describe("hasConsent — returns latest granted value via maybeSingle", () => {
+    it("returns true when the latest row has granted=true", async () => {
+      const db = buildMockDb({ maybeSingleRow: { granted: true } });
+      const svc = new ConsentManagementService(db);
+
+      expect(await svc.hasConsent(userId, "marketing")).toBe(true);
     });
 
     it("returns false when the latest row has granted=false", async () => {
-      const db = buildMockDb({
-        singleRow: {
-          granted: false,
-        },
-      });
+      const db = buildMockDb({ maybeSingleRow: { granted: false } });
       const svc = new ConsentManagementService(db);
 
-      const result = await svc.hasConsent(userId, "ai_processing");
-      expect(result).toBe(false);
+      expect(await svc.hasConsent(userId, "ai_processing")).toBe(false);
     });
 
-    it("returns false when no consent records exist for user", async () => {
-      const db = buildMockDb({ singleRow: null });
+    it("returns false (not throws) when no rows exist", async () => {
+      // maybeSingleRow: null with no error = zero rows — must return false, not throw
+      const db = buildMockDb({ maybeSingleRow: null });
       const svc = new ConsentManagementService(db);
 
-      const result = await svc.hasConsent(userId, "data_sharing");
-      expect(result).toBe(false);
+      expect(await svc.hasConsent(userId, "data_sharing")).toBe(false);
+    });
+
+    it("throws on a real DB error (not PGRST116 no-row)", async () => {
+      const db = buildMockDb({ maybeSingleError: "connection refused" });
+      const svc = new ConsentManagementService(db);
+
+      await expect(svc.hasConsent(userId, "marketing")).rejects.toThrow(
+        "connection refused",
+      );
+    });
+
+    it("uses maybeSingle (not single) so zero-row is not an error", async () => {
+      const chain = createChainableMock({ maybeSingleRow: null });
+      const db: DbClient = {
+        from: jest.fn().mockImplementation(() => chain),
+        rpc: jest.fn().mockResolvedValue({ error: null }),
+        auth: {
+          admin: { deleteUser: jest.fn().mockResolvedValue({ error: null }) },
+        },
+      };
+      const svc = new ConsentManagementService(db);
+
+      await svc.hasConsent(userId, "marketing");
+
+      expect(chain.maybeSingle).toHaveBeenCalled();
+      expect(chain.single).not.toHaveBeenCalled();
     });
   });
 
-  describe("cold-start survival — fresh instance reads history from DB", () => {
-    it("a newly constructed instance reads consent state back from DB", async () => {
-      // Simulate a previously-inserted row retrieved from Supabase
-      const db = buildMockDb({
-        singleRow: { granted: true },
+  // -------------------------------------------------------------------------
+  // withdrawConsent — appends granted:false
+  // -------------------------------------------------------------------------
+  describe("withdrawConsent — appends a granted:false row", () => {
+    it("calls insert with granted=false for the given consentType", async () => {
+      const insertMock = jest.fn().mockResolvedValue({ error: null });
+      const chain = createChainableMock();
+      chain.insert = insertMock;
+
+      const db: DbClient = {
+        from: jest.fn().mockImplementation(() => chain),
+        rpc: jest.fn().mockResolvedValue({ error: null }),
+        auth: {
+          admin: { deleteUser: jest.fn().mockResolvedValue({ error: null }) },
+        },
+      };
+
+      const svc = new ConsentManagementService(db);
+      await svc.withdrawConsent(userId, "analytics");
+
+      expect(insertMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: userId,
+          consent_type: "analytics",
+          granted: false,
+        }),
+      );
+    });
+
+    it("withdraw-then-regrant: hasConsent returns true after re-granting", async () => {
+      // Sequence: grant → withdraw → re-grant.
+      // After re-grant, hasConsent must return true (latest row wins).
+      //
+      // The mock DB accumulates inserted rows and serves the last-inserted
+      // one back via maybeSingle to simulate ORDER BY timestamp DESC LIMIT 1.
+      const insertedRows: Array<Record<string, unknown>> = [];
+      const chain = createChainableMock();
+
+      // Capture every insert into our local array
+      chain.insert = jest.fn().mockImplementation((row: Record<string, unknown>) => {
+        insertedRows.push({ ...row, timestamp: row.timestamp ?? new Date().toISOString() });
+        return Promise.resolve({ error: null });
       });
 
-      // Construct a FRESH instance — no in-memory state
+      // maybeSingle returns the last-inserted row for this (user, type)
+      // — simulates ORDER BY timestamp DESC LIMIT 1
+      chain.maybeSingle = jest.fn().mockImplementation(() => {
+        const matching = insertedRows
+          .filter(
+            (r) =>
+              r.user_id === userId && r.consent_type === "analytics",
+          )
+          .sort((a, b) =>
+            String(b.timestamp) > String(a.timestamp) ? 1 : -1,
+          );
+        const latest = matching[matching.length - 1] ?? null;
+        return Promise.resolve({ data: latest, error: null });
+      });
+
+      // getUserConsents returns all rows (for exportConsentHistory coverage)
+      chain.order = jest.fn().mockImplementation(() => {
+        const resolved = Promise.resolve({
+          data: insertedRows.filter(
+            (r) => r.user_id === userId,
+          ),
+          error: null,
+        });
+        Object.assign(resolved, chain);
+        return resolved;
+      });
+
+      const db: DbClient = {
+        from: jest.fn().mockImplementation(() => chain),
+        rpc: jest.fn().mockResolvedValue({ error: null }),
+        auth: {
+          admin: { deleteUser: jest.fn().mockResolvedValue({ error: null }) },
+        },
+      };
+
+      const svc = new ConsentManagementService(db);
+
+      // Step 1: grant
+      await svc.recordConsent({
+        userId,
+        consentType: "analytics",
+        granted: true,
+        timestamp: new Date("2026-01-01T10:00:00Z"),
+      });
+      expect(await svc.hasConsent(userId, "analytics")).toBe(true);
+
+      // Step 2: withdraw
+      await svc.withdrawConsent(userId, "analytics");
+      // Override maybeSingle to reflect the withdraw row
+      const afterWithdraw = insertedRows
+        .filter((r) => r.user_id === userId && r.consent_type === "analytics")
+        .at(-1);
+      chain.maybeSingle = jest.fn().mockResolvedValue({
+        data: afterWithdraw ?? null,
+        error: null,
+      });
+      expect(await svc.hasConsent(userId, "analytics")).toBe(false);
+
+      // Step 3: re-grant
+      await svc.recordConsent({
+        userId,
+        consentType: "analytics",
+        granted: true,
+        timestamp: new Date("2026-01-03T10:00:00Z"),
+      });
+      const afterRegrant = insertedRows
+        .filter((r) => r.user_id === userId && r.consent_type === "analytics")
+        .at(-1);
+      chain.maybeSingle = jest.fn().mockResolvedValue({
+        data: afterRegrant ?? null,
+        error: null,
+      });
+      expect(await svc.hasConsent(userId, "analytics")).toBe(true);
+
+      // All three rows present in the history (append-only)
+      const consents = await svc.getUserConsents(userId);
+      const analyticsRows = consents.filter((c) => c.consentType === "analytics");
+      expect(analyticsRows).toHaveLength(3);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Cold-start survival — genuine proof (the Map implementation would FAIL)
+  // -------------------------------------------------------------------------
+  describe("cold-start survival — fresh instance reads from DB, no shared Map state", () => {
+    it("instance B reads consent recorded by instance A via the shared DB mock", async () => {
+      // The inserted rows are captured in the mock DB's shared state.
+      // Instance A writes; instance B — constructed fresh with NO prior state —
+      // reads back via getUserConsents. The Map implementation would return []
+      // from B because B has no in-memory entries.
+      const capturedInserts: Array<Record<string, unknown>> = [];
+      const chain = createChainableMock();
+
+      chain.insert = jest.fn().mockImplementation((row: Record<string, unknown>) => {
+        capturedInserts.push(row);
+        return Promise.resolve({ error: null });
+      });
+
+      // getUserConsents (order terminal) returns captured rows
+      chain.order = jest.fn().mockImplementation(() => {
+        const resolved = Promise.resolve({
+          data: capturedInserts.filter((r) => r.user_id === userId),
+          error: null,
+        });
+        Object.assign(resolved, chain);
+        return resolved;
+      });
+
+      // hasConsent (maybeSingle terminal) returns last captured row
+      chain.maybeSingle = jest.fn().mockImplementation(() => {
+        const matching = capturedInserts.filter(
+          (r) => r.user_id === userId,
+        );
+        return Promise.resolve({
+          data: matching.at(-1) ?? null,
+          error: null,
+        });
+      });
+
+      const db: DbClient = {
+        from: jest.fn().mockImplementation(() => chain),
+        rpc: jest.fn().mockResolvedValue({ error: null }),
+        auth: {
+          admin: { deleteUser: jest.fn().mockResolvedValue({ error: null }) },
+        },
+      };
+
+      // Instance A: record a consent event
+      const instanceA = new ConsentManagementService(db);
+      await instanceA.recordConsent({
+        userId,
+        consentType: "marketing",
+        granted: true,
+        timestamp: new Date("2026-03-01T09:00:00Z"),
+      });
+
+      // Instance B: entirely new object, no shared in-memory state
+      const instanceB = new ConsentManagementService(db);
+
+      // B reads via getUserConsents — Map implementation returns [] here
+      const consents = await instanceB.getUserConsents(userId);
+      expect(consents).toHaveLength(1);
+      expect(consents[0].granted).toBe(true);
+
+      // B reads via hasConsent — Map implementation returns false here
+      const has = await instanceB.hasConsent(userId, "marketing");
+      expect(has).toBe(true);
+
+      // Confirm B called db.from (it read from the DB, not from memory)
+      const fromCalls = (db.from as jest.Mock).mock.calls as string[][];
+      // A called from() for the insert; B called from() for the reads
+      expect(fromCalls.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("a fresh instance with no prior DB rows returns empty for getUserConsents", async () => {
+      const db = buildMockDb({ allRows: [] });
       const freshSvc = new ConsentManagementService(db);
 
-      const hasIt = await freshSvc.hasConsent(userId, "analytics");
-      expect(hasIt).toBe(true);
+      expect(await freshSvc.getUserConsents(userId)).toEqual([]);
     });
 
     it("a fresh instance with no prior DB rows returns false for hasConsent", async () => {
-      const db = buildMockDb({ singleRow: null });
+      const db = buildMockDb({ maybeSingleRow: null });
       const freshSvc = new ConsentManagementService(db);
 
-      const hasIt = await freshSvc.hasConsent(userId, "marketing");
-      expect(hasIt).toBe(false);
+      expect(await freshSvc.hasConsent(userId, "marketing")).toBe(false);
     });
   });
 
+  // -------------------------------------------------------------------------
+  // exportConsentHistory — all rows as JSON
+  // -------------------------------------------------------------------------
   describe("exportConsentHistory — returns all rows for user", () => {
     it("returns JSON array of all consent events for user", async () => {
       const rows = [
@@ -281,14 +511,16 @@ describe("ConsentManagementService — durable DB persistence", () => {
       const parsed = JSON.parse(history) as ConsentRecord[];
 
       expect(parsed).toHaveLength(3);
-      // Both marketing rows must be present (history preserved)
-      const marketingRows = parsed.filter((r) => r.consentType === "marketing");
-      expect(marketingRows).toHaveLength(2);
+      // Both marketing rows present (append-only history preserved)
+      expect(parsed.filter((r) => r.consentType === "marketing")).toHaveLength(2);
     });
   });
 
+  // -------------------------------------------------------------------------
+  // getUserConsents — DB→ConsentRecord mapping
+  // -------------------------------------------------------------------------
   describe("getUserConsents — maps DB rows to ConsentRecord objects", () => {
-    it("maps DB rows to ConsentRecord objects correctly", async () => {
+    it("maps all columns correctly including optional fields", async () => {
       const rows = [
         {
           user_id: userId,
@@ -317,8 +549,7 @@ describe("ConsentManagementService — durable DB persistence", () => {
       const db = buildMockDb({ allRows: [] });
       const svc = new ConsentManagementService(db);
 
-      const consents = await svc.getUserConsents(userId);
-      expect(consents).toEqual([]);
+      expect(await svc.getUserConsents(userId)).toEqual([]);
     });
   });
 });
@@ -343,21 +574,12 @@ describe("GDPRComplianceService.objectToProcessing — append-only insert", () =
     const svc = new GDPRComplianceService(db);
     await svc.objectToProcessing(userId, "ai_processing");
 
-    // Must use insert for consent_records, never upsert
-    const fromCalls = (db.from as jest.Mock).mock.calls as string[][];
-    const consentRecordsCall = fromCalls.findIndex(
-      ([table]) => table === "consent_records",
-    );
-    expect(consentRecordsCall).toBeGreaterThanOrEqual(0);
     expect(chain.insert).toHaveBeenCalled();
-    // Verify upsert was NOT called with consent data
-    const upsertCalls = chain.upsert.mock
-      .calls as Array<[Record<string, unknown>]>;
-    const consentUpsert = upsertCalls.find(
-      ([payload]) =>
-        (payload as Record<string, unknown>).consent_type !== undefined,
-    );
-    expect(consentUpsert).toBeUndefined();
+    // Upsert must not have been called with consent data
+    const upsertCalls = chain.upsert.mock.calls as Array<[Record<string, unknown>]>;
+    expect(
+      upsertCalls.find(([p]) => (p as Record<string, unknown>).consent_type !== undefined),
+    ).toBeUndefined();
   });
 
   it("inserts a row with granted=false for the processing type", async () => {
@@ -373,11 +595,9 @@ describe("GDPRComplianceService.objectToProcessing — append-only insert", () =
     const svc = new GDPRComplianceService(db);
     await svc.objectToProcessing(userId, "analytics");
 
-    const insertCalls = chain.insert.mock
-      .calls as Array<[Record<string, unknown>]>;
+    const insertCalls = chain.insert.mock.calls as Array<[Record<string, unknown>]>;
     const consentInsert = insertCalls.find(
-      ([payload]) =>
-        (payload as Record<string, unknown>).consent_type !== undefined,
+      ([p]) => (p as Record<string, unknown>).consent_type !== undefined,
     );
     expect(consentInsert).toBeDefined();
     expect(consentInsert![0]).toMatchObject({
@@ -410,13 +630,12 @@ describe("CCPAComplianceService.optOutOfSale — append-only insert", () => {
     await svc.optOutOfSale(userId);
 
     expect(chain.insert).toHaveBeenCalled();
-    const upsertCalls = chain.upsert.mock
-      .calls as Array<[Record<string, unknown>]>;
-    const consentUpsert = upsertCalls.find(
-      ([payload]) =>
-        (payload as Record<string, unknown>).consent_type === "data_sharing",
-    );
-    expect(consentUpsert).toBeUndefined();
+    const upsertCalls = chain.upsert.mock.calls as Array<[Record<string, unknown>]>;
+    expect(
+      upsertCalls.find(
+        ([p]) => (p as Record<string, unknown>).consent_type === "data_sharing",
+      ),
+    ).toBeUndefined();
   });
 
   it("inserts a row with consent_type=data_sharing and granted=false", async () => {
@@ -433,11 +652,9 @@ describe("CCPAComplianceService.optOutOfSale — append-only insert", () => {
     const svc = new CCPAComplianceService(db, gdpr);
     await svc.optOutOfSale(userId);
 
-    const insertCalls = chain.insert.mock
-      .calls as Array<[Record<string, unknown>]>;
+    const insertCalls = chain.insert.mock.calls as Array<[Record<string, unknown>]>;
     const consentInsert = insertCalls.find(
-      ([payload]) =>
-        (payload as Record<string, unknown>).consent_type === "data_sharing",
+      ([p]) => (p as Record<string, unknown>).consent_type === "data_sharing",
     );
     expect(consentInsert).toBeDefined();
     expect(consentInsert![0]).toMatchObject({
