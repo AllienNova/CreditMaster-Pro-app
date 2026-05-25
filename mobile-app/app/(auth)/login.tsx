@@ -157,12 +157,11 @@ export default function LoginScreen() {
 
         <TouchableOpacity
           style={{ alignSelf: "flex-end", marginBottom: spacing.lg }}
+          onPress={() => router.push("/(auth)/forgot-password")}
         >
-          <Link href="/(auth)/forgot-password">
-            <Text style={{ color: colors.primary, fontSize: fontSize.sm }}>
-              Forgot password?
-            </Text>
-          </Link>
+          <Text style={{ color: colors.primary, fontSize: fontSize.sm }}>
+            Forgot password?
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
