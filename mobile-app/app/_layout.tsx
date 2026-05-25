@@ -53,49 +53,9 @@ export default function RootLayout() {
         {/* Credit Builder Screens */}
         <Stack.Screen name="credit-builder" options={{ headerShown: false }} />
 
-        {/* Dispute Screens */}
-        <Stack.Screen
-          name="dispute/[id]"
-          options={{
-            headerShown: true,
-            title: "Dispute Details",
-            ...headerOptions,
-          }}
-        />
-        <Stack.Screen
-          name="dispute/create"
-          options={{
-            headerShown: true,
-            title: "New Dispute",
-            ...headerOptions,
-          }}
-        />
-        <Stack.Screen name="dispute/wizard" options={{ headerShown: false }} />
-        <Stack.Screen name="dispute/new" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="dispute/use-template"
-          options={{ headerShown: true, title: "Use Template", ...headerOptions }}
-        />
-        <Stack.Screen
-          name="dispute/use-strategy"
-          options={{ headerShown: true, title: "Use Strategy", ...headerOptions }}
-        />
-        <Stack.Screen
-          name="dispute/templates"
-          options={{ headerShown: true, title: "Templates", ...headerOptions }}
-        />
-        <Stack.Screen
-          name="dispute/strategies"
-          options={{ headerShown: true, title: "Strategies", ...headerOptions }}
-        />
-        <Stack.Screen
-          name="dispute/analytics"
-          options={{
-            headerShown: true,
-            title: "Dispute Analytics",
-            ...headerOptions,
-          }}
-        />
+        {/* Dispute Screens — nested navigator; children (`[id]`, `create`,
+            `wizard`, etc.) are owned by app/dispute/_layout.tsx */}
+        <Stack.Screen name="dispute" options={{ headerShown: false }} />
 
         {/* Document Screens */}
         <Stack.Screen
