@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useAuthStore } from "../src/store/authStore";
@@ -11,7 +11,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { colors, fontWeight, isDark } = useTheme();
-  const { initialize, isLoading } = useAuthStore();
+  const { initialize, isLoading, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     const init = async () => {
@@ -20,6 +20,26 @@ export default function RootLayout() {
     };
     init();
   }, [initialize]);
+
+  const segments = useSegments();
+  const router = useRouter();
+
+  // Auth route guard (Finding 1): redirect unauthenticated users away from
+  // protected routes so deep links cannot reach authenticated screens without
+  // a session. Public routes — the (auth) group, onboarding, the deep-link
+  // handoff handler, and the index entry (which self-redirects) — are exempt.
+  useEffect(() => {
+    if (isLoading) return;
+    const root = segments[0];
+    const isPublicRoute =
+      root === undefined ||
+      root === "(auth)" ||
+      root === "onboarding" ||
+      root === "handoff";
+    if (!isAuthenticated && !isPublicRoute) {
+      router.replace("/(auth)/login");
+    }
+  }, [isAuthenticated, isLoading, segments, router]);
 
   if (isLoading) {
     return null; // Splash screen is still visible
