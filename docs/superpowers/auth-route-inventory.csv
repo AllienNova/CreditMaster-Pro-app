@@ -6,6 +6,7 @@ src/app/api/admin/affiliate/revenue/route.ts,GET,validateFromHeaders,"rbac.hasPe
 src/app/api/admin/analytics/route.ts,GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
 src/app/api/admin/audit/route.ts,GET;POST,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
 src/app/api/admin/auth/route.ts,GET,requireRole,reads profiles.role from DB (safe),withRole(admin),a,DB-sourced role check - safe pattern; rewrap withRole(admin)
+src/app/api/admin/compliance/breach/route.ts,POST,withRole(admin),admin role via withRole,withRole(admin),a,CMP-02 breach-notify trigger; born withRole(admin) - added to inventory post-hoc
 src/app/api/admin/disputes/route.ts,GET;PATCH,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
 src/app/api/admin/logs/route.ts,GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
 src/app/api/admin/metrics/route.ts,GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
