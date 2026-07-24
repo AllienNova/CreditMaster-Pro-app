@@ -11,7 +11,6 @@ import type {
   Notification,
   NotificationPreferences,
 } from "../services/api/types";
-import { seedNotifications, seedNotificationPreferences } from "../data/dev-seed";
 
 interface NotificationState {
   // Notifications
@@ -77,23 +76,14 @@ export const useNotificationStore = create<NotificationState>()(
 
       fetchNotifications: async (params) => {
         set({ isLoading: true, error: null });
-        if (__DEV__) {
-          set({
-            notifications: seedNotifications,
-            unreadCount: seedNotifications.filter((n) => !n.read).length,
-            totalNotifications: seedNotifications.length,
-            isLoading: false,
-          });
-          return;
-        }
         try {
           const response = await notificationApi.getAll(params);
           if (response.success && response.data) {
-            const notifications = response.data.items;
+            const { notifications, unreadCount } = response.data;
             set({
               notifications,
-              unreadCount: notifications.filter((n) => !n.read).length,
-              totalNotifications: response.data.total,
+              unreadCount,
+              totalNotifications: notifications.length,
               isLoading: false,
             });
           } else {
@@ -172,10 +162,6 @@ export const useNotificationStore = create<NotificationState>()(
 
       fetchPreferences: async () => {
         set({ isLoadingPreferences: true });
-        if (__DEV__) {
-          set({ preferences: seedNotificationPreferences, isLoadingPreferences: false });
-          return;
-        }
         try {
           const response = await notificationApi.getPreferences();
           if (response.success && response.data) {

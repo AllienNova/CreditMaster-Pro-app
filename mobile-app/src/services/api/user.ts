@@ -204,31 +204,29 @@ export const notificationApi = {
   /**
    * Get all notifications
    */
-  getAll: (params?: {
-    page?: number;
-    limit?: number;
-    unreadOnly?: boolean;
-  }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-    if (params?.unreadOnly) queryParams.append("unread", "true");
-    const query = queryParams.toString();
-    return api.get<PaginatedResponse<Notification>>(
-      `/notifications${query ? `?${query}` : ""}`,
+  getAll: (params?: { page?: number; limit?: number; unreadOnly?: boolean }) => {
+    // The web route (/api/notifications) returns { notifications, unreadCount }
+    // and honors ?limit=; page/unreadOnly are not server-supported.
+    const query = params?.limit ? `?limit=${params.limit}` : "";
+    return api.get<{ notifications: Notification[]; unreadCount: number }>(
+      `/notifications${query}`,
     );
   },
 
   /**
-   * Mark notification as read
+   * Mark one notification as read. Web contract: PATCH with an action body.
    */
   markAsRead: (notificationId: string) =>
-    api.patch<Notification>(`/notifications/${notificationId}/read`),
+    api.patch<{ success: boolean }>("/notifications", {
+      notificationId,
+      action: "mark_read",
+    }),
 
   /**
-   * Mark all as read
+   * Mark all as read. Web contract: PATCH with action only.
    */
-  markAllAsRead: () => api.post<{ updated: number }>("/notifications/read-all"),
+  markAllAsRead: () =>
+    api.patch<{ count: number }>("/notifications", { action: "mark_all_read" }),
 
   /**
    * Get notification preferences
@@ -258,7 +256,9 @@ export const notificationApi = {
    * Delete notification
    */
   delete: (notificationId: string) =>
-    api.delete<{ success: boolean }>(`/notifications/${notificationId}`),
+    api.delete<{ success: boolean }>(
+      `/notifications?notificationId=${encodeURIComponent(notificationId)}`,
+    ),
 };
 
 // Recommendations Endpoints
