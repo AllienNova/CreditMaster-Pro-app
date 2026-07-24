@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -21,6 +21,8 @@ import {
   Shield,
   X,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import type { Bill as ApiBill } from "@/lib/financial/types/bill.types";
 
 interface Bill {
   id: string;
@@ -52,75 +54,89 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   credit_card: <CreditCard className="w-4 h-4" />,
 };
 
-const MOCK_BILLS: Bill[] = [
-  {
-    id: "1",
-    name: "Rent",
-    payee: "Property Management",
-    amount: 1500,
-    category: "housing",
-    dueDay: 1,
-    nextDueDate: new Date(2026, 1, 1),
-    autopayEnabled: true,
-    status: "pending",
-    icon: <Home className="w-4 h-4" />,
-  },
-  {
-    id: "2",
-    name: "Electric Bill",
-    payee: "Power Company",
-    amount: 125,
-    category: "utilities",
-    dueDay: 15,
-    nextDueDate: new Date(2026, 0, 15),
-    autopayEnabled: false,
-    status: "overdue",
-    icon: <Zap className="w-4 h-4" />,
-  },
-  {
-    id: "3",
-    name: "Internet",
-    payee: "ISP Provider",
-    amount: 79.99,
-    category: "internet",
-    dueDay: 20,
-    nextDueDate: new Date(2026, 0, 20),
-    autopayEnabled: true,
-    status: "pending",
-    icon: <Wifi className="w-4 h-4" />,
-  },
-  {
-    id: "4",
-    name: "Car Insurance",
-    payee: "Insurance Co",
-    amount: 145,
-    category: "insurance",
-    dueDay: 25,
-    nextDueDate: new Date(2026, 0, 25),
-    autopayEnabled: true,
-    status: "pending",
-    icon: <Shield className="w-4 h-4" />,
-  },
-  {
-    id: "5",
-    name: "Credit Card",
-    payee: "Chase Bank",
-    amount: 350,
-    category: "credit_card",
-    dueDay: 28,
-    nextDueDate: new Date(2026, 0, 28),
-    autopayEnabled: false,
-    status: "pending",
-    icon: <CreditCard className="w-4 h-4" />,
-  },
-];
+/**
+ * Map an API bill (GET /api/financial/bills → `{ bills }`) to the shape this
+ * page renders. Field names verified against
+ * `src/lib/financial/types/bill.types.ts`:
+ * - `name`/`payee` ← `merchantName` (the API models a single merchant, not a
+ *   separate biller name and payee).
+ * - `nextDueDate` ← `new Date(api.nextDueDate)` (dates arrive as ISO strings
+ *   over JSON); `dueDay` ← that date's day-of-month.
+ * - `autopayEnabled` ← `isAutoPay`.
+ * - `icon` ← `CATEGORY_ICONS[category]`, with a generic money icon fallback
+ *   for API categories that have no dedicated icon (rent, mortgage,
+ *   subscription, loan, streaming, other).
+ * - `status`: the API `status` field is lifecycle (`active`/`paused`/
+ *   `cancelled`), NOT payment status, so it cannot supply pending/overdue.
+ *   Payment status is derived from the due date vs. today. Bills are fetched
+ *   with `activeOnly=true`, so only lifecycle-active bills reach this map.
+ */
+function mapApiBillToBill(api: ApiBill): Bill {
+  const nextDueDate = new Date(api.nextDueDate);
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const status: Bill["status"] =
+    nextDueDate.getTime() < startOfToday.getTime() ? "overdue" : "pending";
+
+  return {
+    id: api.id,
+    name: api.merchantName,
+    payee: api.merchantName,
+    amount: api.amount,
+    category: api.category,
+    dueDay: nextDueDate.getDate(),
+    nextDueDate,
+    autopayEnabled: api.isAutoPay,
+    status,
+    icon: CATEGORY_ICONS[api.category] ?? <DollarSign className="w-4 h-4" />,
+  };
+}
 
 export default function BillCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [bills] = useState<Bill[]>(MOCK_BILLS);
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showAddBillModal, setShowAddBillModal] = useState(false);
   const [view, setView] = useState<"calendar" | "list">("calendar");
+
+  const loadBills = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      setBills([]);
+      setError("Sign in to view your bills.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/financial/bills?activeOnly=true", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to load bills (${res.status})`);
+      }
+      const data = (await res.json()) as { bills?: ApiBill[] };
+      setBills((data.bills ?? []).map(mapApiBillToBill));
+    } catch (err) {
+      setBills([]);
+      setError(err instanceof Error ? err.message : "Failed to load bills.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBills();
+  }, [loadBills]);
 
   const getDaysInMonth = (date: Date): CalendarDay[] => {
     const year = date.getFullYear();
@@ -209,6 +225,41 @@ export default function BillCalendarPage() {
       autopay: monthBills.filter((b) => b.autopayEnabled).length,
     };
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-slate-400">
+            Loading your bills...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-8 max-w-md w-full text-center">
+          <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full w-fit mx-auto mb-4">
+            <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Couldn&apos;t load your bills
+          </h2>
+          <p className="text-gray-600 dark:text-slate-400 mb-6">{error}</p>
+          <button
+            onClick={loadBills}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const stats = getMonthStats();
   const calendarDays = getDaysInMonth(currentDate);
@@ -351,7 +402,27 @@ export default function BillCalendarPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendar / List View */}
           <div className="lg:col-span-2">
-            {view === "calendar" ? (
+            {bills.length === 0 ? (
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-12 text-center">
+                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full w-fit mx-auto mb-4">
+                  <Calendar className="w-6 h-6 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  No bills yet
+                </h3>
+                <p className="text-gray-600 dark:text-slate-400 mb-6">
+                  Add your recurring bills to track due dates and never miss a
+                  payment.
+                </p>
+                <button
+                  onClick={() => setShowAddBillModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Bill
+                </button>
+              </div>
+            ) : view === "calendar" ? (
               <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6">
                 {/* Calendar Header */}
                 <div className="flex items-center justify-between mb-6">
