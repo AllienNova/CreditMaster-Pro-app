@@ -28,6 +28,23 @@ Parallel subagent drive (one mobile lane + one web lane) hit the **account sessi
 - **Mobile lane — ✅ P1 COMPLETE (6/6 screens)**: Documents `c336d63`, Notifications `138fb59`, Savings `c0165cd`, Dashboard `502b94e`, Insights `fb17146`, Admin-analytics `9c67dfd` — all wired to real data + verified (mobile tsc 0, tests). Adapters added per screen (mapWebGoal/mapWebDashboard/mapWebNotification/mapWebInsight); honest omissions (never fabricated): Dashboard payday, Insights health-score + quick-stats, Savings per-account APY. → **P2 Credit Repair scope+wire in flight.**
 - **Web lane — ✅ P1 COMPLETE**: Bills `4e4344e`, Subscriptions `228aed0`, Auto-save `56f939f`, Zero-based `0914b88` (real `smartBudgetEngine`-backed guarded route), Dashboard `1b7848b` (6 widgets real via `Promise.allSettled`, 9 tests, full web suite 16,245/0).
 - **⚠ CRITICAL de-fabrication (in flight `ae6b7e8e`)**: web Dashboard discovered `vitalityScoreService` is ENTIRELY mock-backed (each component calculator computes from hardcoded `mockDetails`; `calculatePercentile` commented "Mock"). This means **the earlier ai-insights fix `e2071a3` launders mock** via `healthScore = calculateVitalityScore().overall` (Dashboard + Insights correctly empty-stated their vitality widgets instead). The SOLID fix — de-mock the engine's component calculators to real per-user data (credit_score_history, financial dashboard aggregates, …), renormalize over real components, rewire ai-insights (or empty-state if a component has no source) — is in flight. **P1 SCREEN WIRING is done; this is the one remaining P1-class honesty defect.**
+
+## P2 — Mobile Credit Repair stack (`mobile-app/app/credit-repair/`) — full map (from `ab09213` recon)
+
+All 8 screens shared a fake `setTimeout(600)` load + a module-level hardcoded array. No mobile `creditRepairApi` existed; the web exposes a `withAuth`-guarded `/api/credit-repair/*` family (`{success,data}`). Dispatch order = highest real-source value first.
+
+| Screen | Mock | Real source to wire | Status |
+|---|---|---|---|
+| **disputes** | `DISPUTES` array | `useDisputeStore` → `GET /api/disputes` (+ `mapWebDispute` adapter) | ✅ `ab09213` |
+| **index** | hardcoded "12 Active Disputes" stat | `useDisputeStore` `selectDisputeStats` + `useCreditStore` score; nav tiles stay static | in flight `a1e83dcc` (or next) |
+| **inquiries** | `INQUIRIES` array | credit-report hard inquiries — `GET /api/credit/analyze` `inquiries[]` (mobile `credit.ts:183`) or `/api/credit-repair/reports`; new getter + adapter | queued |
+| **cards** | `CARDS` array | `GET /api/credit-repair/cards` (exists, withAuth); new `creditRepairApi.getCards` + adapter | queued |
+| **goodwill** | `LETTERS` array | `GET /api/credit-repair/goodwill` (exists, withAuth); new getter + adapter | queued |
+| **negotiate** | `DEBTS` array | `GET /api/credit-repair/negotiate` (exists) or `useDebtStore.fetchOverview` | queued |
+| **payments** | `PAYMENTS` array + on-time% from it | `GET /api/financial/bills` (no credit-repair payments route); new bills getter | queued |
+| **building** | `STRATEGIES` array = **static educational content** (keep, like Savings tips) | just remove the fake `setTimeout` — no user data | trivial |
+
+`cards`/`goodwill`/`inquiries`/`payments` each need a new `mobile-app/src/services/api/creditRepair.ts` getter + a per-screen `mapWebX` adapter (type divergence recurs every screen).
 - **Follow-ups flagged by subagents** (roll up at P1 close): the new `budgets/generate/zero-based` route wants a Codex/`vcrit-auth` pass (blocked on out-of-date Codex CLI); mobile `useNudges`/`useCoaching` shared hooks still have mock-on-error fallbacks (separate item); zero-based "Save plan" button inert (needs a bulk-create budgets endpoint).
 - **Then**: P2 (mobile Credit Repair 8 screens + Billing/IAP), P3 (web-only → mobile ports), P4 (web Trading/Watchlist). Re-measure functional parity after each wave.
 - **Remaining**: mobile screens (Notifications, Savings, Dashboard, Insights, Admin-analytics → real stores/APIs, drop `__DEV__` seeds); web Budgeting Subscriptions/Auto-save/Zero-based; web Dashboard page fetches; web Savings hardcoded-interest (needs product call); marketplace route-auth (public-browse?) product call.
