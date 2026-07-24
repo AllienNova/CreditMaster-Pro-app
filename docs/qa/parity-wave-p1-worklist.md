@@ -47,6 +47,32 @@
 - API: `/api/financial/dashboard` REAL. **`src/app/api/user/analytics/route.ts` L40,43 fabricates with `Math.random()` despite `withAuth` — a STUB posing as real.** No real vitality-score aggregate.
 - **Fix**: web → replace every `mock*` const with fetches (`/api/financial/dashboard` for spending/payday/subscriptions; credit+disputes endpoints; a real vitality source), **rewrite `/api/user/analytics` to query Supabase instead of Math.random**. Mobile → `dashboardStore.fetchDashboard` + `gamificationStore.fetchProgress`, drop `__DEV__` seeds (`dashboardStore.ts:57-58`, `gamificationStore.ts:167-178`).
 
+### 8b. AI Insights Panel — `/api/financial/ai-insights` (backend de-fabrication)
+Scouted 2026-07-24; real sources confirmed present. Feeds the `AIInsightsPanel` dashboard widget
+(NOT the main /insights page). `withPermission("financial:read")`.
+- **Fabrications**: `predictions` hardcoded (route L46-71, with a lying "generated from ML model"
+  comment), `healthScore = 78` (L74), `healthTrend = "improving"` (L75). `insights` +
+  `topRecommendation` are already REAL (`smartInsightsEngine.generateInsights`).
+- **Panel consumes** (`src/components/financial/AIInsightsPanel.tsx`): `data.healthScore` (/100,
+  L192/196), `data.healthTrend` compared to `"improving"`/`"declining"` else stable (L178-187),
+  and per prediction `{metric, trend, predictedValue, timeframe, confidence, currentValue}`
+  (L232-246). **Keep this response shape** so the panel is untouched.
+- **Real sources** (both singletons, userId-only):
+  - `vitalityScoreService.calculateVitalityScore(userId)` → `FinancialVitalityScore { overall, trend, grade, ... }`. Use `.overall` for healthScore. **Verify `.trend`'s value union** and map it to `"improving"|"declining"|"stable"`.
+  - `spendingForecastService.generateForecast(userId, { months: 1, includeCategories: true })` →
+    `SpendingForecast { predictions: MonthlyPrediction[], categoryForecasts: CategoryForecast[] }`.
+    Build the "Monthly Spending" prediction: `predictedValue = predictions[0].predictedSpending`,
+    `currentValue = Σ categoryForecasts[].currentMonthlyAvg`, `confidence =
+    round(predictions[0].confidenceInterval.confidence * 100)`, `trend = map(predictions[0].trend)`
+    (increasing→up, decreasing→down, else stable), `timeframe = predictions[0].monthLabel`.
+    **Verify `generateForecast` reliably populates categoryForecasts** before summing.
+- **Honest fallbacks**: keep the existing catch returning empty predictions + honest handling; on
+  the SUCCESS path return real values (never 78/3200). Empty `predictions: []` if forecast has no data.
+- **Tests**: mock `smartInsightsEngine`, `vitalityScoreService`, `spendingForecastService`; assert
+  real healthScore/predictions render, the literals 78 / 3200 never appear, empty-data path, error
+  path. Coverage ≥85% branch on changed lines.
+- **Effort**: M (multi-service integration; 2 return-shape unknowns to verify first). NOT a quick fix.
+
 ## Cross-cutting (do alongside)
 - **`__DEV__` mock seeds** in mobile `notificationStore`/`dashboardStore`/`gamificationStore` short-circuit real data in non-prod — remove.
 - **Duplicate `/dashboard/*` mock pages** (web+mobile) shadow canonical real routes — consolidate/redirect.

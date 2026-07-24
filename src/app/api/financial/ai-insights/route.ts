@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
 import { smartInsightsEngine } from "@/lib/financial/smart-insights-engine";
+import { vitalityScoreService } from "@/lib/financial/vitality-score-service";
+import { spendingForecastService } from "@/lib/financial/spending-forecast-service";
 
 export const GET = withPermission(
   "financial:read",
@@ -41,38 +43,49 @@ export const GET = withPermission(
       actionLabel: insight.actionLabel,
     }));
 
-    // Create predictive metrics
-    // Predictions generated from spending patterns and ML forecasting model
-    const predictions = [
-      {
-        metric: "Monthly Spending",
-        currentValue: 3200,
-        predictedValue: 3050,
-        timeframe: "Next Month",
-        confidence: 82,
-        trend: "down" as const,
-      },
-      {
-        metric: "Savings Rate",
-        currentValue: 15,
-        predictedValue: 18,
-        timeframe: "3 Months",
-        confidence: 75,
-        trend: "up" as const,
-      },
-      {
-        metric: "Cash Flow",
-        currentValue: 1200,
-        predictedValue: 1350,
-        timeframe: "Next Month",
-        confidence: 78,
-        trend: "up" as const,
-      },
-    ];
+    // Real predictive metrics + health score, sourced from the vitality-score
+    // and spending-forecast services (both were previously hardcoded).
+    const [vitality, forecast] = await Promise.all([
+      vitalityScoreService.calculateVitalityScore(userId),
+      spendingForecastService.generateForecast(userId, {
+        months: 1,
+        includeCategories: true,
+      }),
+    ]);
 
-    // Health score calculated from financial metrics aggregation
-    const healthScore = 78;
-    const healthTrend = "improving" as const;
+    // Build the one prediction we can source honestly from the forecast model:
+    // current = sum of per-category current monthly averages, predicted = the
+    // next month's forecast. Empty when the model has no prediction (no fake row).
+    const nextMonth = forecast.predictions[0];
+    const predictions = nextMonth
+      ? [
+          {
+            metric: "Monthly Spending",
+            currentValue: Math.round(
+              forecast.categoryForecasts.reduce(
+                (sum, category) => sum + category.currentMonthlyAvg,
+                0,
+              ),
+            ),
+            predictedValue: Math.round(nextMonth.predictedSpending),
+            timeframe: nextMonth.monthLabel || "Next Month",
+            confidence: Math.round(
+              nextMonth.confidenceInterval.confidence * 100,
+            ),
+            trend:
+              nextMonth.trend === "increasing"
+                ? "up"
+                : nextMonth.trend === "decreasing"
+                  ? "down"
+                  : "stable",
+          },
+        ]
+      : [];
+
+    // vitality.trend is already "improving" | "stable" | "declining" — the exact
+    // union the panel renders, so no remapping is needed.
+    const healthScore = vitality.overall;
+    const healthTrend = vitality.trend;
 
     // Get top recommendation
     const topRecommendation =
@@ -91,7 +104,7 @@ export const GET = withPermission(
       },
       _meta: {
         generatedAt: new Date().toISOString(),
-        dataSourcesUsed: ["insights", "predictions"],
+        dataSourcesUsed: ["insights", "vitality-score", "spending-forecast"],
       },
     });
   } catch (error) {
