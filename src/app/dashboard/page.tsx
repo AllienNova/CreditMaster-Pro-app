@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { VitalityScoreWidget } from "@/components/financial/VitalityScoreWidget";
 import { SpendingOverview } from "@/components/financial/SpendingOverview";
 import { PaydayCountdown } from "@/components/financial/PaydayCountdown";
-import { XpBar, StreakDisplay, ProgressRing } from "@/components/gamification";
+import { XpBar, StreakDisplay } from "@/components/gamification";
 import { useGamification } from "@/hooks/useGamification";
 import { FadeIn, StaggerList, ScrollReveal } from "@/components/ui/animations";
+import type { FinancialDashboard } from "@/lib/financial/financial-service";
+import type { PaydayCountdown as PaydayCountdownData } from "@/lib/financial/income-tracking-service";
+import type { RecurringCharge } from "@/lib/financial/types/savings.types";
 
 interface User {
   id: string;
@@ -19,63 +21,223 @@ interface User {
   };
 }
 
-// Mock data - replace with API calls
-const mockVitalityData = {
-  overall: 78,
-  grade: "B+" as const,
-  trend: "improving" as const,
-  trendPercentage: 5.2,
-  components: {
-    credit: { score: 85, weight: 0.25, trend: "improving" as const },
-    spending: { score: 70, weight: 0.2, trend: "stable" as const },
-    savings: { score: 65, weight: 0.2, trend: "improving" as const },
-    debt: { score: 75, weight: 0.2, trend: "stable" as const },
-    investments: { score: 80, weight: 0.15, trend: "improving" as const },
-  },
-};
+// View-models mapped from the real API responses this page consumes. No mock
+// fallback: when a source is empty or errors, the widget shows an honest
+// empty/error state rather than fabricated numbers.
+interface SpendingView {
+  totalSpent: number;
+  lastMonthSpent: number;
+  categories: {
+    name: string;
+    value: number;
+    color: string;
+    percentage: number;
+  }[];
+}
 
-const mockSpendingData = {
-  totalSpent: 2847,
-  lastMonthSpent: 3120,
-  categories: [
-    { name: "Food & Dining", value: 680, color: "#22C55E", percentage: 24 },
-    { name: "Shopping", value: 520, color: "#3B82F6", percentage: 18 },
-    { name: "Transportation", value: 380, color: "#F59E0B", percentage: 13 },
-    { name: "Bills & Utilities", value: 650, color: "#EF4444", percentage: 23 },
-    { name: "Entertainment", value: 317, color: "#EC4899", percentage: 11 },
-    { name: "Other", value: 300, color: "#9CA3AF", percentage: 11 },
-  ],
-};
+interface SubscriptionView {
+  name: string;
+  amount: number;
+  category: string;
+}
 
-const mockPaydayData = {
-  daysUntilPayday: 5,
-  hoursUntilPayday: 127,
-  nextPayDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-  expectedAmount: 3200,
-  sourceName: "Main Job",
-  sourceId: "1",
-  percentComplete: 76,
-};
+interface CreditView {
+  score: number | null;
+  change: number | null;
+}
 
-const mockSubscriptions = [
-  { name: "Netflix", amount: 15.99, category: "Entertainment" },
-  { name: "Spotify", amount: 9.99, category: "Entertainment" },
-  { name: "Amazon Prime", amount: 14.99, category: "Shopping" },
-  { name: "Gym Membership", amount: 45.0, category: "Health" },
-];
+interface DisputesView {
+  pending: number;
+  resolved: number;
+  total: number;
+}
+
+// Real API response shapes (fields verified against the route/service source):
+// - /api/financial/dashboard → { data: FinancialDashboard } (withPermission)
+// - /api/financial/income → { countdown: PaydayCountdown | null } (withAuth)
+// - /api/financial/savings/subscriptions → { data: { subscriptions } } (withPermission)
+// - /api/user/analytics → { creditHistory, disputeStats } (withAuth)
+interface DashboardApiResponse {
+  data: FinancialDashboard;
+}
+interface IncomeApiResponse {
+  countdown: PaydayCountdownData | null;
+}
+interface SubscriptionsApiResponse {
+  data?: { subscriptions?: RecurringCharge[] };
+}
+interface AnalyticsApiResponse {
+  creditHistory: { date: string; score: number }[];
+  disputeStats: {
+    total: number;
+    resolved: number;
+    pending: number;
+    successRate: number;
+  };
+}
+
+/**
+ * Honest inline error card for a widget whose data source failed. Renders no
+ * fabricated data — just a message prompting a refresh.
+ */
+function WidgetError({ label }: { label: string }) {
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-5 flex items-center justify-center text-center min-h-[140px]">
+      <div>
+        <div className="mx-auto w-10 h-10 bg-red-50 dark:bg-red-950/40 rounded-full flex items-center justify-center mb-3">
+          <svg
+            className="w-5 h-5 text-red-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+            />
+          </svg>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-slate-400">
+          Couldn&apos;t load {label} data. Please refresh.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
-  const { progress: gamificationProgress, checkIn } = useGamification();
+  const { progress: gamificationProgress } = useGamification();
 
-  const supabase = createClient();
+  // Real dashboard data. Each widget owns its honest loading / empty / error
+  // state so a single failed source never blanks another (or falls back to
+  // fabricated numbers).
+  const [spending, setSpending] = useState<SpendingView | null>(null);
+  const [spendingError, setSpendingError] = useState(false);
+  const [savingsRate, setSavingsRate] = useState<number | null>(null);
+  const [payday, setPayday] = useState<PaydayCountdownData | null>(null);
+  const [paydayError, setPaydayError] = useState(false);
+  const [subscriptions, setSubscriptions] = useState<SubscriptionView[] | null>(
+    null,
+  );
+  const [subscriptionsError, setSubscriptionsError] = useState(false);
+  const [credit, setCredit] = useState<CreditView | null>(null);
+  const [creditError, setCreditError] = useState(false);
+  const [disputes, setDisputes] = useState<DisputesView | null>(null);
+  const [disputesError, setDisputesError] = useState(false);
+
+  const loadDashboardData = useCallback(async (accessToken: string) => {
+    setDataLoading(true);
+    const headers = { Authorization: `Bearer ${accessToken}` };
+
+    const [dashboardRes, incomeRes, subsRes, analyticsRes] =
+      await Promise.allSettled([
+        fetch("/api/financial/dashboard", { headers }),
+        fetch("/api/financial/income", { headers }),
+        fetch("/api/financial/savings/subscriptions", { headers }),
+        fetch("/api/user/analytics", { headers }),
+      ]);
+
+    // Spending + savings rate ← /api/financial/dashboard
+    try {
+      if (dashboardRes.status !== "fulfilled" || !dashboardRes.value.ok) {
+        throw new Error("dashboard");
+      }
+      const body = (await dashboardRes.value.json()) as DashboardApiResponse;
+      const d = body.data;
+      setSpending({
+        totalSpent: d.monthlyExpenses,
+        // monthlyTrend is oldest-first; the entry before the current month is
+        // last month. Absent history → 0 (widget shows a neutral comparison).
+        lastMonthSpent:
+          d.monthlyTrend.length >= 2
+            ? d.monthlyTrend[d.monthlyTrend.length - 2].expenses
+            : 0,
+        categories: d.spendingByCategory.map((c) => ({
+          name: c.category,
+          value: c.amount,
+          color: "", // SpendingOverview resolves a color by name.
+          percentage: c.percentage,
+        })),
+      });
+      setSavingsRate(d.savingsRate);
+    } catch {
+      setSpendingError(true);
+    }
+
+    // Payday ← /api/financial/income (countdown is null when no income sources)
+    try {
+      if (incomeRes.status !== "fulfilled" || !incomeRes.value.ok) {
+        throw new Error("income");
+      }
+      const body = (await incomeRes.value.json()) as IncomeApiResponse;
+      setPayday(
+        body.countdown
+          ? {
+              ...body.countdown,
+              // Dates arrive as ISO strings over JSON.
+              nextPayDate: new Date(body.countdown.nextPayDate),
+            }
+          : null,
+      );
+    } catch {
+      setPaydayError(true);
+    }
+
+    // Subscriptions ← /api/financial/savings/subscriptions
+    try {
+      if (subsRes.status !== "fulfilled" || !subsRes.value.ok) {
+        throw new Error("subscriptions");
+      }
+      const body = (await subsRes.value.json()) as SubscriptionsApiResponse;
+      setSubscriptions(
+        (body.data?.subscriptions ?? []).map((rc) => ({
+          name: rc.merchantName,
+          amount: rc.amount,
+          category: rc.category,
+        })),
+      );
+    } catch {
+      setSubscriptionsError(true);
+    }
+
+    // Credit + disputes ← /api/user/analytics
+    try {
+      if (analyticsRes.status !== "fulfilled" || !analyticsRes.value.ok) {
+        throw new Error("analytics");
+      }
+      const body = (await analyticsRes.value.json()) as AnalyticsApiResponse;
+      const history = body.creditHistory ?? [];
+      setCredit({
+        score: history.length > 0 ? history[history.length - 1].score : null,
+        change:
+          history.length >= 2
+            ? history[history.length - 1].score - history[0].score
+            : null,
+      });
+      setDisputes({
+        pending: body.disputeStats.pending,
+        resolved: body.disputeStats.resolved,
+        total: body.disputeStats.total,
+      });
+    } catch {
+      setCreditError(true);
+      setDisputesError(true);
+    }
+
+    setDataLoading(false);
+  }, []);
 
   useEffect(() => {
-
-    const getUser = async () => {
+    const init = async () => {
+      const supabase = createClient();
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -87,13 +249,14 @@ export default function DashboardPage() {
 
       setUser(session.user as User);
       setLoading(false);
+      await loadDashboardData(session.access_token);
     };
 
-    getUser();
-  }, [router, supabase]);
+    init();
+  }, [router, loadDashboardData]);
 
   const handleSignOut = async () => {
-    if (!supabase) return;
+    const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/auth/login");
   };
@@ -289,17 +452,46 @@ export default function DashboardPage() {
           </p>
         </FadeIn>
 
-        {/* Financial Vitality Score - Hero Widget */}
+        {/* Financial Vitality Score - Hero Widget.
+            The vitality engine currently has no real per-user data source (its
+            component scores are not yet wired to live data), so we render an
+            honest "set up your score" state rather than a fabricated number. */}
         <div className="mb-8">
-          <VitalityScoreWidget
-            score={mockVitalityData.overall}
-            grade={
-              mockVitalityData.grade.charAt(0) as "A" | "B" | "C" | "D" | "F"
-            }
-            trend={mockVitalityData.trend}
-            trendPercentage={mockVitalityData.trendPercentage}
-            percentile={72}
-          />
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-5">
+            <div className="flex items-center gap-5">
+              <div className="w-28 h-28 rounded-full border-4 border-dashed border-gray-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0">
+                <svg
+                  className="w-10 h-10 text-gray-400 dark:text-slate-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                  Financial Vitality Score
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mb-3">
+                  Connect your accounts and complete your financial profile to
+                  calculate your Vitality Score.
+                </p>
+                <Link
+                  href="/dashboard/vitality"
+                  className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                >
+                  Set up your score →
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Gamification Progress Widget */}
@@ -363,21 +555,31 @@ export default function DashboardPage() {
         {/* Top Row - Key Widgets */}
         <StaggerList stagger={0.1} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Payday Countdown */}
-          <PaydayCountdown
-            daysUntilPayday={mockPaydayData.daysUntilPayday}
-            nextPayDate={mockPaydayData.nextPayDate}
-            expectedAmount={mockPaydayData.expectedAmount}
-            sourceName={mockPaydayData.sourceName}
-            percentComplete={mockPaydayData.percentComplete}
-            hasIncomeSources={true}
-          />
+          {paydayError ? (
+            <WidgetError label="payday" />
+          ) : (
+            <PaydayCountdown
+              isLoading={dataLoading}
+              daysUntilPayday={payday?.daysUntilPayday}
+              nextPayDate={payday?.nextPayDate}
+              expectedAmount={payday?.expectedAmount}
+              sourceName={payday?.sourceName}
+              percentComplete={payday?.percentComplete}
+              hasIncomeSources={!dataLoading && payday !== null}
+            />
+          )}
 
           {/* Spending Overview */}
-          <SpendingOverview
-            totalSpent={mockSpendingData.totalSpent}
-            lastMonthSpent={mockSpendingData.lastMonthSpent}
-            categories={mockSpendingData.categories}
-          />
+          {spendingError ? (
+            <WidgetError label="spending" />
+          ) : (
+            <SpendingOverview
+              isLoading={dataLoading}
+              totalSpent={spending?.totalSpent ?? 0}
+              lastMonthSpent={spending?.lastMonthSpent ?? 0}
+              categories={spending?.categories ?? []}
+            />
+          )}
 
           {/* Subscriptions Widget */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-5 hover:shadow-md transition-shadow">
@@ -386,16 +588,26 @@ export default function DashboardPage() {
                 <h3 className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">
                   Active Subscriptions
                 </h3>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  $
-                  {mockSubscriptions
-                    .reduce((sum, s) => sum + s.amount, 0)
-                    .toFixed(0)}
-                  /mo
-                </p>
-                <p className="text-sm text-gray-500 dark:text-slate-400">
-                  {mockSubscriptions.length} subscriptions
-                </p>
+                {dataLoading ? (
+                  <div className="h-8 w-28 bg-gray-200 dark:bg-slate-700 rounded animate-pulse" />
+                ) : subscriptionsError ? (
+                  <p className="text-sm text-red-500 dark:text-red-400">
+                    Couldn&apos;t load subscriptions
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      $
+                      {(subscriptions ?? [])
+                        .reduce((sum, s) => sum + s.amount, 0)
+                        .toFixed(0)}
+                      /mo
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">
+                      {(subscriptions ?? []).length} subscriptions
+                    </p>
+                  </>
+                )}
               </div>
               <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
                 <svg
@@ -413,21 +625,29 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <div className="space-y-2 mb-4">
-              {mockSubscriptions.slice(0, 3).map((sub, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <span className="text-gray-700 dark:text-slate-300">
-                    {sub.name}
-                  </span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    ${sub.amount.toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {!dataLoading && !subscriptionsError && (
+              <div className="space-y-2 mb-4">
+                {(subscriptions ?? []).length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    No recurring subscriptions detected yet.
+                  </p>
+                ) : (
+                  (subscriptions ?? []).slice(0, 3).map((sub, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between text-sm"
+                    >
+                      <span className="text-gray-700 dark:text-slate-300">
+                        {sub.name}
+                      </span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        ${sub.amount.toFixed(2)}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
             <Link
               href="/dashboard/subscriptions"
               className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
@@ -460,12 +680,40 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <div className="text-xl font-bold text-green-600 dark:text-green-400">
-              678
-            </div>
-            <p className="text-xs text-green-600 dark:text-green-400">
-              +36 this month
-            </p>
+            {dataLoading ? (
+              <div className="h-6 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse" />
+            ) : creditError ? (
+              <div className="text-xl font-bold text-gray-400 dark:text-slate-500">
+                —
+              </div>
+            ) : credit?.score != null ? (
+              <>
+                <div className="text-xl font-bold text-green-600 dark:text-green-400">
+                  {credit.score}
+                </div>
+                {credit.change != null && credit.change !== 0 && (
+                  <p
+                    className={`text-xs ${
+                      credit.change > 0
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-red-600 dark:text-red-400"
+                    }`}
+                  >
+                    {credit.change > 0 ? "+" : ""}
+                    {credit.change} this period
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="text-xl font-bold text-gray-400 dark:text-slate-500">
+                  —
+                </div>
+                <p className="text-xs text-gray-500 dark:text-slate-400">
+                  No score yet
+                </p>
+              </>
+            )}
           </div>
 
           <div className="bg-white dark:bg-slate-800/80 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 shadow-sm rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -489,12 +737,22 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <div className="text-xl font-bold text-gray-900 dark:text-white">
-              3
-            </div>
-            <p className="text-xs text-gray-600 dark:text-slate-400">
-              7 resolved
-            </p>
+            {dataLoading ? (
+              <div className="h-6 w-12 bg-gray-200 dark:bg-slate-700 rounded animate-pulse" />
+            ) : disputesError ? (
+              <div className="text-xl font-bold text-gray-400 dark:text-slate-500">
+                —
+              </div>
+            ) : (
+              <>
+                <div className="text-xl font-bold text-gray-900 dark:text-white">
+                  {disputes?.pending ?? 0}
+                </div>
+                <p className="text-xs text-gray-600 dark:text-slate-400">
+                  {disputes?.resolved ?? 0} resolved
+                </p>
+              </>
+            )}
           </div>
 
           <div className="bg-white dark:bg-slate-800/80 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 shadow-sm rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -518,12 +776,31 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-              18%
-            </div>
-            <p className="text-xs text-gray-600 dark:text-slate-400">
-              of income
-            </p>
+            {dataLoading ? (
+              <div className="h-6 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse" />
+            ) : spendingError ? (
+              <div className="text-xl font-bold text-gray-400 dark:text-slate-500">
+                —
+              </div>
+            ) : savingsRate != null ? (
+              <>
+                <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {savingsRate.toFixed(0)}%
+                </div>
+                <p className="text-xs text-gray-600 dark:text-slate-400">
+                  of income
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-xl font-bold text-gray-400 dark:text-slate-500">
+                  —
+                </div>
+                <p className="text-xs text-gray-500 dark:text-slate-400">
+                  No data yet
+                </p>
+              </>
+            )}
           </div>
 
           <div className="bg-white dark:bg-slate-800/80 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 shadow-sm rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -552,12 +829,17 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <div className="text-xl font-bold text-gray-900 dark:text-white">
-              5
+            {/* No real transaction-rules data source exists yet, so we show an
+                honest empty state instead of a fabricated count. */}
+            <div className="text-xl font-bold text-gray-400 dark:text-slate-500">
+              —
             </div>
-            <p className="text-xs text-gray-600 dark:text-slate-400">
-              active rules
-            </p>
+            <Link
+              href="/dashboard/settings/transaction-rules"
+              className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+            >
+              Set up rules →
+            </Link>
           </div>
         </StaggerList>
 
