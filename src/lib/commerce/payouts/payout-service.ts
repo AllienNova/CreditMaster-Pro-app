@@ -7,7 +7,7 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
-import { fromDollars, toStripeAmount } from "@/lib/money";
+import { cents, fromDollars, toDollars, toStripeAmount, type Cents } from "@/lib/money";
 import {
   TrueLayerPaymentsConnector,
   createTrueLayerPaymentsConnector,
@@ -774,31 +774,42 @@ export class PayoutService {
     return (data || []).reduce((sum, c) => sum + (c.commission_earned || 0), 0);
   }
 
+  /**
+   * amount/fee/net are all dollars at this function's boundary (payouts.amount,
+   * .fee, .net_amount are dollar-denominated columns — createPayoutRecord writes
+   * request.amount straight through unconverted). Fee arithmetic itself runs in
+   * integer cents via the Money module so flat-cent fees (50 = $0.50, etc.) never
+   * get summed against a dollar-scaled amount (that mismatch was the bug: a $50
+   * bank_transfer netted $50 - 50 = $0.00 instead of $49.50).
+   */
   private calculateFees(
     amount: number,
     method: PayoutMethod,
   ): { fee: number; net: number } {
-    let fee = 0;
+    const amountCents = fromDollars(amount);
+    let feeCents: Cents = cents(0);
 
     switch (method) {
       case "stripe_connect":
-        fee = Math.ceil(amount * 0.0025); // 0.25%
+        feeCents = cents(Math.ceil(amountCents * 0.0025)); // 0.25%
         break;
       case "bank_transfer":
       case "open_banking":
-        fee = 50; // $0.50 flat
+        feeCents = cents(50); // $0.50 flat
         break;
       case "paypal":
-        fee = Math.ceil(amount * 0.02) + 25; // 2% + $0.25
+        feeCents = cents(Math.ceil(amountCents * 0.02) + 25); // 2% + $0.25
         break;
       case "check":
-        fee = 100; // $1.00 for printing/mailing
+        feeCents = cents(100); // $1.00 for printing/mailing
         break;
     }
 
+    const netCents = cents(amountCents - feeCents);
+
     return {
-      fee,
-      net: amount - fee,
+      fee: toDollars(feeCents),
+      net: toDollars(netCents),
     };
   }
 

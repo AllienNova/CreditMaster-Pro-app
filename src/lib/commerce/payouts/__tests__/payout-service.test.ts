@@ -96,7 +96,7 @@ jest.mock("../../../connectors/payments", () => ({
 // =============================================================================
 
 import Stripe from "stripe";
-import { PayoutService, PayoutRequest } from "../payout-service";
+import { PayoutService, PayoutRequest, PayoutMethod } from "../payout-service";
 
 // =============================================================================
 // Helpers
@@ -968,7 +968,7 @@ describe("PayoutService", () => {
         return mockBuilder;
       });
       mockBuilder.single.mockResolvedValue({
-        data: makePayoutRow({ method: "bank_transfer", fee: 50, net_amount: 9950 }),
+        data: makePayoutRow({ method: "bank_transfer", fee: 0.5, net_amount: 9999.5 }),
         error: null,
       });
 
@@ -981,8 +981,8 @@ describe("PayoutService", () => {
 
       expect(capturedInsert).toBeDefined();
       if (capturedInsert) {
-        expect(capturedInsert.fee).toBe(50); // flat $0.50
-        expect(capturedInsert.net_amount).toBe(9950);
+        expect(capturedInsert.fee).toBe(0.5); // flat $0.50, not $50 (FIX-BLOCKER-1)
+        expect(capturedInsert.net_amount).toBe(9999.5);
       }
     });
 
@@ -1016,9 +1016,10 @@ describe("PayoutService", () => {
 
       expect(capturedInsert).toBeDefined();
       if (capturedInsert) {
-        // 2% of 10000 = 200, ceil(200) + 25 = 225
-        expect(capturedInsert.fee).toBe(225);
-        expect(capturedInsert.net_amount).toBe(9775);
+        // 2% of $10,000 = $200 flat, + $0.25 flat add-on = $200.25 (not $225 — the
+        // pre-fix bug added 25 dollars instead of 25 cents; FIX-BLOCKER-1)
+        expect(capturedInsert.fee).toBe(200.25);
+        expect(capturedInsert.net_amount).toBe(9799.75);
       }
     });
 
@@ -1041,10 +1042,167 @@ describe("PayoutService", () => {
 
       expect(capturedInsert).toBeDefined();
       if (capturedInsert) {
-        expect(capturedInsert.fee).toBe(100); // flat $1.00
-        expect(capturedInsert.net_amount).toBe(9900);
+        expect(capturedInsert.fee).toBe(1); // flat $1.00, not $100 (FIX-BLOCKER-1)
+        expect(capturedInsert.net_amount).toBe(9999);
       }
     });
+
+    // -------------------------------------------------------------------------
+    // FIX-BLOCKER-1 regressions — exact scenarios reported broken: a $50
+    // bank_transfer netted $0.00 (50 cents subtracted as if it were $50) and an
+    // $80 check netted -$20.00 (100 cents subtracted as if it were $100).
+    // -------------------------------------------------------------------------
+
+    it("should net $49.50 (not $0.00) for a $50 bank_transfer payout", async () => {
+      setupRecipientLookup(
+        makePartnerRecipient({
+          payment_method: "bank_transfer",
+          stripe_account_id: undefined,
+          bank_details: {
+            accountHolderName: "Test",
+            accountNumber: "123",
+            routingNumber: "456",
+            country: "US",
+          },
+        }),
+      );
+
+      let capturedInsert: Record<string, unknown> | undefined;
+      mockBuilder.insert.mockImplementation((data: any) => {
+        capturedInsert = data;
+        return mockBuilder;
+      });
+      mockBuilder.single.mockResolvedValue({
+        data: makePayoutRow({
+          method: "bank_transfer",
+          amount: 50,
+          fee: 0.5,
+          net_amount: 49.5,
+        }),
+        error: null,
+      });
+
+      mockStripe.tokens.create.mockResolvedValue({ id: "btok_50" } as any);
+      mockStripe.payouts.create.mockResolvedValue({ id: "po_50" } as any);
+
+      await service.createPayout(
+        makePayoutRequest({ amount: 50, method: "bank_transfer" }),
+      );
+
+      expect(capturedInsert).toBeDefined();
+      if (capturedInsert) {
+        expect(capturedInsert.fee).toBe(0.5);
+        expect(capturedInsert.net_amount).toBe(49.5);
+      }
+    });
+
+    it("should net $79.00 (not -$20.00) for an $80 check payout", async () => {
+      setupRecipientLookup(makePartnerRecipient());
+
+      let capturedInsert: Record<string, unknown> | undefined;
+      mockBuilder.insert.mockImplementation((data: any) => {
+        capturedInsert = data;
+        return mockBuilder;
+      });
+      mockBuilder.single.mockResolvedValue({
+        data: makePayoutRow({ method: "check", amount: 80, fee: 1, net_amount: 79 }),
+        error: null,
+      });
+
+      await service.createPayout(
+        makePayoutRequest({ amount: 80, method: "check" }),
+      );
+
+      expect(capturedInsert).toBeDefined();
+      if (capturedInsert) {
+        expect(capturedInsert.fee).toBe(1);
+        expect(capturedInsert.net_amount).toBe(79);
+      }
+    });
+
+    it("should compute the percent fee in exact cents at a non-round dollar amount", async () => {
+      // $33.50 stripe_connect: 0.25% of 3350 cents = 8.375 -> ceil to 9 cents ($0.09).
+      // A float-dollar computation (33.5 * 0.0025 = 0.08375, ceil -> 1) would have
+      // overcharged the fee by 10x; computing in integer cents avoids that drift.
+      setupRecipientLookup(makePartnerRecipient());
+
+      let capturedInsert: Record<string, unknown> | undefined;
+      mockBuilder.insert.mockImplementation((data: any) => {
+        capturedInsert = data;
+        return mockBuilder;
+      });
+      mockBuilder.single.mockResolvedValue({
+        data: makePayoutRow({ amount: 33.5, fee: 0.09, net_amount: 33.41 }),
+        error: null,
+      });
+
+      mockStripe.transfers.create.mockResolvedValue({ id: "tr_percent" } as any);
+
+      await service.createPayout(makePayoutRequest({ amount: 33.5 }));
+
+      expect(capturedInsert).toBeDefined();
+      if (capturedInsert) {
+        expect(capturedInsert.fee).toBe(0.09);
+        expect(capturedInsert.net_amount).toBe(33.41);
+      }
+    });
+
+    it.each<[PayoutMethod, number]>([
+      ["stripe_connect", 100],
+      ["bank_transfer", 10],
+      ["open_banking", 10],
+      ["paypal", 100],
+      ["check", 10],
+    ])(
+      "should return a positive net for %s when the amount exceeds the fee",
+      async (method, amount) => {
+        if (method === "paypal") {
+          setupProfileRecipient({
+            id: "recip-pos",
+            full_name: "Positive Net User",
+            payout_method: "paypal",
+            paypal_email: "pos@test.com",
+          });
+        } else {
+          setupRecipientLookup(
+            makePartnerRecipient({
+              payment_method: method,
+              bank_details: {
+                accountHolderName: "Test",
+                accountNumber: "123",
+                routingNumber: "456",
+                country: "US",
+              },
+            }),
+          );
+        }
+
+        let capturedInsert: Record<string, unknown> | undefined;
+        mockBuilder.insert.mockImplementation((data: any) => {
+          capturedInsert = data;
+          return mockBuilder;
+        });
+        mockBuilder.single.mockResolvedValue({
+          data: makePayoutRow({ method }),
+          error: null,
+        });
+
+        mockStripe.transfers.create.mockResolvedValue({ id: "tr_pos" } as any);
+        mockStripe.tokens.create.mockResolvedValue({ id: "btok_pos" } as any);
+        mockStripe.payouts.create.mockResolvedValue({ id: "po_pos" } as any);
+
+        await service.createPayout(
+          method === "paypal"
+            ? makePayoutRequest({ recipientId: "recip-pos", amount, method })
+            : makePayoutRequest({ amount, method }),
+        );
+
+        expect(capturedInsert).toBeDefined();
+        if (capturedInsert) {
+          expect(capturedInsert.net_amount as number).toBeGreaterThan(0);
+        }
+      },
+    );
   });
 
   // ===========================================================================
@@ -1239,7 +1397,7 @@ describe("PayoutService", () => {
 
       // Override the chain result for the schedules query
       // Since all builder methods chain, we need to make the final resolution return empty
-      let queryResult: any = { data: [], error: null };
+      const queryResult: any = { data: [], error: null };
       // Override: when .eq("is_active", true).lte(...) is called, resolve with empty
       const originalEq = mockBuilder.eq;
       mockBuilder.eq.mockImplementation((...args: any[]) => {
