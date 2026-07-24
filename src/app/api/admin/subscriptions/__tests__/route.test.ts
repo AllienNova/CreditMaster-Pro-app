@@ -100,7 +100,7 @@ describe("Admin Subscriptions API – GET", () => {
     });
   });
 
-  it("should return mock data when env vars are missing", async () => {
+  it("should return 503 when env vars are missing (never fabricated data)", async () => {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -108,10 +108,9 @@ describe("Admin Subscriptions API – GET", () => {
     const res = await GET(makeRequest());
     const body = await res.json();
 
-    expect(res.status).toBe(200);
-    expect(body.subscriptions).toBeDefined();
-    expect(Array.isArray(body.subscriptions)).toBe(true);
-    expect(body.subscriptions.length).toBeGreaterThan(0);
+    expect(res.status).toBe(503);
+    expect(body.error).toMatch(/database not configured/i);
+    expect(body.subscriptions).toBeUndefined();
   });
 
   it("should return subscriptions from Supabase when env is configured", async () => {
@@ -226,7 +225,7 @@ describe("Admin Subscriptions API – DELETE", () => {
     expect(body.error).toBeDefined();
   });
 
-  it("should return mock success when env vars are missing", async () => {
+  it("should return 503 when env vars are missing (never a fabricated success)", async () => {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -240,8 +239,9 @@ describe("Admin Subscriptions API – DELETE", () => {
     const res = await DELETE(req);
     const body = await res.json();
 
-    expect(res.status).toBe(200);
-    expect(body.success).toBe(true);
+    expect(res.status).toBe(503);
+    expect(body.error).toMatch(/database not configured/i);
+    expect(body.success).toBeUndefined();
   });
 
   it("should cancel subscription via Supabase when env is configured", async () => {

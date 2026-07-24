@@ -190,4 +190,48 @@ describe("Admin Disputes API – /api/admin/disputes", () => {
       expect(payload).toHaveProperty("outcome", "removed");
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  database-not-configured (QA-residual: "mock-fallback fabrication in
+  //  admin/subscriptions + admin/disputes when Supabase env unset" —
+  //  docs/ssot/gap_analysis.md)
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe("database-not-configured (honest 503, never mock)", () => {
+    beforeEach(() => {
+      mockValidate.mockResolvedValue({
+        valid: true,
+        user: { id: "admin-1", email: "admin@example.com" },
+      });
+      mockResolveRole.mockResolvedValue("admin");
+    });
+
+    it("GET returns 503 when env vars are missing (never fabricated dispute data)", async () => {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      const res = await GET(makeGetRequest());
+      const body = await res.json();
+
+      expect(res.status).toBe(503);
+      expect(body.error).toMatch(/database not configured/i);
+      expect(body.disputes).toBeUndefined();
+    });
+
+    it("PATCH returns 503 when env vars are missing (never a fabricated success)", async () => {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      const req = makePatchRequest({
+        disputeId: "dispute-1",
+        updates: { status: "resolved" },
+      });
+
+      const res = await PATCH(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(503);
+      expect(body.error).toMatch(/database not configured/i);
+      expect(body.success).toBeUndefined();
+    });
+  });
 });
