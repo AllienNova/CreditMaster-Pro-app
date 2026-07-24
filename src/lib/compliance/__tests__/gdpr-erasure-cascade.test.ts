@@ -21,6 +21,13 @@
  * These four do NOT appear in 20260401000000_gdpr_erasure_rpc.sql so the first
  * run MUST fail until supabase/migrations/20260518000002_expand_erasure_cascade.sql
  * is created.
+ *
+ * FND-058 FOLLOW-UP (schema-drift resilience): 20260518000002 runs an UNGUARDED
+ * delete loop, so a single table absent from the live schema aborts the entire
+ * erasure. 20260519000000_erasure_cascade_resilient.sql CREATE OR REPLACEs the
+ * function to guard each table with to_regclass(). The "schema-drift resilience"
+ * describe block below pins that guard; the coverage/permission/anonymisation
+ * assertions now validate the resilient rewrite (it is the latest definition).
  */
 
 import * as fs from "fs";
@@ -113,6 +120,28 @@ function loadExpandedErasureMigration(): { filename: string; sql: string } {
 
   const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, latest), "utf-8");
   return { filename: latest, sql };
+}
+
+/**
+ * The schema-drift resilience migration (follow-up to FND-058). It CREATE OR
+ * REPLACEs delete_user_data_cascade so the delete loop guards each table with
+ * to_regclass() — a table absent from the live schema is skipped instead of
+ * aborting the whole erasure. Loaded by EXACT name (not "latest") so the guard
+ * assertions stay pinned to this file even if a later migration supersedes it.
+ */
+const RESILIENT_MIGRATION = "20260519000000_erasure_cascade_resilient.sql";
+
+function loadResilientErasureMigration(): string {
+  const p = path.join(MIGRATIONS_DIR, RESILIENT_MIGRATION);
+  if (!fs.existsSync(p)) {
+    throw new Error(
+      `Resilient erasure migration missing: ${RESILIENT_MIGRATION}. ` +
+        "It must CREATE OR REPLACE delete_user_data_cascade and wrap the delete " +
+        "loop in `IF to_regclass('public.' || v_table) IS NOT NULL THEN ... END IF;` " +
+        "so a missing table cannot abort GDPR erasure (schema-drift resilience).",
+    );
+  }
+  return fs.readFileSync(p, "utf-8");
 }
 
 // ---------------------------------------------------------------------------
@@ -435,8 +464,12 @@ describe("CMP-3: delete_user_data_cascade migration coverage (FND-058)", () => {
     expect(vTables.size).toBeGreaterThan(28);
   });
 
-  test("migration filename is 20260518000002_expand_erasure_cascade.sql", () => {
-    expect(migrationFilename).toBe("20260518000002_expand_erasure_cascade.sql");
+  test("latest migration defining the function is the resilient rewrite", () => {
+    // 20260519000000_erasure_cascade_resilient.sql CREATE OR REPLACEs (supersedes)
+    // 20260518000002_expand_erasure_cascade.sql to add schema-drift resilience.
+    // It carries the identical v_tables array, so every coverage/permission/
+    // anonymisation assertion above now validates the resilient definition too.
+    expect(migrationFilename).toBe(RESILIENT_MIGRATION);
   });
 
   test("migration uses CREATE OR REPLACE FUNCTION", () => {
@@ -452,6 +485,70 @@ describe("CMP-3: delete_user_data_cascade migration coverage (FND-058)", () => {
       if (!vTables.has(t)) missing.push(t);
     }
     expect(missing).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Schema-drift resilience — guarded delete loop (FND-058 follow-up)
+//
+// 20260518000002 runs an UNGUARDED delete loop; if any listed table is absent
+// from the live schema the first DELETE raises undefined_table (42P01) and the
+// whole erasure aborts — GDPR Art. 17 silently broken for every user. The
+// resilient rewrite guards each table with to_regclass() so a missing table is
+// skipped, not fatal. (5 listed tables — transactions, goals, ai_interactions,
+// savings_accounts, spending_categories — have no CREATE TABLE in any migration.)
+// ---------------------------------------------------------------------------
+
+describe("schema-drift resilience: to_regclass-guarded delete loop", () => {
+  let resilientSql: string;
+
+  beforeAll(() => {
+    // Throws (red) until 20260519000000_erasure_cascade_resilient.sql exists.
+    resilientSql = loadResilientErasureMigration();
+  });
+
+  test("resilient migration redefines the function via CREATE OR REPLACE", () => {
+    expect(resilientSql).toMatch(
+      /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+delete_user_data_cascade/i,
+    );
+  });
+
+  test("delete loop guards each table with to_regclass('public.' || v_table)", () => {
+    expect(resilientSql).toMatch(
+      /IF\s+to_regclass\('public\.'\s*\|\|\s*v_table\)\s+IS\s+NOT\s+NULL\s+THEN/i,
+    );
+  });
+
+  test("the EXECUTE ... DELETE sits INSIDE the to_regclass IF guard (THEN ... END IF)", () => {
+    // Structural: the guard must WRAP the dynamic DELETE, not merely coexist.
+    // Order enforced: IF to_regclass(...) THEN -> EXECUTE format('DELETE ...') -> END IF;
+    expect(resilientSql).toMatch(
+      /IF\s+to_regclass\([\s\S]*?\)\s+IS\s+NOT\s+NULL\s+THEN[\s\S]*?EXECUTE\s+format\('DELETE FROM %I WHERE user_id = \$1'[\s\S]*?END\s+IF;/i,
+    );
+  });
+
+  test("resilient migration keeps the same v_tables coverage (no dropped tables)", () => {
+    const resilientTables = parseVTables(resilientSql);
+    const allRequired = new Set([...ORIGINAL_28, ...DELTA_FULL]);
+    const missing = [...allRequired].filter((t) => !resilientTables.has(t));
+    expect(missing).toEqual([]);
+  });
+
+  test("resilient migration re-asserts REVOKE from PUBLIC + GRANT to service_role", () => {
+    expect(resilientSql).toMatch(/REVOKE\s+ALL\s+ON\s+FUNCTION[\s\S]*?FROM\s+PUBLIC/i);
+    expect(resilientSql).toMatch(
+      /GRANT\s+EXECUTE\s+ON\s+FUNCTION[\s\S]*?TO\s+service_role/i,
+    );
+  });
+
+  test("profiles DELETE stays UNGUARDED (core record must hard-fail if ever absent)", () => {
+    // profiles anchors the erasure and exists in every schema; deliberately NOT
+    // wrapped in a to_regclass guard so a missing profiles table fails loudly.
+    expect(resilientSql).toMatch(
+      /DELETE\s+FROM\s+profiles\s+WHERE\s+id\s*=\s*p_user_id/i,
+    );
+    // And it is NOT immediately preceded by a to_regclass guard on profiles.
+    expect(resilientSql).not.toMatch(/to_regclass\([^)]*profiles/i);
   });
 });
 
