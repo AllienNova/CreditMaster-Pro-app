@@ -43,7 +43,16 @@ Both platforms render mock here, so fixing each shared API/backend fixes BOTH at
   required unless web should match.
 
 ## Status
-- [ ] P1 Shared mock-debt
+- [x] **P0 prerequisite — mobile `tsc` green** (verified exit 0 on-disk + committed at HEAD, 2026-07-24). Fixed by a concurrent `fix-mobile-types` peer session; audited honest (no `any`/`@ts-ignore`/test-skips).
+- [ ] P1 Shared mock-debt — file-level spec ready in `parity-wave-p1-worklist.md`
 - [ ] P2 Mobile stubs (Credit Repair, Billing)
 - [ ] P3 Web-only → mobile ports
 - [ ] P4 Web laggards (Trading, Watchlist)
+
+## ⚠ Execution hazard — concurrent writers on this worktree
+Multiple CC sessions committed to `remediation/wave-7-foundation` in the same worktree during
+the 2026-07-24 session, and `fix-residuals` observed its uncommitted work silently reverted once
+(transient working-tree reset between agent snapshots). **Run the P1–P4 build as a single-driver,
+focused effort — ideally in an isolated git worktree, or with no other sessions writing this branch.**
+Commit each workflow immediately after it verifies (don't leave wiring as long-lived uncommitted
+state) so a stray reset can't drop it. Verify on-disk (`tsc`/tests), never trust a snapshot.
