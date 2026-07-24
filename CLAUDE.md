@@ -9,7 +9,7 @@
 >
 > **Verdict: GO WITH CONDITIONS for M1 Closed Beta. NOT "done", NOT "ship-ready", NOT "100%".** The earlier "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010..012) was false and triggered this remediation; status here is stated conditionally and backed by fresh evidence, never as unconditional success.
 >
-> **What is verified.** Adversarial re-verification from source (4 reviewers, 187 commits, `docs/qa/qa-report.md`) confirmed **26 M1-scope CRITICALs CLOSED_REAL** with 600+ security/money tests run fresh (0 failures). Verification also found and FIXED two previously-undisclosed live bugs this session: **B1** payout `calculateFees` dollar/cent unit bug — a $50 payout netted $0 (`14dd011`); **B2** GDPR-erasure RPC resilience over 5 unmigrated tables (`7069485`). Tip gates green: web + mobile `tsc` 0, `npm run lint` 0 errors, build OK, `audit:auth` 295/295, `test:auth-negative` 611, `npm test` 16,195 pass / 0 fail.
+> **What is verified.** Adversarial re-verification from source (4 reviewers, 187 commits, `docs/qa/qa-report.md`) confirmed **30 of 32 M1-scope CRITICALs CLOSED_REAL** with 600+ security/money tests run fresh (0 failures). Verification also found and FIXED two previously-undisclosed live bugs this session: **B1** payout `calculateFees` dollar/cent unit bug — a $50 payout netted $0 (`14dd011`); **B2** GDPR-erasure RPC resilience over 5 unmigrated tables (`7069485`). Tip gates green: web + mobile `tsc` 0, `npm run lint` 0 errors, build OK, `audit:auth` 295/295, `test:auth-negative` 611, `npm test` 16,195 pass / 0 fail.
 >
 > **What still gates launch (conditions UNMET, operator-owned).** (1) **FND-001** is INERT_BEHIND_FLAG — per-route `withAuth` guards enforce, but the middleware deny-by-default backstop needs a 24 h staging soak → SEC sign-off on `PUBLIC_ROUTES.ts` → prod flip, plus `audit:auth` + `test:auth-negative` wired into CI as blocking gates (see `docs/deployment/LAUNCH_CHECKLIST.md`). (2) Live-schema audit — payout/affiliate + 5 erasure tables absent from migrations (schema drift). (3) FND-026 dual payout-rail decision before wiring. (4) Closed-beta cohort. (5) `main` branch protection. (6) `npm audit` (32 vulns, 1 critical).
 >
@@ -29,7 +29,7 @@
 | **Repository** | `github.com/AllienNova/CreditMaster-Pro-app` |
 | **Brand** | Fynvita (formerly CPFI / CreditMaster Pro) — pre-launch, branded as financial-education company |
 | **Phase** | **Wave 7 (Security & Correctness Remediation) — GO WITH CONDITIONS for M1 Closed Beta** (verified 2026-07-24, `docs/qa/qa-report.md`). Conditions unmet; see STATUS BANNER. Waves 0-6 originals remain NEEDS_VERIFICATION. |
-| **Quality** | **26 M1 CRITICALs verified CLOSED_REAL; launch conditions remain open** (FND-001 flag-gated, live-schema audit, CI wiring, `npm audit`) — see `docs/qa/qa-report.md` + `docs/ssot/gap_analysis.md` |
+| **Quality** | **30 of 32 M1 CRITICALs verified CLOSED_REAL; launch conditions remain open** (FND-001 flag-gated, live-schema audit, CI wiring, `npm audit`) — see `docs/qa/qa-report.md` + `docs/ssot/gap_analysis.md` |
 | **Canonical Docs** | `docs/ssot/SSOT.md` (single source of truth); `docs/ssot/gap_analysis.md` (audit findings) |
 
 ---
@@ -231,12 +231,12 @@ Run in order after any code change:
 3. TEST     npm test                  # Jest
 4. BUILD    npm run build             # next build
 5. SECURITY npm audit                 # dependency scan
-6. AUDIT    9-domain code review      # 26 M1 CRITICALs CLOSED_REAL; launch conditions open (qa-report.md)
+6. AUDIT    9-domain code review      # 30 of 32 M1 CRITICALs CLOSED_REAL; launch conditions open (qa-report.md)
 ```
 
 > **The live pass/fail status and exact counts for every gate are in `docs/ssot/health_metrics.md` § 8 — that file is canonical.** Do not hardcode results here.
 >
-> Verified state at tip (2026-07-24, `docs/qa/qa-report.md`): lint 0 errors, web + mobile type-check 0 errors, build OK, `npm test` 16,195 pass / 0 fail, `audit:auth` 295/295, `test:auth-negative` 611. Adversarial re-verification confirmed **26 M1-scope CRITICALs CLOSED_REAL**, and found + fixed 2 previously-undisclosed live bugs (B1 payout fee `14dd011`, B2 erasure resilience `7069485`). Green gates do NOT by themselves clear the launch conditions below.
+> Verified state at tip (2026-07-24, `docs/qa/qa-report.md`): lint 0 errors, web + mobile type-check 0 errors, build OK, `npm test` 16,195 pass / 0 fail, `audit:auth` 295/295, `test:auth-negative` 611. Adversarial re-verification confirmed **30 of 32 M1-scope CRITICALs CLOSED_REAL**, and found + fixed 2 previously-undisclosed live bugs (B1 payout fee `14dd011`, B2 erasure resilience `7069485`). Green gates do NOT by themselves clear the launch conditions below.
 >
 > **Overall: GO WITH CONDITIONS for M1 Closed Beta — not "green", not ship-ready.** Launch remains gated on operator-owned conditions: FND-001 deny-by-default staging soak + prod flip + CI wiring, live-schema audit, FND-026 rail decision, closed-beta cohort, `main` branch protection, `npm audit` (32 vulns, 1 critical). See `docs/deployment/LAUNCH_CHECKLIST.md` § Wave 7 M1 Security Gate.
 
@@ -268,7 +268,7 @@ Run in order after any code change:
 | 4 | Mobile + Platform | DONE (NEEDS_VERIFICATION — mobile reopened) | Gamification, onboarding, mobile parity |
 | 5 | Scale + Polish | DONE (NEEDS_VERIFICATION) | Performance, monitoring, white-label |
 | 6 | External Integrations | DONE | Plaid SDK, DriveWealth, Affiliate (13 tasks) |
-| **7** | **Security & Correctness Remediation** | **IN PROGRESS — GO WITH CONDITIONS (M1)** | **26 M1 CRITICALs verified CLOSED_REAL; launch conditions open — see `docs/qa/qa-report.md`** |
+| **7** | **Security & Correctness Remediation** | **IN PROGRESS — GO WITH CONDITIONS (M1)** | **30 of 32 M1 CRITICALs verified CLOSED_REAL; launch conditions open — see `docs/qa/qa-report.md`** |
 
 ### Wave 7 — Security & Correctness Remediation
 
@@ -313,7 +313,7 @@ Run in order after any code change:
 | Wave | Status | Count |
 |------|--------|------:|
 | 0-6 (originals) | NEEDS_VERIFICATION (some REOPENED) | 125 |
-| 7 (Security & Correctness Remediation) | IN PROGRESS — GO WITH CONDITIONS (M1); 26 M1 CRITICALs CLOSED_REAL | 59 |
+| 7 (Security & Correctness Remediation) | IN PROGRESS — GO WITH CONDITIONS (M1); 30 of 32 M1 CRITICALs CLOSED_REAL | 59 |
 | **Total** | **mixed** | **184** |
 
 ---

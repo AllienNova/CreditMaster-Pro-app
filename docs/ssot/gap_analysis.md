@@ -17,17 +17,9 @@
 | Findings opened | **33 CRITICAL**, **38 HIGH**, ~21 MEDIUM, ~21 LOW (71 enumerated in §2; banner count corrected from "~50 HIGH" 2026-05-03 post-QA) |
 | User exposure today | **None** (no live users yet — Fynvita branded as financial-education company in pre-launch) |
 | Disclosure obligations | Not currently triggered (no user data exposure to disclose). Re-evaluate before public launch. |
-| Ship decision | **M1 = GO WITH CONDITIONS** (2026-07-24) — Wave 7 code verified (26 CRITICALs CLOSED_REAL); operator-gated conditions remain. See `docs/qa/qa-report.md` + `docs/deployment/LAUNCH_CHECKLIST.md`. Original register below is unchanged. |
+| Ship decision | **M1 = GO WITH CONDITIONS** (2026-07-24) — Wave 7 code verified (30 of 32 CRITICALs CLOSED_REAL); operator-gated conditions remain. See `docs/qa/qa-report.md` + `docs/deployment/LAUNCH_CHECKLIST.md`. Original register below is unchanged. |
 
 **Critical interpretation:** Test pass rate of 99.86% (13,585 / 13,604) did **not** catch any of the 33 criticals. Pass rate is not a substitute for negative-auth tests, money-precision tests, or mock-data lint rules. Detection-gap remediation is part of Wave 7.
-
----
-
-## Verification addendum (2026-07-24)
-
-Wave 7 remediation was adversarially re-verified from source (4 reviewers, branch `remediation/wave-7-foundation`, 187 commits). **26 M1-scope CRITICALs confirmed CLOSED_REAL** with 600+ tests run fresh (0 failures). Verification **found and fixed 2 previously-undisclosed live bugs**: **B1** — payout `calculateFees` dollar/cent unit error (a $50 payout netted $0; fixed `14dd011`); **B2** — unguarded GDPR-erasure RPC over 5 unmigrated tables (fixed `7069485`). All automated gates green (`npm test` 16,195/0, `audit:auth` 295/295, web+mobile `tsc` 0, `npm run lint` 0 errors).
-
-**M1 verdict: GO WITH CONDITIONS** — not "done". Operator-gated conditions remain unmet: FND-001 `auth.deny_by_default` flip (24 h staging soak) + `audit:auth`/`test:auth-negative` into CI; live-schema audit (payout/affiliate + 5 erasure tables absent from migrations); FND-026 dual-payout-rail decision; `main` branch protection; `npm audit` (32 vulns, 1 critical). **Lower-severity residuals** (follow-up, not blockers): mock-fallback fabrication in `admin/subscriptions`+`disputes` when Supabase env unset; audit-log POST trusts client `user_id`/`ip`; `settings/billing/page.tsx` hardcodes card 4242; dead `auth-middleware.ts` JWT-role path (0 importers — delete); `dev-seed.ts` used by 6 mobile stores. Authoritative record: **`docs/qa/qa-report.md`**.
 
 ---
 
@@ -208,3 +200,39 @@ Severity scale: **C** = Critical (exploitable today / financial-loss / regulator
 - **Known-good rate limiter**: `src/lib/security/redis-rate-limiting.ts` is the only serverless-safe one. Delete the other three under TASK-AUTH-06.
 - **Wave 7 task cards**: see `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7.
 - **Per-domain reviewer outputs** (full transcripts, do NOT read from main session — large): `/private/tmp/claude-502/.../tasks/*.output`.
+
+---
+
+## 7. Verification Addendum (2026-07-24)
+
+> Appended, not overwritten — §§1–6 above are the original 2026-05-03 audit baseline, preserved as
+> the historical record. Authoritative verification record: `docs/qa/qa-report.md`.
+
+**Verdict: M1 (Closed Beta) = GO WITH CONDITIONS.** Not "done / ship-ready / 100%".
+
+**Verified CLOSED_REAL:** 30 of 32 M1-scope CRITICALs, confirmed from source by 4 reviewers with 600+
+security/money tests run fresh (0 failures). Tip gates green — web + mobile `tsc` 0, `npm run lint`
+0 errors, build OK, `audit:auth` 295/295, `test:auth-negative` 611, `npm test` 16,195 pass / 0 fail.
+**FND-001** is INERT_BEHIND_FLAG (per-route `withAuth` guards enforce; the middleware
+deny-by-default backstop is off until TASK-AUTH-04-staging). Exact per-cluster counts: `qa-report.md`
+§ V-CRIT.
+
+**Found AND fixed during verification (were NOT in the original register):**
+
+| # | Sev | Finding | Fix |
+|---|-----|---------|-----|
+| B1 | CRITICAL | `payout-service.ts:calculateFees` subtracted cent-scaled flat fees from a dollar-scaled amount → a $50 payout netted **$0.00** (same unit-confusion class as FND-024; uncaught, no test) | `14dd011` — integer cents via `Money` module + regression tests |
+| B2 | HIGH | FND-058 erasure RPC did an unguarded `DELETE` loop over 5 tables absent from any migration → a missing table throws and **all** GDPR erasure fails | `7069485` — `to_regclass`-guarded resilient migration |
+
+**Conditions that remain UNMET (operator-owned; gate the launch):** FND-001 deny-by-default 24 h
+staging soak → SEC sign-off on `src/lib/auth/PUBLIC_ROUTES.ts` → prod flip, plus `audit:auth` +
+`test:auth-negative` wired into CI as blocking gates (`docs/deployment/LAUNCH_CHECKLIST.md`);
+live/staging schema audit (payout/affiliate + 5 erasure tables absent from `supabase/migrations/`);
+FND-026 dual payout-rail decision before wiring; closed-beta cohort; `main` branch protection;
+`npm audit` (32 vulns, 1 critical).
+
+**Lower-severity residuals (follow-up tasks, not M1-blocking):** mock-fallback fabrication in
+`admin/subscriptions` + `admin/disputes` when Supabase env unset; audit-log POST trusts client-supplied
+`user_id`/`ip`; `settings/billing/page.tsx` hardcodes card `4242` (nav-linked UI); dead code in
+`auth-middleware.ts` (old JWT-role pattern, zero importers — delete); `dev-seed.ts` used by 6 mobile
+stores; FND-026 dual-rail and schema drift (also tracked as launch conditions above).

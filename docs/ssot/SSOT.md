@@ -2,7 +2,7 @@
 
 > **VERSION-016 — WAVE 7 REMEDIATION VERIFIED; M1 = GO WITH CONDITIONS** (2026-07-24)
 >
-> **Wave 7 (Security & Correctness Remediation) code is complete and adversarially verified — this is NOT a "done / ship-ready / 100%" claim.** The 9-domain audit's original 33 CRITICAL + 38 HIGH findings were remediated on branch `remediation/wave-7-foundation` (187 commits). A fresh 4-reviewer adversarial re-verification *from source* (2026-07-24) confirmed **26 M1-scope CRITICALs genuinely CLOSED_REAL** with 600+ passing tests — and found + fixed **2 previously-undisclosed live bugs**: the payout `calculateFees` dollar/cent error (a $50 payout netted $0; commit `14dd011`) and an unguarded GDPR-erasure RPC over 5 unmigrated tables (`7069485`).
+> **Wave 7 (Security & Correctness Remediation) M1-scope code is complete and adversarially verified — this is NOT a "done / ship-ready / 100%" claim.** The 9-domain audit's original 33 CRITICAL + 38 HIGH findings were remediated on branch `remediation/wave-7-foundation` (187 commits). A fresh 4-reviewer adversarial re-verification *from source* (2026-07-24) confirmed **30 of 32 M1-scope CRITICALs genuinely CLOSED_REAL** with 600+ passing tests — and found + fixed **2 previously-undisclosed live bugs**: the payout `calculateFees` dollar/cent error (a $50 payout netted $0; commit `14dd011`) and an unguarded GDPR-erasure RPC over 5 unmigrated tables (`7069485`).
 >
 > Current quality (@ tip): web + mobile `tsc` 0 errors, `npm run lint` 0 errors, `npm run build` OK, `audit:auth` 295/295, `test:auth-negative` 611, `npm test` 16,195 pass / 0 fail. All automated gates green.
 >
