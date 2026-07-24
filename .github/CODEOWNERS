@@ -19,7 +19,7 @@
 /src/lib/subscriptions/                        @AllienNova
 /src/lib/commerce/                             @AllienNova
 /src/lib/affiliate/                            @AllienNova
-/src/lib/money.ts                              @AllienNova
+/src/lib/money/                                @AllienNova
 
 # Compliance / PII / GDPR-CCPA
 /src/lib/compliance/                           @AllienNova

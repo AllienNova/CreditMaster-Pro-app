@@ -591,7 +591,7 @@ describe("AchievementService", () => {
     it("should return locked default if user has no progress", async () => {
       const def = makeAchievementDef();
       const dbRow = defToDbRow(def);
-      let callIndex = 0;
+      const callIndex = 0;
 
       mockSupabase.from.mockImplementation((table: string) => {
         if (table === "achievement_definitions") {
@@ -861,7 +861,7 @@ describe("AchievementService", () => {
       const def = makeAchievementDef();
       const dbRow = defToDbRow(def);
 
-      let callCount = 0;
+      const callCount = 0;
       mockSupabase.from.mockImplementation((table: string) => {
         if (table === "achievement_definitions") {
           const mockSingle = jest.fn().mockResolvedValue({ data: dbRow, error: null });
@@ -1203,7 +1203,7 @@ describe("AchievementService", () => {
   describe("seedAchievements", () => {
     it("should seed achievements that do not already exist", async () => {
       const insertMock = jest.fn().mockResolvedValue({ data: null, error: null });
-      let singleCallIndex = 0;
+      const singleCallIndex = 0;
 
       mockSupabase.from.mockImplementation(() => {
         const mockSingle = jest.fn().mockResolvedValue({ data: null, error: { code: "PGRST116" } });

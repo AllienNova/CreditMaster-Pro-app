@@ -368,9 +368,8 @@ describe("TrailingStopManager", () => {
 
       // Now stall for maxBarsNoProgress bars with low R progress
       const stallBar = makeBar({ high: 106, low: 104, close: 105 });
-      let result;
       // Already at barsHeld=2 after setup, need >= 3 total
-      result = mgr.updateStop("pos1", stallBar, 2.0);
+      const result = mgr.updateStop("pos1", stallBar, 2.0);
       // barsHeld is now 3, which >= maxBarsNoProgress(3)
       // check if it transitioned to E
       if (result.stage === "E") {

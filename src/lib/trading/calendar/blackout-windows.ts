@@ -64,7 +64,7 @@ function nthWeekdayOfMonth(
   // Find the first occurrence
   const firstDay = new Date(Date.UTC(year, month - 1, 1));
   const firstDow = firstDay.getUTCDay();
-  let offset = (weekday - firstDow + 7) % 7;
+  const offset = (weekday - firstDow + 7) % 7;
   const day = 1 + offset + (n - 1) * 7;
   return buildDateInET(year, month, day, 0, 0);
 }
