@@ -9,6 +9,7 @@ import type {
   Transaction,
   Budget,
   FinancialGoal,
+  GoalType,
   ApiResponse,
   PaginatedResponse,
 } from "./types";
@@ -202,12 +203,83 @@ export const budgetApi = {
     }>("/financial/budgets/alerts"),
 };
 
+// The real web route (GET /api/financial/goals) returns the goals array directly
+// as `data` (not `{ goals: [...] }`), each enriched goal carrying `targetDate`
+// (no `deadline`), no `userId`, and a wider GoalStatus enum
+// (not_started|in_progress|on_track|behind|ahead|completed|paused) than the mobile
+// FinancialGoal.status union. Adapt web -> mobile at the boundary so the
+// store/screen see one shape. Getting this wrong leaves goals invisible
+// (goalStore reads response.data.goals) or mis-filtered (status !== "active").
+interface WebFinancialGoal {
+  id: string;
+  userId?: string;
+  type?: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate?: string;
+  deadline?: string;
+  monthlyContribution?: number;
+  status?: string;
+}
+
+const WEB_TO_MOBILE_GOAL_STATUS: Record<string, FinancialGoal["status"]> = {
+  completed: "completed",
+  paused: "paused",
+  not_started: "active",
+  in_progress: "active",
+  on_track: "active",
+  behind: "active",
+  ahead: "active",
+  active: "active",
+};
+
+const WEB_TO_MOBILE_GOAL_TYPE: Record<string, GoalType> = {
+  emergency_fund: "emergency_fund",
+  debt_payoff: "debt_payoff",
+  savings: "savings",
+  investment: "investment",
+  retirement: "retirement",
+  education: "education",
+  vacation: "vacation",
+  home: "home",
+  home_down_payment: "home",
+  major_purchase: "other",
+  custom: "other",
+  other: "other",
+};
+
+export function mapWebGoal(g: WebFinancialGoal): FinancialGoal {
+  const targetDate = g.targetDate ?? g.deadline;
+  return {
+    id: g.id,
+    userId: g.userId ?? "",
+    name: g.name,
+    type: g.type ? (WEB_TO_MOBILE_GOAL_TYPE[g.type] ?? "other") : undefined,
+    targetAmount: g.targetAmount,
+    currentAmount: g.currentAmount,
+    deadline: targetDate,
+    targetDate,
+    monthlyContribution: g.monthlyContribution,
+    status: g.status ? (WEB_TO_MOBILE_GOAL_STATUS[g.status] ?? "active") : "active",
+  };
+}
+
 // Financial Goals Endpoints
 export const financialGoalsApi = {
   /**
-   * Get all financial goals
+   * Get all financial goals. The web route returns a bare array; adapt each web
+   * goal to the mobile FinancialGoal shape and re-wrap as { goals } so the
+   * goalStore contract (response.data.goals) holds.
    */
-  getAll: () => api.get<{ goals: FinancialGoal[] }>("/financial/goals"),
+  getAll: async (): Promise<ApiResponse<{ goals: FinancialGoal[] }>> => {
+    const res = await api.get<WebFinancialGoal[]>("/financial/goals");
+    if (res.success && res.data) {
+      const raw = Array.isArray(res.data) ? res.data : [];
+      return { success: true, data: { goals: raw.map(mapWebGoal) } };
+    }
+    return { success: false, error: res.error };
+  },
 
   /**
    * Get single goal

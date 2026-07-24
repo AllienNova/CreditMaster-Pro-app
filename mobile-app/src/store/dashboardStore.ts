@@ -8,7 +8,6 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { financialOverviewApi } from "../services/api";
-import { seedFinancialDashboard } from "../data/dev-seed";
 
 interface FinancialDashboard {
   netWorth: number;
@@ -54,10 +53,6 @@ export const useDashboardStore = create<DashboardState>()(
 
       fetchDashboard: async () => {
         set({ isLoadingDashboard: true, error: null });
-        if (__DEV__) {
-          set({ dashboard: { ...seedFinancialDashboard, lastUpdated: new Date().toISOString() }, isLoadingDashboard: false });
-          return;
-        }
         try {
           const response = await financialOverviewApi.getDashboard();
           if (response.success && response.data) {

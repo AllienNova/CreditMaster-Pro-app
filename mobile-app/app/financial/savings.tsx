@@ -1,9 +1,15 @@
 /**
  * Fynvita Savings Tracker Screen
- * Track savings accounts and growth
+ *
+ * Real-data wiring (PARITY-P1): renders real financial goals from goalStore and
+ * real aggregate balances (net worth, savings rate, monthly cash flow, total
+ * assets) from dashboardStore. The former hardcoded ACCOUNTS/GOALS arrays, the
+ * fake setTimeout load, and the fabricated per-account APY list were removed — no
+ * honest mobile source exposes per-account savings balances or APY, so that
+ * section is gone rather than faked.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,88 +17,88 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { useGoalStore } from "../../src/store/goalStore";
+import { useDashboardStore } from "../../src/store/dashboardStore";
+import type { FinancialGoal } from "../../src/services/api/types";
 
-interface SavingsAccount {
-  name: string;
-  balance: number;
-  apy: number;
-  type: "emergency" | "vacation" | "general" | "retirement";
+// Goal target dates arrive as ISO strings; render a compact "Mon YYYY".
+function formatDeadline(iso?: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
-interface SavingsGoal {
-  name: string;
-  current: number;
-  target: number;
-  deadline: string;
-}
-
-const ACCOUNTS: SavingsAccount[] = [
-  { name: "Emergency Fund", balance: 12500, apy: 4.5, type: "emergency" },
-  { name: "Vacation Fund", balance: 3200, apy: 4.25, type: "vacation" },
-  { name: "General Savings", balance: 8300, apy: 4.0, type: "general" },
-  { name: "IRA Contributions", balance: 6500, apy: 0, type: "retirement" },
-];
-
-const GOALS: SavingsGoal[] = [
-  {
-    name: "Emergency Fund (6 months)",
-    current: 12500,
-    target: 18000,
-    deadline: "Dec 2024",
-  },
-  {
-    name: "Vacation to Europe",
-    current: 3200,
-    target: 5000,
-    deadline: "Jun 2025",
-  },
-  {
-    name: "New Car Down Payment",
-    current: 8300,
-    target: 15000,
-    deadline: "Dec 2025",
-  },
-];
 
 export default function SavingsScreen() {
-  const [loading, setLoading] = useState(true);
+  const {
+    goals,
+    isLoadingGoals,
+    error: goalsError,
+    fetchGoals,
+  } = useGoalStore();
+  const {
+    dashboard,
+    isLoadingDashboard,
+    error: dashboardError,
+    fetchDashboard,
+  } = useDashboardStore();
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(() => {
+    fetchGoals();
+    fetchDashboard();
+  }, [fetchGoals, fetchDashboard]);
 
   useEffect(() => {
-    setTimeout(() => setLoading(false), 800);
-  }, []);
+    load();
+  }, [load]);
 
-  const totalSavings = ACCOUNTS.reduce((sum, a) => sum + a.balance, 0);
-  const monthlyInterest = ACCOUNTS.reduce(
-    (sum, a) => sum + (a.balance * a.apy) / 100 / 12,
-    0,
-  );
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "emergency":
-        return "shield-checkmark";
-      case "vacation":
-        return "airplane";
-      case "general":
-        return "wallet";
-      case "retirement":
-        return "trending-up";
-      default:
-        return "cash";
-    }
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchGoals(), fetchDashboard()]);
+    setRefreshing(false);
   };
 
-  if (loading) {
+  const loading = isLoadingGoals || isLoadingDashboard;
+  const error = goalsError || dashboardError;
+  const hasData = dashboard !== null || goals.length > 0;
+
+  const monthlyCashFlow = dashboard
+    ? dashboard.monthlyIncome - dashboard.monthlyExpenses
+    : 0;
+
+  if (loading && !hasData) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered} testID="savings-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading savings...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && !hasData) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="savings-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={load}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -103,6 +109,9 @@ export default function SavingsScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -118,98 +127,98 @@ export default function SavingsScreen() {
           </View>
         </View>
 
-        {/* Summary */}
-        <Card style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>Total Savings</Text>
-          <Text style={styles.summaryValue}>
-            ${totalSavings.toLocaleString()}
-          </Text>
-          <View style={styles.interestRow}>
-            <Ionicons
-              name="trending-up"
-              size={16}
-              color={theme.colors.success}
-            />
-            <Text style={styles.interestText}>
-              +${monthlyInterest.toFixed(2)}/month in interest
+        {/* Summary — real aggregates from the financial dashboard */}
+        {dashboard && (
+          <Card style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Net Worth</Text>
+            <Text style={styles.summaryValue}>
+              ${Math.round(dashboard.netWorth).toLocaleString()}
             </Text>
-          </View>
-        </Card>
-
-        {/* Accounts */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Savings Accounts</Text>
-          {ACCOUNTS.map((account, i) => (
-            <Card key={i} style={styles.accountCard}>
-              <View style={styles.accountRow}>
-                <View
-                  style={[
-                    styles.typeIcon,
-                    { backgroundColor: `${theme.colors.primary}15` },
-                  ]}
-                >
-                  <Ionicons
-                    name={
-                      getTypeIcon(
-                        account.type,
-                      ) as keyof typeof Ionicons.glyphMap
-                    }
-                    size={20}
-                    color={theme.colors.primary}
-                  />
-                </View>
-                <View style={styles.accountInfo}>
-                  <Text style={styles.accountName}>{account.name}</Text>
-                  {account.apy > 0 && (
-                    <Text style={styles.accountApy}>{account.apy}% APY</Text>
-                  )}
-                </View>
-                <Text style={styles.accountBalance}>
-                  ${account.balance.toLocaleString()}
+            <View style={styles.interestRow}>
+              <Ionicons
+                name="trending-up"
+                size={16}
+                color={theme.colors.success}
+              />
+              <Text style={styles.interestText}>
+                {dashboard.savingsRate.toFixed(0)}% savings rate
+              </Text>
+            </View>
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>
+                  ${Math.round(monthlyCashFlow).toLocaleString()}
                 </Text>
+                <Text style={styles.statLabel}>Monthly Savings</Text>
               </View>
-            </Card>
-          ))}
-        </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>
+                  ${Math.round(dashboard.totalAssets).toLocaleString()}
+                </Text>
+                <Text style={styles.statLabel}>Total Assets</Text>
+              </View>
+            </View>
+          </Card>
+        )}
 
-        {/* Goals */}
+        {/* Goals — real goals from goalStore */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Savings Goals</Text>
-          {GOALS.map((goal, i) => {
-            const progress = (goal.current / goal.target) * 100;
-            return (
-              <Card key={i} style={styles.goalCard}>
-                <View style={styles.goalHeader}>
-                  <Text style={styles.goalName}>{goal.name}</Text>
-                  <Text style={styles.goalDeadline}>{goal.deadline}</Text>
-                </View>
-                <View style={styles.goalProgress}>
-                  <View style={styles.progressBarBg}>
-                    <View
-                      style={[
-                        styles.progressBarFill,
-                        { width: `${Math.min(progress, 100)}%` },
-                      ]}
-                    />
+          {goals.length === 0 ? (
+            <View style={styles.emptyCard} testID="savings-empty">
+              <Ionicons
+                name="flag-outline"
+                size={40}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.emptyTitle}>No savings goals yet</Text>
+              <Text style={styles.emptyText}>
+                Create a goal to start tracking your progress.
+              </Text>
+            </View>
+          ) : (
+            goals.map((goal: FinancialGoal) => {
+              const progress =
+                goal.targetAmount > 0
+                  ? (goal.currentAmount / goal.targetAmount) * 100
+                  : 0;
+              const deadline = formatDeadline(goal.deadline ?? goal.targetDate);
+              return (
+                <Card key={goal.id} style={styles.goalCard}>
+                  <View style={styles.goalHeader}>
+                    <Text style={styles.goalName}>{goal.name}</Text>
+                    {deadline !== "" && (
+                      <Text style={styles.goalDeadline}>{deadline}</Text>
+                    )}
                   </View>
-                  <Text style={styles.progressText}>
-                    {progress.toFixed(0)}%
-                  </Text>
-                </View>
-                <View style={styles.goalAmounts}>
-                  <Text style={styles.currentAmount}>
-                    ${goal.current.toLocaleString()}
-                  </Text>
-                  <Text style={styles.targetAmount}>
-                    of ${goal.target.toLocaleString()}
-                  </Text>
-                </View>
-              </Card>
-            );
-          })}
+                  <View style={styles.goalProgress}>
+                    <View style={styles.progressBarBg}>
+                      <View
+                        style={[
+                          styles.progressBarFill,
+                          { width: `${Math.min(progress, 100)}%` },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.progressText}>
+                      {progress.toFixed(0)}%
+                    </Text>
+                  </View>
+                  <View style={styles.goalAmounts}>
+                    <Text style={styles.currentAmount}>
+                      ${Math.round(goal.currentAmount).toLocaleString()}
+                    </Text>
+                    <Text style={styles.targetAmount}>
+                      of ${Math.round(goal.targetAmount).toLocaleString()}
+                    </Text>
+                  </View>
+                </Card>
+              );
+            })
+          )}
         </View>
 
-        {/* Tips */}
+        {/* Tips (static guidance, not user data) */}
         <Card style={styles.tipsCard}>
           <View style={styles.tipsHeader}>
             <Ionicons name="bulb" size={20} color={theme.colors.warning} />
@@ -233,11 +242,29 @@ export default function SavingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
+  },
   loadingText: {
     marginTop: theme.spacing.md,
     color: theme.colors.textSecondary,
   },
+  errorText: {
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -261,6 +288,19 @@ const styles = StyleSheet.create({
   },
   interestRow: { flexDirection: "row", alignItems: "center", marginTop: 12 },
   interestText: { fontSize: 14, color: theme.colors.success, marginLeft: 4 },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignSelf: "stretch",
+    marginTop: theme.spacing.lg,
+  },
+  statItem: { alignItems: "center" },
+  statValue: { fontSize: 18, fontWeight: "700", color: theme.colors.text },
+  statLabel: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+  },
   section: { paddingHorizontal: theme.spacing.lg, marginTop: theme.spacing.lg },
   sectionTitle: {
     fontSize: 16,
@@ -268,19 +308,19 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
-  accountCard: { marginBottom: theme.spacing.sm, padding: theme.spacing.md },
-  accountRow: { flexDirection: "row", alignItems: "center" },
-  typeIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
+  emptyCard: { padding: theme.spacing.xl, alignItems: "center" },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
   },
-  accountInfo: { flex: 1, marginLeft: 12 },
-  accountName: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
-  accountApy: { fontSize: 12, color: theme.colors.success, marginTop: 2 },
-  accountBalance: { fontSize: 16, fontWeight: "700", color: theme.colors.text },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
+  },
   goalCard: { marginBottom: theme.spacing.md, padding: theme.spacing.md },
   goalHeader: {
     flexDirection: "row",
