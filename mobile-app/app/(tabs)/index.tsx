@@ -19,6 +19,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../../src/store/authStore";
 import { useCreditStore } from "../../src/store/creditStore";
 import { useDisputeStore } from "../../src/store/disputeStore";
+import { useDashboardStore } from "../../src/store/dashboardStore";
+import { useGamificationStore } from "../../src/store/gamificationStore";
 import { useTheme } from "../../src/hooks/useTheme";
 import { Card } from "../../src/components/Card";
 import { ScoreGauge } from "../../src/components/ScoreGauge";
@@ -32,6 +34,19 @@ import {
   PaydayCountdown,
 } from "../../src/components/financial";
 import { XpBar, StreakDisplay } from "../../src/components/gamification";
+
+// Stable colors for the spending donut/bar. Real category names (Plaid taxonomy)
+// won't match SpendingOverview's built-in name->color map, so assign by index.
+const SPENDING_PALETTE = [
+  "#22C55E",
+  "#3B82F6",
+  "#EF4444",
+  "#F59E0B",
+  "#EC4899",
+  "#8B5CF6",
+  "#06B6D4",
+  "#9CA3AF",
+];
 
 export default function HomeScreen() {
   const {
@@ -57,47 +72,35 @@ export default function HomeScreen() {
     fetchDisputes,
     isLoading: isLoadingDisputes,
   } = useDisputeStore();
+  const { dashboard, isLoadingDashboard, fetchDashboard } = useDashboardStore();
+  const {
+    progress: gamification,
+    isLoadingProgress,
+    fetchProgress,
+  } = useGamificationStore();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Mock spending data - replace with real data from store
-  const spendingData = {
-    totalSpent: 2846,
-    lastMonthSpent: 2650,
-    categories: [
-      { name: "Food & Dining", value: 847, color: "#22C55E", percentage: 30 },
-      { name: "Shopping", value: 623, color: "#3B82F6", percentage: 22 },
-      {
-        name: "Bills & Utilities",
-        value: 485,
-        color: "#EF4444",
-        percentage: 17,
-      },
-      { name: "Transportation", value: 312, color: "#F59E0B", percentage: 11 },
-      { name: "Entertainment", value: 234, color: "#EC4899", percentage: 8 },
-      { name: "Other", value: 345, color: "#9CA3AF", percentage: 12 },
-    ],
-  };
-
-  // Mock payday data - replace with real data from store
-  const paydayData = {
-    daysUntilPayday: 5,
-    nextPayDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-    expectedAmount: 3200,
-    sourceName: "Acme Corp",
-    percentComplete: 65,
-    hasIncomeSources: true,
-  };
-
-  // Mock gamification data - replace with real data from API
-  const gamificationData = {
-    level: 12,
-    levelTitle: "Financial Warrior",
-    currentXp: 2450,
-    xpToNextLevel: 3000,
-    streak: 14,
-    streakMultiplier: 1.4,
-    longestStreak: 21,
-  };
+  // Spending — real per-category month spend + last-month delta from the
+  // financial dashboard aggregate (dashboardStore). No fabricated fallback: an
+  // empty/loading dashboard renders the widget's own empty/skeleton state.
+  const spendingCategories = useMemo(
+    () =>
+      (dashboard?.spendingByCategory ?? []).map((c, i) => ({
+        name: c.category,
+        value: c.amount,
+        percentage: c.percentage,
+        color: SPENDING_PALETTE[i % SPENDING_PALETTE.length],
+      })),
+    [dashboard],
+  );
+  const spendingTotal = dashboard?.monthlyExpenses ?? 0;
+  // monthlyTrend is chronological (oldest -> current month last); the entry before
+  // the last is last month's real expenses. Absent history -> neutral (equal).
+  const spendingLastMonth =
+    dashboard?.monthlyTrend && dashboard.monthlyTrend.length >= 2
+      ? dashboard.monthlyTrend[dashboard.monthlyTrend.length - 2].expenses
+      : spendingTotal;
+  const isDashboardLoading = isLoadingDashboard && !dashboard;
 
   // Get greeting based on time of day
   const getGreeting = () => {
@@ -112,14 +115,28 @@ export default function HomeScreen() {
     fetchScores();
     fetchAlerts();
     fetchDisputes();
+    fetchDashboard();
+    fetchProgress();
   }, []);
 
   // Pull to refresh
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchScores(), fetchAlerts(), fetchDisputes()]);
+    await Promise.all([
+      fetchScores(),
+      fetchAlerts(),
+      fetchDisputes(),
+      fetchDashboard(),
+      fetchProgress(),
+    ]);
     setRefreshing(false);
-  }, [fetchScores, fetchAlerts, fetchDisputes]);
+  }, [
+    fetchScores,
+    fetchAlerts,
+    fetchDisputes,
+    fetchDashboard,
+    fetchProgress,
+  ]);
 
   // Get primary score (average or first available)
   const primaryScore =
@@ -751,53 +768,79 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Gamification Widget */}
-        <TouchableOpacity
-          onPress={() => router.push("/rewards" as never)}
-          activeOpacity={0.9}
-        >
-          <Card style={styles.gamificationCard}>
-            <View style={styles.gamificationHeader}>
-              <View style={styles.levelBadge}>
-                <Text style={styles.levelNumber}>{gamificationData.level}</Text>
-              </View>
-              <View style={styles.levelInfo}>
-                <Text style={styles.levelTitle}>
-                  {gamificationData.levelTitle}
-                </Text>
-                <Text style={styles.levelLabel}>
-                  Level {gamificationData.level}
-                </Text>
-              </View>
-              <StreakDisplay
-                streak={gamificationData.streak}
-                multiplier={gamificationData.streakMultiplier}
-                longestStreak={gamificationData.longestStreak}
-                size="sm"
-              />
-            </View>
-            <XpBar
-              currentXp={gamificationData.currentXp}
-              xpToNextLevel={gamificationData.xpToNextLevel}
-              currentLevel={gamificationData.level}
-              showDetails={false}
-            />
-            <View style={styles.gamificationFooter}>
-              <Text style={styles.xpProgressText}>
-                {gamificationData.currentXp.toLocaleString()} /{" "}
-                {gamificationData.xpToNextLevel.toLocaleString()} XP
-              </Text>
-              <View style={styles.viewRewardsLink}>
-                <Text style={styles.viewRewardsText}>View Rewards</Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={14}
-                  color={colors.primary}
+        {/* Gamification Widget — real XP/level/streak from gamificationStore.
+            Real data renders the card; while loading with no data yet, an inline
+            skeleton; on no-data/error the widget is simply hidden (never faked). */}
+        {gamification ? (
+          <TouchableOpacity
+            onPress={() => router.push("/rewards" as never)}
+            activeOpacity={0.9}
+          >
+            <Card style={styles.gamificationCard}>
+              <View style={styles.gamificationHeader}>
+                <View style={styles.levelBadge}>
+                  <Text style={styles.levelNumber}>
+                    {gamification.level.current}
+                  </Text>
+                </View>
+                <View style={styles.levelInfo}>
+                  <Text style={styles.levelTitle}>
+                    {gamification.level.title}
+                  </Text>
+                  <Text style={styles.levelLabel}>
+                    Level {gamification.level.current}
+                  </Text>
+                </View>
+                <StreakDisplay
+                  streak={gamification.streak.days}
+                  multiplier={gamification.streak.multiplier}
+                  longestStreak={gamification.streak.longestStreak}
+                  size="sm"
                 />
               </View>
+              <XpBar
+                currentXp={gamification.xp.current}
+                xpToNextLevel={gamification.xp.toNextLevel}
+                currentLevel={gamification.level.current}
+                showDetails={false}
+              />
+              <View style={styles.gamificationFooter}>
+                <Text style={styles.xpProgressText}>
+                  {gamification.xp.current.toLocaleString()} /{" "}
+                  {gamification.xp.toNextLevel.toLocaleString()} XP
+                </Text>
+                <View style={styles.viewRewardsLink}>
+                  <Text style={styles.viewRewardsText}>View Rewards</Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={14}
+                    color={colors.primary}
+                  />
+                </View>
+              </View>
+            </Card>
+          </TouchableOpacity>
+        ) : isLoadingProgress ? (
+          <Card style={styles.gamificationCard}>
+            <View style={styles.gamificationHeader}>
+              <LoadingSkeleton
+                width={44}
+                height={44}
+                borderRadius={22}
+                style={{ marginRight: 12 }}
+              />
+              <View style={styles.levelInfo}>
+                <LoadingSkeleton
+                  width="60%"
+                  height={16}
+                  style={{ marginBottom: 6 }}
+                />
+                <LoadingSkeleton width="40%" height={12} />
+              </View>
             </View>
+            <LoadingSkeleton width="100%" height={10} borderRadius={5} />
           </Card>
-        </TouchableOpacity>
+        ) : null}
 
         {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -867,25 +910,24 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </Card>
 
-        {/* Payday Countdown */}
+        {/* Payday Countdown — no honest pay-schedule source is wired: the
+            dashboard aggregate carries no next-pay date/amount/source and there is
+            no mobile income client. Render the widget's own "add income" empty
+            state (CTA -> real income screen) instead of fabricating a countdown. */}
         <Text style={styles.sectionTitle}>Payday</Text>
         <PaydayCountdown
-          daysUntilPayday={paydayData.daysUntilPayday}
-          nextPayDate={paydayData.nextPayDate}
-          expectedAmount={paydayData.expectedAmount}
-          sourceName={paydayData.sourceName}
-          percentComplete={paydayData.percentComplete}
-          hasIncomeSources={paydayData.hasIncomeSources}
-          isLoading={isLoading}
+          hasIncomeSources={false}
+          onAddIncome={() => router.push("/financial/income")}
         />
 
-        {/* Spending Overview */}
+        {/* Spending Overview — real month spend + category breakdown + last-month
+            delta from the financial dashboard aggregate (dashboardStore). */}
         <Text style={styles.sectionTitle}>Spending</Text>
         <SpendingOverview
-          totalSpent={spendingData.totalSpent}
-          lastMonthSpent={spendingData.lastMonthSpent}
-          categories={spendingData.categories}
-          isLoading={isLoading}
+          totalSpent={spendingTotal}
+          lastMonthSpent={spendingLastMonth}
+          categories={spendingCategories}
+          isLoading={isDashboardLoading}
         />
 
         {/* Credit Monitoring Status */}

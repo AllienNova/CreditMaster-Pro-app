@@ -30,8 +30,12 @@ export {
   financialGoalsApi,
   debtApi,
   billsApi,
+  mapWebDashboard,
   type PlaidLinkToken,
   type PlaidExchangeResult,
+  type FinancialDashboardData,
+  type DashboardCategorySpending,
+  type DashboardMonthlyTrend,
 } from "./financial";
 export {
   userProfileApi,

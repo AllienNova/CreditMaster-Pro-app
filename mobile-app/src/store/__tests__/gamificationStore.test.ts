@@ -18,12 +18,9 @@ jest.mock("../../services/api/gamification", () => ({
   },
 }));
 
-jest.mock("../../data/dev-seed", () => ({
-  seedGamificationProgress: null,
-  seedBadgesResponse: { earned: [], inProgress: [], locked: [], stats: null },
-  seedQuestsResponse: { today: [], completedToday: 0, totalToday: 0, availableXp: 0 },
-  seedLeaderboard: { entries: [], type: "weekly_xp", periodStart: "", periodEnd: "", userRank: null, userPercentile: null },
-}));
+// The dev-seed short-circuits were removed from gamificationStore (real data now
+// flows through in every environment), so the store no longer imports dev-seed
+// and the former jest.mock("../../data/dev-seed", …) stub is gone with it.
 
 const { gamificationApi } = require("../../services/api/gamification");
 

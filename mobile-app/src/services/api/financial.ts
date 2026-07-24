@@ -25,22 +25,107 @@ export interface PlaidExchangeResult {
   accountsConnected: number;
 }
 
+// ---------------------------------------------------------------------------
+// Financial dashboard — web -> mobile adapter (PARITY-P1)
+// ---------------------------------------------------------------------------
+// The real web route (GET /api/financial/dashboard) returns the full aggregate
+// from financialService.getFinancialDashboard. Alongside the headline numbers it
+// carries `spendingByCategory` (per-category month spend) and `monthlyTrend`
+// (6-month income/expense/savings history). The mobile client previously declared
+// a narrower shape that DROPPED both, so the dashboard tab had no real source for
+// its spending breakdown or its month-over-month delta and fell back to hardcoded
+// values. Surface the real fields; ignore web-only extras (accounts,
+// recentTransactions, cashFlow).
+export interface DashboardCategorySpending {
+  category: string;
+  amount: number;
+  percentage: number;
+  transactionCount: number;
+}
+
+export interface DashboardMonthlyTrend {
+  month: string;
+  income: number;
+  expenses: number;
+  savings: number;
+}
+
+export interface FinancialDashboardData {
+  netWorth: number;
+  totalAssets: number;
+  totalLiabilities: number;
+  monthlyIncome: number;
+  monthlyExpenses: number;
+  savingsRate: number;
+  spendingByCategory: DashboardCategorySpending[];
+  monthlyTrend: DashboardMonthlyTrend[];
+}
+
+interface WebFinancialDashboard {
+  netWorth: number;
+  totalAssets: number;
+  totalLiabilities: number;
+  monthlyIncome: number;
+  monthlyExpenses: number;
+  savingsRate: number;
+  spendingByCategory?: {
+    category: string;
+    amount: number;
+    percentage: number;
+    transactionCount?: number;
+  }[];
+  monthlyTrend?: {
+    month: string;
+    income: number;
+    expenses: number;
+    savings: number;
+  }[];
+}
+
+export function mapWebDashboard(
+  d: WebFinancialDashboard,
+): FinancialDashboardData {
+  return {
+    netWorth: d.netWorth,
+    totalAssets: d.totalAssets,
+    totalLiabilities: d.totalLiabilities,
+    monthlyIncome: d.monthlyIncome,
+    monthlyExpenses: d.monthlyExpenses,
+    savingsRate: d.savingsRate,
+    spendingByCategory: Array.isArray(d.spendingByCategory)
+      ? d.spendingByCategory.map((c) => ({
+          category: c.category,
+          amount: c.amount,
+          percentage: c.percentage,
+          transactionCount: c.transactionCount ?? 0,
+        }))
+      : [],
+    monthlyTrend: Array.isArray(d.monthlyTrend)
+      ? d.monthlyTrend.map((m) => ({
+          month: m.month,
+          income: m.income,
+          expenses: m.expenses,
+          savings: m.savings,
+        }))
+      : [],
+  };
+}
+
 // Financial Overview
 export const financialOverviewApi = {
   /**
-   * Get financial dashboard overview
+   * Get financial dashboard overview. The web route returns the full aggregate
+   * (headline numbers + spendingByCategory + monthlyTrend); adapt web -> mobile
+   * so the store/screens see one shape. Never fabricate on failure — pass the
+   * error through.
    */
-  getDashboard: () =>
-    api.get<{
-      netWorth: number;
-      totalAssets: number;
-      totalLiabilities: number;
-      monthlyIncome: number;
-      monthlyExpenses: number;
-      savingsRate: number;
-      budgetStatus: { onTrack: number; overBudget: number };
-      recentTransactions: Transaction[];
-    }>("/financial/dashboard"),
+  getDashboard: async (): Promise<ApiResponse<FinancialDashboardData>> => {
+    const res = await api.get<WebFinancialDashboard>("/financial/dashboard");
+    if (res.success && res.data) {
+      return { success: true, data: mapWebDashboard(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
 
   /**
    * Get spending insights

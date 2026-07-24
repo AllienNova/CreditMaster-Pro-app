@@ -21,7 +21,6 @@ import {
   type StreakUpdateResponse,
   type BadgeCategory,
 } from "../services/api/gamification";
-import { seedGamificationProgress, seedBadgesResponse, seedQuestsResponse, seedLeaderboard } from "../data/dev-seed";
 
 // ============================================================================
 // STATE INTERFACE
@@ -164,20 +163,12 @@ export const useGamificationStore = create<GamificationState>()(
             });
             return;
           }
-          if (__DEV__) {
-            set({ progress: seedGamificationProgress, lastProgressFetch: new Date().toISOString(), isLoadingProgress: false });
-            return;
-          }
           set({
             progressError:
               response.error?.message || "Failed to fetch progress",
             isLoadingProgress: false,
           });
         } catch (error) {
-          if (__DEV__) {
-            set({ progress: seedGamificationProgress, lastProgressFetch: new Date().toISOString(), isLoadingProgress: false });
-            return;
-          }
           set({
             progressError:
               error instanceof Error
@@ -251,33 +242,11 @@ export const useGamificationStore = create<GamificationState>()(
             });
             return;
           }
-          if (__DEV__) {
-            set({
-              earnedBadges: seedBadgesResponse.earned,
-              inProgressBadges: seedBadgesResponse.inProgress,
-              lockedBadges: seedBadgesResponse.locked,
-              badgeStats: seedBadgesResponse.stats,
-              lastBadgesFetch: new Date().toISOString(),
-              isLoadingBadges: false,
-            });
-            return;
-          }
           set({
             badgesError: response.error?.message || "Failed to fetch badges",
             isLoadingBadges: false,
           });
         } catch (error) {
-          if (__DEV__) {
-            set({
-              earnedBadges: seedBadgesResponse.earned,
-              inProgressBadges: seedBadgesResponse.inProgress,
-              lockedBadges: seedBadgesResponse.locked,
-              badgeStats: seedBadgesResponse.stats,
-              lastBadgesFetch: new Date().toISOString(),
-              isLoadingBadges: false,
-            });
-            return;
-          }
           set({
             badgesError:
               error instanceof Error ? error.message : "Failed to fetch badges",
@@ -320,33 +289,11 @@ export const useGamificationStore = create<GamificationState>()(
             });
             return;
           }
-          if (__DEV__) {
-            set({
-              quests: seedQuestsResponse.today,
-              questsCompletedToday: seedQuestsResponse.completedToday,
-              totalQuestsToday: seedQuestsResponse.totalToday,
-              availableXp: seedQuestsResponse.availableXp,
-              lastQuestsFetch: new Date().toISOString(),
-              isLoadingQuests: false,
-            });
-            return;
-          }
           set({
             questsError: response.error?.message || "Failed to fetch quests",
             isLoadingQuests: false,
           });
         } catch (error) {
-          if (__DEV__) {
-            set({
-              quests: seedQuestsResponse.today,
-              questsCompletedToday: seedQuestsResponse.completedToday,
-              totalQuestsToday: seedQuestsResponse.totalToday,
-              availableXp: seedQuestsResponse.availableXp,
-              lastQuestsFetch: new Date().toISOString(),
-              isLoadingQuests: false,
-            });
-            return;
-          }
           set({
             questsError:
               error instanceof Error ? error.message : "Failed to fetch quests",
@@ -412,36 +359,12 @@ export const useGamificationStore = create<GamificationState>()(
             });
             return;
           }
-          if (__DEV__) {
-            set({
-              leaderboard: seedLeaderboard.entries,
-              leaderboardType: seedLeaderboard.type,
-              leaderboardPeriod: { start: seedLeaderboard.periodStart, end: seedLeaderboard.periodEnd },
-              userRank: seedLeaderboard.userRank ?? null,
-              userPercentile: seedLeaderboard.userPercentile ?? null,
-              lastLeaderboardFetch: new Date().toISOString(),
-              isLoadingLeaderboard: false,
-            });
-            return;
-          }
           set({
             leaderboardError:
               response.error?.message || "Failed to fetch leaderboard",
             isLoadingLeaderboard: false,
           });
         } catch (error) {
-          if (__DEV__) {
-            set({
-              leaderboard: seedLeaderboard.entries,
-              leaderboardType: seedLeaderboard.type,
-              leaderboardPeriod: { start: seedLeaderboard.periodStart, end: seedLeaderboard.periodEnd },
-              userRank: seedLeaderboard.userRank ?? null,
-              userPercentile: seedLeaderboard.userPercentile ?? null,
-              lastLeaderboardFetch: new Date().toISOString(),
-              isLoadingLeaderboard: false,
-            });
-            return;
-          }
           set({
             leaderboardError:
               error instanceof Error

@@ -7,7 +7,11 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { financialOverviewApi } from "../services/api";
+import {
+  financialOverviewApi,
+  type DashboardCategorySpending,
+  type DashboardMonthlyTrend,
+} from "../services/api";
 
 interface FinancialDashboard {
   netWorth: number;
@@ -16,6 +20,11 @@ interface FinancialDashboard {
   monthlyIncome: number;
   monthlyExpenses: number;
   savingsRate: number;
+  // Real per-category month spend + 6-month income/expense/savings trend, surfaced
+  // from the web aggregate via mapWebDashboard. Optional because older persisted
+  // state may predate them; a live fetch always supplies arrays (possibly empty).
+  spendingByCategory?: DashboardCategorySpending[];
+  monthlyTrend?: DashboardMonthlyTrend[];
   lastUpdated: string;
 }
 
