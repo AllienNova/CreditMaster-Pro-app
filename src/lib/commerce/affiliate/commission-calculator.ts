@@ -1,11 +1,17 @@
 /**
  * Commission Calculator Service
  *
- * Handles commission calculation, payout processing, and commission reporting.
+ * Handles commission calculation and commission reporting.
+ *
+ * Payout EXECUTION (Stripe transfers, bank transfers, scheduled runs) lives
+ * exclusively in `@/lib/commerce/payouts/payout-service.ts` — this file must
+ * never write to `affiliate_payouts` or call a payment provider directly.
+ * Two independent payout rails with separate idempotency-key namespaces would
+ * let a double-trigger slip past both guards (FND-026).
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { Cents, fromDollars, toDollars, toStripeAmount } from "@/lib/money";
+import { Cents, fromDollars, toDollars } from "@/lib/money";
 import {
   CommissionReport,
   CommissionType,
@@ -48,20 +54,6 @@ interface CommissionRule {
   commissionFixed?: number;
   bonusRate?: number;
   bonusThreshold?: number;
-}
-
-interface PayoutRequest {
-  partnerId: string;
-  amount: number;
-  conversionIds: string[];
-  paymentMethod: "stripe" | "bank_transfer" | "check";
-  stripeAccountId?: string;
-  bankDetails?: {
-    accountName: string;
-    accountNumber: string;
-    routingNumber: string;
-    bankName: string;
-  };
 }
 
 interface PayoutResult {
@@ -339,170 +331,6 @@ class CommissionCalculatorService {
   }
 
   // ===========================================================================
-  // Payout Processing
-  // ===========================================================================
-
-  /**
-   * Initiate a payout to a partner
-   */
-  async initiatePayout(request: PayoutRequest): Promise<PayoutResult> {
-    // Validate payout eligibility
-    const pending = await this.getPendingPayout(request.partnerId);
-    if (!pending.eligibleForPayout) {
-      throw new Error(
-        `Minimum payout of $${pending.minPayoutRequired} not reached. Current: $${pending.amount}`,
-      );
-    }
-
-    if (request.amount > pending.amount) {
-      throw new Error(
-        `Requested payout $${request.amount} exceeds available $${pending.amount}`,
-      );
-    }
-
-    // Create payout record
-    const payoutRecord = {
-      partner_id: request.partnerId,
-      amount: request.amount,
-      status: "pending",
-      payment_method: request.paymentMethod,
-      stripe_account_id: request.stripeAccountId,
-      conversion_ids: request.conversionIds,
-      created_at: new Date().toISOString(),
-    };
-
-    const { data: payout, error } = await supabase
-      .from("affiliate_payouts")
-      .insert(payoutRecord)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to create payout: ${error.message}`);
-    }
-
-    // Process the payout based on method
-    try {
-      let transactionId: string | undefined;
-
-      if (request.paymentMethod === "stripe" && request.stripeAccountId) {
-        transactionId = await this.processStripePayout(
-          request.stripeAccountId,
-          request.amount,
-          payout.id,
-        );
-      } else if (
-        request.paymentMethod === "bank_transfer" &&
-        request.bankDetails
-      ) {
-        transactionId = await this.processBankTransfer(
-          request.bankDetails,
-          request.amount,
-        );
-      }
-
-      // Update payout status
-      await supabase
-        .from("affiliate_payouts")
-        .update({
-          status: "completed",
-          transaction_id: transactionId,
-          processed_at: new Date().toISOString(),
-        })
-        .eq("id", payout.id);
-
-      // Mark conversions as paid
-      await supabase
-        .from("affiliate_conversions")
-        .update({ status: "paid", paid_at: new Date().toISOString() })
-        .in("id", request.conversionIds);
-
-      return {
-        id: payout.id,
-        partnerId: request.partnerId,
-        amount: request.amount,
-        status: "completed",
-        paymentMethod: request.paymentMethod,
-        transactionId,
-        processedAt: new Date(),
-      };
-    } catch (err) {
-      // Update payout as failed
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      await supabase
-        .from("affiliate_payouts")
-        .update({ status: "failed", error: errorMessage })
-        .eq("id", payout.id);
-
-      return {
-        id: payout.id,
-        partnerId: request.partnerId,
-        amount: request.amount,
-        status: "failed",
-        paymentMethod: request.paymentMethod,
-        error: errorMessage,
-      };
-    }
-  }
-
-  /**
-   * Process automatic payouts based on schedule
-   */
-  async processScheduledPayouts(): Promise<PayoutResult[]> {
-    // Get partners eligible for payout
-    const { data: partners, error } = await supabase
-      .from("affiliate_partners")
-      .select("id, payout_frequency, payment_method, stripe_account_id")
-      .eq("is_active", true);
-
-    if (error) {
-      throw new Error(`Failed to get partners: ${error.message}`);
-    }
-
-    const results: PayoutResult[] = [];
-    const now = new Date();
-
-    for (const partner of partners || []) {
-      // Check if payout is due based on frequency
-      const isDue = await this.isPayoutDue(
-        partner.id,
-        partner.payout_frequency,
-      );
-      if (!isDue) continue;
-
-      // Get pending payout
-      const pending = await this.getPendingPayout(partner.id);
-      if (!pending.eligibleForPayout) continue;
-
-      // Get eligible conversions
-      const { data: conversions } = await supabase
-        .from("affiliate_conversions")
-        .select("id")
-        .eq("partner_id", partner.id)
-        .in("status", ["confirmed", "qualified"]);
-
-      const conversionIds = (conversions || []).map((c) => c.id);
-
-      // Initiate payout
-      try {
-        const result = await this.initiatePayout({
-          partnerId: partner.id,
-          amount: pending.amount,
-          conversionIds,
-          paymentMethod: partner.payment_method,
-          stripeAccountId: partner.stripe_account_id,
-        });
-        results.push(result);
-      } catch (_err) {
-        // CommissionCalculator error: Failed to process payout for partner
-        void _err;
-      }
-    }
-
-    return results;
-  }
-
-  // ===========================================================================
   // Commission Rules
   // ===========================================================================
 
@@ -619,100 +447,6 @@ class CommissionCalculatorService {
       minVolume: row.min_volume,
       multiplier: row.multiplier,
     }));
-  }
-
-  /**
-   * Check if payout is due based on frequency
-   */
-  private async isPayoutDue(
-    partnerId: string,
-    frequency: string,
-  ): Promise<boolean> {
-    // Get last payout date
-    const { data } = await supabase
-      .from("affiliate_payouts")
-      .select("processed_at")
-      .eq("partner_id", partnerId)
-      .eq("status", "completed")
-      .order("processed_at", { ascending: false })
-      .limit(1)
-      .single();
-
-    if (!data?.processed_at) return true; // Never paid, due now
-
-    const lastPayout = new Date(data.processed_at);
-    const now = new Date();
-    const daysSince = Math.floor(
-      (now.getTime() - lastPayout.getTime()) / (1000 * 60 * 60 * 24),
-    );
-
-    switch (frequency) {
-      case "weekly":
-        return daysSince >= 7;
-      case "biweekly":
-        return daysSince >= 14;
-      case "monthly":
-        return daysSince >= 30;
-      default:
-        return daysSince >= 30;
-    }
-  }
-
-  /**
-   * Process Stripe payout
-   */
-  private async processStripePayout(
-    stripeAccountId: string,
-    amount: number,
-    payoutId: string,
-  ): Promise<string> {
-    // Import Stripe service
-    const stripe = await import("stripe");
-    const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!);
-
-    // Create a transfer to the connected account
-    const transfer = await stripeClient.transfers.create(
-      {
-        amount: toStripeAmount(fromDollars(amount)), // Convert to integer cents via Cents type (FND-029)
-        currency: "usd",
-        destination: stripeAccountId,
-        description: "Fynvita affiliate commission payout",
-      },
-      // Idempotency key derived from stable payout row id — prevents double-pay on retry (FND-026)
-      { idempotencyKey: `commission-transfer-${payoutId}` },
-    );
-
-    return transfer.id;
-  }
-
-  /**
-   * Process bank transfer payout
-   */
-  private async processBankTransfer(
-    bankDetails: {
-      accountName: string;
-      accountNumber: string;
-      routingNumber: string;
-      bankName: string;
-    },
-    amount: number,
-  ): Promise<string> {
-    // For now, generate a reference and queue for manual processing
-    // In production, integrate with a bank transfer API like Dwolla, Plaid Transfer, etc.
-    const reference = `BT-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-
-    // Log the transfer request for manual processing
-    await supabase.from("pending_bank_transfers").insert({
-      reference,
-      amount,
-      account_name: bankDetails.accountName,
-      account_number_last4: bankDetails.accountNumber.slice(-4),
-      routing_number: bankDetails.routingNumber,
-      bank_name: bankDetails.bankName,
-      created_at: new Date().toISOString(),
-    });
-
-    return reference;
   }
 
   /**
