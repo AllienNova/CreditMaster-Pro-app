@@ -129,10 +129,34 @@ jobs:
         run: npm audit --audit-level=high
         continue-on-error: true
 
+  auth-gates:
+    name: Auth Gates (FND-001 regression guard)
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      # BLOCKING: every API route must be classified + guarded in the SEC-signed
+      # auth-route-inventory.csv (scripts/verify-auth-coverage.ts) - catches an
+      # FND-001-class unguarded/under-authorized route before merge.
+      - name: audit:auth - every route classified & guarded (must stay 295/295)
+        run: npm run audit:auth
+
+      # BLOCKING: negative-auth suite must not regress (>=568; 611 at last run).
+      - name: test:auth-negative - 401/403 coverage across wrapped routes
+        run: npm run test:auth-negative
+
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [test, security]
+    needs: [test, security, auth-gates]
     steps:
       - uses: actions/checkout@v4
 
