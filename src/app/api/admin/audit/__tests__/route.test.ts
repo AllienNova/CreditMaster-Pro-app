@@ -46,6 +46,23 @@ function makePostRequest(): NextRequest {
   } as never);
 }
 
+/**
+ * The globally-mocked NextRequest (src/setupTests.ts) always resolves
+ * `.json()` to `{}` regardless of the constructor's `init.body`, so a real
+ * body/header round trip can't be exercised through `new NextRequest(...)`.
+ * Build a minimal request-shaped object instead — same pattern as
+ * `makePatchRequest` in the sibling admin/disputes route test.
+ */
+function makePostRequestWithBody(
+  body: Record<string, unknown>,
+  headers: Record<string, string> = {},
+): NextRequest {
+  return {
+    json: jest.fn().mockResolvedValue(body),
+    headers: new Headers(headers),
+  } as unknown as NextRequest;
+}
+
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
@@ -178,6 +195,63 @@ describe("Admin Audit API – /api/admin/audit", () => {
       const body = await res.json();
       expect(body.limit).toBe(25);
       expect(body.page).toBe(3);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  POST actor/ip integrity (QA-residual: "audit-log POST trusts
+  //  client-supplied user_id/ip" — docs/ssot/gap_analysis.md)
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe("POST actor/ip integrity — spoofed body fields are ignored", () => {
+    beforeEach(() => {
+      mockValidate.mockResolvedValue({
+        valid: true,
+        user: { id: "admin-1", email: "admin@fynvita.com" },
+      });
+      mockResolveRole.mockResolvedValue("admin");
+    });
+
+    it("derives user_id from the authenticated session, ignoring a spoofed body userId", async () => {
+      const req = makePostRequestWithBody(
+        {
+          action: "user.suspend",
+          userId: "attacker-controlled-uid",
+          details: { reason: "test" },
+          ipAddress: "1.2.3.4",
+        },
+        { "x-forwarded-for": "9.9.9.9" },
+      );
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      expect(mockInsert).toHaveBeenCalledTimes(1);
+      const payload = mockInsert.mock.calls[0][0] as Record<string, unknown>;
+
+      expect(payload.user_id).toBe("admin-1");
+      expect(payload.user_id).not.toBe("attacker-controlled-uid");
+      expect(payload.ip_address).toBe("9.9.9.9");
+      expect(payload.ip_address).not.toBe("1.2.3.4");
+      expect(payload.action).toBe("user.suspend");
+    });
+
+    it("falls back to x-real-ip when x-forwarded-for is absent", async () => {
+      const req = makePostRequestWithBody(
+        { action: "test.action" },
+        { "x-real-ip": "8.8.8.8" },
+      );
+
+      await POST(req);
+      const payload = mockInsert.mock.calls[0][0] as Record<string, unknown>;
+      expect(payload.ip_address).toBe("8.8.8.8");
+    });
+
+    it('records "unknown" ip_address when no ip header is present', async () => {
+      const req = makePostRequestWithBody({ action: "test.action" });
+
+      await POST(req);
+      const payload = mockInsert.mock.calls[0][0] as Record<string, unknown>;
+      expect(payload.ip_address).toBe("unknown");
     });
   });
 });

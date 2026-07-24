@@ -92,16 +92,25 @@ export const GET = withRole(
 
 export const POST = withRole(
   "admin",
-  async (request: NextRequest, _user: AuthedUser) => {
+  async (request: NextRequest, user: AuthedUser) => {
     const supabase = getSupabaseClient();
     try {
-      const { action, userId, details, ipAddress } = await request.json();
+      // SECURITY: the actor and origin of a forensic log entry must never come
+      // from the client body — a caller could otherwise attribute their own
+      // action to an arbitrary spoofed userId/ipAddress. Both are derived
+      // server-side: user_id from the authenticated session, ip_address from
+      // the request headers.
+      const { action, details } = await request.json();
+      const ipAddress =
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip") ||
+        "unknown";
 
       const { data, error } = await supabase
         .from("audit_logs")
         .insert({
           action,
-          user_id: userId,
+          user_id: user.id,
           details,
           ip_address: ipAddress,
           created_at: new Date().toISOString(),
