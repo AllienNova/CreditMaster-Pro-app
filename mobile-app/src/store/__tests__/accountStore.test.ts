@@ -4,6 +4,7 @@
 
 import { act } from "@testing-library/react-native";
 import { useAccountStore, selectTotalBalance, selectSelectedAccount, selectIsLoading } from "../accountStore";
+import type { BankAccount } from "../../services/api/types";
 
 jest.mock("../../services/api", () => ({
   bankAccountApi: {
@@ -17,9 +18,33 @@ jest.mock("../../services/api", () => ({
 
 const { bankAccountApi } = require("../../services/api");
 
-const mockAccounts = [
-  { id: "acc-1", name: "Checking", type: "checking", balance: 5000 },
-  { id: "acc-2", name: "Savings", type: "savings", balance: 15000 },
+const mockAccounts: BankAccount[] = [
+  {
+    id: "acc-1",
+    userId: "user-1",
+    institutionName: "Chase",
+    accountType: "checking",
+    type: "checking",
+    accountName: "Checking",
+    name: "Checking",
+    balance: 5000,
+    availableBalance: 5000,
+    lastSynced: "2026-07-20T12:00:00.000Z",
+    isConnected: true,
+  },
+  {
+    id: "acc-2",
+    userId: "user-1",
+    institutionName: "Ally Bank",
+    accountType: "savings",
+    type: "savings",
+    accountName: "Savings",
+    name: "Savings",
+    balance: 15000,
+    availableBalance: 15000,
+    lastSynced: "2026-07-20T12:00:00.000Z",
+    isConnected: true,
+  },
 ];
 
 describe("Account Store", () => {

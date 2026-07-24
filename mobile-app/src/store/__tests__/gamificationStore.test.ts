@@ -4,6 +4,7 @@
 
 import { act } from "@testing-library/react-native";
 import { useGamificationStore } from "../gamificationStore";
+import type { GamificationProgress } from "../../services/api/gamification";
 
 jest.mock("../../services/api/gamification", () => ({
   gamificationApi: {
@@ -26,8 +27,8 @@ jest.mock("../../data/dev-seed", () => ({
 
 const { gamificationApi } = require("../../services/api/gamification");
 
-const mockProgress = {
-  xp: { current: 1500, toNextLevel: 2000 },
+const mockProgress: GamificationProgress = {
+  xp: { current: 1500, toNextLevel: 2000, totalEarned: 8500 },
   level: { current: 5, title: "Budgeting Pro", progress: 75 },
   streak: { days: 12, multiplier: 1.5, longestStreak: 20 },
 };
@@ -221,7 +222,7 @@ describe("Gamification Store", () => {
 
   describe("resetStore", () => {
     it("should reset to initial state", () => {
-      useGamificationStore.setState({ progress: mockProgress as never });
+      useGamificationStore.setState({ progress: mockProgress });
       useGamificationStore.getState().resetStore();
       expect(useGamificationStore.getState().progress).toBeNull();
     });

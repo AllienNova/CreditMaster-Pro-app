@@ -11,6 +11,7 @@ import {
   selectTotalUnrealizedPL,
   selectHighConfidenceSignals,
   selectIsLoading,
+  type CreateOrderResult,
 } from "../tradingStore";
 
 jest.mock("../../services/api/trading", () => ({
@@ -104,7 +105,7 @@ describe("Trading Store", () => {
       tradingApi.createOrder.mockResolvedValue({ data: { order: { id: "o-3" } } });
       tradingApi.getOrders.mockResolvedValue({ data: mockOrders });
 
-      let result;
+      let result: CreateOrderResult | undefined;
       await act(async () => {
         result = await useTradingStore.getState().createOrder({
           symbol: "AAPL", side: "buy", type: "market", quantity: 10,
@@ -117,7 +118,7 @@ describe("Trading Store", () => {
     it("should return error on failure", async () => {
       tradingApi.createOrder.mockRejectedValue(new Error("Insufficient funds"));
 
-      let result;
+      let result: CreateOrderResult | undefined;
       await act(async () => {
         result = await useTradingStore.getState().createOrder({} as never);
       });

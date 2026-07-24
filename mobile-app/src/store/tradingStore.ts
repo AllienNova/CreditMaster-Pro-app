@@ -28,6 +28,11 @@ import tradingApi, {
 // TYPES
 // ============================================================================
 
+export interface CreateOrderResult {
+  success: boolean;
+  error?: string;
+}
+
 interface TradingState {
   // Orders
   orders: Order[];
@@ -70,9 +75,7 @@ interface TradingState {
 interface TradingActions {
   // Orders
   fetchOrders: () => Promise<void>;
-  createOrder: (
-    order: OrderRequest,
-  ) => Promise<{ success: boolean; error?: string }>;
+  createOrder: (order: OrderRequest) => Promise<CreateOrderResult>;
   cancelOrder: (orderId: string) => Promise<void>;
   cancelAllOrders: () => Promise<void>;
 

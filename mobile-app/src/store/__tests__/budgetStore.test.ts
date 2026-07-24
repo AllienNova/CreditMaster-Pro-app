@@ -4,6 +4,7 @@
 
 import { act } from "@testing-library/react-native";
 import { useBudgetStore, selectOverBudgetAlerts, selectBudgetByCategory, selectIsLoading } from "../budgetStore";
+import type { Budget } from "../../services/api/types";
 
 jest.mock("../../services/api", () => ({
   budgetApi: {
@@ -16,9 +17,25 @@ jest.mock("../../services/api", () => ({
 
 const { budgetApi } = require("../../services/api");
 
-const mockBudgets = [
-  { category: "food", limit: 500, period: "monthly" as const, spent: 300 },
-  { category: "transport", limit: 200, period: "monthly" as const, spent: 180 },
+const mockBudgets: Budget[] = [
+  {
+    id: "budget-food",
+    userId: "user-1",
+    category: "food",
+    limit: 500,
+    period: "monthly" as const,
+    spent: 300,
+    remaining: 200,
+  },
+  {
+    id: "budget-transport",
+    userId: "user-1",
+    category: "transport",
+    limit: 200,
+    period: "monthly" as const,
+    spent: 180,
+    remaining: 20,
+  },
 ];
 
 const mockAlerts = [
