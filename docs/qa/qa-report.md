@@ -1,6 +1,6 @@
 # QA Report — Fynvita Wave 7 (Security & Correctness Remediation)
 
-> Status: **CONDITIONAL — GO WITH CONDITIONS** (pending 2 in-session blocker fixes verifying + operator items)
+> Status: **GO WITH CONDITIONS** — the 2 in-session blocker fixes have landed + verified; operator items remain
 > Branch `remediation/wave-7-foundation` · Scope: M1 Closed-Beta readiness
 > Method: adversarial re-verification from source (the project's prior "100% done" claim was false — nothing trusted from commit messages). 4 independent reviewers + fresh gate runs.
 
@@ -22,7 +22,7 @@ never disclosed**, both now fixed this session, plus conditions that are genuine
 | negative-auth | **PASS** 609 (floor ≥568) | `npm run test:auth-negative` |
 | audit:auth | **PASS** 295/295 routes classified | `npm run audit:auth` (fixed `12c4b86`) |
 | mobile `tsc` | **PASS** 0 err (was 13) | `bd5ca79` |
-| lint | 15 legacy errors → fix in progress | `fix-lint` |
+| lint | **PASS** 0 errors (was 15) | `b1b8d6d` |
 | npm audit | 32 vulns (1 crit / 16 high) — M2 gate | operator |
 
 ## V-CRIT — 32 CRITICALs, per-cluster verdict
@@ -45,8 +45,8 @@ audit:auth not CI-gated). The system runs on one enforcement layer instead of th
 
 | # | Severity | Finding | Status |
 |---|---|---|---|
-| B1 | 🔴 CRITICAL | `payout-service.ts:calculateFees` subtracts cent-scaled flat fees from a dollar-scaled amount → a $50 bank-transfer payout nets **$0.00**, an $80 check nets **−$20**. Unit-confusion, same class as FND-024, uncaught, no test. Mitigated only because payouts are currently unwired. | **fix in progress** (fix-payout-fees) |
-| B2 | 🔴 HIGH | FND-058 erasure RPC does an **unguarded** `DELETE FROM %I` loop; 5 of 6 cited tables have no `CREATE TABLE` in any migration → if absent in the live DB, the RPC throws and **all** GDPR erasure fails. | **fix in progress** (fix-erasure-resilient, resilient `to_regclass`-guarded migration) |
+| B1 | 🔴 CRITICAL | `payout-service.ts:calculateFees` subtracts cent-scaled flat fees from a dollar-scaled amount → a $50 bank-transfer payout nets **$0.00**, an $80 check nets **−$20**. Unit-confusion, same class as FND-024, uncaught, no test. Mitigated only because payouts are currently unwired. | **FIXED** `14dd011` — integer-cents fix + regression tests ($50→$49.50) |
+| B2 | 🔴 HIGH | FND-058 erasure RPC does an **unguarded** `DELETE FROM %I` loop; 5 of 6 cited tables have no `CREATE TABLE` in any migration → if absent in the live DB, the RPC throws and **all** GDPR erasure fails. | **FIXED** `7069485` — resilient `to_regclass`-guarded migration |
 
 ## Conditions / follow-ups (not shippable-blocking, but tracked)
 
@@ -74,13 +74,14 @@ audit:auth not CI-gated). The system runs on one enforcement layer instead of th
 
 ## Changes landed this session (`remediation/wave-7-foundation`)
 
-`12c4b86` audit:auth offender fixed · `bc668ea` 24MB zip removed · `5ab461d` CODEOWNERS+SECURITY.md
-· `bd5ca79` 13 mobile tsc errors fixed · _(pending)_ B1 payout-fee fix, B2 erasure resilience, 15 lint errors.
+`12c4b86` audit:auth · `bc668ea` 24MB zip · `5ab461d` CODEOWNERS+SECURITY.md · `bd5ca79` mobile tsc ·
+`b1b8d6d` lint · `7069485` B2 erasure · `14dd011` B1 payout fee · `81024e6` hermetic test ·
+`b81c6ec`/`6b9c829`/`062c808` doc reconciliation. All landed + pushed to PR #3.
 
 ## Verdict
 
-**GO WITH CONDITIONS** — the remediation is genuinely shippable for M1 once (a) the two blocker
-fixes (B1 payout fee, B2 erasure resilience) verify green — in progress this session — and (b) the
-operator-gated items are satisfied (chiefly the 24 h deny-by-default staging soak, the live-schema
-audit, and the FND-026 rail decision before any payout code is wired). Absent B1/B2 it is **NO-GO**.
+**GO WITH CONDITIONS** — the remediation is genuinely shippable for M1. The two blocker fixes
+(B1 payout fee `14dd011`, B2 erasure resilience `7069485`) landed + verified this session; all
+automated gates are green. What remains is operator-gated: the 24 h deny-by-default staging soak +
+flip, the live-schema audit, and the FND-026 rail decision before any payout code is wired.
 The verification confirmed the 187-commit remediation is real work, not the earlier false "done".
