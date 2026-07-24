@@ -17,7 +17,7 @@
 | Findings opened | **33 CRITICAL**, **38 HIGH**, ~21 MEDIUM, ~21 LOW (71 enumerated in §2; banner count corrected from "~50 HIGH" 2026-05-03 post-QA) |
 | User exposure today | **None** (no live users yet — Fynvita branded as financial-education company in pre-launch) |
 | Disclosure obligations | Not currently triggered (no user data exposure to disclose). Re-evaluate before public launch. |
-| Ship decision | **M1 = GO WITH CONDITIONS** (2026-07-24) — Wave 7 code verified (30 of 32 CRITICALs CLOSED_REAL); operator-gated conditions remain. See `docs/qa/qa-report.md` + `docs/deployment/LAUNCH_CHECKLIST.md`. Original register below is unchanged. |
+| Ship decision | **M1 = GO WITH CONDITIONS** (2026-07-24) — Wave 7 code verified (30 of 32 CRITICALs CLOSED_REAL; FND-001 inert, FND-026 partial); operator-gated conditions remain. See `docs/qa/qa-report.md` + `docs/deployment/LAUNCH_CHECKLIST.md`. Original register below is unchanged. |
 
 **Critical interpretation:** Test pass rate of 99.86% (13,585 / 13,604) did **not** catch any of the 33 criticals. Pass rate is not a substitute for negative-auth tests, money-precision tests, or mock-data lint rules. Detection-gap remediation is part of Wave 7.
 
@@ -210,7 +210,7 @@ Severity scale: **C** = Critical (exploitable today / financial-loss / regulator
 
 **Verdict: M1 (Closed Beta) = GO WITH CONDITIONS.** Not "done / ship-ready / 100%".
 
-**Verified CLOSED_REAL:** 30 of 32 M1-scope CRITICALs, confirmed from source by 4 reviewers with 600+
+**Verified CLOSED_REAL:** 30 of 32 M1-scope CRITICALs (FND-001 inert, FND-026 partial), confirmed from source by 4 reviewers with 600+
 security/money tests run fresh (0 failures). Tip gates green — web + mobile `tsc` 0, `npm run lint`
 0 errors, build OK, `audit:auth` 295/295, `test:auth-negative` 611, `npm test` 16,195 pass / 0 fail.
 **FND-001** is INERT_BEHIND_FLAG (per-route `withAuth` guards enforce; the middleware

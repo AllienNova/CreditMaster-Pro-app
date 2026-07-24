@@ -30,9 +30,11 @@ never disclosed**, both now fixed this session, plus conditions that are genuine
 | Cluster | Findings | Verdict | Tests run |
 |---|---|---|---|
 | Auth/RBAC (FND-001–006) | 6 | 5 CLOSED_REAL · **FND-001 INERT_BEHIND_FLAG** | api-guard/middleware/rbac — pass |
-| Payments/Money (FND-014–018, 024–027) | 9 | 7 CLOSED_REAL · **2 undisclosed live bugs (below)** | 281 money tests pass |
+| Payments/Money (FND-014–018, 024–027) | 9 | **8 CLOSED_REAL** (FND-024 closed; FND-026 partial — dual-rail) · **B1 fee bug found + fixed** (`14dd011`, a separate new finding) | 281 money tests pass |
 | Investments/Notif/Admin (FND-030–032, 041–044, 049–053) | 12 | 12 CLOSED_REAL | 138 tests pass |
 | Compliance/Mobile (FND-056–058, 064, 068) | 5 | 5 CLOSED_REAL · **FND-058 schema risk (below)** | breach 35 / consent 35 / erasure 130 / mobile 39 pass |
+
+> **Count reconciliation:** 30 of 32 = 32 enumerated M1 CRITICALs - FND-001 (INERT) - FND-026 (partial); per-cluster 5 + 8 + 12 + 5 = 30.
 
 **FND-001 (INERT_BEHIND_FLAG, not open-hole):** per-route `withAuth`/`withRole` enforcement is
 LIVE and independent of any flag (audit:auth 295/295 proves every route wrapped). Only the

@@ -8,7 +8,7 @@
 
 ## 🔒 Wave 7 M1 Security Gate — BLOCKING (read before anything else)
 
-Wave 7 remediation closed 26 M1-scope CRITICALs, verified from source (`docs/qa/qa-report.md`).
+Wave 7 remediation closed 30 of the 32 enumerated M1 CRITICALs (FND-001 inert, FND-026 partial), verified from source (`docs/qa/qa-report.md`).
 But the app currently runs on **one** auth-enforcement layer, not the intended two: per-route
 `withAuth`/`withRole` guards are LIVE (`audit:auth` reports 295/295 routes wrapped), while the
 **middleware deny-by-default backstop is OFF** — feature flag `auth.deny_by_default` seeds `false`
