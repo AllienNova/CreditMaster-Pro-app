@@ -1,14 +1,16 @@
 # Fynvita — Single Source of Truth (SSOT)
 
-> **VERSION-015 — WAVE 7 IN FLIGHT** (2026-05-16)
+> **VERSION-016 — WAVE 7 REMEDIATION VERIFIED; M1 = GO WITH CONDITIONS** (2026-07-24)
 >
-> **Wave 7 (Security & Correctness Remediation) is in flight.** The prior "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010 to VERSION-012) was invalidated by a 9-domain comprehensive code review (27 reviewer agents) that opened **33 CRITICAL** + 38 HIGH findings. Wave 7 Phase 0 (Foundation) is underway on branch `remediation/wave-7-foundation`; TASK-PRE-01 (honest re-baseline) completed 2026-05-16. No new feature work begins until Wave 7 closes per `build_order_blueprint.md`.
+> **Wave 7 (Security & Correctness Remediation) code is complete and adversarially verified — this is NOT a "done / ship-ready / 100%" claim.** The 9-domain audit's original 33 CRITICAL + 38 HIGH findings were remediated on branch `remediation/wave-7-foundation` (187 commits). A fresh 4-reviewer adversarial re-verification *from source* (2026-07-24) confirmed **26 M1-scope CRITICALs genuinely CLOSED_REAL** with 600+ passing tests — and found + fixed **2 previously-undisclosed live bugs**: the payout `calculateFees` dollar/cent error (a $50 payout netted $0; commit `14dd011`) and an unguarded GDPR-erasure RPC over 5 unmigrated tables (`7069485`).
 >
-> Current quality (TASK-PRE-01 re-baseline @ `900d286`): tests 14,967 pass / 0 fail / 19 skip and types 0 errors both PASS; `npm run lint` exits 1 with 15 pre-existing legacy errors + 3,193 warnings (non-blocking for the build, not introduced by Wave 7). The **nine-domain audit remains the authoritative signal and is FAIL — 33 CRITICAL findings open.** Ship: **BLOCKED** until Wave 7 closes. See `docs/ssot/health_metrics.md` for the full scorecard.
+> Current quality (@ tip): web + mobile `tsc` 0 errors, `npm run lint` 0 errors, `npm run build` OK, `audit:auth` 295/295, `test:auth-negative` 611, `npm test` 16,195 pass / 0 fail. All automated gates green.
 >
-> Pre-launch status (no live users yet) means there is **no current GDPR Art. 33 / CCPA disclosure obligation**, but every finding must close before public launch.
+> **M1 (Closed Beta) verdict: GO WITH CONDITIONS.** The code is shippable for M1, but launch is gated on **operator-only conditions that are unmet today** — chiefly **FND-001** (the `auth.deny_by_default` middleware backstop is INERT until a 24 h staging soak + prod flip; per-route guards *do* enforce today), a **live-schema audit** (payout/affiliate + 5 erasure tables absent from migrations), the **FND-026** dual-payout-rail decision, `main` branch protection, and `npm audit` (32 vulns, 1 critical). Blocking gate: `docs/deployment/LAUNCH_CHECKLIST.md`. Authoritative record: **`docs/qa/qa-report.md`**.
 >
-> Audit detail: see `docs/ssot/gap_analysis.md` (FND-001 through FND-071). Roadmap: see `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7.
+> Pre-launch status (no live users yet) means there is **no current GDPR Art. 33 / CCPA disclosure obligation**, but every condition must close before public launch.
+>
+> Audit detail + verification addendum: `docs/ssot/gap_analysis.md`. Roadmap: `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7.
 
 ---
 

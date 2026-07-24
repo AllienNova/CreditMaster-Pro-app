@@ -1,6 +1,6 @@
 # Gap Analysis — Audit-Driven Findings Register
 
-> **VERSION-013** — Generated 2026-05-03
+> **VERSION-016** — Generated 2026-05-03; **verification addendum 2026-07-24** (see §1 note + `docs/qa/qa-report.md`)
 > Source: 9-domain comprehensive code review (security + architecture + code quality), 27 reviewer agents.
 > **Re-baseline**: invalidates the prior "125/125 DONE / 100%" status reported in VERSION-010 through VERSION-012.
 
@@ -17,9 +17,17 @@
 | Findings opened | **33 CRITICAL**, **38 HIGH**, ~21 MEDIUM, ~21 LOW (71 enumerated in §2; banner count corrected from "~50 HIGH" 2026-05-03 post-QA) |
 | User exposure today | **None** (no live users yet — Fynvita branded as financial-education company in pre-launch) |
 | Disclosure obligations | Not currently triggered (no user data exposure to disclose). Re-evaluate before public launch. |
-| Ship decision | **BLOCKED** — Wave 7 must complete before launch |
+| Ship decision | **M1 = GO WITH CONDITIONS** (2026-07-24) — Wave 7 code verified (26 CRITICALs CLOSED_REAL); operator-gated conditions remain. See `docs/qa/qa-report.md` + `docs/deployment/LAUNCH_CHECKLIST.md`. Original register below is unchanged. |
 
 **Critical interpretation:** Test pass rate of 99.86% (13,585 / 13,604) did **not** catch any of the 33 criticals. Pass rate is not a substitute for negative-auth tests, money-precision tests, or mock-data lint rules. Detection-gap remediation is part of Wave 7.
+
+---
+
+## Verification addendum (2026-07-24)
+
+Wave 7 remediation was adversarially re-verified from source (4 reviewers, branch `remediation/wave-7-foundation`, 187 commits). **26 M1-scope CRITICALs confirmed CLOSED_REAL** with 600+ tests run fresh (0 failures). Verification **found and fixed 2 previously-undisclosed live bugs**: **B1** — payout `calculateFees` dollar/cent unit error (a $50 payout netted $0; fixed `14dd011`); **B2** — unguarded GDPR-erasure RPC over 5 unmigrated tables (fixed `7069485`). All automated gates green (`npm test` 16,195/0, `audit:auth` 295/295, web+mobile `tsc` 0, `npm run lint` 0 errors).
+
+**M1 verdict: GO WITH CONDITIONS** — not "done". Operator-gated conditions remain unmet: FND-001 `auth.deny_by_default` flip (24 h staging soak) + `audit:auth`/`test:auth-negative` into CI; live-schema audit (payout/affiliate + 5 erasure tables absent from migrations); FND-026 dual-payout-rail decision; `main` branch protection; `npm audit` (32 vulns, 1 critical). **Lower-severity residuals** (follow-up, not blockers): mock-fallback fabrication in `admin/subscriptions`+`disputes` when Supabase env unset; audit-log POST trusts client `user_id`/`ip`; `settings/billing/page.tsx` hardcodes card 4242; dead `auth-middleware.ts` JWT-role path (0 importers — delete); `dev-seed.ts` used by 6 mobile stores. Authoritative record: **`docs/qa/qa-report.md`**.
 
 ---
 
