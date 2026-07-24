@@ -22,70 +22,6 @@ interface CreditRepairService {
   verified: boolean;
 }
 
-// Fallback mock data for development/offline mode
-const mockServices: CreditRepairService[] = [
-  {
-    id: "1",
-    name: "Lexington Law",
-    rating: 4.5,
-    reviewCount: 12500,
-    bbbRating: "A+",
-    yearsInBusiness: 18,
-    priceRange: "$89-$129/mo",
-    services: ["Disputes", "Monitoring", "Identity Protection"],
-    guarantee: "90-day money back",
-    verified: true,
-  },
-  {
-    id: "2",
-    name: "Credit Saint",
-    rating: 4.7,
-    reviewCount: 8200,
-    bbbRating: "A",
-    yearsInBusiness: 15,
-    priceRange: "$79-$119/mo",
-    services: ["Disputes", "Score Tracking", "Creditor Intervention"],
-    guarantee: "90-day money back",
-    verified: true,
-  },
-  {
-    id: "3",
-    name: "Sky Blue Credit",
-    rating: 4.4,
-    reviewCount: 6800,
-    bbbRating: "A+",
-    yearsInBusiness: 20,
-    priceRange: "$79/mo flat",
-    services: ["Disputes", "Debt Validation", "Goodwill Letters"],
-    guarantee: "90-day money back",
-    verified: true,
-  },
-  {
-    id: "4",
-    name: "The Credit People",
-    rating: 4.3,
-    reviewCount: 5400,
-    bbbRating: "A",
-    yearsInBusiness: 12,
-    priceRange: "$69-$99/mo",
-    services: ["Disputes", "Score Analysis", "Credit Education"],
-    guarantee: "60-day money back",
-    verified: true,
-  },
-  {
-    id: "5",
-    name: "Ovation Credit",
-    rating: 4.2,
-    reviewCount: 4100,
-    bbbRating: "A-",
-    yearsInBusiness: 10,
-    priceRange: "$89-$149/mo",
-    services: ["Disputes", "Personal Case Manager", "Unlimited Challenges"],
-    guarantee: "30-day money back",
-    verified: false,
-  },
-];
-
 // Map API provider to CreditRepairService format
 function mapProviderToService(
   provider: Record<string, unknown>,
@@ -198,7 +134,7 @@ export default function ServicesPage() {
     "rating",
   );
   const [filterVerified, setFilterVerified] = useState(false);
-  const [services, setServices] = useState<CreditRepairService[]>(mockServices);
+  const [services, setServices] = useState<CreditRepairService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -217,21 +153,23 @@ export default function ServicesPage() {
       const response = await fetch(
         `/api/marketplace/providers?${params.toString()}`,
       );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch providers");
+      }
+
       const result = await response.json();
 
-      if (result.success && result.data && result.data.length > 0) {
+      if (result.success && Array.isArray(result.data)) {
         setServices(result.data.map(mapProviderToService));
       } else {
-        // Fallback to mock data
-        setServices(mockServices);
-        if (!result.success) {
-          setError("Unable to load from server. Showing sample data.");
-        }
+        setServices([]);
+        setError("Couldn't load providers. Try again.");
       }
     } catch (err) {
       console.error("Failed to fetch services:", err);
-      setServices(mockServices);
-      setError("Unable to load from server. Showing sample data.");
+      setServices([]);
+      setError("Couldn't load providers. Try again.");
     } finally {
       setLoading(false);
     }
@@ -260,11 +198,6 @@ export default function ServicesPage() {
         <p className="text-gray-600 dark:text-slate-300">
           Vetted credit repair companies to help improve your score
         </p>
-        {error && (
-          <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-            {error}
-          </p>
-        )}
       </div>
 
       {/* Controls */}
@@ -314,6 +247,22 @@ export default function ServicesPage() {
           <span className="ml-3 text-gray-600 dark:text-slate-300">
             Loading services...
           </span>
+        </div>
+      ) : filteredServices.length === 0 ? (
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-12 text-center border border-gray-200 dark:border-slate-700">
+          <p className="text-gray-600 dark:text-slate-300 mb-4">
+            {error
+              ? "Couldn't load providers. Try again."
+              : "No credit repair services available right now."}
+          </p>
+          {error && (
+            <button
+              onClick={fetchServices}
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Retry
+            </button>
+          )}
         </div>
       ) : view === "cards" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
