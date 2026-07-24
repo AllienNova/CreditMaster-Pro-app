@@ -26,6 +26,10 @@ let service: IncidentResponse;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Hermeticity: force real timers so this suite's Date-based resolution-time math
+  // is immune to a neighbor suite that left fake timers on (jest worker reordering
+  // surfaced this latent order-dependency). This suite uses real `new Date()`.
+  jest.useRealTimers();
   service = new IncidentResponse();
 });
 
