@@ -199,18 +199,74 @@ export const subscriptionApi = {
     }),
 };
 
+// The real web route (/api/notifications) returns notifications with `message`
+// and a broader type enum than the mobile Notification type (`body` + a smaller
+// enum). Adapt web -> mobile at the boundary so the store/screen see one shape.
+interface WebNotification {
+  id: string;
+  userId?: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
+const WEB_TO_MOBILE_NOTIFICATION_TYPE: Record<string, Notification["type"]> = {
+  dispute_update: "dispute_update",
+  dispute_overdue: "dispute_update",
+  dispute_reminder: "dispute_update",
+  draft_reminder: "dispute_update",
+  payment_success: "payment",
+  subscription_expiring: "payment",
+  score_reminder: "score_change",
+  document_uploaded: "alert",
+  tip: "recommendation",
+  welcome: "system",
+  system: "system",
+};
+
+export function mapWebNotification(n: WebNotification): Notification {
+  return {
+    id: n.id,
+    userId: n.userId ?? "",
+    type: WEB_TO_MOBILE_NOTIFICATION_TYPE[n.type] ?? "system",
+    title: n.title,
+    body: n.message,
+    read: n.read,
+    createdAt: n.createdAt,
+  };
+}
+
 // Notification Endpoints
 export const notificationApi = {
   /**
    * Get all notifications
    */
-  getAll: (params?: { page?: number; limit?: number; unreadOnly?: boolean }) => {
-    // The web route (/api/notifications) returns { notifications, unreadCount }
-    // and honors ?limit=; page/unreadOnly are not server-supported.
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    unreadOnly?: boolean;
+  }): Promise<
+    ApiResponse<{ notifications: Notification[]; unreadCount: number }>
+  > => {
+    // The web route honors ?limit= and returns { notifications, unreadCount } in
+    // the web notification shape; adapt each to the mobile Notification shape.
     const query = params?.limit ? `?limit=${params.limit}` : "";
-    return api.get<{ notifications: Notification[]; unreadCount: number }>(
-      `/notifications${query}`,
-    );
+    const res = await api.get<{
+      notifications: WebNotification[];
+      unreadCount: number;
+    }>(`/notifications${query}`);
+    if (res.success && res.data) {
+      return {
+        success: true,
+        data: {
+          notifications: res.data.notifications.map(mapWebNotification),
+          unreadCount: res.data.unreadCount,
+        },
+      };
+    }
+    return { success: false, error: res.error };
   },
 
   /**

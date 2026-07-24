@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,84 +6,17 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
-import { EmptyState } from "../../src/components/EmptyState";
+import { useNotificationStore } from "../../src/store/notificationStore";
+import type { Notification } from "../../src/services/api/types";
 
-interface Notification {
-  id: string;
-  type: "score_change" | "dispute_update" | "payment" | "alert" | "system";
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  actionUrl?: string;
-}
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    type: "score_change",
-    title: "Score Increased!",
-    message: "Your Experian score increased by 15 points to 695.",
-    timestamp: "2 hours ago",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "dispute_update",
-    title: "Dispute Resolved",
-    message: "Your dispute with Capital One has been resolved in your favor.",
-    timestamp: "5 hours ago",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "alert",
-    title: "New Hard Inquiry",
-    message: "A new hard inquiry was added to your TransUnion report.",
-    timestamp: "1 day ago",
-    read: true,
-  },
-  {
-    id: "4",
-    type: "payment",
-    title: "Payment Reminder",
-    message:
-      "Your subscription renews in 3 days. Update payment method if needed.",
-    timestamp: "2 days ago",
-    read: true,
-  },
-  {
-    id: "5",
-    type: "dispute_update",
-    title: "Dispute Submitted",
-    message: "Your dispute letter has been sent to Equifax.",
-    timestamp: "3 days ago",
-    read: true,
-  },
-  {
-    id: "6",
-    type: "system",
-    title: "New Feature Available",
-    message: "Try our new AI-powered credit analysis tool!",
-    timestamp: "1 week ago",
-    read: true,
-  },
-  {
-    id: "7",
-    type: "score_change",
-    title: "Score Alert",
-    message:
-      "Your Equifax score dropped by 8 points due to increased utilization.",
-    timestamp: "1 week ago",
-    read: true,
-  },
-];
-
-const getNotificationIcon = (type: string) => {
+const getNotificationIcon = (
+  type: Notification["type"],
+): { name: keyof typeof Ionicons.glyphMap; color: string } => {
   switch (type) {
     case "score_change":
       return { name: "trending-up-outline", color: "#4CAF50" };
@@ -93,6 +26,8 @@ const getNotificationIcon = (type: string) => {
       return { name: "card-outline", color: "#FF9800" };
     case "alert":
       return { name: "alert-circle-outline", color: "#EF4444" };
+    case "recommendation":
+      return { name: "bulb-outline", color: "#FFC107" };
     case "system":
       return { name: "information-circle-outline", color: "#9C27B0" };
     default:
@@ -103,35 +38,49 @@ const getNotificationIcon = (type: string) => {
   }
 };
 
+// The API delivers ISO createdAt strings; render a compact relative time.
+function formatTimestamp(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString();
+}
+
 export default function NotificationsScreen() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    error,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+  } = useNotificationStore();
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
   const filteredNotifications =
     filter === "unread" ? notifications.filter((n) => !n.read) : notifications;
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await fetchNotifications();
     setRefreshing(false);
   };
 
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
   const handleNotificationPress = (notification: Notification) => {
-    markAsRead(notification.id);
-    // Navigate based on notification type
+    if (!notification.read) markAsRead(notification.id);
     if (notification.type === "dispute_update") {
       router.push("/(tabs)/disputes");
     } else if (notification.type === "score_change") {
@@ -152,12 +101,14 @@ export default function NotificationsScreen() {
         <Text style={styles.headerTitle}>Notifications</Text>
         <View style={styles.headerActions}>
           {unreadCount > 0 && (
-            <TouchableOpacity onPress={markAllAsRead}>
+            <TouchableOpacity onPress={() => markAllAsRead()}>
               <Text style={styles.markAllText}>Mark all read</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            onPress={() => router.push("/settings/notification-preferences" as never)}
+            onPress={() =>
+              router.push("/settings/notification-preferences" as never)
+            }
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Ionicons
@@ -210,16 +161,39 @@ export default function NotificationsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {filteredNotifications.length === 0 ? (
-          <EmptyState
-            icon="checkmark-circle-outline"
-            title="All caught up!"
-            description={
-              filter === "unread"
+        {isLoading && notifications.length === 0 ? (
+          <View style={styles.centered} testID="notifications-loading">
+            <ActivityIndicator size="large" color={lightTheme.colors.primary} />
+          </View>
+        ) : error && notifications.length === 0 ? (
+          <View style={styles.centered} testID="notifications-error">
+            <Ionicons
+              name="cloud-offline-outline"
+              size={48}
+              color={lightTheme.colors.textSecondary}
+            />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => fetchNotifications()}
+            >
+              <Text style={styles.retryText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : filteredNotifications.length === 0 ? (
+          <View style={styles.centered} testID="notifications-empty">
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={48}
+              color={lightTheme.colors.primary}
+            />
+            <Text style={styles.emptyTitle}>All caught up!</Text>
+            <Text style={styles.emptyText}>
+              {filter === "unread"
                 ? "You have no unread notifications"
-                : "Notifications will appear here"
-            }
-          />
+                : "Notifications will appear here"}
+            </Text>
+          </View>
         ) : (
           filteredNotifications.map((notification) => {
             const icon = getNotificationIcon(notification.type);
@@ -238,11 +212,7 @@ export default function NotificationsScreen() {
                     { backgroundColor: icon.color + "20" },
                   ]}
                 >
-                  <Ionicons
-                    name={icon.name as any}
-                    size={24}
-                    color={icon.color}
-                  />
+                  <Ionicons name={icon.name} size={24} color={icon.color} />
                 </View>
                 <View style={styles.notificationContent}>
                   <View style={styles.notificationHeader}>
@@ -257,10 +227,10 @@ export default function NotificationsScreen() {
                     {!notification.read && <View style={styles.unreadDot} />}
                   </View>
                   <Text style={styles.notificationMessage} numberOfLines={2}>
-                    {notification.message}
+                    {notification.body}
                   </Text>
                   <Text style={styles.notificationTime}>
-                    {notification.timestamp}
+                    {formatTimestamp(notification.createdAt)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -319,11 +289,26 @@ const styles = StyleSheet.create({
   },
   filterTextActive: { color: "#FFFFFF" },
   content: { flex: 1 },
-  emptyState: {
+  centered: {
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 64,
+    paddingHorizontal: 24,
   },
+  errorText: {
+    fontSize: 14,
+    color: lightTheme.colors.textSecondary,
+    marginTop: 12,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: lightTheme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
   emptyTitle: {
     fontSize: 18,
     fontWeight: "600",
@@ -334,6 +319,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: lightTheme.colors.textSecondary,
     marginTop: 8,
+    textAlign: "center",
   },
   notificationItem: {
     flexDirection: "row",
