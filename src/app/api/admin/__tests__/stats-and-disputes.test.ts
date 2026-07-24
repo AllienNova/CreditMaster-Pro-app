@@ -258,7 +258,9 @@ describe("Admin Disputes API – GET /api/admin/disputes", () => {
     });
   });
 
-  describe("Mock data fallback (no env vars)", () => {
+  // FND-049 remediation (commit 9086c75): the route no longer fabricates mock
+  // disputes when Supabase is unconfigured — it returns an honest 503.
+  describe("Database not configured (honest 503, never mock)", () => {
     beforeEach(() => {
       authenticatedAdmin();
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -270,47 +272,15 @@ describe("Admin Disputes API – GET /api/admin/disputes", () => {
       process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
     });
 
-    it("should return 6 mock disputes when Supabase is not configured", async () => {
+    it("returns 503 with no fabricated disputes when Supabase is not configured", async () => {
       const res = await getDisputes(
         makeRequest("http://localhost:3000/api/admin/disputes"),
       );
       const body = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(body.disputes.length).toBe(6);
-      expect(body.total).toBe(6);
-    });
-
-    it("should include expected fields in mock disputes", async () => {
-      const res = await getDisputes(
-        makeRequest("http://localhost:3000/api/admin/disputes"),
-      );
-      const body = await res.json();
-
-      const first = body.disputes[0];
-      expect(first).toHaveProperty("id");
-      expect(first).toHaveProperty("user_id");
-      expect(first).toHaveProperty("user_email");
-      expect(first).toHaveProperty("bureau");
-      expect(first).toHaveProperty("status");
-      expect(first).toHaveProperty("item_type");
-      expect(first).toHaveProperty("item_description");
-    });
-
-    it("should have disputes with various statuses in mock data", async () => {
-      const res = await getDisputes(
-        makeRequest("http://localhost:3000/api/admin/disputes"),
-      );
-      const body = await res.json();
-      const statuses = body.disputes.map(
-        (d: { status: string }) => d.status,
-      );
-
-      expect(statuses).toContain("resolved");
-      expect(statuses).toContain("under_review");
-      expect(statuses).toContain("sent");
-      expect(statuses).toContain("draft");
-      expect(statuses).toContain("rejected");
+      expect(res.status).toBe(503);
+      expect(body.error).toMatch(/database not configured/i);
+      expect(body.disputes).toBeUndefined();
     });
   });
 
@@ -490,7 +460,9 @@ describe("Admin Disputes API – PATCH /api/admin/disputes", () => {
     });
   });
 
-  describe("Mock update (no env vars)", () => {
+  // FND-049 remediation (9086c75): PATCH returns an honest 503 when Supabase is
+  // unconfigured, never a fabricated "Mock update successful".
+  describe("Update with no DB configured (honest 503, never mock)", () => {
     beforeEach(() => {
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
       delete process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -501,7 +473,7 @@ describe("Admin Disputes API – PATCH /api/admin/disputes", () => {
       process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
     });
 
-    it("should return mock success when Supabase is not configured", async () => {
+    it("returns 503 (never a fabricated success) when Supabase is not configured", async () => {
       const req = makePatchRequest({
         disputeId: "d1",
         updates: { status: "resolved" },
@@ -509,9 +481,9 @@ describe("Admin Disputes API – PATCH /api/admin/disputes", () => {
       const res = await patchDispute(req);
       const body = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(body.success).toBe(true);
-      expect(body.message).toBe("Mock update successful");
+      expect(res.status).toBe(503);
+      expect(body.error).toMatch(/database not configured/i);
+      expect(body.success).toBeUndefined();
     });
   });
 

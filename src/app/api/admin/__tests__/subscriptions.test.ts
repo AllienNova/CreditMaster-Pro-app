@@ -110,7 +110,7 @@ describe("Admin Subscriptions API – GET /api/admin/subscriptions", () => {
     });
   });
 
-  describe("Mock data fallback (no env vars)", () => {
+  describe("Database not configured (honest 503, never mock)", () => {
     beforeEach(() => {
       authenticatedAdmin();
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -122,47 +122,15 @@ describe("Admin Subscriptions API – GET /api/admin/subscriptions", () => {
       process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
     });
 
-    it("should return mock subscriptions when Supabase is not configured", async () => {
+    it("returns 503 with no fabricated subscriptions when Supabase is not configured", async () => {
       const res = await GET(
         makeRequest("http://localhost:3000/api/admin/subscriptions"),
       );
       const body = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(body.subscriptions).toHaveLength(5);
-      expect(body.total).toBe(5);
-    });
-
-    it("should include expected fields in mock subscriptions", async () => {
-      const res = await GET(
-        makeRequest("http://localhost:3000/api/admin/subscriptions"),
-      );
-      const body = await res.json();
-      const first = body.subscriptions[0];
-
-      expect(first).toHaveProperty("id");
-      expect(first).toHaveProperty("user_id");
-      expect(first).toHaveProperty("user_email");
-      expect(first).toHaveProperty("stripe_subscription_id");
-      expect(first).toHaveProperty("stripe_price_id");
-      expect(first).toHaveProperty("status");
-      expect(first).toHaveProperty("current_period_start");
-      expect(first).toHaveProperty("current_period_end");
-      expect(first).toHaveProperty("cancel_at_period_end");
-    });
-
-    it("should include various statuses in mock data", async () => {
-      const res = await GET(
-        makeRequest("http://localhost:3000/api/admin/subscriptions"),
-      );
-      const body = await res.json();
-      const statuses = body.subscriptions.map(
-        (s: { status: string }) => s.status,
-      );
-
-      expect(statuses).toContain("active");
-      expect(statuses).toContain("past_due");
-      expect(statuses).toContain("canceled");
+      expect(res.status).toBe(503);
+      expect(body.error).toMatch(/database not configured/i);
+      expect(body.subscriptions).toBeUndefined();
     });
   });
 
@@ -349,7 +317,7 @@ describe("Admin Subscriptions API – DELETE /api/admin/subscriptions", () => {
     });
   });
 
-  describe("Mock cancellation (no env vars)", () => {
+  describe("Cancellation with no DB configured (honest 503, never mock)", () => {
     beforeEach(() => {
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
       delete process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -360,14 +328,14 @@ describe("Admin Subscriptions API – DELETE /api/admin/subscriptions", () => {
       process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
     });
 
-    it("should return mock success when Supabase is not configured", async () => {
+    it("returns 503 (never a fabricated success) when Supabase is not configured", async () => {
       const req = makeDeleteRequest({ subscriptionId: "sub_1234" });
       const res = await DELETE(req);
       const body = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(body.success).toBe(true);
-      expect(body.message).toBe("Mock cancellation successful");
+      expect(res.status).toBe(503);
+      expect(body.error).toMatch(/database not configured/i);
+      expect(body.success).toBeUndefined();
     });
   });
 

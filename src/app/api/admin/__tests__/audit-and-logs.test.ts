@@ -303,7 +303,10 @@ describe("Admin Audit API – POST /api/admin/audit", () => {
       expect(body.log).toEqual(createdRow);
     });
 
-    it("should pass the correct payload to Supabase insert", async () => {
+    // FND remediation (21d01e6): the actor is derived from the authenticated
+    // session (user.id) and the IP from request headers — NOT the client body.
+    // A spoofed userId/ipAddress in the body must be ignored.
+    it("derives user_id from the session + ip from headers, ignoring spoofed body values", async () => {
       const singleMock = jest.fn().mockResolvedValue({
         data: { id: "a1" },
         error: null,
@@ -313,6 +316,7 @@ describe("Admin Audit API – POST /api/admin/audit", () => {
       mockFrom.mockReturnValue({ insert: insertMock });
       mockCreateClient.mockReturnValue({ from: mockFrom });
 
+      // Attacker attempts to spoof user_id + ip via the request body.
       const req = makePostRequest("http://localhost:3000/api/admin/audit", {
         action: "dispute_created",
         userId: "u5",
@@ -323,14 +327,15 @@ describe("Admin Audit API – POST /api/admin/audit", () => {
       await postAudit(req);
 
       expect(mockFrom).toHaveBeenCalledWith("audit_logs");
-      expect(insertMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: "dispute_created",
-          user_id: "u5",
-          details: { disputeId: "d100" },
-          ip_address: "10.0.0.1",
-        }),
-      );
+      const payload = insertMock.mock.calls[0][0];
+      // Session id is used, NOT the spoofed body userId.
+      expect(payload.user_id).toBe("admin-1");
+      expect(payload.user_id).not.toBe("u5");
+      // No forwarding header on this request → "unknown", NOT the spoofed body ip.
+      expect(payload.ip_address).toBe("unknown");
+      expect(payload.ip_address).not.toBe("10.0.0.1");
+      expect(payload.action).toBe("dispute_created");
+      expect(payload.details).toEqual({ disputeId: "d100" });
     });
   });
 
