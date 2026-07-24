@@ -5,6 +5,14 @@
 > gap is almost entirely CLIENT WIRING, not backend.** No new routes needed except rewriting one
 > fabricating stub. Sequence: **P0 (mobile tsc green) must land before any mobile wiring.**
 
+## Progress (2026-07-24)
+- ✅ **Dashboard `/api/user/analytics`** — de-Math.random'd → real `credit_score_history`, zeroed fake dispute default, neutral (non-fabricated) factors (`484387c`, 11 tests).
+- ✅ **AI Insights `/api/financial/ai-insights`** — de-fabricated (was healthScore=78 + fake predictions) → real `vitalityScoreService` + `spendingForecastService` (`e2071a3`, 9 tests).
+- ✅ **Marketplace** — silent mock-fallbacks removed → honest empty/error states (`51375f4`, subagent, 11 tests).
+- ✅ **Regression cleanup** — 9 stale admin tests (codified the removed mock-fallback + audit-spoof behavior, missed when co-located tests were updated) fixed to assert the secure behavior (`2fc1686`).
+- **Gates after**: full suite 16,194 pass / 0 fail (778 suites), whole-project `tsc` 0, `lint` 0 errors.
+- **Remaining (UI-heavy, device-test-gated — best driven as a focused session with the app running)**: mobile screen wiring (Admin/Insights/Notifications/Documents/Savings/Budgeting/Dashboard → real stores/APIs, drop `__DEV__` seeds); web Budgeting 4 subpages; web Dashboard page fetches; web Savings hardcoded-interest; the marketplace route-auth product decision (public-browse?).
+
 ## Per-workflow tasks
 
 ### 1. Admin Analytics — Mobile M
