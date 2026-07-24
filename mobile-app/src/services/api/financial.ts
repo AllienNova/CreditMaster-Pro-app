@@ -111,6 +111,63 @@ export function mapWebDashboard(
   };
 }
 
+// ---------------------------------------------------------------------------
+// AI insights — web -> mobile adapter (PARITY-P1)
+// ---------------------------------------------------------------------------
+// The real web route (GET /api/ai/insights, withAuth) is what the web /insights
+// page renders. It returns an InsightsResponse whose `insights` array is
+// CoachingInsight[] = { type, title, description, data? } — a NARROW 4-value type
+// union (observation|suggestion|warning|celebration) with NO id, priority, amount,
+// or action fields. The mobile screen previously rendered a fabricated 6-type
+// Insight carrying invented priority/amount/action data; adapt the real, narrower
+// shape at the boundary instead of faking those fields. The source carries no id,
+// so derive a stable one from list position.
+export type InsightType =
+  | "observation"
+  | "suggestion"
+  | "warning"
+  | "celebration";
+
+export interface Insight {
+  id: string;
+  type: InsightType;
+  title: string;
+  description: string;
+}
+
+interface WebCoachingInsight {
+  type?: string;
+  title?: string;
+  description?: string;
+  data?: Record<string, unknown>;
+}
+
+// The /api/ai/insights payload also carries `coaching` and `personality`; the
+// mobile screen renders only the insights list, so the rest is ignored here.
+interface WebInsightsResponse {
+  insights?: WebCoachingInsight[];
+}
+
+const INSIGHT_TYPES: readonly InsightType[] = [
+  "observation",
+  "suggestion",
+  "warning",
+  "celebration",
+];
+
+export function mapWebInsight(raw: WebCoachingInsight, index: number): Insight {
+  const type =
+    raw.type && (INSIGHT_TYPES as readonly string[]).includes(raw.type)
+      ? (raw.type as InsightType)
+      : "observation";
+  return {
+    id: `insight-${index}`,
+    type,
+    title: raw.title ?? "",
+    description: raw.description ?? "",
+  };
+}
+
 // Financial Overview
 export const financialOverviewApi = {
   /**
@@ -123,6 +180,21 @@ export const financialOverviewApi = {
     const res = await api.get<WebFinancialDashboard>("/financial/dashboard");
     if (res.success && res.data) {
       return { success: true, data: mapWebDashboard(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Get personalized AI insights. Hits the same real route the web /insights page
+   * uses (GET /api/ai/insights, withAuth); extract the `insights` list and adapt
+   * each web CoachingInsight to the mobile Insight shape. Never fabricate on
+   * failure — pass the error through.
+   */
+  getInsights: async (): Promise<ApiResponse<{ insights: Insight[] }>> => {
+    const res = await api.get<WebInsightsResponse>("/ai/insights");
+    if (res.success && res.data) {
+      const raw = Array.isArray(res.data.insights) ? res.data.insights : [];
+      return { success: true, data: { insights: raw.map(mapWebInsight) } };
     }
     return { success: false, error: res.error };
   },
