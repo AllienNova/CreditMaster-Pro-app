@@ -11,7 +11,15 @@
 - ✅ **Marketplace** — silent mock-fallbacks removed → honest empty/error states (`51375f4`, subagent, 11 tests).
 - ✅ **Regression cleanup** — 9 stale admin tests (codified the removed mock-fallback + audit-spoof behavior, missed when co-located tests were updated) fixed to assert the secure behavior (`2fc1686`).
 - **Gates after**: full suite 16,194 pass / 0 fail (778 suites), whole-project `tsc` 0, `lint` 0 errors.
-- **Remaining (UI-heavy, device-test-gated — best driven as a focused session with the app running)**: mobile screen wiring (Admin/Insights/Notifications/Documents/Savings/Budgeting/Dashboard → real stores/APIs, drop `__DEV__` seeds); web Budgeting 4 subpages; web Dashboard page fetches; web Savings hardcoded-interest; the marketplace route-auth product decision (public-browse?).
+- ✅ **Mobile Documents** — wired to real `documentApi` (list + real upload via picker), mock removed, `dashboard/documents` duplicate collapsed to a re-export, mobile `tsc` 0, 6 tests (`c336d63`).
+- ✅ **Web Bills (Budgeting)** — wired to real `/api/financial/bills` (session guard, Bearer, API→Bill map, honest states), web `tsc` 0, 7 tests (`4e4344e`).
+
+### Drive status (2026-07-24)
+Parallel subagent drive (one mobile lane + one web lane) hit the **account session limit** (resets ~9:40am ET) — Documents landed, but the in-flight Notifications (mobile) + a second Bills attempt were terminated; the Bills page wiring + test were complete and I salvaged/verified/committed them. Notifications failed too early to leave any partial. Main-loop commits still work; only subagent *spawning* is blocked until the reset.
+
+- **Notifications spec (ready to dispatch)**: mobile `notificationApi` (`services/api/user.ts` ~L225-231) calls dead endpoints — fix to the real web contract: `markAsRead(id)` → `PATCH /notifications {notificationId:id, action:"mark_read"}`; `markAllAsRead()` → `PATCH /notifications {action:"mark_all_read"}`; delete → `DELETE /notifications?notificationId=`; `getAll` → `{notifications, unreadCount}`. Then wire `app/notifications/index.tsx` to `useNotificationStore`, drop the `__DEV__` seed (`notificationStore.ts` ~L80-89).
+- **Remaining**: mobile screens (Notifications, Savings, Dashboard, Insights, Admin-analytics → real stores/APIs, drop `__DEV__` seeds); web Budgeting Subscriptions/Auto-save/Zero-based; web Dashboard page fetches; web Savings hardcoded-interest (needs product call); marketplace route-auth (public-browse?) product call.
+- **Resume**: relaunch one mobile + one web implementer subagent from this list when capacity returns; each keeps its package's `tsc` green, adds tests, commits atomically, pushes with rebase-retry.
 
 ## Per-workflow tasks
 
