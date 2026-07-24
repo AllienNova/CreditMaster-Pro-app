@@ -19,6 +19,12 @@ import {
   Target,
   DollarSign,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import {
+  CATEGORY_DISPLAY_NAMES,
+  type SmartBudgetCategory,
+  type CategoryType,
+} from "@/lib/financial/types/budget.types";
 
 interface BudgetCategory {
   id: string;
@@ -36,61 +42,74 @@ interface BudgetPriorities {
   lifestyle: number;
 }
 
-const CATEGORY_TEMPLATES: Record<
-  string,
-  { icon: React.ReactNode; color: string; type: BudgetCategory["type"] }
+/**
+ * Presentation-only visuals per budget type. Icons and accent colors are UI
+ * affordances, not financial data — the category set and every dollar amount
+ * come from the real zero-based budgets API.
+ */
+const TYPE_VISUALS: Record<
+  BudgetCategory["type"],
+  { icon: React.ReactNode; color: string }
 > = {
-  housing: {
-    icon: <Home className="w-4 h-4" />,
-    color: "bg-blue-500",
-    type: "essential",
-  },
-  utilities: {
-    icon: <Sparkles className="w-4 h-4" />,
-    color: "bg-blue-500",
-    type: "essential",
-  },
-  groceries: {
-    icon: <ShoppingCart className="w-4 h-4" />,
-    color: "bg-green-500",
-    type: "essential",
-  },
-  transportation: {
-    icon: <Car className="w-4 h-4" />,
-    color: "bg-orange-500",
-    type: "essential",
-  },
-  debt_payments: {
-    icon: <CreditCard className="w-4 h-4" />,
-    color: "bg-red-500",
-    type: "debt",
-  },
-  savings: {
-    icon: <PiggyBank className="w-4 h-4" />,
-    color: "bg-emerald-500",
-    type: "savings",
-  },
-  emergency_fund: {
-    icon: <Target className="w-4 h-4" />,
-    color: "bg-teal-500",
-    type: "savings",
-  },
-  dining_out: {
-    icon: <Utensils className="w-4 h-4" />,
-    color: "bg-emerald-500",
-    type: "lifestyle",
-  },
-  entertainment: {
-    icon: <Sparkles className="w-4 h-4" />,
-    color: "bg-blue-500",
-    type: "lifestyle",
-  },
-  shopping: {
-    icon: <ShoppingCart className="w-4 h-4" />,
-    color: "bg-blue-500",
-    type: "lifestyle",
-  },
+  essential: { icon: <Home className="w-4 h-4" />, color: "bg-blue-500" },
+  debt: { icon: <CreditCard className="w-4 h-4" />, color: "bg-red-500" },
+  savings: { icon: <PiggyBank className="w-4 h-4" />, color: "bg-emerald-500" },
+  lifestyle: { icon: <Sparkles className="w-4 h-4" />, color: "bg-purple-500" },
 };
+
+/** Finer per-category icons for well-known categories (presentation only). */
+const CATEGORY_ICONS = new Map<string, React.ReactNode>([
+  ["housing", <Home key="housing" className="w-4 h-4" />],
+  ["groceries", <ShoppingCart key="groceries" className="w-4 h-4" />],
+  ["transportation", <Car key="transportation" className="w-4 h-4" />],
+  ["emergency_fund", <Target key="emergency_fund" className="w-4 h-4" />],
+  ["investments", <TrendingUp key="investments" className="w-4 h-4" />],
+  ["dining_out", <Utensils key="dining_out" className="w-4 h-4" />],
+  ["shopping", <ShoppingCart key="shopping" className="w-4 h-4" />],
+]);
+
+/** Engine `CategoryType` → this page's four-way budget type. */
+const PAGE_TYPE_BY_API = new Map<CategoryType, BudgetCategory["type"]>([
+  ["ESSENTIAL", "essential"],
+  ["DEBT", "debt"],
+  ["SAVINGS", "savings"],
+  ["INVESTMENT", "savings"],
+  ["DISCRETIONARY", "lifestyle"],
+]);
+
+const displayNameFor = (value: string): string =>
+  (CATEGORY_DISPLAY_NAMES as Record<string, string | undefined>)[value] ??
+  value;
+
+/**
+ * Map a real API `SmartBudgetCategory` (from POST
+ * /api/financial/budgets/generate/zero-based → `data.budget.categories`) to the
+ * shape this wizard renders. `id`, `name`, `type`, and the dollar `allocated`
+ * amount all come from the server; icon and color are presentation-only. The
+ * amount is rounded to whole dollars to match the wizard's integer-dollar
+ * inputs — the allocate step lets the user fine-tune any rounding residual to
+ * reach a true zero-based total.
+ */
+const mapApiCategory = (api: SmartBudgetCategory): BudgetCategory => {
+  const type = PAGE_TYPE_BY_API.get(api.type) ?? "lifestyle";
+  return {
+    id: api.id,
+    name: displayNameFor(api.name),
+    icon: CATEGORY_ICONS.get(api.name) ?? TYPE_VISUALS[type].icon,
+    allocated: Math.round(api.allocatedAmount),
+    type,
+    color: TYPE_VISUALS[type].color,
+  };
+};
+
+/** Shape of POST /api/financial/budgets/generate/zero-based (defensive parse). */
+interface ZeroBasedApiResponse {
+  success?: boolean;
+  data?: {
+    budget?: { categories?: SmartBudgetCategory[] };
+    unallocated?: number;
+  };
+}
 
 export default function ZeroBasedBudgetPage() {
   const [step, setStep] = useState<
@@ -105,6 +124,7 @@ export default function ZeroBasedBudgetPage() {
   });
   const [categories, setCategories] = useState<BudgetCategory[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const totalAllocated = categories.reduce(
     (sum, cat) => sum + cat.allocated,
@@ -117,83 +137,61 @@ export default function ZeroBasedBudgetPage() {
     priorities.savings +
     priorities.lifestyle;
 
+  /**
+   * Generate the budget from the user's real income + priorities via the
+   * zero-based budgets API. The server allocates income across category pools
+   * (driven by the priority percentages, weighted by real transaction history)
+   * and returns the categories this wizard renders. No client-side fabrication
+   * and no mock fallback: an unauthenticated user is prompted to sign in, and a
+   * failed request surfaces an honest error instead of a fake budget.
+   */
   const generateBudget = async () => {
     setIsGenerating(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setGenerateError(null);
 
-    const pools = {
-      essentials: monthlyIncome * (priorities.essentials / 100),
-      debt: monthlyIncome * (priorities.debtPayoff / 100),
-      savings: monthlyIncome * (priorities.savings / 100),
-      lifestyle: monthlyIncome * (priorities.lifestyle / 100),
-    };
+    try {
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    const newCategories: BudgetCategory[] = [
-      {
-        id: "1",
-        name: "Housing",
-        ...CATEGORY_TEMPLATES.housing,
-        allocated: Math.round(pools.essentials * 0.5),
-      },
-      {
-        id: "2",
-        name: "Utilities",
-        ...CATEGORY_TEMPLATES.utilities,
-        allocated: Math.round(pools.essentials * 0.1),
-      },
-      {
-        id: "3",
-        name: "Groceries",
-        ...CATEGORY_TEMPLATES.groceries,
-        allocated: Math.round(pools.essentials * 0.25),
-      },
-      {
-        id: "4",
-        name: "Transportation",
-        ...CATEGORY_TEMPLATES.transportation,
-        allocated: Math.round(pools.essentials * 0.15),
-      },
-      {
-        id: "5",
-        name: "Debt Payments",
-        ...CATEGORY_TEMPLATES.debt_payments,
-        allocated: Math.round(pools.debt),
-      },
-      {
-        id: "6",
-        name: "Savings",
-        ...CATEGORY_TEMPLATES.savings,
-        allocated: Math.round(pools.savings * 0.6),
-      },
-      {
-        id: "7",
-        name: "Emergency Fund",
-        ...CATEGORY_TEMPLATES.emergency_fund,
-        allocated: Math.round(pools.savings * 0.4),
-      },
-      {
-        id: "8",
-        name: "Dining Out",
-        ...CATEGORY_TEMPLATES.dining_out,
-        allocated: Math.round(pools.lifestyle * 0.35),
-      },
-      {
-        id: "9",
-        name: "Entertainment",
-        ...CATEGORY_TEMPLATES.entertainment,
-        allocated: Math.round(pools.lifestyle * 0.35),
-      },
-      {
-        id: "10",
-        name: "Shopping",
-        ...CATEGORY_TEMPLATES.shopping,
-        allocated: Math.round(pools.lifestyle * 0.3),
-      },
-    ];
+      if (!session) {
+        setGenerateError("Sign in to generate your budget.");
+        return;
+      }
 
-    setCategories(newCategories);
-    setIsGenerating(false);
-    setStep("allocate");
+      const res = await fetch("/api/financial/budgets/generate/zero-based", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ monthlyIncome, priorities }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to generate budget (${res.status})`);
+      }
+
+      const body = (await res.json()) as ZeroBasedApiResponse;
+      const mapped = (body.data?.budget?.categories ?? []).map(mapApiCategory);
+
+      if (mapped.length === 0) {
+        setGenerateError(
+          "We couldn't build a budget from those numbers. Try adjusting your income or priorities.",
+        );
+        return;
+      }
+
+      setCategories(mapped);
+      setStep("allocate");
+    } catch (err) {
+      setGenerateError(
+        err instanceof Error ? err.message : "Failed to generate budget.",
+      );
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const updateCategoryAllocation = (categoryId: string, amount: number) => {
@@ -505,9 +503,23 @@ export default function ZeroBasedBudgetPage() {
                 </div>
               </div>
 
+              {generateError && (
+                <div className="p-4 rounded-lg mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    <span className="text-sm font-medium text-red-700 dark:text-red-300">
+                      {generateError}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStep("income")}
+                  onClick={() => {
+                    setGenerateError(null);
+                    setStep("income");
+                  }}
                   className="flex-1 py-3 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   Back
