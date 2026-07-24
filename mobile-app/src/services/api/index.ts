@@ -113,6 +113,17 @@ export {
   type MarketplaceProvider,
   type MarketplaceTradeline,
 } from "./marketplace";
+export {
+  adminAnalyticsApi,
+  ANALYTICS_RANGES,
+  type AnalyticsRange,
+  type AdminAnalytics,
+  type UserGrowthPoint,
+  type RevenuePoint,
+  type DisputeStatusCount,
+  type SubscriptionTierCount,
+  type FeatureUsage,
+} from "./admin";
 
 // Type exports
 export * from "./types";
