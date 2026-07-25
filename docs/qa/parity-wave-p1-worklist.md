@@ -189,7 +189,7 @@ Web `src/`-only-wireable screens are DONE (paper, journal, goodwill-letters, das
 |---|---|
 | `admin/analytics` | ✅ already-wired (`adminAnalyticsApi` → `/api/admin/analytics`) |
 | `admin/disputes` | ✅ DONE `19eae07` (`/api/admin/disputes` real table+user_email; `mapAdminDispute`; real status enum; 16 tests) |
-| `admin/audit` | 🔧 next (resumed agent) — list wireable (`/api/admin/audit` real `audit_logs`+profiles); but screen's `type` (login/data/admin/security) has NO column → drop type icon/color/filter |
+| `admin/audit` | ⛔ FABRICATION-RISK (deeper look overrode "partial") — `audit_logs` SCHEMA DRIFT (002 UUID/resource_type/old_values vs 20260217 TEXT/event_type/metadata, both IF NOT EXISTS; route POST inserts a `details` col in NEITHER); screen's `type` + `details` have NO source column; profiles FK unreliable → would fabricate. Unblocker: reconcile schema + add `type`/`category` column |
 | `admin/logs` | ⛔ dead-source — `/api/admin/logs` is honest-empty always (`dataAvailable:false`, no `system_logs` table); wireable but permanently empty |
 | `admin/subscriptions` | ⛔ concept-mismatch/high-fab — schema drift (Stripe shape vs cancellation-tracking); `plan`/`amount`/`nextBilling` unsourced (broken FND-018 path); web admin subs itself 100% mock |
 | `admin/health` | ⛔ concept-mismatch — `/api/monitoring/health` returns runtime uptime/mem/cpu, not the per-service up/down list the screen models (would fabricate services) |
