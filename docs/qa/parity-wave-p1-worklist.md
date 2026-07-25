@@ -61,8 +61,8 @@ All 8 screens shared a fake `setTimeout(600)` load + a module-level hardcoded ar
 - ✅ DONE `58d8ea0` — `mobile-app/app/financial/bills.tsx` `MOCK_BILLS` silent-fallback removed; wired to real `getBills`/`mapWebBill`; honest error+retry; removed fake per-bill "paid" status + hardcoded calendar dots (7 tests).
 
 ---
-## ⏸ SESSION-LIMIT CHECKPOINT (2026-07-25, LATEST) — resets **1pm ET**; NEW SUBAGENTS BLOCKED until then
-Recurring session-limit pattern: subagent commits its work then dies before push; the main session verifies (tsc + tests) + salvage-pushes. Salvaged this cycle: **`af62dd9` billing/index** (removed the fabricated "Visa •••• 4242" card = mobile face of FND-016, wired to real `subscriptionApi.getBillingOverview`; 20 tests). Tree clean. **Resume after 1pm ET, or switch to fresh quota.**
+## ▶ SESSION-LIMIT CHECKPOINT (2026-07-25) — RESUMED (subagents freed before 1pm, like the 8am cycle)
+Recurring session-limit pattern: subagent commits its work then dies before push; the main session verifies + salvage-pushes; quota then frees early. Salvaged: **`af62dd9` billing/index** (removed the fabricated "Visa •••• 4242" card = mobile face of FND-016; 20 tests). Then subagents freed → **DRIVE RESUMED**: **`a610588` billing/subscription** (real Stripe `/api/payment/billing`; removed a fabricated plan catalog with nonexistent "Basic"/"Enterprise" tiers; 38 tests). **billing/invoices in flight** (last billing screen → completes P2 billing). If the limit recurs: salvage-push local commits + resume on quota-free.
 
 ### Landed since the earlier 8am checkpoint (all verified green, pushed):
 P4 journal (`9085b88`) · **financial mobile domain COMPLETE** (cash-flow `d0afa8e`, net-worth `d7f890e`, debt `015af6f`, spending `c50f241`) · web goodwill-letters (`ac0c73f`) · web dashboard/spending (`632a85d`) · building de-fabrication (`0b8aeec`) · billing/index (`af62dd9`). Web client-wiring now EXHAUSTED (remaining web = backend, decision #4). Real bugs caught: net-worth Plaid classification, debt `$NaN` reports, `/financial/insights/*` mis-path, `__proto__` pollution, budget fabrication, FND-016 mobile card.
