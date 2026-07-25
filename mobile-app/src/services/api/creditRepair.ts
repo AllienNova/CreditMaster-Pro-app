@@ -194,6 +194,127 @@ export function mapWebNegotiation(raw: WebNegotiation): NegotiationDebt {
   };
 }
 
+// --- Mobile-facing credit-inquiry shape --------------------------------------
+// The mobile Inquiries screen renders a creditor, the inquiry date, an optional
+// bureau, and whether the inquiry is removable. The web route
+// (GET /api/credit-repair/inquiries) exposes the raw facts — inquiry type, date,
+// and an optional bureau embedded from the parent credit report — but NOT a
+// "removable" flag; that is derived here from the FCRA reporting window so the
+// mobile screen never fabricates eligibility.
+
+export type InquiryType = "hard" | "soft";
+export type InquiryBureau = "experian" | "equifax" | "transunion";
+
+export interface CreditInquiry {
+  id: string;
+  creditor: string;
+  inquiryDate: string; // ISO 8601 string over HTTP
+  inquiryType: InquiryType;
+  bureau?: InquiryBureau; // omitted when the route omits it (report unreadable)
+  removable: boolean; // derived — see mapWebInquiry
+}
+
+/**
+ * Raw inquiry as returned by GET /api/credit-repair/inquiries
+ * (src/lib/credit-repair/db/inquiries-db-service.ts `CreditInquiry`). The web
+ * route serializes the record with `NextResponse.json`, so its `Date` columns
+ * (inquiryDate, createdAt) arrive as ISO strings, and `bureau` is optional
+ * because it is embedded from the parent credit report (undefined when that row
+ * is unreadable). Fields the mobile screen does not render are declared for
+ * documentation but left optional and tolerant, so a partial payload never
+ * throws. `isDisputed` is a real fact ("a dispute has already been filed") that
+ * is intentionally NOT used to derive `removable` — see mapWebInquiry.
+ */
+export interface WebCreditInquiry {
+  id: string;
+  userId?: string;
+  reportId?: string;
+  inquiryType?: string;
+  creditorName?: string;
+  inquiryDate?: string;
+  bureau?: string;
+  isDisputed?: boolean;
+  disputeId?: string;
+  createdAt?: string;
+}
+
+const KNOWN_BUREAUS: readonly InquiryBureau[] = [
+  "experian",
+  "equifax",
+  "transunion",
+];
+
+// Pass the bureau through only when it is a recognized value; the route embeds
+// it from the parent credit report and omits it when that row is unreadable, so
+// an absent or unknown bureau becomes `undefined` rather than a fabricated one.
+function normalizeBureau(bureau: string | undefined): InquiryBureau | undefined {
+  return bureau && (KNOWN_BUREAUS as readonly string[]).includes(bureau)
+    ? (bureau as InquiryBureau)
+    : undefined;
+}
+
+// Only "hard" inquiries affect the score and are disputable as obsolete; any
+// other value (including "soft" and unknown/missing) is treated as "soft", the
+// floor that never claims removability.
+function normalizeInquiryType(type: string | undefined): InquiryType {
+  return type === "hard" ? "hard" : "soft";
+}
+
+// FCRA reporting window (15 U.S.C. §1681c(a)(3)): a hard inquiry may be reported
+// for up to 24 months, after which it is obsolete and should fall off — the
+// point at which the mobile screen surfaces it as removable.
+const HARD_INQUIRY_REMOVABLE_MONTHS = 24;
+
+/**
+ * Whole calendar months elapsed from an ISO inquiry date to `now`. An absent,
+ * unparseable, or future date yields <= 0 months (never removable). A not-yet-
+ * complete final month is corrected down by the day-of-month so the count never
+ * rounds up.
+ */
+function inquiryAgeMonths(inquiryDateIso: string, now: Date): number {
+  if (!inquiryDateIso) return 0;
+  const then = new Date(inquiryDateIso);
+  if (Number.isNaN(then.getTime())) return 0;
+  let months =
+    (now.getFullYear() - then.getFullYear()) * 12 +
+    (now.getMonth() - then.getMonth());
+  if (now.getDate() < then.getDate()) months -= 1;
+  return months;
+}
+
+/**
+ * Map a web credit inquiry onto the mobile CreditInquiry shape. Web uses
+ * `creditorName`; mobile uses `creditor`. `inquiryDate` is preserved as-is
+ * (already an ISO string over HTTP). `bureau` passes through only when it is a
+ * recognized bureau, and is omitted otherwise rather than fabricated.
+ *
+ * `removable` is DERIVED, not read from the payload: the route exposes
+ * `isDisputed` ("a dispute has already been filed"), which is a distinct fact
+ * from removability ("eligible to dispute/remove as obsolete") — mapping
+ * `isDisputed` onto `removable` would misrepresent the data. Instead removability
+ * follows the FCRA rule: a hard inquiry that is at least 24 months old. Soft
+ * inquiries, recent hard inquiries, and inquiries with an unusable date are never
+ * marked removable. `now` is injectable for deterministic testing.
+ */
+export function mapWebInquiry(
+  raw: WebCreditInquiry,
+  now: Date = new Date(),
+): CreditInquiry {
+  const inquiryType = normalizeInquiryType(raw.inquiryType);
+  const inquiryDate = raw.inquiryDate ?? "";
+  const removable =
+    inquiryType === "hard" &&
+    inquiryAgeMonths(inquiryDate, now) >= HARD_INQUIRY_REMOVABLE_MONTHS;
+  return {
+    id: raw.id,
+    creditor: raw.creditorName ?? "",
+    inquiryDate,
+    inquiryType,
+    bureau: normalizeBureau(raw.bureau),
+    removable,
+  };
+}
+
 export const creditRepairApi = {
   /**
    * Get all goodwill letters for the current user. The web route returns
@@ -235,6 +356,32 @@ export const creditRepairApi = {
         ? res.data.negotiations.map(mapWebNegotiation)
         : [];
       return { success: true, data: { debts } };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Get all credit inquiries for the current user. The web route returns
+   * `{ inquiries, stats, pagination }`; the shared client unwraps the
+   * `{ success, data }` envelope, so `res.data` is that inner object. The
+   * inquiries are adapted onto the mobile CreditInquiry shape, with `removable`
+   * derived from the FCRA 24-month rule. A single `now` is captured for the whole
+   * batch so every inquiry's removability is measured against one clock; the
+   * arrow wrapper keeps the array index from being passed as `now`. A failed
+   * request passes straight through without fabricating data.
+   */
+  getInquiries: async (): Promise<
+    ApiResponse<{ inquiries: CreditInquiry[] }>
+  > => {
+    const now = new Date();
+    const res = await api.get<{ inquiries?: WebCreditInquiry[] }>(
+      "/credit-repair/inquiries",
+    );
+    if (res.success && res.data) {
+      const inquiries = Array.isArray(res.data.inquiries)
+        ? res.data.inquiries.map((r) => mapWebInquiry(r, now))
+        : [];
+      return { success: true, data: { inquiries } };
     }
     return { success: false, error: res.error };
   },

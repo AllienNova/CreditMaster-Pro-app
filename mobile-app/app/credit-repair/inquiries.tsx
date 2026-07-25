@@ -1,9 +1,17 @@
 /**
  * Fynvita Inquiry Removal Screen
- * Remove hard inquiries from credit report
+ *
+ * Real-data wiring (PARITY-P2): renders the user's real credit inquiries from
+ * GET /api/credit-repair/inquiries (withAuth) via creditRepairApi.getInquiries,
+ * adapted web -> mobile by mapWebInquiry. Fetch on mount with honest inline
+ * loading / error / empty states, a retry, and pull-to-refresh. The former
+ * hardcoded INQUIRIES array, the local Inquiry interface, the fake setTimeout
+ * load, and the fake "Dispute filed successfully" alert were removed; the stats
+ * are computed from the real inquiries and each inquiry's removability is derived
+ * from the FCRA 24-month rule. Nothing is fabricated.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,86 +19,93 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
+  RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { creditRepairApi } from "../../src/services/api/creditRepair";
+import type {
+  CreditInquiry,
+  InquiryBureau,
+} from "../../src/services/api/creditRepair";
 
-interface Inquiry {
-  id: string;
-  creditor: string;
-  date: string;
-  bureau: string;
-  removable: boolean;
+// inquiryDate arrives as an ISO string; render a compact locale date.
+function formatDate(iso?: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString();
 }
 
-const INQUIRIES: Inquiry[] = [
-  {
-    id: "1",
-    creditor: "Chase Bank",
-    date: "2024-11-15",
-    bureau: "Experian",
-    removable: true,
-  },
-  {
-    id: "2",
-    creditor: "Capital One",
-    date: "2024-10-20",
-    bureau: "TransUnion",
-    removable: true,
-  },
-  {
-    id: "3",
-    creditor: "Discover",
-    date: "2024-09-05",
-    bureau: "Equifax",
-    removable: false,
-  },
-  {
-    id: "4",
-    creditor: "American Express",
-    date: "2024-08-12",
-    bureau: "Experian",
-    removable: true,
-  },
-  {
-    id: "5",
-    creditor: "Wells Fargo",
-    date: "2024-06-30",
-    bureau: "TransUnion",
-    removable: false,
-  },
-];
+// Bureau is a lowercase DB enum; present it capitalized for display.
+function formatBureau(bureau: InquiryBureau): string {
+  return bureau.charAt(0).toUpperCase() + bureau.slice(1);
+}
 
 export default function InquiriesScreen() {
+  const [inquiries, setInquiries] = useState<CreditInquiry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 600);
+  const fetchInquiries = useCallback(async () => {
+    const res = await creditRepairApi.getInquiries();
+    if (res.success && res.data) {
+      setInquiries(res.data.inquiries);
+      setError(null);
+    } else {
+      setError(res.error?.message ?? "Unable to load inquiries.");
+    }
   }, []);
 
-  const handleDispute = (inquiry: Inquiry) => {
-    Alert.alert(
-      "Dispute Inquiry",
-      `File a dispute for ${inquiry.creditor} inquiry?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Dispute",
-          onPress: () => Alert.alert("Success", "Dispute filed successfully"),
-        },
-      ],
-    );
+  const load = useCallback(async () => {
+    setLoading(true);
+    await fetchInquiries();
+    setLoading(false);
+  }, [fetchInquiries]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchInquiries();
+    setRefreshing(false);
   };
 
-  if (loading) {
+  // Stats computed from the real inquiries.
+  const total = inquiries.length;
+  const removableCount = inquiries.filter((i) => i.removable).length;
+  const hardCount = inquiries.filter((i) => i.inquiryType === "hard").length;
+
+  if (loading && inquiries.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered} testID="credit-repair-inquiries-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.stateText}>Loading inquiries...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && inquiries.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="credit-repair-inquiries-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={load}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -101,6 +116,13 @@ export default function InquiriesScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+          />
+        }
       >
         <View style={styles.header}>
           <TouchableOpacity
@@ -110,31 +132,31 @@ export default function InquiriesScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={styles.title}>Hard Inquiries</Text>
+            <Text style={styles.title}>Credit Inquiries</Text>
             <Text style={styles.subtitle}>Manage credit inquiries</Text>
           </View>
         </View>
 
-        {/* Info */}
+        {/* Info — computed from real inquiries */}
         <Card style={styles.infoCard}>
           <View style={styles.infoRow}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoValue}>{INQUIRIES.length}</Text>
+              <Text style={styles.infoValue}>{total}</Text>
               <Text style={styles.infoLabel}>Total Inquiries</Text>
             </View>
             <View style={styles.infoDivider} />
             <View style={styles.infoItem}>
               <Text style={[styles.infoValue, { color: theme.colors.success }]}>
-                {INQUIRIES.filter((i) => i.removable).length}
+                {removableCount}
               </Text>
               <Text style={styles.infoLabel}>Removable</Text>
             </View>
             <View style={styles.infoDivider} />
             <View style={styles.infoItem}>
-              <Text style={[styles.infoValue, { color: theme.colors.error }]}>
-                -{INQUIRIES.length * 5}
+              <Text style={[styles.infoValue, { color: theme.colors.warning }]}>
+                {hardCount}
               </Text>
-              <Text style={styles.infoLabel}>Score Impact</Text>
+              <Text style={styles.infoLabel}>Hard</Text>
             </View>
           </View>
         </Card>
@@ -151,38 +173,60 @@ export default function InquiriesScreen() {
         {/* Inquiries List */}
         <View style={styles.inquiriesList}>
           <Text style={styles.sectionTitle}>Your Inquiries</Text>
-          {INQUIRIES.map((inquiry) => (
-            <Card key={inquiry.id} style={styles.inquiryCard}>
-              <View style={styles.inquiryHeader}>
-                <View style={styles.inquiryIcon}>
-                  <Ionicons
-                    name="search"
-                    size={20}
-                    color={theme.colors.primary}
-                  />
-                </View>
-                <View style={styles.inquiryInfo}>
-                  <Text style={styles.inquiryCreditor}>{inquiry.creditor}</Text>
-                  <View style={styles.inquiryMeta}>
-                    <Text style={styles.inquiryDate}>{inquiry.date}</Text>
-                    <Text style={styles.inquiryBureau}>• {inquiry.bureau}</Text>
+          {inquiries.length === 0 ? (
+            <View
+              style={styles.emptyCard}
+              testID="credit-repair-inquiries-empty"
+            >
+              <Ionicons
+                name="search-outline"
+                size={40}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.emptyTitle}>No inquiries found</Text>
+              <Text style={styles.emptyText}>
+                When a lender checks your credit, the inquiry will appear here.
+              </Text>
+            </View>
+          ) : (
+            inquiries.map((inquiry) => (
+              <Card key={inquiry.id} style={styles.inquiryCard}>
+                <View style={styles.inquiryHeader}>
+                  <View style={styles.inquiryIcon}>
+                    <Ionicons
+                      name="search"
+                      size={20}
+                      color={theme.colors.primary}
+                    />
                   </View>
-                </View>
-                {inquiry.removable ? (
-                  <TouchableOpacity
-                    style={styles.disputeButton}
-                    onPress={() => handleDispute(inquiry)}
-                  >
-                    <Text style={styles.disputeText}>Dispute</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.validBadge}>
-                    <Text style={styles.validText}>Valid</Text>
+                  <View style={styles.inquiryInfo}>
+                    <Text style={styles.inquiryCreditor}>
+                      {inquiry.creditor}
+                    </Text>
+                    <View style={styles.inquiryMeta}>
+                      <Text style={styles.inquiryDate}>
+                        {formatDate(inquiry.inquiryDate)}
+                      </Text>
+                      {inquiry.bureau && (
+                        <Text style={styles.inquiryBureau}>
+                          • {formatBureau(inquiry.bureau)}
+                        </Text>
+                      )}
+                    </View>
                   </View>
-                )}
-              </View>
-            </Card>
-          ))}
+                  {inquiry.removable ? (
+                    <View style={styles.removableBadge}>
+                      <Text style={styles.removableText}>Removable</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.validBadge}>
+                      <Text style={styles.validText}>Valid</Text>
+                    </View>
+                  )}
+                </View>
+              </Card>
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -192,7 +236,25 @@ export default function InquiriesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
+  },
+  stateText: {
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -259,13 +321,13 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     marginLeft: 4,
   },
-  disputeButton: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 14,
+  removableBadge: {
+    backgroundColor: `${theme.colors.success}15`,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
   },
-  disputeText: { fontSize: 12, fontWeight: "600", color: "#fff" },
+  removableText: { fontSize: 12, fontWeight: "600", color: theme.colors.success },
   validBadge: {
     backgroundColor: `${theme.colors.textSecondary}15`,
     paddingHorizontal: 12,
@@ -273,4 +335,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   validText: { fontSize: 12, color: theme.colors.textSecondary },
+  emptyCard: {
+    padding: theme.spacing.xl,
+    alignItems: "center",
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
+  },
 });
