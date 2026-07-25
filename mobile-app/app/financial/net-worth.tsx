@@ -1,6 +1,21 @@
 /**
  * Fynvita Net Worth Tracker Screen
- * Track assets, liabilities, and net worth over time with real charts
+ *
+ * Real-data wiring (PARITY): renders the user's real assets, liabilities, and net
+ * worth from GET /api/financial/accounts (withPermission "financial:read") via
+ * financialOverviewApi.getNetWorth, adapted web -> mobile by mapWebAccountsToNetWorth.
+ * Accounts are classified by their real Plaid accountType exactly as the web dashboard
+ * does (depository + investment = assets at currentBalance; credit + loan = liabilities
+ * at |currentBalance|) — NOT by balance sign, which is wrong for Plaid because credit
+ * and loan balances are positive amounts owed. Fetch on mount with honest inline
+ * loading / error+retry / empty states and pull-to-refresh.
+ *
+ * The former MOCK_ASSETS / MOCK_LIABILITIES arrays and their silent catch-fallback
+ * were removed: on a failed fetch the screen shows an honest error + retry, never
+ * fabricated balances. MOCK_HISTORY (a fabricated 6-month net-worth series) and the
+ * "$X this month" delta derived from it were also removed — there is no honest source
+ * for a net-worth-over-time series (the dashboard's monthlyTrend is income/expense/
+ * savings, not net worth), so the history chart is empty-stated rather than invented.
  */
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -12,135 +27,71 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Dimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-import { LineChart, PieChart } from "../../src/components/charts";
-import { useAccountStore } from "../../src/store/accountStore";
+import { PieChart } from "../../src/components/charts";
+import { financialOverviewApi } from "../../src/services/api/financial";
+import type {
+  NetWorthData,
+  NetWorthAccount,
+  NetWorthAccountType,
+} from "../../src/services/api/financial";
 
-interface Asset {
-  name: string;
-  value: number;
-  icon: string;
-  color: string;
-}
-interface Liability {
-  name: string;
-  value: number;
-  icon: string;
-  color: string;
-}
-interface NetWorthHistory {
-  month: string;
-  value: number;
-}
-
-const MOCK_ASSETS: Asset[] = [
-  { name: "Checking Account", value: 8500, icon: "wallet", color: "#3B82F6" },
-  { name: "Savings Account", value: 25000, icon: "cash", color: "#22C55E" },
-  {
-    name: "Investment Portfolio",
-    value: 38070,
-    icon: "trending-up",
-    color: "#8B5CF6",
-  },
-  {
-    name: "Retirement (401k)",
-    value: 85000,
-    icon: "shield-checkmark",
-    color: "#F59E0B",
-  },
-  { name: "Home Value", value: 350000, icon: "home", color: "#06B6D4" },
-  { name: "Vehicle", value: 18000, icon: "car", color: "#EC4899" },
+// Presentation palettes and icons. These are display-only concerns derived from the
+// account's real type — no financial value is invented here.
+const ASSET_COLORS = [
+  "#3B82F6",
+  "#22C55E",
+  "#8B5CF6",
+  "#F59E0B",
+  "#06B6D4",
+  "#EC4899",
 ];
+const LIABILITY_COLORS = ["#EF4444", "#F97316", "#DC2626", "#B91C1C"];
 
-const MOCK_LIABILITIES: Liability[] = [
-  { name: "Mortgage", value: 280000, icon: "home", color: "#EF4444" },
-  { name: "Auto Loan", value: 12000, icon: "car", color: "#F97316" },
-  { name: "Credit Cards", value: 4500, icon: "card", color: "#DC2626" },
-  { name: "Student Loans", value: 22000, icon: "school", color: "#B91C1C" },
-];
+function assetIcon(
+  accountType: NetWorthAccountType,
+  subtype: string,
+): keyof typeof Ionicons.glyphMap {
+  if (accountType === "investment") return "trending-up";
+  if (accountType === "depository") {
+    return subtype.toLowerCase().includes("savings") ? "cash" : "wallet";
+  }
+  return "wallet";
+}
 
-const MOCK_HISTORY: NetWorthHistory[] = [
-  { month: "Jul", value: 185000 },
-  { month: "Aug", value: 188000 },
-  { month: "Sep", value: 192000 },
-  { month: "Oct", value: 198000 },
-  { month: "Nov", value: 202000 },
-  { month: "Dec", value: 206070 },
-];
-
-const { width: screenWidth } = Dimensions.get("window");
+function liabilityIcon(
+  accountType: NetWorthAccountType,
+): keyof typeof Ionicons.glyphMap {
+  return accountType === "credit" ? "card" : "document-text";
+}
 
 export default function NetWorthScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [liabilities, setLiabilities] = useState<Liability[]>([]);
-  const [history, setHistory] = useState<NetWorthHistory[]>([]);
-  const [showAssetBreakdown, setShowAssetBreakdown] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<NetWorthData | null>(null);
+  const [showAssetBreakdown, setShowAssetBreakdown] = useState(true);
 
-  const { accounts, fetchAccounts } = useAccountStore();
+  const fetchNetWorth = useCallback(async () => {
+    const response = await financialOverviewApi.getNetWorth();
+    if (response.success && response.data) {
+      setData(response.data);
+      setError(null);
+    } else {
+      setError(response.error?.message ?? "Unable to load net worth.");
+    }
+  }, []);
 
   const loadNetWorthData = useCallback(async () => {
-    try {
-      await fetchAccounts();
-      // Transform accounts to assets/liabilities
-      const assetAccounts = accounts.filter((a) => a.balance > 0);
-      const liabilityAccounts = accounts.filter((a) => a.balance < 0);
-
-      if (assetAccounts.length > 0) {
-        setAssets(
-          assetAccounts.map((a, i) => ({
-            name: a.name,
-            value: a.balance,
-            icon:
-              a.type === "investment"
-                ? "trending-up"
-                : a.type === "savings"
-                  ? "cash"
-                  : "wallet",
-            color: [
-              "#3B82F6",
-              "#22C55E",
-              "#8B5CF6",
-              "#F59E0B",
-              "#06B6D4",
-              "#EC4899",
-            ][i % 6],
-          })),
-        );
-      } else {
-        setAssets(MOCK_ASSETS);
-      }
-
-      if (liabilityAccounts.length > 0) {
-        setLiabilities(
-          liabilityAccounts.map((a, i) => ({
-            name: a.name,
-            value: Math.abs(a.balance),
-            icon: a.type === "credit" ? "card" : "document-text",
-            color: ["#EF4444", "#F97316", "#DC2626", "#B91C1C"][i % 4],
-          })),
-        );
-      } else {
-        setLiabilities(MOCK_LIABILITIES);
-      }
-
-      setHistory(MOCK_HISTORY); // Would come from API in production
-    } catch (err) {
-      // Fallback to mock data silently in production
-      setAssets(MOCK_ASSETS);
-      setLiabilities(MOCK_LIABILITIES);
-      setHistory(MOCK_HISTORY);
-    } finally {
-      setLoading(false);
-    }
-  }, [accounts, fetchAccounts]);
+    setLoading(true);
+    await fetchNetWorth();
+    setLoading(false);
+  }, [fetchNetWorth]);
 
   useEffect(() => {
     loadNetWorthData();
@@ -148,40 +99,55 @@ export default function NetWorthScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadNetWorthData();
+    await fetchNetWorth();
     setRefreshing(false);
   };
 
-  const totalAssets = assets.reduce((sum, a) => sum + a.value, 0);
-  const totalLiabilities = liabilities.reduce((sum, l) => sum + l.value, 0);
-  const netWorth = totalAssets - totalLiabilities;
-  const monthlyChange =
-    history.length >= 2
-      ? history[history.length - 1].value - history[history.length - 2].value
-      : 0;
+  const assets: NetWorthAccount[] = data?.assets ?? [];
+  const liabilities: NetWorthAccount[] = data?.liabilities ?? [];
+  const totalAssets = data?.totalAssets ?? 0;
+  const totalLiabilities = data?.totalLiabilities ?? 0;
+  const netWorth = data?.netWorth ?? 0;
+  const isEmpty = assets.length === 0 && liabilities.length === 0;
 
-  // Prepare chart data
-  const historyChartData = history.map((h) => ({
-    value: h.value,
-    label: h.month,
-  }));
-  const assetPieData = assets.map((a) => ({
+  const assetPieData = assets.map((a, i) => ({
     value: a.value,
     label: a.name,
-    color: a.color,
+    color: ASSET_COLORS[i % ASSET_COLORS.length],
   }));
-  const liabilityPieData = liabilities.map((l) => ({
+  const liabilityPieData = liabilities.map((l, i) => ({
     value: l.value,
     label: l.name,
-    color: l.color,
+    color: LIABILITY_COLORS[i % LIABILITY_COLORS.length],
   }));
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered} testID="financial-net-worth-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Calculating net worth...</Text>
+          <Text style={styles.stateText}>Calculating net worth...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="financial-net-worth-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={loadNetWorthData}
+          >
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -214,161 +180,180 @@ export default function NetWorthScreen() {
           </View>
         </View>
 
-        {/* Net Worth Summary */}
-        <Card style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>Net Worth</Text>
-          <Text style={styles.summaryValue}>${netWorth.toLocaleString()}</Text>
-          <View style={styles.changeRow}>
+        {isEmpty ? (
+          <View style={styles.emptyCard} testID="financial-net-worth-empty">
             <Ionicons
-              name={monthlyChange >= 0 ? "arrow-up" : "arrow-down"}
-              size={16}
-              color={monthlyChange >= 0 ? "#22C55E" : "#EF4444"}
+              name="wallet-outline"
+              size={40}
+              color={theme.colors.textSecondary}
             />
-            <Text
-              style={[
-                styles.changeText,
-                { color: monthlyChange >= 0 ? "#22C55E" : "#EF4444" },
-              ]}
-            >
-              {monthlyChange >= 0 ? "+" : ""}${monthlyChange.toLocaleString()}{" "}
-              this month
+            <Text style={styles.emptyTitle}>No accounts yet</Text>
+            <Text style={styles.emptyText}>
+              Once you link a bank, credit, loan, or investment account, your
+              assets, liabilities, and net worth will show here.
             </Text>
           </View>
-        </Card>
-
-        {/* Assets vs Liabilities */}
-        <View style={styles.compareRow}>
-          <TouchableOpacity
-            style={[styles.compareCard, { backgroundColor: "#22C55E08" }]}
-            onPress={() => setShowAssetBreakdown(true)}
-          >
-            <Ionicons name="trending-up" size={24} color="#22C55E" />
-            <Text style={[styles.compareValue, { color: "#22C55E" }]}>
-              ${(totalAssets / 1000).toFixed(0)}K
-            </Text>
-            <Text style={styles.compareLabel}>Total Assets</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.compareCard, { backgroundColor: "#EF444408" }]}
-            onPress={() => setShowAssetBreakdown(false)}
-          >
-            <Ionicons name="trending-down" size={24} color="#EF4444" />
-            <Text style={[styles.compareValue, { color: "#EF4444" }]}>
-              ${(totalLiabilities / 1000).toFixed(0)}K
-            </Text>
-            <Text style={styles.compareLabel}>Total Liabilities</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Net Worth History Chart */}
-        <Card style={styles.historyCard}>
-          <Text style={styles.sectionTitle}>Net Worth History</Text>
-          <LineChart
-            data={historyChartData}
-            width={screenWidth - 64}
-            height={180}
-            color={theme.colors.primary}
-            showDots
-            showGrid
-            formatValue={(v) => `$${(v / 1000).toFixed(0)}K`}
-          />
-        </Card>
-
-        {/* Asset/Liability Breakdown Pie Chart */}
-        <Card style={styles.breakdownCard}>
-          <View style={styles.breakdownHeader}>
-            <TouchableOpacity
-              style={[
-                styles.breakdownTab,
-                showAssetBreakdown && styles.breakdownTabActive,
-              ]}
-              onPress={() => setShowAssetBreakdown(true)}
-            >
-              <Text
-                style={[
-                  styles.breakdownTabText,
-                  showAssetBreakdown && styles.breakdownTabTextActive,
-                ]}
-              >
-                Assets
+        ) : (
+          <>
+            {/* Net Worth Summary */}
+            <Card style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Net Worth</Text>
+              <Text style={styles.summaryValue}>
+                ${netWorth.toLocaleString()}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.breakdownTab,
-                !showAssetBreakdown && styles.breakdownTabActive,
-              ]}
-              onPress={() => setShowAssetBreakdown(false)}
-            >
-              <Text
-                style={[
-                  styles.breakdownTabText,
-                  !showAssetBreakdown && styles.breakdownTabTextActive,
-                ]}
-              >
-                Liabilities
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <PieChart
-            data={showAssetBreakdown ? assetPieData : liabilityPieData}
-            size={160}
-            innerRadius={45}
-            centerValue={`$${((showAssetBreakdown ? totalAssets : totalLiabilities) / 1000).toFixed(0)}K`}
-            centerLabel={showAssetBreakdown ? "Assets" : "Debt"}
-            showPercentages
-          />
-        </Card>
+            </Card>
 
-        {/* Assets List */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Assets</Text>
-          {assets.map((asset, i) => (
-            <View key={i} style={styles.listItem}>
+            {/* Assets vs Liabilities */}
+            <View style={styles.compareRow}>
+              <TouchableOpacity
+                style={[styles.compareCard, { backgroundColor: "#22C55E08" }]}
+                onPress={() => setShowAssetBreakdown(true)}
+              >
+                <Ionicons name="trending-up" size={24} color="#22C55E" />
+                <Text style={[styles.compareValue, { color: "#22C55E" }]}>
+                  ${(totalAssets / 1000).toFixed(0)}K
+                </Text>
+                <Text style={styles.compareLabel}>Total Assets</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.compareCard, { backgroundColor: "#EF444408" }]}
+                onPress={() => setShowAssetBreakdown(false)}
+              >
+                <Ionicons name="trending-down" size={24} color="#EF4444" />
+                <Text style={[styles.compareValue, { color: "#EF4444" }]}>
+                  ${(totalLiabilities / 1000).toFixed(0)}K
+                </Text>
+                <Text style={styles.compareLabel}>Total Liabilities</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Net Worth History — no honest over-time source exists yet, so this is
+                empty-stated rather than fabricated. */}
+            <Card style={styles.historyCard}>
+              <Text style={styles.sectionTitle}>Net Worth History</Text>
               <View
-                style={[
-                  styles.itemIcon,
-                  { backgroundColor: `${asset.color}15` },
-                ]}
+                style={styles.historyUnavailable}
+                testID="net-worth-history-unavailable"
               >
                 <Ionicons
-                  name={asset.icon as keyof typeof Ionicons.glyphMap}
-                  size={18}
-                  color={asset.color}
+                  name="analytics-outline"
+                  size={28}
+                  color={theme.colors.textSecondary}
                 />
+                <Text style={styles.historyUnavailableText}>
+                  Net-worth history isn&apos;t available yet. Your trend will
+                  appear here as Fynvita records your balances over time.
+                </Text>
               </View>
-              <Text style={styles.itemName}>{asset.name}</Text>
-              <Text style={[styles.itemValue, { color: "#22C55E" }]}>
-                ${asset.value.toLocaleString()}
-              </Text>
-            </View>
-          ))}
-        </View>
+            </Card>
 
-        {/* Liabilities List */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Liabilities</Text>
-          {liabilities.map((liability, i) => (
-            <View key={i} style={styles.listItem}>
-              <View
-                style={[
-                  styles.itemIcon,
-                  { backgroundColor: `${liability.color}15` },
-                ]}
-              >
-                <Ionicons
-                  name={liability.icon as keyof typeof Ionicons.glyphMap}
-                  size={18}
-                  color={liability.color}
-                />
+            {/* Asset/Liability Breakdown Pie Chart */}
+            <Card style={styles.breakdownCard}>
+              <View style={styles.breakdownHeader}>
+                <TouchableOpacity
+                  style={[
+                    styles.breakdownTab,
+                    showAssetBreakdown && styles.breakdownTabActive,
+                  ]}
+                  onPress={() => setShowAssetBreakdown(true)}
+                >
+                  <Text
+                    style={[
+                      styles.breakdownTabText,
+                      showAssetBreakdown && styles.breakdownTabTextActive,
+                    ]}
+                  >
+                    Assets
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.breakdownTab,
+                    !showAssetBreakdown && styles.breakdownTabActive,
+                  ]}
+                  onPress={() => setShowAssetBreakdown(false)}
+                >
+                  <Text
+                    style={[
+                      styles.breakdownTabText,
+                      !showAssetBreakdown && styles.breakdownTabTextActive,
+                    ]}
+                  >
+                    Liabilities
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <Text style={styles.itemName}>{liability.name}</Text>
-              <Text style={[styles.itemValue, { color: "#EF4444" }]}>
-                -${liability.value.toLocaleString()}
-              </Text>
-            </View>
-          ))}
-        </View>
+              <PieChart
+                data={showAssetBreakdown ? assetPieData : liabilityPieData}
+                size={160}
+                innerRadius={45}
+                centerValue={`$${((showAssetBreakdown ? totalAssets : totalLiabilities) / 1000).toFixed(0)}K`}
+                centerLabel={showAssetBreakdown ? "Assets" : "Debt"}
+                showPercentages
+              />
+            </Card>
+
+            {/* Assets List */}
+            {assets.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Assets</Text>
+                {assets.map((asset, i) => {
+                  const color = ASSET_COLORS[i % ASSET_COLORS.length];
+                  return (
+                    <View key={asset.id || i} style={styles.listItem}>
+                      <View
+                        style={[
+                          styles.itemIcon,
+                          { backgroundColor: `${color}15` },
+                        ]}
+                      >
+                        <Ionicons
+                          name={assetIcon(asset.accountType, asset.subtype)}
+                          size={18}
+                          color={color}
+                        />
+                      </View>
+                      <Text style={styles.itemName}>{asset.name}</Text>
+                      <Text style={[styles.itemValue, { color: "#22C55E" }]}>
+                        ${asset.value.toLocaleString()}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {/* Liabilities List */}
+            {liabilities.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Liabilities</Text>
+                {liabilities.map((liability, i) => {
+                  const color = LIABILITY_COLORS[i % LIABILITY_COLORS.length];
+                  return (
+                    <View key={liability.id || i} style={styles.listItem}>
+                      <View
+                        style={[
+                          styles.itemIcon,
+                          { backgroundColor: `${color}15` },
+                        ]}
+                      >
+                        <Ionicons
+                          name={liabilityIcon(liability.accountType)}
+                          size={18}
+                          color={color}
+                        />
+                      </View>
+                      <Text style={styles.itemName}>{liability.name}</Text>
+                      <Text style={[styles.itemValue, { color: "#EF4444" }]}>
+                        -${liability.value.toLocaleString()}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -379,10 +364,41 @@ export default function NetWorthScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: {
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
+  },
+  stateText: {
     marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
     color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
+  emptyCard: {
+    alignItems: "center",
+    padding: theme.spacing.xl,
+    marginTop: theme.spacing.xl,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
   },
   header: {
     flexDirection: "row",
@@ -405,8 +421,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginTop: 8,
   },
-  changeRow: { flexDirection: "row", alignItems: "center", marginTop: 12 },
-  changeText: { fontSize: 14, marginLeft: 4 },
   compareRow: {
     flexDirection: "row",
     paddingHorizontal: theme.spacing.lg,
@@ -429,6 +443,16 @@ const styles = StyleSheet.create({
     marginHorizontal: theme.spacing.lg,
     marginTop: theme.spacing.lg,
     padding: theme.spacing.lg,
+  },
+  historyUnavailable: {
+    alignItems: "center",
+    paddingVertical: theme.spacing.lg,
+  },
+  historyUnavailableText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    marginTop: theme.spacing.sm,
   },
   breakdownCard: {
     marginHorizontal: theme.spacing.lg,

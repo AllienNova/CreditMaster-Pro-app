@@ -232,6 +232,108 @@ export function mapWebCashFlow(raw: WebCashFlowAnalysis): CashFlowAnalysisData {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Net worth — web -> mobile adapter (PARITY)
+// ---------------------------------------------------------------------------
+// The mobile Net Worth screen (app/financial/net-worth.tsx) renders the user's
+// assets, liabilities, and net worth. Its honest source is GET
+// /api/financial/accounts (withPermission "financial:read") ->
+// plaidService.getAccounts, which returns PlaidAccount[] straight through as the
+// response `data` (a bare array, NOT { accounts: [...] }). Each PlaidAccount carries
+// accountType ("depository" | "credit" | "loan" | "investment"), accountSubtype,
+// accountName, and currentBalance (Date columns serialize to ISO strings over HTTP;
+// the net-worth view reads none of them).
+//
+// The screen previously classified accounts by balance SIGN (balance > 0 = asset,
+// balance < 0 = liability) and, on any gap, silently fell back to hardcoded
+// MOCK_ASSETS / MOCK_LIABILITIES / MOCK_HISTORY. That sign rule is wrong for Plaid:
+// credit and loan balances are POSITIVE (the amount owed), so every debt was
+// miscounted as an asset. This adapter instead classifies by accountType exactly as
+// the web dashboard does (src/lib/financial/financial-service.ts:127): depository +
+// investment are assets (summed at currentBalance); credit + loan are liabilities
+// (summed at |currentBalance|); any other or absent type is excluded from net worth,
+// matching web. Nothing is fabricated — an absent balance becomes 0 and an absent
+// name an empty string. There is NO honest month-over-month net-worth series (the
+// dashboard's monthlyTrend is income/expense/savings, not net worth), so the screen
+// omits the history chart rather than invent one.
+export type NetWorthAccountType =
+  | "depository"
+  | "credit"
+  | "loan"
+  | "investment";
+
+export interface NetWorthAccount {
+  id: string;
+  name: string; // from accountName
+  value: number; // assets: currentBalance; liabilities: |currentBalance|
+  accountType: NetWorthAccountType;
+  subtype: string; // from accountSubtype
+}
+
+export interface NetWorthData {
+  assets: NetWorthAccount[];
+  liabilities: NetWorthAccount[];
+  totalAssets: number;
+  totalLiabilities: number;
+  netWorth: number;
+}
+
+// Raw account as returned by GET /api/financial/accounts (PlaidAccount, defined in
+// src/lib/financial/plaid-service.ts). Only the fields the net-worth view reads are
+// declared; each is optional and tolerant so a partial payload never throws.
+interface WebAccount {
+  id?: string;
+  accountId?: string;
+  accountName?: string;
+  accountType?: string;
+  accountSubtype?: string;
+  currentBalance?: number;
+}
+
+const ASSET_ACCOUNT_TYPES = ["depository", "investment"] as const;
+const LIABILITY_ACCOUNT_TYPES = ["credit", "loan"] as const;
+
+function isAssetType(t: string): t is "depository" | "investment" {
+  return (ASSET_ACCOUNT_TYPES as readonly string[]).includes(t);
+}
+
+function isLiabilityType(t: string): t is "credit" | "loan" {
+  return (LIABILITY_ACCOUNT_TYPES as readonly string[]).includes(t);
+}
+
+export function mapWebAccountsToNetWorth(raw: WebAccount[]): NetWorthData {
+  const assets: NetWorthAccount[] = [];
+  const liabilities: NetWorthAccount[] = [];
+
+  for (const a of raw) {
+    const type = a.accountType ?? "";
+    const balance = a.currentBalance ?? 0;
+    const base = {
+      id: a.id ?? a.accountId ?? "",
+      name: a.accountName ?? "",
+      subtype: a.accountSubtype ?? "",
+    };
+    if (isAssetType(type)) {
+      assets.push({ ...base, accountType: type, value: balance });
+    } else if (isLiabilityType(type)) {
+      liabilities.push({ ...base, accountType: type, value: Math.abs(balance) });
+    }
+    // Any other or absent accountType is excluded from net worth, matching the
+    // web dashboard's classification — never guessed into a bucket.
+  }
+
+  const totalAssets = assets.reduce((sum, a) => sum + a.value, 0);
+  const totalLiabilities = liabilities.reduce((sum, l) => sum + l.value, 0);
+
+  return {
+    assets,
+    liabilities,
+    totalAssets,
+    totalLiabilities,
+    netWorth: totalAssets - totalLiabilities,
+  };
+}
+
 // Financial Overview
 export const financialOverviewApi = {
   /**
@@ -301,6 +403,23 @@ export const financialOverviewApi = {
     );
     if (res.success && res.data) {
       return { success: true, data: mapWebCashFlow(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Get the user's net worth. Hits the real route GET /api/financial/accounts
+   * (withPermission "financial:read"), which returns PlaidAccount[] as the response
+   * data, and splits those accounts into assets vs liabilities via
+   * mapWebAccountsToNetWorth — classifying by accountType exactly as the web
+   * dashboard does. A failed request passes straight through without fabricating
+   * data. Consumed by app/financial/net-worth.tsx.
+   */
+  getNetWorth: async (): Promise<ApiResponse<NetWorthData>> => {
+    const res = await api.get<WebAccount[]>("/financial/accounts");
+    if (res.success && res.data) {
+      const raw = Array.isArray(res.data) ? res.data : [];
+      return { success: true, data: mapWebAccountsToNetWorth(raw) };
     }
     return { success: false, error: res.error };
   },
