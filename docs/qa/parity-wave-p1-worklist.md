@@ -172,7 +172,7 @@ Web `src/`-only-wireable screens are DONE (paper, journal, goodwill-letters, das
 | Screen | Verdict |
 |---|---|
 | `dashboard/disputes` | ✅ DONE `18fa7f3` (`useDisputeStore`, reused `mapWebDispute`; 7 tests) |
-| `dashboard/analytics` | 🔧 in flight (`a23cfb6b`) — `/api/user/analytics` returns ALL 4 rendered shapes (creditHistory/successRate/scoreFactors/recommendations); strongest wire |
+| `dashboard/analytics` | ✅ DONE `58ffbf2` (`/api/user/analytics` — all 4 shapes real; 9 tests) |
 | `dashboard/documents` | ✅ already-wired (13-line re-export of `app/documents`) |
 | `dashboard/notifications` | wireable — `useNotificationStore` (NOT wired here despite P1; still renders mock) |
 | `dashboard/monitoring` | partial — scores/alerts → `useCreditStore`; inline "Key Factors" + SCORE_HISTORY NO source (fabrication risk — remove/empty-state) |
