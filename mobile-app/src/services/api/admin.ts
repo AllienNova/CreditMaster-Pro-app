@@ -76,4 +76,127 @@ export const adminAnalyticsApi = {
     api.get<AdminAnalytics>(`/admin/analytics?range=${range}`),
 };
 
+// ---------------------------------------------------------------------------
+// Admin disputes
+// ---------------------------------------------------------------------------
+//
+// Platform-wide dispute oversight, backed by the real, admin-guarded route
+// (GET /api/admin/disputes — withRole("admin") in
+// src/app/api/admin/disputes/route.ts). That route runs
+// `supabase.from("disputes").select("*")` (ordered newest-first) and enriches
+// each row with the account owner's `user_email`, returning `{ disputes, total }`.
+//
+// Every field the screen renders is a real column of the disputes table
+// (authoritative migration 20250204000000_credit_repair_schema.sql: bureau,
+// status, item_type, created_at) or the route's `user_email` enrichment —
+// nothing is fabricated. The adapter only reshapes for display: it prettifies
+// the bureau label, trims the timestamp to a date, and passes the real status
+// enum straight through. A non-admin session is rejected by the route (403)
+// and surfaces as an honest error state on the screen.
+
+// The disputes-table status CHECK constraint, verbatim from
+// 20250204000000_credit_repair_schema.sql. These are the real statuses the
+// admin list filters by — the screen no longer invents "pending"/"processing".
+export const ADMIN_DISPUTE_STATUSES = [
+  "draft",
+  "sent",
+  "under_review",
+  "resolved",
+  "rejected",
+  "escalated",
+] as const;
+
+export type AdminDisputeStatus = (typeof ADMIN_DISPUTE_STATUSES)[number];
+
+// The disputes-table bureau CHECK values -> brand display labels. Presentation
+// only: the underlying value is still the real `bureau` column.
+const BUREAU_LABELS: Record<string, string> = {
+  experian: "Experian",
+  equifax: "Equifax",
+  transunion: "TransUnion",
+};
+
+/**
+ * Raw disputes row as returned by the admin route. Only the fields the screen
+ * consumes are typed; the route returns the full row (`select *`) but extra
+ * columns are simply ignored here. Fields are optional to stay tolerant of a
+ * partial row — the adapter substitutes an empty value, never a fabricated one.
+ */
+export interface AdminDisputeRow {
+  id: string;
+  user_email?: string; // route enrichment (server-side "Unknown" fallback)
+  bureau?: string; // experian | equifax | transunion (DB CHECK)
+  status?: string; // draft|sent|under_review|resolved|rejected|escalated
+  item_type?: string; // kind of item disputed (NOT NULL free text in DB)
+  created_at?: string; // ISO timestamp
+}
+
+export interface AdminDisputesResponse {
+  disputes: AdminDisputeRow[];
+  total: number;
+}
+
+/** Mobile display model — every field sourced from a real column/enrichment. */
+export interface AdminDispute {
+  id: string;
+  user: string; // user_email
+  bureau: string; // pretty bureau label
+  status: string; // real DB status, passed through honestly
+  type: string; // item_type
+  created: string; // YYYY-MM-DD (date part of created_at)
+}
+
+function prettyBureau(raw: string | undefined): string {
+  const key = (raw ?? "").toLowerCase();
+  if (BUREAU_LABELS[key]) return BUREAU_LABELS[key];
+  return raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : "";
+}
+
+function dateOnly(iso: string | undefined): string {
+  if (!iso) return "";
+  const t = iso.indexOf("T");
+  return t === -1 ? iso : iso.slice(0, t);
+}
+
+/**
+ * Reshape one raw disputes row onto the mobile display model. No fabrication:
+ * a missing field becomes an empty string (or "Unknown" user), never an
+ * invented value; the real status enum is passed straight through.
+ */
+export function mapAdminDispute(row: AdminDisputeRow): AdminDispute {
+  return {
+    id: row.id,
+    user: row.user_email ?? "Unknown",
+    bureau: prettyBureau(row.bureau),
+    status: row.status ?? "",
+    type: row.item_type ?? "",
+    created: dateOnly(row.created_at),
+  };
+}
+
+export const adminDisputesApi = {
+  /**
+   * Fetch every platform dispute from the real admin route and adapt each row
+   * onto the mobile display model. A failed request is passed straight through
+   * (no fabricated fallback) so the screen can show an honest error state.
+   */
+  getDisputes: async (): Promise<ApiResponse<AdminDispute[]>> => {
+    const res = await api.get<AdminDisputesResponse>("/admin/disputes");
+    if (res.success && res.data) {
+      const rows = Array.isArray(res.data.disputes) ? res.data.disputes : [];
+      return {
+        success: true,
+        data: rows.map(mapAdminDispute),
+        timestamp: res.timestamp,
+      };
+    }
+    return {
+      success: false,
+      error: res.error,
+      message: res.message,
+      timestamp: res.timestamp,
+    };
+  },
+};
+
 export default adminAnalyticsApi;
