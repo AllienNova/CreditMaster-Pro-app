@@ -556,10 +556,12 @@ export const debtApi = {
 // endpoint truly provides (merchant, amount, due date, category, autopay); the
 // screen omits the on-time %/late metrics rather than fabricate them.
 //
-// This is deliberately a SEPARATE getter from the pre-existing billsApi.getUpcoming
-// below: that getter is mis-typed against a non-existent payload shape
-// (name/dueDate/autopay/totalDue) and is consumed by app/financial/bills.tsx;
-// correcting it is out of scope for this one-screen change and tracked separately.
+// getBills is the single honest getter for the bills endpoint. It replaced the old
+// billsApi.getUpcoming, which was mis-typed against a payload the route never returns
+// (name/dueDate/autopay/totalDue): its consumer app/financial/bills.tsx read undefined
+// fields, produced Invalid Dates, and silently fell back to a hardcoded MOCK_BILLS
+// array. Both screens (credit-repair/payments.tsx and financial/bills.tsx) now consume
+// getBills; getUpcoming was deleted.
 
 export interface BillItem {
   id: string;
@@ -616,12 +618,11 @@ export function mapWebBill(raw: WebBill): BillItem {
 // Bills & Payments Endpoints
 export const billsApi = {
   /**
-   * Get the current user's recurring bills for the Payments screen. Hits the real
-   * route GET /api/financial/bills with activeOnly=true (paused/cancelled bills are
-   * not upcoming, so they are excluded) and adapts each web Bill onto the mobile
-   * BillItem shape. A failed request passes straight through without fabricating
-   * data. Distinct from getUpcoming (the mis-typed legacy getter below, used by
-   * app/financial/bills.tsx).
+   * Get the current user's recurring bills. Hits the real route GET
+   * /api/financial/bills with activeOnly=true (paused/cancelled bills are not
+   * upcoming, so they are excluded) and adapts each web Bill onto the mobile BillItem
+   * shape. A failed request passes straight through without fabricating data. Consumed
+   * by both credit-repair/payments.tsx and financial/bills.tsx.
    */
   getBills: async (): Promise<ApiResponse<{ bills: BillItem[] }>> => {
     const res = await api.get<{ bills?: WebBill[] }>(
@@ -635,23 +636,6 @@ export const billsApi = {
     }
     return { success: false, error: res.error };
   },
-
-  /**
-   * Get upcoming bills
-   */
-  getUpcoming: () =>
-    api.get<{
-      bills: {
-        id: string;
-        name: string;
-        amount: number;
-        dueDate: string;
-        autopay: boolean;
-        category: string;
-      }[];
-      totalDue: number;
-      nextDueDate: string;
-    }>("/financial/bills"),
 
   /**
    * Add bill reminder
