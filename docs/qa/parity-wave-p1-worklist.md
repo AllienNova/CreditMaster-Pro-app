@@ -100,7 +100,9 @@ A `grep` of `mobile-app/app` found **~29 screens still holding `MOCK_` arrays** 
 | `financial/cash-flow.tsx` | `GET /api/financial/spending/cashflow` (real Plaid txns) — was mis-pathed `/financial/insights/cashflow` (404) | ✅ DONE `d0afa8e` (`mapWebCashFlow`; real `recommendations`; 16 tests) |
 | `financial/net-worth.tsx` | assets/liabilities ← `GET /api/financial/accounts`; history omitted | ✅ DONE `d7f890e` — real accounts; **fixed a correctness bug** (old balance-sign rule miscounted Plaid credit/loan as assets → now type-based like web dashboard); history empty-stated; 17 tests |
 | `financial/debt.tsx` | `GET /api/financial/debt` (`data.overview` shape) + real payoff comparison | ✅ DONE `015af6f` — real overview/debts + killed fabricated `STRATEGIES` (real comparison); 21 tests |
-| `financial/spending.tsx` | trends ← cashflow route; **byCategory NO source at referenced endpoint** — candidate `dashboard.spendingByCategory` | queued — partial |
+| `financial/spending.tsx` | trends ← cashflow route; byCategory ← `dashboard.spendingByCategory` (real % share) | ✅ DONE `c50f241` — reused `mapWebCashFlow`/`mapWebDashboard`; **dropped fabricated `amount*1.2` budget** (budgets.tsx owns budgets); deleted 2 dead mis-pathed methods; 8 tests |
+
+**✅ FINANCIAL MOBILE DOMAIN COMPLETE** — cash-flow, net-worth, debt, spending, bills all wired to real data. Caught real bugs: net-worth Plaid classification, debt `$NaN` reports, the `/financial/insights/*` mis-path (now cleaned).
 
 ## Web-credit map (from `a13748ca` scout) — mostly NOT clean wiring
 | Screen | Verdict |
