@@ -1,9 +1,15 @@
 /**
  * Fynvita Goodwill Letters Screen
- * Request late payment removal
+ *
+ * Real-data wiring (PARITY-P2): renders the user's real goodwill letters from
+ * GET /api/credit-repair/goodwill (withAuth) via creditRepairApi.getGoodwillLetters,
+ * adapted web -> mobile by mapWebGoodwillLetter. Fetch on mount with honest inline
+ * loading / error / empty states and pull-to-refresh. The former hardcoded LETTERS
+ * array, the local Letter interface, and the fake setTimeout load were removed;
+ * the stats are computed from the real letters. Nothing is fabricated.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,35 +17,61 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { creditRepairApi } from "../../src/services/api/creditRepair";
+import type {
+  GoodwillLetter,
+  GoodwillLetterStatus,
+} from "../../src/services/api/creditRepair";
 
-interface Letter {
-  id: string;
-  creditor: string;
-  status: "draft" | "sent" | "responded" | "success";
-  date: string;
+// createdAt arrives as an ISO string; render a compact locale date.
+function formatDate(iso?: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString();
 }
 
-const LETTERS: Letter[] = [
-  { id: "1", creditor: "Chase Bank", status: "success", date: "2024-11-15" },
-  { id: "2", creditor: "Capital One", status: "responded", date: "2024-11-20" },
-  { id: "3", creditor: "Discover", status: "sent", date: "2024-12-01" },
-  { id: "4", creditor: "Bank of America", status: "draft", date: "2024-12-05" },
-];
-
 export default function GoodwillScreen() {
+  const [letters, setLetters] = useState<GoodwillLetter[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 600);
+  const fetchLetters = useCallback(async () => {
+    const res = await creditRepairApi.getGoodwillLetters();
+    if (res.success && res.data) {
+      setLetters(res.data.letters);
+      setError(null);
+    } else {
+      setError(res.error?.message ?? "Unable to load goodwill letters.");
+    }
   }, []);
 
-  const getStatusColor = (status: string) => {
+  const load = useCallback(async () => {
+    setLoading(true);
+    await fetchLetters();
+    setLoading(false);
+  }, [fetchLetters]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchLetters();
+    setRefreshing(false);
+  };
+
+  // status is a closed union (GoodwillLetterStatus); the switch is exhaustive.
+  const getStatusColor = (status: GoodwillLetterStatus): string => {
     switch (status) {
       case "draft":
         return theme.colors.textSecondary;
@@ -49,16 +81,37 @@ export default function GoodwillScreen() {
         return theme.colors.warning;
       case "success":
         return theme.colors.success;
-      default:
-        return theme.colors.textSecondary;
     }
   };
 
-  if (loading) {
+  const total = letters.length;
+  const successCount = letters.filter((l) => l.status === "success").length;
+  const pendingCount = letters.filter((l) => l.status === "sent").length;
+
+  if (loading && letters.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered} testID="credit-repair-goodwill-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.stateText}>Loading goodwill letters...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && letters.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="credit-repair-goodwill-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={load}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -69,6 +122,13 @@ export default function GoodwillScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+          />
+        }
       >
         <View style={styles.header}>
           <TouchableOpacity
@@ -101,10 +161,10 @@ export default function GoodwillScreen() {
           </Text>
         </Card>
 
-        {/* Stats */}
+        {/* Stats — computed from real letters */}
         <View style={styles.statsRow}>
           <Card style={styles.statCard}>
-            <Text style={styles.statValue}>{LETTERS.length}</Text>
+            <Text style={styles.statValue}>{total}</Text>
             <Text style={styles.statLabel}>Total</Text>
           </Card>
           <Card
@@ -114,7 +174,7 @@ export default function GoodwillScreen() {
             ]}
           >
             <Text style={[styles.statValue, { color: theme.colors.success }]}>
-              {LETTERS.filter((l) => l.status === "success").length}
+              {successCount}
             </Text>
             <Text style={styles.statLabel}>Successful</Text>
           </Card>
@@ -125,7 +185,7 @@ export default function GoodwillScreen() {
             ]}
           >
             <Text style={[styles.statValue, { color: theme.colors.primary }]}>
-              {LETTERS.filter((l) => l.status === "sent").length}
+              {pendingCount}
             </Text>
             <Text style={styles.statLabel}>Pending</Text>
           </Card>
@@ -134,38 +194,58 @@ export default function GoodwillScreen() {
         {/* Letters List */}
         <View style={styles.lettersList}>
           <Text style={styles.sectionTitle}>Your Letters</Text>
-          {LETTERS.map((letter) => (
-            <Card key={letter.id} style={styles.letterCard}>
-              <View style={styles.letterHeader}>
-                <View style={styles.letterIcon}>
-                  <Ionicons
-                    name="mail"
-                    size={20}
-                    color={theme.colors.primary}
-                  />
-                </View>
-                <View style={styles.letterInfo}>
-                  <Text style={styles.letterCreditor}>{letter.creditor}</Text>
-                  <Text style={styles.letterDate}>{letter.date}</Text>
-                </View>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: `${getStatusColor(letter.status)}15` },
-                  ]}
-                >
-                  <Text
+          {letters.length === 0 ? (
+            <View
+              style={styles.emptyCard}
+              testID="credit-repair-goodwill-empty"
+            >
+              <Ionicons
+                name="mail-outline"
+                size={40}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.emptyTitle}>No goodwill letters yet</Text>
+              <Text style={styles.emptyText}>
+                Create a goodwill letter to ask a creditor to remove a late
+                payment from your credit report.
+              </Text>
+            </View>
+          ) : (
+            letters.map((letter) => (
+              <Card key={letter.id} style={styles.letterCard}>
+                <View style={styles.letterHeader}>
+                  <View style={styles.letterIcon}>
+                    <Ionicons
+                      name="mail"
+                      size={20}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <View style={styles.letterInfo}>
+                    <Text style={styles.letterCreditor}>{letter.creditor}</Text>
+                    <Text style={styles.letterDate}>
+                      {formatDate(letter.createdAt)}
+                    </Text>
+                  </View>
+                  <View
                     style={[
-                      styles.statusText,
-                      { color: getStatusColor(letter.status) },
+                      styles.statusBadge,
+                      { backgroundColor: `${getStatusColor(letter.status)}15` },
                     ]}
                   >
-                    {letter.status}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.statusText,
+                        { color: getStatusColor(letter.status) },
+                      ]}
+                    >
+                      {letter.status}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            </Card>
-          ))}
+              </Card>
+            ))
+          )}
         </View>
 
         {/* Create Button */}
@@ -181,7 +261,25 @@ export default function GoodwillScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
+  },
+  stateText: {
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -235,6 +333,22 @@ const styles = StyleSheet.create({
   letterDate: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 10, fontWeight: "600", textTransform: "capitalize" },
+  emptyCard: {
+    padding: theme.spacing.xl,
+    alignItems: "center",
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
+  },
   createButton: {
     flexDirection: "row",
     alignItems: "center",
