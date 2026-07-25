@@ -199,6 +199,30 @@ Web `src/`-only-wireable screens are DONE (paper, journal, goodwill-letters, das
 
 **Admin: 2 done + audit next; the other 5 need backend (feature-flags/system-logs/per-service-health routes + subscriptions schema fix) — overlaps decision #4.**
 
+## Mobile misc map (from `afa2dbba` scout)
+| Screen | Verdict |
+|---|---|
+| `financial-intelligence/smart-budget-enhanced` | ✅ DONE `2d94245` (`/api/financial/budgets/summary`; alerts from real overspent categories; 13 tests) |
+| `financial-intelligence/action-plan`, `chat`; `search/index` | ✅ already-wired (financial-coach, chat, investmentsApi+transactionStore) |
+| `activity/index` | ⛔ no-source (no feed route) |
+| `analytics/reports`, `help/contact`, `handoff`, `dispute/new` | action-not-fetch / honest-static (report-gen, support-submit, nav, scripted wizard — not data screens) |
+| `dispute/create` | ⛔ no-source for the disputable-items list (submit already uses real disputeStore) |
+| `document/[id]`, `documents/[id]` | ⛔ concept-mismatch (route returns no analysis/metadata fields the screens render) |
+| `reports/[id]` | ⛔ no-source (`/api/credit/reports/[id]` is a 404) |
+| `profile/edit` | ⛔ partial/schema-drift (`/api/profile` omits dob/city/state/zip; `profiles` table lacks phone/address/avatar) |
+
+# 🏁 CLIENT-WIRING DRIVE COMPLETE (2026-07-25)
+Every mobile + web screen with a real, honest, concept-matched source is now wired. **~30 screens/fixes landed this session** (P1 vitality de-mock, P2 Credit Repair 8/8 + Billing 3/3, financial mobile domain 5, insights 3, credit-builder 1, dashboard 5, admin 2, misc 1, web paper/journal/goodwill/dashboard-spending), all verified green on PR #3, with **~12 real bugs caught** (net-worth Plaid classification, debt `$NaN` reports, `/financial/insights/*` mis-path, `__proto__` pollution, budget fabrication, FND-016 card, fabricated plan catalog, fabricated milestones, mock-on-error fallbacks, …). Every un-wired screen was honestly triaged and mapped — none fabricated.
+
+## ⛔ Remaining parity = BACKEND work (OWNER DECISION #4) — client-wiring can't close it
+Reaching ≥98% requires building backend that doesn't exist. Consolidated, by leverage:
+1. **Orphaned services → migration + route** (logic already written): crypto, real-estate, shared-goals, journey.
+2. **Aggregation engines**: insights/weekly-summary + alerts, admin/health (per-service probes), a vitality/health-score service.
+3. **Schema reconciliations**: `audit_logs` (+ `type`/`category` col), `subscriptions` (billing-tier read model, fixes FND-018), `credit_reports` twin-schema, vitality history table (nullable component cols).
+4. **New routes/tables**: `system_logs`, admin feature-flags, DB-backed admin settings/config, payment-history, per-card credit-limits, credit tradelines, disputable-items list, credit-report `[id]`, activity feed, support tickets, doc-analysis payload, a full user-profile route (dob/address/phone/avatar).
+5. **External integrations**: market-data/quotes provider (web watchlist + chart OHLC), identity-monitoring provider.
+6. **Product forks**: cards screen (utilization-optimizer vs catalog); marketplace unguarded routes; the 2 credit simulators (deterministic-math de-fab).
+
 ### Remaining parity work (all doable, need subagent quota)
 - **P2 Billing / IAP** (mobile) — not started.
 - **P3 web-only → mobile ports** — Real Estate, Crypto holdings, shared Goals, marketplace sub-cats (not started).
