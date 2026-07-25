@@ -1,9 +1,20 @@
 /**
  * Fynvita Dashboard Analytics Screen
- * Credit analytics with score progress, dispute stats, and AI recommendations
+ * Credit analytics with score progress, dispute stats, and recommendations.
+ *
+ * Real-data wiring (PARITY): renders the authenticated user's analytics from
+ * GET /api/user/analytics (withAuth) via userAnalyticsApi.getAnalytics. The
+ * former MOCK_DATA object + fake setTimeout load were removed. creditHistory
+ * and disputeStats are the user's real data (honestly empty/zeroed when the
+ * source is empty); scoreFactors and recommendations are the endpoint's own
+ * reference data. Fetch on mount with honest inline loading / error+retry
+ * states and pull-to-refresh; when the user has no score history the chart
+ * shows an honest empty note instead of crashing on an empty series, and the
+ * recommendations card is omitted rather than invented when the API returns
+ * none. Nothing is fabricated.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,85 +22,96 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-
-interface CreditHistory {
-  date: string;
-  score: number;
-}
-interface ScoreFactor {
-  factor: string;
-  impact: number;
-  status: "positive" | "negative" | "neutral";
-}
-interface DisputeStats {
-  total: number;
-  resolved: number;
-  pending: number;
-  successRate: number;
-}
-
-const MOCK_DATA = {
-  creditHistory: [
-    { date: "Jul", score: 620 },
-    { date: "Aug", score: 635 },
-    { date: "Sep", score: 648 },
-    { date: "Oct", score: 655 },
-    { date: "Nov", score: 668 },
-    { date: "Dec", score: 678 },
-  ],
-  disputeStats: { total: 12, resolved: 9, pending: 3, successRate: 75 },
-  scoreFactors: [
-    { factor: "Payment History", impact: 35, status: "positive" as const },
-    { factor: "Credit Utilization", impact: 30, status: "negative" as const },
-    { factor: "Credit Age", impact: 15, status: "neutral" as const },
-    { factor: "Credit Mix", impact: 10, status: "positive" as const },
-    { factor: "New Credit", impact: 10, status: "neutral" as const },
-  ],
-  recommendations: [
-    "Pay down credit card balances to reduce utilization below 30%",
-    "Continue making on-time payments to build positive history",
-    "Consider a secured credit card to improve credit mix",
-    "Avoid opening new credit accounts for the next 6 months",
-  ],
-};
+import { userAnalyticsApi } from "../../src/services/api/user";
+import type { UserAnalytics } from "../../src/services/api/user";
 
 export default function DashboardAnalyticsScreen() {
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState("6m");
-  const [data, setData] = useState(MOCK_DATA);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<UserAnalytics | null>(null);
+  const [timeRange] = useState("6m");
+
+  const fetchAnalytics = useCallback(async () => {
+    const response = await userAnalyticsApi.getAnalytics(timeRange);
+    if (response.success && response.data) {
+      setData(response.data);
+      setError(null);
+    } else {
+      setError(response.error?.message ?? "Unable to load analytics.");
+    }
+  }, [timeRange]);
+
+  const loadAnalytics = useCallback(async () => {
+    setLoading(true);
+    await fetchAnalytics();
+    setLoading(false);
+  }, [fetchAnalytics]);
 
   useEffect(() => {
-    setTimeout(() => setLoading(false), 800);
-  }, []);
+    loadAnalytics();
+  }, [loadAnalytics]);
 
-  const maxScore = Math.max(...data.creditHistory.map((h) => h.score));
-  const minScore = Math.min(...data.creditHistory.map((h) => h.score));
-  const scoreGain =
-    data.creditHistory[data.creditHistory.length - 1].score -
-    data.creditHistory[0].score;
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchAnalytics();
+    setRefreshing(false);
+  };
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered} testID="dashboard-analytics-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading analytics...</Text>
+          <Text style={styles.stateText}>Loading analytics...</Text>
         </View>
       </SafeAreaView>
     );
   }
+
+  if (error && !data) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="dashboard-analytics-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadAnalytics}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Unreachable once a fetch succeeds (success populates data); narrows the type.
+  if (!data) return null;
+
+  const { creditHistory, disputeStats, scoreFactors, recommendations } = data;
+  const hasHistory = creditHistory.length > 0;
+  const scoreGain = hasHistory
+    ? creditHistory[creditHistory.length - 1].score - creditHistory[0].score
+    : 0;
+  const scoreGainText = `${scoreGain >= 0 ? "+" : ""}${scoreGain}`;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -113,24 +135,52 @@ export default function DashboardAnalyticsScreen() {
         {/* Score Progress Chart */}
         <Card style={styles.chartCard}>
           <Text style={styles.sectionTitle}>Credit Score Progress</Text>
-          <View style={styles.chartContainer}>
-            {data.creditHistory.map((item, i) => (
-              <View key={i} style={styles.barColumn}>
-                <Text style={styles.barValue}>{item.score}</Text>
-                <View
-                  style={[
-                    styles.bar,
-                    { height: ((item.score - 300) / 550) * 120 },
-                  ]}
-                />
-                <Text style={styles.barLabel}>{item.date}</Text>
+          {hasHistory ? (
+            <>
+              <View style={styles.chartContainer}>
+                {creditHistory.map((item, i) => (
+                  <View key={i} style={styles.barColumn}>
+                    <Text style={styles.barValue}>{item.score}</Text>
+                    <View
+                      style={[
+                        styles.bar,
+                        { height: ((item.score - 300) / 550) * 120 },
+                      ]}
+                    />
+                    <Text style={styles.barLabel}>{item.date}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-          <View style={styles.scoreGainRow}>
-            <Text style={styles.scoreGainValue}>+{scoreGain}</Text>
-            <Text style={styles.scoreGainLabel}> points gained</Text>
-          </View>
+              <View style={styles.scoreGainRow}>
+                <Text
+                  style={[
+                    styles.scoreGainValue,
+                    {
+                      color:
+                        scoreGain >= 0
+                          ? theme.colors.success
+                          : theme.colors.error,
+                    },
+                  ]}
+                >
+                  {scoreGainText}
+                </Text>
+                <Text style={styles.scoreGainLabel}> points gained</Text>
+              </View>
+            </>
+          ) : (
+            <View style={styles.chartEmpty} testID="dashboard-analytics-empty">
+              <Ionicons
+                name="stats-chart-outline"
+                size={36}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.chartEmptyText}>
+                No score history yet. Your credit score trend will appear here
+                once scores are recorded.
+              </Text>
+            </View>
+          )}
         </Card>
 
         {/* Dispute Stats */}
@@ -144,7 +194,7 @@ export default function DashboardAnalyticsScreen() {
               ]}
             >
               <Text style={[styles.statValue, { color: theme.colors.primary }]}>
-                {data.disputeStats.total}
+                {disputeStats.total}
               </Text>
               <Text style={styles.statLabel}>Total</Text>
             </View>
@@ -155,7 +205,7 @@ export default function DashboardAnalyticsScreen() {
               ]}
             >
               <Text style={[styles.statValue, { color: theme.colors.success }]}>
-                {data.disputeStats.resolved}
+                {disputeStats.resolved}
               </Text>
               <Text style={styles.statLabel}>Resolved</Text>
             </View>
@@ -166,7 +216,7 @@ export default function DashboardAnalyticsScreen() {
               ]}
             >
               <Text style={[styles.statValue, { color: theme.colors.warning }]}>
-                {data.disputeStats.pending}
+                {disputeStats.pending}
               </Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
@@ -179,7 +229,7 @@ export default function DashboardAnalyticsScreen() {
               <Text
                 style={[styles.statValue, { color: theme.colors.secondary }]}
               >
-                {data.disputeStats.successRate}%
+                {disputeStats.successRate}%
               </Text>
               <Text style={styles.statLabel}>Success</Text>
             </View>
@@ -187,45 +237,53 @@ export default function DashboardAnalyticsScreen() {
         </Card>
 
         {/* Score Factors */}
-        <Card style={styles.factorsCard}>
-          <Text style={styles.sectionTitle}>Score Factors</Text>
-          {data.scoreFactors.map((factor, i) => (
-            <View key={i} style={styles.factorRow}>
-              <Text style={styles.factorName}>{factor.factor}</Text>
-              <View style={styles.factorBar}>
-                <View
-                  style={[
-                    styles.factorFill,
-                    {
-                      width: `${factor.impact}%`,
-                      backgroundColor:
-                        factor.status === "positive"
-                          ? theme.colors.success
-                          : factor.status === "negative"
-                            ? theme.colors.error
-                            : theme.colors.warning,
-                    },
-                  ]}
-                />
+        {scoreFactors.length > 0 && (
+          <Card style={styles.factorsCard}>
+            <Text style={styles.sectionTitle}>Score Factors</Text>
+            {scoreFactors.map((factor, i) => (
+              <View key={i} style={styles.factorRow}>
+                <Text style={styles.factorName}>{factor.factor}</Text>
+                <View style={styles.factorBar}>
+                  <View
+                    style={[
+                      styles.factorFill,
+                      {
+                        width: `${factor.impact}%`,
+                        backgroundColor:
+                          factor.status === "positive"
+                            ? theme.colors.success
+                            : factor.status === "negative"
+                              ? theme.colors.error
+                              : theme.colors.warning,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.factorPercent}>{factor.impact}%</Text>
               </View>
-              <Text style={styles.factorPercent}>{factor.impact}%</Text>
-            </View>
-          ))}
-        </Card>
+            ))}
+          </Card>
+        )}
 
-        {/* AI Recommendations */}
-        <Card style={styles.recommendationsCard}>
-          <View style={styles.recommendationsHeader}>
-            <Ionicons name="sparkles" size={20} color={theme.colors.primary} />
-            <Text style={styles.sectionTitle}> AI Recommendations</Text>
-          </View>
-          {data.recommendations.map((rec, i) => (
-            <View key={i} style={styles.recommendationItem}>
-              <Ionicons name="bulb" size={18} color={theme.colors.primary} />
-              <Text style={styles.recommendationText}>{rec}</Text>
+        {/* Recommendations — omitted when the endpoint returns none */}
+        {recommendations.length > 0 && (
+          <Card style={styles.recommendationsCard}>
+            <View style={styles.recommendationsHeader}>
+              <Ionicons
+                name="sparkles"
+                size={20}
+                color={theme.colors.primary}
+              />
+              <Text style={styles.sectionTitle}> Recommendations</Text>
             </View>
-          ))}
-        </Card>
+            {recommendations.map((rec, i) => (
+              <View key={i} style={styles.recommendationItem}>
+                <Ionicons name="bulb" size={18} color={theme.colors.primary} />
+                <Text style={styles.recommendationText}>{rec}</Text>
+              </View>
+            ))}
+          </Card>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -234,11 +292,25 @@ export default function DashboardAnalyticsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: {
-    marginTop: theme.spacing.md,
-    color: theme.colors.textSecondary,
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
   },
+  stateText: {
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -294,6 +366,17 @@ const styles = StyleSheet.create({
     color: theme.colors.success,
   },
   scoreGainLabel: { fontSize: 14, color: theme.colors.textSecondary },
+  chartEmpty: {
+    alignItems: "center",
+    paddingVertical: theme.spacing.lg,
+  },
+  chartEmptyText: {
+    marginTop: theme.spacing.sm,
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 18,
+  },
   statsCard: {
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,

@@ -648,6 +648,129 @@ export const recommendationApi = {
     ),
 };
 
+// User Analytics Endpoints
+// GET /api/user/analytics (withAuth) returns the authenticated user's credit
+// dashboard analytics. creditHistory + disputeStats are real per-user data
+// (credit_score_history, disputes), honestly empty/zeroed when a source is
+// empty. scoreFactors (standard FICO category weights, status "neutral" until a
+// pulled report drives per-factor analysis) and recommendations (general
+// best-practice tips) are the endpoint's own reference data — not per-user
+// fabrication. normalizeUserAnalytics only guarantees array/number shapes and
+// clamps status to the known union; it never invents values (missing => [] / 0
+// / "neutral"), so an empty response stays honestly empty rather than mocked.
+export type ScoreFactorStatus = "positive" | "negative" | "neutral";
+
+export interface CreditHistoryPoint {
+  date: string;
+  score: number;
+}
+
+export interface AnalyticsDisputeStats {
+  total: number;
+  resolved: number;
+  pending: number;
+  successRate: number;
+}
+
+export interface ScoreFactor {
+  factor: string;
+  impact: number;
+  status: ScoreFactorStatus;
+}
+
+export interface UserAnalytics {
+  creditHistory: CreditHistoryPoint[];
+  disputeStats: AnalyticsDisputeStats;
+  scoreFactors: ScoreFactor[];
+  recommendations: string[];
+  timeRange: string;
+}
+
+interface RawUserAnalytics {
+  creditHistory?: unknown;
+  disputeStats?: unknown;
+  scoreFactors?: unknown;
+  recommendations?: unknown;
+  timeRange?: unknown;
+}
+
+const SCORE_FACTOR_STATUSES: readonly ScoreFactorStatus[] = [
+  "positive",
+  "negative",
+  "neutral",
+];
+
+function toFiniteNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function normalizeScoreFactorStatus(value: unknown): ScoreFactorStatus {
+  return typeof value === "string" &&
+    (SCORE_FACTOR_STATUSES as readonly string[]).includes(value)
+    ? (value as ScoreFactorStatus)
+    : "neutral";
+}
+
+function asRecordArray(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value)
+    ? value.filter(
+        (item): item is Record<string, unknown> =>
+          typeof item === "object" && item !== null,
+      )
+    : [];
+}
+
+export function normalizeUserAnalytics(raw: RawUserAnalytics): UserAnalytics {
+  const creditHistory = asRecordArray(raw.creditHistory).map((point) => ({
+    date: typeof point.date === "string" ? point.date : "",
+    score: toFiniteNumber(point.score),
+  }));
+
+  const scoreFactors = asRecordArray(raw.scoreFactors).map((factor) => ({
+    factor: typeof factor.factor === "string" ? factor.factor : "",
+    impact: toFiniteNumber(factor.impact),
+    status: normalizeScoreFactorStatus(factor.status),
+  }));
+
+  const recommendations = Array.isArray(raw.recommendations)
+    ? raw.recommendations.filter((tip): tip is string => typeof tip === "string")
+    : [];
+
+  const stats =
+    typeof raw.disputeStats === "object" && raw.disputeStats !== null
+      ? (raw.disputeStats as Record<string, unknown>)
+      : {};
+
+  return {
+    creditHistory,
+    disputeStats: {
+      total: toFiniteNumber(stats.total),
+      resolved: toFiniteNumber(stats.resolved),
+      pending: toFiniteNumber(stats.pending),
+      successRate: toFiniteNumber(stats.successRate),
+    },
+    scoreFactors,
+    recommendations,
+    timeRange: typeof raw.timeRange === "string" ? raw.timeRange : "6m",
+  };
+}
+
+export const userAnalyticsApi = {
+  /**
+   * Get the authenticated user's credit-dashboard analytics.
+   * @param range "3m" | "6m" | "12m" (server default "6m")
+   */
+  getAnalytics: async (range = "6m"): Promise<ApiResponse<UserAnalytics>> => {
+    const res = await api.get<RawUserAnalytics>(
+      `/user/analytics?range=${encodeURIComponent(range)}`,
+    );
+    if (res.success && res.data) {
+      return { success: true, data: normalizeUserAnalytics(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
+};
+
 // Identity Protection Endpoints
 export const identityProtectionApi = {
   /**
