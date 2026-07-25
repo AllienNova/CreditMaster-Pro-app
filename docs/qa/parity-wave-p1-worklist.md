@@ -164,7 +164,7 @@ Web `src/`-only-wireable screens are DONE (paper, journal, goodwill-letters, das
 |---|---|
 | `insights/index` | ✅ already-wired (P1, `/api/ai/insights`); still uses `useNudges`/`useCoaching` (mock-on-error fallbacks) |
 | `insights/spending` | ✅ DONE `b1490f2` (was 100% fabricated; real deterministic `/api/financial/spending/analyze`; trends from real `comparison.categoryChanges`; 18 tests) |
-| `insights/nudges` | 🔧 in flight (`a379f30c`) — active feed real; removing `MOCK_NUDGES` mock-on-error fallback + empty-stating unsourced history/stats tabs |
+| `insights/nudges` | ✅ DONE `89e08d5` — removed `MOCK_NUDGES` array + both mock-on-error fallbacks (honest error now); deleted fabricated stats card + history mock; empty-stated history tab; net −180 lines; 10 tests. **Follow-up bug**: hook posts `/ai/nudges/respond` but route is `POST /api/ai/nudges` (`{nudgeId,action}` vs `{nudgeId,response}`) — path/field mismatch. |
 | `insights/weekly-summary` | ⛔ NEEDS-AGGREGATION-ENGINE — healthScore + 7 domains in one weekly payload; no endpoint, no health-score service (same as vitality) |
 | `insights/alerts` | ⛔ CONCEPT-MISMATCH — `/api/notifications` carries `{type/title/message}`, not the alerts priority-triage engine (priority/actionRoute/rich data); would fabricate |
 
