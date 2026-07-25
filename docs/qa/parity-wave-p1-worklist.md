@@ -159,6 +159,15 @@ Web `src/`-only-wireable screens are DONE (paper, journal, goodwill-letters, das
 
 ⚠ **EMERGING PATTERN**: many mobile-tail screens (like the web orphaned services) need **new backend routes** (tradelines, payment-history, card-limits, upload, etc.), not just client wiring. The truly-client-wireable tail is smaller than the raw screen count. Backend-route work overlaps decision #4.
 
+## Mobile insights map (from `ae691f7e` scout)
+| Screen | Verdict |
+|---|---|
+| `insights/index` | ✅ already-wired (P1, `/api/ai/insights`); still uses `useNudges`/`useCoaching` (mock-on-error fallbacks) |
+| `insights/spending` | ✅ DONE `b1490f2` (was 100% fabricated; real deterministic `/api/financial/spending/analyze`; trends from real `comparison.categoryChanges`; 18 tests) |
+| `insights/nudges` | 🔧 in flight (`a379f30c`) — active feed real; removing `MOCK_NUDGES` mock-on-error fallback + empty-stating unsourced history/stats tabs |
+| `insights/weekly-summary` | ⛔ NEEDS-AGGREGATION-ENGINE — healthScore + 7 domains in one weekly payload; no endpoint, no health-score service (same as vitality) |
+| `insights/alerts` | ⛔ CONCEPT-MISMATCH — `/api/notifications` carries `{type/title/message}`, not the alerts priority-triage engine (priority/actionRoute/rich data); would fabricate |
+
 ### Remaining parity work (all doable, need subagent quota)
 - **P2 Billing / IAP** (mobile) — not started.
 - **P3 web-only → mobile ports** — Real Estate, Crypto holdings, shared Goals, marketplace sub-cats (not started).
