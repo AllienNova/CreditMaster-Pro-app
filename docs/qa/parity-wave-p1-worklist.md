@@ -63,6 +63,19 @@ All 8 screens shared a fake `setTimeout(600)` load + a module-level hardcoded ar
 
 **Credit Repair: 6/8 data screens wired to real APIs** (disputes, goodwill, index, negotiate, payments, inquiries); cards ⛔ product fork; building honest-static. Effectively COMPLETE.
 
+## P4 — Web Trading/Watchlist laggards (full map from `afe668ea` scout)
+
+| Surface | Real source | Status |
+|---|---|---|
+| `trading/paper/page.tsx` | `PaperTradingEngine` + 5 authed routes | ✅ DONE `23d5bef` (mapAccount/Position/Order/Performance/Trade; omitted no-source fields; profitFactor ∞→null→em-dash; 25 tests; full suite 16,316/0) |
+| `trading/journal/page.tsx` | `/api/trading/journal` GET/POST + stats + `[id]`/close | 🔧 in flight — needs adapter (`entryQuantity`/`entryDate` diverge); omit hardcoded "Quick Insights" (no source) |
+| `investments/watchlist/page.tsx` | ⛔ **NONE** — no quote route; mock `Math.random()` prices | BLOCKED-on-backend (needs a quotes/market-data API) |
+| `components/trading/charts/TradingChartContainer.tsx` | ⛔ **NONE** — mock OHLC `generateMockData` | BLOCKED-on-backend (needs market-data OHLC API) |
+| trading main / strategies / backtest / OpportunityRadar | already real | ✅ no action |
+| `components/trading/watchlist/Watchlist.tsx` | prop-driven orphan (no page imports) | n/a |
+
+No product forks. After journal, the only remaining P4 mock-debt is **backend-blocked** (watchlist quotes + chart OHLC both need a market-data/quotes provider — a net-new backend, larger than a wiring task). **Codex gate env-blocked on paper-trading** → substituted self-review (all calls authed, server-side ownership check prevents IDOR).
+
 `cards`/`goodwill`/`inquiries`/`payments` each need a new `mobile-app/src/services/api/creditRepair.ts` getter + a per-screen `mapWebX` adapter (type divergence recurs every screen).
 - **Follow-ups flagged by subagents** (roll up at P1 close): the new `budgets/generate/zero-based` route wants a Codex/`vcrit-auth` pass (blocked on out-of-date Codex CLI); mobile `useNudges`/`useCoaching` shared hooks still have mock-on-error fallbacks (separate item); zero-based "Save plan" button inert (needs a bulk-create budgets endpoint).
 - **Then**: P2 (mobile Credit Repair 8 screens + Billing/IAP), P3 (web-only → mobile ports), P4 (web Trading/Watchlist). Re-measure functional parity after each wave.
