@@ -57,8 +57,23 @@ All 8 screens shared a fake `setTimeout(600)` load + a module-level hardcoded ar
 | **negotiate** | `DEBTS` array | ✅ DONE `9020c87` — confirmed `GET /api/credit-repair/negotiate` (real pay-for-delete records); **rejected `useDebtStore`** (concept mismatch → would fabricate); `mapWebNegotiation` (creditor←collectionAgency, honest status compression, `lastContact`←`updatedAt` "Updated"); 17 tests |
 | **payments** | `PAYMENTS` array + on-time% | ✅ DONE `0917c1b` — `GET /api/financial/bills` (upcoming bills, NOT history); **omitted on-time%/paid-late statuses** (no history HTTP route — only service methods) + **removed fabricated calendar card**; `mapWebBill`; 13 tests |
 
-**Discovered mock-debt (queue as parity tasks):**
-- `mobile-app/app/financial/bills.tsx:146-171` — `billsApi.getUpcoming` is mis-typed (declares `name`/`dueDate`/`autopay`/`totalDue` the route never returns); consumer reads nonexistent fields → **silently falls back to `MOCK_BILLS`** on error. Fix: correct the getter's type + wire real fields (reuse the new `getBills`/`mapWebBill`), remove the mock fallback.
+**Discovered mock-debt:**
+- ✅ DONE `58d8ea0` — `mobile-app/app/financial/bills.tsx` `MOCK_BILLS` silent-fallback removed; wired to real `getBills`/`mapWebBill`; honest error+retry; removed fake per-bill "paid" status + hardcoded calendar dots (7 tests).
+
+---
+## ⏸ SESSION-LIMIT CHECKPOINT (2026-07-25) — resets 8am ET; NEW SUBAGENTS BLOCKED until then
+Both in-flight lanes (bills, journal) hit the session limit during their FINAL verification step; both were complete + green, so the main session verified (tsc 0 + tests) and salvage-committed them pathspec-scoped (`58d8ea0`, `9085b88`). Tree clean. **Resume after 8am ET.**
+
+### Remaining parity work (all doable, need subagent quota)
+- **P2 Billing / IAP** (mobile) — not started.
+- **P3 web-only → mobile ports** — Real Estate, Crypto holdings, shared Goals, marketplace sub-cats (not started).
+- **P4 watchlist quotes + chart OHLC** — BLOCKED-on-backend (net-new market-data/quotes API required — a real infra gap, not a wiring task).
+- **building.tsx** — honest-static cosmetic `setTimeout` cleanup (optional, low priority).
+
+### Owner decisions batched for the user
+1. **Cards screen product fork** — Utilization-Optimizer rebuild vs static catalog vs redirect to `credit-builder`.
+2. **Marketplace unguarded routes** — public browse allowed, or auth-gate?
+3. **Backend gaps to greenlight** — market-data/quotes API (unblocks watchlist + charts); vitality-score history-table migration (nullable component columns).
 | **building** | `STRATEGIES` array = **honest static educational content** (like Savings tips) | NOT mock-debt — content is legitimately static; only the cosmetic `setTimeout` is fake. LOW priority cleanup, no parity/honesty impact. | ⏸ optional (honest-static) |
 
 **Credit Repair: 6/8 data screens wired to real APIs** (disputes, goodwill, index, negotiate, payments, inquiries); cards ⛔ product fork; building honest-static. Effectively COMPLETE.
@@ -68,7 +83,7 @@ All 8 screens shared a fake `setTimeout(600)` load + a module-level hardcoded ar
 | Surface | Real source | Status |
 |---|---|---|
 | `trading/paper/page.tsx` | `PaperTradingEngine` + 5 authed routes | ✅ DONE `23d5bef` (mapAccount/Position/Order/Performance/Trade; omitted no-source fields; profitFactor ∞→null→em-dash; 25 tests; full suite 16,316/0) |
-| `trading/journal/page.tsx` | `/api/trading/journal` GET/POST + stats + `[id]`/close | 🔧 in flight — needs adapter (`entryQuantity`/`entryDate` diverge); omit hardcoded "Quick Insights" (no source) |
+| `trading/journal/page.tsx` | `/api/trading/journal` GET/POST + stats + `[id]`/close | ✅ DONE `9085b88` — real fetch + adapter; "Quick Insights" replaced w/ real `bestStrategy`/`expectancy`/`avgHoldingTime` + "Not enough data yet" empty-state; 12 tests |
 | `investments/watchlist/page.tsx` | ⛔ **NONE** — no quote route; mock `Math.random()` prices | BLOCKED-on-backend (needs a quotes/market-data API) |
 | `components/trading/charts/TradingChartContainer.tsx` | ⛔ **NONE** — mock OHLC `generateMockData` | BLOCKED-on-backend (needs market-data OHLC API) |
 | trading main / strategies / backtest / OpportunityRadar | already real | ✅ no action |
