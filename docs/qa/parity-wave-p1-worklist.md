@@ -61,8 +61,15 @@ All 8 screens shared a fake `setTimeout(600)` load + a module-level hardcoded ar
 - ✅ DONE `58d8ea0` — `mobile-app/app/financial/bills.tsx` `MOCK_BILLS` silent-fallback removed; wired to real `getBills`/`mapWebBill`; honest error+retry; removed fake per-bill "paid" status + hardcoded calendar dots (7 tests).
 
 ---
-## ⏸ SESSION-LIMIT CHECKPOINT (2026-07-25) — resets 8am ET; NEW SUBAGENTS BLOCKED until then
-Both in-flight lanes (bills, journal) hit the session limit during their FINAL verification step; both were complete + green, so the main session verified (tsc 0 + tests) and salvage-committed them pathspec-scoped (`58d8ea0`, `9085b88`). Tree clean. **Resume after 8am ET.**
+## ⏸ SESSION-LIMIT CHECKPOINT (2026-07-25, LATEST) — resets **1pm ET**; NEW SUBAGENTS BLOCKED until then
+Recurring session-limit pattern: subagent commits its work then dies before push; the main session verifies (tsc + tests) + salvage-pushes. Salvaged this cycle: **`af62dd9` billing/index** (removed the fabricated "Visa •••• 4242" card = mobile face of FND-016, wired to real `subscriptionApi.getBillingOverview`; 20 tests). Tree clean. **Resume after 1pm ET, or switch to fresh quota.**
+
+### Landed since the earlier 8am checkpoint (all verified green, pushed):
+P4 journal (`9085b88`) · **financial mobile domain COMPLETE** (cash-flow `d0afa8e`, net-worth `d7f890e`, debt `015af6f`, spending `c50f241`) · web goodwill-letters (`ac0c73f`) · web dashboard/spending (`632a85d`) · building de-fabrication (`0b8aeec`) · billing/index (`af62dd9`). Web client-wiring now EXHAUSTED (remaining web = backend, decision #4). Real bugs caught: net-worth Plaid classification, debt `$NaN` reports, `/financial/insights/*` mis-path, `__proto__` pollution, budget fabrication, FND-016 mobile card.
+
+### Remaining (needs subagent quota — resume 1pm ET or fresh account):
+- **Mobile tail** (client-wiring, real APIs exist — the productive lane): billing invoices+subscription; credit-builder (5-6); insights (5); dashboard (~8); admin (~9); misc (activity/search/profile/reports/documents/…).
+- **Web backend** (decision #4): 4 orphaned-service migrations+routes, aggregation engines, market-data, integrations, 2 simulator de-fabrications.
 
 ### ⚠ HONEST PARITY RE-ASSESSMENT (2026-07-25 main-session scan) — parity is NOT near ≥98%
 A `grep` of `mobile-app/app` found **~29 screens still holding `MOCK_` arrays** + **~34 with fake `setTimeout` loading**. The drive has genuinely closed P1 + Credit Repair (8/8) + paper/journal + bills, but a LARGE mock-debt tail remains. Candidate mock-debt inventory (needs per-screen triage — some `MOCK_` refs may be dead fallbacks, like the cards/inquiries lesson; verify source-concept before wiring each):
