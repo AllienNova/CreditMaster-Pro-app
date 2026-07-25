@@ -125,6 +125,20 @@ A `grep` of `mobile-app/app` found **~29 screens still holding `MOCK_` arrays** 
 
 **Web tail is largely exhausted of clean wiring**: goodwill-letters + dashboard/spending wired; the rest need aggregation engines (alerts, weekly-summary), portfolio selection + daily-series (investments), or are product-forks/math-fixes. Most remaining WEB parity = backend work, not wiring.
 
+## Web P3/misc map (from `af995e64` scout) — ALL 6 STOP (backend work, not wiring)
+None of the 6 pages fetch anything today (all render `MOCK_*` constants). Verdicts:
+| Screen | Real logic exists? | Blocker |
+|---|---|---|
+| `financial/crypto` | ✅ `crypto-wallet-service` (concept-exact) | ⛔ **orphaned service** — no `crypto_wallets`/`crypto_holdings` table in any migration; no route. Needs migration + route (outside `src/`) |
+| `financial/real-estate` | ✅ `real-estate-tracking-service` | ⛔ orphaned service — no `properties`/`mortgages` table; no route |
+| `goals/shared` | ✅ `shared-goals-service` | ⛔ orphaned service — no `shared_goals*` table; no route |
+| `journey` | ✅ `financial-journey-service` (IDOR-tested) | ⛔ orphaned service — no `financial_journeys` table; no route (+ nothing calls `createJourney`) |
+| `experts` | ❌ none | ⛔ no service/table/route — full advisor-marketplace build |
+| `identity` | partial (credit-monitoring alerts ≠ identity-theft concept) | ⛔ product-fork — protection score + dark-web scan unsourced; needs identity-monitoring provider |
+
+## ⚠ WEB CLIENT-WIRING EXHAUSTED — remaining web parity is BACKEND work (owner decision #4)
+Web `src/`-only-wireable screens are DONE (paper, journal, goodwill-letters, dashboard/spending). Everything else on web needs backend that's outside a client-wire task: **(a) 4 orphaned services** (crypto/real-estate/shared-goals/journey — service logic written, need a **migration + authed route** each, then the wire is trivial); **(b) aggregation engines** (insights/alerts, weekly-summary); **(c) market-data provider** (watchlist quotes, chart OHLC); **(d) portfolioId + daily-series** (investments perf/rebalance); **(e) full builds** (experts marketplace, identity-monitoring integration); **(f) deterministic-math de-fabrication** (2 credit simulators). **Highest-leverage = the 4 orphaned services** (small coordinated migration+route+wire each). MOBILE still has a large wireable tail (client wiring, real APIs exist) → that's the productive lane.
+
 ### Remaining parity work (all doable, need subagent quota)
 - **P2 Billing / IAP** (mobile) — not started.
 - **P3 web-only → mobile ports** — Real Estate, Crypto holdings, shared Goals, marketplace sub-cats (not started).
