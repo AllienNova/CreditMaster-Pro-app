@@ -179,14 +179,15 @@ export function mapWebInsight(raw: WebCoachingInsight, index: number): Insight {
 // CashFlowAnalysis: { monthlyData: [{ month, monthLabel, income, expenses,
 // netFlow, savingsRate }], summary, trends, health, recommendations }.
 //
-// The pre-existing getCashFlow method (still consumed by spending.tsx) points at
-// /financial/insights/cashflow — a route that DOES NOT EXIST (the real one lives
-// under /financial/spending/cashflow) — and declares a shape the route never
-// returns ({ income, expenses, net, forecast }). Every call 404s and the screen
-// silently fell back to a hardcoded MOCK_DATA array, so real users saw invented
-// cash-flow figures. This adapter carries only the fields the endpoint truly
-// provides; nothing is fabricated (an absent income/expenses becomes 0, an absent
-// month becomes an empty label, absent recommendations become []).
+// The old getCashFlow / getSpendingInsights methods pointed at
+// /financial/insights/{cashflow,spending} — routes that DO NOT EXIST (the real
+// cash-flow route lives under /financial/spending/cashflow) — and declared shapes
+// those routes never return. Every call 404'd and the callers (cash-flow.tsx and
+// spending.tsx) silently fell back to hardcoded mock arrays, so real users saw
+// invented figures. Both dead methods were deleted once those screens moved onto
+// this adapter, which carries only the fields the endpoint truly provides; nothing
+// is fabricated (an absent income/expenses becomes 0, an absent month becomes an
+// empty label, absent recommendations become []).
 export interface CashFlowMonthPoint {
   month: string; // short label, e.g. "Jan" (from monthLabel); "" when the source omits it
   income: number;
@@ -364,29 +365,6 @@ export const financialOverviewApi = {
     }
     return { success: false, error: res.error };
   },
-
-  /**
-   * Get spending insights
-   */
-  getSpendingInsights: (period?: "week" | "month" | "year") =>
-    api.get<{
-      totalSpent: number;
-      byCategory: { category: string; amount: number; percentage: number }[];
-      comparedToLastPeriod: number;
-      unusualSpending: { category: string; amount: number; average: number }[];
-      recommendations: string[];
-    }>(`/financial/insights/spending${period ? `?period=${period}` : ""}`),
-
-  /**
-   * Get cash flow analysis
-   */
-  getCashFlow: (months?: number) =>
-    api.get<{
-      income: { month: string; amount: number }[];
-      expenses: { month: string; amount: number }[];
-      net: { month: string; amount: number }[];
-      forecast: { month: string; projected: number }[];
-    }>(`/financial/insights/cashflow${months ? `?months=${months}` : ""}`),
 
   /**
    * Get cash flow analysis. Hits the real route GET /api/financial/spending/cashflow

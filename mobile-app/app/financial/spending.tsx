@@ -1,6 +1,27 @@
 /**
  * Fynvita Spending Analysis Screen
- * Analyze spending patterns and get insights with real charts
+ *
+ * Real-data wiring (PARITY): renders the user's real spending broken down by
+ * category plus a real monthly-expense trend — no mocks, no fabricated fields.
+ *
+ *  - By-category comes from GET /api/financial/dashboard (withPermission
+ *    "financial:read") via financialOverviewApi.getDashboard -> the dashboard's
+ *    `spendingByCategory` (each { category, amount, percentage, transactionCount }:
+ *    the last 30 days of the user's real Plaid expense transactions grouped by
+ *    category, sorted by amount desc; see financial-service.calculateSpendingByCategory).
+ *    Each category's progress bar shows its real `percentage` share of total spending,
+ *    exactly as the web SpendingOverview does (src/components/financial/SpendingOverview.tsx
+ *    line 274) — this screen no longer overlays an invented budget. Budget tracking
+ *    lives on its own screen (app/financial/budgets.tsx).
+ *  - The monthly trend comes from GET /api/financial/spending/cashflow via
+ *    financialOverviewApi.getCashFlowAnalysis(6) -> each month's real `expenses`.
+ *
+ * The screen previously called getSpendingInsights (/financial/insights/spending) and
+ * getCashFlow (/financial/insights/cashflow) — routes that DO NOT EXIST (404); every
+ * call fell through to hardcoded MOCK_CATEGORIES / MOCK_TRENDS and an invented
+ * `amount * 1.2` budget, so real users saw fabricated figures. Both dead methods were
+ * deleted and the mocks removed; on a failed fetch the screen shows an honest error +
+ * retry, never fabricated data.
  */
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -20,13 +41,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { PieChart, LineChart, BarChart } from "../../src/components/charts";
-import { useBudgetStore } from "../../src/store/budgetStore";
 import { financialOverviewApi } from "../../src/services/api/financial";
 
 interface SpendingCategory {
   name: string;
   amount: number;
-  budget: number;
+  percentage: number; // real share of total spending, 0-100
   icon: string;
   color: string;
 }
@@ -59,170 +79,143 @@ const CATEGORY_ICONS: Record<string, string> = {
   Other: "ellipsis-horizontal",
 };
 
-// Fallback mock data when API is unavailable
-const MOCK_CATEGORIES: SpendingCategory[] = [
-  {
-    name: "Housing",
-    amount: 1800,
-    budget: 1800,
-    icon: "home",
-    color: "#3B82F6",
-  },
-  {
-    name: "Food & Dining",
-    amount: 650,
-    budget: 600,
-    icon: "restaurant",
-    color: "#F59E0B",
-  },
-  {
-    name: "Transportation",
-    amount: 420,
-    budget: 500,
-    icon: "car",
-    color: "#10B981",
-  },
-  { name: "Shopping", amount: 380, budget: 300, icon: "bag", color: "#EC4899" },
-  {
-    name: "Entertainment",
-    amount: 180,
-    budget: 200,
-    icon: "game-controller",
-    color: "#8B5CF6",
-  },
-  {
-    name: "Utilities",
-    amount: 220,
-    budget: 250,
-    icon: "flash",
-    color: "#F97316",
-  },
-];
-
-const MOCK_TRENDS: SpendingTrend[] = [
-  { month: "Jul", amount: 3200 },
-  { month: "Aug", amount: 3450 },
-  { month: "Sep", amount: 3100 },
-  { month: "Oct", amount: 3650 },
-  { month: "Nov", amount: 3380 },
-  { month: "Dec", amount: 3650 },
-];
-
 const { width: screenWidth } = Dimensions.get("window");
+
+const money = (value: number): string =>
+  `$${Math.round(value).toLocaleString()}`;
 
 export default function SpendingScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<SpendingCategory[]>([]);
   const [trends, setTrends] = useState<SpendingTrend[]>([]);
   const [chartView, setChartView] = useState<"pie" | "bar">("pie");
-  const [error, setError] = useState<string | null>(null);
 
-  const { budgets, fetchBudgets } = useBudgetStore();
+  const fetchSpending = useCallback(async () => {
+    const [dashboardRes, cashFlowRes] = await Promise.all([
+      financialOverviewApi.getDashboard(),
+      financialOverviewApi.getCashFlowAnalysis(6),
+    ]);
+
+    if (
+      dashboardRes.success &&
+      dashboardRes.data &&
+      cashFlowRes.success &&
+      cashFlowRes.data
+    ) {
+      setCategories(
+        dashboardRes.data.spendingByCategory.map((c) => ({
+          name: c.category,
+          amount: c.amount,
+          percentage: c.percentage,
+          icon: CATEGORY_ICONS[c.category] ?? "ellipsis-horizontal",
+          color: CATEGORY_COLORS[c.category] ?? "#9CA3AF",
+        })),
+      );
+      setTrends(
+        cashFlowRes.data.months.map((m) => ({
+          month: m.month,
+          amount: m.expenses,
+        })),
+      );
+      setError(null);
+    } else {
+      setError(
+        dashboardRes.error?.message ??
+          cashFlowRes.error?.message ??
+          "Unable to load spending.",
+      );
+    }
+  }, []);
 
   const loadSpendingData = useCallback(async () => {
-    try {
-      setError(null);
-      const response = await financialOverviewApi.getSpendingInsights("month");
-
-      if (response.success && response.data) {
-        const catData = response.data.byCategory.map((cat) => ({
-          name: cat.category,
-          amount: cat.amount,
-          budget:
-            budgets.find((b) => b.category === cat.category)?.limit ||
-            cat.amount * 1.2,
-          icon: CATEGORY_ICONS[cat.category] || "ellipsis-horizontal",
-          color: CATEGORY_COLORS[cat.category] || "#9CA3AF",
-        }));
-        setCategories(catData.length > 0 ? catData : MOCK_CATEGORIES);
-      } else {
-        setCategories(MOCK_CATEGORIES);
-      }
-
-      const cashFlowResponse = await financialOverviewApi.getCashFlow(6);
-      if (cashFlowResponse.success && cashFlowResponse.data) {
-        const trendData = cashFlowResponse.data.expenses.map((e) => ({
-          month: e.month,
-          amount: e.amount,
-        }));
-        setTrends(trendData.length > 0 ? trendData : MOCK_TRENDS);
-      } else {
-        setTrends(MOCK_TRENDS);
-      }
-    } catch (err) {
-      // Fallback to mock data silently in production
-      setCategories(MOCK_CATEGORIES);
-      setTrends(MOCK_TRENDS);
-    } finally {
-      setLoading(false);
-    }
-  }, [budgets]);
+    setLoading(true);
+    await fetchSpending();
+    setLoading(false);
+  }, [fetchSpending]);
 
   useEffect(() => {
-    fetchBudgets();
     loadSpendingData();
-  }, [loadSpendingData, fetchBudgets]);
+  }, [loadSpendingData]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadSpendingData();
+    await fetchSpending();
     setRefreshing(false);
   };
 
   const totalSpent = categories.reduce((sum, c) => sum + c.amount, 0);
-  const totalBudget = categories.reduce((sum, c) => sum + c.budget, 0);
   const avgMonthly =
     trends.length > 0
       ? trends.reduce((sum, t) => sum + t.amount, 0) / trends.length
       : 0;
 
-  // Prepare chart data
+  // Chart data — all derived from the real fetched values.
   const pieChartData = categories.map((cat) => ({
     value: cat.amount,
     label: cat.name,
     color: cat.color,
   }));
-
-  const lineChartData = trends.map((t) => ({
-    value: t.amount,
-    label: t.month,
-  }));
-
+  const lineChartData = trends.map((t) => ({ value: t.amount, label: t.month }));
   const barChartData = categories.map((cat) => ({
     value: cat.amount,
     label: cat.name.split(" ")[0], // Shorten labels
     color: cat.color,
   }));
 
-  // Generate dynamic insights
-  const generateInsights = () => {
-    const insights: { type: "warning" | "success"; text: string }[] = [];
-    categories.forEach((cat) => {
-      const percent = (cat.amount / cat.budget) * 100;
-      if (percent > 100) {
-        insights.push({
-          type: "warning",
-          text: `${cat.name} exceeded budget by $${(cat.amount - cat.budget).toFixed(0)}`,
-        });
-      } else if (percent < 80) {
-        insights.push({
-          type: "success",
-          text: `${cat.name} is ${(100 - percent).toFixed(0)}% under budget`,
-        });
+  // Honest, real-data insights: the largest spending category's real share, and the
+  // month-over-month change in the real expense trend. Both are arithmetic facts about
+  // the fetched data — nothing is fabricated. Categories arrive sorted by amount desc
+  // (financial-service.calculateSpendingByCategory), so categories[0] is the largest.
+  const buildInsights = (): string[] => {
+    const out: string[] = [];
+    if (categories.length > 0) {
+      const top = categories[0];
+      out.push(
+        `${top.name} is your top category — ${top.percentage.toFixed(0)}% of spending (${money(top.amount)})`,
+      );
+    }
+    if (trends.length >= 2) {
+      const delta = trends[trends.length - 1].amount - trends[trends.length - 2].amount;
+      if (delta > 0) {
+        out.push(`Spending rose ${money(delta)} vs last month`);
+      } else if (delta < 0) {
+        out.push(`Spending fell ${money(-delta)} vs last month`);
+      } else {
+        out.push("Spending held steady vs last month");
       }
-    });
-    return insights.slice(0, 4); // Limit to 4 insights
+    }
+    return out;
   };
+  const insights = buildInsights();
 
-  const insights = generateInsights();
+  const hasData = categories.length > 0 || trends.length > 0;
 
-  if (loading) {
+  if (loading && !hasData) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered} testID="financial-spending-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Analyzing spending patterns...</Text>
+          <Text style={styles.stateText}>Analyzing spending patterns...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && !hasData) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="financial-spending-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadSpendingData}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -251,7 +244,7 @@ export default function SpendingScreen() {
           </TouchableOpacity>
           <View style={styles.headerContent}>
             <Text style={styles.title}>Spending Analysis</Text>
-            <Text style={styles.subtitle}>This month's overview</Text>
+            <Text style={styles.subtitle}>Last 30 days</Text>
           </View>
           <TouchableOpacity onPress={() => router.push("/insights")}>
             <Ionicons
@@ -262,204 +255,209 @@ export default function SpendingScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Summary Stats */}
-        <View style={styles.statsRow}>
-          <Card style={styles.statCard}>
-            <Text style={styles.statLabel}>Total Spent</Text>
-            <Text style={styles.statValue}>${totalSpent.toLocaleString()}</Text>
-          </Card>
-          <Card style={styles.statCard}>
-            <Text style={styles.statLabel}>Budget</Text>
-            <Text style={styles.statValue}>
-              ${totalBudget.toLocaleString()}
-            </Text>
-          </Card>
-          <Card style={styles.statCard}>
-            <Text style={styles.statLabel}>Remaining</Text>
-            <Text
-              style={[
-                styles.statValue,
-                {
-                  color: totalBudget - totalSpent >= 0 ? "#22C55E" : "#EF4444",
-                },
-              ]}
-            >
-              ${Math.abs(totalBudget - totalSpent).toLocaleString()}
-            </Text>
-          </Card>
-        </View>
-
-        {/* Chart View Toggle */}
-        <View style={styles.chartToggle}>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              chartView === "pie" && styles.toggleButtonActive,
-            ]}
-            onPress={() => setChartView("pie")}
-          >
+        {!hasData ? (
+          <View style={styles.emptyCard} testID="financial-spending-empty">
             <Ionicons
-              name="pie-chart"
-              size={18}
-              color={chartView === "pie" ? "#fff" : theme.colors.textSecondary}
+              name="pie-chart-outline"
+              size={40}
+              color={theme.colors.textSecondary}
             />
-            <Text
-              style={[
-                styles.toggleText,
-                chartView === "pie" && styles.toggleTextActive,
-              ]}
-            >
-              Pie
+            <Text style={styles.emptyTitle}>No spending yet</Text>
+            <Text style={styles.emptyText}>
+              Once Fynvita sees spending from your linked accounts, your category
+              breakdown and monthly trend will show here.
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              chartView === "bar" && styles.toggleButtonActive,
-            ]}
-            onPress={() => setChartView("bar")}
-          >
-            <Ionicons
-              name="bar-chart"
-              size={18}
-              color={chartView === "bar" ? "#fff" : theme.colors.textSecondary}
-            />
-            <Text
-              style={[
-                styles.toggleText,
-                chartView === "bar" && styles.toggleTextActive,
-              ]}
-            >
-              Bar
-            </Text>
-          </TouchableOpacity>
-        </View>
+          </View>
+        ) : (
+          <>
+            {/* Summary Stats */}
+            <View style={styles.statsRow}>
+              <Card style={styles.statCard}>
+                <Text style={styles.statLabel}>Total Spent</Text>
+                <Text style={styles.statValue}>{money(totalSpent)}</Text>
+              </Card>
+              <Card style={styles.statCard}>
+                <Text style={styles.statLabel}>Avg/Month</Text>
+                <Text style={styles.statValue}>{money(avgMonthly)}</Text>
+              </Card>
+              <Card style={styles.statCard}>
+                <Text style={styles.statLabel}>Categories</Text>
+                <Text style={styles.statValue}>{categories.length}</Text>
+              </Card>
+            </View>
 
-        {/* Spending Breakdown Chart */}
-        <Card style={styles.chartCard}>
-          <Text style={styles.sectionTitle}>Spending Breakdown</Text>
-          {chartView === "pie" ? (
-            <PieChart
-              data={pieChartData}
-              size={180}
-              innerRadius={50}
-              centerValue={`$${(totalSpent / 1000).toFixed(1)}K`}
-              centerLabel="Total"
-              showPercentages
-            />
-          ) : (
-            <BarChart
-              data={barChartData}
-              width={screenWidth - 64}
-              height={200}
-              formatValue={(v) => `$${v}`}
-            />
-          )}
-        </Card>
-
-        {/* Spending by Category List */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>By Category</Text>
-          {categories.map((category, i) => {
-            const progress = (category.amount / category.budget) * 100;
-            const isOver = progress > 100;
-            return (
-              <Card key={i} style={styles.categoryCard}>
-                <View style={styles.categoryHeader}>
-                  <View
+            {categories.length > 0 && (
+              <>
+                {/* Chart View Toggle */}
+                <View style={styles.chartToggle}>
+                  <TouchableOpacity
+                    testID="spending-toggle-pie"
                     style={[
-                      styles.categoryIcon,
-                      { backgroundColor: `${category.color}20` },
+                      styles.toggleButton,
+                      chartView === "pie" && styles.toggleButtonActive,
                     ]}
+                    onPress={() => setChartView("pie")}
                   >
                     <Ionicons
-                      name={category.icon as keyof typeof Ionicons.glyphMap}
+                      name="pie-chart"
                       size={18}
-                      color={category.color}
+                      color={
+                        chartView === "pie" ? "#fff" : theme.colors.textSecondary
+                      }
                     />
-                  </View>
-                  <View style={styles.categoryInfo}>
-                    <Text style={styles.categoryName}>{category.name}</Text>
-                    <View style={styles.progressBarBg}>
-                      <View
-                        style={[
-                          styles.progressBarFill,
-                          {
-                            width: `${Math.min(progress, 100)}%`,
-                            backgroundColor: isOver
-                              ? "#EF4444"
-                              : category.color,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                  <View style={styles.categoryAmounts}>
                     <Text
                       style={[
-                        styles.spentAmount,
-                        isOver && { color: "#EF4444" },
+                        styles.toggleText,
+                        chartView === "pie" && styles.toggleTextActive,
                       ]}
                     >
-                      ${category.amount}
+                      Pie
                     </Text>
-                    <Text style={styles.budgetAmount}>
-                      / ${category.budget}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    testID="spending-toggle-bar"
+                    style={[
+                      styles.toggleButton,
+                      chartView === "bar" && styles.toggleButtonActive,
+                    ]}
+                    onPress={() => setChartView("bar")}
+                  >
+                    <Ionicons
+                      name="bar-chart"
+                      size={18}
+                      color={
+                        chartView === "bar" ? "#fff" : theme.colors.textSecondary
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.toggleText,
+                        chartView === "bar" && styles.toggleTextActive,
+                      ]}
+                    >
+                      Bar
                     </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Spending Breakdown Chart */}
+                <Card style={styles.chartCard}>
+                  <Text style={styles.sectionTitle}>Spending Breakdown</Text>
+                  {chartView === "pie" ? (
+                    <PieChart
+                      data={pieChartData}
+                      size={180}
+                      innerRadius={50}
+                      centerValue={`$${(totalSpent / 1000).toFixed(1)}K`}
+                      centerLabel="Total"
+                      showPercentages
+                    />
+                  ) : (
+                    <BarChart
+                      data={barChartData}
+                      width={screenWidth - 64}
+                      height={200}
+                      formatValue={(v) => `$${v}`}
+                    />
+                  )}
+                </Card>
+
+                {/* Spending by Category List */}
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>By Category</Text>
+                  {categories.map((category, i) => (
+                    <Card key={i} style={styles.categoryCard}>
+                      <View style={styles.categoryHeader}>
+                        <View
+                          style={[
+                            styles.categoryIcon,
+                            { backgroundColor: `${category.color}20` },
+                          ]}
+                        >
+                          <Ionicons
+                            name={
+                              category.icon as keyof typeof Ionicons.glyphMap
+                            }
+                            size={18}
+                            color={category.color}
+                          />
+                        </View>
+                        <View style={styles.categoryInfo}>
+                          <Text style={styles.categoryName}>
+                            {category.name}
+                          </Text>
+                          <View style={styles.progressBarBg}>
+                            <View
+                              style={[
+                                styles.progressBarFill,
+                                {
+                                  width: `${Math.min(category.percentage, 100)}%`,
+                                  backgroundColor: category.color,
+                                },
+                              ]}
+                            />
+                          </View>
+                        </View>
+                        <View style={styles.categoryAmounts}>
+                          <Text style={styles.spentAmount}>
+                            {money(category.amount)}
+                          </Text>
+                          <Text style={styles.categoryShare}>
+                            {category.percentage.toFixed(0)}%
+                          </Text>
+                        </View>
+                      </View>
+                    </Card>
+                  ))}
+                </View>
+
+                {/* Insights derived from the real category + trend data */}
+                <Card style={styles.insightsCard}>
+                  <View style={styles.insightsHeader}>
+                    <Ionicons name="bulb" size={20} color="#F59E0B" />
+                    <Text style={styles.sectionTitle}> Spending Insights</Text>
                   </View>
+                  {insights.map((text, i) => (
+                    <Text key={i} style={styles.insightText}>
+                      • {text}
+                    </Text>
+                  ))}
+                  <TouchableOpacity
+                    style={styles.viewAllButton}
+                    onPress={() => router.push("/insights")}
+                  >
+                    <Text style={styles.viewAllText}>View All Insights</Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={theme.colors.primary}
+                    />
+                  </TouchableOpacity>
+                </Card>
+              </>
+            )}
+
+            {trends.length > 0 && (
+              /* Monthly Trend Chart */
+              <Card style={styles.trendCard}>
+                <Text style={styles.sectionTitle}>Monthly Trend</Text>
+                <LineChart
+                  data={lineChartData}
+                  width={screenWidth - 64}
+                  height={180}
+                  color={theme.colors.primary}
+                  showDots
+                  showGrid
+                  formatValue={(v) => `$${(v / 1000).toFixed(1)}K`}
+                />
+                <View style={styles.avgRow}>
+                  <Text style={styles.avgLabel}>Monthly Average:</Text>
+                  <Text style={styles.avgValue}>{money(avgMonthly)}</Text>
                 </View>
               </Card>
-            );
-          })}
-        </View>
-
-        {/* Monthly Trend Chart */}
-        <Card style={styles.trendCard}>
-          <Text style={styles.sectionTitle}>Monthly Trend</Text>
-          <LineChart
-            data={lineChartData}
-            width={screenWidth - 64}
-            height={180}
-            color={theme.colors.primary}
-            showDots
-            showGrid
-            formatValue={(v) => `$${(v / 1000).toFixed(1)}K`}
-          />
-          <View style={styles.avgRow}>
-            <Text style={styles.avgLabel}>Monthly Average:</Text>
-            <Text style={styles.avgValue}>${avgMonthly.toLocaleString()}</Text>
-          </View>
-        </Card>
-
-        {/* AI Insights */}
-        <Card style={styles.insightsCard}>
-          <View style={styles.insightsHeader}>
-            <Ionicons name="bulb" size={20} color="#F59E0B" />
-            <Text style={styles.sectionTitle}> Spending Insights</Text>
-          </View>
-          {insights.length > 0 ? (
-            insights.map((insight, i) => (
-              <Text key={i} style={styles.insightText}>
-                {insight.type === "warning" ? "⚠️" : "✅"} {insight.text}
-              </Text>
-            ))
-          ) : (
-            <Text style={styles.insightText}>
-              ✅ All categories are within budget!
-            </Text>
-          )}
-          <TouchableOpacity
-            style={styles.viewAllButton}
-            onPress={() => router.push("/insights")}
-          >
-            <Text style={styles.viewAllText}>View All Insights</Text>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={theme.colors.primary}
-            />
-          </TouchableOpacity>
-        </Card>
+            )}
+          </>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -470,10 +468,41 @@ export default function SpendingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: {
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
+  },
+  stateText: {
     marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
     color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
+  emptyCard: {
+    alignItems: "center",
+    padding: theme.spacing.xl,
+    marginTop: theme.spacing.xl,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
   },
   header: {
     flexDirection: "row",
@@ -553,7 +582,11 @@ const styles = StyleSheet.create({
   progressBarFill: { height: 6, borderRadius: 3 },
   categoryAmounts: { flexDirection: "row", alignItems: "baseline" },
   spentAmount: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
-  budgetAmount: { fontSize: 12, color: theme.colors.textSecondary },
+  categoryShare: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginLeft: 6,
+  },
   trendCard: {
     marginHorizontal: theme.spacing.lg,
     marginTop: theme.spacing.lg,
