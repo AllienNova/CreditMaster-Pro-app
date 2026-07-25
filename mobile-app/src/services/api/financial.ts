@@ -538,8 +538,104 @@ export const debtApi = {
     api.delete<{ success: boolean }>(`/financial/debt/${debtId}`),
 };
 
+// ---------------------------------------------------------------------------
+// Bills — web -> mobile adapter (PARITY-P2)
+// ---------------------------------------------------------------------------
+// The mobile Payments screen (credit-repair/payments.tsx) renders the user's
+// recurring bills: a merchant, an amount, and a due date. Its honest source is
+// GET /api/financial/bills (withPermission "financial:read"), which returns
+// { bills: Bill[] } from billDetectionService.getBillsByUser — the recurring-bill
+// records defined in src/lib/financial/types/bill.types.ts. Over HTTP the record's
+// Date columns (nextDueDate, ...) serialize to ISO strings via NextResponse.json.
+//
+// The screen previously also rendered a hardcoded on-time %, paid/late/missed
+// per-bill statuses, and a "late" count. Those describe PAYMENT HISTORY
+// (BillPayment.isLate in bill.types.ts), which the service exposes only through
+// billDetectionService.getPaymentHistory — with NO HTTP route. Because no honest
+// source reaches the client, this adapter carries only the fields the bills
+// endpoint truly provides (merchant, amount, due date, category, autopay); the
+// screen omits the on-time %/late metrics rather than fabricate them.
+//
+// This is deliberately a SEPARATE getter from the pre-existing billsApi.getUpcoming
+// below: that getter is mis-typed against a non-existent payload shape
+// (name/dueDate/autopay/totalDue) and is consumed by app/financial/bills.tsx;
+// correcting it is out of scope for this one-screen change and tracked separately.
+
+export interface BillItem {
+  id: string;
+  merchant: string; // from Bill.merchantName
+  amount: number;
+  dueDate: string; // ISO 8601 over HTTP (Bill.nextDueDate)
+  category: string;
+  isAutoPay: boolean;
+}
+
+/**
+ * Raw bill as returned by GET /api/financial/bills
+ * (src/lib/financial/types/bill.types.ts `Bill`, mapped by
+ * bill-detection-service.mapBillFromDb). Date columns serialize to ISO strings
+ * over HTTP. Fields the mobile screen does not render are declared for
+ * documentation but left optional and tolerant, so a partial payload never throws.
+ */
+export interface WebBill {
+  id: string;
+  userId?: string;
+  merchantName?: string;
+  category?: string;
+  amount?: number;
+  frequency?: string;
+  nextDueDate?: string;
+  lastPaidDate?: string;
+  lastPaidAmount?: number;
+  status?: string;
+  isAutoPay?: boolean;
+  accountId?: string;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Map a web bill onto the mobile BillItem shape. Web uses `merchantName` and
+ * `nextDueDate`; mobile uses `merchant` and `dueDate`. Nothing is fabricated: an
+ * absent merchant becomes an empty string rather than a made-up name, an absent
+ * amount becomes 0 rather than an invented figure, an absent due date becomes an
+ * empty string, and autopay defaults to false.
+ */
+export function mapWebBill(raw: WebBill): BillItem {
+  return {
+    id: raw.id,
+    merchant: raw.merchantName ?? "",
+    amount: raw.amount ?? 0,
+    dueDate: raw.nextDueDate ?? "",
+    category: raw.category ?? "",
+    isAutoPay: raw.isAutoPay ?? false,
+  };
+}
+
 // Bills & Payments Endpoints
 export const billsApi = {
+  /**
+   * Get the current user's recurring bills for the Payments screen. Hits the real
+   * route GET /api/financial/bills with activeOnly=true (paused/cancelled bills are
+   * not upcoming, so they are excluded) and adapts each web Bill onto the mobile
+   * BillItem shape. A failed request passes straight through without fabricating
+   * data. Distinct from getUpcoming (the mis-typed legacy getter below, used by
+   * app/financial/bills.tsx).
+   */
+  getBills: async (): Promise<ApiResponse<{ bills: BillItem[] }>> => {
+    const res = await api.get<{ bills?: WebBill[] }>(
+      "/financial/bills?activeOnly=true",
+    );
+    if (res.success && res.data) {
+      const bills = Array.isArray(res.data.bills)
+        ? res.data.bills.map(mapWebBill)
+        : [];
+      return { success: true, data: { bills } };
+    }
+    return { success: false, error: res.error };
+  },
+
   /**
    * Get upcoming bills
    */
