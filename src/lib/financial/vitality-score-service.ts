@@ -147,11 +147,14 @@ export interface FinancialVitalityScore {
 export interface VitalityScoreHistory {
   date: Date;
   overall: number;
-  credit: number;
-  spending: number;
-  savings: number;
-  debt: number;
-  investments: number;
+  // Component snapshots are `null` when the component had no real data at that
+  // snapshot — never a fabricated 0. (Only `overall` is guaranteed real: history
+  // is written only when a real overall exists.)
+  credit: number | null;
+  spending: number | null;
+  savings: number | null;
+  debt: number | null;
+  investments: number | null;
 }
 
 /** Internal per-component result (weight is attached at assembly time). */
@@ -374,17 +377,22 @@ class FinancialVitalityScoreService {
     const nextMilestone = this.getNextMilestone(overall ?? 0);
 
     // Only record history when there is a real overall score to record.
-    // Component columns are NOT NULL in the schema; unavailable components are
-    // stored as 0 (history is used only for overall-trend — the live score
-    // carries the authoritative `available` flag per component).
+    // Unavailable components are persisted as `null` (never a fabricated 0) so
+    // the history table never accumulates laundered zeros; the live score
+    // carries the authoritative `available` flag per component. The write is
+    // best-effort — its failure is logged and swallowed so it can never discard
+    // the already-computed real overall (which the route's catch-all would
+    // otherwise surface as a laundered healthScore: 0).
     if (overall !== null) {
       await this.saveScoreToHistory(userId, {
         overall,
-        credit: credit.available ? credit.score : 0,
-        spending: spending.available ? spending.score : 0,
-        savings: savings.available ? savings.score : 0,
-        debt: debt.available ? debt.score : 0,
-        investments: investments.available ? investments.score : 0,
+        credit: credit.available ? credit.score : null,
+        spending: spending.available ? spending.score : null,
+        savings: savings.available ? savings.score : null,
+        debt: debt.available ? debt.score : null,
+        investments: investments.available ? investments.score : null,
+      }).catch((error) => {
+        console.error("[vitality] score history write failed:", error);
       });
     }
 
@@ -437,11 +445,11 @@ class FinancialVitalityScoreService {
       (row: {
         date: string;
         overall: number;
-        credit: number;
-        spending: number;
-        savings: number;
-        debt: number;
-        investments: number;
+        credit: number | null;
+        spending: number | null;
+        savings: number | null;
+        debt: number | null;
+        investments: number | null;
       }) => ({
         date: new Date(row.date),
         overall: row.overall,
@@ -523,7 +531,12 @@ class FinancialVitalityScoreService {
       };
     }
 
-    const savingsRate = dashboard.savingsRate;
+    // Savings rate is real only when income is observable. financial-service
+    // emits a sentinel 0 when monthlyIncome <= 0 (unknown), indistinguishable
+    // from a real 0% rate — so treat unobservable income as null and drop the
+    // factor (renormalize) rather than scoring "unknown" as the worst band.
+    const savingsRate =
+      dashboard.monthlyIncome > 0 ? dashboard.savingsRate : null;
     const necessaryRatio = this.necessaryVsDiscretionaryRatio(
       dashboard.spendingByCategory,
     );
@@ -534,8 +547,13 @@ class FinancialVitalityScoreService {
 
     const factors: ScoreFactor[] = [];
 
-    // Savings rate (weight 30) — always real when the component is available.
-    factors.push({ weight: 30, points: this.savingsRateSpendingBand(savingsRate) });
+    // Savings rate (weight 30) — real only when income is observable.
+    if (savingsRate !== null) {
+      factors.push({
+        weight: 30,
+        points: this.savingsRateSpendingBand(savingsRate),
+      });
+    }
 
     // Necessary vs discretionary (weight 20) — real when there is categorized spend.
     if (necessaryRatio !== null) {
@@ -550,6 +568,17 @@ class FinancialVitalityScoreService {
     // Budget adherence (weight 40) — real only when the user has budgets.
     if (budgetAdherence !== null) {
       factors.push({ weight: 40, points: (budgetAdherence / 100) * 40 });
+    }
+
+    // No real scorable factor remains → honest unavailable, never a coerced 0.
+    if (factors.length === 0) {
+      return {
+        available: false,
+        score: 0,
+        grade: null,
+        trend: "stable",
+        details: EMPTY_SPENDING_DETAILS,
+      };
     }
 
     const score = scoreFromFactors(factors);
@@ -571,7 +600,7 @@ class FinancialVitalityScoreService {
       details: {
         budgetAdherence:
           budgetAdherence !== null ? round(budgetAdherence) : null,
-        savingsRate: round(savingsRate),
+        savingsRate: savingsRate !== null ? round(savingsRate) : null,
         necessaryVsDiscretionary:
           necessaryRatio !== null ? round2(necessaryRatio) : null,
         monthlyTrend: monthlyTrendPct !== null ? round(monthlyTrendPct) : null,
@@ -605,7 +634,10 @@ class FinancialVitalityScoreService {
     const emergencyFundMonths =
       monthlyExpenses > 0 ? liquidSavings / monthlyExpenses : null;
 
-    const savingsRate = dashboard.savingsRate;
+    // Savings rate is real only when income is observable (see the spending
+    // note); an unobservable-income sentinel 0 is treated as null and dropped.
+    const savingsRate =
+      dashboard.monthlyIncome > 0 ? dashboard.savingsRate : null;
 
     const goal =
       goals.find((g) => g.type === "emergency_fund") ??
@@ -621,7 +653,12 @@ class FinancialVitalityScoreService {
       });
     }
 
-    factors.push({ weight: 35, points: this.savingsRateSavingsBand(savingsRate) });
+    if (savingsRate !== null) {
+      factors.push({
+        weight: 35,
+        points: this.savingsRateSavingsBand(savingsRate),
+      });
+    }
 
     if (savingsGoalProgress !== null) {
       factors.push({
@@ -630,10 +667,33 @@ class FinancialVitalityScoreService {
       });
     }
 
+    // No real scorable factor remains → honest unavailable. The real liquid
+    // balance is still surfaced (informational), mirroring debt's totalDebt.
+    if (factors.length === 0) {
+      return {
+        available: false,
+        score: 0,
+        grade: null,
+        trend: "stable",
+        details: {
+          emergencyFundMonths: null,
+          savingsRate: null,
+          totalSavings: round(liquidSavings),
+          savingsGoalProgress: null,
+        },
+      };
+    }
+
     const score = scoreFromFactors(factors);
 
     const trend: TrendDirection =
-      savingsRate >= 15 ? "improving" : savingsRate >= 10 ? "stable" : "declining";
+      savingsRate === null
+        ? "stable"
+        : savingsRate >= 15
+          ? "improving"
+          : savingsRate >= 10
+            ? "stable"
+            : "declining";
 
     return {
       available: true,
@@ -643,7 +703,7 @@ class FinancialVitalityScoreService {
       details: {
         emergencyFundMonths:
           emergencyFundMonths !== null ? round1(emergencyFundMonths) : null,
-        savingsRate: round(savingsRate),
+        savingsRate: savingsRate !== null ? round(savingsRate) : null,
         totalSavings: round(liquidSavings),
         savingsGoalProgress:
           savingsGoalProgress !== null ? round(savingsGoalProgress) : null,
@@ -710,20 +770,32 @@ class FinancialVitalityScoreService {
       (sum, p) => sum + (p.totalGainLoss || 0),
       0,
     );
+    // Return % is real only with a known cost basis. When cost basis is missing
+    // (holdings without a purchase price), the return is unknowable — leave it
+    // null and DROP the performance factor (renormalize), rather than scoring an
+    // unknowable return as a real 0% (which the band would reward as ~mid).
     const returnPct =
-      totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : 0;
+      totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : null;
 
     const diversificationScore = this.diversificationFromHoldings(allHoldings);
 
     const factors: ScoreFactor[] = [
       { weight: 30, points: (diversificationScore / 100) * 30 },
-      { weight: 25, points: this.performanceBand(returnPct) },
     ];
+    if (returnPct !== null) {
+      factors.push({ weight: 25, points: this.performanceBand(returnPct) });
+    }
 
     const score = scoreFromFactors(factors);
 
     const trend: TrendDirection =
-      returnPct > 5 ? "improving" : returnPct > 0 ? "stable" : "declining";
+      returnPct === null
+        ? "stable"
+        : returnPct > 5
+          ? "improving"
+          : returnPct > 0
+            ? "stable"
+            : "declining";
 
     return {
       available: true,
@@ -732,7 +804,7 @@ class FinancialVitalityScoreService {
       trend,
       details: {
         portfolioValue: round(portfolioValue),
-        ytdReturn: round1(returnPct),
+        ytdReturn: returnPct !== null ? round1(returnPct) : null,
         diversificationScore,
         riskAdjustedReturn: null,
         contributionRate: null,
@@ -1036,11 +1108,11 @@ class FinancialVitalityScoreService {
     userId: string,
     scores: {
       overall: number;
-      credit: number;
-      spending: number;
-      savings: number;
-      debt: number;
-      investments: number;
+      credit: number | null;
+      spending: number | null;
+      savings: number | null;
+      debt: number | null;
+      investments: number | null;
     },
   ): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

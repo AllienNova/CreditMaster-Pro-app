@@ -191,14 +191,20 @@ describe("GET /api/financial/ai-insights", () => {
     expect(body.data.healthScore).toBe(0);
   });
 
-  it("returns fallback data when the vitality/forecast service throws", async () => {
-    (vitalityScoreService.calculateVitalityScore as jest.Mock).mockRejectedValue(
-      new Error("vitality boom"),
-    );
+  it("surfaces the real health score even when the vitality service had a transient persistence failure (finding 1: never launders to 0)", async () => {
+    // Post-fix, a history-WRITE failure inside the vitality service is swallowed
+    // there and the real computed score is still returned (that service-level
+    // behavior is locked in vitality-score-service.test.ts). So the route reports
+    // the real healthScore and does NOT fall back to the laundered 0.
+    (vitalityScoreService.calculateVitalityScore as jest.Mock).mockResolvedValue({
+      overall: 91,
+      trend: "improving",
+      grade: "A",
+    });
     const body = await (await GET(createMockRequest())).json();
-    expect(body._meta.fallback).toBe(true);
-    expect(body.data.healthScore).toBe(0);
-    expect(body.data.predictions).toEqual([]);
+    expect(body.data.healthScore).toBe(91);
+    expect(body.data.healthTrend).toBe("improving");
+    expect(body._meta.fallback).toBeUndefined();
   });
 
   it("maps insight types to the panel union", async () => {

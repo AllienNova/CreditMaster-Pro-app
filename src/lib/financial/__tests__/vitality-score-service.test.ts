@@ -567,7 +567,7 @@ describe("FinancialVitalityScoreService", () => {
       expect(result.lastUpdated.getTime()).toBeLessThanOrEqual(after);
     });
 
-    it("saves the real component scores to history (unavailable debt stored as 0)", async () => {
+    it("saves the real component scores to history (unavailable debt persisted as null, never a fabricated 0)", async () => {
       const upsertMock = chainMock({ data: null, error: null });
       let callCount = 0;
       sb().from.mockImplementation(() => {
@@ -585,7 +585,7 @@ describe("FinancialVitalityScoreService", () => {
           credit: EXP_CREDIT,
           spending: EXP_SPENDING,
           savings: EXP_SAVINGS,
-          debt: 0, // unavailable → stored as 0, never a fabricated value
+          debt: null, // unavailable → persisted as null, never a fabricated 0
           investments: EXP_INVESTMENTS,
         }),
         { onConflict: "user_id,date" },
@@ -773,7 +773,8 @@ describe("FinancialVitalityScoreService", () => {
       expect(result.components.investments.available).toBe(true);
       expect(result.components.investments.details.portfolioValue).toBe(5000);
       expect(result.components.investments.details.diversificationScore).toBe(0);
-      expect(result.components.investments.details.ytdReturn).toBe(0);
+      // No cost basis → the return is unknowable → null, never a fabricated 0%.
+      expect(result.components.investments.details.ytdReturn).toBeNull();
     });
 
     it("drops the optional spending factors that have no real data (only savings rate remains)", async () => {
@@ -931,6 +932,166 @@ describe("FinancialVitalityScoreService", () => {
       ]);
       const result = await vitalityScoreService.calculateVitalityScore("u1");
       expect(result.trendPercentage).toBe(0);
+    });
+  });
+
+  // ==========================================================================
+  // Residual coerce-to-0 laundering paths (review follow-up)
+  // Each proves: missing/unavailable real data → null + drop-and-renormalize,
+  // NEVER a coerced 0 or a plausible constant.
+  // ==========================================================================
+  describe("residual coerce-to-0 laundering paths (review follow-up)", () => {
+    it("returns the real computed score even when the history WRITE fails (finding 1: no discard to 0)", async () => {
+      // History READ succeeds (callCount 1); the history WRITE upsert rejects
+      // (callCount 2). The overall is already computed before persistence, so a
+      // write failure must be swallowed and the real score still returned — never
+      // rejected (which the route's catch-all would launder to healthScore: 0).
+      let callCount = 0;
+      sb().from.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return chainMock({ data: [], error: null });
+        const failing = chainMock({ data: null, error: null });
+        failing.upsert = jest.fn(() =>
+          Promise.reject(new Error("history write down")),
+        );
+        return failing;
+      });
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+
+      // Real renormalized score preserved, not discarded to null/0.
+      expect(result.overall).toBe(EXP_OVERALL);
+      expect(result.grade).toBe("B");
+      expect(result.components.credit.score).toBe(EXP_CREDIT);
+    });
+
+    it("drops the investment performance factor when cost basis is missing (finding 2: renormalize, not a real 0%)", async () => {
+      // Two-sector holdings (diversification 43) but no cost basis → the return
+      // is unknowable. The performance factor is DROPPED and the score
+      // renormalizes over diversification alone: round((43/100*30)/30*100) = 43.
+      // The buggy path scored the unknown return as a real 0% (band 15) → 51.
+      mockGetPortfolios.mockResolvedValue([
+        makePortfolio({ totalCostBasis: 0, totalGainLoss: 0 }),
+      ]);
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      const inv = result.components.investments;
+
+      expect(inv.available).toBe(true);
+      expect(inv.details.ytdReturn).toBeNull();
+      expect(inv.details.diversificationScore).toBe(43);
+      expect(inv.score).toBe(43); // diversification-only, renormalized
+      expect(inv.score).not.toBe(51); // NOT the coerce-0% (band-15) value
+      expect(inv.trend).toBe("stable"); // null return → stable, not fabricated
+    });
+
+    it("drops the spending savings-rate factor when income is unobservable (finding 3: sentinel 0 → null)", async () => {
+      // monthlyIncome 0 → financial-service emits the savingsRate sentinel 0
+      // (unknown). Spending stays available via categories/trend/budgets, but the
+      // savings-rate factor is dropped and its detail is null — not scored as a
+      // real 0%. Renormalized over necessary(20)+trend(10)+adherence(34.29)/70.
+      mockGetDashboard.mockResolvedValue(
+        makeDashboard({ monthlyIncome: 0, savingsRate: 0 }),
+      );
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      const spending = result.components.spending;
+
+      expect(spending.available).toBe(true);
+      expect(spending.details.savingsRate).toBeNull(); // sentinel → null, not 0
+      expect(spending.details.necessaryVsDiscretionary).toBe(0.75); // real factor kept
+      expect(spending.details.budgetAdherence).toBe(86); // real factor kept
+      expect(spending.score).toBe(92); // renormalized over the 3 real factors
+    });
+
+    it("drops the savings savings-rate factor when income is unobservable (finding 3: sentinel 0 → null)", async () => {
+      // Same sentinel; savings stays available via emergency-fund + goal, but the
+      // savings-rate factor is dropped. Renormalized over emergency(30)+goal(16.25)/65.
+      mockGetDashboard.mockResolvedValue(
+        makeDashboard({ monthlyIncome: 0, savingsRate: 0 }),
+      );
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      const savings = result.components.savings;
+
+      expect(savings.available).toBe(true);
+      expect(savings.details.savingsRate).toBeNull(); // sentinel → null, not 0
+      expect(savings.details.emergencyFundMonths).toBe(3); // real factor kept
+      expect(savings.score).toBe(71); // renormalized over the 2 real factors
+      expect(savings.trend).toBe("stable"); // null rate → stable, not fabricated
+    });
+
+    it("marks spending unavailable when income is unobservable and no other factor exists (finding 3: no coerced 0)", async () => {
+      // Expenses present (component reachable) but no categories, no trend, no
+      // budgets, and unobservable income → zero scorable factors → honest
+      // unavailable, NEVER score 0 with available: true.
+      mockGetDashboard.mockResolvedValue(
+        makeDashboard({
+          monthlyIncome: 0,
+          savingsRate: 0,
+          monthlyExpenses: 4000,
+          spendingByCategory: [],
+          monthlyTrend: [],
+        }),
+      );
+      mockGetBudgets.mockResolvedValue([]);
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+
+      expect(result.components.spending.available).toBe(false);
+      expect(result.components.spending.score).toBe(0);
+      expect(result.components.spending.details.savingsRate).toBeNull();
+    });
+
+    it("marks savings unavailable when it has liquid balances but no scorable factor (finding 3: no coerced 0)", async () => {
+      // Depository account present (reachable) but no emergency-fund coverage (no
+      // expenses), no observable income, and no savings goal → zero scorable
+      // factors → honest unavailable, with the real liquid balance still surfaced.
+      mockGetDashboard.mockResolvedValue(
+        makeDashboard({
+          monthlyIncome: 0,
+          savingsRate: 0,
+          monthlyExpenses: 0,
+          accounts: [makeAccount("depository", 5000)],
+        }),
+      );
+      mockGetGoals.mockResolvedValue([]);
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      const savings = result.components.savings;
+
+      expect(savings.available).toBe(false);
+      expect(savings.score).toBe(0);
+      expect(savings.details.totalSavings).toBe(5000); // real, informational
+      expect(savings.details.savingsRate).toBeNull();
+    });
+
+    it("persists null (not 0) for a transiently-unavailable component in history (finding 4)", async () => {
+      // Credit source throws → credit unavailable THIS run, but the other real
+      // components still yield a real overall. History must store credit as null,
+      // never a fabricated 0, while overall stays the real renormalized value.
+      mockGetCreditDash.mockRejectedValue(new Error("credit service down"));
+
+      const upsertMock = chainMock({ data: null, error: null });
+      let callCount = 0;
+      sb().from.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return chainMock({ data: [], error: null });
+        return upsertMock;
+      });
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+
+      expect(result.components.credit.available).toBe(false);
+      expect(result.overall).not.toBeNull();
+      expect(upsertMock.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          credit: null, // transiently unavailable → null, never a fabricated 0
+          debt: null, // always-unavailable debt likewise null
+          overall: result.overall,
+        }),
+        { onConflict: "user_id,date" },
+      );
     });
   });
 });
