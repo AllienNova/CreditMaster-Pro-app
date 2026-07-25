@@ -64,6 +64,23 @@ All 8 screens shared a fake `setTimeout(600)` load + a module-level hardcoded ar
 ## ⏸ SESSION-LIMIT CHECKPOINT (2026-07-25) — resets 8am ET; NEW SUBAGENTS BLOCKED until then
 Both in-flight lanes (bills, journal) hit the session limit during their FINAL verification step; both were complete + green, so the main session verified (tsc 0 + tests) and salvage-committed them pathspec-scoped (`58d8ea0`, `9085b88`). Tree clean. **Resume after 8am ET.**
 
+### ⚠ HONEST PARITY RE-ASSESSMENT (2026-07-25 main-session scan) — parity is NOT near ≥98%
+A `grep` of `mobile-app/app` found **~29 screens still holding `MOCK_` arrays** + **~34 with fake `setTimeout` loading**. The drive has genuinely closed P1 + Credit Repair (8/8) + paper/journal + bills, but a LARGE mock-debt tail remains. Candidate mock-debt inventory (needs per-screen triage — some `MOCK_` refs may be dead fallbacks, like the cards/inquiries lesson; verify source-concept before wiring each):
+
+| Domain | Screens with `MOCK_`/fake-load (candidates) |
+|---|---|
+| **credit-builder** | age, debt-strategy, pay-for-delete, payments, utilization, reports/upload |
+| **financial** | cash-flow, debt, net-worth, spending (bills ✅ done) |
+| **insights** | alerts, index, nudges, spending, weekly-summary |
+| **dashboard** | analytics, disputes, documents, monitoring, notifications, reports, progress, settings |
+| **admin** | analytics, audit, config, disputes, features, health, logs, settings, subscriptions |
+| **billing (P2)** | index, invoices, subscription |
+| **trading** | agents, chart |
+| **budgeting (mobile)** | auto-save, bills, subscriptions, zero-based (web versions done in P1; mobile likely not) |
+| **misc** | activity, analytics/reports, dispute/new+create, document(s)/[id], reports/[id], search, profile/edit, help/contact, handoff, financial-intelligence/* |
+
+**Implication:** ≥98% parity requires triaging + wiring this whole tail (dozens of screens) — many more two-lane dispatch rounds. This is the honest remaining scope, not "almost done." Each screen: verify real source exists (many will, some will STOP like cards/inquiries, a few need new web routes).
+
 ### Remaining parity work (all doable, need subagent quota)
 - **P2 Billing / IAP** (mobile) — not started.
 - **P3 web-only → mobile ports** — Real Estate, Crypto holdings, shared Goals, marketplace sub-cats (not started).
