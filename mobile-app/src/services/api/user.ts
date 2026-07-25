@@ -129,8 +129,136 @@ export const userProfileApi = {
     api.post<{ success: boolean }>("/user/onboarding/complete"),
 };
 
+// ── Billing overview (real source: GET /api/payment/billing) ──────────────────
+// The web billing route (withPermission("billing:read"), Stripe-backed) returns
+// plans + subscription + payment methods + invoices in one un-wrapped payload;
+// Date fields arrive as ISO strings over JSON. Adapt to a mobile view-model the
+// billing overview screen renders directly. No fabrication: a user with no Stripe
+// presence yields an empty payment-method list and empty invoices (free plan),
+// which the screen empty-states — it never invents a card number or an invoice.
+interface WebBillingPlan {
+  id: string;
+  name: string;
+  price: number;
+  interval: string;
+}
+
+interface WebBillingSubscription {
+  planId: string;
+  status: string;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd: boolean;
+}
+
+interface WebBillingPaymentMethod {
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+  isDefault: boolean;
+}
+
+interface WebBillingInvoice {
+  id: string;
+  amount: number;
+  status: string;
+  created: string;
+  dueDate?: string;
+  pdfUrl?: string;
+}
+
+export interface WebBillingResponse {
+  plans: WebBillingPlan[];
+  subscription: WebBillingSubscription;
+  paymentMethods: WebBillingPaymentMethod[];
+  invoices: WebBillingInvoice[];
+}
+
+/** A real Stripe payment method, reduced to what the overview renders. */
+export interface BillingPaymentMethodView {
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+}
+
+/** A real Stripe invoice, reduced to what the overview renders. */
+export interface BillingInvoiceView {
+  id: string;
+  date: string;
+  amount: number;
+  status: string;
+}
+
+/** The mobile billing-overview view-model — every field sourced, none invented. */
+export interface BillingOverview {
+  planName: string;
+  price: number;
+  interval: string;
+  status: string;
+  nextBilling: string | null;
+  cancelAtPeriodEnd: boolean;
+  paymentMethod: BillingPaymentMethodView | null;
+  recentInvoices: BillingInvoiceView[];
+}
+
+/** Format an ISO datetime to a YYYY-MM-DD date, or null when absent/invalid. */
+function toBillingDate(value?: string): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
+}
+
+export function mapWebBilling(res: WebBillingResponse): BillingOverview {
+  const plan = res.plans.find((p) => p.id === res.subscription.planId);
+  const defaultMethod =
+    res.paymentMethods.find((pm) => pm.isDefault) ??
+    res.paymentMethods[0] ??
+    null;
+
+  return {
+    planName: plan?.name ?? "Free",
+    price: plan?.price ?? 0,
+    interval: plan?.interval ?? "month",
+    status: res.subscription.status,
+    nextBilling: toBillingDate(res.subscription.currentPeriodEnd),
+    cancelAtPeriodEnd: res.subscription.cancelAtPeriodEnd,
+    paymentMethod: defaultMethod
+      ? {
+          brand: defaultMethod.brand,
+          last4: defaultMethod.last4,
+          expMonth: defaultMethod.expMonth,
+          expYear: defaultMethod.expYear,
+        }
+      : null,
+    recentInvoices: res.invoices.slice(0, 3).map((inv) => ({
+      id: inv.id,
+      date: toBillingDate(inv.created) ?? "",
+      amount: inv.amount,
+      status: inv.status,
+    })),
+  };
+}
+
 // Subscription Endpoints
 export const subscriptionApi = {
+  /**
+   * Get the real billing overview (current plan, default payment method, and
+   * recent invoices) from the Stripe-backed web route GET /api/payment/billing.
+   * Adapted to the mobile BillingOverview view-model by mapWebBilling; unsourced
+   * fields are omitted so the screen can empty-state rather than fabricate.
+   */
+  getBillingOverview: async (): Promise<ApiResponse<BillingOverview>> => {
+    const res = await api.get<WebBillingResponse>("/payment/billing");
+    if (res.success && res.data) {
+      return { success: true, data: mapWebBilling(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
+
   /**
    * Get current subscription
    */

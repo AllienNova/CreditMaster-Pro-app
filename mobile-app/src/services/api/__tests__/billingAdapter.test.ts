@@ -1,0 +1,226 @@
+/**
+ * mapWebBilling — web -> mobile billing-overview adapter (PARITY-P2).
+ *
+ * The real web route GET /api/payment/billing (Stripe-backed) returns
+ * plans + subscription + payment methods + invoices in one un-wrapped payload
+ * with ISO-string dates. This adapter reduces it to the BillingOverview
+ * view-model the billing overview screen renders. Getting it wrong ships a wrong
+ * plan/price, a fabricated card, or a fabricated invoice — the exact FND-016 risk
+ * this wiring removes. These tests prove: plan name/price resolve from the plan
+ * catalog by planId, the default payment method is chosen honestly, invoices are
+ * mapped and capped at 3, and a user with no Stripe presence yields null card +
+ * empty invoices (never a fabricated card or invoice).
+ */
+
+// Stub the module's side-effecting imports so user.ts loads in isolation. The
+// client's `api.get` is mockable so the getBillingOverview wiring can be exercised.
+const mockApiGet = jest.fn();
+jest.mock("../client", () => ({
+  api: { get: (...args: unknown[]) => mockApiGet(...args) },
+}));
+jest.mock("../../offline-sync", () => ({ offlineSyncService: {} }));
+
+import { mapWebBilling, subscriptionApi, type WebBillingResponse } from "../user";
+
+const PLANS = [
+  { id: "free", name: "Free", price: 0, interval: "month" },
+  { id: "standard", name: "Standard", price: 29.99, interval: "month" },
+  { id: "pro", name: "Pro", price: 99.99, interval: "month" },
+];
+
+function response(over: Partial<WebBillingResponse> = {}): WebBillingResponse {
+  return {
+    plans: PLANS,
+    subscription: {
+      planId: "standard",
+      status: "active",
+      currentPeriodStart: "2027-01-15T00:00:00.000Z",
+      currentPeriodEnd: "2027-02-15T00:00:00.000Z",
+      cancelAtPeriodEnd: false,
+    },
+    paymentMethods: [
+      {
+        id: "pm_1",
+        brand: "mastercard",
+        last4: "5100",
+        expMonth: 8,
+        expYear: 2027,
+        isDefault: true,
+      },
+    ],
+    invoices: [
+      {
+        id: "in_1001",
+        amount: 29.99,
+        status: "paid",
+        created: "2027-01-15T00:00:00.000Z",
+      },
+    ],
+    ...over,
+  };
+}
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+describe("subscriptionApi.getBillingOverview", () => {
+  it("fetches GET /payment/billing and returns the mapped overview", async () => {
+    mockApiGet.mockResolvedValue({ success: true, data: response() });
+    const res = await subscriptionApi.getBillingOverview();
+    expect(mockApiGet).toHaveBeenCalledWith("/payment/billing");
+    expect(res.success).toBe(true);
+    expect(res.data?.planName).toBe("Standard");
+    expect(res.data?.paymentMethod?.last4).toBe("5100");
+    expect(res.data?.recentInvoices[0]?.id).toBe("in_1001");
+  });
+
+  it("propagates the error without fabricating data when the fetch fails", async () => {
+    mockApiGet.mockResolvedValue({
+      success: false,
+      error: { code: "HTTP_401", message: "Unauthorized" },
+    });
+    const res = await subscriptionApi.getBillingOverview();
+    expect(res.success).toBe(false);
+    expect(res.data).toBeUndefined();
+    expect(res.error?.code).toBe("HTTP_401");
+  });
+});
+
+describe("mapWebBilling", () => {
+  it("resolves plan name, price, and interval from the plan catalog by planId", () => {
+    const vm = mapWebBilling(response());
+    expect(vm.planName).toBe("Standard");
+    expect(vm.price).toBe(29.99);
+    expect(vm.interval).toBe("month");
+    expect(vm.status).toBe("active");
+  });
+
+  it("formats the next-billing date from currentPeriodEnd (YYYY-MM-DD)", () => {
+    expect(mapWebBilling(response()).nextBilling).toBe("2027-02-15");
+  });
+
+  it("returns null next-billing when the subscription has no period end (free plan)", () => {
+    const vm = mapWebBilling(
+      response({
+        subscription: {
+          planId: "free",
+          status: "active",
+          cancelAtPeriodEnd: false,
+        },
+      }),
+    );
+    expect(vm.nextBilling).toBeNull();
+    expect(vm.planName).toBe("Free");
+    expect(vm.price).toBe(0);
+  });
+
+  it("reduces the default payment method to brand/last4/expiry — chosen by isDefault", () => {
+    const vm = mapWebBilling(
+      response({
+        paymentMethods: [
+          {
+            id: "pm_a",
+            brand: "visa",
+            last4: "1881",
+            expMonth: 1,
+            expYear: 2029,
+            isDefault: false,
+          },
+          {
+            id: "pm_b",
+            brand: "amex",
+            last4: "0005",
+            expMonth: 6,
+            expYear: 2030,
+            isDefault: true,
+          },
+        ],
+      }),
+    );
+    expect(vm.paymentMethod).toEqual({
+      brand: "amex",
+      last4: "0005",
+      expMonth: 6,
+      expYear: 2030,
+    });
+  });
+
+  it("falls back to the first payment method when none is flagged default", () => {
+    const vm = mapWebBilling(
+      response({
+        paymentMethods: [
+          {
+            id: "pm_a",
+            brand: "visa",
+            last4: "1881",
+            expMonth: 1,
+            expYear: 2029,
+            isDefault: false,
+          },
+        ],
+      }),
+    );
+    expect(vm.paymentMethod?.last4).toBe("1881");
+  });
+
+  it("yields a null payment method (never a fabricated card) when the user has none", () => {
+    const vm = mapWebBilling(response({ paymentMethods: [] }));
+    expect(vm.paymentMethod).toBeNull();
+  });
+
+  it("maps invoices (date from created) and caps the list at 3", () => {
+    const vm = mapWebBilling(
+      response({
+        invoices: [
+          { id: "in_5", amount: 5, status: "paid", created: "2027-05-01T00:00:00.000Z" },
+          { id: "in_4", amount: 4, status: "paid", created: "2027-04-01T00:00:00.000Z" },
+          { id: "in_3", amount: 3, status: "open", created: "2027-03-01T00:00:00.000Z" },
+          { id: "in_2", amount: 2, status: "paid", created: "2027-02-01T00:00:00.000Z" },
+        ],
+      }),
+    );
+    expect(vm.recentInvoices).toHaveLength(3);
+    expect(vm.recentInvoices[0]).toEqual({
+      id: "in_5",
+      date: "2027-05-01",
+      amount: 5,
+      status: "paid",
+    });
+    expect(vm.recentInvoices.map((i) => i.id)).toEqual(["in_5", "in_4", "in_3"]);
+  });
+
+  it("yields an empty invoice list (never a fabricated invoice) when the user has none", () => {
+    expect(mapWebBilling(response({ invoices: [] })).recentInvoices).toEqual([]);
+  });
+
+  it("defaults planName/price to the free tier when planId is not in the catalog", () => {
+    const vm = mapWebBilling(
+      response({
+        plans: [],
+        subscription: {
+          planId: "unknown",
+          status: "active",
+          cancelAtPeriodEnd: false,
+        },
+      }),
+    );
+    expect(vm.planName).toBe("Free");
+    expect(vm.price).toBe(0);
+    expect(vm.interval).toBe("month");
+  });
+
+  it("preserves cancelAtPeriodEnd from the subscription", () => {
+    const vm = mapWebBilling(
+      response({
+        subscription: {
+          planId: "standard",
+          status: "active",
+          currentPeriodEnd: "2027-02-15T00:00:00.000Z",
+          cancelAtPeriodEnd: true,
+        },
+      }),
+    );
+    expect(vm.cancelAtPeriodEnd).toBe(true);
+  });
+});
