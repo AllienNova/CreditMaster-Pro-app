@@ -38,49 +38,6 @@ interface UseNudgesReturn {
   dismissAll: () => void;
 }
 
-const MOCK_NUDGES: Nudge[] = [
-  {
-    id: "1",
-    nudgeType: "insight",
-    title: "Spending Alert",
-    message:
-      "Your dining spending is 35% higher than last month. Consider reviewing your food budget.",
-    actionLabel: "View Budget",
-    actionRoute: "/budget",
-    createdAt: new Date().toISOString(),
-    priority: 1,
-  },
-  {
-    id: "2",
-    nudgeType: "celebration",
-    title: "🎉 Goal Achieved!",
-    message: "You've saved $500 this month - that's 20% more than your target!",
-    createdAt: new Date().toISOString(),
-    priority: 2,
-  },
-  {
-    id: "3",
-    nudgeType: "coaching",
-    title: "Quick Tip",
-    message:
-      "Automating your savings can help you reach goals 2x faster. Would you like to set this up?",
-    actionLabel: "Set Up Auto-Save",
-    actionRoute: "/savings/automation",
-    createdAt: new Date().toISOString(),
-    priority: 3,
-  },
-  {
-    id: "4",
-    nudgeType: "reminder",
-    title: "Bill Due Soon",
-    message: "Your credit card payment of $450 is due in 3 days.",
-    actionLabel: "Pay Now",
-    actionRoute: "/bills",
-    createdAt: new Date().toISOString(),
-    priority: 1,
-  },
-];
-
 export function useNudges(): UseNudgesReturn {
   const [nudges, setNudges] = useState<Nudge[]>([]);
   const [activeNudge, setActiveNudge] = useState<Nudge | null>(null);
@@ -92,33 +49,38 @@ export function useNudges(): UseNudgesReturn {
     setError(null);
     try {
       const res = await api.get<{ nudges: Nudge[] }>("/ai/nudges");
-      let nudgesData: Nudge[];
       if (res.success && res.data) {
-        nudgesData = res.data.nudges || [];
+        const sortedNudges = [...(res.data.nudges || [])].sort(
+          (a, b) => a.priority - b.priority,
+        );
+        setNudges(sortedNudges);
+        // Surface the highest-priority nudge if none is active yet.
+        setActiveNudge((current) =>
+          current ?? (sortedNudges.length > 0 ? sortedNudges[0] : null),
+        );
       } else {
-        // Fallback to mock data if API unavailable
-        nudgesData = MOCK_NUDGES;
-      }
-      const sortedNudges = [...nudgesData].sort(
-        (a, b) => a.priority - b.priority,
-      );
-      setNudges(sortedNudges);
-      if (sortedNudges.length > 0 && !activeNudge) {
-        setActiveNudge(sortedNudges[0]);
+        // Honest failure: clear the feed and surface the error — never mock.
+        setNudges([]);
+        setActiveNudge(null);
+        setError(
+          res.error?.message ||
+            res.message ||
+            "Unable to load recommendations. Please try again.",
+        );
       }
     } catch (err) {
-      // Fallback to mock data on network error
-      const sortedNudges = [...MOCK_NUDGES].sort(
-        (a, b) => a.priority - b.priority,
+      // Honest failure on an unexpected/thrown error — never mock.
+      setNudges([]);
+      setActiveNudge(null);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to load recommendations. Please try again.",
       );
-      setNudges(sortedNudges);
-      if (sortedNudges.length > 0 && !activeNudge) {
-        setActiveNudge(sortedNudges[0]);
-      }
     } finally {
       setIsLoading(false);
     }
-  }, [activeNudge]);
+  }, []);
 
   const respondToNudge = useCallback(
     async (nudgeId: string, nudgeResponse: NudgeResponse) => {
