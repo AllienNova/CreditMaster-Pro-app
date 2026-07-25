@@ -91,6 +91,17 @@ A `grep` of `mobile-app/app` found **~29 screens still holding `MOCK_` arrays** 
 
 **Implication:** ≥98% parity requires triaging + wiring this whole tail on BOTH platforms (~29 mobile + ~16 web candidate screens, minus dead fallbacks + legit-random) — many more two-lane dispatch rounds. This is the honest remaining scope, not "almost done." Each screen: verify real source exists (many will, some will STOP like cards/inquiries, a few need new web routes or a market-data backend).
 
+## Financial domain map (from `a7344db0` scout)
+
+⚠ **SYSTEMIC FINDING**: mobile `financialOverviewApi` methods call `/financial/insights/*` routes **that don't exist** → 404 → silent `MOCK_` render. The real routes are `/financial/spending/*`. **This mis-path→silent-mock pattern likely affects other mobile screens — check the route path exists when wiring any financial/insights screen.**
+
+| Screen | Real source | Status |
+|---|---|---|
+| `financial/cash-flow.tsx` | `GET /api/financial/spending/cashflow` (real Plaid txns) — was mis-pathed `/financial/insights/cashflow` (404) | ✅ DONE `d0afa8e` (`mapWebCashFlow`; real `recommendations`; 16 tests) |
+| `financial/net-worth.tsx` | assets/liabilities ← `GET /api/financial/accounts`; **history has NO source** (omit) | 🔧 in flight (`a348fab1`) |
+| `financial/debt.tsx` | `GET /api/financial/debt` (`data.overview` shape) + `debtApi.calculatePayoff` for real strategies; **kill fabricated `STRATEGIES`** (hardcoded interest/months) | queued — bigger (shape re-map) |
+| `financial/spending.tsx` | trends ← cashflow route; **byCategory NO source at referenced endpoint** — candidate `dashboard.spendingByCategory` | queued — partial |
+
 ### Remaining parity work (all doable, need subagent quota)
 - **P2 Billing / IAP** (mobile) — not started.
 - **P3 web-only → mobile ports** — Real Estate, Crypto holdings, shared Goals, marketplace sub-cats (not started).
