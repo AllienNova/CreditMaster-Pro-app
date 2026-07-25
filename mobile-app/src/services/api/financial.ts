@@ -756,6 +756,93 @@ export const transactionApi = {
     ),
 };
 
+// ── Budget overview (real source: GET /api/financial/budgets/summary) ─────────
+// budgetService.getBudgetSummary returns the authenticated user's real budget
+// aggregates: totals, an overall percent-used, a monthly period summary (with
+// daysRemaining), and the top over-/under-budget categories. Date fields inside
+// periodSummary arrive as ISO strings over JSON, but this view-model needs only the
+// numeric daysRemaining.
+//
+// The smart-budget overview screen previously rendered a hardcoded BudgetAnalysis
+// (invented $5,000 budgeted / $3,200 spent / 64% used / 12 days left) behind a fake
+// setTimeout, so every user saw the same figures. This adapter carries ONLY the
+// fields the endpoint truly provides. Alerts are not fabricated: each is derived from
+// the payload's own topOverspentCategories — real over-budget categories — with a
+// message formatted from that category's real name and real dollar overage (the same
+// over-budget signal the web budgetService itself emits). A user with no budgets
+// yields all-zero totals and no alerts, which the screen empty-states rather than
+// dressing up as a real budget.
+
+interface WebBudgetCategorySummary {
+  category: string;
+  categoryDisplayName: string;
+  // spentAmount - budgetedAmount for an overspent category (a positive overage).
+  variance: number;
+}
+
+interface WebBudgetPeriodSummary {
+  daysRemaining: number;
+}
+
+export interface WebBudgetSummary {
+  totalBudgeted: number;
+  totalSpent: number;
+  totalRemaining: number;
+  overallPercentUsed: number;
+  topOverspentCategories: WebBudgetCategorySummary[];
+  periodSummary: WebBudgetPeriodSummary;
+}
+
+/** A real over-budget category, reduced to the alert the overview screen renders. */
+export interface BudgetOverviewAlert {
+  category: string;
+  severity: "high" | "medium" | "low";
+  message: string;
+}
+
+/** The mobile smart-budget overview view-model — every field sourced, none invented. */
+export interface BudgetOverviewData {
+  totalBudgeted: number;
+  totalSpent: number;
+  totalRemaining: number;
+  percentUsed: number;
+  daysRemaining: number;
+  alerts: BudgetOverviewAlert[];
+}
+
+/** Coerce a JSON-boundary value to a finite number, defaulting to 0 (never NaN). */
+function toFiniteOrZero(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+/**
+ * Adapt the web budget-summary payload to the mobile BudgetOverviewData view-model.
+ * Every rendered field is sourced from the payload; a malformed row degrades to 0
+ * rather than fabricating, and alerts derive solely from real over-budget categories.
+ */
+export function mapBudgetSummary(res: WebBudgetSummary): BudgetOverviewData {
+  const overspent = Array.isArray(res.topOverspentCategories)
+    ? res.topOverspentCategories
+    : [];
+  return {
+    totalBudgeted: toFiniteOrZero(res.totalBudgeted),
+    totalSpent: toFiniteOrZero(res.totalSpent),
+    totalRemaining: toFiniteOrZero(res.totalRemaining),
+    percentUsed: toFiniteOrZero(res.overallPercentUsed),
+    daysRemaining: toFiniteOrZero(res.periodSummary?.daysRemaining),
+    // Each alert is a real over-budget category from the same payload; the message
+    // formats that category's real name + real dollar overage — no invented data.
+    alerts: overspent.map((c) => {
+      const name = c.categoryDisplayName || c.category;
+      return {
+        category: name,
+        severity: "high" as const,
+        message: `${name} is over budget by $${Math.round(toFiniteOrZero(c.variance))}`,
+      };
+    }),
+  };
+}
+
 // Budget Endpoints
 export const budgetApi = {
   /**
@@ -793,6 +880,21 @@ export const budgetApi = {
     api.get<{
       alerts: { category: string; percentUsed: number; remaining: number }[];
     }>("/financial/budgets/alerts"),
+
+  /**
+   * Get the real budget overview (totals, overall percent-used, days remaining, and
+   * over-budget alerts) from GET /api/financial/budgets/summary, adapted to the mobile
+   * BudgetOverviewData view-model by mapBudgetSummary. Replaces the smart-budget
+   * screen's former hardcoded BudgetAnalysis. A user with no budgets yields all-zero
+   * totals and no alerts — never a fabricated budget.
+   */
+  getBudgetSummary: async (): Promise<ApiResponse<BudgetOverviewData>> => {
+    const res = await api.get<WebBudgetSummary>("/financial/budgets/summary");
+    if (res.success && res.data) {
+      return { success: true, data: mapBudgetSummary(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
 };
 
 // The real web route (GET /api/financial/goals) returns the goals array directly
