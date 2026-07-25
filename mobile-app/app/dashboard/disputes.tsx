@@ -1,9 +1,18 @@
 /**
  * Fynvita Disputes Dashboard Screen
- * Dispute tracking and management
+ * Dispute tracking and management.
+ *
+ * Real-data wiring (PARITY): renders the user's real disputes from
+ * useDisputeStore (fetch on mount, honest inline loading / error / empty
+ * states). The former MOCK_DISPUTES array, the local Dispute interface, and
+ * the fake setTimeout load were removed. Dispute fields come from the mobile
+ * Dispute type fed by disputeApi.getAll (see mapWebDispute, which maps the web
+ * `itemDescription` onto `creditorName`) — nothing is fabricated. This route
+ * (/dashboard/disputes) is the deep-link target used by the notifications
+ * screen's dispute_update actionUrl.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,92 +20,50 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-
-interface Dispute {
-  id: string;
-  bureau: "experian" | "equifax" | "transunion";
-  status: "draft" | "sent" | "under_review" | "resolved" | "rejected";
-  itemType: string;
-  itemDescription: string;
-  createdAt: string;
-  outcome: string | null;
-}
-
-const MOCK_DISPUTES: Dispute[] = [
-  {
-    id: "1",
-    bureau: "experian",
-    status: "resolved",
-    itemType: "Late Payment",
-    itemDescription: "Capital One late payment March 2023",
-    createdAt: "2024-10-15T10:00:00Z",
-    outcome: "removed",
-  },
-  {
-    id: "2",
-    bureau: "equifax",
-    status: "under_review",
-    itemType: "Collection",
-    itemDescription: "Medical collection ABC Collections",
-    createdAt: "2024-11-01T09:15:00Z",
-    outcome: null,
-  },
-  {
-    id: "3",
-    bureau: "transunion",
-    status: "sent",
-    itemType: "Inquiry",
-    itemDescription: "Unauthorized hard inquiry XYZ Lender",
-    createdAt: "2024-11-10T16:45:00Z",
-    outcome: null,
-  },
-  {
-    id: "4",
-    bureau: "experian",
-    status: "draft",
-    itemType: "Balance Error",
-    itemDescription: "Incorrect balance on Chase card",
-    createdAt: "2024-11-15T11:20:00Z",
-    outcome: null,
-  },
-];
+import { useDisputeStore } from "../../src/store/disputeStore";
 
 const FILTERS = ["all", "draft", "sent", "under_review", "resolved"] as const;
 
+// createdAt arrives as an ISO string; render a compact locale date (empty for
+// a missing/invalid timestamp rather than "Invalid Date").
+function formatDate(iso?: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString();
+}
+
 export default function DisputesScreen() {
-  const [disputes, setDisputes] = useState<Dispute[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { disputes, isLoading, error, fetchDisputes } = useDisputeStore();
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<string>("all");
 
-  useEffect(() => {
-    loadDisputes();
-  }, []);
+  const load = useCallback(() => {
+    fetchDisputes();
+  }, [fetchDisputes]);
 
-  const loadDisputes = async () => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setDisputes(MOCK_DISPUTES);
-      setLoading(false);
-    }, 500);
-  };
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadDisputes();
+    await fetchDisputes();
     setRefreshing(false);
   };
 
   const filteredDisputes = disputes.filter(
     (d) => filter === "all" || d.status === filter,
   );
+
+  const showLoading = isLoading && disputes.length === 0;
+  const showError = !!error && disputes.length === 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -208,7 +175,33 @@ export default function DisputesScreen() {
           ))}
         </ScrollView>
 
+        {/* Honest inline states — no mock fallback, nothing fabricated */}
+        {showLoading && (
+          <View
+            style={styles.stateContainer}
+            testID="dashboard-disputes-loading"
+          >
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.stateText}>Loading disputes...</Text>
+          </View>
+        )}
+
+        {showError && (
+          <View style={styles.stateContainer} testID="dashboard-disputes-error">
+            <Ionicons
+              name="cloud-offline-outline"
+              size={48}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.stateText}>{error}</Text>
+            <TouchableOpacity style={styles.emptyButton} onPress={load}>
+              <Text style={styles.emptyButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Disputes List */}
+        {!showLoading && !showError && (
         <View style={styles.disputesList}>
           {filteredDisputes.map((dispute) => (
             <Card key={dispute.id} style={styles.disputeCard}>
@@ -251,13 +244,15 @@ export default function DisputesScreen() {
               </View>
 
               <Text style={styles.itemType}>{dispute.itemType}</Text>
-              <Text style={styles.itemDescription}>
-                {dispute.itemDescription}
-              </Text>
+              {!!dispute.creditorName && (
+                <Text style={styles.itemDescription}>
+                  {dispute.creditorName}
+                </Text>
+              )}
 
               <View style={styles.disputeFooter}>
                 <Text style={styles.dateText}>
-                  Created: {new Date(dispute.createdAt).toLocaleDateString()}
+                  Created: {formatDate(dispute.createdAt)}
                 </Text>
                 {dispute.outcome && (
                   <View style={styles.outcomeBadge}>
@@ -283,7 +278,7 @@ export default function DisputesScreen() {
           ))}
 
           {filteredDisputes.length === 0 && (
-            <View style={styles.emptyState}>
+            <View style={styles.emptyState} testID="dashboard-disputes-empty">
               <Ionicons
                 name="document-text-outline"
                 size={48}
@@ -299,6 +294,7 @@ export default function DisputesScreen() {
             </View>
           )}
         </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -426,4 +422,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   emptyButtonText: { color: "#fff", fontWeight: "600" },
+
+  stateContainer: { alignItems: "center", padding: 40, gap: 12 },
+  stateText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
 });
