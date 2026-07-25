@@ -1,9 +1,26 @@
 /**
- * Fynvita Spending Analysis Screen
- * AI-powered spending pattern analysis and insights
+ * Fynvita Insights > Spending Analysis Screen
+ *
+ * Real-data wiring (PARITY): renders the user's real spending analysis — category
+ * breakdown, detected patterns, and recommendations — from POST
+ * /api/financial/spending/analyze (withPermission "financial:read") ->
+ * spendingAnalysisService.analyzeSpending, a DETERMINISTIC (no-LLM) analysis of the
+ * user's real Plaid transactions, via financialOverviewApi.getSpendingAnalysis and the
+ * mapWebSpendingAnalysis adapter (services/api/financial.ts). The 7d/30d/90d filter is
+ * sent as the analyze date range and refetches on change.
+ *
+ * The screen previously rendered a hardcoded MOCK_ANALYSIS (invented totals,
+ * categories, an overall "risk score", per-category budgets, a monthly projection, and
+ * pattern/recommendation copy) behind a fake setTimeout, so every user saw the same
+ * fabricated figures. That mock and the fake load are removed. Fields the endpoint does
+ * not provide are omitted rather than faked: the overall risk-score card, the
+ * monthly-projection subtext, and the per-category budget overlay are gone (budget
+ * tracking lives on app/financial/budgets.tsx). Each category's trend badge now
+ * reflects the REAL period-over-period change; on a failed fetch the screen shows an
+ * honest error + retry, never fabricated data.
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,257 +29,166 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Dimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { financialOverviewApi } from "../../src/services/api/financial";
+import type {
+  SpendingAnalysisData,
+  SpendingPatternKind,
+  SpendingSeverity,
+} from "../../src/services/api/financial";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-interface SpendingCategory {
-  name: string;
-  amount: number;
-  percentOfTotal: number;
-  trend: "up" | "down" | "stable";
-  trendPercent: number;
-  budget?: number;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-}
-
-interface SpendingPattern {
-  id: string;
-  type: "anomaly" | "trend" | "recurring" | "opportunity";
-  title: string;
-  description: string;
-  impact: string;
-  severity: "low" | "medium" | "high";
-}
-
-interface SpendingAnalysis {
-  totalSpending: number;
-  transactionCount: number;
-  averageTransaction: number;
-  overallRiskScore: number;
-  periodDays: number;
-  categories: SpendingCategory[];
-  patterns: SpendingPattern[];
-  recommendations: string[];
-  dailyAverage: number;
-  projectedMonthly: number;
-  comparedToLastPeriod: number;
-}
-
-const MOCK_ANALYSIS: SpendingAnalysis = {
-  totalSpending: 3456.78,
-  transactionCount: 87,
-  averageTransaction: 39.73,
-  overallRiskScore: 4.2,
-  periodDays: 30,
-  dailyAverage: 115.23,
-  projectedMonthly: 3500,
-  comparedToLastPeriod: 8.5,
-  categories: [
-    {
-      name: "Housing",
-      amount: 1200,
-      percentOfTotal: 34.7,
-      trend: "stable",
-      trendPercent: 0,
-      budget: 1200,
-      icon: "home",
-      color: "#3B82F6",
-    },
-    {
-      name: "Groceries",
-      amount: 542.15,
-      percentOfTotal: 15.7,
-      trend: "up",
-      trendPercent: 12,
-      budget: 500,
-      icon: "cart",
-      color: "#22C55E",
-    },
-    {
-      name: "Dining Out",
-      amount: 456.8,
-      percentOfTotal: 13.2,
-      trend: "up",
-      trendPercent: 45,
-      budget: 300,
-      icon: "restaurant",
-      color: "#F59E0B",
-    },
-    {
-      name: "Transportation",
-      amount: 289.45,
-      percentOfTotal: 8.4,
-      trend: "down",
-      trendPercent: -15,
-      budget: 350,
-      icon: "car",
-      color: "#8B5CF6",
-    },
-    {
-      name: "Shopping",
-      amount: 367.9,
-      percentOfTotal: 10.6,
-      trend: "up",
-      trendPercent: 25,
-      budget: 250,
-      icon: "bag",
-      color: "#EC4899",
-    },
-    {
-      name: "Entertainment",
-      amount: 198.5,
-      percentOfTotal: 5.7,
-      trend: "stable",
-      trendPercent: 2,
-      budget: 200,
-      icon: "film",
-      color: "#06B6D4",
-    },
-    {
-      name: "Subscriptions",
-      amount: 142.98,
-      percentOfTotal: 4.1,
-      trend: "up",
-      trendPercent: 8,
-      icon: "repeat",
-      color: "#6366F1",
-    },
-    {
-      name: "Other",
-      amount: 259.0,
-      percentOfTotal: 7.5,
-      trend: "down",
-      trendPercent: -5,
-      icon: "ellipsis-horizontal",
-      color: "#9CA3AF",
-    },
-  ],
-  patterns: [
-    {
-      id: "1",
-      type: "anomaly",
-      title: "Dining spending spike",
-      description:
-        "Your dining out spending increased 45% compared to your 3-month average.",
-      impact: "+$140/month",
-      severity: "high",
-    },
-    {
-      id: "2",
-      type: "trend",
-      title: "Subscription creep",
-      description:
-        "Your subscription costs have grown 8% over the past 6 months.",
-      impact: "+$11/month",
-      severity: "medium",
-    },
-    {
-      id: "3",
-      type: "recurring",
-      title: "Weekend spending pattern",
-      description: "You spend 40% more on weekends compared to weekdays.",
-      impact: "Pattern detected",
-      severity: "low",
-    },
-    {
-      id: "4",
-      type: "opportunity",
-      title: "Transportation savings",
-      description: "Great job! Your transportation costs are 15% below budget.",
-      impact: "Save $60/month",
-      severity: "low",
-    },
-  ],
-  recommendations: [
-    "Set a dining out limit of $75/week to stay within budget",
-    "Review your subscriptions - 2 services appear unused in the last 30 days",
-    "Consider meal prepping on weekends to reduce weekday dining expenses",
-    "Your grocery spending is optimal - maintain current habits",
-    "Set spending alerts for categories exceeding budget",
-  ],
+type Period = "7d" | "30d" | "90d";
+const PERIOD_DAYS: Record<Period, number> = { "7d": 7, "30d": 30, "90d": 90 };
+const PERIOD_LABELS: Record<Period, string> = {
+  "7d": "7 Days",
+  "30d": "30 Days",
+  "90d": "90 Days",
 };
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-US", {
+// Icons/colors are pure presentation — the display name comes from the real payload.
+const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  Housing: "home",
+  Utilities: "flash",
+  Groceries: "cart",
+  Transportation: "car",
+  Insurance: "shield-checkmark",
+  Healthcare: "medical",
+  "Debt Payments": "card",
+  "Dining Out": "restaurant",
+  Entertainment: "film",
+  Shopping: "bag",
+  "Personal Care": "person",
+  Fitness: "barbell",
+  Subscriptions: "repeat",
+  Savings: "wallet",
+  Investments: "trending-up",
+  Travel: "airplane",
+  Other: "ellipsis-horizontal",
+};
+
+const CATEGORY_COLORS = [
+  "#3B82F6",
+  "#22C55E",
+  "#F59E0B",
+  "#8B5CF6",
+  "#EC4899",
+  "#06B6D4",
+  "#6366F1",
+  "#F97316",
+  "#9CA3AF",
+];
+
+const PATTERN_ICONS: Record<
+  SpendingPatternKind,
+  keyof typeof Ionicons.glyphMap
+> = {
+  anomaly: "alert-circle",
+  trend: "trending-up",
+  recurring: "repeat",
+  opportunity: "bulb",
+};
+const PATTERN_COLORS: Record<SpendingPatternKind, string> = {
+  anomaly: "#EF4444",
+  trend: "#F59E0B",
+  recurring: "#3B82F6",
+  opportunity: "#22C55E",
+};
+
+const money = (amount: number) =>
+  new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
-};
+
+function rangeForPeriod(period: Period): { startDate: string; endDate: string } {
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - PERIOD_DAYS[period]);
+  return { startDate: start.toISOString(), endDate: end.toISOString() };
+}
+
+function severityBadge(severity: SpendingSeverity) {
+  switch (severity) {
+    case "high":
+      return { bg: "#FEE2E2", text: "#DC2626" };
+    case "medium":
+      return { bg: "#FEF3C7", text: "#D97706" };
+    default:
+      return { bg: "#D1FAE5", text: "#059669" };
+  }
+}
 
 export default function SpendingAnalysisScreen() {
-  const [analysis] = useState<SpendingAnalysis>(MOCK_ANALYSIS);
-  const [loading, setLoading] = useState(false);
+  const [analysis, setAnalysis] = useState<SpendingAnalysisData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [periodFilter, setPeriodFilter] = useState<"7d" | "30d" | "90d">("30d");
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState<Period>("30d");
 
-  const onRefresh = useCallback(async () => {
+  const fetchAnalysis = useCallback(async () => {
+    const res = await financialOverviewApi.getSpendingAnalysis(
+      rangeForPeriod(period),
+    );
+    if (res.success && res.data) {
+      setAnalysis(res.data);
+      setError(null);
+    } else {
+      setError(res.error?.message ?? "Unable to load spending analysis.");
+    }
+  }, [period]);
+
+  const loadAnalysis = useCallback(async () => {
+    setLoading(true);
+    await fetchAnalysis();
+    setLoading(false);
+  }, [fetchAnalysis]);
+
+  // Fetch on mount and whenever the period filter changes (fetchAnalysis depends on it).
+  useEffect(() => {
+    loadAnalysis();
+  }, [loadAnalysis]);
+
+  const onRefresh = async () => {
     setRefreshing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await fetchAnalysis();
     setRefreshing(false);
-  }, []);
-
-  const getRiskColor = (score: number) => {
-    if (score <= 3) return "#22C55E";
-    if (score <= 6) return "#F59E0B";
-    return "#EF4444";
   };
 
-  const getPatternIcon = (type: string): keyof typeof Ionicons.glyphMap => {
-    switch (type) {
-      case "anomaly":
-        return "alert-circle";
-      case "trend":
-        return "trending-up";
-      case "recurring":
-        return "repeat";
-      case "opportunity":
-        return "bulb";
-      default:
-        return "information-circle";
-    }
-  };
+  const hasData =
+    !!analysis &&
+    (analysis.categories.length > 0 || analysis.patterns.length > 0);
 
-  const getPatternColor = (type: string) => {
-    switch (type) {
-      case "anomaly":
-        return "#EF4444";
-      case "trend":
-        return "#F59E0B";
-      case "recurring":
-        return "#3B82F6";
-      case "opportunity":
-        return "#22C55E";
-      default:
-        return theme.colors.textSecondary;
-    }
-  };
-
-  const getSeverityBadge = (severity: string) => {
-    const colors = {
-      high: { bg: "#FEE2E2", text: "#DC2626" },
-      medium: { bg: "#FEF3C7", text: "#D97706" },
-      low: { bg: "#D1FAE5", text: "#059669" },
-    };
-    return colors[severity as keyof typeof colors] || colors.low;
-  };
-
-  if (loading) {
+  if (loading && !analysis) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered} testID="insights-spending-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Analyzing your spending...</Text>
+          <Text style={styles.stateText}>Analyzing your spending...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && !analysis) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="insights-spending-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadAnalysis}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -290,9 +216,11 @@ export default function SpendingAnalysisScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Spending Analysis</Text>
-          <TouchableOpacity onPress={() => {}}>
+          <TouchableOpacity
+            onPress={() => router.push("/financial/transactions" as never)}
+          >
             <Ionicons
-              name="download-outline"
+              name="list-outline"
               size={24}
               color={theme.colors.textSecondary}
             />
@@ -301,321 +229,305 @@ export default function SpendingAnalysisScreen() {
 
         {/* Period Filter */}
         <View style={styles.periodFilter}>
-          {(["7d", "30d", "90d"] as const).map((period) => (
+          {(["7d", "30d", "90d"] as const).map((p) => (
             <TouchableOpacity
-              key={period}
+              key={p}
+              testID={`spending-period-${p}`}
               style={[
                 styles.periodChip,
-                periodFilter === period && styles.periodChipActive,
+                period === p && styles.periodChipActive,
               ]}
-              onPress={() => setPeriodFilter(period)}
+              onPress={() => setPeriod(p)}
             >
               <Text
                 style={[
                   styles.periodText,
-                  periodFilter === period && styles.periodTextActive,
+                  period === p && styles.periodTextActive,
                 ]}
               >
-                {period === "7d"
-                  ? "7 Days"
-                  : period === "30d"
-                    ? "30 Days"
-                    : "90 Days"}
+                {PERIOD_LABELS[p]}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Overview Cards */}
-        <View style={styles.overviewGrid}>
-          <Card style={styles.overviewCard}>
-            <Text style={styles.overviewLabel}>Total Spent</Text>
-            <Text style={styles.overviewValue}>
-              {formatCurrency(analysis.totalSpending)}
+        {!hasData ? (
+          <View style={styles.emptyCard} testID="insights-spending-empty">
+            <Ionicons
+              name="pie-chart-outline"
+              size={40}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.emptyTitle}>No spending yet</Text>
+            <Text style={styles.emptyText}>
+              Once Fynvita sees spending from your linked accounts, your category
+              breakdown and detected patterns will show here.
             </Text>
-            <View style={styles.overviewTrend}>
-              <Ionicons
-                name={
-                  analysis.comparedToLastPeriod >= 0
-                    ? "trending-up"
-                    : "trending-down"
-                }
-                size={14}
-                color={
-                  analysis.comparedToLastPeriod >= 0 ? "#EF4444" : "#22C55E"
-                }
-              />
-              <Text
-                style={[
-                  styles.overviewTrendText,
-                  {
-                    color:
-                      analysis.comparedToLastPeriod >= 0
-                        ? "#EF4444"
-                        : "#22C55E",
-                  },
-                ]}
-              >
-                {analysis.comparedToLastPeriod >= 0 ? "+" : ""}
-                {analysis.comparedToLastPeriod}%
-              </Text>
-            </View>
-          </Card>
+          </View>
+        ) : (
+          analysis && (
+            <>
+              {/* Overview Cards — every value is real; the mock's risk-score card and
+                  monthly-projection subtext were removed (no source). */}
+              <View style={styles.overviewGrid}>
+                <Card style={styles.overviewCard}>
+                  <Text style={styles.overviewLabel}>Total Spent</Text>
+                  <Text style={styles.overviewValue}>
+                    {money(analysis.totalSpending)}
+                  </Text>
+                  <View style={styles.overviewTrend}>
+                    <Ionicons
+                      name={
+                        analysis.comparedToLastPeriod >= 0
+                          ? "trending-up"
+                          : "trending-down"
+                      }
+                      size={14}
+                      color={
+                        analysis.comparedToLastPeriod >= 0
+                          ? "#EF4444"
+                          : "#22C55E"
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.overviewTrendText,
+                        {
+                          color:
+                            analysis.comparedToLastPeriod >= 0
+                              ? "#EF4444"
+                              : "#22C55E",
+                        },
+                      ]}
+                    >
+                      {analysis.comparedToLastPeriod >= 0 ? "+" : ""}
+                      {analysis.comparedToLastPeriod.toFixed(1)}% vs prev
+                    </Text>
+                  </View>
+                </Card>
 
-          <Card style={styles.overviewCard}>
-            <Text style={styles.overviewLabel}>Transactions</Text>
-            <Text style={styles.overviewValue}>
-              {analysis.transactionCount}
-            </Text>
-            <Text style={styles.overviewSubtext}>
-              Avg: {formatCurrency(analysis.averageTransaction)}
-            </Text>
-          </Card>
+                <Card style={styles.overviewCard}>
+                  <Text style={styles.overviewLabel}>Transactions</Text>
+                  <Text style={styles.overviewValue}>
+                    {analysis.transactionCount}
+                  </Text>
+                  <Text style={styles.overviewSubtext}>
+                    Avg: {money(analysis.averageTransaction)}
+                  </Text>
+                </Card>
 
-          <Card style={styles.overviewCard}>
-            <Text style={styles.overviewLabel}>Daily Average</Text>
-            <Text style={styles.overviewValue}>
-              {formatCurrency(analysis.dailyAverage)}
-            </Text>
-            <Text style={styles.overviewSubtext}>
-              Projected: {formatCurrency(analysis.projectedMonthly)}/mo
-            </Text>
-          </Card>
+                <Card style={styles.overviewCard}>
+                  <Text style={styles.overviewLabel}>Daily Average</Text>
+                  <Text style={styles.overviewValue}>
+                    {money(analysis.dailyAverage)}
+                  </Text>
+                  <Text style={styles.overviewSubtext}>
+                    over {PERIOD_LABELS[period].toLowerCase()}
+                  </Text>
+                </Card>
+              </View>
 
-          <Card style={styles.overviewCard}>
-            <Text style={styles.overviewLabel}>Risk Score</Text>
-            <Text
-              style={[
-                styles.overviewValue,
-                { color: getRiskColor(analysis.overallRiskScore) },
-              ]}
-            >
-              {analysis.overallRiskScore.toFixed(1)}/10
-            </Text>
-            <Text style={styles.overviewSubtext}>
-              {analysis.overallRiskScore <= 3
-                ? "Healthy"
-                : analysis.overallRiskScore <= 6
-                  ? "Monitor"
-                  : "High Risk"}
-            </Text>
-          </Card>
-        </View>
-
-        {/* Spending by Category */}
-        <Text style={styles.sectionTitle}>Spending by Category</Text>
-        <Card style={styles.categoryCard}>
-          {analysis.categories.map((cat) => {
-            const isOverBudget = cat.budget && cat.amount > cat.budget;
-            const budgetPercent = cat.budget
-              ? (cat.amount / cat.budget) * 100
-              : 0;
-            const isExpanded = expandedCategory === cat.name;
-
-            return (
-              <TouchableOpacity
-                key={cat.name}
-                style={styles.categoryRow}
-                onPress={() =>
-                  setExpandedCategory(isExpanded ? null : cat.name)
-                }
-              >
-                <View
-                  style={[
-                    styles.categoryIcon,
-                    { backgroundColor: `${cat.color}20` },
-                  ]}
-                >
-                  <Ionicons name={cat.icon} size={20} color={cat.color} />
-                </View>
-                <View style={styles.categoryContent}>
-                  <View style={styles.categoryHeader}>
-                    <View style={styles.categoryNameRow}>
-                      <Text style={styles.categoryName}>{cat.name}</Text>
-                      {isOverBudget && (
-                        <View style={styles.overBudgetBadge}>
-                          <Ionicons name="alert" size={10} color="#EF4444" />
-                        </View>
-                      )}
-                    </View>
-                    <View style={styles.categoryAmountRow}>
-                      <Text style={styles.categoryAmount}>
-                        {formatCurrency(cat.amount)}
-                      </Text>
-                      <View
-                        style={[
-                          styles.trendBadge,
-                          {
-                            backgroundColor:
-                              cat.trend === "down"
-                                ? "#D1FAE5"
-                                : cat.trend === "up"
-                                  ? "#FEE2E2"
-                                  : "#F3F4F6",
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name={
-                            cat.trend === "up"
-                              ? "arrow-up"
-                              : cat.trend === "down"
-                                ? "arrow-down"
-                                : "remove"
-                          }
-                          size={10}
-                          color={
-                            cat.trend === "down"
-                              ? "#22C55E"
-                              : cat.trend === "up"
-                                ? "#EF4444"
-                                : "#6B7280"
-                          }
-                        />
-                        <Text
+              {/* Spending by Category */}
+              {analysis.categories.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Spending by Category</Text>
+                  <Card style={styles.categoryCard}>
+                    {analysis.categories.map((cat, i) => (
+                      <View key={cat.name} style={styles.categoryRow}>
+                        <View
                           style={[
-                            styles.trendText,
+                            styles.categoryIcon,
                             {
-                              color:
-                                cat.trend === "down"
-                                  ? "#22C55E"
-                                  : cat.trend === "up"
-                                    ? "#EF4444"
-                                    : "#6B7280",
+                              backgroundColor: `${
+                                CATEGORY_COLORS[i % CATEGORY_COLORS.length]
+                              }20`,
                             },
                           ]}
                         >
-                          {Math.abs(cat.trendPercent)}%
-                        </Text>
+                          <Ionicons
+                            name={CATEGORY_ICONS[cat.name] ?? "pricetag"}
+                            size={20}
+                            color={CATEGORY_COLORS[i % CATEGORY_COLORS.length]}
+                          />
+                        </View>
+                        <View style={styles.categoryContent}>
+                          <View style={styles.categoryHeader}>
+                            <Text style={styles.categoryName}>{cat.name}</Text>
+                            <View style={styles.categoryAmountRow}>
+                              <Text style={styles.categoryAmount}>
+                                {money(cat.amount)}
+                              </Text>
+                              <View
+                                style={[
+                                  styles.trendBadge,
+                                  {
+                                    backgroundColor:
+                                      cat.trend === "down"
+                                        ? "#D1FAE5"
+                                        : cat.trend === "up"
+                                          ? "#FEE2E2"
+                                          : "#F3F4F6",
+                                  },
+                                ]}
+                              >
+                                <Ionicons
+                                  name={
+                                    cat.trend === "up"
+                                      ? "arrow-up"
+                                      : cat.trend === "down"
+                                        ? "arrow-down"
+                                        : "remove"
+                                  }
+                                  size={10}
+                                  color={
+                                    cat.trend === "down"
+                                      ? "#22C55E"
+                                      : cat.trend === "up"
+                                        ? "#EF4444"
+                                        : "#6B7280"
+                                  }
+                                />
+                                {cat.trend !== "stable" && (
+                                  <Text
+                                    style={[
+                                      styles.trendText,
+                                      {
+                                        color:
+                                          cat.trend === "down"
+                                            ? "#22C55E"
+                                            : "#EF4444",
+                                      },
+                                    ]}
+                                  >
+                                    {cat.trendPercent}%
+                                  </Text>
+                                )}
+                              </View>
+                            </View>
+                          </View>
+                          <View style={styles.progressContainer}>
+                            <View style={styles.progressBar}>
+                              <View
+                                style={[
+                                  styles.progressFill,
+                                  {
+                                    width: `${Math.min(cat.percentOfTotal, 100)}%`,
+                                    backgroundColor:
+                                      CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+                                  },
+                                ]}
+                              />
+                            </View>
+                            <Text style={styles.percentText}>
+                              {cat.percentOfTotal.toFixed(0)}%
+                            </Text>
+                          </View>
+                          <Text style={styles.categoryMeta}>
+                            {cat.transactionCount} transaction
+                            {cat.transactionCount === 1 ? "" : "s"}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                  </View>
-                  <View style={styles.progressContainer}>
-                    <View style={styles.progressBar}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          {
-                            width: `${Math.min(cat.percentOfTotal, 100)}%`,
-                            backgroundColor: cat.color,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.percentText}>
-                      {cat.percentOfTotal.toFixed(0)}%
-                    </Text>
-                  </View>
-                  {isExpanded && cat.budget && (
-                    <View style={styles.expandedContent}>
-                      <View style={styles.budgetRow}>
-                        <Text style={styles.budgetLabel}>Budget:</Text>
-                        <Text style={styles.budgetValue}>
-                          {formatCurrency(cat.budget)}
-                        </Text>
-                      </View>
-                      <View style={styles.budgetProgress}>
-                        <View
-                          style={[
-                            styles.budgetProgressFill,
-                            {
-                              width: `${Math.min(budgetPercent, 100)}%`,
-                              backgroundColor: isOverBudget
-                                ? "#EF4444"
-                                : "#22C55E",
-                            },
-                          ]}
+                    ))}
+                  </Card>
+                </>
+              )}
+
+              {/* Detected Patterns */}
+              {analysis.patterns.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Detected Patterns</Text>
+                  {analysis.patterns.map((pattern) => {
+                    const badge = severityBadge(pattern.severity);
+                    return (
+                      <Card key={pattern.id} style={styles.patternCard}>
+                        <View style={styles.patternHeader}>
+                          <View
+                            style={[
+                              styles.patternIcon,
+                              {
+                                backgroundColor: `${PATTERN_COLORS[pattern.kind]}15`,
+                              },
+                            ]}
+                          >
+                            <Ionicons
+                              name={PATTERN_ICONS[pattern.kind]}
+                              size={20}
+                              color={PATTERN_COLORS[pattern.kind]}
+                            />
+                          </View>
+                          <View style={styles.patternContent}>
+                            <View style={styles.patternTitleRow}>
+                              <Text style={styles.patternTitle}>
+                                {pattern.title}
+                              </Text>
+                              <View
+                                style={[
+                                  styles.severityBadge,
+                                  { backgroundColor: badge.bg },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.severityText,
+                                    { color: badge.text },
+                                  ]}
+                                >
+                                  {pattern.severity}
+                                </Text>
+                              </View>
+                            </View>
+                            {pattern.description.length > 0 && (
+                              <Text style={styles.patternDescription}>
+                                {pattern.description}
+                              </Text>
+                            )}
+                            <Text
+                              style={[
+                                styles.patternImpact,
+                                { color: PATTERN_COLORS[pattern.kind] },
+                              ]}
+                            >
+                              {pattern.impact}
+                            </Text>
+                          </View>
+                        </View>
+                      </Card>
+                    );
+                  })}
+                </>
+              )}
+
+              {/* Recommendations */}
+              {analysis.recommendations.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Recommendations</Text>
+                  <Card style={styles.recommendationsCard}>
+                    {analysis.recommendations.map((rec, index) => (
+                      <View key={index} style={styles.recommendationRow}>
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={20}
+                          color="#22C55E"
                         />
+                        <Text style={styles.recommendationText}>{rec}</Text>
                       </View>
-                      <Text
-                        style={[
-                          styles.budgetStatus,
-                          { color: isOverBudget ? "#EF4444" : "#22C55E" },
-                        ]}
-                      >
-                        {isOverBudget
-                          ? `${formatCurrency(cat.amount - cat.budget)} over budget`
-                          : `${formatCurrency(cat.budget - cat.amount)} remaining`}
-                      </Text>
-                    </View>
-                  )}
-                </View>
+                    ))}
+                  </Card>
+                </>
+              )}
+
+              {/* Action Button */}
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => router.push("/financial/budgets" as never)}
+              >
+                <Ionicons name="settings" size={20} color="#fff" />
+                <Text style={styles.primaryButtonText}>Adjust Budgets</Text>
               </TouchableOpacity>
-            );
-          })}
-        </Card>
-
-        {/* Spending Patterns */}
-        <Text style={styles.sectionTitle}>AI-Detected Patterns</Text>
-        {analysis.patterns.map((pattern) => {
-          const badge = getSeverityBadge(pattern.severity);
-          return (
-            <Card key={pattern.id} style={styles.patternCard}>
-              <View style={styles.patternHeader}>
-                <View
-                  style={[
-                    styles.patternIcon,
-                    { backgroundColor: `${getPatternColor(pattern.type)}15` },
-                  ]}
-                >
-                  <Ionicons
-                    name={getPatternIcon(pattern.type)}
-                    size={20}
-                    color={getPatternColor(pattern.type)}
-                  />
-                </View>
-                <View style={styles.patternContent}>
-                  <View style={styles.patternTitleRow}>
-                    <Text style={styles.patternTitle}>{pattern.title}</Text>
-                    <View
-                      style={[
-                        styles.severityBadge,
-                        { backgroundColor: badge.bg },
-                      ]}
-                    >
-                      <Text
-                        style={[styles.severityText, { color: badge.text }]}
-                      >
-                        {pattern.severity}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.patternDescription}>
-                    {pattern.description}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.patternImpact,
-                      { color: getPatternColor(pattern.type) },
-                    ]}
-                  >
-                    {pattern.impact}
-                  </Text>
-                </View>
-              </View>
-            </Card>
-          );
-        })}
-
-        {/* Recommendations */}
-        <Text style={styles.sectionTitle}>Recommendations</Text>
-        <Card style={styles.recommendationsCard}>
-          {analysis.recommendations.map((rec, index) => (
-            <View key={index} style={styles.recommendationRow}>
-              <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
-              <Text style={styles.recommendationText}>{rec}</Text>
-            </View>
-          ))}
-        </Card>
-
-        {/* Action Button */}
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => router.push("/financial/budgets" as never)}
-        >
-          <Ionicons name="settings" size={20} color="#fff" />
-          <Text style={styles.primaryButtonText}>Adjust Budgets</Text>
-        </TouchableOpacity>
+            </>
+          )
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -626,10 +538,41 @@ export default function SpendingAnalysisScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: {
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
+  },
+  stateText: {
     marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
     color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
+  emptyCard: {
+    alignItems: "center",
+    padding: theme.spacing.xl,
+    marginTop: theme.spacing.xl,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
   },
   header: {
     flexDirection: "row",
@@ -678,7 +621,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   overviewTrend: { flexDirection: "row", alignItems: "center", marginTop: 4 },
-  overviewTrendText: { fontSize: 13, fontWeight: "500", marginLeft: 2 },
+  overviewTrendText: { fontSize: 12, fontWeight: "500", marginLeft: 2 },
   overviewSubtext: {
     fontSize: 11,
     color: theme.colors.textSecondary,
@@ -713,17 +656,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 8,
   },
-  categoryNameRow: { flexDirection: "row", alignItems: "center" },
   categoryName: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
-  overBudgetBadge: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#FEE2E2",
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 6,
-  },
   categoryAmountRow: { flexDirection: "row", alignItems: "center" },
   categoryAmount: {
     fontSize: 14,
@@ -754,28 +687,11 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     width: 32,
   },
-  expandedContent: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+  categoryMeta: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    marginTop: 6,
   },
-  budgetRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  budgetLabel: { fontSize: 12, color: theme.colors.textSecondary },
-  budgetValue: { fontSize: 12, fontWeight: "600", color: theme.colors.text },
-  budgetProgress: {
-    height: 4,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 2,
-    overflow: "hidden",
-    marginBottom: 6,
-  },
-  budgetProgressFill: { height: "100%", borderRadius: 2 },
-  budgetStatus: { fontSize: 12, fontWeight: "500" },
   patternCard: { marginBottom: theme.spacing.sm, padding: theme.spacing.md },
   patternHeader: { flexDirection: "row" },
   patternIcon: {

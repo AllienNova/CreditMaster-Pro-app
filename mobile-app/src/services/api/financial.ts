@@ -234,6 +234,240 @@ export function mapWebCashFlow(raw: WebCashFlowAnalysis): CashFlowAnalysisData {
 }
 
 // ---------------------------------------------------------------------------
+// Spending analysis — web -> mobile adapter (PARITY)
+// ---------------------------------------------------------------------------
+// The Insights > Spending Analysis screen (app/insights/spending.tsx) renders the
+// user's real spending broken down by category, the patterns detected in it, and
+// the resulting recommendations. Its honest source is POST
+// /api/financial/spending/analyze (withPermission "financial:read") ->
+// spendingAnalysisService.analyzeSpending, a DETERMINISTIC (no-LLM) analysis of the
+// user's real Plaid transactions for a date range. It returns a SpendingAnalysisResult:
+// { totalSpending, averageDailySpending, byCategory[], anomalies[], patterns[],
+//   insights[], comparison{ spendingChangePercent, categoryChanges[] } }.
+//
+// The screen previously rendered a hardcoded MOCK_ANALYSIS (invented totals,
+// categories, an overall "risk score", per-category budgets, a monthly projection,
+// and pattern/recommendation copy) behind a fake setTimeout, so every user saw the
+// same fabricated figures. This adapter carries only the fields the endpoint truly
+// provides:
+//   - each category's `trend`/`trendPercent` come from the REAL period-over-period
+//     `comparison.categoryChanges[cat].changePercent` (joined by category key), NOT
+//     the service's placeholder per-category `trend`, which is always "stable".
+//   - `patterns` merge the real `anomalies` (z-score / duplicate detections), the
+//     recurring/weekend `patterns`, and savings-opportunity `insights`; every
+//     `impact` string is built from a REAL amount on the payload.
+//   - `recommendations` are the real `insights[].actionSuggestion` values.
+// Fields the endpoint does NOT provide are omitted rather than faked: there is no
+// overall spending "risk score", no monthly projection, and no per-category budget in
+// this path (budget tracking lives on app/financial/budgets.tsx).
+export type SpendingTrendDirection = "up" | "down" | "stable";
+export type SpendingPatternKind =
+  | "anomaly"
+  | "trend"
+  | "recurring"
+  | "opportunity";
+export type SpendingSeverity = "low" | "medium" | "high";
+
+export interface SpendingAnalysisCategory {
+  name: string;
+  amount: number;
+  percentOfTotal: number; // real share of total spending, 0-100
+  trend: SpendingTrendDirection; // from the real period-over-period change
+  trendPercent: number; // |changePercent|, rounded; 0 when stable/unknown
+  transactionCount: number;
+}
+
+export interface SpendingAnalysisPattern {
+  id: string;
+  kind: SpendingPatternKind;
+  title: string;
+  description: string;
+  impact: string; // human-readable, always derived from a real amount
+  severity: SpendingSeverity;
+}
+
+export interface SpendingAnalysisData {
+  totalSpending: number;
+  transactionCount: number;
+  averageTransaction: number;
+  dailyAverage: number;
+  comparedToLastPeriod: number; // percent vs the previous period
+  categories: SpendingAnalysisCategory[];
+  patterns: SpendingAnalysisPattern[];
+  recommendations: string[];
+}
+
+// Date range for the analyze request. The screen maps its 7d/30d/90d filter to this.
+export interface SpendingAnalysisRange {
+  startDate: string; // ISO 8601
+  endDate: string; // ISO 8601
+}
+
+interface WebCategorySpending {
+  category?: string;
+  displayName?: string;
+  amount?: number;
+  percentage?: number;
+  transactionCount?: number;
+}
+interface WebSpendingAnomaly {
+  id?: string;
+  type?: string;
+  severity?: SpendingSeverity;
+  description?: string;
+  amount?: number;
+  category?: string;
+}
+interface WebSpendingPatternRaw {
+  type?: string;
+  description?: string;
+  averageAmount?: number;
+}
+interface WebSpendingInsightRaw {
+  id?: string;
+  title?: string;
+  description?: string;
+  potentialSavings?: number;
+  actionSuggestion?: string;
+}
+interface WebCategoryChange {
+  category?: string;
+  changePercent?: number;
+}
+interface WebSpendingAnalysis {
+  totalSpending?: number;
+  averageDailySpending?: number;
+  byCategory?: WebCategorySpending[];
+  anomalies?: WebSpendingAnomaly[];
+  patterns?: WebSpendingPatternRaw[];
+  insights?: WebSpendingInsightRaw[];
+  comparison?: {
+    spendingChangePercent?: number;
+    categoryChanges?: WebCategoryChange[];
+  };
+}
+
+// ±5% matches the service's own trend threshold (calculateTrend); below it a
+// category is "stable" rather than up/down.
+const CATEGORY_TREND_THRESHOLD_PCT = 5;
+
+const ANOMALY_TITLES: Record<string, string> = {
+  unusual_large_transaction: "Large transaction",
+  unusual_merchant: "Unusual merchant",
+  unusual_category: "Unusual category spend",
+  unusual_frequency: "Unusual frequency",
+  duplicate_charge: "Possible duplicate charge",
+  subscription_increase: "Subscription increase",
+};
+
+const PATTERN_TITLES: Record<string, string> = {
+  recurring_subscription: "Recurring subscription",
+  weekly_spending: "Weekly spending pattern",
+  payday_spending: "Payday spending pattern",
+  seasonal_spending: "Seasonal spending pattern",
+  weekend_spending: "Weekend spending pattern",
+};
+
+function usd(amount: number): string {
+  return `$${Math.round(amount).toLocaleString("en-US")}`;
+}
+
+export function mapWebSpendingAnalysis(
+  raw: WebSpendingAnalysis,
+): SpendingAnalysisData {
+  const byCategory = Array.isArray(raw.byCategory) ? raw.byCategory : [];
+  const anomalies = Array.isArray(raw.anomalies) ? raw.anomalies : [];
+  const patternsRaw = Array.isArray(raw.patterns) ? raw.patterns : [];
+  const insights = Array.isArray(raw.insights) ? raw.insights : [];
+  const categoryChanges = Array.isArray(raw.comparison?.categoryChanges)
+    ? raw.comparison!.categoryChanges!
+    : [];
+
+  const changeByCategory = new Map<string, number>();
+  for (const c of categoryChanges) {
+    if (c.category != null) {
+      changeByCategory.set(c.category, c.changePercent ?? 0);
+    }
+  }
+
+  const totalSpending = raw.totalSpending ?? 0;
+  const transactionCount = byCategory.reduce(
+    (sum, c) => sum + (c.transactionCount ?? 0),
+    0,
+  );
+
+  const categories: SpendingAnalysisCategory[] = byCategory.map((c) => {
+    const changePct = changeByCategory.get(c.category ?? "") ?? 0;
+    const trend: SpendingTrendDirection =
+      changePct > CATEGORY_TREND_THRESHOLD_PCT
+        ? "up"
+        : changePct < -CATEGORY_TREND_THRESHOLD_PCT
+          ? "down"
+          : "stable";
+    return {
+      name: c.displayName ?? c.category ?? "Other",
+      amount: c.amount ?? 0,
+      percentOfTotal: c.percentage ?? 0,
+      trend,
+      trendPercent: Math.round(Math.abs(changePct)),
+      transactionCount: c.transactionCount ?? 0,
+    };
+  });
+
+  const patterns: SpendingAnalysisPattern[] = [];
+  anomalies.forEach((a, i) => {
+    patterns.push({
+      id: a.id ?? `anomaly-${i}`,
+      kind: "anomaly",
+      title: ANOMALY_TITLES[a.type ?? ""] ?? "Unusual activity",
+      description: a.description ?? "",
+      impact: usd(a.amount ?? 0),
+      severity: a.severity ?? "medium",
+    });
+  });
+  patternsRaw.forEach((p, i) => {
+    patterns.push({
+      id: `pattern-${i}`,
+      kind: p.type === "recurring_subscription" ? "recurring" : "trend",
+      title: PATTERN_TITLES[p.type ?? ""] ?? "Spending pattern",
+      description: p.description ?? "",
+      impact: `${usd(p.averageAmount ?? 0)} avg`,
+      severity: "low",
+    });
+  });
+  insights.forEach((ins, i) => {
+    if (typeof ins.potentialSavings === "number" && ins.potentialSavings > 0) {
+      patterns.push({
+        id: ins.id ?? `opportunity-${i}`,
+        kind: "opportunity",
+        title: ins.title ?? "Savings opportunity",
+        description: ins.description ?? "",
+        impact: `Save ${usd(ins.potentialSavings)}`,
+        severity: "low",
+      });
+    }
+  });
+
+  const recommendations = insights
+    .map((ins) => ins.actionSuggestion)
+    .filter((s): s is string => typeof s === "string" && s.length > 0);
+
+  return {
+    totalSpending,
+    transactionCount,
+    averageTransaction:
+      transactionCount > 0
+        ? Math.round((totalSpending / transactionCount) * 100) / 100
+        : 0,
+    dailyAverage: raw.averageDailySpending ?? 0,
+    comparedToLastPeriod: raw.comparison?.spendingChangePercent ?? 0,
+    categories,
+    patterns,
+    recommendations,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Net worth — web -> mobile adapter (PARITY)
 // ---------------------------------------------------------------------------
 // The mobile Net Worth screen (app/financial/net-worth.tsx) renders the user's
@@ -398,6 +632,27 @@ export const financialOverviewApi = {
     if (res.success && res.data) {
       const raw = Array.isArray(res.data) ? res.data : [];
       return { success: true, data: mapWebAccountsToNetWorth(raw) };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Get the user's spending analysis for a date range. Hits the real route POST
+   * /api/financial/spending/analyze (withPermission "financial:read") ->
+   * spendingAnalysisService.analyzeSpending, a deterministic analysis of the user's
+   * real Plaid transactions, and adapts the payload web -> mobile via
+   * mapWebSpendingAnalysis. A failed request passes straight through without
+   * fabricating data. Consumed by app/insights/spending.tsx.
+   */
+  getSpendingAnalysis: async (
+    range: SpendingAnalysisRange,
+  ): Promise<ApiResponse<SpendingAnalysisData>> => {
+    const res = await api.post<WebSpendingAnalysis>(
+      "/financial/spending/analyze",
+      { startDate: range.startDate, endDate: range.endDate },
+    );
+    if (res.success && res.data) {
+      return { success: true, data: mapWebSpendingAnalysis(res.data) };
     }
     return { success: false, error: res.error };
   },
