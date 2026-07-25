@@ -2,14 +2,31 @@
  * @jest-environment node
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
- * Tests for FinancialVitalityScoreService
+ * Tests for FinancialVitalityScoreService (Wave 7 radical-honesty de-mock).
  *
- * The service uses hardcoded mock data for the 5 component calculations
- * (credit, spending, savings, debt, investments), so the scores are
- * deterministic. The DB calls are only for score history.
+ * The service no longer uses any hardcoded `mockDetails`. Every component score
+ * is computed from REAL per-user data pulled from three services, which these
+ * tests mock:
+ *   - credit      → creditMonitoringService.getMonitoringDashboard
+ *   - spending    → financialService.getFinancialDashboard + getBudgets
+ *   - savings     → financialService.getFinancialDashboard + getFinancialGoals
+ *   - debt        → financialService.getFinancialDashboard (always excluded —
+ *                   the schema lacks the inputs its formula needs)
+ *   - investments → portfolioService.getUserPortfolios
+ *
+ * The assertions prove:
+ *   - each component's score is derived from the real inputs (details echo the
+ *     source values; changing an input changes the score) — NOT the removed
+ *     mock constants (credit 82 / spending 89 / savings 74 / debt 52 / invest 78);
+ *   - a component with no real data is `available: false` and EXCLUDED from the
+ *     weighted overall, which is renormalized over the components that remain;
+ *   - `overall` / `grade` are null when no component has real data;
+ *   - `percentile` is always null (no cross-user benchmark);
+ *   - the score is saved to history only when a real `overall` exists.
+ *
+ * Mocking the three source modules also prevents their module-load Supabase
+ * side effects, so no client mock is needed beyond the history store.
  */
 
 jest.mock("@/lib/supabase/server", () => {
@@ -17,70 +34,277 @@ jest.mock("@/lib/supabase/server", () => {
   return { supabaseAdmin: _admin };
 });
 
+jest.mock("@/lib/financial/financial-service", () => ({
+  financialService: {
+    getFinancialDashboard: jest.fn(),
+    getFinancialGoals: jest.fn(),
+    getBudgets: jest.fn(),
+  },
+}));
+
+jest.mock("@/lib/credit-monitoring/credit-monitoring-service", () => ({
+  creditMonitoringService: { getMonitoringDashboard: jest.fn() },
+}));
+
+jest.mock("@/lib/investments/portfolio-service", () => ({
+  portfolioService: { getUserPortfolios: jest.fn() },
+}));
+
+import { vitalityScoreService } from "@/lib/financial/vitality-score-service";
+import {
+  financialService,
+  type FinancialDashboard,
+  type FinancialGoal,
+  type Budget,
+} from "@/lib/financial/financial-service";
+import {
+  creditMonitoringService,
+  type CreditMonitoringDashboard,
+} from "@/lib/credit-monitoring/credit-monitoring-service";
+import {
+  portfolioService,
+  type Portfolio,
+} from "@/lib/investments/portfolio-service";
+import type { PlaidAccount } from "@/lib/financial/plaid-service";
+
+// Typed handles to the mocked source methods.
+const mockGetDashboard =
+  financialService.getFinancialDashboard as jest.Mock;
+const mockGetGoals = financialService.getFinancialGoals as jest.Mock;
+const mockGetBudgets = financialService.getBudgets as jest.Mock;
+const mockGetCreditDash =
+  creditMonitoringService.getMonitoringDashboard as jest.Mock;
+const mockGetPortfolios = portfolioService.getUserPortfolios as jest.Mock;
+
 function sb() {
   return require("@/lib/supabase/server").supabaseAdmin;
 }
 
+type ChainMock = Record<
+  | "select"
+  | "insert"
+  | "update"
+  | "upsert"
+  | "delete"
+  | "eq"
+  | "gte"
+  | "lte"
+  | "order"
+  | "limit"
+  | "single",
+  jest.Mock
+> & {
+  // Thenable so `await chain` resolves without .single().
+  then: (resolve: (v: unknown) => void, reject: (e: unknown) => void) => Promise<unknown>;
+};
+
 /** Self-referencing chain mock that resolves to {data,error} when awaited. */
-function chainMock(result: { data: any; error: any }) {
-  const mock: any = {};
-  const handler = () => mock;
-  mock.select = jest.fn(handler);
-  mock.insert = jest.fn(handler);
-  mock.update = jest.fn(handler);
-  mock.upsert = jest.fn(handler);
-  mock.delete = jest.fn(handler);
-  mock.eq = jest.fn(handler);
-  mock.gte = jest.fn(handler);
-  mock.lte = jest.fn(handler);
-  mock.order = jest.fn(handler);
-  mock.limit = jest.fn(handler);
-  mock.single = jest.fn(() => Promise.resolve(result));
-  // Thenable so `await chain` resolves without .single()
-  mock.then = (resolve: any, reject: any) =>
-    Promise.resolve(result).then(resolve, reject);
+function chainMock(result: { data: unknown; error: unknown }): ChainMock {
+  // `handler` returns `mock`; it is only invoked when a chained method is
+  // called (well after `mock` is initialized), so there is no TDZ access.
+  const handler = (): ChainMock => mock;
+  const mock: ChainMock = {
+    select: jest.fn(handler),
+    insert: jest.fn(handler),
+    update: jest.fn(handler),
+    upsert: jest.fn(handler),
+    delete: jest.fn(handler),
+    eq: jest.fn(handler),
+    gte: jest.fn(handler),
+    lte: jest.fn(handler),
+    order: jest.fn(handler),
+    limit: jest.fn(handler),
+    single: jest.fn(() => Promise.resolve(result)),
+    then: (resolve, reject) => Promise.resolve(result).then(resolve, reject),
+  };
   return mock;
 }
 
-import { vitalityScoreService } from "@/lib/financial/vitality-score-service";
+// ============================================================================
+// Fixture factories — realistic per-user data for the three source services
+// ============================================================================
 
-// ============================================================================
-// Pre-calculated expected scores from the hardcoded mock data:
-// Credit:      720 score -> 25, util 25 -> 25, payment 98% -> 24.5, age 72 -> 7
-//              Total = 25 + 25 + 24.5 + 7 = 81.5 -> round = 82
-// Spending:    adherence 85 -> 34, rate 15 -> 25, ratio 0.7 -> 20, trend -5 -> 10
-//              Total = 34 + 25 + 20 + 10 = 89
-// Savings:     emergency 4 -> 30, rate 15 -> 28, goalProg 65 -> 16.25
-//              Total = 30 + 28 + 16.25 = 74.25 -> round = 74
-// Debt:        dti 0.35 -> 30, highInterest 5000 -> 10 (== 5000, not < 5000),
-//              payoff 40% -> 12
-//              Total = 30 + 10 + 12 = 52
-// Investments: contrib 12 -> 28, divers 75 -> 22.5, ytd 8.5 -> 20, risk 1.2 -> 7
-//              Total = 28 + 22.5 + 20 + 7 = 77.5 -> round = 78
-//
-// Overall = 82*0.25 + 89*0.2 + 74*0.2 + 52*0.2 + 78*0.15
-//         = 20.5 + 17.8 + 14.8 + 10.4 + 11.7 = 75.2 -> round = 75
-// ============================================================================
-const EXPECTED_CREDIT = 82;
-const EXPECTED_SPENDING = 89;
-const EXPECTED_SAVINGS = 74;
-const EXPECTED_DEBT = 52;
-const EXPECTED_INVESTMENTS = 78;
-const EXPECTED_OVERALL = Math.round(
-  EXPECTED_CREDIT * 0.25 +
-    EXPECTED_SPENDING * 0.2 +
-    EXPECTED_SAVINGS * 0.2 +
-    EXPECTED_DEBT * 0.2 +
-    EXPECTED_INVESTMENTS * 0.15,
-);
+function makeAccount(
+  accountType: PlaidAccount["accountType"],
+  currentBalance: number,
+): PlaidAccount {
+  return {
+    id: `acc-${accountType}`,
+    itemId: "item-1",
+    userId: "u1",
+    accountId: `acct-${accountType}`,
+    institutionId: "ins-1",
+    institutionName: "Test Bank",
+    accountName: `Test ${accountType}`,
+    accountType,
+    accountSubtype: "checking",
+    mask: "0000",
+    currentBalance,
+    currency: "USD",
+    lastSynced: new Date(),
+    createdAt: new Date(),
+  };
+}
+
+function makeDashboard(
+  overrides: Partial<FinancialDashboard> = {},
+): FinancialDashboard {
+  return {
+    netWorth: 50000,
+    totalAssets: 60000,
+    totalLiabilities: 10000,
+    monthlyIncome: 5000,
+    monthlyExpenses: 4000,
+    cashFlow: 1000,
+    savingsRate: 20,
+    accounts: [makeAccount("depository", 12000)],
+    recentTransactions: [],
+    spendingByCategory: [
+      { category: "Rent", amount: 1500, percentage: 75, transactionCount: 1 },
+      {
+        category: "Entertainment",
+        amount: 500,
+        percentage: 25,
+        transactionCount: 5,
+      },
+    ],
+    monthlyTrend: [
+      { month: "Jan 2026", income: 5000, expenses: 4200, savings: 800 },
+      { month: "Feb 2026", income: 5000, expenses: 4000, savings: 1000 },
+    ],
+    ...overrides,
+  };
+}
+
+function makeCreditDash(
+  overrides: Partial<CreditMonitoringDashboard> = {},
+): CreditMonitoringDashboard {
+  return {
+    currentScores: { experian: 720, equifax: 720, transunion: 720 },
+    averageScore: 720,
+    scoreChange30Days: 15,
+    scoreChange90Days: 20,
+    alerts: [],
+    recentChanges: [],
+    history: [],
+    ...overrides,
+  };
+}
+
+function makeGoal(overrides: Partial<FinancialGoal> = {}): FinancialGoal {
+  return {
+    id: "goal-1",
+    userId: "u1",
+    type: "emergency_fund",
+    name: "Emergency Fund",
+    targetAmount: 10000,
+    currentAmount: 6500,
+    progress: 65,
+    targetDate: new Date(),
+    status: "active",
+    createdAt: new Date(),
+    ...overrides,
+  };
+}
+
+function makeBudget(overrides: Partial<Budget> = {}): Budget {
+  return {
+    id: "budget-1",
+    userId: "u1",
+    category: "Groceries",
+    amount: 600,
+    spent: 700, // slightly over → adherence 85.7%, a clearly-derived (non-100) value
+    remaining: -100,
+    period: "monthly",
+    startDate: new Date(),
+    endDate: new Date(),
+    createdAt: new Date(),
+    ...overrides,
+  };
+}
+
+function makePortfolio(overrides: Partial<Portfolio> = {}): Portfolio {
+  return {
+    id: "port-1",
+    userId: "u1",
+    name: "Main",
+    holdings: [
+      {
+        symbol: "AAPL",
+        shares: 10,
+        costBasis: 1000,
+        currentPrice: 150,
+        currentValue: 1500,
+        sector: "Technology",
+      },
+      {
+        symbol: "JPM",
+        shares: 5,
+        costBasis: 500,
+        currentPrice: 140,
+        currentValue: 700,
+        sector: "Financials",
+      },
+    ],
+    totalValue: 2200,
+    totalCostBasis: 1500,
+    totalGainLoss: 700,
+    totalGainLossPercent: 46.67,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
+/**
+ * Expected component scores hand-derived from the default fixtures — every one
+ * is a real computation, and every one differs from the removed mock constant.
+ *   Credit:      averageScore 720 → round((420/550)*100) = 76   (mock was 82)
+ *   Spending:    rate-band 30 + necessary 20 + trend 10 + adherence 34.29 = 94.29
+ *                → 94                                            (mock was 89)
+ *   Savings:     emergencyFund(3mo) 30 + rate 35 + goal 16.25 = 81.25 → 81
+ *                                                               (mock was 74)
+ *   Investments: diversification 43→12.9 + performance 25, over weight 55
+ *                → round(37.9/55*100) = 69                      (mock was 78)
+ *   Debt:        always available:false, excluded                (mock was 52)
+ *   Overall:     (76*.25 + 94*.2 + 81*.2 + 69*.15) / 0.8
+ *                = 64.35 / 0.8 = 80.44 → 80                      (mock was 75)
+ */
+const EXP_CREDIT = 76;
+const EXP_SPENDING = 94;
+const EXP_SAVINGS = 81;
+const EXP_INVESTMENTS = 69;
+const EXP_OVERALL = 80;
+
+function setHappyPathSources() {
+  mockGetDashboard.mockResolvedValue(makeDashboard());
+  mockGetCreditDash.mockResolvedValue(makeCreditDash());
+  mockGetPortfolios.mockResolvedValue([makePortfolio()]);
+  mockGetGoals.mockResolvedValue([makeGoal()]);
+  mockGetBudgets.mockResolvedValue([makeBudget()]);
+}
+
+/** Route the two supabaseAdmin.from() calls: [0] history read, [1..] upsert. */
+function setupHistoryDb(historyRows: unknown[] = []) {
+  let callCount = 0;
+  sb().from.mockImplementation(() => {
+    callCount++;
+    if (callCount === 1) {
+      return chainMock({ data: historyRows, error: null });
+    }
+    return chainMock({ data: null, error: null });
+  });
+}
 
 describe("FinancialVitalityScoreService", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    setHappyPathSources();
+    setupHistoryDb();
   });
 
   // ==========================================================================
-  // getScoreHistory
+  // getScoreHistory (unchanged DB mapping — still valid)
   // ==========================================================================
   describe("getScoreHistory", () => {
     it("should return mapped history rows from database", async () => {
@@ -105,9 +329,7 @@ describe("FinancialVitalityScoreService", () => {
         },
       ];
 
-      sb().from.mockReturnValue(
-        chainMock({ data: rows, error: null }),
-      );
+      sb().from.mockReturnValue(chainMock({ data: rows, error: null }));
 
       const result = await vitalityScoreService.getScoreHistory("u1", 30);
 
@@ -116,15 +338,11 @@ describe("FinancialVitalityScoreService", () => {
       expect(result[0].credit).toBe(80);
       expect(result[0].date).toBeInstanceOf(Date);
       expect(result[1].overall).toBe(72);
-
       expect(sb().from).toHaveBeenCalledWith("vitality_score_history");
     });
 
     it("should return empty array when data is null", async () => {
-      sb().from.mockReturnValue(
-        chainMock({ data: null, error: null }),
-      );
-
+      sb().from.mockReturnValue(chainMock({ data: null, error: null }));
       const result = await vitalityScoreService.getScoreHistory("u1");
       expect(result).toEqual([]);
     });
@@ -133,7 +351,6 @@ describe("FinancialVitalityScoreService", () => {
       sb().from.mockReturnValue(
         chainMock({ data: null, error: { message: "db down" } }),
       );
-
       const result = await vitalityScoreService.getScoreHistory("u1", 7);
       expect(result).toEqual([]);
     });
@@ -141,57 +358,184 @@ describe("FinancialVitalityScoreService", () => {
     it("should use default days=30 when not specified", async () => {
       const mock = chainMock({ data: [], error: null });
       sb().from.mockReturnValue(mock);
-
       await vitalityScoreService.getScoreHistory("u1");
-
-      // Verify gte was called (which means the date filter was applied)
       expect(mock.gte).toHaveBeenCalled();
     });
   });
 
   // ==========================================================================
-  // calculateVitalityScore
+  // Component sourcing — each score derives from the real source, not a mock
   // ==========================================================================
-  describe("calculateVitalityScore", () => {
-    /**
-     * For calculateVitalityScore, the service:
-     * 1. Calls 5 private calculate* methods (hardcoded mock data, no DB)
-     * 2. Calls getScoreHistory(userId, 30) — reads from DB
-     * 3. Calls saveScoreToHistory — upserts to DB
-     * So we need the from() mock to handle both reads and upserts.
-     */
-
-    function setupDbForCalculate(historyRows: any[] = []) {
-      let callCount = 0;
-      sb().from.mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // getScoreHistory — select query
-          return chainMock({ data: historyRows, error: null });
-        }
-        // saveScoreToHistory — upsert
-        return chainMock({ data: null, error: null });
-      });
-    }
-
-    it("should calculate overall score from hardcoded component scores", async () => {
-      setupDbForCalculate();
-
+  describe("component scores derive from real per-user data", () => {
+    it("computes the credit score from the real average FICO score", async () => {
       const result = await vitalityScoreService.calculateVitalityScore("u1");
 
-      expect(result.overall).toBe(EXPECTED_OVERALL);
-      expect(result.components.credit.score).toBe(EXPECTED_CREDIT);
-      expect(result.components.spending.score).toBe(EXPECTED_SPENDING);
-      expect(result.components.savings.score).toBe(EXPECTED_SAVINGS);
-      expect(result.components.debt.score).toBe(EXPECTED_DEBT);
-      expect(result.components.investments.score).toBe(EXPECTED_INVESTMENTS);
+      expect(mockGetCreditDash).toHaveBeenCalledWith("u1");
+      expect(result.components.credit.available).toBe(true);
+      expect(result.components.credit.score).toBe(EXP_CREDIT);
+      expect(result.components.credit.score).not.toBe(82); // removed mock constant
+      // Details echo the real source values; bureau sub-factors stay null.
+      expect(result.components.credit.details.currentScore).toBe(720);
+      expect(result.components.credit.details.scoreChange).toBe(15);
+      expect(result.components.credit.details.utilizationRate).toBeNull();
+      expect(result.components.credit.details.paymentHistory).toBeNull();
+      expect(result.components.credit.trend).toBe("improving"); // scoreChange 15 > 0
     });
 
-    it("should assign correct weights to components", async () => {
-      setupDbForCalculate();
+    it("normalizes different real FICO scores to different component scores", async () => {
+      mockGetCreditDash.mockResolvedValue(makeCreditDash({ averageScore: 580 }));
+      const low = await vitalityScoreService.calculateVitalityScore("u1");
+      // round((280/550)*100) = 51
+      expect(low.components.credit.score).toBe(51);
+
+      mockGetCreditDash.mockResolvedValue(makeCreditDash({ averageScore: 800 }));
+      const high = await vitalityScoreService.calculateVitalityScore("u1");
+      // round((500/550)*100) = 91
+      expect(high.components.credit.score).toBe(91);
+    });
+
+    it("computes the spending score from real savings rate, categories, trend, and budgets", async () => {
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+
+      expect(mockGetDashboard).toHaveBeenCalledWith("u1");
+      expect(mockGetBudgets).toHaveBeenCalledWith("u1");
+      expect(result.components.spending.available).toBe(true);
+      expect(result.components.spending.score).toBe(EXP_SPENDING);
+      expect(result.components.spending.score).not.toBe(89);
+      expect(result.components.spending.details.savingsRate).toBe(20);
+      // Rent 1500 of 2000 total → 0.75 necessary ratio.
+      expect(result.components.spending.details.necessaryVsDiscretionary).toBe(
+        0.75,
+      );
+      // Budget 700 spent of 600 → adherence round(600/700*100) = 86.
+      expect(result.components.spending.details.budgetAdherence).toBe(86);
+      // Expenses 4200 → 4000 = -5% month over month.
+      expect(result.components.spending.details.monthlyTrend).toBe(-5);
+    });
+
+    it("computes the savings score from real liquid balances, rate, and goal progress", async () => {
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+
+      expect(mockGetGoals).toHaveBeenCalledWith("u1");
+      expect(result.components.savings.available).toBe(true);
+      expect(result.components.savings.score).toBe(EXP_SAVINGS);
+      expect(result.components.savings.score).not.toBe(74);
+      // Only depository balances count as liquid savings.
+      expect(result.components.savings.details.totalSavings).toBe(12000);
+      // 12000 liquid / 4000 monthly expenses = 3 months.
+      expect(result.components.savings.details.emergencyFundMonths).toBe(3);
+      expect(result.components.savings.details.savingsGoalProgress).toBe(65);
+    });
+
+    it("computes the investments score from real holdings and sector diversification", async () => {
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+
+      expect(mockGetPortfolios).toHaveBeenCalledWith("u1");
+      expect(result.components.investments.available).toBe(true);
+      expect(result.components.investments.score).toBe(EXP_INVESTMENTS);
+      expect(result.components.investments.score).not.toBe(78);
+      expect(result.components.investments.details.portfolioValue).toBe(2200);
+      // 700 gain / 1500 cost basis = 46.7% aggregate return.
+      expect(result.components.investments.details.ytdReturn).toBe(46.7);
+      // Two sectors (0.68/0.32 split) → HHI diversification 43.
+      expect(result.components.investments.details.diversificationScore).toBe(43);
+      // Factors we do not track stay null — never fabricated.
+      expect(result.components.investments.details.riskAdjustedReturn).toBeNull();
+      expect(result.components.investments.details.contributionRate).toBeNull();
+    });
+
+    it("marks the debt component unavailable but surfaces the real total liability", async () => {
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+
+      // Debt formula needs inputs the schema lacks → honestly excluded.
+      expect(result.components.debt.available).toBe(false);
+      expect(result.components.debt.grade).toBeNull();
+      expect(result.components.debt.details.totalDebt).toBe(10000); // real, informational
+      expect(result.components.debt.details.debtToIncomeRatio).toBeNull();
+      expect(result.components.debt.details.highInterestDebt).toBeNull();
+    });
+  });
+
+  // ==========================================================================
+  // Weighted overall — renormalized over only the available components
+  // ==========================================================================
+  describe("overall score renormalization", () => {
+    it("weights only the available components and renormalizes (debt excluded)", async () => {
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+
+      const c = result.components;
+      // Debt is excluded, so the divisor is the sum of the OTHER weights (0.8),
+      // not the full 1.0 — this is the renormalization under test.
+      const expected = Math.round(
+        (c.credit.score * 0.25 +
+          c.spending.score * 0.2 +
+          c.savings.score * 0.2 +
+          c.investments.score * 0.15) /
+          0.8,
+      );
+      expect(result.overall).toBe(expected);
+      expect(result.overall).toBe(EXP_OVERALL);
+      expect(result.overall).not.toBe(75); // removed mock overall
+      expect(result.grade).toBe("B"); // 80 → B
+    });
+
+    it("renormalizes to a single component when only credit has real data", async () => {
+      // No financial dashboard, no portfolios → spending/savings/debt/investments
+      // are all unavailable; only credit remains.
+      mockGetDashboard.mockResolvedValue(null);
+      mockGetPortfolios.mockResolvedValue([]);
+      mockGetGoals.mockResolvedValue([]);
+      mockGetBudgets.mockResolvedValue([]);
 
       const result = await vitalityScoreService.calculateVitalityScore("u1");
 
+      expect(result.components.credit.available).toBe(true);
+      expect(result.components.spending.available).toBe(false);
+      expect(result.components.savings.available).toBe(false);
+      expect(result.components.investments.available).toBe(false);
+      // Renormalized over credit's weight alone → overall equals the credit score.
+      expect(result.overall).toBe(result.components.credit.score);
+      expect(result.overall).toBe(EXP_CREDIT);
+    });
+
+    it("returns null overall/grade and does NOT save history when no component has data", async () => {
+      mockGetCreditDash.mockResolvedValue(makeCreditDash({ averageScore: 0 }));
+      mockGetDashboard.mockResolvedValue(null);
+      mockGetPortfolios.mockResolvedValue([]);
+      mockGetGoals.mockResolvedValue([]);
+      mockGetBudgets.mockResolvedValue([]);
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+
+      expect(result.overall).toBeNull();
+      expect(result.grade).toBeNull();
+      // Only the history READ happened; nothing was upserted (no real score).
+      expect(sb().from).toHaveBeenCalledTimes(1);
+    });
+
+    it("degrades a component to unavailable (not fabricated) when its source throws", async () => {
+      mockGetCreditDash.mockRejectedValue(new Error("credit service down"));
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+
+      expect(result.components.credit.available).toBe(false);
+      expect(result.components.credit.details.currentScore).toBeNull();
+      // The remaining real components still produce an honest overall.
+      expect(result.overall).not.toBeNull();
+    });
+
+    it("never returns a percentile (no cross-user benchmark data)", async () => {
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      expect(result.percentile).toBeNull();
+    });
+  });
+
+  // ==========================================================================
+  // Weights, grades, milestone, lastUpdated
+  // ==========================================================================
+  describe("assembly", () => {
+    it("assigns the nominal design weights to every component", async () => {
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
       expect(result.components.credit.weight).toBe(0.25);
       expect(result.components.spending.weight).toBe(0.2);
       expect(result.components.savings.weight).toBe(0.2);
@@ -199,27 +543,289 @@ describe("FinancialVitalityScoreService", () => {
       expect(result.components.investments.weight).toBe(0.15);
     });
 
-    it("should assign correct grade based on overall score", async () => {
-      setupDbForCalculate();
-
+    it("assigns component grades from the real component scores", async () => {
       const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      // EXPECTED_OVERALL = 75 -> grade C (70-79)
-      expect(result.grade).toBe("C");
+      expect(result.components.credit.grade).toBe("C"); // 76 → C (70-79)
+      expect(result.components.spending.grade).toBe("A"); // 94 → A (>=90)
+      expect(result.components.savings.grade).toBe("B"); // 81 → B (80-89)
+      expect(result.components.investments.grade).toBe("D"); // 69 → D (60-69)
     });
 
-    it("should determine trend as stable when history has < 2 entries", async () => {
-      setupDbForCalculate([]);
+    it("returns the next milestone above the real overall score", async () => {
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      // Overall 80 → next milestone target 90 ("Financial Champion").
+      expect(result.nextMilestone.target).toBe(90);
+      expect(result.nextMilestone.description).toBe("Financial Champion");
+    });
+
+    it("sets lastUpdated to a recent Date", async () => {
+      const before = Date.now();
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      const after = Date.now();
+      expect(result.lastUpdated).toBeInstanceOf(Date);
+      expect(result.lastUpdated.getTime()).toBeGreaterThanOrEqual(before);
+      expect(result.lastUpdated.getTime()).toBeLessThanOrEqual(after);
+    });
+
+    it("saves the real component scores to history (unavailable debt stored as 0)", async () => {
+      const upsertMock = chainMock({ data: null, error: null });
+      let callCount = 0;
+      sb().from.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return chainMock({ data: [], error: null });
+        return upsertMock;
+      });
+
+      await vitalityScoreService.calculateVitalityScore("u1");
+
+      expect(upsertMock.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: "u1",
+          overall: EXP_OVERALL,
+          credit: EXP_CREDIT,
+          spending: EXP_SPENDING,
+          savings: EXP_SAVINGS,
+          debt: 0, // unavailable → stored as 0, never a fabricated value
+          investments: EXP_INVESTMENTS,
+        }),
+        { onConflict: "user_id,date" },
+      );
+    });
+  });
+
+  // ==========================================================================
+  // Quick wins — fire ONLY on real, observable data (never on null factors)
+  // ==========================================================================
+  describe("quick wins", () => {
+    it("suggests building an emergency fund when real coverage is under 3 months", async () => {
+      // 12000 liquid / 5000 monthly expenses = 2.4 months (< 3).
+      mockGetDashboard.mockResolvedValue(
+        makeDashboard({ monthlyExpenses: 5000 }),
+      );
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      const win = result.quickWins.find((w) => w.id === "emergency-fund");
+      expect(win).toBeDefined();
+      expect(win!.category).toBe("savings");
+    });
+
+    it("suggests sticking to the budget when real adherence is under 80%", async () => {
+      // 1200 spent of 600 → adherence 50%.
+      mockGetBudgets.mockResolvedValue([
+        makeBudget({ amount: 600, spent: 1200, remaining: -600 }),
+      ]);
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      const win = result.quickWins.find((w) => w.id === "track-spending");
+      expect(win).toBeDefined();
+      expect(win!.category).toBe("spending");
+    });
+
+    it("never fires wins keyed on the null (unfabricated) factors", async () => {
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      // utilizationRate / highInterestDebt / contributionRate are always null
+      // now, so their quick wins must never appear.
+      expect(
+        result.quickWins.find((w) => w.id === "lower-utilization"),
+      ).toBeUndefined();
+      expect(
+        result.quickWins.find((w) => w.id === "pay-high-interest"),
+      ).toBeUndefined();
+      expect(
+        result.quickWins.find((w) => w.id === "increase-contributions"),
+      ).toBeUndefined();
+    });
+
+    it("caps quick wins at five", async () => {
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      expect(result.quickWins.length).toBeLessThanOrEqual(5);
+    });
+  });
+
+  // ==========================================================================
+  // Scoring bands — the score tracks the real inputs across every band
+  // ==========================================================================
+  describe("scores track varied real inputs across every band", () => {
+    function monthlyTrend(prevExpenses: number, currExpenses: number) {
+      return [
+        { month: "Jan 2026", income: 5000, expenses: prevExpenses, savings: 0 },
+        { month: "Feb 2026", income: 5000, expenses: currExpenses, savings: 0 },
+      ];
+    }
+
+    it("degrades every component to unavailable when all sources fail (null overall)", async () => {
+      mockGetCreditDash.mockRejectedValue(new Error("credit down"));
+      mockGetDashboard.mockRejectedValue(new Error("financial down"));
+      mockGetPortfolios.mockRejectedValue(new Error("portfolios down"));
+      mockGetGoals.mockRejectedValue(new Error("goals down"));
+      mockGetBudgets.mockRejectedValue(new Error("budgets down"));
 
       const result = await vitalityScoreService.calculateVitalityScore("u1");
 
+      expect(result.components.credit.available).toBe(false);
+      expect(result.components.spending.available).toBe(false);
+      expect(result.components.savings.available).toBe(false);
+      expect(result.components.investments.available).toBe(false);
+      expect(result.overall).toBeNull();
+    });
+
+    it("echoes a weak financial profile through the low bands", async () => {
+      mockGetDashboard.mockResolvedValue(
+        makeDashboard({
+          savingsRate: 3, // spending & savings rate → lowest bands
+          monthlyExpenses: 4000,
+          accounts: [makeAccount("depository", 2000)], // 0.5 months coverage
+          spendingByCategory: [
+            { category: "Rent", amount: 400, percentage: 40, transactionCount: 1 },
+            { category: "Dining", amount: 600, percentage: 60, transactionCount: 3 },
+          ], // 0.4 necessary ratio → lowest necessary band
+          monthlyTrend: monthlyTrend(4000, 4400), // +10% → worst trend band
+        }),
+      );
+      mockGetBudgets.mockResolvedValue([]); // no budgets → adherence factor dropped
+      mockGetGoals.mockResolvedValue([
+        makeGoal({ type: "savings", progress: 30 }), // exercises the goal `??` fallback
+      ]);
+      mockGetPortfolios.mockResolvedValue([
+        makePortfolio({
+          holdings: [
+            {
+              symbol: "AAPL",
+              shares: 10,
+              costBasis: 1500,
+              currentPrice: 120,
+              currentValue: 1200,
+              sector: "Technology",
+            },
+          ], // single sector → 0 diversification
+          totalValue: 1200,
+          totalCostBasis: 1500,
+          totalGainLoss: -300, // -20% → worst performance band
+        }),
+      ]);
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      const c = result.components;
+
+      expect(c.spending.details.savingsRate).toBe(3);
+      expect(c.spending.details.necessaryVsDiscretionary).toBe(0.4);
+      expect(c.spending.details.monthlyTrend).toBe(10);
+      expect(c.spending.details.budgetAdherence).toBeNull(); // dropped, not fabricated
+      expect(c.savings.details.emergencyFundMonths).toBe(0.5);
+      expect(c.savings.details.savingsGoalProgress).toBe(30); // from the savings-type goal
+      expect(c.investments.details.diversificationScore).toBe(0);
+      expect(c.investments.details.ytdReturn).toBe(-20);
+      expect(c.investments.trend).toBe("declining");
+      expect(result.overall).not.toBeNull();
+    });
+
+    it("echoes a mid financial profile through the middle bands", async () => {
+      mockGetDashboard.mockResolvedValue(
+        makeDashboard({
+          savingsRate: 12,
+          monthlyExpenses: 4000,
+          accounts: [makeAccount("depository", 8000)], // 2 months coverage
+          spendingByCategory: [
+            { category: "Rent", amount: 600, percentage: 60, transactionCount: 1 },
+            { category: "Dining", amount: 400, percentage: 40, transactionCount: 3 },
+          ], // 0.6 necessary ratio → middle band
+          monthlyTrend: monthlyTrend(4000, 4120), // +3% → middle trend band
+        }),
+      );
+      mockGetPortfolios.mockResolvedValue([
+        makePortfolio({ totalCostBasis: 1500, totalGainLoss: 105 }), // +7% → mid perf band
+      ]);
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      const c = result.components;
+
+      expect(c.spending.details.savingsRate).toBe(12);
+      expect(c.spending.details.necessaryVsDiscretionary).toBe(0.6);
+      expect(c.spending.details.monthlyTrend).toBe(3);
+      expect(c.savings.details.emergencyFundMonths).toBe(2);
+      expect(c.investments.details.ytdReturn).toBe(7);
+    });
+
+    it("echoes a strong savings profile through the top bands", async () => {
+      mockGetDashboard.mockResolvedValue(
+        makeDashboard({
+          savingsRate: 17, // spending band 25 / savings band 28
+          monthlyExpenses: 4000,
+          accounts: [makeAccount("depository", 30000)], // 7.5 months → top emergency band
+        }),
+      );
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      expect(result.components.savings.details.emergencyFundMonths).toBe(7.5);
+      expect(result.components.savings.details.savingsRate).toBe(17);
+    });
+
+    it("places a 5–10% savings rate in its own band", async () => {
+      mockGetDashboard.mockResolvedValue(makeDashboard({ savingsRate: 7 }));
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      expect(result.components.spending.details.savingsRate).toBe(7);
+      expect(result.components.spending.available).toBe(true);
+    });
+
+    it("scores an investment component that has value but no itemized holdings", async () => {
+      mockGetPortfolios.mockResolvedValue([
+        makePortfolio({ holdings: [], totalValue: 5000, totalCostBasis: 0, totalGainLoss: 0 }),
+      ]);
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      expect(result.components.investments.available).toBe(true);
+      expect(result.components.investments.details.portfolioValue).toBe(5000);
+      expect(result.components.investments.details.diversificationScore).toBe(0);
+      expect(result.components.investments.details.ytdReturn).toBe(0);
+    });
+
+    it("drops the optional spending factors that have no real data (only savings rate remains)", async () => {
+      mockGetDashboard.mockResolvedValue(
+        makeDashboard({
+          savingsRate: 18,
+          spendingByCategory: [], // no categorized spend → necessary ratio null
+          monthlyTrend: [], // < 2 months → trend null
+        }),
+      );
+      mockGetBudgets.mockResolvedValue([]); // no budgets → adherence null
+
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      const spending = result.components.spending;
+      expect(spending.available).toBe(true);
+      expect(spending.details.savingsRate).toBe(18);
+      expect(spending.details.necessaryVsDiscretionary).toBeNull();
+      expect(spending.details.monthlyTrend).toBeNull();
+      expect(spending.details.budgetAdherence).toBeNull();
+      expect(spending.trend).toBe("stable"); // no trend data → stable, not fabricated
+    });
+  });
+
+  // ==========================================================================
+  // Overall trend — from stored history (real), independent of components
+  // ==========================================================================
+  describe("overall trend from history", () => {
+    it("is stable with fewer than two history points", async () => {
+      setupHistoryDb([]);
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
       expect(result.trend).toBe("stable");
       expect(result.trendPercentage).toBe(0);
     });
 
-    it("should determine improving trend when recent avg > older avg by > 2", async () => {
-      // Need 14+ entries: first 7 with lower scores, last 7 with higher scores
-      const history: any[] = [];
+    it("is stable when the recent and older windows are within tolerance", async () => {
+      // 14 points at the same overall → recent avg ≈ older avg → stable.
+      const history = Array.from({ length: 14 }, (_v, i) => ({
+        date: `2026-02-${String(i + 1).padStart(2, "0")}`,
+        overall: 70,
+        credit: 70,
+        spending: 70,
+        savings: 70,
+        debt: 70,
+        investments: 70,
+      }));
+      setupHistoryDb(history);
+      const result = await vitalityScoreService.calculateVitalityScore("u1");
+      expect(result.trend).toBe("stable");
+    });
+
+    it("is improving when the recent window exceeds the older window", async () => {
+      const history: unknown[] = [];
       for (let i = 0; i < 7; i++) {
         history.push({
           date: `2026-02-0${i + 1}`,
@@ -242,16 +848,13 @@ describe("FinancialVitalityScoreService", () => {
           investments: 80,
         });
       }
-
-      setupDbForCalculate(history);
-
+      setupHistoryDb(history);
       const result = await vitalityScoreService.calculateVitalityScore("u1");
-
       expect(result.trend).toBe("improving");
     });
 
-    it("should determine declining trend when recent avg < older avg by > 2", async () => {
-      const history: any[] = [];
+    it("is declining when the recent window falls below the older window", async () => {
+      const history: unknown[] = [];
       for (let i = 0; i < 7; i++) {
         history.push({
           date: `2026-02-0${i + 1}`,
@@ -274,16 +877,13 @@ describe("FinancialVitalityScoreService", () => {
           investments: 60,
         });
       }
-
-      setupDbForCalculate(history);
-
+      setupHistoryDb(history);
       const result = await vitalityScoreService.calculateVitalityScore("u1");
-
       expect(result.trend).toBe("declining");
     });
 
-    it("should calculate correct trend percentage", async () => {
-      const history: any[] = [
+    it("computes the trend percentage from the first and last history points", async () => {
+      setupHistoryDb([
         {
           date: "2026-02-01",
           overall: 50,
@@ -302,18 +902,14 @@ describe("FinancialVitalityScoreService", () => {
           debt: 75,
           investments: 75,
         },
-      ];
-
-      setupDbForCalculate(history);
-
+      ]);
       const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      // Trend percentage = ((75 - 50) / 50) * 100 = 50
+      // ((75 - 50) / 50) * 100 = 50
       expect(result.trendPercentage).toBe(50);
     });
 
-    it("should return trendPercentage 0 when first score is 0", async () => {
-      const history: any[] = [
+    it("returns trend percentage 0 when the first stored score is 0", async () => {
+      setupHistoryDb([
         {
           date: "2026-02-01",
           overall: 0,
@@ -332,188 +928,9 @@ describe("FinancialVitalityScoreService", () => {
           debt: 50,
           investments: 50,
         },
-      ];
-
-      setupDbForCalculate(history);
-
+      ]);
       const result = await vitalityScoreService.calculateVitalityScore("u1");
-
       expect(result.trendPercentage).toBe(0);
-    });
-
-    it("should assign correct percentile based on overall score", async () => {
-      setupDbForCalculate();
-
-      const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      // EXPECTED_OVERALL = 75 -> percentile 60 (70-79 range)
-      expect(result.percentile).toBe(60);
-    });
-
-    it("should generate quick wins for high-interest debt", async () => {
-      setupDbForCalculate();
-
-      const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      // Mock debt has highInterestDebt = 5000 > 0, so "pay-high-interest" should exist
-      const debtWin = result.quickWins.find(
-        (w) => w.id === "pay-high-interest",
-      );
-      expect(debtWin).toBeDefined();
-      expect(debtWin!.category).toBe("debt");
-    });
-
-    it("should generate quick win for investment contributions < 15%", async () => {
-      setupDbForCalculate();
-
-      const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      // Mock investments has contributionRate = 12 < 15
-      const investWin = result.quickWins.find(
-        (w) => w.id === "increase-contributions",
-      );
-      expect(investWin).toBeDefined();
-      expect(investWin!.category).toBe("investments");
-    });
-
-    it("should NOT generate utilization quick win when utilization <= 30", async () => {
-      setupDbForCalculate();
-
-      const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      // Mock credit has utilizationRate = 25 <= 30
-      const utilWin = result.quickWins.find(
-        (w) => w.id === "lower-utilization",
-      );
-      expect(utilWin).toBeUndefined();
-    });
-
-    it("should NOT generate emergency fund quick win when months >= 3", async () => {
-      setupDbForCalculate();
-
-      const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      // Mock savings has emergencyFundMonths = 4 >= 3
-      const emergWin = result.quickWins.find(
-        (w) => w.id === "emergency-fund",
-      );
-      expect(emergWin).toBeUndefined();
-    });
-
-    it("should NOT generate spending quick win when budget adherence >= 80", async () => {
-      setupDbForCalculate();
-
-      const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      // Mock spending has budgetAdherence = 85 >= 80
-      const spendWin = result.quickWins.find(
-        (w) => w.id === "track-spending",
-      );
-      expect(spendWin).toBeUndefined();
-    });
-
-    it("should return next milestone based on overall score", async () => {
-      setupDbForCalculate();
-
-      const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      // EXPECTED_OVERALL = 75 -> next milestone target = 80 ("Financial Fit")
-      expect(result.nextMilestone.target).toBe(80);
-      expect(result.nextMilestone.description).toBe("Financial Fit");
-    });
-
-    it("should set lastUpdated to a recent Date", async () => {
-      setupDbForCalculate();
-
-      const before = Date.now();
-      const result = await vitalityScoreService.calculateVitalityScore("u1");
-      const after = Date.now();
-
-      expect(result.lastUpdated).toBeInstanceOf(Date);
-      expect(result.lastUpdated.getTime()).toBeGreaterThanOrEqual(before);
-      expect(result.lastUpdated.getTime()).toBeLessThanOrEqual(after);
-    });
-
-    it("should save the score to history via upsert", async () => {
-      const upsertMock = chainMock({ data: null, error: null });
-      let callCount = 0;
-      sb().from.mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          return chainMock({ data: [], error: null });
-        }
-        return upsertMock;
-      });
-
-      await vitalityScoreService.calculateVitalityScore("u1");
-
-      // Second from() call is for saving — verify upsert was called
-      expect(upsertMock.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          user_id: "u1",
-          overall: EXPECTED_OVERALL,
-          credit: EXPECTED_CREDIT,
-          spending: EXPECTED_SPENDING,
-          savings: EXPECTED_SAVINGS,
-          debt: EXPECTED_DEBT,
-          investments: EXPECTED_INVESTMENTS,
-        }),
-        { onConflict: "user_id,date" },
-      );
-    });
-
-    it("should set component trends correctly from mock data", async () => {
-      setupDbForCalculate();
-
-      const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      // Credit: scoreChange 15 > 0 -> improving
-      expect(result.components.credit.trend).toBe("improving");
-      // Spending: monthlyTrend -5 < 0 -> improving
-      expect(result.components.spending.trend).toBe("improving");
-      // Savings: savingsRate 15 >= 15 -> improving
-      expect(result.components.savings.trend).toBe("improving");
-      // Debt: payoffProgress 40 > 25 -> stable
-      expect(result.components.debt.trend).toBe("stable");
-      // Investments: ytdReturn 8.5 > 5 -> improving
-      expect(result.components.investments.trend).toBe("improving");
-    });
-
-    it("should set component grades correctly", async () => {
-      setupDbForCalculate();
-
-      const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      // Credit 82 -> B (80-89)
-      expect(result.components.credit.grade).toBe("B");
-      // Spending 89 -> B (80-89)
-      expect(result.components.spending.grade).toBe("B");
-      // Savings 74 -> C (70-79)
-      expect(result.components.savings.grade).toBe("C");
-      // Debt 52 -> F (< 60)
-      expect(result.components.debt.grade).toBe("F");
-      // Investments 78 -> C (70-79)
-      expect(result.components.investments.grade).toBe("C");
-    });
-
-    it("should limit quick wins to 5 maximum", async () => {
-      setupDbForCalculate();
-
-      const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      expect(result.quickWins.length).toBeLessThanOrEqual(5);
-    });
-
-    it("should return last milestone when score >= 100", async () => {
-      // We can't directly change the score since calculations are hardcoded,
-      // but we can test getNextMilestone logic indirectly. Since overall = 75,
-      // next milestone is target=80. Let's verify the milestone chain.
-      setupDbForCalculate();
-
-      const result = await vitalityScoreService.calculateVitalityScore("u1");
-
-      // For score 75, next milestone target should be 80
-      expect(result.nextMilestone.target).toBe(80);
     });
   });
 });

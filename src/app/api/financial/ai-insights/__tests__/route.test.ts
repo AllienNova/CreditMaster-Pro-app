@@ -131,6 +131,18 @@ describe("GET /api/financial/ai-insights", () => {
     ]);
   });
 
+  it("passes through a null health score honestly (no laundering to a number) when vitality has no data", async () => {
+    // When the user has no real per-user data, the vitality service returns a
+    // null overall. The route must surface that null — an honest empty-state —
+    // never a fabricated number.
+    (vitalityScoreService.calculateVitalityScore as jest.Mock).mockResolvedValue(
+      { overall: null, trend: "stable", grade: null },
+    );
+    const data = (await (await GET(createMockRequest())).json()).data;
+    expect(data.healthScore).toBeNull();
+    expect(data.healthTrend).toBe("stable");
+  });
+
   it("maps forecast trend increasing→up and stable→stable", async () => {
     (spendingForecastService.generateForecast as jest.Mock).mockResolvedValue(
       forecast("increasing"),
