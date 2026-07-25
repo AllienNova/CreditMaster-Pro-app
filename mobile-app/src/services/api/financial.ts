@@ -674,25 +674,230 @@ export const financialGoalsApi = {
     api.delete<{ success: boolean }>(`/financial/goals/${goalId}`),
 };
 
+// ---------------------------------------------------------------------------
+// Debt — web -> mobile adapter (PARITY)
+// ---------------------------------------------------------------------------
+// The mobile Debt screen (app/financial/debt.tsx) renders the user's real debts, a
+// debt summary, and an avalanche-vs-snowball payoff comparison. Its honest source is
+// GET /api/financial/debt (withAuth) -> debtService.listDebts + debtPayoffService,
+// which returns data: { overview, debts, currentPlan, comparison, milestones,
+// insights } (src/app/api/financial/debt/route.ts). With ?compare=true the route also
+// computes `comparison` (a StrategyComparison of real avalanche/snowball/hybrid
+// PayoffPlans). Over HTTP each PayoffPlan's `payoffDate` Date serializes to an ISO
+// string via NextResponse.json.
+//
+// The mobile client previously declared this route as a FLAT
+// { totalDebt, debts, monthlyPayments, projectedPayoffDate } shape — but those
+// headline fields actually live under data.overview (totalDebt, totalMinimumPayments)
+// and data.currentPlan (payoffDate), so the store read `undefined` for all of them
+// (the debt screen additionally hardcoded a MOCK_DEBTS array and a fabricated
+// STRATEGIES object with invented interest/months). These adapters map the REAL nested
+// payload: getOverview flattens overview+currentPlan for the store/reports; getDebtPlan
+// carries the overview, real debts, and the real comparison for the screen. Nothing is
+// fabricated — an absent number becomes 0, an absent name an empty string, and an
+// unknown debt type falls back to "other".
+export type DebtAccountType =
+  | "credit_card"
+  | "student_loan"
+  | "auto_loan"
+  | "mortgage"
+  | "personal_loan"
+  | "medical"
+  | "other";
+
+export interface DebtAccount {
+  id: string;
+  name: string;
+  type: DebtAccountType;
+  balance: number;
+  interestRate: number; // APR as a percentage, e.g. 18.5
+  minimumPayment: number;
+}
+
+export interface DebtOverviewSummary {
+  totalDebt: number;
+  totalMinimumPayments: number;
+  averageInterestRate: number;
+  highestInterestRate: number;
+  debtCount: number;
+  projectedPayoffDate: string; // from currentPlan.payoffDate (ISO); "" when absent
+}
+
+export interface DebtStrategyMetrics {
+  totalInterestPaid: number;
+  totalMonths: number;
+  interestSaved: number; // vs minimum payments only, for the requested extra payment
+  monthsSaved: number;
+}
+
+export interface DebtStrategyComparison {
+  avalanche: DebtStrategyMetrics;
+  snowball: DebtStrategyMetrics;
+  recommendation: string; // real PayoffStrategy from the route
+  recommendationReason: string;
+}
+
+export interface DebtPlanData {
+  overview: DebtOverviewSummary;
+  debts: DebtAccount[];
+  comparison: DebtStrategyComparison | null;
+}
+
+// Raw shapes as returned by GET /api/financial/debt (after the api client unwraps the
+// { success, data } envelope). Only the fields the mobile debt views read are declared;
+// each is optional and tolerant so a partial payload never throws.
+interface WebDebt {
+  id: string;
+  name?: string;
+  type?: string;
+  balance?: number;
+  interestRate?: number;
+  minimumPayment?: number;
+}
+
+interface WebDebtOverview {
+  totalDebt?: number;
+  totalMinimumPayments?: number;
+  averageInterestRate?: number;
+  highestInterestRate?: number;
+  debtCount?: number;
+}
+
+interface WebPayoffPlan {
+  totalInterestPaid?: number;
+  totalMonths?: number;
+  interestSaved?: number;
+  monthsSaved?: number;
+  payoffDate?: string;
+}
+
+interface WebStrategyComparison {
+  avalanche?: WebPayoffPlan;
+  snowball?: WebPayoffPlan;
+  recommendation?: string;
+  recommendationReason?: string;
+}
+
+interface WebDebtResponse {
+  overview?: WebDebtOverview;
+  debts?: WebDebt[];
+  currentPlan?: WebPayoffPlan;
+  comparison?: WebStrategyComparison;
+}
+
+const DEBT_ACCOUNT_TYPES: readonly DebtAccountType[] = [
+  "credit_card",
+  "student_loan",
+  "auto_loan",
+  "mortgage",
+  "personal_loan",
+  "medical",
+  "other",
+];
+
+function toDebtAccountType(type?: string): DebtAccountType {
+  return type && (DEBT_ACCOUNT_TYPES as readonly string[]).includes(type)
+    ? (type as DebtAccountType)
+    : "other";
+}
+
+export function mapWebDebt(raw: WebDebt): DebtAccount {
+  return {
+    id: raw.id,
+    name: raw.name ?? "",
+    type: toDebtAccountType(raw.type),
+    balance: raw.balance ?? 0,
+    interestRate: raw.interestRate ?? 0,
+    minimumPayment: raw.minimumPayment ?? 0,
+  };
+}
+
+function mapStrategyMetrics(plan?: WebPayoffPlan): DebtStrategyMetrics {
+  return {
+    totalInterestPaid: plan?.totalInterestPaid ?? 0,
+    totalMonths: plan?.totalMonths ?? 0,
+    interestSaved: plan?.interestSaved ?? 0,
+    monthsSaved: plan?.monthsSaved ?? 0,
+  };
+}
+
+export function mapWebDebtPlan(raw: WebDebtResponse): DebtPlanData {
+  const o = raw.overview ?? {};
+  const overview: DebtOverviewSummary = {
+    totalDebt: o.totalDebt ?? 0,
+    totalMinimumPayments: o.totalMinimumPayments ?? 0,
+    averageInterestRate: o.averageInterestRate ?? 0,
+    highestInterestRate: o.highestInterestRate ?? 0,
+    debtCount: o.debtCount ?? 0,
+    projectedPayoffDate: raw.currentPlan?.payoffDate ?? "",
+  };
+  const debts = Array.isArray(raw.debts) ? raw.debts.map(mapWebDebt) : [];
+  const comparison: DebtStrategyComparison | null = raw.comparison
+    ? {
+        avalanche: mapStrategyMetrics(raw.comparison.avalanche),
+        snowball: mapStrategyMetrics(raw.comparison.snowball),
+        recommendation: raw.comparison.recommendation ?? "avalanche",
+        recommendationReason: raw.comparison.recommendationReason ?? "",
+      }
+    : null;
+  return { overview, debts, comparison };
+}
+
 // Debt Management Endpoints
 export const debtApi = {
   /**
-   * Get debt overview
+   * Get the flat debt overview the debtStore / reports screen read. Hits the real route
+   * GET /api/financial/debt and adapts its nested { overview, debts, currentPlan }
+   * payload into the store's flat shape (totalDebt/monthlyPayments/projectedPayoffDate
+   * come from overview + currentPlan, NOT the top level). Never fabricate on failure —
+   * pass the error through.
    */
-  getOverview: () =>
-    api.get<{
+  getOverview: async (): Promise<
+    ApiResponse<{
       totalDebt: number;
-      debts: {
-        id: string;
-        name: string;
-        type: string;
-        balance: number;
-        interestRate: number;
-        minimumPayment: number;
-      }[];
+      debts: DebtAccount[];
       monthlyPayments: number;
       projectedPayoffDate: string;
-    }>("/financial/debt"),
+    }>
+  > => {
+    const res = await api.get<WebDebtResponse>("/financial/debt");
+    if (res.success && res.data) {
+      const plan = mapWebDebtPlan(res.data);
+      return {
+        success: true,
+        data: {
+          totalDebt: plan.overview.totalDebt,
+          debts: plan.debts,
+          monthlyPayments: plan.overview.totalMinimumPayments,
+          projectedPayoffDate: plan.overview.projectedPayoffDate,
+        },
+      };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Get the full debt payoff plan for the debt screen: the real overview, the real
+   * debts, and the real avalanche/snowball comparison (compare=true). extraPayment is
+   * forwarded so the comparison's interest/months/savings reflect the user's chosen
+   * extra monthly payment — the numbers are computed server-side by debtPayoffService,
+   * never fabricated on the client. Consumed by app/financial/debt.tsx.
+   */
+  getDebtPlan: async (
+    extraPayment = 0,
+  ): Promise<ApiResponse<DebtPlanData>> => {
+    const params = new URLSearchParams({
+      compare: "true",
+      extraPayment: String(extraPayment),
+    });
+    const res = await api.get<WebDebtResponse>(
+      `/financial/debt?${params.toString()}`,
+    );
+    if (res.success && res.data) {
+      return { success: true, data: mapWebDebtPlan(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
 
   /**
    * Calculate payoff strategy
