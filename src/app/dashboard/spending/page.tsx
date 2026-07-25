@@ -3,12 +3,18 @@
 /**
  * Spending Dashboard Page
  *
- * Comprehensive spending visualization with:
- * - Category breakdown donut chart
- * - Monthly spending trends
- * - Top merchants
- * - Budget vs actual comparison
- * - Spending insights
+ * Comprehensive spending visualization backed by real, per-user data:
+ * - Category breakdown donut chart      ← /api/financial/dashboard (spendingByCategory)
+ * - Monthly spending trend line chart    ← /api/financial/dashboard (monthlyTrend.expenses)
+ * - Summary cards (total, daily, count)  ← /api/financial/dashboard (monthlyExpenses)
+ * - Month-over-month change              ← /api/financial/spending (comparisonToPreviousMonth)
+ * - Top merchants                        ← /api/financial/spending (topMerchants)
+ * - Spending insights                    ← /api/financial/spending (insights)
+ *
+ * Both endpoints are authenticated (Bearer JWT) and derive the user id
+ * server-side. Fields with no honest per-user source — per-category trend
+ * arrows and budget-vs-actual — are rendered neutrally or empty-stated rather
+ * than fabricated.
  */
 
 import { useEffect, useState, useCallback } from "react";
@@ -17,9 +23,7 @@ import { createClient } from "@/lib/supabase/client";
 import DonutChart from "@/components/charts/DonutChart";
 import {
   LineChartComponent as LineChart,
-  BarChartComponent as BarChart,
   formatCurrency,
-  CHART_COLORS,
 } from "@/components/charts";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
 
@@ -63,7 +67,10 @@ function getCategoryColor(category: string): string {
   );
 }
 
-// Types
+// ============================================================================
+// VIEW MODELS
+// ============================================================================
+
 interface SpendingCategory {
   name: string;
   value: number;
@@ -85,14 +92,6 @@ interface MonthlySpending {
   amount: number;
 }
 
-interface BudgetComparison {
-  category: string;
-  budgeted: number;
-  spent: number;
-  remaining: number;
-  percentUsed: number;
-}
-
 interface SpendingInsight {
   id: string;
   type: "saving" | "warning" | "tip" | "achievement";
@@ -101,180 +100,167 @@ interface SpendingInsight {
   potentialSavings?: number;
 }
 
-// Mock data - will be replaced with API calls
-const MOCK_SPENDING_DATA: SpendingCategory[] = [
-  {
-    name: "Housing",
-    value: 1850,
-    transactionCount: 2,
-    trend: "stable",
-    changePercent: 0,
-  },
-  {
-    name: "Food & Dining",
-    value: 680,
-    transactionCount: 45,
-    trend: "up",
-    changePercent: 12,
-  },
-  {
-    name: "Transportation",
-    value: 420,
-    transactionCount: 28,
-    trend: "down",
-    changePercent: -8,
-  },
-  {
-    name: "Shopping",
-    value: 385,
-    transactionCount: 15,
-    trend: "up",
-    changePercent: 25,
-  },
-  {
-    name: "Utilities",
-    value: 245,
-    transactionCount: 6,
-    trend: "stable",
-    changePercent: 2,
-  },
-  {
-    name: "Entertainment",
-    value: 195,
-    transactionCount: 12,
-    trend: "up",
-    changePercent: 15,
-  },
-  {
-    name: "Healthcare",
-    value: 150,
-    transactionCount: 4,
-    trend: "down",
-    changePercent: -20,
-  },
-  {
-    name: "Subscriptions",
-    value: 89,
-    transactionCount: 8,
-    trend: "stable",
-    changePercent: 0,
-  },
-];
+// ============================================================================
+// API RESPONSE SHAPES (subset of the JSON the auth'd endpoints return)
+// ============================================================================
 
-const MOCK_MONTHLY_TREND: MonthlySpending[] = [
-  { month: "Aug", amount: 3850 },
-  { month: "Sep", amount: 4120 },
-  { month: "Oct", amount: 3920 },
-  { month: "Nov", amount: 4280 },
-  { month: "Dec", amount: 4650 },
-  { month: "Jan", amount: 4014 },
-];
+interface DashboardApiData {
+  monthlyExpenses: number;
+  spendingByCategory: {
+    category: string;
+    amount: number;
+    percentage: number;
+    transactionCount: number;
+  }[];
+  monthlyTrend: {
+    month: string;
+    income: number;
+    expenses: number;
+    savings: number;
+  }[];
+}
 
-const MOCK_TOP_MERCHANTS: Merchant[] = [
-  {
-    name: "Whole Foods",
-    category: "Food & Dining",
-    amount: 342,
-    transactionCount: 8,
-  },
-  { name: "Amazon", category: "Shopping", amount: 285, transactionCount: 12 },
-  {
-    name: "Shell Gas",
-    category: "Transportation",
-    amount: 198,
-    transactionCount: 6,
-  },
-  {
-    name: "Netflix",
-    category: "Entertainment",
-    amount: 15.99,
-    transactionCount: 1,
-  },
-  {
-    name: "Spotify",
-    category: "Entertainment",
-    amount: 10.99,
-    transactionCount: 1,
-  },
-];
+interface SpendingApiData {
+  totalSpending: number;
+  averageDaily: number;
+  topMerchants: {
+    merchant: string;
+    amount: number;
+    transactionCount: number;
+  }[];
+  comparisonToPreviousMonth: number;
+  insights: string[];
+}
 
-const MOCK_BUDGET_COMPARISON: BudgetComparison[] = [
-  {
-    category: "Food & Dining",
-    budgeted: 600,
-    spent: 680,
-    remaining: -80,
-    percentUsed: 113,
-  },
-  {
-    category: "Shopping",
-    budgeted: 400,
-    spent: 385,
-    remaining: 15,
-    percentUsed: 96,
-  },
-  {
-    category: "Entertainment",
-    budgeted: 200,
-    spent: 195,
-    remaining: 5,
-    percentUsed: 98,
-  },
-  {
-    category: "Transportation",
-    budgeted: 500,
-    spent: 420,
-    remaining: 80,
-    percentUsed: 84,
-  },
-];
-
-const MOCK_INSIGHTS: SpendingInsight[] = [
-  {
-    id: "1",
-    type: "warning",
-    title: "Food spending up 12%",
-    description:
-      "Your food & dining spending increased from last month. Consider meal planning to reduce costs.",
-    potentialSavings: 80,
-  },
-  {
-    id: "2",
-    type: "saving",
-    title: "Subscription savings found",
-    description:
-      "You have 3 streaming services. Consolidating could save money.",
-    potentialSavings: 25,
-  },
-  {
-    id: "3",
-    type: "achievement",
-    title: "Transportation down 8%",
-    description: "Great job reducing transportation costs this month!",
-  },
-  {
-    id: "4",
-    type: "tip",
-    title: "Set up automatic savings",
-    description:
-      "Based on your spending patterns, you could save $200/month automatically.",
-    potentialSavings: 200,
-  },
-];
+interface ApiEnvelope<T> {
+  success: boolean;
+  data?: T;
+}
 
 export default function SpendingDashboardPage() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<
     "week" | "month" | "quarter" | "year"
   >("month");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Real data, populated from the authenticated financial APIs.
+  const [categories, setCategories] = useState<SpendingCategory[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<MonthlySpending[]>([]);
+  const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const [insights, setInsights] = useState<SpendingInsight[]>([]);
+  const [totalSpending, setTotalSpending] = useState(0);
+  const [dailyAverage, setDailyAverage] = useState(0);
+  const [spendingChange, setSpendingChange] = useState(0);
+  const [transactionCount, setTransactionCount] = useState(0);
+
   const router = useRouter();
 
-  const supabase = createClient();
+  const loadData = useCallback(async (accessToken: string) => {
+    setLoading(true);
+    setError(null);
+
+    const headers = { Authorization: `Bearer ${accessToken}` };
+
+    const [dashboardResult, spendingResult] = await Promise.allSettled([
+      fetch("/api/financial/dashboard", { headers }),
+      fetch("/api/financial/spending?days=30", { headers }),
+    ]);
+
+    try {
+      // Dashboard is the primary source (category breakdown + monthly trend +
+      // totals). If it fails, the page has no honest data to show.
+      if (
+        dashboardResult.status !== "fulfilled" ||
+        !dashboardResult.value.ok
+      ) {
+        throw new Error(
+          "We couldn't load your spending data. Please try again.",
+        );
+      }
+      const dashboardJson =
+        (await dashboardResult.value.json()) as ApiEnvelope<DashboardApiData>;
+      if (!dashboardJson.success || !dashboardJson.data) {
+        throw new Error(
+          "We couldn't load your spending data. Please try again.",
+        );
+      }
+      const dashboard = dashboardJson.data;
+
+      // Per-category trend/changePercent has no per-user source yet, so it is
+      // rendered neutrally (stable / no percent) rather than invented.
+      setCategories(
+        dashboard.spendingByCategory.map((cat) => ({
+          name: cat.category,
+          value: cat.amount,
+          transactionCount: cat.transactionCount,
+          trend: "stable" as const,
+          changePercent: 0,
+        })),
+      );
+      setMonthlyTrend(
+        dashboard.monthlyTrend.map((m) => ({
+          month: m.month,
+          amount: m.expenses,
+        })),
+      );
+      setTotalSpending(dashboard.monthlyExpenses);
+      setDailyAverage(dashboard.monthlyExpenses / 30);
+      setTransactionCount(
+        dashboard.spendingByCategory.reduce(
+          (sum, cat) => sum + cat.transactionCount,
+          0,
+        ),
+      );
+
+      // Spending analysis is a secondary source (merchants, insights, MoM
+      // change). A failure here leaves those sections empty — never mocked.
+      let change = 0;
+      if (spendingResult.status === "fulfilled" && spendingResult.value.ok) {
+        const spendingJson =
+          (await spendingResult.value.json()) as ApiEnvelope<SpendingApiData>;
+        if (spendingJson.success && spendingJson.data) {
+          const spending = spendingJson.data;
+          setMerchants(
+            spending.topMerchants.map((m) => ({
+              name: m.merchant,
+              category: "",
+              amount: m.amount,
+              transactionCount: m.transactionCount,
+            })),
+          );
+          setInsights(
+            spending.insights.map((text, i) => ({
+              id: String(i),
+              type: "tip" as const,
+              title: text,
+              description: "",
+            })),
+          );
+          change = spending.comparisonToPreviousMonth;
+        } else {
+          setMerchants([]);
+          setInsights([]);
+        }
+      } else {
+        setMerchants([]);
+        setInsights([]);
+      }
+      setSpendingChange(change);
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "We couldn't load your spending data. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-
-    const checkAuth = async () => {
+    const init = async () => {
+      const supabase = createClient();
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -282,45 +268,22 @@ export default function SpendingDashboardPage() {
         router.push("/auth/login");
         return;
       }
-      setLoading(false);
+      await loadData(session.access_token);
     };
 
-    checkAuth();
-  }, [router, supabase]);
+    void init();
+  }, [router, loadData]);
 
-  const totalSpending = MOCK_SPENDING_DATA.reduce(
-    (sum, cat) => sum + cat.value,
-    0,
-  );
-  const lastMonthSpending = 4280;
-  const spendingChange =
-    ((totalSpending - lastMonthSpending) / lastMonthSpending) * 100;
-
-  const donutData = MOCK_SPENDING_DATA.map((cat) => ({
+  const donutData = categories.map((cat) => ({
     name: cat.name,
     value: cat.value,
     color: getCategoryColor(cat.name),
   }));
 
-  const trendData = MOCK_MONTHLY_TREND.map((m) => ({
+  const trendData = monthlyTrend.map((m) => ({
     label: m.month,
     spending: m.amount,
   }));
-
-  const getInsightIcon = (type: SpendingInsight["type"]) => {
-    switch (type) {
-      case "warning":
-        return "";
-      case "saving":
-        return "";
-      case "achievement":
-        return "";
-      case "tip":
-        return "";
-      default:
-        return "";
-    }
-  };
 
   const getInsightColor = (type: SpendingInsight["type"]) => {
     switch (type) {
@@ -338,11 +301,16 @@ export default function SpendingDashboardPage() {
   };
 
   const handleRefresh = useCallback(async () => {
-    setLoading(true);
-    // Simulate data refresh
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setLoading(false);
-  }, []);
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      router.push("/auth/login");
+      return;
+    }
+    await loadData(session.access_token);
+  }, [router, loadData]);
 
   if (loading) {
     return (
@@ -412,6 +380,27 @@ export default function SpendingDashboardPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-lg p-12 shadow-lg text-center">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              Unable to load spending
+            </h1>
+            <p className="text-gray-500 dark:text-slate-400 mb-6">{error}</p>
+            <button
+              onClick={() => void handleRefresh()}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <PullToRefresh
       onRefresh={handleRefresh}
@@ -472,7 +461,7 @@ export default function SpendingDashboardPage() {
               Daily Average
             </p>
             <p className="text-3xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(totalSpending / 30)}
+              {formatCurrency(dailyAverage)}
             </p>
             <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
               Based on this month
@@ -484,13 +473,10 @@ export default function SpendingDashboardPage() {
               Transactions
             </p>
             <p className="text-3xl font-bold text-gray-900 dark:text-white">
-              {MOCK_SPENDING_DATA.reduce(
-                (sum, cat) => sum + cat.transactionCount,
-                0,
-              )}
+              {transactionCount}
             </p>
             <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-              Across {MOCK_SPENDING_DATA.length} categories
+              Across {categories.length} categories
             </p>
           </div>
         </div>
@@ -501,18 +487,24 @@ export default function SpendingDashboardPage() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Spending by Category
             </h2>
-            <DonutChart
-              data={donutData}
-              height={320}
-              innerRadius={70}
-              outerRadius={100}
-              showLegend={true}
-              currency={true}
-              centerValue={formatCurrency(totalSpending)}
-              centerLabel="Total Spent"
-              useCategyColors={true}
-              onSliceClick={(data) => setSelectedCategory(data.name)}
-            />
+            {categories.length === 0 ? (
+              <div className="h-80 flex items-center justify-center text-center text-gray-500 dark:text-slate-400">
+                No spending data yet. Connect an account to see your category
+                breakdown.
+              </div>
+            ) : (
+              <DonutChart
+                data={donutData}
+                height={320}
+                innerRadius={70}
+                outerRadius={100}
+                showLegend={true}
+                currency={true}
+                centerValue={formatCurrency(totalSpending)}
+                centerLabel="Total Spent"
+                useCategyColors={true}
+              />
+            )}
           </div>
 
           {/* Monthly Trend */}
@@ -520,66 +512,36 @@ export default function SpendingDashboardPage() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Monthly Trend
             </h2>
-            <LineChart
-              data={trendData}
-              lines={[
-                {
-                  dataKey: "spending",
-                  name: "Monthly Spending",
-                  color: "#3B82F6",
-                },
-              ]}
-              height={320}
-              currency={true}
-            />
+            {trendData.length === 0 ? (
+              <div className="h-80 flex items-center justify-center text-center text-gray-500 dark:text-slate-400">
+                No trend data yet.
+              </div>
+            ) : (
+              <LineChart
+                data={trendData}
+                lines={[
+                  {
+                    dataKey: "spending",
+                    name: "Monthly Spending",
+                    color: "#3B82F6",
+                  },
+                ]}
+                height={320}
+                currency={true}
+              />
+            )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Budget vs Actual */}
+          {/* Budget vs Actual — no honest per-user source wired yet */}
           <div className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-lg p-6 shadow-lg">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Budget vs Actual
             </h2>
-            <div className="space-y-4">
-              {MOCK_BUDGET_COMPARISON.map((item) => (
-                <div key={item.category} className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium text-gray-700 dark:text-slate-300">
-                      {item.category}
-                    </span>
-                    <span
-                      className={
-                        item.percentUsed > 100
-                          ? "text-red-600"
-                          : "text-gray-600 dark:text-slate-400"
-                      }
-                    >
-                      {formatCurrency(item.spent)} /{" "}
-                      {formatCurrency(item.budgeted)}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        item.percentUsed > 100
-                          ? "bg-red-500"
-                          : item.percentUsed > 80
-                            ? "bg-amber-500"
-                            : "bg-green-500"
-                      }`}
-                      style={{ width: `${Math.min(item.percentUsed, 100)}%` }}
-                    />
-                  </div>
-                  <p
-                    className={`text-xs ${item.remaining < 0 ? "text-red-600" : "text-green-600"}`}
-                  >
-                    {item.remaining < 0
-                      ? `${formatCurrency(Math.abs(item.remaining))} over budget`
-                      : `${formatCurrency(item.remaining)} remaining`}
-                  </p>
-                </div>
-              ))}
+            <div className="py-8 text-center text-gray-500 dark:text-slate-400">
+              Budget comparison isn&apos;t available yet. Set up category budgets
+              to track budget vs actual spending.
             </div>
           </div>
 
@@ -588,32 +550,37 @@ export default function SpendingDashboardPage() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Top Merchants
             </h2>
-            <div className="space-y-3">
-              {MOCK_TOP_MERCHANTS.map((merchant, index) => (
-                <div
-                  key={merchant.name}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400">
-                      {index + 1}
-                    </span>
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {merchant.name}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-slate-400">
-                        {merchant.category} • {merchant.transactionCount}{" "}
-                        transactions
-                      </p>
+            {merchants.length === 0 ? (
+              <div className="py-8 text-center text-gray-500 dark:text-slate-400">
+                No merchant activity yet.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {merchants.map((merchant, index) => (
+                  <div
+                    key={merchant.name}
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {merchant.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400">
+                          {merchant.transactionCount} transactions
+                        </p>
+                      </div>
                     </div>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(merchant.amount)}
+                    </span>
                   </div>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {formatCurrency(merchant.amount)}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -622,34 +589,39 @@ export default function SpendingDashboardPage() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Spending Insights
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {MOCK_INSIGHTS.map((insight) => (
-              <div
-                key={insight.id}
-                className={`p-4 rounded-lg border ${getInsightColor(insight.type)}`}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">
-                    {getInsightIcon(insight.type)}
-                  </span>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                      {insight.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
-                      {insight.description}
-                    </p>
-                    {insight.potentialSavings && (
-                      <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-2">
-                        Potential savings:{" "}
-                        {formatCurrency(insight.potentialSavings)}/month
-                      </p>
-                    )}
+          {insights.length === 0 ? (
+            <div className="py-8 text-center text-gray-500 dark:text-slate-400">
+              No insights yet. Insights appear as we analyze your spending.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {insights.map((insight) => (
+                <div
+                  key={insight.id}
+                  className={`p-4 rounded-lg border ${getInsightColor(insight.type)}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                        {insight.title}
+                      </h3>
+                      {insight.description && (
+                        <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
+                          {insight.description}
+                        </p>
+                      )}
+                      {insight.potentialSavings && (
+                        <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-2">
+                          Potential savings:{" "}
+                          {formatCurrency(insight.potentialSavings)}/month
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Category Breakdown Table */}
@@ -679,54 +651,68 @@ export default function SpendingDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {MOCK_SPENDING_DATA.map((category) => (
-                  <tr
-                    key={category.name}
-                    className="border-b border-gray-100 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30"
-                  >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{
-                            backgroundColor: getCategoryColor(category.name),
-                          }}
-                        />
-                        <span className="font-medium text-gray-900 dark:text-white text-sm truncate">
-                          {category.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="text-right py-3 px-4 font-medium text-gray-900 dark:text-white text-sm whitespace-nowrap">
-                      {formatCurrency(category.value)}
-                    </td>
-                    <td className="text-right py-3 px-4 text-gray-600 dark:text-slate-400 text-sm hidden sm:table-cell">
-                      {((category.value / totalSpending) * 100).toFixed(1)}%
-                    </td>
-                    <td className="text-right py-3 px-4 text-gray-600 dark:text-slate-400 text-sm hidden md:table-cell">
-                      {category.transactionCount}
-                    </td>
-                    <td className="text-right py-3 px-4">
-                      <span
-                        className={`inline-flex items-center gap-1 text-sm whitespace-nowrap ${
-                          category.trend === "up"
-                            ? "text-red-600"
-                            : category.trend === "down"
-                              ? "text-green-600"
-                              : "text-gray-500 dark:text-slate-400"
-                        }`}
-                      >
-                        {category.trend === "up"
-                          ? "↑"
-                          : category.trend === "down"
-                            ? "↓"
-                            : "→"}
-                        {category.changePercent !== 0 &&
-                          `${Math.abs(category.changePercent)}%`}
-                      </span>
+                {categories.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="py-8 text-center text-gray-500 dark:text-slate-400 text-sm"
+                    >
+                      No spending data yet.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  categories.map((category) => (
+                    <tr
+                      key={category.name}
+                      className="border-b border-gray-100 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30"
+                    >
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className="w-3 h-3 rounded-full flex-shrink-0"
+                            style={{
+                              backgroundColor: getCategoryColor(category.name),
+                            }}
+                          />
+                          <span className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                            {category.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="text-right py-3 px-4 font-medium text-gray-900 dark:text-white text-sm whitespace-nowrap">
+                        {formatCurrency(category.value)}
+                      </td>
+                      <td className="text-right py-3 px-4 text-gray-600 dark:text-slate-400 text-sm hidden sm:table-cell">
+                        {totalSpending > 0
+                          ? ((category.value / totalSpending) * 100).toFixed(1)
+                          : "0.0"}
+                        %
+                      </td>
+                      <td className="text-right py-3 px-4 text-gray-600 dark:text-slate-400 text-sm hidden md:table-cell">
+                        {category.transactionCount}
+                      </td>
+                      <td className="text-right py-3 px-4">
+                        <span
+                          className={`inline-flex items-center gap-1 text-sm whitespace-nowrap ${
+                            category.trend === "up"
+                              ? "text-red-600"
+                              : category.trend === "down"
+                                ? "text-green-600"
+                                : "text-gray-500 dark:text-slate-400"
+                          }`}
+                        >
+                          {category.trend === "up"
+                            ? "↑"
+                            : category.trend === "down"
+                              ? "↓"
+                              : "→"}
+                          {category.changePercent !== 0 &&
+                            `${Math.abs(category.changePercent)}%`}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
