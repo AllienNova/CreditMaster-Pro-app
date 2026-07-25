@@ -79,7 +79,17 @@ A `grep` of `mobile-app/app` found **~29 screens still holding `MOCK_` arrays** 
 | **budgeting (mobile)** | auto-save, bills, subscriptions, zero-based (web versions done in P1; mobile likely not) |
 | **misc** | activity, analytics/reports, dispute/new+create, document(s)/[id], reports/[id], search, profile/edit, help/contact, handoff, financial-intelligence/* |
 
-**Implication:** ≥98% parity requires triaging + wiring this whole tail (dozens of screens) — many more two-lane dispatch rounds. This is the honest remaining scope, not "almost done." Each screen: verify real source exists (many will, some will STOP like cards/inquiries, a few need new web routes).
+**WEB also carries mock-debt** (scan of `src/app` + `src/components`): **~16 pages with `MOCK_` arrays** + genuine `Math.random` fabrications (excluding legit animation uses — Confetti/Toast/ToastNotification):
+
+| Domain | Web screens with `MOCK_`/`Math.random` fabrication |
+|---|---|
+| **credit** | credit-builder/goals, credit-builder/pay-for-delete, credit-builder/simulator, credit/simulator, credit/goodwill-letters, credit/secured-cards |
+| **financial (P3 web-only)** | financial/crypto, financial/real-estate, goals/shared, dashboard/spending, financial-intelligence |
+| **investments** | investments/performance, investments/watchlist (P4 backend-blocked), investments/rebalance, StockAnalysisView, NetWorthTracker |
+| **trading (P4)** | TradingChartContainer (OHLC, backend-blocked), OpportunityRadar |
+| **misc** | experts, identity, insights/alerts, insights/weekly-summary, journey, onboarding/complete |
+
+**Implication:** ≥98% parity requires triaging + wiring this whole tail on BOTH platforms (~29 mobile + ~16 web candidate screens, minus dead fallbacks + legit-random) — many more two-lane dispatch rounds. This is the honest remaining scope, not "almost done." Each screen: verify real source exists (many will, some will STOP like cards/inquiries, a few need new web routes or a market-data backend).
 
 ### Remaining parity work (all doable, need subagent quota)
 - **P2 Billing / IAP** (mobile) — not started.
