@@ -26,6 +26,7 @@ jest.mock("../../offline-sync", () => ({ offlineSyncService: {} }));
 
 import {
   mapWebBilling,
+  mapWebInvoices,
   mapWebSubscription,
   subscriptionApi,
   type WebBillingResponse,
@@ -386,5 +387,156 @@ describe("subscriptionApi.updatePlan / cancelPlan", () => {
     const res = await subscriptionApi.updatePlan("pro");
     expect(res.success).toBe(false);
     expect(res.error?.code).toBe("HTTP_500");
+  });
+});
+
+describe("subscriptionApi.getInvoices", () => {
+  it("fetches GET /payment/billing and returns the mapped invoice list", async () => {
+    mockApiGet.mockResolvedValue({ success: true, data: response() });
+    const res = await subscriptionApi.getInvoices();
+    expect(mockApiGet).toHaveBeenCalledWith("/payment/billing");
+    expect(res.success).toBe(true);
+    expect(res.data).toEqual([
+      { id: "in_1001", date: "2027-01-15", amount: 29.99, status: "paid" },
+    ]);
+  });
+
+  it("propagates the error without fabricating data when the fetch fails", async () => {
+    mockApiGet.mockResolvedValue({
+      success: false,
+      error: { code: "HTTP_401", message: "Unauthorized" },
+    });
+    const res = await subscriptionApi.getInvoices();
+    expect(res.success).toBe(false);
+    expect(res.data).toBeUndefined();
+    expect(res.error?.code).toBe("HTTP_401");
+  });
+});
+
+describe("mapWebInvoices", () => {
+  it("maps id, amount, and date (from created) for each invoice", () => {
+    const vm = mapWebInvoices(
+      response({
+        invoices: [
+          {
+            id: "in_9",
+            amount: 99.99,
+            status: "paid",
+            created: "2027-06-01T12:00:00.000Z",
+          },
+        ],
+      }),
+    );
+    expect(vm).toEqual([
+      { id: "in_9", date: "2027-06-01", amount: 99.99, status: "paid" },
+    ]);
+  });
+
+  it("maps every invoice (uncapped, unlike the 3-item overview) in server order", () => {
+    const vm = mapWebInvoices(
+      response({
+        invoices: [
+          { id: "i5", amount: 5, status: "paid", created: "2027-05-01T00:00:00.000Z" },
+          { id: "i4", amount: 4, status: "paid", created: "2027-04-01T00:00:00.000Z" },
+          { id: "i3", amount: 3, status: "open", created: "2027-03-01T00:00:00.000Z" },
+          { id: "i2", amount: 2, status: "paid", created: "2027-02-01T00:00:00.000Z" },
+        ],
+      }),
+    );
+    expect(vm.map((i) => i.id)).toEqual(["i5", "i4", "i3", "i2"]);
+  });
+
+  it("remaps the full Stripe status vocabulary to paid | pending | failed", () => {
+    const vm = mapWebInvoices(
+      response({
+        invoices: [
+          { id: "a", amount: 1, status: "paid", created: "2027-01-01T00:00:00.000Z" },
+          { id: "b", amount: 1, status: "open", created: "2027-01-01T00:00:00.000Z" },
+          { id: "c", amount: 1, status: "draft", created: "2027-01-01T00:00:00.000Z" },
+          { id: "d", amount: 1, status: "void", created: "2027-01-01T00:00:00.000Z" },
+          {
+            id: "e",
+            amount: 1,
+            status: "uncollectible",
+            created: "2027-01-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    );
+    expect(vm.map((i) => i.status)).toEqual([
+      "paid",
+      "pending",
+      "pending",
+      "failed",
+      "failed",
+    ]);
+  });
+
+  it("maps an unknown status to pending (honest floor — never a false 'paid')", () => {
+    const vm = mapWebInvoices(
+      response({
+        invoices: [
+          {
+            id: "x",
+            amount: 1,
+            status: "some_future_status",
+            created: "2027-01-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    );
+    expect(vm[0]?.status).toBe("pending");
+  });
+
+  it("carries a real pdfUrl through when present and omits it when absent", () => {
+    const vm = mapWebInvoices(
+      response({
+        invoices: [
+          {
+            id: "with_pdf",
+            amount: 1,
+            status: "paid",
+            created: "2027-01-01T00:00:00.000Z",
+            pdfUrl: "https://files.stripe.com/invoice.pdf",
+          },
+          {
+            id: "no_pdf",
+            amount: 1,
+            status: "paid",
+            created: "2027-01-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    );
+    expect(vm[0]?.pdfUrl).toBe("https://files.stripe.com/invoice.pdf");
+    expect(vm[1]?.pdfUrl).toBeUndefined();
+  });
+
+  it("degrades a malformed row honestly — absent amount -> 0, invalid/absent date -> ''", () => {
+    // The server types amount as a number and created as a string; guard the JSON
+    // boundary anyway so a malformed row never fabricates a value or throws.
+    const malformed = {
+      ...response(),
+      invoices: [
+        { id: "no_amount", status: "paid", created: "not-a-real-date" },
+        { id: "empty_date", amount: 12.5, status: "paid", created: "" },
+      ],
+    } as unknown as WebBillingResponse;
+    const vm = mapWebInvoices(malformed);
+    expect(vm[0]).toEqual({ id: "no_amount", date: "", amount: 0, status: "paid" });
+    expect(vm[1]?.date).toBe("");
+    expect(vm[1]?.amount).toBe(12.5);
+  });
+
+  it("yields an empty list (never a fabricated invoice) when the user has none", () => {
+    expect(mapWebInvoices(response({ invoices: [] }))).toEqual([]);
+  });
+
+  it("yields an empty list when invoices is not an array (defensive JSON boundary)", () => {
+    const malformed = {
+      ...response(),
+      invoices: undefined,
+    } as unknown as WebBillingResponse;
+    expect(mapWebInvoices(malformed)).toEqual([]);
   });
 });

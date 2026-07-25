@@ -302,6 +302,71 @@ export function mapWebSubscription(res: WebBillingResponse): SubscriptionDetail 
   };
 }
 
+// ── Invoices (real source: GET /api/payment/billing) ──────────────────────────
+// The invoices screen shows the full billing history — every Stripe invoice for
+// the customer, not just the three the overview previews. Same /payment/billing
+// payload (invoices[] = real Stripe invoices; the web route already converts cents
+// to dollars). This view-model reduces each invoice to what the screen renders and
+// remaps Stripe's status vocabulary (paid | open | void | uncollectible | draft)
+// to the mobile paid | pending | failed set. It replaces the screen's former
+// hardcoded INV-001..007 array: ids, amounts, dates, statuses, and the optional
+// PDF link are all sourced — nothing invented. A user with no Stripe presence
+// yields an empty list (the screen empty-states), never a fabricated invoice.
+
+/** The mobile status vocabulary for an invoice. */
+export type InvoiceStatus = "paid" | "pending" | "failed";
+
+/** A real Stripe invoice, reduced to what the invoices screen renders. */
+export interface InvoiceView {
+  id: string;
+  date: string;
+  amount: number;
+  status: InvoiceStatus;
+  pdfUrl?: string;
+}
+
+// Stripe invoice status -> mobile status. The web route (billing-data.ts) already
+// filters to paid | open | void | uncollectible, but this map stays exhaustive
+// (includes draft) and is hasOwnProperty-guarded with an honest unknown -> pending
+// floor, so a future or unfiltered Stripe status never crashes or mislabels a
+// still-owed invoice as paid.
+const WEB_TO_MOBILE_INVOICE_STATUS: Record<string, InvoiceStatus> = {
+  paid: "paid",
+  open: "pending",
+  draft: "pending",
+  void: "failed",
+  uncollectible: "failed",
+};
+
+function toInvoiceStatus(status: string): InvoiceStatus {
+  return Object.prototype.hasOwnProperty.call(
+    WEB_TO_MOBILE_INVOICE_STATUS,
+    status,
+  )
+    ? WEB_TO_MOBILE_INVOICE_STATUS[status]
+    : "pending";
+}
+
+/**
+ * Adapt the web billing payload's invoices[] to the mobile InvoiceView[] the
+ * invoices screen renders, in server order and uncapped (the full history). Every
+ * field is sourced; a malformed row from the JSON boundary degrades honestly —
+ * absent/invalid amount -> 0, absent/invalid date -> "" — rather than fabricating.
+ */
+export function mapWebInvoices(res: WebBillingResponse): InvoiceView[] {
+  const invoices = Array.isArray(res.invoices) ? res.invoices : [];
+  return invoices.map((inv) => {
+    const view: InvoiceView = {
+      id: inv.id,
+      date: toBillingDate(inv.created) ?? "",
+      amount: Number.isFinite(inv.amount) ? inv.amount : 0,
+      status: toInvoiceStatus(inv.status),
+    };
+    if (inv.pdfUrl) view.pdfUrl = inv.pdfUrl;
+    return view;
+  });
+}
+
 // Subscription Endpoints
 export const subscriptionApi = {
   /**
@@ -328,6 +393,20 @@ export const subscriptionApi = {
     const res = await api.get<WebBillingResponse>("/payment/billing");
     if (res.success && res.data) {
       return { success: true, data: mapWebSubscription(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Get the real billing history (all invoices) from the Stripe-backed web route
+   * GET /api/payment/billing, adapted to the mobile InvoiceView[] by mapWebInvoices.
+   * Replaces the invoices screen's former hardcoded INV-001..007 array. A user with
+   * no Stripe presence yields an empty list — never a fabricated invoice.
+   */
+  getInvoices: async (): Promise<ApiResponse<InvoiceView[]>> => {
+    const res = await api.get<WebBillingResponse>("/payment/billing");
+    if (res.success && res.data) {
+      return { success: true, data: mapWebInvoices(res.data) };
     }
     return { success: false, error: res.error };
   },
