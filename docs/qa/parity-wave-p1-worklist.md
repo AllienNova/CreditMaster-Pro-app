@@ -147,6 +147,18 @@ None of the 6 pages fetch anything today (all render `MOCK_*` constants). Verdic
 ## ⚠ WEB CLIENT-WIRING EXHAUSTED — remaining web parity is BACKEND work (owner decision #4)
 Web `src/`-only-wireable screens are DONE (paper, journal, goodwill-letters, dashboard/spending). Everything else on web needs backend that's outside a client-wire task: **(a) 4 orphaned services** (crypto/real-estate/shared-goals/journey — service logic written, need a **migration + authed route** each, then the wire is trivial); **(b) aggregation engines** (insights/alerts, weekly-summary); **(c) market-data provider** (watchlist quotes, chart OHLC); **(d) portfolioId + daily-series** (investments perf/rebalance); **(e) full builds** (experts marketplace, identity-monitoring integration); **(f) deterministic-math de-fabrication** (2 credit simulators). **Highest-leverage = the 4 orphaned services** (small coordinated migration+route+wire each). MOBILE still has a large wireable tail (client wiring, real APIs exist) → that's the productive lane.
 
+## Mobile credit-builder map (from `afa42eba` scout) — mostly backend-blocked
+| Screen | Verdict |
+|---|---|
+| `debt-strategy` | ✅ DONE `c5bf0c3` (reused `debtApi.getDebtPlan`; killed fabricated avalanche/snowball constants; 7 tests) |
+| `pay-for-delete` | partial — `creditRepairApi.getNegotiations` exists but lacks `originalCreditor`/`dateOpened`; wireable via adapter omitting those (overlaps negotiate). Follow-up |
+| `age` | ⛔ NO-SOURCE — no route returns per-account open-dates/age (needs credit-report tradeline source) |
+| `payments` | ⛔ NO-SOURCE — payment-history (on-time%/late) only via `billDetectionService.getPaymentHistory`, NO HTTP route |
+| `utilization` | ⛔ NO-SOURCE — no route exposes per-card credit limits (+ dead `useCreditStore` imports to drop) |
+| `reports/upload` | different-pattern — upload action, needs a multipart upload/ingest route |
+
+⚠ **EMERGING PATTERN**: many mobile-tail screens (like the web orphaned services) need **new backend routes** (tradelines, payment-history, card-limits, upload, etc.), not just client wiring. The truly-client-wireable tail is smaller than the raw screen count. Backend-route work overlaps decision #4.
+
 ### Remaining parity work (all doable, need subagent quota)
 - **P2 Billing / IAP** (mobile) — not started.
 - **P3 web-only → mobile ports** — Real Estate, Crypto holdings, shared Goals, marketplace sub-cats (not started).
