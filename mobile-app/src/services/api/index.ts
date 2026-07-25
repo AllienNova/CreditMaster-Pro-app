@@ -42,6 +42,7 @@ export {
   subscriptionApi,
   notificationApi,
   recommendationApi,
+  userAnalyticsApi,
   identityProtectionApi,
   documentApi,
   settingsApi,
