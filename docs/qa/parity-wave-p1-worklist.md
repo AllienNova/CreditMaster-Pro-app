@@ -184,6 +184,21 @@ Web `src/`-only-wireable screens are DONE (paper, journal, goodwill-letters, das
 | `dashboard/settings` | partial — profile/notif-prefs real; billing tab hardcoded ($79/mo — fabrication risk) |
 | `dashboard/progress` | ⛔ concept-mismatch — fabricated milestones/achievements ≠ `gamificationStore` (XP/badges/quests); empty-state only |
 
+## Mobile admin map (from `ae848ce5` scout) — mostly blocked (all routes admin-guarded)
+| Screen | Verdict |
+|---|---|
+| `admin/analytics` | ✅ already-wired (`adminAnalyticsApi` → `/api/admin/analytics`) |
+| `admin/disputes` | ✅ DONE `19eae07` (`/api/admin/disputes` real table+user_email; `mapAdminDispute`; real status enum; 16 tests) |
+| `admin/audit` | 🔧 next (resumed agent) — list wireable (`/api/admin/audit` real `audit_logs`+profiles); but screen's `type` (login/data/admin/security) has NO column → drop type icon/color/filter |
+| `admin/logs` | ⛔ dead-source — `/api/admin/logs` is honest-empty always (`dataAvailable:false`, no `system_logs` table); wireable but permanently empty |
+| `admin/subscriptions` | ⛔ concept-mismatch/high-fab — schema drift (Stripe shape vs cancellation-tracking); `plan`/`amount`/`nextBilling` unsourced (broken FND-018 path); web admin subs itself 100% mock |
+| `admin/health` | ⛔ concept-mismatch — `/api/monitoring/health` returns runtime uptime/mem/cpu, not the per-service up/down list the screen models (would fabricate services) |
+| `admin/settings` | ⛔ partial/non-persistent — in-memory 7-field object (not DB); feature-flag list unsourced |
+| `admin/config` | ⛔ no-source — screen wants categorized config-item list the settings object lacks |
+| `admin/features` | ⛔ no-source — no feature-flags route (settings has 2 booleans) |
+
+**Admin: 2 done + audit next; the other 5 need backend (feature-flags/system-logs/per-service-health routes + subscriptions schema fix) — overlaps decision #4.**
+
 ### Remaining parity work (all doable, need subagent quota)
 - **P2 Billing / IAP** (mobile) — not started.
 - **P3 web-only → mobile ports** — Real Estate, Crypto holdings, shared Goals, marketplace sub-cats (not started).
