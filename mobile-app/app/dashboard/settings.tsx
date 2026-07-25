@@ -1,9 +1,29 @@
 /**
  * Fynvita Settings Dashboard Screen
- * User settings, notifications, security, and billing
+ *
+ * Real-data wiring (PARITY): this composite screen used to render a hardcoded
+ * profile ("John Doe" via INITIAL_SETTINGS), a fake setTimeout "save" that
+ * persisted nothing, and a hardcoded "$79/month Premium" billing card. Each
+ * section is now sourced honestly, or empty-stated when no honest source exists:
+ *
+ *  - Profile (name / email / phone): the real authenticated user from authStore
+ *    (Supabase `profiles`). Name + phone are editable and saved through the real
+ *    authStore.updateProfile mutation; email is account identity and shown
+ *    read-only (the profile mutation does not change it). No more "John Doe".
+ *  - Billing: the real Stripe-backed billing overview from GET /api/payment/billing
+ *    via subscriptionApi.getBillingOverview (the same source the subscription
+ *    screen uses), replacing the hardcoded $79 / Premium / renewal. No card data
+ *    is rendered on this screen.
+ *  - Notifications: empty-stated. The only mobile-reachable preferences endpoint
+ *    (/api/notifications/preferences) is an unauthenticated in-memory "demo-user"
+ *    mock with no per-user persistence, so this screen does NOT present fake
+ *    toggles that look saved but aren't.
+ *  - Security: unchanged action buttons (out of scope for real-data wiring).
+ *
+ * Honest inline states use testIDs dashboard-settings-{loading,error,empty}.
  */
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,49 +31,80 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Switch,
+  ActivityIndicator,
   Alert,
-  Linking,
 } from "react-native";
-import { router, Href } from "expo-router";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-
-interface UserSettings {
-  fullName: string;
-  email: string;
-  phone: string;
-  notifications: {
-    email: boolean;
-    sms: boolean;
-    disputeUpdates: boolean;
-    weeklyReport: boolean;
-    marketingEmails: boolean;
-  };
-}
-
-const INITIAL_SETTINGS: UserSettings = {
-  fullName: "John Doe",
-  email: "john@example.com",
-  phone: "+1 (555) 123-4567",
-  notifications: {
-    email: true,
-    sms: false,
-    disputeUpdates: true,
-    weeklyReport: true,
-    marketingEmails: false,
-  },
-};
+import { useAuthStore } from "../../src/store/authStore";
+import { subscriptionApi } from "../../src/services/api/user";
+import type { BillingOverview } from "../../src/services/api/user";
 
 type TabType = "profile" | "notifications" | "security" | "billing";
 
+const STATUS_COLORS: Record<string, string> = {
+  active: theme.colors.success,
+  trialing: theme.colors.success,
+  past_due: theme.colors.warning,
+  incomplete: theme.colors.warning,
+  unpaid: theme.colors.error,
+  canceled: theme.colors.error,
+};
+
+function formatStatus(status: string): string {
+  if (!status) return status;
+  const spaced = status.replace(/_/g, " ");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+function formatPrice(price: number, interval: string): string {
+  if (price <= 0) return "Free";
+  const period = interval === "year" ? "yr" : "mo";
+  return `$${price.toFixed(2)}/${period}`;
+}
+
 export default function SettingsScreen() {
-  const [settings, setSettings] = useState<UserSettings>(INITIAL_SETTINGS);
+  const { user, updateProfile } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>("profile");
+
+  // Editable profile fields, seeded from the real user (authStore / Supabase).
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // Billing overview (real: GET /api/payment/billing via getBillingOverview).
+  const [billing, setBilling] = useState<BillingOverview | null>(null);
+  const [billingLoading, setBillingLoading] = useState(true);
+  const [billingError, setBillingError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setFullName(user.name ?? "");
+      setPhone(user.phone ?? "");
+    }
+  }, [user]);
+
+  const loadBilling = useCallback(async () => {
+    setBillingLoading(true);
+    setBillingError(null);
+    const res = await subscriptionApi.getBillingOverview();
+    if (res.success && res.data) {
+      setBilling(res.data);
+    } else {
+      setBillingError(
+        res.error?.message ?? "Unable to load your billing details right now.",
+      );
+    }
+    setBillingLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadBilling();
+  }, [loadBilling]);
 
   const tabs: { id: TabType; label: string; icon: string }[] = [
     { id: "profile", label: "Profile", icon: "person" },
@@ -63,23 +114,19 @@ export default function SettingsScreen() {
   ];
 
   const handleSave = async () => {
+    if (!user) return;
     setSaving(true);
-    // Simulate save
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      await updateProfile({ name: fullName.trim(), phone: phone.trim() });
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    }, 1000);
-  };
-
-  const updateNotification = (key: keyof UserSettings["notifications"]) => {
-    setSettings((prev) => ({
-      ...prev,
-      notifications: {
-        ...prev.notifications,
-        [key]: !prev.notifications[key],
-      },
-    }));
+    } catch (error) {
+      Alert.alert(
+        "Couldn't save changes",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleChangePassword = () => {
@@ -95,6 +142,10 @@ export default function SettingsScreen() {
       "Follow the link to set up 2FA for your account.",
     );
   };
+
+  const statusColor = billing
+    ? (STATUS_COLORS[billing.status] ?? theme.colors.textSecondary)
+    : theme.colors.textSecondary;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -151,102 +202,83 @@ export default function SettingsScreen() {
           <Card style={styles.card}>
             <Text style={styles.sectionTitle}>Profile Information</Text>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Full Name</Text>
-              <TextInput
-                style={styles.input}
-                value={settings.fullName}
-                onChangeText={(text) =>
-                  setSettings({ ...settings, fullName: text })
-                }
-                placeholder="Enter your name"
-                placeholderTextColor={theme.colors.textSecondary}
-              />
-            </View>
+            {!user ? (
+              <View
+                style={styles.stateBlock}
+                testID="dashboard-settings-empty"
+              >
+                <Ionicons
+                  name="person-circle-outline"
+                  size={48}
+                  color={theme.colors.textSecondary}
+                />
+                <Text style={styles.stateText}>
+                  Sign in to view and manage your profile.
+                </Text>
+              </View>
+            ) : (
+              <>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Full Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={fullName}
+                    onChangeText={(text) => {
+                      setFullName(text);
+                      setSaved(false);
+                    }}
+                    placeholder="Enter your name"
+                    placeholderTextColor={theme.colors.textSecondary}
+                  />
+                </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email</Text>
-              <TextInput
-                style={styles.input}
-                value={settings.email}
-                onChangeText={(text) =>
-                  setSettings({ ...settings, email: text })
-                }
-                placeholder="Enter your email"
-                placeholderTextColor={theme.colors.textSecondary}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Email</Text>
+                  <View style={styles.readonlyField}>
+                    <Text style={styles.readonlyValue}>{user.email}</Text>
+                    <Ionicons
+                      name="lock-closed-outline"
+                      size={16}
+                      color={theme.colors.textSecondary}
+                    />
+                  </View>
+                </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Phone</Text>
-              <TextInput
-                style={styles.input}
-                value={settings.phone}
-                onChangeText={(text) =>
-                  setSettings({ ...settings, phone: text })
-                }
-                placeholder="Enter your phone"
-                placeholderTextColor={theme.colors.textSecondary}
-                keyboardType="phone-pad"
-              />
-            </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Phone</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={phone}
+                    onChangeText={(text) => {
+                      setPhone(text);
+                      setSaved(false);
+                    }}
+                    placeholder="Enter your phone"
+                    placeholderTextColor={theme.colors.textSecondary}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+              </>
+            )}
           </Card>
         )}
 
-        {/* Notifications Tab */}
+        {/* Notifications Tab — no honest per-user source (the only mobile-reachable
+            endpoint is an unauthenticated in-memory mock), so it is empty-stated
+            rather than showing fake toggles. */}
         {activeTab === "notifications" && (
           <Card style={styles.card}>
             <Text style={styles.sectionTitle}>Notification Preferences</Text>
-
-            {[
-              {
-                key: "email" as const,
-                label: "Email Notifications",
-                desc: "Receive updates via email",
-              },
-              {
-                key: "sms" as const,
-                label: "SMS Notifications",
-                desc: "Receive text message alerts",
-              },
-              {
-                key: "disputeUpdates" as const,
-                label: "Dispute Updates",
-                desc: "Status change notifications",
-              },
-              {
-                key: "weeklyReport" as const,
-                label: "Weekly Report",
-                desc: "Weekly progress summary",
-              },
-              {
-                key: "marketingEmails" as const,
-                label: "Marketing Emails",
-                desc: "Promotional offers and tips",
-              },
-            ].map((item) => (
-              <View key={item.key} style={styles.switchRow}>
-                <View style={styles.switchInfo}>
-                  <Text style={styles.switchLabel}>{item.label}</Text>
-                  <Text style={styles.switchDesc}>{item.desc}</Text>
-                </View>
-                <Switch
-                  value={settings.notifications[item.key]}
-                  onValueChange={() => updateNotification(item.key)}
-                  trackColor={{
-                    false: theme.colors.border,
-                    true: theme.colors.primary + "50",
-                  }}
-                  thumbColor={
-                    settings.notifications[item.key]
-                      ? theme.colors.primary
-                      : "#f4f4f4"
-                  }
-                />
-              </View>
-            ))}
+            <View style={styles.stateBlock} testID="dashboard-settings-empty">
+              <Ionicons
+                name="notifications-off-outline"
+                size={48}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.stateText}>
+                Notification preferences aren&apos;t available in the app yet.
+              </Text>
+            </View>
           </Card>
         )}
 
@@ -335,72 +367,113 @@ export default function SettingsScreen() {
           <Card style={styles.card}>
             <Text style={styles.sectionTitle}>Billing & Subscription</Text>
 
-            <View style={styles.planCard}>
-              <View style={styles.planHeader}>
-                <Text style={styles.planLabel}>Current Plan</Text>
-                <View style={styles.planBadge}>
-                  <Text style={styles.planBadgeText}>Premium</Text>
-                </View>
-              </View>
-              <Text style={styles.planPrice}>$79/month</Text>
-              <Text style={styles.planRenewal}>Renews Dec 15, 2024</Text>
-            </View>
-
-            <View style={styles.billingActions}>
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={() => router.push("/pricing" as Href)}
+            {billingLoading && !billing && (
+              <View
+                style={styles.stateBlock}
+                testID="dashboard-settings-loading"
               >
-                <Text style={styles.primaryButtonText}>Upgrade Plan</Text>
-              </TouchableOpacity>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={styles.stateText}>Loading billing details...</Text>
+              </View>
+            )}
 
-              <TouchableOpacity style={styles.secondaryButton}>
+            {billingError && !billing && (
+              <View style={styles.stateBlock} testID="dashboard-settings-error">
                 <Ionicons
-                  name="card-outline"
-                  size={18}
-                  color={theme.colors.text}
+                  name="cloud-offline-outline"
+                  size={48}
+                  color={theme.colors.textSecondary}
                 />
-                <Text style={styles.secondaryButtonText}>
-                  Manage Payment Method
-                </Text>
-              </TouchableOpacity>
+                <Text style={styles.stateText}>{billingError}</Text>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={loadBilling}
+                >
+                  <Text style={styles.retryText}>Try Again</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
-              <TouchableOpacity style={styles.secondaryButton}>
-                <Ionicons
-                  name="receipt-outline"
-                  size={18}
-                  color={theme.colors.text}
-                />
-                <Text style={styles.secondaryButtonText}>
-                  View Billing History
-                </Text>
-              </TouchableOpacity>
-            </View>
+            {billing && (
+              <>
+                <View style={styles.planCard}>
+                  <View style={styles.planHeader}>
+                    <Text style={styles.planLabel}>Current Plan</Text>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        { backgroundColor: `${statusColor}15` },
+                      ]}
+                    >
+                      <Text style={[styles.statusText, { color: statusColor }]}>
+                        {formatStatus(billing.status)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.planName}>{billing.planName}</Text>
+                  <Text style={styles.planPrice}>
+                    {formatPrice(billing.price, billing.interval)}
+                  </Text>
+                  {billing.nextBilling && (
+                    <Text style={styles.planRenewal}>
+                      {billing.cancelAtPeriodEnd ? "Access ends" : "Renews"}{" "}
+                      {billing.nextBilling}
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.billingActions}>
+                  <TouchableOpacity
+                    style={styles.primaryButton}
+                    onPress={() => router.push("/billing/subscription")}
+                  >
+                    <Text style={styles.primaryButtonText}>Manage Plan</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={() => router.push("/billing/invoices")}
+                  >
+                    <Ionicons
+                      name="receipt-outline"
+                      size={18}
+                      color={theme.colors.text}
+                    />
+                    <Text style={styles.secondaryButtonText}>
+                      View Billing History
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </Card>
         )}
 
-        {/* Save Button */}
-        <View style={styles.saveContainer}>
-          <TouchableOpacity
-            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-            onPress={handleSave}
-            disabled={saving}
-          >
-            <Text style={styles.saveButtonText}>
-              {saving ? "Saving..." : "Save Changes"}
-            </Text>
-          </TouchableOpacity>
-          {saved && (
-            <View style={styles.savedBadge}>
-              <Ionicons
-                name="checkmark-circle"
-                size={18}
-                color={theme.colors.success}
-              />
-              <Text style={styles.savedText}>Changes saved</Text>
-            </View>
-          )}
-        </View>
+        {/* Save Button — only the profile tab has editable, savable fields. */}
+        {activeTab === "profile" && user && (
+          <View style={styles.saveContainer}>
+            <TouchableOpacity
+              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+              onPress={handleSave}
+              disabled={saving}
+              testID="dashboard-settings-save"
+            >
+              <Text style={styles.saveButtonText}>
+                {saving ? "Saving..." : "Save Changes"}
+              </Text>
+            </TouchableOpacity>
+            {saved && (
+              <View style={styles.savedBadge}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={18}
+                  color={theme.colors.success}
+                />
+                <Text style={styles.savedText}>Changes saved</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -467,18 +540,35 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: theme.colors.text,
   },
-
-  switchRow: {
+  readonlyField: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  switchInfo: { flex: 1, marginRight: 12 },
-  switchLabel: { fontSize: 14, fontWeight: "500", color: theme.colors.text },
-  switchDesc: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  readonlyValue: { fontSize: 15, color: theme.colors.textSecondary },
+
+  stateBlock: { alignItems: "center", paddingVertical: 32 },
+  stateText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    textAlign: "center",
+    paddingHorizontal: theme.spacing.lg,
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
 
   securityButton: {
     flexDirection: "row",
@@ -525,14 +615,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   planLabel: { fontSize: 13, color: theme.colors.textSecondary },
-  planBadge: {
-    backgroundColor: theme.colors.primary,
+  statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 12,
   },
-  planBadgeText: { fontSize: 12, fontWeight: "600", color: "#fff" },
-  planPrice: { fontSize: 24, fontWeight: "700", color: theme.colors.text },
+  statusText: { fontSize: 11, fontWeight: "600" },
+  planName: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
+  planPrice: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: theme.colors.text,
+    marginTop: 2,
+  },
   planRenewal: {
     fontSize: 13,
     color: theme.colors.textSecondary,
