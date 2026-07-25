@@ -1,9 +1,17 @@
 /**
  * Fynvita Credit Repair Hub Screen
- * Central hub for all credit repair tools
+ * Central hub for all credit repair tools.
+ *
+ * Real-data wiring (PARITY-P2): the Quick Stats are derived from real store
+ * data — dispute counts from useDisputeStore (fetched via disputeApi.getAll)
+ * and the credit score from useCreditStore (fetched via creditScoreApi). The
+ * former hardcoded stats ("12" active, "+45" points, "85%" success rate) and
+ * the fake setTimeout load were removed. Honest inline loading / error / empty
+ * states for the stats; nothing is fabricated. The TOOLS navigation grid is
+ * legitimate static navigation and stays static.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,6 +25,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { useDisputeStore } from "../../src/store/disputeStore";
+import { useCreditStore } from "../../src/store/creditStore";
+import type { Dispute } from "../../src/services/api/types";
 
 interface Tool {
   id: string;
@@ -86,23 +97,44 @@ const TOOLS: Tool[] = [
   },
 ];
 
+// "Active" mirrors the Dispute Center (disputes.tsx): a dispute is active while
+// still in flight — not resolved, rejected, or deleted. Kept aligned so the hub
+// and the disputes list never report conflicting active counts.
+const CLOSED_STATUSES: readonly Dispute["status"][] = [
+  "resolved",
+  "rejected",
+  "deleted",
+];
+
+function isActive(status: Dispute["status"]): boolean {
+  return !CLOSED_STATUSES.includes(status);
+}
+
 export default function CreditRepairScreen() {
-  const [loading, setLoading] = useState(true);
+  const {
+    disputes,
+    isLoading: disputesLoading,
+    error: disputesError,
+    fetchDisputes,
+  } = useDisputeStore();
+  const { currentScore, isLoadingScores, fetchScores } = useCreditStore();
+
+  const load = useCallback(() => {
+    fetchDisputes();
+    fetchScores();
+  }, [fetchDisputes, fetchScores]);
 
   useEffect(() => {
-    setTimeout(() => setLoading(false), 600);
-  }, []);
+    load();
+  }, [load]);
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading tools...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const activeCount = disputes.filter((d) => isActive(d.status)).length;
+  const resolvedCount = disputes.filter((d) => d.status === "resolved").length;
+
+  const hasStatData = disputes.length > 0 || currentScore !== null;
+  const statsLoading =
+    (disputesLoading || isLoadingScores) && !hasStatData && !disputesError;
+  const statsUnavailable = Boolean(disputesError) && disputes.length === 0;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -123,26 +155,44 @@ export default function CreditRepairScreen() {
           </View>
         </View>
 
-        {/* Quick Stats */}
+        {/* Quick Stats — real data from useDisputeStore + useCreditStore */}
         <Card style={styles.statsCard}>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>12</Text>
-              <Text style={styles.statLabel}>Active Disputes</Text>
+          {statsLoading ? (
+            <View style={styles.statsState} testID="credit-repair-hub-loading">
+              <ActivityIndicator color={theme.colors.primary} />
+              <Text style={styles.statsStateText}>Loading stats...</Text>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.colors.success }]}>
-                +45
-              </Text>
-              <Text style={styles.statLabel}>Points Gained</Text>
+          ) : statsUnavailable ? (
+            <View style={styles.statsState} testID="credit-repair-hub-error">
+              <Text style={styles.statsStateText}>{disputesError}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={load}>
+                <Text style={styles.retryText}>Try Again</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>85%</Text>
-              <Text style={styles.statLabel}>Success Rate</Text>
+          ) : (
+            <View style={styles.statsRow} testID="credit-repair-hub-stats">
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{activeCount}</Text>
+                <Text style={styles.statLabel}>Active Disputes</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text
+                  style={[styles.statValue, { color: theme.colors.success }]}
+                >
+                  {resolvedCount}
+                </Text>
+                <Text style={styles.statLabel}>Resolved</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statValue} testID="credit-repair-hub-score">
+                  {currentScore ?? "—"}
+                </Text>
+                <Text style={styles.statLabel}>Credit Score</Text>
+              </View>
             </View>
-          </View>
+          )}
         </Card>
 
         {/* Tools Grid */}
@@ -195,11 +245,6 @@ export default function CreditRepairScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: {
-    marginTop: theme.spacing.md,
-    color: theme.colors.textSecondary,
-  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -219,6 +264,20 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 22, fontWeight: "700", color: theme.colors.text },
   statLabel: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 4 },
   statDivider: { width: 1, height: 36, backgroundColor: theme.colors.border },
+  statsState: { alignItems: "center", paddingVertical: theme.spacing.sm },
+  statsStateText: {
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
   toolsSection: {
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
