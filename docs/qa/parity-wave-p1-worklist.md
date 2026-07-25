@@ -168,6 +168,18 @@ Web `src/`-only-wireable screens are DONE (paper, journal, goodwill-letters, das
 | `insights/weekly-summary` | ⛔ NEEDS-AGGREGATION-ENGINE — healthScore + 7 domains in one weekly payload; no endpoint, no health-score service (same as vitality) |
 | `insights/alerts` | ⛔ CONCEPT-MISMATCH — `/api/notifications` carries `{type/title/message}`, not the alerts priority-triage engine (priority/actionRoute/rich data); would fabricate |
 
+## Mobile dashboard map (from `aa07be6a` scout)
+| Screen | Verdict |
+|---|---|
+| `dashboard/disputes` | ✅ DONE `18fa7f3` (`useDisputeStore`, reused `mapWebDispute`; 7 tests) |
+| `dashboard/analytics` | 🔧 in flight (`a23cfb6b`) — `/api/user/analytics` returns ALL 4 rendered shapes (creditHistory/successRate/scoreFactors/recommendations); strongest wire |
+| `dashboard/documents` | ✅ already-wired (13-line re-export of `app/documents`) |
+| `dashboard/notifications` | wireable — `useNotificationStore` (NOT wired here despite P1; still renders mock) |
+| `dashboard/monitoring` | partial — scores/alerts → `useCreditStore`; inline "Key Factors" + SCORE_HISTORY NO source (fabrication risk — remove/empty-state) |
+| `dashboard/reports` | needs-verify — fabricates `size`/`generatedAt`; confirm `/api/analytics/reports` or `/credit-repair/reports` shape |
+| `dashboard/settings` | partial — profile/notif-prefs real; billing tab hardcoded ($79/mo — fabrication risk) |
+| `dashboard/progress` | ⛔ concept-mismatch — fabricated milestones/achievements ≠ `gamificationStore` (XP/badges/quests); empty-state only |
+
 ### Remaining parity work (all doable, need subagent quota)
 - **P2 Billing / IAP** (mobile) — not started.
 - **P3 web-only → mobile ports** — Real Estate, Crypto holdings, shared Goals, marketplace sub-cats (not started).
