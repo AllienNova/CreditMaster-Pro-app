@@ -168,6 +168,70 @@ export function mapWebInsight(raw: WebCoachingInsight, index: number): Insight {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Cash flow — web -> mobile adapter (PARITY-P2)
+// ---------------------------------------------------------------------------
+// The mobile Cash Flow screen (app/financial/cash-flow.tsx) renders 6 months of
+// income vs expenses plus cash-flow recommendations. Its honest source is
+// GET /api/financial/spending/cashflow (withAuth) ->
+// spendingAnalysisService.getCashFlowAnalysis, which derives each month's income
+// and expenses from the user's real Plaid transactions and returns a
+// CashFlowAnalysis: { monthlyData: [{ month, monthLabel, income, expenses,
+// netFlow, savingsRate }], summary, trends, health, recommendations }.
+//
+// The pre-existing getCashFlow method (still consumed by spending.tsx) points at
+// /financial/insights/cashflow — a route that DOES NOT EXIST (the real one lives
+// under /financial/spending/cashflow) — and declares a shape the route never
+// returns ({ income, expenses, net, forecast }). Every call 404s and the screen
+// silently fell back to a hardcoded MOCK_DATA array, so real users saw invented
+// cash-flow figures. This adapter carries only the fields the endpoint truly
+// provides; nothing is fabricated (an absent income/expenses becomes 0, an absent
+// month becomes an empty label, absent recommendations become []).
+export interface CashFlowMonthPoint {
+  month: string; // short label, e.g. "Jan" (from monthLabel); "" when the source omits it
+  income: number;
+  expenses: number;
+}
+
+export interface CashFlowAnalysisData {
+  months: CashFlowMonthPoint[];
+  recommendations: string[];
+}
+
+interface WebCashFlowAnalysis {
+  monthlyData?: {
+    month?: string;
+    monthLabel?: string;
+    income?: number;
+    expenses?: number;
+  }[];
+  recommendations?: string[];
+}
+
+// monthLabel is "Jan 2026"; the chart shows a compact month, so take the first
+// token. Fall back to the ISO `month` ("2026-01") when the label is absent. This
+// only reformats the real value — it never invents one.
+function shortMonthLabel(monthLabel?: string, month?: string): string {
+  const source = monthLabel ?? month ?? "";
+  return source.split(" ")[0];
+}
+
+export function mapWebCashFlow(raw: WebCashFlowAnalysis): CashFlowAnalysisData {
+  const months = Array.isArray(raw.monthlyData)
+    ? raw.monthlyData.map((m) => ({
+        month: shortMonthLabel(m.monthLabel, m.month),
+        income: m.income ?? 0,
+        expenses: m.expenses ?? 0,
+      }))
+    : [];
+  return {
+    months,
+    recommendations: Array.isArray(raw.recommendations)
+      ? raw.recommendations
+      : [],
+  };
+}
+
 // Financial Overview
 export const financialOverviewApi = {
   /**
@@ -221,6 +285,25 @@ export const financialOverviewApi = {
       net: { month: string; amount: number }[];
       forecast: { month: string; projected: number }[];
     }>(`/financial/insights/cashflow${months ? `?months=${months}` : ""}`),
+
+  /**
+   * Get cash flow analysis. Hits the real route GET /api/financial/spending/cashflow
+   * (withAuth) and adapts the CashFlowAnalysis payload web -> mobile via
+   * mapWebCashFlow. Each month's income/expenses are derived from the user's real
+   * Plaid transactions server-side; a failed request passes straight through without
+   * fabricating data. Consumed by app/financial/cash-flow.tsx.
+   */
+  getCashFlowAnalysis: async (
+    months?: number,
+  ): Promise<ApiResponse<CashFlowAnalysisData>> => {
+    const res = await api.get<WebCashFlowAnalysis>(
+      `/financial/spending/cashflow${months ? `?months=${months}` : ""}`,
+    );
+    if (res.success && res.data) {
+      return { success: true, data: mapWebCashFlow(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
 };
 
 // Bank Account Endpoints
