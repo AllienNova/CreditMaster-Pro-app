@@ -112,6 +112,17 @@ A `grep` of `mobile-app/app` found **~29 screens still holding `MOCK_` arrays** 
 | `credit/simulator` | legit projection math; only `confidence: 85+Math.random()*10` is fabricated → make deterministic (low pri) |
 | `credit-builder/simulator` | fabrication-in-calc — random score DELTAS as projections → deterministic math fix (not data-wiring) |
 
+## Web insights/dashboard/investments map (from `a768eebe` scout)
+| Screen | Verdict |
+|---|---|
+| `dashboard/spending` | ✅ DONE `632a85d` (`/api/financial/dashboard` + `/spending`, Promise.allSettled partial-resilient, honest empty-states; 10 tests, full suite 16,361/0) |
+| `insights/alerts` | ⛔ NO-SOURCE — "smart alerts" is cross-domain; siloed routes exist but no unified `Alert` engine. Needs aggregation backend |
+| `insights/weekly-summary` | ⛔ NO-SOURCE — aggregates 8 domains + healthScore, no engine (like vitality). Needs backend |
+| `investments/performance` | ⛔ PRODUCT-FORK — fetches nonexistent `/api/investments/portfolio/performance` → silent `Math.random`; real route needs `portfolioId` + returns no daily `points[]` |
+| `investments/rebalance` | ⛔ PRODUCT-FORK — `/api/investments/analytics/rebalance` needs `portfolioId` + divergent shape |
+
+**Web tail is largely exhausted of clean wiring**: goodwill-letters + dashboard/spending wired; the rest need aggregation engines (alerts, weekly-summary), portfolio selection + daily-series (investments), or are product-forks/math-fixes. Most remaining WEB parity = backend work, not wiring.
+
 ### Remaining parity work (all doable, need subagent quota)
 - **P2 Billing / IAP** (mobile) — not started.
 - **P3 web-only → mobile ports** — Real Estate, Crypto holdings, shared Goals, marketplace sub-cats (not started).
