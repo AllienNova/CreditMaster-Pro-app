@@ -15,12 +15,21 @@
 // Stub the module's side-effecting imports so user.ts loads in isolation. The
 // client's `api.get` is mockable so the getBillingOverview wiring can be exercised.
 const mockApiGet = jest.fn();
+const mockApiPost = jest.fn();
 jest.mock("../client", () => ({
-  api: { get: (...args: unknown[]) => mockApiGet(...args) },
+  api: {
+    get: (...args: unknown[]) => mockApiGet(...args),
+    post: (...args: unknown[]) => mockApiPost(...args),
+  },
 }));
 jest.mock("../../offline-sync", () => ({ offlineSyncService: {} }));
 
-import { mapWebBilling, subscriptionApi, type WebBillingResponse } from "../user";
+import {
+  mapWebBilling,
+  mapWebSubscription,
+  subscriptionApi,
+  type WebBillingResponse,
+} from "../user";
 
 const PLANS = [
   { id: "free", name: "Free", price: 0, interval: "month" },
@@ -222,5 +231,160 @@ describe("mapWebBilling", () => {
       }),
     );
     expect(vm.cancelAtPeriodEnd).toBe(true);
+  });
+});
+
+describe("subscriptionApi.getSubscriptionDetail", () => {
+  it("fetches GET /payment/billing and returns the mapped subscription detail", async () => {
+    mockApiGet.mockResolvedValue({ success: true, data: response() });
+    const res = await subscriptionApi.getSubscriptionDetail();
+    expect(mockApiGet).toHaveBeenCalledWith("/payment/billing");
+    expect(res.success).toBe(true);
+    expect(res.data?.plans).toHaveLength(PLANS.length);
+    expect(res.data?.currentPlanId).toBe("standard");
+    expect(res.data?.plans.find((p) => p.id === "standard")?.isCurrent).toBe(
+      true,
+    );
+  });
+
+  it("propagates the error without fabricating data when the fetch fails", async () => {
+    mockApiGet.mockResolvedValue({
+      success: false,
+      error: { code: "HTTP_401", message: "Unauthorized" },
+    });
+    const res = await subscriptionApi.getSubscriptionDetail();
+    expect(res.success).toBe(false);
+    expect(res.data).toBeUndefined();
+    expect(res.error?.code).toBe("HTTP_401");
+  });
+});
+
+describe("mapWebSubscription", () => {
+  it("maps the full catalog and marks the active plan by subscription.planId", () => {
+    const vm = mapWebSubscription(response());
+    expect(vm.plans.map((p) => p.id)).toEqual(["free", "standard", "pro"]);
+    expect(vm.plans.find((p) => p.id === "standard")?.isCurrent).toBe(true);
+    expect(vm.plans.find((p) => p.id === "pro")?.isCurrent).toBe(false);
+    expect(vm.currentPlanId).toBe("standard");
+    expect(vm.status).toBe("active");
+    expect(vm.nextBilling).toBe("2027-02-15");
+    expect(vm.cancelAtPeriodEnd).toBe(false);
+  });
+
+  it("carries each plan's features through, defaulting to an empty list when absent", () => {
+    const vm = mapWebSubscription(
+      response({
+        plans: [
+          {
+            id: "pro",
+            name: "Pro",
+            price: 99.99,
+            interval: "month",
+            features: ["Unlimited disputes", "24/7 AI coach"],
+          },
+          // No `features` on this plan — must map to [] rather than undefined.
+          { id: "free", name: "Free", price: 0, interval: "month" },
+        ],
+        subscription: {
+          planId: "pro",
+          status: "active",
+          cancelAtPeriodEnd: false,
+        },
+      }),
+    );
+    expect(vm.plans[0]?.features).toEqual([
+      "Unlimited disputes",
+      "24/7 AI coach",
+    ]);
+    expect(vm.plans[1]?.features).toEqual([]);
+  });
+
+  it("returns null next-billing when the subscription has no period end", () => {
+    const vm = mapWebSubscription(
+      response({
+        subscription: {
+          planId: "free",
+          status: "active",
+          cancelAtPeriodEnd: false,
+        },
+      }),
+    );
+    expect(vm.nextBilling).toBeNull();
+  });
+
+  it("preserves cancelAtPeriodEnd from the subscription", () => {
+    const vm = mapWebSubscription(
+      response({
+        subscription: {
+          planId: "standard",
+          status: "active",
+          currentPeriodEnd: "2027-02-15T00:00:00.000Z",
+          cancelAtPeriodEnd: true,
+        },
+      }),
+    );
+    expect(vm.cancelAtPeriodEnd).toBe(true);
+  });
+
+  it("marks nothing current when the active planId is not in the catalog", () => {
+    const vm = mapWebSubscription(
+      response({
+        subscription: {
+          planId: "ghost",
+          status: "active",
+          cancelAtPeriodEnd: false,
+        },
+      }),
+    );
+    expect(vm.plans.every((p) => !p.isCurrent)).toBe(true);
+    expect(vm.currentPlanId).toBe("ghost");
+  });
+});
+
+describe("subscriptionApi.updatePlan / cancelPlan", () => {
+  it("posts the planId to the real plan-change route", async () => {
+    mockApiPost.mockResolvedValue({
+      success: true,
+      data: { status: "updated" },
+    });
+    const res = await subscriptionApi.updatePlan("pro");
+    expect(mockApiPost).toHaveBeenCalledWith("/payment/billing/plan", {
+      planId: "pro",
+    });
+    expect(res.data?.status).toBe("updated");
+  });
+
+  it("returns the checkout redirect for a new subscription", async () => {
+    mockApiPost.mockResolvedValue({
+      success: true,
+      data: {
+        status: "redirect",
+        checkoutUrl: "https://checkout.stripe.com/c/pay/x",
+      },
+    });
+    const res = await subscriptionApi.updatePlan("pro");
+    expect(res.data?.status).toBe("redirect");
+    expect(res.data?.checkoutUrl).toBe("https://checkout.stripe.com/c/pay/x");
+  });
+
+  it("cancels by posting cancelSubscription: true (never fabricates success)", async () => {
+    mockApiPost.mockResolvedValue({
+      success: true,
+      data: { status: "updated" },
+    });
+    await subscriptionApi.cancelPlan();
+    expect(mockApiPost).toHaveBeenCalledWith("/payment/billing/plan", {
+      cancelSubscription: true,
+    });
+  });
+
+  it("propagates a plan-change failure without fabricating a result", async () => {
+    mockApiPost.mockResolvedValue({
+      success: false,
+      error: { code: "HTTP_500", message: "Stripe unavailable" },
+    });
+    const res = await subscriptionApi.updatePlan("pro");
+    expect(res.success).toBe(false);
+    expect(res.error?.code).toBe("HTTP_500");
   });
 });

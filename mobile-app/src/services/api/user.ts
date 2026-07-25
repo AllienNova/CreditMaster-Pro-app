@@ -141,6 +141,11 @@ interface WebBillingPlan {
   name: string;
   price: number;
   interval: string;
+  // The web route serves the full SUBSCRIPTION_PLANS catalog, which carries a
+  // features list. The overview adapter ignores it; the subscription-detail
+  // adapter renders it. Optional at the boundary so a plan without features (or
+  // a slimmer future payload) still maps rather than failing.
+  features?: string[];
 }
 
 interface WebBillingSubscription {
@@ -243,6 +248,60 @@ export function mapWebBilling(res: WebBillingResponse): BillingOverview {
   };
 }
 
+// ── Subscription detail (real source: GET /api/payment/billing) ───────────────
+// The subscription-management screen needs the full plan catalog (with features)
+// and which plan is active — both already in the /payment/billing payload (plans =
+// SUBSCRIPTION_PLANS, subscription.planId = the active plan). This view-model
+// reduces that payload to what the screen renders and marks the active plan. It
+// replaces the screen's former hardcoded, wrong-priced plan catalog: nothing here
+// is invented — the plans, prices, features, and current marker are all sourced.
+
+/** One catalog plan, reduced to what the subscription screen renders. */
+export interface SubscriptionPlanView {
+  id: string;
+  name: string;
+  price: number;
+  interval: string;
+  features: string[];
+  isCurrent: boolean;
+}
+
+/** The mobile subscription-management view-model — every field sourced. */
+export interface SubscriptionDetail {
+  plans: SubscriptionPlanView[];
+  currentPlanId: string;
+  status: string;
+  nextBilling: string | null;
+  cancelAtPeriodEnd: boolean;
+}
+
+/** Result of a plan change (POST /api/payment/billing/plan). */
+export interface PlanUpdateResult {
+  // "updated": an existing Stripe subscription was changed in place (re-fetch to
+  // reflect it). "redirect": a new subscription needs Stripe Checkout — open
+  // checkoutUrl. The web route also returns { status: "updated" } on cancel.
+  status: "updated" | "redirect";
+  checkoutUrl?: string;
+}
+
+export function mapWebSubscription(res: WebBillingResponse): SubscriptionDetail {
+  const currentPlanId = res.subscription.planId;
+  return {
+    plans: res.plans.map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      interval: p.interval,
+      features: p.features ?? [],
+      isCurrent: p.id === currentPlanId,
+    })),
+    currentPlanId,
+    status: res.subscription.status,
+    nextBilling: toBillingDate(res.subscription.currentPeriodEnd),
+    cancelAtPeriodEnd: res.subscription.cancelAtPeriodEnd,
+  };
+}
+
 // Subscription Endpoints
 export const subscriptionApi = {
   /**
@@ -258,6 +317,38 @@ export const subscriptionApi = {
     }
     return { success: false, error: res.error };
   },
+
+  /**
+   * Get the real subscription detail (full plan catalog + the active plan) from
+   * the Stripe-backed web route GET /api/payment/billing, adapted to the mobile
+   * SubscriptionDetail view-model by mapWebSubscription. Replaces the subscription
+   * screen's former hardcoded, wrong-priced plan catalog.
+   */
+  getSubscriptionDetail: async (): Promise<ApiResponse<SubscriptionDetail>> => {
+    const res = await api.get<WebBillingResponse>("/payment/billing");
+    if (res.success && res.data) {
+      return { success: true, data: mapWebSubscription(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Change the current plan via the real web route POST /api/payment/billing/plan.
+   * Returns { status: "updated" } when an existing subscription is changed in place
+   * (re-fetch to reflect it) or { status: "redirect", checkoutUrl } when a new
+   * subscription must go through Stripe Checkout.
+   */
+  updatePlan: (planId: string): Promise<ApiResponse<PlanUpdateResult>> =>
+    api.post<PlanUpdateResult>("/payment/billing/plan", { planId }),
+
+  /**
+   * Cancel the current subscription via POST /api/payment/billing/plan with
+   * cancelSubscription: true (server keeps access until period end, then Free).
+   */
+  cancelPlan: (): Promise<ApiResponse<PlanUpdateResult>> =>
+    api.post<PlanUpdateResult>("/payment/billing/plan", {
+      cancelSubscription: true,
+    }),
 
   /**
    * Get current subscription
