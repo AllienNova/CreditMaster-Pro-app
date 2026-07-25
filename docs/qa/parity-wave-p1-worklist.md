@@ -175,7 +175,8 @@ Web `src/`-only-wireable screens are DONE (paper, journal, goodwill-letters, das
 | `dashboard/analytics` | ✅ DONE `58ffbf2` (`/api/user/analytics` — all 4 shapes real; 9 tests) |
 | `dashboard/documents` | ✅ already-wired (13-line re-export of `app/documents`) |
 | `dashboard/notifications` | ✅ DONE `f0b0663` — RE-EXPORTED the real store-backed screen (dashboard variant's UI was dead code over fabricated `actionUrl`/`document_processed` fields); −416 lines; 4 tests |
-| `dashboard/monitoring` | 🔧 in flight (`a157e68c`) — scores/alerts/history via `useCreditStore`; dropping unsourced inline "Key Factors" |
+| `dashboard/monitoring` | ✅ DONE `400d912` — scores/alerts/history via `monitoringDashboardAdapter`; **fabricated "Key Factors" (Util 32%/Age 7yr) empty-stated** (no source at `/credit/factors`); 9 tests |
+| `dashboard/settings` | 🔧 in flight (`a3c88523`) — profile/prefs/real subscription (reuse `subscriptionApi`, no $79 hardcode); wire Save mutation |
 | `dashboard/monitoring` | partial — scores/alerts → `useCreditStore`; inline "Key Factors" + SCORE_HISTORY NO source (fabrication risk — remove/empty-state) |
 | `dashboard/reports` | needs-verify — fabricates `size`/`generatedAt`; confirm `/api/analytics/reports` or `/credit-repair/reports` shape |
 | `dashboard/settings` | partial — profile/notif-prefs real; billing tab hardcoded ($79/mo — fabrication risk) |
