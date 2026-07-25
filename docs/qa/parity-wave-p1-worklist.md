@@ -176,7 +176,9 @@ Web `src/`-only-wireable screens are DONE (paper, journal, goodwill-letters, das
 | `dashboard/documents` | ✅ already-wired (13-line re-export of `app/documents`) |
 | `dashboard/notifications` | ✅ DONE `f0b0663` — RE-EXPORTED the real store-backed screen (dashboard variant's UI was dead code over fabricated `actionUrl`/`document_processed` fields); −416 lines; 4 tests |
 | `dashboard/monitoring` | ✅ DONE `400d912` — scores/alerts/history via `monitoringDashboardAdapter`; **fabricated "Key Factors" (Util 32%/Age 7yr) empty-stated** (no source at `/credit/factors`); 9 tests |
-| `dashboard/settings` | 🔧 in flight (`a3c88523`) — profile/prefs/real subscription (reuse `subscriptionApi`, no $79 hardcode); wire Save mutation |
+| `dashboard/settings` | ✅ DONE `7788a98` — profile via `getProfile` (removed "John Doe"); billing via real `subscriptionApi` (removed $79 hardcode); Save via real `updateProfile` (removed fake setTimeout); notif-prefs empty-stated; 10 tests. (Salvaged after session-limit; fixed 1 ambiguous test assertion.) |
+
+**✅ DASHBOARD DOMAIN COMPLETE** — disputes/analytics/notifications/monitoring/settings wired + documents already-wired (7/8); reports + progress not-wireable (need reports-list route / gamification concept). Session limit resets **6pm ET** (recurring pattern: subagents free early, as 8am+1pm did). Remaining mobile domains: **admin (~9), misc (activity/search/profile/reports/documents/…)**. Then web-backend decision #4.
 | `dashboard/monitoring` | partial — scores/alerts → `useCreditStore`; inline "Key Factors" + SCORE_HISTORY NO source (fabrication risk — remove/empty-state) |
 | `dashboard/reports` | needs-verify — fabricates `size`/`generatedAt`; confirm `/api/analytics/reports` or `/credit-repair/reports` shape |
 | `dashboard/settings` | partial — profile/notif-prefs real; billing tab hardcoded ($79/mo — fabrication risk) |
