@@ -102,6 +102,16 @@ A `grep` of `mobile-app/app` found **~29 screens still holding `MOCK_` arrays** 
 | `financial/debt.tsx` | `GET /api/financial/debt` (`data.overview` shape) + `debtApi.calculatePayoff` for real strategies; **kill fabricated `STRATEGIES`** (hardcoded interest/months) | queued — bigger (shape re-map) |
 | `financial/spending.tsx` | trends ← cashflow route; **byCategory NO source at referenced endpoint** — candidate `dashboard.spendingByCategory` | queued — partial |
 
+## Web-credit map (from `a13748ca` scout) — mostly NOT clean wiring
+| Screen | Verdict |
+|---|---|
+| `credit/goodwill-letters` | ✅ DONE `ac0c73f` (`/api/credit-repair/goodwill`; 23 tests, 100% cov, full suite 16,351/0) |
+| `credit/secured-cards` | ⛔ STOP — screen renders matchScore/approvalLikelihood/projectedScoreImpact that DON'T exist in `SecuredCard` service; catalog-vs-scored mismatch (would fabricate) |
+| `credit-builder/goals` | ⛔ STOP — no `/api/credit-builder/goals` route/table; `goalTrackerService` client-only. Needs new backend |
+| `credit-builder/pay-for-delete` | dead-fallback — fetches `/api/credit-builder/debts` (404); re-point at `/api/credit-repair/negotiate` (separate task) |
+| `credit/simulator` | legit projection math; only `confidence: 85+Math.random()*10` is fabricated → make deterministic (low pri) |
+| `credit-builder/simulator` | fabrication-in-calc — random score DELTAS as projections → deterministic math fix (not data-wiring) |
+
 ### Remaining parity work (all doable, need subagent quota)
 - **P2 Billing / IAP** (mobile) — not started.
 - **P3 web-only → mobile ports** — Real Estate, Crypto holdings, shared Goals, marketplace sub-cats (not started).
