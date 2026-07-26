@@ -6,8 +6,15 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { providerService, type ProviderFilters } from "@/lib/marketplace";
+import {
+  enforcePublicCatalogRateLimit,
+  methodNotAllowed,
+} from "@/lib/api/public-route-guard";
 
 export async function GET(request: NextRequest) {
+  const rateLimit = await enforcePublicCatalogRateLimit(request);
+  if (!rateLimit.allowed) return rateLimit.response;
+
   try {
     const searchParams = request.nextUrl.searchParams;
 
@@ -31,27 +38,31 @@ export async function GET(request: NextRequest) {
     if (top === "true") {
       const limit = parseInt(searchParams.get("limit") || "10");
       const providers = await providerService.getTopProviders(limit);
-      return NextResponse.json({
-        success: true,
-        data: providers,
-        meta: {
-          count: providers.length,
-          top: true,
-        },
-      });
+      return rateLimit.withHeaders(
+        NextResponse.json({
+          success: true,
+          data: providers,
+          meta: {
+            count: providers.length,
+            top: true,
+          },
+        }),
+      );
     }
 
     // Get by category
     if (category && !search && minRating === null && verified === null) {
       const providers = await providerService.getProvidersByCategory(category);
-      return NextResponse.json({
-        success: true,
-        data: providers,
-        meta: {
-          count: providers.length,
-          category,
-        },
-      });
+      return rateLimit.withHeaders(
+        NextResponse.json({
+          success: true,
+          data: providers,
+          meta: {
+            count: providers.length,
+            category,
+          },
+        }),
+      );
     }
 
     // Get filtered providers
@@ -59,14 +70,16 @@ export async function GET(request: NextRequest) {
       Object.keys(filters).length > 0 ? filters : undefined,
     );
 
-    return NextResponse.json({
-      success: true,
-      data: providers,
-      meta: {
-        count: providers.length,
-        filters,
-      },
-    });
+    return rateLimit.withHeaders(
+      NextResponse.json({
+        success: true,
+        data: providers,
+        meta: {
+          count: providers.length,
+          filters,
+        },
+      }),
+    );
   } catch (error) {
     console.error("Error fetching providers:", error);
     return NextResponse.json(
@@ -79,3 +92,8 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const POST = methodNotAllowed;
+export const PUT = methodNotAllowed;
+export const PATCH = methodNotAllowed;
+export const DELETE = methodNotAllowed;

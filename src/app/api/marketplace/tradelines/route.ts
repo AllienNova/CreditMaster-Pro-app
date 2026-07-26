@@ -6,8 +6,15 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { tradelineService, type TradelineFilters } from "@/lib/marketplace";
+import {
+  enforcePublicCatalogRateLimit,
+  methodNotAllowed,
+} from "@/lib/api/public-route-guard";
 
 export async function GET(request: NextRequest) {
+  const rateLimit = await enforcePublicCatalogRateLimit(request);
+  if (!rateLimit.allowed) return rateLimit.response;
+
   try {
     const searchParams = request.nextUrl.searchParams;
 
@@ -40,34 +47,38 @@ export async function GET(request: NextRequest) {
     if (top === "true") {
       const limit = parseInt(searchParams.get("limit") || "10");
       const tradelines = await tradelineService.getTopTradelines(limit);
-      return NextResponse.json({
-        success: true,
-        data: tradelines.map((t) => ({
-          ...t,
-          valueScore: tradelineService.calculateValueScore(t),
-        })),
-        meta: {
-          count: tradelines.length,
-          top: true,
-        },
-      });
+      return rateLimit.withHeaders(
+        NextResponse.json({
+          success: true,
+          data: tradelines.map((t) => ({
+            ...t,
+            valueScore: tradelineService.calculateValueScore(t),
+          })),
+          meta: {
+            count: tradelines.length,
+            top: true,
+          },
+        }),
+      );
     }
 
     const providerId = searchParams.get("providerId");
     if (providerId) {
       const tradelines =
         await tradelineService.getTradelinesByProvider(providerId);
-      return NextResponse.json({
-        success: true,
-        data: tradelines.map((t) => ({
-          ...t,
-          valueScore: tradelineService.calculateValueScore(t),
-        })),
-        meta: {
-          count: tradelines.length,
-          providerId,
-        },
-      });
+      return rateLimit.withHeaders(
+        NextResponse.json({
+          success: true,
+          data: tradelines.map((t) => ({
+            ...t,
+            valueScore: tradelineService.calculateValueScore(t),
+          })),
+          meta: {
+            count: tradelines.length,
+            providerId,
+          },
+        }),
+      );
     }
 
     // Get filtered tradelines
@@ -75,17 +86,19 @@ export async function GET(request: NextRequest) {
       Object.keys(filters).length > 0 ? filters : { available: true },
     );
 
-    return NextResponse.json({
-      success: true,
-      data: tradelines.map((t) => ({
-        ...t,
-        valueScore: tradelineService.calculateValueScore(t),
-      })),
-      meta: {
-        count: tradelines.length,
-        filters,
-      },
-    });
+    return rateLimit.withHeaders(
+      NextResponse.json({
+        success: true,
+        data: tradelines.map((t) => ({
+          ...t,
+          valueScore: tradelineService.calculateValueScore(t),
+        })),
+        meta: {
+          count: tradelines.length,
+          filters,
+        },
+      }),
+    );
   } catch (error) {
     console.error("Error fetching tradelines:", error);
     return NextResponse.json(
@@ -98,3 +111,8 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const POST = methodNotAllowed;
+export const PUT = methodNotAllowed;
+export const PATCH = methodNotAllowed;
+export const DELETE = methodNotAllowed;

@@ -10,12 +10,19 @@ import {
   tradelineService,
   reviewService,
 } from "@/lib/marketplace";
+import {
+  enforcePublicCatalogRateLimit,
+  methodNotAllowed,
+} from "@/lib/api/public-route-guard";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const rateLimit = await enforcePublicCatalogRateLimit(request);
+  if (!rateLimit.allowed) return rateLimit.response;
+
   try {
     const { id } = await params;
 
@@ -63,7 +70,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       response.reviews = reviews;
     }
 
-    return NextResponse.json(response);
+    return rateLimit.withHeaders(NextResponse.json(response));
   } catch (error) {
     console.error("Error fetching provider:", error);
     return NextResponse.json(
@@ -76,3 +83,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     );
   }
 }
+
+export const POST = methodNotAllowed;
+export const PUT = methodNotAllowed;
+export const PATCH = methodNotAllowed;
+export const DELETE = methodNotAllowed;

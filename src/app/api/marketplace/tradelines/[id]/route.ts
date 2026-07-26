@@ -6,12 +6,19 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { tradelineService } from "@/lib/marketplace";
+import {
+  enforcePublicCatalogRateLimit,
+  methodNotAllowed,
+} from "@/lib/api/public-route-guard";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const rateLimit = await enforcePublicCatalogRateLimit(request);
+  if (!rateLimit.allowed) return rateLimit.response;
+
   try {
     const { id } = await params;
 
@@ -37,13 +44,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...tradeline,
-        valueScore: tradelineService.calculateValueScore(tradeline),
-      },
-    });
+    return rateLimit.withHeaders(
+      NextResponse.json({
+        success: true,
+        data: {
+          ...tradeline,
+          valueScore: tradelineService.calculateValueScore(tradeline),
+        },
+      }),
+    );
   } catch (error) {
     console.error("Error fetching tradeline:", error);
     return NextResponse.json(
@@ -56,3 +65,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     );
   }
 }
+
+export const POST = methodNotAllowed;
+export const PUT = methodNotAllowed;
+export const PATCH = methodNotAllowed;
+export const DELETE = methodNotAllowed;
