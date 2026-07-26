@@ -396,6 +396,92 @@ export function mapWebCard(raw: WebCreditCard): CreditCard | null {
   };
 }
 
+// --- Mobile-facing credit-report detail shape --------------------------------
+// The mobile Report Detail screen (app/reports/[id].tsx) renders a header —
+// bureau, credit score, and report date — plus four structured sections:
+// accounts, negative items, inquiries, and public records. The web route
+// (GET /api/credit-repair/reports/[id], withAuth) returns a report shaped by
+// src/lib/credit-repair/db/credit-reports-db-service.ts: `bureau`, `score`, an
+// opaque `reportData` JSONB blob, a `reportDate` Date (an ISO string over HTTP),
+// and four structured JSONB arrays — `accounts`, `inquiries`, `collections`,
+// `publicRecords`.
+//
+// Today the POST that creates a report (src/app/api/credit-repair/reports/
+// route.ts:90) writes only {bureau, reportDate, score, reportData}, so those four
+// arrays are ALWAYS empty; populating them and rendering their rows is a separate
+// slice (M2-4). This adapter therefore surfaces the typed header fields plus an
+// HONEST COUNT of each structured section (0 today) — never fabricated rows — so
+// the screen empty-states every section. When M2-4 populates the arrays it will
+// extend this adapter with the real per-item contract.
+
+export type ReportBureau = InquiryBureau; // the same three credit bureaus
+
+export interface CreditReportDetail {
+  id: string;
+  bureau?: ReportBureau; // omitted when the stored bureau is unreadable
+  score?: number; // omitted when absent/invalid — never coerced to 0
+  reportDate: string; // ISO 8601 over HTTP; "" when absent
+  accountsCount: number; // length of `accounts`; 0 when empty/absent
+  negativeItemsCount: number; // length of `collections`; 0 when empty/absent
+  inquiriesCount: number; // length of `inquiries`; 0 when empty/absent
+  publicRecordsCount: number; // length of `publicRecords`; 0 when empty/absent
+}
+
+/**
+ * Raw credit report as returned by GET /api/credit-repair/reports/[id]
+ * (src/lib/credit-repair/db/credit-reports-db-service.ts `CreditReport`). The web
+ * route serializes the record with `NextResponse.json`, so its `Date` columns
+ * (reportDate, createdAt, updatedAt) arrive as ISO strings and the structured
+ * columns arrive as JSON arrays. Every field except `id` is declared optional and
+ * tolerant so a partial payload never throws; the structured arrays are typed
+ * `unknown[]` because M1-2 only counts them (their per-item shape is owned by the
+ * later slice that populates them).
+ */
+export interface WebCreditReport {
+  id: string;
+  userId?: string;
+  reportData?: Record<string, unknown>;
+  bureau?: string;
+  reportDate?: string;
+  score?: number;
+  accounts?: unknown[];
+  inquiries?: unknown[];
+  collections?: unknown[];
+  publicRecords?: unknown[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// The length of a real array, or 0 for a missing/non-array field — never invents
+// a count. A structured section is empty (and the screen empty-states it) when
+// its count is 0.
+function arrayLength(value: unknown): number {
+  return Array.isArray(value) ? value.length : 0;
+}
+
+/**
+ * Map a web credit report onto the mobile CreditReportDetail shape. `bureau`
+ * passes through `normalizeBureau` (unknown/absent -> undefined, never
+ * fabricated); `score` survives only as a real finite number (absent / NaN /
+ * Infinity -> undefined, never coerced to 0, since a real FICO score is 300-850
+ * and 0 would invent a failing score); `reportDate` is preserved as the ISO
+ * string the route returns. Each structured section becomes an honest count of
+ * the real array — 0 for the empty/absent arrays the route returns today — so the
+ * screen empty-states it rather than rendering fabricated rows.
+ */
+export function mapWebCreditReport(raw: WebCreditReport): CreditReportDetail {
+  return {
+    id: raw.id,
+    bureau: normalizeBureau(raw.bureau),
+    score: isFiniteNumber(raw.score) ? raw.score : undefined,
+    reportDate: raw.reportDate ?? "",
+    accountsCount: arrayLength(raw.accounts),
+    negativeItemsCount: arrayLength(raw.collections),
+    inquiriesCount: arrayLength(raw.inquiries),
+    publicRecordsCount: arrayLength(raw.publicRecords),
+  };
+}
+
 export const creditRepairApi = {
   /**
    * Get all goodwill letters for the current user. The web route returns
@@ -489,6 +575,27 @@ export const creditRepairApi = {
             .filter((c): c is CreditCard => c !== null)
         : [];
       return { success: true, data: { cards } };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Get a single credit report by id. Calls GET /api/credit-repair/reports/[id]
+   * (withAuth); the shared client unwraps the {success,data} envelope, so
+   * `res.data` is the raw report. On success it is adapted onto CreditReportDetail
+   * (or null when the route returns success with no body — a defensive case; a
+   * missing report is a 404, which surfaces as a failed request and passes
+   * straight through). Nothing is fabricated on failure.
+   */
+  getReport: async (
+    id: string,
+  ): Promise<ApiResponse<{ report: CreditReportDetail | null }>> => {
+    const res = await api.get<WebCreditReport>(
+      `/credit-repair/reports/${encodeURIComponent(id)}`,
+    );
+    if (res.success) {
+      const report = res.data ? mapWebCreditReport(res.data) : null;
+      return { success: true, data: { report } };
     }
     return { success: false, error: res.error };
   },
