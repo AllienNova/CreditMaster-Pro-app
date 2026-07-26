@@ -482,6 +482,92 @@ export function mapWebCreditReport(raw: WebCreditReport): CreditReportDetail {
   };
 }
 
+// --- Mobile-facing credit-account (tradeline) shape --------------------------
+// The mobile Credit Age screen (app/credit-builder/age.tsx) renders, per account,
+// a creditor name, account type, opened date, and its age; across every account
+// with a KNOWN age it computes an average age plus the oldest and newest. The web
+// route (GET /api/credit-repair/accounts, withAuth) returns accounts shaped from
+// the credit_accounts row (supabase/migrations/20250107_credit_bureau_tables.sql:53):
+// `creditorName`, `accountType`, `balance`, `creditLimit`, `paymentStatus`,
+// `openedDate`, and a server-computed `ageMonths` (whole months since opened_date,
+// null when opened_date is unknown). The adapter renames those onto the mobile
+// shape and derives whole `ageYears` from `ageMonths` — but ONLY when the age is
+// known: a null / negative / non-finite ageMonths yields a null age (rendered
+// "age unknown") rather than a fabricated 0-year-old account, and a null balance
+// or limit stays null rather than a fabricated $0.
+
+export interface CreditAccount {
+  id: string;
+  name: string; // creditorName
+  type: string; // accountType
+  balance: number | null; // null stays null — never a fabricated $0
+  creditLimit: number | null; // null stays null — never a fabricated $0
+  status: string; // paymentStatus, passed through ("" when absent)
+  openDate: string | null; // openedDate (ISO date over HTTP); null when unknown
+  ageMonths: number | null; // whole months since opened; null when age is unknown
+  ageYears: number | null; // derived floor(ageMonths/12); null when age is unknown
+}
+
+/**
+ * Raw account as returned by GET /api/credit-repair/accounts (withAuth), shaped
+ * from a credit_accounts row (creditor_name, account_type, balance, credit_limit,
+ * payment_status, opened_date) plus a server-computed ageMonths. `balance`,
+ * `creditLimit`, `openedDate`, and `ageMonths` are nullable at the source (the
+ * DECIMAL / DATE columns, and an age that is only computable when opened_date is
+ * present); every field except `id` is declared optional and tolerant so a partial
+ * payload never throws.
+ */
+export interface WebCreditAccount {
+  id: string;
+  creditorName?: string;
+  accountType?: string;
+  balance?: number | null;
+  creditLimit?: number | null;
+  paymentStatus?: string;
+  openedDate?: string | null;
+  ageMonths?: number | null;
+}
+
+// A real, non-negative month count is the only honest "known age". null
+// (opened_date unknown), a negative value (a future opened_date — a data error),
+// NaN, or ±Infinity all mean "age unknown" and become null, never a fabricated 0y.
+function normalizeAgeMonths(value: unknown): number | null {
+  return isFiniteNumber(value) && value >= 0 ? value : null;
+}
+
+// Pass a nullable money column through only when it is a real finite number; null
+// / NaN / ±Infinity become null rather than a fabricated $0, which would invent a
+// paid-off balance or a no-limit account.
+function normalizeNullableAmount(value: unknown): number | null {
+  return isFiniteNumber(value) ? value : null;
+}
+
+/**
+ * Map a web credit account onto the mobile CreditAccount shape. Web uses
+ * `creditorName` / `accountType` / `paymentStatus` / `openedDate`; mobile uses
+ * `name` / `type` / `status` / `openDate`. `ageYears` is DERIVED as whole years
+ * from `ageMonths` and is null whenever the age is unknown (null / negative /
+ * non-finite ageMonths) — never coerced to 0, which would fabricate a brand-new
+ * account and skew the screen's average-age math. A null balance or limit stays
+ * null rather than a fabricated $0. An absent creditorName / accountType becomes
+ * an empty string rather than a made-up value.
+ */
+export function mapWebAccount(raw: WebCreditAccount): CreditAccount {
+  const ageMonths = normalizeAgeMonths(raw.ageMonths);
+  const ageYears = ageMonths !== null ? Math.floor(ageMonths / 12) : null;
+  return {
+    id: raw.id,
+    name: raw.creditorName ?? "",
+    type: raw.accountType ?? "",
+    balance: normalizeNullableAmount(raw.balance),
+    creditLimit: normalizeNullableAmount(raw.creditLimit),
+    status: raw.paymentStatus ?? "",
+    openDate: raw.openedDate ?? null,
+    ageMonths,
+    ageYears,
+  };
+}
+
 export const creditRepairApi = {
   /**
    * Get all goodwill letters for the current user. The web route returns
@@ -596,6 +682,30 @@ export const creditRepairApi = {
     if (res.success) {
       const report = res.data ? mapWebCreditReport(res.data) : null;
       return { success: true, data: { report } };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Get all credit accounts (tradelines) for the current user. Calls
+   * GET /api/credit-repair/accounts (withAuth); the shared client unwraps the
+   * {success,data} envelope, so `res.data` is `{ accounts }`. Each account is
+   * adapted onto the mobile CreditAccount shape; nothing is fabricated — an
+   * account with an unknown opened_date keeps a null age rather than a 0-year-old
+   * one, and null balances / limits stay null. A failed request passes straight
+   * through without fabricating data.
+   */
+  getAccounts: async (): Promise<
+    ApiResponse<{ accounts: CreditAccount[] }>
+  > => {
+    const res = await api.get<{ accounts?: WebCreditAccount[] }>(
+      "/credit-repair/accounts",
+    );
+    if (res.success && res.data) {
+      const accounts = Array.isArray(res.data.accounts)
+        ? res.data.accounts.map(mapWebAccount)
+        : [];
+      return { success: true, data: { accounts } };
     }
     return { success: false, error: res.error };
   },
