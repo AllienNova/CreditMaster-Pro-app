@@ -64,9 +64,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       response.tradelines = tradelines;
     }
 
-    // Include reviews if requested
+    // Include reviews if requested. This is a PUBLIC route, so reviews are
+    // projected through getPublicReviewsForProvider — the reviewer's internal
+    // userId is stripped to prevent deanonymisation (see review-service.ts).
     if (includeReviews) {
-      const reviews = await reviewService.getReviewsForProvider(id);
+      const reviews = await reviewService.getPublicReviewsForProvider(id);
       response.reviews = reviews;
     }
 

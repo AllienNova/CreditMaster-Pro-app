@@ -22,6 +22,8 @@ export {
 } from "./tradeline-service";
 export {
   reviewService,
+  toPublicReview,
   type Review,
+  type PublicReview,
   type CreateReviewInput,
 } from "./review-service";
