@@ -6,7 +6,7 @@
 
 The client-wiring parity drive is complete: every mobile + web screen with an honest data source is wired. The residual parity gap is **backend that does not exist** — screens that still render local `MOCK_*` because there is no route, no table, or the table was never migrated. This spec defines the backend to close that gap **without fabricating data**: where no honest source exists, the screen empty-states; it never shows invented numbers.
 
-A second, load-bearing discovery: **many tables the code already reads/writes have no migration** (`transactions`, `spending_alerts`, `spending_limits`, `budget_alerts`; drifted twins for `credit_reports`, `subscriptions`, `audit_logs`, `vitality_scores`). This is the CLAUDE.md "live-schema audit" launch condition. Some routes have **live bugs today** (admin-audit POST and profile GET query columns that exist in no migration). Schema reconciliation is therefore a prerequisite, not a nicety.
+A second, load-bearing discovery: **many tables the code already reads/writes have no migration** (`transactions`, `spending_alerts`, `spending_limits`, `budget_alerts`) and **17 tables are twinned** (colliding `CREATE TABLE IF NOT EXISTS` — the first-applied shape wins, later definitions no-op). This is the CLAUDE.md "live-schema audit" launch condition. Some routes have **live bugs today** (admin-audit POST and profile GET query columns absent from the operative schema; `audit-logger.ts` silently swallows its failed insert). Schema reconciliation is therefore a prerequisite, not a nicety.
 
 ## Users
 

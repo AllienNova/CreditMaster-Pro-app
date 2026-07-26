@@ -28,6 +28,23 @@ Independent verification by the lead before revising (radical honesty): twin cou
 
 Revised plan committed `039295f`. Round-2 gate requested.
 
-## Round 2 — pending
+## Round 2 — 2026-07-26
 
-_Verdict to be appended when plan-critic returns._
+**Verdict: APPROVE WITH CONDITIONS** (0 P0 · 0 P1 · 1 P2 · 4 P3). Plan `039295f`. The critic re-derived every round-1 fix against committed source (not the change-summary) and confirmed all 2 P0 + 6 P1 genuinely resolved. **Plan is finalized** — build may proceed on M0-independent work + M0 authoring.
+
+Residual findings (this round) — all cleared in the finalize commit:
+
+| ID | Sev | Finding | Resolution |
+|---|---|---|---|
+| F-014 | P2 | M3-1 (journey) carried a stale `Dep: M0-7` from the renumber (M0-7 is now financial_goals, not erasure); contradicted "startable immediately" | M3-1 dep → `—` (M0-independent); journey self-registers erasure per ADR-0004 |
+| F-015 | P3 | M0-10 "register all M0 + M3 tables" runs before M3 creates them → erasure test false-greens | M0-10 scoped to M0-created tables; M3 tasks self-register + test their own |
+| F-016 | P3 | M0-0 introspection as a hard gate blocks all M0 on a reachable DB | Softened: introspect if reachable, else derive from code facts (additive-safe); introspection = verification, not precondition; critical-path + R-9 reworded |
+| F-017 | P3 | `audit-logger.ts` writes `target_type` not `resource_type` → NOT NULL still bites after additive cols | ADR-0010 impl note: map `target_type`→`resource_type` in that writer specifically |
+| F-018 | P3 | product-spec Problem paragraph still named 3-4 twins | Synced to 17-twin reality + the audit-logger silent-failure bug |
+
+**Conditions (per Finalization Gate):**
+1. F-014 — **fixed** (M3-1 dep).
+2. **R-9 (operator, OPEN):** confirm a reachable scratch/staging DB for M0-12 dry-run + optional M0-0 introspection. Migration *authoring* proceeds from code facts meanwhile; the dry-run is a deferred staging step, surfaced not guessed-green.
+3. F-015..F-018 — **fixed** in this commit.
+
+**Green to build now** (critic-confirmed, M0-independent): DEFAB-1/2/3, M1, M2-1..3, M3-1, M4-1, M5-3, + M0 migration authoring. The 5 owner ADRs (0005-0009) remain parked for sign-off (target 2026-08-09; M6 only, off critical path).

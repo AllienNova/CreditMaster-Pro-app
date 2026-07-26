@@ -9,7 +9,7 @@
 
 | Task | FR | Action |
 |---|---|---|
-| **M0-0** | 001 | **Introspect first.** Build a scratch DB from `supabase/migrations/*`; introspect the actual live schema; diff vs each new route's reader/writer column usage; classify all 17 twins by divergence. Output the exact per-table column deltas that drive M0-1..9. (No inference from filename sort — critic F-001.) |
+| **M0-0** | 001 | **Ground the deltas.** *If* a scratch/staging DB is reachable: build it from `supabase/migrations/*`, introspect the live schema, diff vs each route's reader/writer usage. *If not:* derive the column deltas from the code reader/writer facts already in research-notes — additive `ADD COLUMN IF NOT EXISTS` is safe either way (F-016). Introspection is verification, not a hard precondition; never infer the live shape from filename sort (F-001). Classify all 17 twins; output the deltas driving M0-1..9. |
 | M0-1 | 004 | `audit_logs` **redesign** (ADR-0010): forward `ALTER ADD COLUMN IF NOT EXISTS details/type/category/actor_email/target_type/success/error_message`; split AI-event shape to `system_event_logs` iff a live writer exists; fix 3 writers to canonical shape; **unswallow `audit-logger.ts:84`**; admin POST supplies `resource_type`. **Fixes live silent audit-write failure.** |
 | M0-2 | 005 | `profiles` (twinned): forward `ALTER ADD phone/address/city/state/zip/date_of_birth`; **also fix `profile/route.ts:20` `subscriptions!inner` → left join** (F-009, drops sub-less users). |
 | M0-3 | 002 | `subscriptions`: reconcile twin + write-time `tier` column. |
@@ -19,7 +19,7 @@
 | M0-7 | 002/302 | `financial_goals` reconcile: forward `ALTER ADD milestones/ai_recommendations` — **fixes FR-302 goal-milestone alert** (winning twin lacks them). |
 | M0-8 | 304/301 | `financial_health_scores` (FR-304 vitality) + `financial_insights` (FR-301) reconcile per M0-0 deltas. |
 | M0-9 | 204 | `disputes` reconcile (FR-204 disputable-items) per M0-0 deltas. |
-| M0-10 | 007 | Erasure cascade: register all M0 + M3 tables; **verify the sweep reaches child tables** (holdings/valuations/contributions — F-008); erasure test. |
+| M0-10 | 007 | Erasure cascade for **M0-created tables** (M3 tables self-register in their own task, ADR-0004 — F-015); **verify the sweep reaches child tables** (holdings/valuations/contributions — F-008); erasure test scoped to M0 tables. |
 | M0-11 | — | **Regenerate `src/lib/supabase/types.ts`** after all reconciles; `tsc` 0 (F-008). |
 | M0-12 | — | **Dry-run apply** the full migration set to the scratch DB, assert exit 0, before any dependent route builds (owns R-1; F-011). |
 
@@ -47,7 +47,7 @@ Order = ascending complexity. **Every by-id method owner-scoped before routing**
 
 | Task | FR | Service | Notes | Dep |
 |---|---|---|---|---|
-| M3-1 | 101 | journey | CLEAN-WIRE; `financial_journeys` (1 table); de-risks the pattern. | M0-7 |
+| M3-1 | 101 | journey | CLEAN-WIRE; `financial_journeys` (1 new table); de-risks the pattern; self-registers erasure (ADR-0004). | — (M0-independent, F-014) |
 | M3-2 | 102 | crypto | Fix IDOR in 6 by-id methods; 3 tables. | M3-1 |
 | M3-3 | 103 | real-estate | Fix IDOR in 7 by-id methods; 3 tables; amortization unit test. | M3-2 |
 | M3-4 | 104 | shared-goals | 5 tables + membership RLS; add `getGoal` membership check; **atomic contribution RPC (ADR-0002)**. | M3-3 |
@@ -89,7 +89,7 @@ Cannot start until the owner decides. Do NOT build against a guess. Recommendati
 
 ## Critical path
 
-`M0-0 (introspect) → M0-1..9 (forward reconcile migrations) → M0-11 (type-regen) → M0-12 (dry-run apply, exit 0) → the M0-dependent routes (M2-4, M4-2, M4-3, M4-4, M5-1, M5-2)`. **M0-0 introspection gates all of M0** — no reconcile migration is written from filename inference. Genuinely M0-independent and startable immediately: DEFAB-1/2/3 (proceed-now), M1, M2-1..3, M3-1, M4-1, M5-3. M3 is internally serial (ascending complexity). M6 is off the critical path (owner-gated). **New operator dependency (R-9):** M0-0/M0-12 need a reachable scratch/staging DB; if none, M0 blocks and is surfaced, not guessed.
+`M0-0 (ground deltas) → M0-1..9 (forward reconcile migrations) → M0-11 (type-regen) → M0-12 (dry-run apply, exit 0) → the M0-dependent routes (M2-4, M4-2, M4-3, M4-4, M5-1, M5-2)`. Migration **authoring** proceeds from code facts (research-notes) without a DB; only the M0-12 **dry-run verification** needs one. Genuinely M0-independent and startable immediately: DEFAB-1/2/3 (proceed-now), M1, M2-1..3, M3-1, M4-1, M5-3. M3 is internally serial (ascending complexity). M6 is off the critical path (owner-gated). **Operator dependency (R-9):** M0-12 dry-run + optional M0-0 introspection need a reachable scratch/staging DB; if none, migrations are authored from code facts and the dry-run is surfaced as a deferred staging step, not guessed-green.
 
 ## Two-lane execution (per session convention)
 

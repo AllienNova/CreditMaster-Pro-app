@@ -37,7 +37,7 @@ The two shapes are genuinely different logs conflated under one name; splitting 
 
 ## Implementation notes
 
-- M0-1: forward migration `ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS details jsonb, type text, category text, actor_email text, target_type text, success boolean, error_message text`; create `system_event_logs` iff introspection finds a live AI-event writer; fix the 3 writers; replace the `if (error) { }` swallow at `audit-logger.ts:84` with a logged surfaced error; admin POST supplies `resource_type`. Add an insert-failure test (fails before, passes after).
+- M0-1: forward migration `ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS details jsonb, type text, category text, actor_email text, target_type text, success boolean, error_message text`; create `system_event_logs` iff introspection finds a live AI-event writer; fix the 3 writers; replace the `if (error) { }` swallow at `audit-logger.ts:84` with a logged surfaced error; admin POST supplies `resource_type`. **Note (F-017): `audit-logger.ts` writes `target_type`, not `resource_type` — so after the additive columns land, `resource_type NOT NULL` still rejects its inserts. Map `target_type` → `resource_type` (or supply `resource_type`) in that writer specifically.** Add an insert-failure test (fails before, passes after) covering all 3 writers.
 
 ## Revisit triggers
 
