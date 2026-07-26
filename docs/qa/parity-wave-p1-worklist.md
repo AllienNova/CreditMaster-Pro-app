@@ -226,11 +226,20 @@ Two-lane autonomous build off the finalized `docs/specs/` plan. Each slice: suba
 | M4-1 mobile | `c87ca77` | mobile | wire admin health screen (resolved a shared-worktree collision) | tsc0, 30t |
 | M2-3 web | `4724ded` | web | /api/activity over notifications (real withAuth guard tested) | tsc0, 6t |
 | M2-3 mobile | `d67698c` | mobile | activity feed wired (types 1:1, dropped unbacked badges) | tsc0, 18t |
-| M2-1 web | in-flight | web | /api/credit-repair/accounts (tradelines) | — |
-| M2-1 mobile | in-flight | mobile | age/tradelines screen | — |
+| M2-1 web | `b36a0b2` | web | /api/credit-repair/accounts (tradelines; SALVAGED, session-limit push death) | tsc0, 23t |
+| M2-1 mobile | `94c6ecb` | mobile | age/tradelines screen (SALVAGED) | tsc0, 47t |
+| M2-2 web | `09eeac4` | web | /api/credit-repair/disputable-items (negative accts + undisputed inquiries) | tsc0, 7t |
+| M2-2 mobile | `ebec1fe` | mobile | dispute/create item list (submit-via-disputeStore intact) | tsc0, 55t |
+| DEFAB-2 web | `96c5639` | web | de-fab 2 web credit simulators + delete fabricated score-simulator-service.ts | tsc0, 68t |
 
-**Findings surfaced:** P0 review-leak (fixed `7963ded`); task #90 authed-review enumeration (FND-041-family, follow-up); `test:coverage:changed` crashes (maxBuffer — needs owner-approved bump); R-9 = start Docker daemon → local `supabase start` scratch DB unblocks M0 dry-run.
-**Queue next (no DB):** M2-2 disputable-items, M3-1 journey (new table), DEFAB-2 web simulators. **DB-gated (R-9):** M0 reconcile migrations (audit_logs silent-failure fix, profile drift), M0-dependent routes. **Owner-gated:** M6 (5 ADRs, 2026-08-09).
+**Findings surfaced:** P0 review-leak (fixed `7963ded`); task #90 authed-review enumeration (FND-041-family, follow-up); task #111 `test:coverage:changed` crashes (maxBuffer — needs owner-approved bump); R-9 = start Docker daemon → local `supabase start` scratch DB unblocks M0 dry-run.
+**Session-limit deaths salvaged:** M4-1 web (`abbb358`), M2-1 web+mobile (`b36a0b2`/`94c6ecb`) — committed-but-unpushed, main-session verified + salvage-pushed.
+
+## ⏸ NATURAL PAUSE APPROACHING (after DEFAB-2 web)
+The ungated, no-DB queue drains to empty after DEFAB-2 web. **Everything remaining needs an unblock:**
+- **Docker (R-9)** → M0 reconcile migrations (audit_logs silent-failure + profile drift live bugs) + M3 orphaned-service new-table migrations + all M0-dependent routes (M2-4, M4-2/3/4, M5). Start Docker → I run local `supabase start` (ephemeral, zero prod risk) → dry-run-verify + land them.
+- **Owner ADRs (M6)** → market-data/identity vendors (cost), cards/marketplace/simulator-rebuild (target 2026-08-09).
+- **Owner OK** → task #111 coverage-script maxBuffer fix.
 
 # 🏁 CLIENT-WIRING DRIVE COMPLETE (2026-07-25)
 Every mobile + web screen with a real, honest, concept-matched source is now wired. **~30 screens/fixes landed this session** (P1 vitality de-mock, P2 Credit Repair 8/8 + Billing 3/3, financial mobile domain 5, insights 3, credit-builder 1, dashboard 5, admin 2, misc 1, web paper/journal/goodwill/dashboard-spending), all verified green on PR #3, with **~12 real bugs caught** (net-worth Plaid classification, debt `$NaN` reports, `/financial/insights/*` mis-path, `__proto__` pollution, budget fabrication, FND-016 card, fabricated plan catalog, fabricated milestones, mock-on-error fallbacks, …). Every un-wired screen was honestly triaged and mapped — none fabricated.
