@@ -211,6 +211,27 @@ Web `src/`-only-wireable screens are DONE (paper, journal, goodwill-letters, das
 | `reports/[id]` | ⛔ no-source (`/api/credit/reports/[id]` is a 404) |
 | `profile/edit` | ⛔ partial/schema-drift (`/api/profile` omits dob/city/state/zip; `profiles` table lacks phone/address/avatar) |
 
+# 🚧 BACKEND BUILD PROGRESS (2026-07-26) — plan `dfb3cfe`, critic APPROVE WITH CONDITIONS
+
+Two-lane autonomous build off the finalized `docs/specs/` plan. Each slice: subagent → main-session verify (tsc + tests + honesty + clean pathspec) → recorded.
+
+| Slice | SHA | Lane | What | Verified |
+|---|---|---|---|---|
+| M1-1 | `493e90a` | mobile | utilization → real cards API | tsc0, 18t |
+| DEFAB-3 | `317420c` | web | rate-limit + 405-guard 8 public marketplace routes | tsc0, 142t |
+| M1-2 | `6755622` | mobile | report detail → real API (honest empty sections) | tsc0, 19t |
+| P0 fix | `7963ded` | web | strip reviewer user_id from public projection | tsc0, 19t |
+| DEFAB-2 | `6ea00ca` | mobile | de-fab both credit simulators (−438 lines) | tsc0, 8t |
+| M4-1 web | `abbb358` | web | real /api/admin/health probes (unconfigured≠green) — SALVAGED from session-limit death | tsc0, 33t |
+| M4-1 mobile | `c87ca77` | mobile | wire admin health screen (resolved a shared-worktree collision) | tsc0, 30t |
+| M2-3 web | `4724ded` | web | /api/activity over notifications (real withAuth guard tested) | tsc0, 6t |
+| M2-3 mobile | `d67698c` | mobile | activity feed wired (types 1:1, dropped unbacked badges) | tsc0, 18t |
+| M2-1 web | in-flight | web | /api/credit-repair/accounts (tradelines) | — |
+| M2-1 mobile | in-flight | mobile | age/tradelines screen | — |
+
+**Findings surfaced:** P0 review-leak (fixed `7963ded`); task #90 authed-review enumeration (FND-041-family, follow-up); `test:coverage:changed` crashes (maxBuffer — needs owner-approved bump); R-9 = start Docker daemon → local `supabase start` scratch DB unblocks M0 dry-run.
+**Queue next (no DB):** M2-2 disputable-items, M3-1 journey (new table), DEFAB-2 web simulators. **DB-gated (R-9):** M0 reconcile migrations (audit_logs silent-failure fix, profile drift), M0-dependent routes. **Owner-gated:** M6 (5 ADRs, 2026-08-09).
+
 # 🏁 CLIENT-WIRING DRIVE COMPLETE (2026-07-25)
 Every mobile + web screen with a real, honest, concept-matched source is now wired. **~30 screens/fixes landed this session** (P1 vitality de-mock, P2 Credit Repair 8/8 + Billing 3/3, financial mobile domain 5, insights 3, credit-builder 1, dashboard 5, admin 2, misc 1, web paper/journal/goodwill/dashboard-spending), all verified green on PR #3, with **~12 real bugs caught** (net-worth Plaid classification, debt `$NaN` reports, `/financial/insights/*` mis-path, `__proto__` pollution, budget fabrication, FND-016 card, fabricated plan catalog, fabricated milestones, mock-on-error fallbacks, …). Every un-wired screen was honestly triaged and mapped — none fabricated.
 
