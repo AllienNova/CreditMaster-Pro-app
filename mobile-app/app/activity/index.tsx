@@ -1,4 +1,21 @@
-import React, { useState } from "react";
+/**
+ * Fynvita Activity Screen
+ *
+ * Real-data wiring (M2-3): renders the user's real activity feed from
+ * GET /api/activity (authed) via activityApi.getActivity, adapted web -> mobile by
+ * mapWebActivity. The feed is sourced from the notifications table; each item's
+ * icon is driven off its real `type`. Fetch on mount with honest inline
+ * loading / error / empty states; pull-to-refresh re-fetches.
+ *
+ * The former hardcoded 8-item `activities` array, the local ActivityItem type,
+ * and the fake setTimeout refresh were removed. Radical honesty: only real fields
+ * render — title, message, and a formatted `createdAt`. The old per-item
+ * change/status badges (e.g. "+15", "Resolved") had NO backing in the contract and
+ * are dropped, not re-invented. An unrecognized `type` shows a neutral default icon
+ * rather than a fabricated category, and an unread item is surfaced (never hidden).
+ */
+
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,128 +23,110 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../constants/theme";
+import { activityApi, ACTIVITY_TYPES } from "../../src/services/api/activity";
+import type { ActivityItem, ActivityType } from "../../src/services/api/activity";
 
-type ActivityItem = {
-  id: string;
-  type:
-    | "score_change"
-    | "dispute"
-    | "payment"
-    | "document"
-    | "alert"
-    | "account";
-  title: string;
-  description: string;
-  time: string;
-  meta?: { change?: number; status?: string };
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+// Per-type display: filter label + list icon/color, driven off the real activity
+// `type`. `other` is the neutral floor an unrecognized type maps to — a default
+// dot icon, never a fabricated category. Colors preserve the screen's prior
+// palette (dispute=orange, payment=green, document=purple).
+const TYPE_DISPLAY: Record<
+  ActivityType,
+  { label: string; icon: IoniconName; color: string }
+> = {
+  dispute_update: { label: "Disputes", icon: "document-text", color: "#FF9800" },
+  payment_success: { label: "Payments", icon: "card", color: "#00AA00" },
+  document_uploaded: { label: "Documents", icon: "folder", color: "#9C27B0" },
+  tip: { label: "Tips", icon: "bulb", color: "#0066CC" },
+  other: { label: "Other", icon: "ellipse", color: "#666" },
 };
 
+// Filter chips: "All" plus one chip per real type (derived from ACTIVITY_TYPES so
+// the filters can never drift from the contract). `other` items are only shown
+// under "All" — they belong to no specific real category.
+const FILTERS: { key: "all" | ActivityType; label: string }[] = [
+  { key: "all", label: "All" },
+  ...ACTIVITY_TYPES.map((t) => ({ key: t, label: TYPE_DISPLAY[t].label })),
+];
+
+// createdAt arrives as an ISO string; render a compact locale date. Absent or
+// unparseable -> "" so the row omits the time line rather than showing a fake one.
+function formatActivityTime(iso: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString();
+}
+
 export default function ActivityScreen() {
+  const [activities, setActivities] = useState<ActivityItem[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFilter] = useState<"all" | ActivityType>("all");
 
-  const activities: ActivityItem[] = [
-    {
-      id: "1",
-      type: "score_change",
-      title: "Credit Score Update",
-      description: "Your Experian score increased",
-      time: "2 hours ago",
-      meta: { change: 15 },
-    },
-    {
-      id: "2",
-      type: "dispute",
-      title: "Dispute Updated",
-      description: "Medical collection dispute marked as resolved",
-      time: "5 hours ago",
-      meta: { status: "resolved" },
-    },
-    {
-      id: "3",
-      type: "payment",
-      title: "Payment Received",
-      description: "Premium subscription renewed",
-      time: "Yesterday",
-      meta: { status: "success" },
-    },
-    {
-      id: "4",
-      type: "document",
-      title: "Document Uploaded",
-      description: "Credit report from Experian uploaded",
-      time: "Yesterday",
-    },
-    {
-      id: "5",
-      type: "alert",
-      title: "New Hard Inquiry",
-      description: "Chase Bank checked your credit",
-      time: "2 days ago",
-    },
-    {
-      id: "6",
-      type: "account",
-      title: "Account Added",
-      description: "New credit card account detected",
-      time: "3 days ago",
-    },
-    {
-      id: "7",
-      type: "score_change",
-      title: "Credit Score Update",
-      description: "Your TransUnion score decreased",
-      time: "1 week ago",
-      meta: { change: -5 },
-    },
-    {
-      id: "8",
-      type: "dispute",
-      title: "Dispute Filed",
-      description: "Late payment dispute submitted to Equifax",
-      time: "1 week ago",
-      meta: { status: "pending" },
-    },
-  ];
-
-  const filters = [
-    { key: "all", label: "All" },
-    { key: "score_change", label: "Scores" },
-    { key: "dispute", label: "Disputes" },
-    { key: "payment", label: "Payments" },
-    { key: "alert", label: "Alerts" },
-  ];
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "score_change":
-        return { name: "trending-up", color: "#0066CC" };
-      case "dispute":
-        return { name: "document-text", color: "#FF9800" };
-      case "payment":
-        return { name: "card", color: "#00AA00" };
-      case "document":
-        return { name: "folder", color: "#9C27B0" };
-      case "alert":
-        return { name: "warning", color: "#CC0000" };
-      case "account":
-        return { name: "business", color: "#607D8B" };
-      default:
-        return { name: "ellipse", color: "#666" };
+  const fetchActivities = useCallback(async () => {
+    const res = await activityApi.getActivity();
+    if (res.success && res.data) {
+      setActivities(res.data.activities);
+      setError(null);
+    } else {
+      setError(res.error?.message ?? "Unable to load your activity.");
     }
-  };
+  }, []);
 
-  const filteredActivities =
-    filter === "all" ? activities : activities.filter((a) => a.type === filter);
+  const load = useCallback(async () => {
+    setLoading(true);
+    await fetchActivities();
+    setLoading(false);
+  }, [fetchActivities]);
 
-  const onRefresh = () => {
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  };
+    await fetchActivities();
+    setRefreshing(false);
+  }, [fetchActivities]);
+
+  if (loading && activities === null) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.centered} testID="activity-loading">
+          <ActivityIndicator size="large" color={lightTheme.colors.primary} />
+          <Text style={styles.stateText}>Loading activity...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error && activities === null) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.centered} testID="activity-error">
+          <Ionicons name="cloud-offline-outline" size={48} color="#ccc" />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={load}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  const items = activities ?? [];
+  const filteredActivities =
+    filter === "all" ? items : items.filter((a) => a.type === filter);
+  const filterLabel = FILTERS.find((f) => f.key === filter)?.label ?? "";
 
   return (
     <View style={styles.container}>
@@ -147,7 +146,7 @@ export default function ActivityScreen() {
         showsHorizontalScrollIndicator={false}
         style={styles.filterContainer}
       >
-        {filters.map((f) => (
+        {FILTERS.map((f) => (
           <TouchableOpacity
             key={f.key}
             style={[
@@ -174,90 +173,54 @@ export default function ActivityScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {filteredActivities.map((activity) => {
-          const icon = getIcon(activity.type);
-          return (
-            <TouchableOpacity key={activity.id} style={styles.activityItem}>
-              <View
-                style={[
-                  styles.iconContainer,
-                  { backgroundColor: `${icon.color}15` },
-                ]}
-              >
-                <Ionicons
-                  name={icon.name as any}
-                  size={20}
-                  color={icon.color}
-                />
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>{activity.title}</Text>
-                <Text style={styles.activityDesc}>{activity.description}</Text>
-                <Text style={styles.activityTime}>{activity.time}</Text>
-              </View>
-              {activity.meta?.change !== undefined && (
-                <View
-                  style={[
-                    styles.changeBadge,
-                    {
-                      backgroundColor:
-                        activity.meta.change > 0 ? "#E8F5E9" : "#FFEBEE",
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.changeText,
-                      {
-                        color: activity.meta.change > 0 ? "#00AA00" : "#CC0000",
-                      },
-                    ]}
-                  >
-                    {activity.meta.change > 0 ? "+" : ""}
-                    {activity.meta.change}
-                  </Text>
-                </View>
-              )}
-              {activity.meta?.status && (
-                <View
-                  style={[
-                    styles.statusBadge,
-                    {
-                      backgroundColor:
-                        activity.meta.status === "resolved"
-                          ? "#E8F5E9"
-                          : activity.meta.status === "success"
-                            ? "#E8F5E9"
-                            : "#FFF3E0",
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.statusText,
-                      {
-                        color:
-                          activity.meta.status === "resolved"
-                            ? "#00AA00"
-                            : activity.meta.status === "success"
-                              ? "#00AA00"
-                              : "#E65100",
-                      },
-                    ]}
-                  >
-                    {activity.meta.status.charAt(0).toUpperCase() +
-                      activity.meta.status.slice(1)}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-        {filteredActivities.length === 0 && (
-          <View style={styles.emptyState}>
+        {items.length === 0 ? (
+          <View style={styles.emptyState} testID="activity-empty">
             <Ionicons name="time-outline" size={48} color="#ccc" />
-            <Text style={styles.emptyText}>No activity found</Text>
+            <Text style={styles.emptyText}>No activity yet</Text>
           </View>
+        ) : filteredActivities.length === 0 ? (
+          <View style={styles.emptyState} testID="activity-filter-empty">
+            <Ionicons name="funnel-outline" size={48} color="#ccc" />
+            <Text style={styles.emptyText}>
+              No {filterLabel.toLowerCase()} activity
+            </Text>
+          </View>
+        ) : (
+          filteredActivities.map((activity) => {
+            const display = TYPE_DISPLAY[activity.type];
+            const time = formatActivityTime(activity.createdAt);
+            return (
+              <TouchableOpacity key={activity.id} style={styles.activityItem}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: `${display.color}15` },
+                  ]}
+                >
+                  <Ionicons
+                    name={display.icon}
+                    size={20}
+                    color={display.color}
+                  />
+                </View>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityTitle}>{activity.title}</Text>
+                  {activity.message ? (
+                    <Text style={styles.activityDesc}>{activity.message}</Text>
+                  ) : null}
+                  {time ? (
+                    <Text style={styles.activityTime}>{time}</Text>
+                  ) : null}
+                </View>
+                {!activity.read ? (
+                  <View
+                    style={styles.unreadDot}
+                    testID={`activity-unread-${activity.id}`}
+                  />
+                ) : null}
+              </TouchableOpacity>
+            );
+          })
         )}
       </ScrollView>
     </View>
@@ -266,6 +229,25 @@ export default function ActivityScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+  },
+  stateText: {
+    marginTop: 16,
+    marginBottom: 16,
+    color: "#666",
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: lightTheme.colors.primary,
+  },
+  retryText: { color: "#fff", fontWeight: "600", fontSize: 14 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -312,10 +294,13 @@ const styles = StyleSheet.create({
   activityTitle: { fontSize: 14, fontWeight: "600", color: "#333" },
   activityDesc: { fontSize: 12, color: "#666", marginTop: 2 },
   activityTime: { fontSize: 11, color: "#999", marginTop: 4 },
-  changeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  changeText: { fontSize: 14, fontWeight: "700" },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  statusText: { fontSize: 12, fontWeight: "600" },
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: lightTheme.colors.primary,
+    marginLeft: 8,
+  },
   emptyState: { alignItems: "center", paddingVertical: 48 },
   emptyText: { fontSize: 14, color: "#999", marginTop: 12 },
 });
