@@ -315,6 +315,87 @@ export function mapWebInquiry(
   };
 }
 
+// --- Mobile-facing credit-card shape -----------------------------------------
+// The mobile Utilization screen renders, per card, an issuer name, the balance
+// against its limit, and a utilization percentage; across all displayed cards it
+// computes overall utilization, totals, and a pay-down recommendation. The web
+// route (GET /api/credit-repair/cards) returns cards shaped by
+// src/lib/credit-repair/db/credit-cards-db-service.ts: `cardName`,
+// `currentBalance`, `creditLimit`, and a database-generated `utilization`
+// (DECIMAL(5,2) = current_balance / credit_limit * 100 — a 0-100 percent, per
+// supabase/migrations/20250204000000_credit_repair_schema.sql:247). The adapter
+// renames those onto the mobile shape and drops any card missing a required
+// numeric rather than rendering a fabricated $0 / 0% row.
+
+export interface CreditCard {
+  id: string;
+  name: string;
+  balance: number;
+  limit: number;
+  utilization: number; // percent, 0-100
+}
+
+/**
+ * Raw credit card as returned by GET /api/credit-repair/cards
+ * (src/lib/credit-repair/db/credit-cards-db-service.ts `CreditCard`). The web
+ * route serializes the record with `NextResponse.json`, so its `Date` columns
+ * (lastPaymentDate, createdAt, updatedAt) arrive as ISO strings; the mobile
+ * screen renders none of them. Every field except `id` is declared optional and
+ * tolerant so a partial payload never throws — the adapter decides per row
+ * whether the numerics are complete enough to render.
+ */
+export interface WebCreditCard {
+  id: string;
+  userId?: string;
+  cardName?: string;
+  lastFourDigits?: string;
+  currentBalance?: number;
+  creditLimit?: number;
+  utilization?: number;
+  statementDate?: number;
+  dueDate?: number;
+  lastPaymentDate?: string;
+  lastPaymentAmount?: number;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// True only for a real, finite number — rejects undefined, null, NaN, and
+// ±Infinity. Used to decide whether a card carries the numerics the screen needs.
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+/**
+ * Map a web credit card onto the mobile CreditCard shape, or return null to drop
+ * it. Web uses `cardName` / `currentBalance` / `creditLimit`; mobile uses
+ * `name` / `balance` / `limit`. `balance`, `limit`, and `utilization` are all
+ * required to render an honest utilization row — a card missing any of them is
+ * dropped (returns null) rather than coerced to $0 / 0%, which would fabricate a
+ * paid-off card and skew the overall ratio. In normal operation the web route
+ * always supplies all three (utilization is a non-null generated column), so the
+ * guard only sheds a malformed payload; the caller renormalizes its totals over
+ * the surviving cards. An absent `cardName` becomes an empty string rather than a
+ * made-up issuer name.
+ */
+export function mapWebCard(raw: WebCreditCard): CreditCard | null {
+  if (
+    !isFiniteNumber(raw.currentBalance) ||
+    !isFiniteNumber(raw.creditLimit) ||
+    !isFiniteNumber(raw.utilization)
+  ) {
+    return null;
+  }
+  return {
+    id: raw.id,
+    name: raw.cardName ?? "",
+    balance: raw.currentBalance,
+    limit: raw.creditLimit,
+    utilization: raw.utilization,
+  };
+}
+
 export const creditRepairApi = {
   /**
    * Get all goodwill letters for the current user. The web route returns
@@ -382,6 +463,32 @@ export const creditRepairApi = {
         ? res.data.inquiries.map((r) => mapWebInquiry(r, now))
         : [];
       return { success: true, data: { inquiries } };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Get all credit cards for the current user. The web route returns
+   * `{ cards, totalUtilization, pagination }`; the shared client unwraps the
+   * `{ success, data }` envelope, so `res.data` is that inner object. Each card
+   * is adapted onto the mobile CreditCard shape; cards missing a required numeric
+   * are dropped (mapWebCard returns null) so the screen renormalizes its overall
+   * utilization over only the cards it can honestly render — the server's
+   * `totalUtilization` is intentionally not surfaced, since a renormalized set
+   * would contradict it. A failed request passes straight through without
+   * fabricating data.
+   */
+  getCards: async (): Promise<ApiResponse<{ cards: CreditCard[] }>> => {
+    const res = await api.get<{ cards?: WebCreditCard[] }>(
+      "/credit-repair/cards",
+    );
+    if (res.success && res.data) {
+      const cards = Array.isArray(res.data.cards)
+        ? res.data.cards
+            .map(mapWebCard)
+            .filter((c): c is CreditCard => c !== null)
+        : [];
+      return { success: true, data: { cards } };
     }
     return { success: false, error: res.error };
   },

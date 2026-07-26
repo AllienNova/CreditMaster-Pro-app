@@ -1,56 +1,32 @@
 /**
  * Fynvita Credit Utilization Screen
- * Optimize credit utilization ratio
+ *
+ * Real-data wiring (M1-1 / FR-201): renders the user's real credit cards from
+ * GET /api/credit-repair/cards (withAuth) via creditRepairApi.getCards, adapted
+ * web -> mobile by mapWebCard. Fetch on mount with honest inline
+ * loading / error / empty states and a retry. The former hardcoded MOCK_CARDS
+ * array and the local CreditCard interface were removed; overall utilization,
+ * totals, and the pay-down recommendation are computed from the real cards.
+ * Nothing is fabricated — a card missing a required numeric is dropped by the
+ * adapter rather than shown as $0 / 0%.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-import { useCreditStore } from "../../src/store/creditStore";
-
-interface CreditCard {
-  id: string;
-  name: string;
-  balance: number;
-  limit: number;
-  utilization: number;
-}
-
-const MOCK_CARDS: CreditCard[] = [
-  {
-    id: "1",
-    name: "Chase Freedom",
-    balance: 1500,
-    limit: 5000,
-    utilization: 30,
-  },
-  {
-    id: "2",
-    name: "Capital One Quicksilver",
-    balance: 800,
-    limit: 3000,
-    utilization: 27,
-  },
-  { id: "3", name: "Discover It", balance: 200, limit: 2000, utilization: 10 },
-  {
-    id: "4",
-    name: "Citi Double Cash",
-    balance: 2500,
-    limit: 8000,
-    utilization: 31,
-  },
-];
+import { creditRepairApi } from "../../src/services/api/creditRepair";
+import type { CreditCard } from "../../src/services/api/creditRepair";
 
 const getUtilizationColor = (util: number) => {
   if (util <= 10) return "#22C55E";
@@ -69,13 +45,64 @@ const getUtilizationLabel = (util: number) => {
 };
 
 export default function UtilizationScreen() {
-  const [cards, setCards] = useState<CreditCard[]>(MOCK_CARDS);
+  const [cards, setCards] = useState<CreditCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await creditRepairApi.getCards();
+    if (res.success && res.data) {
+      setCards(res.data.cards);
+      setError(null);
+    } else {
+      setError(res.error?.message ?? "Unable to load your credit cards.");
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Totals computed from the real, displayed cards. The totalLimit guard keeps a
+  // zero-limit set at 0% rather than NaN.
   const totalBalance = cards.reduce((sum, c) => sum + c.balance, 0);
   const totalLimit = cards.reduce((sum, c) => sum + c.limit, 0);
-  const overallUtilization = Math.round((totalBalance / totalLimit) * 100);
+  const overallUtilization =
+    totalLimit > 0 ? Math.round((totalBalance / totalLimit) * 100) : 0;
 
   const idealBalance = Math.round(totalLimit * 0.1);
   const amountToPayOff = Math.max(0, totalBalance - idealBalance);
+
+  if (loading && cards.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="utilization-loading">
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.stateText}>Loading credit cards...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && cards.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="utilization-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={load}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -95,118 +122,141 @@ export default function UtilizationScreen() {
           <View style={{ width: 24 }} />
         </View>
 
-        {/* Overall Utilization Card */}
-        <Card style={styles.overallCard}>
-          <View style={styles.utilizationCircle}>
-            <Text
-              style={[
-                styles.utilizationPercent,
-                { color: getUtilizationColor(overallUtilization) },
-              ]}
-            >
-              {overallUtilization}%
-            </Text>
-            <Text style={styles.utilizationLabel}>
-              {getUtilizationLabel(overallUtilization)}
-            </Text>
-          </View>
-          <View style={styles.utilizationBar}>
-            <View
-              style={[
-                styles.utilizationFill,
-                {
-                  width: `${Math.min(overallUtilization, 100)}%`,
-                  backgroundColor: getUtilizationColor(overallUtilization),
-                },
-              ]}
+        {cards.length === 0 ? (
+          <View style={styles.emptyCard} testID="utilization-empty">
+            <Ionicons
+              name="card-outline"
+              size={40}
+              color={theme.colors.textSecondary}
             />
-            <View style={styles.idealMarker} />
-          </View>
-          <View style={styles.utilizationLegend}>
-            <Text style={styles.legendText}>0%</Text>
-            <Text style={styles.legendIdeal}>10% ideal</Text>
-            <Text style={styles.legendText}>100%</Text>
-          </View>
-        </Card>
-
-        {/* Summary Stats */}
-        <View style={styles.statsRow}>
-          <Card style={styles.statCard}>
-            <Text style={styles.statLabel}>Total Balance</Text>
-            <Text style={styles.statValue}>
-              ${totalBalance.toLocaleString()}
+            <Text style={styles.emptyTitle}>No credit cards yet</Text>
+            <Text style={styles.emptyText}>
+              Add a credit card to track your utilization and get pay-down
+              recommendations.
             </Text>
-          </Card>
-          <Card style={styles.statCard}>
-            <Text style={styles.statLabel}>Total Limit</Text>
-            <Text style={styles.statValue}>${totalLimit.toLocaleString()}</Text>
-          </Card>
-        </View>
-
-        {/* Recommendation */}
-        {amountToPayOff > 0 && (
-          <Card style={styles.recommendationCard}>
-            <View style={styles.recommendationIcon}>
-              <Ionicons name="bulb" size={24} color="#F59E0B" />
-            </View>
-            <View style={styles.recommendationContent}>
-              <Text style={styles.recommendationTitle}>
-                Pay off ${amountToPayOff.toLocaleString()}
-              </Text>
-              <Text style={styles.recommendationText}>
-                To reach the ideal 10% utilization, pay down your balances by $
-                {amountToPayOff.toLocaleString()}
-              </Text>
-            </View>
-          </Card>
-        )}
-
-        {/* Cards List */}
-        <Text style={styles.sectionTitle}>Your Credit Cards</Text>
-        {cards.map((card) => (
-          <Card key={card.id} style={styles.cardItem}>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardIcon}>
-                <Ionicons name="card" size={20} color={theme.colors.primary} />
-              </View>
-              <View style={styles.cardInfo}>
-                <Text style={styles.cardName}>{card.name}</Text>
-                <Text style={styles.cardBalance}>
-                  ${card.balance.toLocaleString()} / $
-                  {card.limit.toLocaleString()}
-                </Text>
-              </View>
-              <View
-                style={[
-                  styles.utilizationBadge,
-                  {
-                    backgroundColor: `${getUtilizationColor(card.utilization)}20`,
-                  },
-                ]}
-              >
+          </View>
+        ) : (
+          <>
+            {/* Overall Utilization Card */}
+            <Card style={styles.overallCard}>
+              <View style={styles.utilizationCircle}>
                 <Text
                   style={[
-                    styles.utilizationBadgeText,
-                    { color: getUtilizationColor(card.utilization) },
+                    styles.utilizationPercent,
+                    { color: getUtilizationColor(overallUtilization) },
                   ]}
                 >
-                  {card.utilization}%
+                  {overallUtilization}%
+                </Text>
+                <Text style={styles.utilizationLabel}>
+                  {getUtilizationLabel(overallUtilization)}
                 </Text>
               </View>
+              <View style={styles.utilizationBar}>
+                <View
+                  style={[
+                    styles.utilizationFill,
+                    {
+                      width: `${Math.min(overallUtilization, 100)}%`,
+                      backgroundColor: getUtilizationColor(overallUtilization),
+                    },
+                  ]}
+                />
+                <View style={styles.idealMarker} />
+              </View>
+              <View style={styles.utilizationLegend}>
+                <Text style={styles.legendText}>0%</Text>
+                <Text style={styles.legendIdeal}>10% ideal</Text>
+                <Text style={styles.legendText}>100%</Text>
+              </View>
+            </Card>
+
+            {/* Summary Stats */}
+            <View style={styles.statsRow}>
+              <Card style={styles.statCard}>
+                <Text style={styles.statLabel}>Total Balance</Text>
+                <Text style={styles.statValue}>
+                  ${totalBalance.toLocaleString()}
+                </Text>
+              </Card>
+              <Card style={styles.statCard}>
+                <Text style={styles.statLabel}>Total Limit</Text>
+                <Text style={styles.statValue}>
+                  ${totalLimit.toLocaleString()}
+                </Text>
+              </Card>
             </View>
-            <View style={styles.cardBar}>
-              <View
-                style={[
-                  styles.cardBarFill,
-                  {
-                    width: `${card.utilization}%`,
-                    backgroundColor: getUtilizationColor(card.utilization),
-                  },
-                ]}
-              />
-            </View>
-          </Card>
-        ))}
+
+            {/* Recommendation */}
+            {amountToPayOff > 0 && (
+              <Card style={styles.recommendationCard}>
+                <View style={styles.recommendationIcon}>
+                  <Ionicons name="bulb" size={24} color="#F59E0B" />
+                </View>
+                <View style={styles.recommendationContent}>
+                  <Text style={styles.recommendationTitle}>
+                    Pay off ${amountToPayOff.toLocaleString()}
+                  </Text>
+                  <Text style={styles.recommendationText}>
+                    To reach the ideal 10% utilization, pay down your balances by
+                    ${amountToPayOff.toLocaleString()}
+                  </Text>
+                </View>
+              </Card>
+            )}
+
+            {/* Cards List */}
+            <Text style={styles.sectionTitle}>Your Credit Cards</Text>
+            {cards.map((card) => (
+              <Card key={card.id} style={styles.cardItem}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardIcon}>
+                    <Ionicons
+                      name="card"
+                      size={20}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardName}>{card.name}</Text>
+                    <Text style={styles.cardBalance}>
+                      ${card.balance.toLocaleString()} / $
+                      {card.limit.toLocaleString()}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.utilizationBadge,
+                      {
+                        backgroundColor: `${getUtilizationColor(card.utilization)}20`,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.utilizationBadgeText,
+                        { color: getUtilizationColor(card.utilization) },
+                      ]}
+                    >
+                      {card.utilization}%
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.cardBar}>
+                  <View
+                    style={[
+                      styles.cardBarFill,
+                      {
+                        width: `${Math.min(card.utilization, 100)}%`,
+                        backgroundColor: getUtilizationColor(card.utilization),
+                      },
+                    ]}
+                  />
+                </View>
+              </Card>
+            ))}
+          </>
+        )}
 
         {/* Tips */}
         <Card style={styles.tipsCard}>
@@ -244,6 +294,42 @@ export default function UtilizationScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
+  },
+  stateText: {
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
+  emptyCard: {
+    alignItems: "center",
+    paddingVertical: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
