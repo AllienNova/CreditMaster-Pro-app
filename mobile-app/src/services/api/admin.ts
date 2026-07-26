@@ -199,4 +199,145 @@ export const adminDisputesApi = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Admin system health
+// ---------------------------------------------------------------------------
+//
+// Per-service liveness for the admin health dashboard, backed by the real,
+// admin-guarded route (GET /api/admin/health — withRole("admin") in
+// src/app/api/admin/health/route.ts). That route probes six external
+// dependencies (Supabase, Stripe, AIML, Plaid, S3, Resend) via
+// src/lib/monitoring/service-probes.ts and returns a SystemHealth payload
+// directly (NextResponse.json — no {success,data} wrapper, so the shared client
+// passes the object through as res.data):
+//   { status, checkedAt, services: [{ service, status, detail? }] }.
+//
+// Honesty contract (Wave 7, verbatim from service-probes.ts): a service is
+// NEVER reported `healthy` unless a real credential-bearing liveness call
+// succeeded. An unconfigured service is `unknown` ("cannot assess" — never
+// green) and a failed/timed-out probe is `down`. The route supplies NO uptime,
+// response-time, or last-check metrics — the mobile screen's former hardcoded
+// "99.99%" / "45ms" / "30s ago" values were fabricated and are DROPPED, not
+// re-invented here.
+//
+// This adapter only renames `service` -> `name`, passes the real four-value
+// status through unchanged, and forwards the optional probe `detail`. An
+// unrecognized or missing status degrades to `unknown` — the honest "cannot
+// assess" floor — never to `healthy`.
+
+export type ServiceHealthStatus = "healthy" | "degraded" | "down" | "unknown";
+
+// The full status vocabulary the route can emit (service-probes.ts
+// `ServiceStatus`). Used both to validate an incoming status and to render an
+// honest per-status summary. `unknown` is the floor a bad value degrades to.
+export const SERVICE_HEALTH_STATUSES: readonly ServiceHealthStatus[] = [
+  "healthy",
+  "degraded",
+  "down",
+  "unknown",
+];
+
+export interface ServiceHealth {
+  name: string; // service label (Supabase, Stripe, ...)
+  status: ServiceHealthStatus; // real four-value status, passed through honestly
+  detail?: string; // probe failure message or "not configured"; omitted when absent
+}
+
+export interface SystemHealth {
+  status: ServiceHealthStatus; // overall, worst-component-wins (down > degraded/unknown > healthy)
+  checkedAt: string; // ISO 8601 over HTTP; "" when absent
+  services: ServiceHealth[];
+}
+
+/**
+ * Raw per-service health as returned by GET /api/admin/health
+ * (src/lib/monitoring/service-probes.ts `ServiceHealth`). Every field is
+ * optional to stay tolerant of a partial row — a missing service name becomes an
+ * empty string and a missing/unrecognized status degrades to `unknown`, never a
+ * fabricated `healthy`.
+ */
+export interface WebServiceHealth {
+  service?: string;
+  status?: string;
+  detail?: string;
+}
+
+/**
+ * Raw system-health envelope as returned by GET /api/admin/health
+ * (src/lib/monitoring/service-probes.ts `SystemHealth`). Optional/tolerant so a
+ * partial payload never throws.
+ */
+export interface WebSystemHealth {
+  status?: string;
+  checkedAt?: string;
+  services?: WebServiceHealth[];
+}
+
+// Pass a status through only when it is one the route actually emits; anything
+// else (unknown value, missing) degrades to `unknown` — "cannot assess", the
+// honest floor that never claims a service is healthy or definitively down.
+function normalizeServiceStatus(
+  status: string | undefined,
+): ServiceHealthStatus {
+  return status &&
+    (SERVICE_HEALTH_STATUSES as readonly string[]).includes(status)
+    ? (status as ServiceHealthStatus)
+    : "unknown";
+}
+
+/**
+ * Reshape one raw probe result onto the mobile ServiceHealth model. No
+ * fabrication: a missing name becomes an empty string, the real status is passed
+ * through (unknown/degraded preserved, never coerced to healthy), and `detail`
+ * is forwarded only when the route actually supplied one.
+ */
+export function mapWebServiceHealth(raw: WebServiceHealth): ServiceHealth {
+  return {
+    name: raw.service ?? "",
+    status: normalizeServiceStatus(raw.status),
+    ...(raw.detail ? { detail: raw.detail } : {}),
+  };
+}
+
+/**
+ * Reshape the raw system-health envelope onto the mobile SystemHealth model. The
+ * overall status is passed through the same honest normalizer (missing ->
+ * `unknown`), `checkedAt` is preserved as the ISO string the route returns, and
+ * a non-array `services` degrades to an empty list rather than throwing.
+ */
+export function mapWebSystemHealth(raw: WebSystemHealth): SystemHealth {
+  return {
+    status: normalizeServiceStatus(raw.status),
+    checkedAt: raw.checkedAt ?? "",
+    services: Array.isArray(raw.services)
+      ? raw.services.map(mapWebServiceHealth)
+      : [],
+  };
+}
+
+export const adminHealthApi = {
+  /**
+   * Fetch system health from the real admin route and adapt it onto the mobile
+   * SystemHealth shape. A failed request — including a non-admin 403 — is passed
+   * straight through with no fabricated fallback, so the screen shows an honest
+   * error state instead of an all-green void.
+   */
+  getSystemHealth: async (): Promise<ApiResponse<SystemHealth>> => {
+    const res = await api.get<WebSystemHealth>("/admin/health");
+    if (res.success && res.data) {
+      return {
+        success: true,
+        data: mapWebSystemHealth(res.data),
+        timestamp: res.timestamp,
+      };
+    }
+    return {
+      success: false,
+      error: res.error,
+      message: res.message,
+      timestamp: res.timestamp,
+    };
+  },
+};
+
 export default adminAnalyticsApi;

@@ -13,8 +13,16 @@ import {
   adminDisputesApi,
   mapAdminDispute,
   ADMIN_DISPUTE_STATUSES,
+  adminHealthApi,
+  mapWebServiceHealth,
+  mapWebSystemHealth,
+  SERVICE_HEALTH_STATUSES,
 } from "../admin";
-import type { AdminAnalytics, AdminDisputeRow } from "../admin";
+import type {
+  AdminAnalytics,
+  AdminDisputeRow,
+  WebSystemHealth,
+} from "../admin";
 import { api } from "../client";
 
 jest.mock("../client", () => ({
@@ -193,6 +201,143 @@ describe("adminDisputesApi.getDisputes", () => {
     });
 
     const res = await adminDisputesApi.getDisputes();
+
+    expect(res.success).toBe(false);
+    expect(res.data).toBeUndefined();
+    expect(res.error?.message).toBe("Forbidden");
+  });
+});
+
+describe("mapWebServiceHealth", () => {
+  it("renames service -> name and forwards a real detail", () => {
+    const m = mapWebServiceHealth({
+      service: "Stripe",
+      status: "down",
+      detail: "Stripe API error",
+    });
+    expect(m).toEqual({
+      name: "Stripe",
+      status: "down",
+      detail: "Stripe API error",
+    });
+  });
+
+  it("preserves unknown and degraded — never coerces them to healthy", () => {
+    // `unknown` = unconfigured / cannot assess; must stay amber-honest, not green.
+    expect(mapWebServiceHealth({ service: "AIML", status: "unknown" }).status).toBe(
+      "unknown",
+    );
+    expect(
+      mapWebServiceHealth({ service: "Plaid", status: "degraded" }).status,
+    ).toBe("degraded");
+  });
+
+  it("passes every real status enum straight through", () => {
+    for (const s of SERVICE_HEALTH_STATUSES) {
+      expect(mapWebServiceHealth({ service: "X", status: s }).status).toBe(s);
+    }
+  });
+
+  it("degrades an unrecognized or missing status to unknown, never healthy", () => {
+    expect(mapWebServiceHealth({ service: "X", status: "operational" }).status).toBe(
+      "unknown",
+    );
+    expect(mapWebServiceHealth({ service: "X", status: "up" }).status).toBe(
+      "unknown",
+    );
+    expect(mapWebServiceHealth({ service: "X" }).status).toBe("unknown");
+    // A poisoned prototype key must never resolve to a truthy status.
+    expect(
+      mapWebServiceHealth({ service: "X", status: "constructor" }).status,
+    ).toBe("unknown");
+  });
+
+  it("substitutes an empty name for a missing service, and omits an absent detail", () => {
+    const m = mapWebServiceHealth({ status: "healthy" });
+    expect(m.name).toBe("");
+    expect(m.status).toBe("healthy");
+    expect("detail" in m).toBe(false);
+  });
+});
+
+describe("mapWebSystemHealth", () => {
+  it("maps the overall status, checkedAt, and each service", () => {
+    const raw: WebSystemHealth = {
+      status: "down",
+      checkedAt: "2026-07-25T10:00:00.000Z",
+      services: [
+        { service: "Supabase", status: "healthy" },
+        { service: "Stripe", status: "down", detail: "probe timed out" },
+        { service: "AIML", status: "unknown", detail: "not configured" },
+      ],
+    };
+    const m = mapWebSystemHealth(raw);
+    expect(m.status).toBe("down");
+    expect(m.checkedAt).toBe("2026-07-25T10:00:00.000Z");
+    expect(m.services).toEqual([
+      { name: "Supabase", status: "healthy" },
+      { name: "Stripe", status: "down", detail: "probe timed out" },
+      { name: "AIML", status: "unknown", detail: "not configured" },
+    ]);
+  });
+
+  it("degrades a missing overall status to unknown and absent checkedAt to empty", () => {
+    const m = mapWebSystemHealth({ services: [] });
+    expect(m.status).toBe("unknown");
+    expect(m.checkedAt).toBe("");
+    expect(m.services).toEqual([]);
+  });
+
+  it("returns an empty service list when services is not an array", () => {
+    const m = mapWebSystemHealth({ status: "healthy" });
+    expect(m.services).toEqual([]);
+  });
+});
+
+describe("adminHealthApi.getSystemHealth", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("requests the real admin health route and adapts the payload", async () => {
+    (api.get as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      data: {
+        status: "down",
+        checkedAt: "2026-07-25T10:00:00.000Z",
+        services: [
+          { service: "Supabase", status: "healthy" },
+          { service: "Stripe", status: "down", detail: "Stripe API error" },
+          { service: "AIML", status: "unknown", detail: "not configured" },
+        ],
+      },
+    });
+
+    const res = await adminHealthApi.getSystemHealth();
+
+    expect(api.get).toHaveBeenCalledWith("/admin/health");
+    expect(res.success).toBe(true);
+    expect(res.data?.status).toBe("down");
+    // Real statuses survive the round-trip — unknown/down never laundered green.
+    expect(res.data?.services.map((s) => s.status)).toEqual([
+      "healthy",
+      "down",
+      "unknown",
+    ]);
+    expect(res.data?.services[1]).toEqual({
+      name: "Stripe",
+      status: "down",
+      detail: "Stripe API error",
+    });
+  });
+
+  it("passes a failed request through without fabricating health", async () => {
+    (api.get as jest.Mock).mockResolvedValueOnce({
+      success: false,
+      error: { code: "HTTP_403", message: "Forbidden" },
+    });
+
+    const res = await adminHealthApi.getSystemHealth();
 
     expect(res.success).toBe(false);
     expect(res.data).toBeUndefined();
