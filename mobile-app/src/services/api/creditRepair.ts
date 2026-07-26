@@ -568,6 +568,70 @@ export function mapWebAccount(raw: WebCreditAccount): CreditAccount {
   };
 }
 
+// --- Mobile-facing disputable-item shape -------------------------------------
+// The mobile New Dispute screen (app/dispute/create.tsx, step 3) renders a
+// selectable list of the items a user can dispute — per item a creditor/account
+// name, a status line, and a balance. The web route
+// (GET /api/credit-repair/disputable-items, authed) returns each disputable item
+// as { id, accountName, status, balance: number | null, type: "account" |
+// "inquiry" }: negative tradelines carry a balance, while credit inquiries have
+// none (balance null). The adapter passes those real fields through onto the
+// mobile shape and preserves a null balance as null rather than a fabricated $0,
+// which would invent a paid-off account. `selected` is NOT part of this shape —
+// it is per-screen UI state the screen adds locally, never something the API
+// asserts.
+
+export type DisputableItemType = "account" | "inquiry";
+
+export interface DisputableItem {
+  id: string;
+  accountName: string;
+  status: string;
+  balance: number | null; // null stays null — never a fabricated $0 (inquiries have no balance)
+  type: DisputableItemType;
+}
+
+/**
+ * Raw disputable item as returned by GET /api/credit-repair/disputable-items
+ * (authed). Every field except `id` is declared optional and tolerant so a
+ * partial payload never throws; `balance` is nullable at the source because an
+ * inquiry has no balance and a tradeline's balance column may itself be null.
+ */
+export interface WebDisputableItem {
+  id: string;
+  accountName?: string;
+  status?: string;
+  balance?: number | null;
+  type?: string;
+}
+
+// The item's origin: an "account" (a tradeline) or an "inquiry". Passed through
+// only for the recognized "inquiry" value; anything else (including "account",
+// an unknown value, or an absent one) degrades to "account" — the general
+// tradeline bucket that makes no narrower claim about the item's origin. The
+// balance is normalized independently, so this default never fabricates a value:
+// an item with a null balance still renders "no balance", whichever type it is.
+function normalizeDisputableType(type: string | undefined): DisputableItemType {
+  return type === "inquiry" ? "inquiry" : "account";
+}
+
+/**
+ * Map a web disputable item onto the mobile DisputableItem shape. `accountName`
+ * and `status` pass through, defaulting to an empty string rather than a made-up
+ * value when absent. `balance` reuses normalizeNullableAmount: a real finite
+ * number passes, while null / NaN / ±Infinity become null (never a fabricated
+ * $0). `type` is normalized to the known two-value set. Nothing is fabricated.
+ */
+export function mapWebDisputableItem(raw: WebDisputableItem): DisputableItem {
+  return {
+    id: raw.id,
+    accountName: raw.accountName ?? "",
+    status: raw.status ?? "",
+    balance: normalizeNullableAmount(raw.balance),
+    type: normalizeDisputableType(raw.type),
+  };
+}
+
 export const creditRepairApi = {
   /**
    * Get all goodwill letters for the current user. The web route returns
@@ -706,6 +770,30 @@ export const creditRepairApi = {
         ? res.data.accounts.map(mapWebAccount)
         : [];
       return { success: true, data: { accounts } };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Get the current user's disputable items (negative tradelines + inquiries).
+   * Calls GET /api/credit-repair/disputable-items (authed); the shared client
+   * unwraps the {success,data} envelope, so `res.data` is `{ items }`. Each item
+   * is adapted onto the mobile DisputableItem shape; an honest empty list comes
+   * back when the user has nothing to dispute. Nothing is fabricated — a null
+   * balance stays null, and a failed request passes straight through without
+   * inventing items.
+   */
+  getDisputableItems: async (): Promise<
+    ApiResponse<{ items: DisputableItem[] }>
+  > => {
+    const res = await api.get<{ items?: WebDisputableItem[] }>(
+      "/credit-repair/disputable-items",
+    );
+    if (res.success && res.data) {
+      const items = Array.isArray(res.data.items)
+        ? res.data.items.map(mapWebDisputableItem)
+        : [];
+      return { success: true, data: { items } };
     }
     return { success: false, error: res.error };
   },

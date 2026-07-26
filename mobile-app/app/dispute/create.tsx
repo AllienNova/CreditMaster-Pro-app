@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
 import { useDisputeStore } from "../../src/store/disputeStore";
+import { creditRepairApi } from "../../src/services/api/creditRepair";
+import type { DisputableItem } from "../../src/services/api/creditRepair";
 
 const DISPUTE_TYPES = [
   { id: "late_payment", label: "Late Payment", icon: "time-outline" },
@@ -37,51 +39,20 @@ const BUREAUS = [
   { id: "transunion", label: "TransUnion", color: "#00AA00" },
 ];
 
-interface DisputeItem {
-  id: string;
-  accountName: string;
-  status: string;
-  balance: string;
+// The screen's local item = the real disputable item plus a `selected` flag that
+// is UI-only state (never asserted by the API).
+interface DisputeItem extends DisputableItem {
   selected: boolean;
 }
 
-const MOCK_CREDIT_ITEMS: DisputeItem[] = [
-  {
-    id: "item-1",
-    accountName: "Capital One Platinum",
-    status: "Late 30 days",
-    balance: "$2,450",
-    selected: false,
-  },
-  {
-    id: "item-2",
-    accountName: "ABC Collections",
-    status: "In Collections",
-    balance: "$890",
-    selected: false,
-  },
-  {
-    id: "item-3",
-    accountName: "Chase Freedom",
-    status: "Incorrect Balance",
-    balance: "$5,200",
-    selected: false,
-  },
-  {
-    id: "item-4",
-    accountName: "Discover It",
-    status: "Unauthorized Inquiry",
-    balance: "$0",
-    selected: false,
-  },
-  {
-    id: "item-5",
-    accountName: "Bank of America",
-    status: "Account Not Mine",
-    balance: "$1,100",
-    selected: false,
-  },
-];
+// Render an honest balance: a real amount as a grouped dollar figure (matching
+// the sibling credit-builder screens' `$${n.toLocaleString()}` convention), and
+// a null balance (an inquiry, or a tradeline with no balance column) as an em
+// dash — never a fabricated $0.
+function formatBalance(balance: number | null): string {
+  if (balance === null) return "—";
+  return `$${balance.toLocaleString()}`;
+}
 
 const TOTAL_STEPS = 6;
 const MAX_MESSAGE_LENGTH = 2000;
@@ -112,9 +83,32 @@ export default function CreateDisputeScreen() {
   const [step, setStep] = useState(1);
   const [selectedBureau, setSelectedBureau] = useState("");
   const [disputeType, setDisputeType] = useState("");
-  const [items, setItems] = useState<DisputeItem[]>(MOCK_CREDIT_ITEMS);
+  const [items, setItems] = useState<DisputeItem[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(true);
+  const [itemsError, setItemsError] = useState<string | null>(null);
   const [disputeMessage, setDisputeMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch the user's real disputable items on mount. `selected` is added locally
+  // as UI state — the API never asserts a selection. The former MOCK_CREDIT_ITEMS
+  // array is gone; only real items ever render.
+  const loadItems = useCallback(async () => {
+    setItemsLoading(true);
+    const res = await creditRepairApi.getDisputableItems();
+    if (res.success && res.data) {
+      setItems(res.data.items.map((it) => ({ ...it, selected: false })));
+      setItemsError(null);
+    } else {
+      setItemsError(
+        res.error?.message ?? "Unable to load your disputable items.",
+      );
+    }
+    setItemsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadItems();
+  }, [loadItems]);
 
   const selectedItems = items.filter((i) => i.selected);
 
@@ -278,6 +272,61 @@ export default function CreateDisputeScreen() {
   );
 
   const renderStep3Items = () => {
+    if (itemsLoading) {
+      return (
+        <View style={styles.stepContent}>
+          <Text style={styles.stepTitle}>Select Items to Dispute</Text>
+          <View style={styles.itemsStateBox} testID="dispute-items-loading">
+            <ActivityIndicator size="large" color={lightTheme.colors.primary} />
+            <Text style={styles.itemsStateText}>
+              Loading your disputable items...
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (itemsError) {
+      return (
+        <View style={styles.stepContent}>
+          <Text style={styles.stepTitle}>Select Items to Dispute</Text>
+          <View style={styles.itemsStateBox} testID="dispute-items-error">
+            <Ionicons
+              name="cloud-offline-outline"
+              size={40}
+              color={lightTheme.colors.textSecondary}
+            />
+            <Text style={styles.itemsStateText}>{itemsError}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadItems}>
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+
+    if (items.length === 0) {
+      return (
+        <View style={styles.stepContent}>
+          <Text style={styles.stepTitle}>Select Items to Dispute</Text>
+          <View style={styles.itemsStateBox} testID="dispute-items-empty">
+            <Ionicons
+              name="checkmark-done-circle-outline"
+              size={40}
+              color={lightTheme.colors.textSecondary}
+            />
+            <Text style={styles.itemsStateTitle}>
+              Nothing to dispute right now
+            </Text>
+            <Text style={styles.itemsStateText}>
+              When your credit report has items you can dispute, they will show up
+              here to select.
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
     const allSelected = items.every((i) => i.selected);
 
     return (
@@ -332,7 +381,7 @@ export default function CreateDisputeScreen() {
               <Text style={styles.itemName}>{item.accountName}</Text>
               <Text style={styles.itemStatus}>{item.status}</Text>
             </View>
-            <Text style={styles.itemBalance}>{item.balance}</Text>
+            <Text style={styles.itemBalance}>{formatBalance(item.balance)}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -652,6 +701,31 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: lightTheme.colors.text,
   },
+  itemsStateBox: {
+    alignItems: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 8,
+  },
+  itemsStateTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: lightTheme.colors.text,
+    marginTop: 12,
+  },
+  itemsStateText: {
+    fontSize: 14,
+    color: lightTheme.colors.textSecondary,
+    textAlign: "center",
+    marginTop: 8,
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: lightTheme.colors.primary,
+  },
+  retryButtonText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
 
   // Step 4 - Message Customization
   aiButton: {
