@@ -46,8 +46,12 @@ All four have COMPLETE `src/lib` logic, **no** migration, **no** route, and **no
 | 11 | support tickets | **NEW-TABLE + ROUTE** | No `support_tickets` table, no submit route. Mobile `help/contact.tsx:68` `setTimeout` fake submit. Create table (`user_id,topic,subject,message,status,created_at`) + `POST /api/support` (`withAuth`). |
 | 12 | doc-analysis payload | **ADDITIVE-COLUMN** (infra exists, unbacked) | `documents` (`001_initial_schema.sql:38`) has NO analysis column; `analysis_result` grep = 0 in src. Real OCR pipeline exists for **tax** only (`tax_documents.extracted_data`); `credit-report/analyze/route.ts:68` OCRs but doesn't persist. Mobile `document/[id].tsx:36` mocks `analysis_result{bureau,score,accounts_count,disputable_items,recommendations}`. Add `analysis_result JSONB` + wire analyze pipeline. |
 
-### Track 2 systemic finding → ADR
-**Migration twin-schema pattern** (`credit_reports`, `subscriptions`, `audit_logs` all have colliding `CREATE TABLE IF NOT EXISTS`): earlier migration's shape silently wins; later richer definition is a no-op. Root cause of items 1/2/3. Warrants an ADR on migration hygiene (reconcile via `ALTER`, forbid shadow re-`CREATE`).
+### Track 2 systemic finding → ADR (CORRECTED after critic round 1)
+**Migration twin-schema pattern: 17 tables are twinned, not 3** (`grep CREATE TABLE … | uniq -d` = audit_logs, subscriptions, credit_reports, profiles, budgets, financial_goals, financial_health_scores, financial_insights, disputes, recurring_bills, investment_holdings/portfolios/transactions, financial_chat_sessions/messages, trading_signals, document_share_links). The first-applied `CREATE TABLE IF NOT EXISTS` wins; later definitions no-op.
+- **Correction (was wrong above/§3.2):** the winning `financial_goals` twin (`20250207000000`, sorts first) **LACKS `milestones`/`ai_recommendations`** (they exist only on `20251217000001`) → **FR-302's goal-milestone alert reads a column that doesn't exist.** Verified.
+- **Correction:** item 1 `audit_logs` is **NOT additive-column** — the twin has an unmergeable PK-type conflict (UUID vs TEXT) → redesign (ADR-0010), and `audit-logger.ts:84` **swallows the insert error today** so security audit logging is silently failing on the live schema.
+- **Mechanism correction:** there is **no `supabase/config.toml`**; editing an applied migration file never re-runs → reconcile with **NEW forward `ALTER … ADD COLUMN IF NOT EXISTS` migrations** + live-schema introspection (ADR-0001), never by editing history.
+- Root cause of items 1/2/3 **and** the M0 rescope. See ADR-0001 (mechanism) + ADR-0010 (audit_logs).
 
 ### Track 2 build tiers
 - **Trivial ROUTE-ONLY (wire existing):** 5 (already wired — verify only), 6 (fetch existing route).
@@ -74,7 +78,7 @@ Every consumer screen renders a local `MOCK_*` and never fetches. Real sources e
 - Consumers: web `src/app/insights/alerts/page.tsx:208` (MOCK_ALERTS); mobile `mobile-app/app/insights/alerts.tsx:149` (MOCK_ALERTS). No unified `/api/alerts` route.
 - **4 real signal sources (build the engine as a union):**
   1. Budget overspend — `spending-limit-alerts-service.getActiveAlerts:483`/`getLimitSummary:576` + `budget-service.getAlerts`. ⚠ `spending_alerts`/`spending_limits`/`budget_alerts` tables **missing from migrations**.
-  2. Goal milestone — `goal-tracker.calculateProgressMetrics:123`/`goal-planner.getUserGoals:158`; `financial_goals` exists (`milestones` JSONB).
+  2. Goal milestone — `goal-tracker.calculateProgressMetrics:123`/`goal-planner.getUserGoals:158`. **⚠ `milestones`/`ai_recommendations` are absent on the operative `financial_goals` twin** (`20250207` wins over `20251217`) → M0-7 must forward-`ADD` them before this signal works.
   3. Low savings — DERIVED from `financialService.getFinancialDashboard` `savingsRate:162`/`cashFlow:161` + threshold rule (requires Plaid link).
   4. Upcoming bills — `bill-calendar-service.getUpcomingBills:390`; `bills` table EXISTS.
 - Auth `withPermission("financial:read")`; response `{success,data,count}` (budgets/alerts precedent).
@@ -92,7 +96,7 @@ Every consumer screen renders a local `MOCK_*` and never fetches. Real sources e
 - **Missing piece:** a vitality-history endpoint + a nullable-component history table. **ADR needed:** unify on ONE score system (recommend: point mobile at the existing v2 `health-score?history=true`, OR give `vitalityScoreService` its own history table + `/api/financial/vitality-score` route). Decide before building.
 
 ### Track 3 systemic finding (reinforces Track 2)
-Tables the code writes/reads with **no migration**: `transactions`, `spending_alerts`, `spending_limits`, `budget_alerts`; drifted: `vitality_scores`, `subscriptions`, `credit_reports`, `audit_logs`. This IS the CLAUDE.md "live-schema audit" launch condition — broader than first scoped. A dedicated **schema-reconciliation milestone (M0)** must precede the read-routes that depend on these tables, grounding each new/reconciled table in the reader+writer column usage.
+Tables the code writes/reads with **no migration**: `transactions`, `spending_alerts`, `spending_limits`, `budget_alerts`; plus the 17 twinned tables above (drifted). This IS the CLAUDE.md "live-schema audit" launch condition — broader than first scoped. The re-specced **M0 milestone** (introspect → forward-reconcile → type-regen → dry-run) must precede every read-route that depends on these tables; each new/reconciled table is grounded in the M0-0 introspection deltas, not filename inference.
 
 ---
 

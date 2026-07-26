@@ -15,14 +15,18 @@ A second, load-bearing discovery: **many tables the code already reads/writes ha
 
 ## Requirements (MoSCoW; FR-IDs)
 
-### MUST — schema reconciliation (M0, unblocks everything)
-- **FR-001** Create a migration for the bare `transactions` table grounded in the Plaid writer + analyzer reader, resolving the `category` (string[] vs string) and `pending`/`is_pending` conflict.
-- **FR-002** Reconcile the `credit_reports` twin (`20250107` vs `20250204`) so `accounts/inquiries/collections/score/report_data` columns exist; make the later migration an `ALTER`, not a shadow `CREATE`.
-- **FR-003** Reconcile the `subscriptions` twin (`001` Stripe vs `20260110` third-party) and add a write-time `tier` column (removes the read-path `?? "free"` recompute).
-- **FR-004** Reconcile the `audit_logs` twin (`002` vs `20260217`): add `details JSONB` + `type`/`category`; fix the admin POST that fails against the live schema.
-- **FR-005** Add `phone, address, city, state, zip, date_of_birth` to `profiles` (fixes the live profile GET/PATCH bug).
-- **FR-006** Create `spending_alerts`, `spending_limits`, `budget_alerts` migrations grounded in their service usage (needed by the alerts engine).
-- **FR-007** Every new/reconciled table carries RLS (`auth.uid() = user_id` or ownership-join) and is registered in the GDPR erasure cascade (FND-057 tie-in).
+### MUST — schema reconciliation (M0, unblocks everything) — re-specced after critic round 1
+Reconcile via **NEW forward `ALTER … ADD COLUMN IF NOT EXISTS` migrations, never edits to applied files** (ADR-0001). **17 tables are twinned** (`grep CREATE TABLE … | uniq -d`); M0 covers the ones read/written by a new route.
+- **FR-010** (foundation) Introspect the actual target-DB schema (scratch DB from `supabase/migrations/*`) and diff vs each route's reader/writer usage — classify all 17 twins; do NOT infer the live shape from filename order. Regenerate `src/lib/supabase/types.ts` after reconcile; dry-run apply (exit 0) before dependent routes build.
+- **FR-001** Create the bare `transactions` table (never migrated) grounded in the Plaid writer + analyzer reader, resolving `category` (string[] vs string) and `pending`/`is_pending`.
+- **FR-002** Reconcile `credit_reports`: **choose the inquiries model** — separate `credit_inquiries` table (`20250107`, wins) vs inline `inquiries JSONB` (`20250204`) — then forward-reconcile so FR-206 POST writes the chosen shape.
+- **FR-003** Reconcile `subscriptions` twin + add a write-time `tier` column (removes the read-path `?? "free"` recompute).
+- **FR-004** `audit_logs` **redesign** (ADR-0010, not a simple column-add): the twin has an unmergeable PK-type conflict (UUID vs TEXT). Standardize on the UUID security-audit table + additive columns (`details/type/category/actor_email/target_type/success/error_message`), split the AI-event shape to `system_event_logs`, fix the 3 writers, and **unswallow `audit-logger.ts:84`** (security audit logging silently fails today).
+- **FR-005** Add `phone, address, city, state, zip, date_of_birth` to `profiles` (twinned); fix the live profile GET/PATCH bug **and** the `subscriptions!inner` join that drops sub-less users.
+- **FR-006** Create `spending_alerts`, `spending_limits`, `budget_alerts`; reconcile `budgets` + `recurring_bills` twins for the columns the alert signals read.
+- **FR-007** Reconcile `financial_goals` (forward `ADD milestones/ai_recommendations` — the winning twin lacks them, **breaking FR-302**), plus `financial_health_scores` (FR-304), `financial_insights` (FR-301), `disputes` (FR-204) per the M0-0 deltas.
+- **FR-008** Every new/reconciled table carries RLS and is registered in the GDPR erasure cascade; verify the sweep reaches child tables (holdings/valuations/contributions).
+- **Out of M0 (honest scope):** the 7 twins no new route touches (investment_holdings/portfolios/transactions, financial_chat_sessions/messages, trading_signals, document_share_links) are logged latent drift, not reconciled here.
 
 ### MUST — Track 1 orphaned services (complete logic, no route/migration/client)
 - **FR-101** `journey` — `financial_journeys` migration + `GET/POST /api/journey` (withAuth) + un-mock web `journey/page.tsx` + mobile screen. Ownership already enforced. (CLEAN-WIRE, S)
@@ -70,7 +74,7 @@ A second, load-bearing discovery: **many tables the code already reads/writes ha
 
 - Screens converted from MOCK → real (or honest empty-state) across Tracks 1–3: target 100% of non-gated items.
 - Zero fabricated-data code paths remain in the touched screens (grep-verified).
-- Missing/drifted tables migrated: 8 (FR-001..006 set) + Track-1 tables (12).
+- Schema reconciled: `transactions` created + the route-touched twins forward-reconciled (audit_logs, credit_reports, subscriptions, profiles, financial_goals, budgets, recurring_bills, financial_health_scores, financial_insights, disputes) + alert tables (3) + Track-1 tables (12); 7 non-route-touched twins logged as latent. Verified by M0-0 introspection + M0-12 dry-run exit 0 + `tsc` 0 after type-regen.
 - All new routes: auth-negative + IDOR test green; `tsc` 0; changed-line coverage ≥85%.
 
 ## Out of scope

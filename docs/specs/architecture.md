@@ -36,13 +36,16 @@ flowchart LR
 5. Return the project's canonical `{ success, data, ... }` shape; honest error (503 on infra, 4xx on client), never a mock fallback.
 6. No fabricated data. No source → empty-state / `[]` / `null`, never invented numbers.
 
-## Migration reconciliation strategy (M0)
+## Migration reconciliation strategy (M0) — corrected after critic round 1
 
-Root cause of items FR-001..006: **`CREATE TABLE IF NOT EXISTS` collisions** — an earlier migration's shape silently wins, the later richer definition is a no-op; and several tables were never migrated at all.
+Root cause: **17 `CREATE TABLE IF NOT EXISTS` collisions** (first-applied wins, later definitions no-op) + several never-migrated tables. There is **no `supabase/config.toml`**; applied migrations never re-run.
 
-- **Reconcile, don't duplicate:** the canonical (first-run) table is authoritative; the later migration becomes an idempotent `ALTER TABLE … ADD COLUMN IF NOT EXISTS`. Never a second `CREATE`.
-- **Ground new tables in reader+writer usage:** e.g. `transactions` columns come from the Plaid writer (`plaid-service.ts:411`) reconciled with the analyzer reader (`spending-analyzer.ts:77`) — resolve `category` to a single canonical type, pick one of `pending`/`is_pending`.
-- **Additive only. RLS on every table. Register every table in the erasure cascade.** No `DROP`, no destructive `ALTER`. The build produces migration files; it does **not** run them against prod.
+- **New forward migrations, never edit applied files.** Emit `2026072x_reconcile_<table>.sql` with idempotent `ALTER TABLE … ADD COLUMN IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`. Editing a historical migration into an `ALTER` is a silent no-op on any already-provisioned DB (critic F-001) — forbidden.
+- **Introspect, don't infer.** Before writing a reconcile migration, build a scratch DB from `supabase/migrations/*`, introspect its real schema, and diff vs the route's reader/writer column usage. Filename sort is not ground truth (mixed `001`/`2026…` naming, `IF NOT EXISTS`).
+- **Non-additive twins escalate to redesign.** A PK-type or `NOT NULL` conflict can't be `ALTER`ed additively → split, don't merge (e.g. `audit_logs`, ADR-0010).
+- **Ground new tables in reader+writer usage:** `transactions` columns come from the Plaid writer (`plaid-service.ts:411`) reconciled with the analyzer reader (`spending-analyzer.ts:77`).
+- **After every reconcile: regenerate `src/lib/supabase/types.ts`** (else `tsc` drifts) and **dry-run apply to the scratch DB (exit 0)** before dependent routes build.
+- **Additive only. RLS + erasure-cascade on every table.** No `DROP`, no destructive `ALTER`. Build produces files; operator applies to staging→prod.
 
 ## Modules
 
@@ -77,7 +80,8 @@ Root cause of items FR-001..006: **`CREATE TABLE IF NOT EXISTS` collisions** —
 
 | Decision | Confidence | ADR |
 |---|---|---|
-| Reconcile drift via ALTER, forbid shadow CREATE | high | ADR-0001 migration-hygiene |
+| Reconcile drift via NEW forward migrations + introspection (never edit applied files) | medium | ADR-0001 migration-hygiene |
+| audit_logs: standardize UUID security shape, split AI-events, unswallow the write | medium | ADR-0010 audit-logs-redesign |
 | shared-goals contributions via atomic RPC | high | ADR-0002 atomic-money-mutations |
 | Unify the two health-score systems before wiring vitality history | medium | ADR-0003 health-score-unification |
 | Register all new tables in GDPR erasure cascade | high | ADR-0004 erasure-cascade-coverage |
