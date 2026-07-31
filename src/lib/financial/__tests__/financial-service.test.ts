@@ -357,16 +357,43 @@ describe("FinancialService — N+1 batch fix (FND-040)", () => {
   });
 
   it("getMonthlyTrend: for 6 months × 3 accounts, uses at most 6 batch calls (not 18 serial)", async () => {
+    // Freeze the clock MID-MONTH. This test was date-dependent and failed on
+    // exactly one day per month with no regression in the behaviour it guards.
+    //
+    // getFinancialDashboard issues a rolling 30-day call
+    // (financial-service.ts:145-150) alongside getMonthlyTrend's 6 whole-month
+    // calls. On the 31st of a 31-day month, `thirtyDaysAgo` lands on the 1st,
+    // so that rolling window is EXACTLY 1st→month-end — indistinguishable from
+    // a calendar month by any heuristic, which is why tightening the filter
+    // alone could not fix it. Pinning the clock to mid-month makes the rolling
+    // window (16 May → 15 Jun) provably not a calendar month, so the count is
+    // deterministic on every day of the year.
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 5, 15)); // 15 June 2026
+
     // Drive getMonthlyTrend directly via getFinancialDashboard.
-    // We count only the batch calls that look like monthly-range calls
-    // (endDate is last day of a calendar month).
+    // We count only the batch calls that span a whole calendar month.
     await financialService.getFinancialDashboard(userId);
 
+    // A monthly-trend call spans a WHOLE calendar month: startDate is the 1st
+    // AND endDate is the last day of that month.
+    //
+    // Matching on endDate alone (the original form) made this test
+    // DATE-DEPENDENT and it failed on exactly one day per month. The dashboard
+    // also issues a rolling 30-day call ending `new Date()`
+    // (financial-service.ts:145-150); when the suite runs on the last day of a
+    // month that endDate is itself a month-end, so it was miscounted as a 7th
+    // "monthly" call and the <= 6 assertion tripped — with no regression in the
+    // batching it guards. Requiring startDate === the 1st excludes the rolling
+    // window (which starts 30 days back) and makes the count deterministic.
     const monthlyBatchCalls = mockGetTransactionsForAccounts.mock.calls.filter(
-      ([, , endDate]) => {
-        if (!(endDate instanceof Date)) return false;
+      ([, startDate, endDate]) => {
+        if (!(startDate instanceof Date) || !(endDate instanceof Date)) {
+          return false;
+        }
+        if (startDate.getDate() !== 1) return false;
         const dayAfter = new Date(endDate);
-        dayAfter.setDate((endDate as Date).getDate() + 1);
+        dayAfter.setDate(endDate.getDate() + 1);
         return dayAfter.getDate() === 1;
       },
     );
