@@ -917,11 +917,127 @@ describe("checkDemotionTriggers", () => {
     expect(result.shouldDemote).toBe(false);
   });
 
-  it("handles database errors gracefully (no crash, no demotion)", async () => {
+  // ----------------------------------------------------------------------
+  // Fail-CLOSED behavior — a missing/errored trigger table must never be
+  // silently read as "the strategy is safe." Landmine: risk_vetoes and
+  // recon_breaks are phantom tables today (always error), and
+  // kill_switch_events/incidents can error transiently (RLS, network).
+  // Pre-fix, ALL FOUR checks defaulted to "no trigger" on error — this
+  // block used to assert exactly that ("no crash, no demotion") as if it
+  // were correct. It was the bug.
+  // ----------------------------------------------------------------------
+
+  it("fails CLOSED (demotes) when every trigger table errors, instead of silently reporting safe", async () => {
     const incidentChain = chainBuilder({ data: null, error: { message: "db error" } });
     const reconChain = chainBuilder({ data: null, error: { message: "db error" } });
     const ksChain = chainBuilder({ data: null, error: { message: "db error" } });
     const vetoChain = chainBuilder({ data: null, error: { message: "db error" } });
+
+    setupTableMocks({
+      incidents: incidentChain,
+      recon_breaks: reconChain,
+      kill_switch_events: ksChain,
+      risk_vetoes: vetoChain,
+    });
+
+    const result = await checkDemotionTriggers("strat-1", "autonomous_live");
+    // Highest-priority trigger (SEV1) fires first and demotes to paper.
+    expect(result.shouldDemote).toBe(true);
+    expect(result.trigger).toBe("sev1_incident");
+    expect(result.targetStage).toBe("paper");
+    expect(result.reason).toContain("failing closed");
+  });
+
+  it("fails CLOSED on a risk_vetoes query error (phantom table) — demotes one level", async () => {
+    const incidentChain = chainBuilder({ data: [], error: null });
+    const reconChain = chainBuilder({ data: [], error: null });
+    const ksChain = chainBuilder({ data: [{ level: "INACTIVE" }], error: null });
+    const vetoChain = chainBuilder({
+      data: null,
+      error: { message: 'relation "risk_vetoes" does not exist' },
+    });
+
+    setupTableMocks({
+      incidents: incidentChain,
+      recon_breaks: reconChain,
+      kill_switch_events: ksChain,
+      risk_vetoes: vetoChain,
+    });
+
+    const result = await checkDemotionTriggers("strat-1", "supervised_live");
+    expect(result.shouldDemote).toBe(true);
+    expect(result.trigger).toBe("risk_vetoes_exceeded");
+    expect(result.reason).toContain("failing closed");
+  });
+
+  it("fails CLOSED on a recon_breaks query error (phantom table) — demotes to paper", async () => {
+    const incidentChain = chainBuilder({ data: [], error: null });
+    const reconChain = chainBuilder({
+      data: null,
+      error: { message: 'relation "recon_breaks" does not exist' },
+    });
+    const ksChain = chainBuilder({ data: [{ level: "INACTIVE" }], error: null });
+    const vetoChain = chainBuilder({ data: [], error: null });
+
+    setupTableMocks({
+      incidents: incidentChain,
+      recon_breaks: reconChain,
+      kill_switch_events: ksChain,
+      risk_vetoes: vetoChain,
+    });
+
+    const result = await checkDemotionTriggers("strat-1", "supervised_live");
+    expect(result.shouldDemote).toBe(true);
+    expect(result.trigger).toBe("recon_break");
+    expect(result.targetStage).toBe("paper");
+    expect(result.reason).toContain("failing closed");
+  });
+
+  it("fails CLOSED on a kill_switch_events query error (real table, transient failure) — demotes to supervised_live", async () => {
+    const incidentChain = chainBuilder({ data: [], error: null });
+    const reconChain = chainBuilder({ data: [], error: null });
+    const ksChain = chainBuilder({ data: null, error: { message: "connection reset" } });
+    const vetoChain = chainBuilder({ data: [], error: null });
+
+    setupTableMocks({
+      incidents: incidentChain,
+      recon_breaks: reconChain,
+      kill_switch_events: ksChain,
+      risk_vetoes: vetoChain,
+    });
+
+    const result = await checkDemotionTriggers("strat-1", "autonomous_live");
+    expect(result.shouldDemote).toBe(true);
+    expect(result.trigger).toBe("kill_switch_l3_plus");
+    expect(result.targetStage).toBe("supervised_live");
+    expect(result.reason).toContain("failing closed");
+  });
+
+  it("fails CLOSED on an incidents (SEV1) query error (real table, transient failure) — demotes to paper", async () => {
+    const incidentChain = chainBuilder({ data: null, error: { message: "connection reset" } });
+    const reconChain = chainBuilder({ data: [], error: null });
+    const ksChain = chainBuilder({ data: [{ level: "INACTIVE" }], error: null });
+    const vetoChain = chainBuilder({ data: [], error: null });
+
+    setupTableMocks({
+      incidents: incidentChain,
+      recon_breaks: reconChain,
+      kill_switch_events: ksChain,
+      risk_vetoes: vetoChain,
+    });
+
+    const result = await checkDemotionTriggers("strat-1", "autonomous_live");
+    expect(result.shouldDemote).toBe(true);
+    expect(result.trigger).toBe("sev1_incident");
+    expect(result.targetStage).toBe("paper");
+    expect(result.reason).toContain("failing closed");
+  });
+
+  it("does NOT fail closed when kill_switch_events legitimately has zero rows (real empty state, not an error)", async () => {
+    const incidentChain = chainBuilder({ data: [], error: null });
+    const reconChain = chainBuilder({ data: [], error: null });
+    const ksChain = chainBuilder({ data: [], error: null }); // no rows, no error
+    const vetoChain = chainBuilder({ data: [], error: null });
 
     setupTableMocks({
       incidents: incidentChain,

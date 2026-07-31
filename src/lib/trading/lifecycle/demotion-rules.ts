@@ -9,6 +9,13 @@
  *   - Recon break (reconciliation discrepancy) → demote to paper
  *   - Kill switch L3+ activated → demote all strategies to supervised_live or below
  *   - SEV1 incident → demote to paper
+ *
+ * Fail-CLOSED contract: every check below treats a query error or missing
+ * result as "cannot verify safe" and reports the trigger as active, never
+ * as absent. Silently defaulting to "no trigger" on error would let a
+ * misbehaving strategy stay live purely because a table couldn't be read
+ * (or, for risk_vetoes/recon_breaks, doesn't exist yet) — the same
+ * fail-closed contract `promotion-gates.ts` uses for missing metrics.
  */
 
 import type { LifecycleStage } from "@/lib/trading/config";
@@ -50,6 +57,7 @@ export interface DemotionResult {
 async function checkRiskVetoes(strategyId: string): Promise<{
   exceeded: boolean;
   count: number;
+  dataUnavailable: boolean;
 }> {
   const twentyFourHoursAgo = new Date(
     Date.now() - 24 * 60 * 60 * 1000,
@@ -60,11 +68,17 @@ async function checkRiskVetoes(strategyId: string): Promise<{
     .eq("strategy_id", strategyId)
     .gte("created_at", twentyFourHoursAgo);
 
-  if (error || !data) return { exceeded: false, count: 0 };
+  // Fail CLOSED: risk_vetoes is a phantom table today, so this query errors
+  // on every call. Reporting "no vetoes" here would permanently and
+  // invisibly disable this trigger the moment the code is wired up.
+  if (error || !data) {
+    return { exceeded: true, count: 0, dataUnavailable: true };
+  }
 
   return {
     exceeded: data.length >= 3,
     count: data.length,
+    dataUnavailable: false,
   };
 }
 
@@ -72,15 +86,21 @@ async function checkRiskVetoes(strategyId: string): Promise<{
 // RECON BREAK CHECK
 // ============================================================================
 
-async function checkReconBreak(strategyId: string): Promise<boolean> {
+async function checkReconBreak(strategyId: string): Promise<{
+  triggered: boolean;
+  dataUnavailable: boolean;
+}> {
   const { data, error } = await reconBreaks()
     .select("id")
     .eq("strategy_id", strategyId)
     .eq("status", "OPEN")
     .limit(1);
 
-  if (error || !data) return false;
-  return data.length > 0;
+  // Fail CLOSED: recon_breaks is a phantom table today, so this query
+  // errors on every call. An error/missing result is indistinguishable
+  // from "no break" to the caller unless it is explicitly treated as one.
+  if (error || !data) return { triggered: true, dataUnavailable: true };
+  return { triggered: data.length > 0, dataUnavailable: false };
 }
 
 // ============================================================================
@@ -90,36 +110,51 @@ async function checkReconBreak(strategyId: string): Promise<boolean> {
 async function checkKillSwitchLevel(): Promise<{
   isL3Plus: boolean;
   level: string | null;
+  dataUnavailable: boolean;
 }> {
   const { data, error } = await killSwitchEvents()
     .select("level")
     .order("created_at", { ascending: false })
     .limit(1);
 
-  if (error || !data || data.length === 0) {
-    return { isL3Plus: false, level: null };
+  // Fail CLOSED only on a genuine query error — kill_switch_events is a
+  // real table, so an empty result (no event ever recorded) is legitimate
+  // and must stay isL3Plus:false. An unreadable state, in contrast, must
+  // be treated as tripped: the safe assumption for an e-stop under
+  // uncertainty is "assume active," not "assume clear."
+  if (error) {
+    return { isL3Plus: true, level: null, dataUnavailable: true };
+  }
+  if (!data || data.length === 0) {
+    return { isL3Plus: false, level: null, dataUnavailable: false };
   }
 
   const level = data[0].level as string;
   const isL3Plus =
     level === "LEVEL_3_FREEZE" || level === "LEVEL_4_FLATTEN";
 
-  return { isL3Plus, level };
+  return { isL3Plus, level, dataUnavailable: false };
 }
 
 // ============================================================================
 // SEV1 INCIDENT CHECK
 // ============================================================================
 
-async function checkSev1Incident(strategyId: string): Promise<boolean> {
+async function checkSev1Incident(strategyId: string): Promise<{
+  triggered: boolean;
+  dataUnavailable: boolean;
+}> {
   const { data, error } = await incidents()
     .select("id")
     .eq("status", "OPEN")
     .eq("severity", "SEV1")
     .limit(1);
 
-  if (error || !data) return false;
-  return data.length > 0;
+  // Fail CLOSED: incidents is a real table, but the query can still error
+  // (RLS, network, outage). An unreadable incident state must be treated
+  // as an active SEV1 — assume the incident is open, not resolved.
+  if (error || !data) return { triggered: true, dataUnavailable: true };
+  return { triggered: data.length > 0, dataUnavailable: false };
 }
 
 // ============================================================================
@@ -182,29 +217,33 @@ export async function checkDemotionTriggers(
   }
 
   // 1. SEV1 incident
-  const hasSev1 = await checkSev1Incident(strategyId);
-  if (hasSev1) {
+  const sev1Check = await checkSev1Incident(strategyId);
+  if (sev1Check.triggered) {
     const target = resolveTargetStage(currentStage, "sev1_incident");
     if (target) {
       return {
         shouldDemote: true,
         trigger: "sev1_incident",
         targetStage: target,
-        reason: "Open SEV1 incident detected. Demoting to paper.",
+        reason: sev1Check.dataUnavailable
+          ? "SEV1 incident status unavailable (query failed) — failing closed. Demoting to paper."
+          : "Open SEV1 incident detected. Demoting to paper.",
       };
     }
   }
 
   // 2. Recon break
-  const hasReconBreak = await checkReconBreak(strategyId);
-  if (hasReconBreak) {
+  const reconCheck = await checkReconBreak(strategyId);
+  if (reconCheck.triggered) {
     const target = resolveTargetStage(currentStage, "recon_break");
     if (target) {
       return {
         shouldDemote: true,
         trigger: "recon_break",
         targetStage: target,
-        reason: "Open reconciliation break detected. Demoting to paper.",
+        reason: reconCheck.dataUnavailable
+          ? "Reconciliation break status unavailable (query failed) — failing closed. Demoting to paper."
+          : "Open reconciliation break detected. Demoting to paper.",
       };
     }
   }
@@ -218,7 +257,9 @@ export async function checkDemotionTriggers(
         shouldDemote: true,
         trigger: "kill_switch_l3_plus",
         targetStage: target,
-        reason: `Kill switch at ${ksCheck.level}. Demoting to ${target}.`,
+        reason: ksCheck.dataUnavailable
+          ? `Kill switch status unavailable (query failed) — failing closed. Demoting to ${target}.`
+          : `Kill switch at ${ksCheck.level}. Demoting to ${target}.`,
       };
     }
   }
@@ -232,7 +273,9 @@ export async function checkDemotionTriggers(
         shouldDemote: true,
         trigger: "risk_vetoes_exceeded",
         targetStage: target,
-        reason: `${vetoCheck.count} risk vetoes in last 24h (threshold: 3). Demoting one level.`,
+        reason: vetoCheck.dataUnavailable
+          ? "Risk veto data unavailable (query failed) — failing closed. Demoting one level."
+          : `${vetoCheck.count} risk vetoes in last 24h (threshold: 3). Demoting one level.`,
       };
     }
   }
