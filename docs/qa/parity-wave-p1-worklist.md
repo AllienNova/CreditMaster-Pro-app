@@ -299,6 +299,26 @@ The other 4 remain absent — triaged honestly:
 - `goals`, `savings_accounts`, `spending_categories` → **0 source files query them**: vestigial list entries, harmless (the guard skips them).
 - `ai_interactions` → queried at `gdpr-ccpa.ts:409`, in the **data-EXPORT (Art. 15) path**. That read targets a table that does not exist, so the subject-access export cannot return AI-interaction data. Minor but real; logged, not fixed here.
 
+## 🔴 ROOT CAUSE FOUND — `types.ts` silently disabled ALL table/column type-checking (4-way adversarial debug, 2026-07-31)
+`src/lib/supabase/types.ts` omits the **`Relationships`** field that postgrest-js's `GenericSchema` **requires** on every table (`grep -c Relationships`: **0** committed vs **145** generated). Without it `Database['public']` fails to extend `GenericSchema`, the client's `Schema` generic degrades, and **`.from()` accepts ANY string** — table *and* column validation were off app-wide. Proven by two independent minimal repros against the installed `@supabase/supabase-js@2.91.0`: without `Relationships`, `.from("this_table_absolutely_does_not_exist")` compiles clean; add `Relationships: []` and it correctly errors TS2769.
+
+The file was **never generated** — hand-authored at 384 lines (first commit 2025-12-02), patched to 1,184 across 9 commits; covers **27 of 161** schema entries, and hard-coded nullability *more optimistically* than the live DB for tables it did include.
+
+**Three lenses falsified themselves and converged here:** not a regression (worst sites wrong in the commit that authored them); not tsconfig (3 touches ever, last a Prettier reformat); not a version mismatch (supabase-js/postgrest-js 2.91.0 lockstep, CLI output identical). TS2589 is **downstream** — 5/5 instances sit exactly on phantom-table calls; fix the name and it evaporates.
+
+### What it was hiding — 5 phantom tables (psql: 0 rows for all five)
+| Site | Impact | Status |
+|---|---|---|
+| `wellness-gate.ts:221` `.from("debts")` | **SAFETY-CRITICAL** — DTI always 0, so the "DTI > 40% blocks live trading" gate **never fired for any user**; `negative_net_income` defeated too | ✅ FIXED `247fe9a` → `debt_accounts`, + **fails closed** (a swallowed DB error previously read as a *passed* safety check) |
+| `wellness-gate.ts:240` `.from("savings_goals")` | emergency-fund check always false | ✅ FIXED `247fe9a` → `financial_goals`, column `type` not `category` |
+| `order-manager.ts` ×3 `.from("orders")` | **orders NEVER persisted** — in-memory Map is the only truth; restart = total order-history loss | 🔨 owner-approved: BUILD persistence |
+| `position-manager.ts` ×2 `.from("positions")` | positions never persisted | 🔨 owner-approved: BUILD persistence |
+| tax routes ×2 `.from("tax_accounts")` | `TaxProfile.accounts` always `[]` | 🔨 owner-approved: use real `tax_profiles` columns |
+
+**Three separate developers routed around this instead of fixing it:** `as unknown as {...}` casts commented *"table schema not yet defined in Supabase types"* (`order-manager.ts:639`, `position-manager.ts:584`), and `src/lib/supabase/client.ts` is **deliberately untyped** admitting the type covers "~20 tables while the codebase uses 40+". That carve-out must be removed once real types land.
+
+**Tier 2/3 (real, lower urgency):** nullable DB columns assigned to non-null DTO fields across ~9 files (`new Date(null)` → 1970 silently); TEXT+CHECK columns vs app literal unions (checked: zero value mismatches — needs validated casts, not `any`).
+
 ### ⚠ M0-11 (regenerate types) — ATTEMPTED, REVERTED, tracked as its own slice
 `supabase gen types typescript --local` against the now-provisionable DB produces **7,324 lines** vs the **1,184-line** copy checked in — the committed `src/lib/supabase/types.ts` is a stale hand-trimmed subset that still models the pre-M0 schema.
 
