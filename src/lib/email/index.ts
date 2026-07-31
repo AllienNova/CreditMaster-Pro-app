@@ -20,13 +20,3 @@ export type {
   TradingAlertType,
   SignalDirection,
 } from "./templates/TradingAlertTemplate";
-
-export { default as emailPreferencesService } from "./email-preferences-service";
-export { EmailPreferencesService } from "./email-preferences-service";
-export type {
-  EmailTemplateType,
-  EmailFrequency,
-  EmailPreference,
-  UserEmailPreferences,
-  UnsubscribeTokenPayload,
-} from "./email-preferences-service";

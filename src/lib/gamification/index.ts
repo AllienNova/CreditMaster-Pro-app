@@ -88,30 +88,6 @@ export {
   RELATIONSHIP_TYPES,
 } from "./shared-goals-service";
 
-// Achievement System
-export {
-  AchievementService,
-  getAchievementService,
-  BUILT_IN_ACHIEVEMENTS,
-  TIER_CONFIG,
-  CATEGORY_CONFIG,
-  type AchievementCategory,
-  type BadgeTier,
-  type AchievementStatus,
-  type ConditionOperator,
-  type AchievementCondition,
-  type AchievementDefinition,
-  type UserAchievement,
-  type UserAchievementWithDefinition,
-  type AchievementCheckResult,
-  type AchievementAwardResult,
-  type AchievementProgressUpdate,
-  type AchievementStats,
-  type CategoryStats,
-  type TierStats,
-  type AchievementNotification,
-} from "./achievement-service";
-
 // Points & Rewards Engine
 export {
   PointsRewardsService,
