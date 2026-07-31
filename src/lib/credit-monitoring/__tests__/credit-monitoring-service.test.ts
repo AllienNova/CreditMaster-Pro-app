@@ -632,6 +632,53 @@ describe("CreditMonitoringService", () => {
       expect(result).toBeNull();
     });
 
+    it("should still return the saved score when the score itself was saved but the follow-on alert fails to save (alert failure must not mask an already-successful score save)", async () => {
+      // getCurrentScores - previous score exists, well past threshold
+      mockSupabase.limit.mockResolvedValueOnce({
+        data: [makeScoreRow({ bureau: "experian", score: 700 })],
+        error: null,
+      });
+
+      // insert for new score succeeds -> .select().single()
+      mockSupabase.single.mockResolvedValueOnce({
+        data: {
+          id: "score-saved-alert-failed",
+          user_id: TEST_USER_ID,
+          bureau: "experian",
+          score: 725,
+          score_date: "2026-02-20T00:00:00Z",
+          factors,
+          created_at: "2026-02-20T00:00:00Z",
+        },
+        error: null,
+      });
+
+      // getMonitoringSettings -> .single()
+      mockSupabase.single.mockResolvedValueOnce({
+        data: makeSettingsRow({ score_change_threshold: 10 }),
+        error: null,
+      });
+
+      // createAlert's insert -> .select().single() FAILS
+      mockSupabase.single.mockResolvedValueOnce({
+        data: null,
+        error: { message: "credit_alerts insert failed" },
+      });
+
+      const result = await creditMonitoringService.addCreditScore(
+        TEST_USER_ID,
+        "experian",
+        725,
+        factors,
+      );
+
+      // The score row was already committed — its own save must be reported
+      // as a success regardless of the alert failure above.
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe("score-saved-alert-failed");
+      expect(result!.score).toBe(725);
+    });
+
     it("should set severity to high when change >= 20 points", async () => {
       // getCurrentScores - previous score
       mockSupabase.limit.mockResolvedValueOnce({
@@ -1017,15 +1064,15 @@ describe("CreditMonitoringService", () => {
       expect(mockSupabase.limit).toHaveBeenCalledWith(10);
     });
 
-    it("should return empty array on error", async () => {
+    it("should throw (not silently return []) on a database error — a load failure must never render identically to a genuine empty alert list", async () => {
       mockSupabase.order.mockResolvedValueOnce({
         data: null,
         error: { message: "DB error" },
       });
 
-      const result = await creditMonitoringService.getAlerts(TEST_USER_ID);
-
-      expect(result).toEqual([]);
+      await expect(
+        creditMonitoringService.getAlerts(TEST_USER_ID),
+      ).rejects.toThrow("Failed to fetch credit alerts: DB error");
     });
 
     it("should map alert rows correctly including null bureau", async () => {
@@ -1124,36 +1171,36 @@ describe("CreditMonitoringService", () => {
       expect(insertArg.read).toBe(false);
     });
 
-    it("should return null on insert error", async () => {
+    it("should throw (not silently return null) on insert error — a save failure must never be discarded", async () => {
       mockSupabase.single.mockResolvedValueOnce({
         data: null,
         error: { message: "Insert error" },
       });
 
-      const result = await creditMonitoringService.createAlert(TEST_USER_ID, {
-        type: "new_account",
-        title: "New Account",
-        message: "A new account was opened",
-        severity: "low",
-      });
-
-      expect(result).toBeNull();
+      await expect(
+        creditMonitoringService.createAlert(TEST_USER_ID, {
+          type: "new_account",
+          title: "New Account",
+          message: "A new account was opened",
+          severity: "low",
+        }),
+      ).rejects.toThrow("Failed to create credit alert: Insert error");
     });
 
-    it("should return null when data is null from response", async () => {
+    it("should throw when no data is returned from a successful-looking response", async () => {
       mockSupabase.single.mockResolvedValueOnce({
         data: null,
         error: null,
       });
 
-      const result = await creditMonitoringService.createAlert(TEST_USER_ID, {
-        type: "identity_theft",
-        title: "Identity Theft",
-        message: "Possible identity theft detected",
-        severity: "critical",
-      });
-
-      expect(result).toBeNull();
+      await expect(
+        creditMonitoringService.createAlert(TEST_USER_ID, {
+          type: "identity_theft",
+          title: "Identity Theft",
+          message: "Possible identity theft detected",
+          severity: "critical",
+        }),
+      ).rejects.toThrow("Failed to create credit alert: no data returned");
     });
 
     it("should handle all 10 alert types", async () => {

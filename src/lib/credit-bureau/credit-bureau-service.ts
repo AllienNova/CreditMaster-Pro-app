@@ -23,6 +23,7 @@ import type {
   CreditReport,
   CreditReportRequest,
   DisputeSubmission,
+  DisputeSubmissionResult,
   UserPII,
   Bureau,
   CreditAnalysis,
@@ -93,6 +94,28 @@ function maskApiKey(key: string): string {
   if (!key) return "(empty)";
   if (key.length < 12) return "*".repeat(key.length);
   return `${key.slice(0, 4)}${"*".repeat(key.length - 8)}${key.slice(-4)}`;
+}
+
+/**
+ * Extracts a human-readable message from an unknown thrown value.
+ *
+ * Handles both real `Error` instances AND raw PostgREST/Supabase error
+ * objects (`{ message, code, details, hint }`), which are NOT `Error`
+ * instances — `saveDisputeRecord` below rethrows the raw object returned by
+ * `.insert()`, so `error instanceof Error` alone would silently discard the
+ * actual database error message.
+ */
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+  return "Unknown error";
 }
 
 // ---------------------------------------------------------------------------
@@ -696,18 +719,29 @@ export class CreditBureauService {
   // =========================================================================
 
   /**
-   * Submit dispute to a specific bureau
+   * Submit dispute to a specific bureau.
+   *
+   * `success` in the returned result reflects ONLY the bureau's acceptance
+   * of the dispute. Once the bureau has accepted it, the FCRA Sec. 611
+   * 30-day investigation clock is running regardless of what happens to our
+   * own audit record of it — so from that point on this method must never
+   * report `success: false`, even if saving that record fails. Doing so
+   * would tell the caller "not filed" for a dispute that WAS filed, and an
+   * honest-looking retry would file a DUPLICATE dispute with the bureau
+   * (risking it being deemed frivolous under Sec. 611(a)(3)).
+   *
+   * `persisted` is the separate signal for whether the local `bureau_disputes`
+   * row was saved. See `DisputeSubmissionResult` for the full contract.
    */
   static async submitDispute(
     userId: string,
     dispute: DisputeSubmission,
-  ): Promise<BureauResponse> {
+  ): Promise<DisputeSubmissionResult> {
     this.ensureInitialized();
 
+    let response: BureauResponse;
     try {
       const userPII = await this.getUserPII(userId);
-
-      let response: BureauResponse;
 
       switch (dispute.bureau) {
         case "experian":
@@ -731,28 +765,45 @@ export class CreditBureauService {
         default:
           throw new Error(`Unknown bureau: ${dispute.bureau}`);
       }
-
-      // Save dispute record if successful
-      if (response.success) {
-        await this.saveDisputeRecord({
-          user_id: userId,
-          bureau: dispute.bureau,
-          credit_item_id: dispute.credit_item_id,
-          dispute_reason: dispute.dispute_reason,
-          status: "submitted",
-          reference_id: response.reference_id,
-          created_at: new Date().toISOString(),
-        });
-      }
-
-      return response;
     } catch (error) {
+      // Nothing was filed at the bureau — a plain failure is accurate here.
       // CreditBureauService error: Error submitting dispute
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: extractErrorMessage(error),
         bureau: dispute.bureau,
         timestamp: new Date().toISOString(),
+        persisted: false,
+      };
+    }
+
+    if (!response.success) {
+      // Bureau declined the submission — nothing to persist.
+      return { ...response, persisted: false };
+    }
+
+    // The bureau ACCEPTED the dispute. Everything below is best-effort local
+    // record-keeping; its failure must not flip `success` back to false.
+    try {
+      await this.saveDisputeRecord({
+        user_id: userId,
+        bureau: dispute.bureau,
+        credit_item_id: dispute.credit_item_id,
+        dispute_reason: dispute.dispute_reason,
+        status: "submitted",
+        reference_id: response.reference_id,
+        created_at: new Date().toISOString(),
+      });
+      return { ...response, persisted: true };
+    } catch (persistError) {
+      // CreditBureauService error: dispute accepted by bureau but local
+      // record failed to save — flagged via persisted/persistenceError for
+      // operator reconciliation, never surfaced as a bureau-side failure.
+      return {
+        ...response,
+        success: true,
+        persisted: false,
+        persistenceError: extractErrorMessage(persistError),
       };
     }
   }

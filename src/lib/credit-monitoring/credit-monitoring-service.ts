@@ -220,14 +220,23 @@ class CreditMonitoringService {
         const settings = await this.getMonitoringSettings(userId);
 
         if (Math.abs(change) >= settings.scoreChangeThreshold) {
-          await this.createAlert(userId, {
-            type: change > 0 ? "score_increase" : "score_decrease",
-            bureau,
-            title: `${bureau.charAt(0).toUpperCase() + bureau.slice(1)} Score ${change > 0 ? "Increased" : "Decreased"}`,
-            message: `Your ${bureau} credit score ${change > 0 ? "increased" : "decreased"} by ${Math.abs(change)} points (${previousScore} → ${score})`,
-            severity: Math.abs(change) >= 20 ? "high" : "medium",
-            data: { previousScore, newScore: score, change },
-          });
+          // The score row above is already saved — an alert-creation failure
+          // here is a secondary side effect and must not null out that
+          // already-successful result (same shape as the submitDispute fix:
+          // a committed primary action must not be masked by a downstream
+          // failure). Caught and dropped locally, not propagated.
+          try {
+            await this.createAlert(userId, {
+              type: change > 0 ? "score_increase" : "score_decrease",
+              bureau,
+              title: `${bureau.charAt(0).toUpperCase() + bureau.slice(1)} Score ${change > 0 ? "Increased" : "Decreased"}`,
+              message: `Your ${bureau} credit score ${change > 0 ? "increased" : "decreased"} by ${Math.abs(change)} points (${previousScore} → ${score})`,
+              severity: Math.abs(change) >= 20 ? "high" : "medium",
+              data: { previousScore, newScore: score, change },
+            });
+          } catch (alertError) {
+            // Credit monitoring error: creating score-change alert (non-fatal)
+          }
         }
       }
 
@@ -320,7 +329,14 @@ class CreditMonitoringService {
   }
 
   /**
-   * Get all alerts for user
+   * Get all alerts for user.
+   *
+   * An empty array means "no alerts matched" — a genuine, successful result.
+   * A query failure THROWS instead of returning `[]`, so callers (and their
+   * HTTP layer) can tell "no alerts" apart from "could not load alerts"
+   * rather than the two rendering identically as an empty list, which reads
+   * as a false all-clear (every fraud/new-account/score-change alert would
+   * be silently invisible to the user on a DB error).
    */
   async getAlerts(
     userId: string,
@@ -330,39 +346,43 @@ class CreditMonitoringService {
       severity?: "low" | "medium" | "high" | "critical";
     },
   ): Promise<CreditAlert[]> {
-    try {
-      let query = supabase
-        .from("credit_alerts")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+    let query = supabase
+      .from("credit_alerts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
-      if (options?.unreadOnly) {
-        query = query.eq("read", false);
-      }
-
-      if (options?.severity) {
-        query = query.eq("severity", options.severity);
-      }
-
-      if (options?.limit) {
-        query = query.limit(options.limit);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      const rows = (data ?? []) as CreditAlertRow[];
-      return rows.map((alert) => this.mapAlertRow(alert));
-    } catch (error) {
-      // Credit monitoring error: fetching alerts
-      return [];
+    if (options?.unreadOnly) {
+      query = query.eq("read", false);
     }
+
+    if (options?.severity) {
+      query = query.eq("severity", options.severity);
+    }
+
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to fetch credit alerts: ${error.message}`);
+    }
+
+    const rows = (data ?? []) as CreditAlertRow[];
+    return rows.map((alert) => this.mapAlertRow(alert));
   }
 
   /**
-   * Create new alert
+   * Create new alert.
+   *
+   * Throws on failure instead of returning `null` — a silent `null` here is
+   * how fraud/new-account/score-change alerts get discarded with no trace.
+   * Callers that treat alert creation as a best-effort side effect of a
+   * primary action that already succeeded (e.g. `addCreditScore` after the
+   * score row is saved) must catch this locally rather than let it null out
+   * an unrelated, already-successful result — see `addCreditScore` below.
    */
   async createAlert(
     userId: string,
@@ -374,31 +394,31 @@ class CreditMonitoringService {
       severity: "low" | "medium" | "high" | "critical";
       data?: JsonRecord;
     },
-  ): Promise<CreditAlert | null> {
-    try {
-      const { data, error } = await supabase
-        .from("credit_alerts")
-        .insert({
-          user_id: userId,
-          type: alert.type,
-          bureau: alert.bureau,
-          title: alert.title,
-          message: alert.message,
-          severity: alert.severity,
-          read: false,
-          data: alert.data,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+  ): Promise<CreditAlert> {
+    const { data, error } = await supabase
+      .from("credit_alerts")
+      .insert({
+        user_id: userId,
+        type: alert.type,
+        bureau: alert.bureau,
+        title: alert.title,
+        message: alert.message,
+        severity: alert.severity,
+        read: false,
+        data: alert.data,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
-      if (error) throw error;
-
-      return data ? this.mapAlertRow(data as CreditAlertRow) : null;
-    } catch (error) {
-      // Credit monitoring error: creating alert
-      return null;
+    if (error) {
+      throw new Error(`Failed to create credit alert: ${error.message}`);
     }
+    if (!data) {
+      throw new Error("Failed to create credit alert: no data returned");
+    }
+
+    return this.mapAlertRow(data as CreditAlertRow);
   }
 
   /**
