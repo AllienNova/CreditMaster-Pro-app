@@ -203,6 +203,34 @@ const DELTA_SEED_TABLES = [
  *   financial_chat_messages → parent: financial_chat_sessions (in delta)
  *   chat_messages → parent: chat_sessions (in delta)
  */
+/**
+ * Tables added to the erasure cascade during the Wave 7 build phase (2026-07-31).
+ *
+ * Kept SEPARATE from DELTA_FULL on purpose. The resilient-migration assertion
+ * below is pinned by exact filename to 20260519000000, which predates these
+ * tables — demanding that a May migration list July tables would be incoherent.
+ * These are asserted against the LATEST defining migration instead.
+ *
+ * Why they must be asserted at all: `delete_user_data_cascade` is redefined
+ * WHOLESALE with a hardcoded v_tables array, so a later migration can silently
+ * drop an earlier one's tables, and this suite only catches that for tables
+ * named here. Before this list existed the guarded set excluded precisely the
+ * NEWEST tables — exactly the ones at risk during a concurrent build. That gap
+ * was observed for real (a per-feature erasure migration landed omitting the
+ * Plaid tables still in flight; reverted in 9ba9c5d).
+ *
+ * RULE: any table added to the erasure cascade MUST be added here, or its
+ * removal will pass CI unnoticed.
+ */
+const WAVE7_ERASURE_ADDITIONS = [
+  "orders", // 20260731000001 — trade orders
+  "positions", // 20260731000001 — open positions
+  "bureau_disputes", // 20260731000007 — FCRA disputes + bureau reference_id
+  "credit_alerts", // 20260731000007 — fraud / identity alert payloads
+  "plaid_items", // 20260731000006 — Plaid access tokens (bank credentials)
+  "financial_accounts", // 20260731000006 — linked bank accounts + balances
+];
+
 const DELTA_FULL = [
   // 002_production_enhancements.sql
   "sessions",
@@ -401,6 +429,22 @@ describe("CMP-3: delete_user_data_cascade migration coverage (FND-058)", () => {
   // -------------------------------------------------------------------------
   // Legal retention — excluded tables NOT in v_tables delete array
   // -------------------------------------------------------------------------
+
+  // -------------------------------------------------------------------------
+  // Wave 7 additions — asserted against the LATEST defining migration.
+  //
+  // This is the guard that was missing when a concurrent build silently
+  // dropped in-flight tables from the cascade. Any migration that redefines
+  // delete_user_data_cascade must carry ALL of these forward.
+  // -------------------------------------------------------------------------
+  describe("Wave 7 erasure additions present in the latest definition", () => {
+    test.each(WAVE7_ERASURE_ADDITIONS)(
+      "v_tables contains Wave 7 table: %s",
+      (table) => {
+        expect(vTables.has(table)).toBe(true);
+      },
+    );
+  });
 
   describe("legal retention — excluded tables absent from v_tables", () => {
     test.each(EXCLUDED_TABLES)(
