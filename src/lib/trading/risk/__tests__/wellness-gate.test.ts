@@ -57,14 +57,47 @@ function setupDebts(debts: Array<{ minimum_payment: number; is_active: boolean; 
   return { selectFn, eq1Fn, eq2Fn, gtFn };
 }
 
-function setupSavingsGoals(
-  goals: Array<{ current_amount: number; target_amount: number; category: string }>,
+function setupFinancialGoals(
+  goals: Array<{ current_amount: number; target_amount: number; type: string }>,
 ) {
-  // savings_goals → select → eq(user_id) → eq(category)
+  // financial_goals → select → eq(user_id) → eq(type)
   const eq2Fn = jest.fn().mockResolvedValue({ data: goals, error: null });
   const eq1Fn = jest.fn().mockReturnValue({ eq: eq2Fn });
   const selectFn = jest.fn().mockReturnValue({ eq: eq1Fn });
 
+  return { selectFn, eq1Fn, eq2Fn };
+}
+
+type FetchError = { message: string; code?: string };
+
+/**
+ * Simulates Postgrest resolving with an error (e.g. "relation does not exist"
+ * or a transient failure) instead of throwing. This mirrors real
+ * @supabase/supabase-js behavior — API-level errors are returned as
+ * `{ data: null, error }`; `throwOnError()` is opt-in and unused by this
+ * module, so the promise always resolves (see PostgrestBuilder.ts:72-73).
+ */
+function setupQueryError(chain: "single" | "eq-gt" | "eq-eq", error: FetchError) {
+  if (chain === "single") {
+    // profiles → select → eq(id) → single
+    const singleFn = jest.fn().mockResolvedValue({ data: null, error });
+    const eqFn = jest.fn().mockReturnValue({ single: singleFn });
+    const selectFn = jest.fn().mockReturnValue({ eq: eqFn });
+    return { selectFn, eqFn, singleFn };
+  }
+  if (chain === "eq-gt") {
+    // debt_accounts → select → eq(user_id) → eq(is_active) → gt(balance)
+    // transactions  → select → eq(user_id) → gte(date)      → gt(amount)
+    const gtFn = jest.fn().mockResolvedValue({ data: null, error });
+    const eq2Fn = jest.fn().mockReturnValue({ gt: gtFn });
+    const eq1Fn = jest.fn().mockReturnValue({ eq: eq2Fn, gte: eq2Fn });
+    const selectFn = jest.fn().mockReturnValue({ eq: eq1Fn });
+    return { selectFn, eq1Fn, eq2Fn, gtFn };
+  }
+  // financial_goals → select → eq(user_id) → eq(type)
+  const eq2Fn = jest.fn().mockResolvedValue({ data: null, error });
+  const eq1Fn = jest.fn().mockReturnValue({ eq: eq2Fn });
+  const selectFn = jest.fn().mockReturnValue({ eq: eq1Fn });
   return { selectFn, eq1Fn, eq2Fn };
 }
 
@@ -82,18 +115,49 @@ function setupTransactions(
 
 /**
  * Wire all table mocks together via mockFrom. Call order matters:
- * profiles, transactions, debts, savings_goals
+ * profiles, transactions, debt_accounts, financial_goals.
+ *
+ * Also wires the legacy table names ("debts", "savings_goals") to a
+ * "relation does not exist" error, matching the live schema (verified
+ * 2026-07-31 — neither table has ever existed). This lets a single test be
+ * run unmodified against pre-fix code (which queries the legacy names) and
+ * post-fix code (which queries the real names) and fail/pass for the right
+ * reason in each case, without per-test bespoke mock wiring.
+ *
+ * Pass `debtAccountsError` / `financialGoalsError` / `transactionsError` /
+ * `profileError` to simulate a *correctly-named* table query failing (e.g. a
+ * transient timeout) instead of supplying happy-path data.
  */
 function wireAllTables(opts: {
   profileIncome: number | null;
+  profileError?: FetchError;
   debts?: Array<{ minimum_payment: number; is_active: boolean; balance: number }>;
-  goals?: Array<{ current_amount: number; target_amount: number; category: string }>;
+  debtAccountsError?: FetchError;
+  goals?: Array<{ current_amount: number; target_amount: number; type: string }>;
+  financialGoalsError?: FetchError;
   transactions?: Array<{ amount: number; date: string }>;
+  transactionsError?: FetchError;
 }) {
-  const profileMock = setupProfileIncome(opts.profileIncome);
-  const debtMock = setupDebts(opts.debts || []);
-  const goalMock = setupSavingsGoals(opts.goals || []);
-  const txMock = setupTransactions(opts.transactions || []);
+  const profileMock = opts.profileError
+    ? setupQueryError("single", opts.profileError)
+    : setupProfileIncome(opts.profileIncome);
+  const txMock = opts.transactionsError
+    ? setupQueryError("eq-gt", opts.transactionsError)
+    : setupTransactions(opts.transactions || []);
+  const debtMock = opts.debtAccountsError
+    ? setupQueryError("eq-gt", opts.debtAccountsError)
+    : setupDebts(opts.debts || []);
+  const goalMock = opts.financialGoalsError
+    ? setupQueryError("eq-eq", opts.financialGoalsError)
+    : setupFinancialGoals(opts.goals || []);
+  const legacyDebtsMock = setupQueryError("eq-gt", {
+    message: 'relation "public.debts" does not exist',
+    code: "42P01",
+  });
+  const legacyGoalsMock = setupQueryError("eq-eq", {
+    message: 'relation "public.savings_goals" does not exist',
+    code: "42P01",
+  });
 
   mockFrom.mockImplementation((table: string) => {
     switch (table) {
@@ -101,10 +165,14 @@ function wireAllTables(opts: {
         return { select: profileMock.selectFn };
       case "transactions":
         return { select: txMock.selectFn };
-      case "debts":
+      case "debt_accounts":
         return { select: debtMock.selectFn };
-      case "savings_goals":
+      case "debts":
+        return { select: legacyDebtsMock.selectFn };
+      case "financial_goals":
         return { select: goalMock.selectFn };
+      case "savings_goals":
+        return { select: legacyGoalsMock.selectFn };
       default:
         return { select: jest.fn().mockReturnValue({ eq: jest.fn() }) };
     }
@@ -132,7 +200,7 @@ describe("WellnessGate", () => {
           { minimum_payment: 300, is_active: true, balance: 5000 },
         ],
         goals: [
-          { current_amount: 15000, target_amount: 24000, category: "emergency_fund" },
+          { current_amount: 15000, target_amount: 24000, type: "emergency_fund" },
         ],
       });
 
@@ -154,7 +222,7 @@ describe("WellnessGate", () => {
         profileIncome: 6000,
         debts: [],
         goals: [
-          { current_amount: 10000, target_amount: 18000, category: "emergency_fund" },
+          { current_amount: 10000, target_amount: 18000, type: "emergency_fund" },
         ],
       });
 
@@ -179,7 +247,7 @@ describe("WellnessGate", () => {
           { minimum_payment: 900, is_active: true, balance: 20000 },
         ],
         goals: [
-          { current_amount: 15000, target_amount: 15000, category: "emergency_fund" },
+          { current_amount: 15000, target_amount: 15000, type: "emergency_fund" },
         ],
       });
 
@@ -200,7 +268,7 @@ describe("WellnessGate", () => {
           { minimum_payment: 4010, is_active: true, balance: 50000 },
         ],
         goals: [
-          { current_amount: 20000, target_amount: 30000, category: "emergency_fund" },
+          { current_amount: 20000, target_amount: 30000, type: "emergency_fund" },
         ],
       });
 
@@ -218,7 +286,7 @@ describe("WellnessGate", () => {
           { minimum_payment: 4000, is_active: true, balance: 50000 },
         ],
         goals: [
-          { current_amount: 20000, target_amount: 30000, category: "emergency_fund" },
+          { current_amount: 20000, target_amount: 30000, type: "emergency_fund" },
         ],
       });
 
@@ -258,7 +326,7 @@ describe("WellnessGate", () => {
           { minimum_payment: 1500, is_active: true, balance: 30000 },
         ],
         goals: [
-          { current_amount: 10000, target_amount: 10000, category: "emergency_fund" },
+          { current_amount: 10000, target_amount: 10000, type: "emergency_fund" },
         ],
       });
 
@@ -302,7 +370,7 @@ describe("WellnessGate", () => {
         ],
         debts: [{ minimum_payment: 500, is_active: true, balance: 5000 }],
         goals: [
-          { current_amount: 10000, target_amount: 12000, category: "emergency_fund" },
+          { current_amount: 10000, target_amount: 12000, type: "emergency_fund" },
         ],
       });
 
@@ -340,7 +408,7 @@ describe("WellnessGate", () => {
         profileIncome: 8000,
         debts: [],
         goals: [
-          { current_amount: 2000, target_amount: 24000, category: "emergency_fund" },
+          { current_amount: 2000, target_amount: 24000, type: "emergency_fund" },
         ],
       });
 
@@ -356,7 +424,7 @@ describe("WellnessGate", () => {
         profileIncome: 8000,
         debts: [],
         goals: [
-          { current_amount: 12000, target_amount: 24000, category: "emergency_fund" },
+          { current_amount: 12000, target_amount: 24000, type: "emergency_fund" },
         ],
       });
 
@@ -378,7 +446,7 @@ describe("WellnessGate", () => {
         profileIncome: 10000,
         debts: [{ minimum_payment: 3500, is_active: true, balance: 40000 }],
         goals: [
-          { current_amount: 20000, target_amount: 30000, category: "emergency_fund" },
+          { current_amount: 20000, target_amount: 30000, type: "emergency_fund" },
         ],
       });
 
@@ -394,7 +462,7 @@ describe("WellnessGate", () => {
         profileIncome: 10000,
         debts: [{ minimum_payment: 1000, is_active: true, balance: 10000 }],
         goals: [
-          { current_amount: 20000, target_amount: 30000, category: "emergency_fund" },
+          { current_amount: 20000, target_amount: 30000, type: "emergency_fund" },
         ],
       });
 
@@ -414,7 +482,7 @@ describe("WellnessGate", () => {
         profileIncome: 8000,
         debts: [{ minimum_payment: 500, is_active: true, balance: 5000 }],
         goals: [
-          { current_amount: 15000, target_amount: 24000, category: "emergency_fund" },
+          { current_amount: 15000, target_amount: 24000, type: "emergency_fund" },
         ],
       });
 
@@ -427,7 +495,7 @@ describe("WellnessGate", () => {
         profileIncome: 5000,
         debts: [{ minimum_payment: 2500, is_active: true, balance: 50000 }],
         goals: [
-          { current_amount: 15000, target_amount: 15000, category: "emergency_fund" },
+          { current_amount: 15000, target_amount: 15000, type: "emergency_fund" },
         ],
       });
 
@@ -504,7 +572,7 @@ describe("WellnessGate", () => {
           { minimum_payment: 500, is_active: true, balance: 10000 },
         ],
         goals: [
-          { current_amount: 15000, target_amount: 24000, category: "emergency_fund" },
+          { current_amount: 15000, target_amount: 24000, type: "emergency_fund" },
         ],
       });
 
@@ -513,6 +581,161 @@ describe("WellnessGate", () => {
 
       expect(result.monthlyDebtPayments).toBe(500);
       expect(result.dtiRatio).toBeCloseTo(6.25, 1);
+    });
+  });
+
+  // ========================================================================
+  // TABLE-NAME REGRESSION — debt_accounts / financial_goals
+  // ========================================================================
+  // `debts` and `savings_goals` have never existed in the live schema
+  // (confirmed via `\d+ debt_accounts` / `\d+ financial_goals` against the
+  // local Supabase instance, 2026-07-31). Because the checked-in Database
+  // type omits `Relationships`, `.from()` accepts any string, so the wrong
+  // table name compiled cleanly and only failed at runtime — where the
+  // swallowed Postgrest error let the DTI gate silently pass every user.
+  describe("table-name regression", () => {
+    it("computes DTI from debt_accounts (not the nonexistent debts table) and fires max_dti when debt is high", async () => {
+      wireAllTables({
+        profileIncome: 10000,
+        debts: [{ minimum_payment: 4500, is_active: true, balance: 60000 }],
+        goals: [
+          { current_amount: 20000, target_amount: 30000, type: "emergency_fund" },
+        ],
+      });
+
+      const gate = new WellnessGate("user_1");
+      const result = await gate.check();
+
+      // Against pre-fix code (queries "debts"): the legacy-table error is
+      // swallowed, monthlyDebtPayments computes to 0, DTI is 0%, and
+      // max_dti never fires — this assertion block fails.
+      expect(result.monthlyDebtPayments).toBe(4500);
+      expect(result.dtiRatio).toBeCloseTo(45, 0);
+      expect(result.approved).toBe(false);
+      expect(result.violations.some((v) => v.rule === "max_dti")).toBe(true);
+    });
+
+    it("reads the emergency fund flag from financial_goals.type (not the nonexistent savings_goals.category)", async () => {
+      wireAllTables({
+        profileIncome: 8000,
+        debts: [],
+        goals: [
+          { current_amount: 20000, target_amount: 24000, type: "emergency_fund" },
+        ],
+      });
+
+      const gate = new WellnessGate("user_1");
+      const result = await gate.check();
+
+      // Against pre-fix code (queries "savings_goals"): the legacy-table
+      // error is swallowed, hasEmergencyFund is always false, and the
+      // no_emergency_fund warning always fires — this assertion block fails.
+      expect(result.hasEmergencyFund).toBe(true);
+      expect(result.warnings.some((w) => w.rule === "no_emergency_fund")).toBe(false);
+    });
+  });
+
+  // ========================================================================
+  // FAIL-CLOSED ON DB ERROR
+  // ========================================================================
+  // A failed lookup must never be silently read as a passed safety check.
+  // These simulate a *correctly-named* table query failing (e.g. a transient
+  // timeout) — distinct from the table-name regressions above — and prove
+  // the gate blocks rather than defaulting to "no debt / safe".
+  describe("fails closed on DB error", () => {
+    it("blocks with system_error when debt_accounts query errors, instead of reading as zero debt", async () => {
+      wireAllTables({
+        profileIncome: 10000,
+        debtAccountsError: {
+          message: "connection terminated unexpectedly",
+          code: "08006",
+        },
+        goals: [],
+      });
+
+      const gate = new WellnessGate("user_1");
+      const result = await gate.check();
+
+      // Pre-fix code has no error handling anywhere in the file: it queries
+      // "debts" (also swallowed), computes 0 debt payments, and approves —
+      // silently reading a DB failure as "no debt, safe to trade".
+      expect(result.approved).toBe(false);
+      expect(result.violations).toHaveLength(1);
+      expect(result.violations[0].rule).toBe("system_error");
+    });
+
+    it("blocks with system_error when financial_goals query errors, instead of reading as no emergency fund", async () => {
+      wireAllTables({
+        profileIncome: 8000,
+        debts: [],
+        financialGoalsError: {
+          message: "connection terminated unexpectedly",
+          code: "08006",
+        },
+      });
+
+      const gate = new WellnessGate("user_1");
+      const result = await gate.check();
+
+      expect(result.approved).toBe(false);
+      expect(result.violations).toHaveLength(1);
+      expect(result.violations[0].rule).toBe("system_error");
+    });
+
+    it("blocks with system_error (not the misleading no_income_data) when the transaction-estimate lookup errors", async () => {
+      wireAllTables({
+        profileIncome: null,
+        transactionsError: {
+          message: "connection terminated unexpectedly",
+          code: "08006",
+        },
+        debts: [],
+        goals: [],
+      });
+
+      const gate = new WellnessGate("user_1");
+      const result = await gate.check();
+
+      // Pre-fix code swallows the transactions error, returns 0 income, and
+      // reports "no_income_data" — accurate-sounding but misattributed; the
+      // real cause is a DB failure, not an absence of income data.
+      expect(result.approved).toBe(false);
+      expect(result.violations).toHaveLength(1);
+      expect(result.violations[0].rule).toBe("system_error");
+    });
+
+    it("logs (does not throw) when profiles.monthly_income errors, and falls back to the transaction estimate", async () => {
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+      wireAllTables({
+        profileIncome: null,
+        profileError: {
+          message: 'column "monthly_income" does not exist',
+          code: "42703",
+        },
+        transactions: [
+          { amount: 4000, date: new Date().toISOString() },
+          { amount: 4000, date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() },
+          { amount: 4000, date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString() },
+        ],
+        debts: [],
+        goals: [],
+      });
+
+      const gate = new WellnessGate("user_1");
+      const result = await gate.check();
+
+      // profiles.monthly_income has never existed (see FND report) — this is
+      // a permanent gap with a working fallback, not a transient failure, so
+      // it is logged and degrades gracefully rather than blocking.
+      expect(result.monthlyIncome).toBeGreaterThan(0);
+      expect(result.violations.some((v) => v.rule === "system_error")).toBe(false);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("profiles.monthly_income lookup failed"),
+        expect.anything(),
+      );
+
+      consoleErrorSpy.mockRestore();
     });
   });
 });

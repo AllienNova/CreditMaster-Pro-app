@@ -49,6 +49,21 @@ export interface WellnessGateConfig {
   incomeEstimateFallback: number;
 }
 
+/**
+ * Raised when a wellness data lookup returns a query error (not "no rows").
+ * Caught by `check()` and converted into a blocking `system_error` violation —
+ * a failed lookup must never be silently read as "no debt" / "safe".
+ */
+class WellnessDataFetchError extends Error {
+  constructor(
+    public readonly table: string,
+    public readonly cause: unknown,
+  ) {
+    super(`Failed to query "${table}" for wellness check`);
+    this.name = "WellnessDataFetchError";
+  }
+}
+
 // ============================================================================
 // DEFAULTS
 // ============================================================================
@@ -81,12 +96,44 @@ export class WellnessGate {
     const violations: WellnessViolation[] = [];
     const warnings: WellnessWarning[] = [];
 
-    const [monthlyIncome, monthlyDebtPayments, hasEmergencyFund] =
-      await Promise.all([
-        this.getMonthlyIncome(),
-        this.getMonthlyDebtPayments(),
-        this.checkEmergencyFund(),
-      ]);
+    let monthlyIncome: number;
+    let monthlyDebtPayments: number;
+    let hasEmergencyFund: boolean;
+
+    try {
+      [monthlyIncome, monthlyDebtPayments, hasEmergencyFund] =
+        await Promise.all([
+          this.getMonthlyIncome(),
+          this.getMonthlyDebtPayments(),
+          this.checkEmergencyFund(),
+        ]);
+    } catch (err) {
+      // A failed lookup must never be silently read as a passed safety check —
+      // fail closed and block live trading until the underlying error is resolved.
+      console.error(
+        `[WellnessGate] Wellness data lookup failed for user ${this.userId}, blocking live trading:`,
+        err,
+      );
+      return {
+        approved: false,
+        dtiRatio: null,
+        monthlyIncome: 0,
+        monthlyDebtPayments: 0,
+        hasEmergencyFund: false,
+        netMonthlyIncome: 0,
+        violations: [
+          {
+            rule: "system_error",
+            message:
+              "Unable to verify financial wellness due to a system error. Live trading is blocked until this can be re-checked.",
+            currentValue: 0,
+            limit: 0,
+          },
+        ],
+        warnings: [],
+        checkedAt: Date.now(),
+      };
+    }
 
     const netMonthlyIncome = monthlyIncome - monthlyDebtPayments;
     const dtiRatio =
@@ -175,14 +222,25 @@ export class WellnessGate {
   // --------------------------------------------------------------------------
 
   private async getMonthlyIncome(): Promise<number> {
-    // Try profile first (monthly_income column exists in DB but not in TS types)
-    const { data: profile } = (await supabaseAdmin
+    // Try profile first. NOTE: `profiles.monthly_income` is NOT present in the
+    // live schema (verified 2026-07-31 via `\d+ profiles`) — this lookup fails
+    // for every user today, not just on transient errors. The transaction-based
+    // fallback below is the only working income source in practice. Logged (not
+    // thrown) so a permanently-absent optional enhancement doesn't block every
+    // trade — see FND report for the product decision this needs (add the
+    // column via migration, or remove this dead lookup).
+    const { data: profile, error } = (await supabaseAdmin
       .from("profiles")
       .select("monthly_income")
       .eq("id", this.userId)
       .single()) as { data: { monthly_income?: number } | null; error: unknown };
 
-    if (profile?.monthly_income && profile.monthly_income > 0) {
+    if (error) {
+      console.error(
+        `[WellnessGate] profiles.monthly_income lookup failed for user ${this.userId}, falling back to transaction estimate:`,
+        error,
+      );
+    } else if (profile?.monthly_income && profile.monthly_income > 0) {
       return profile.monthly_income;
     }
 
@@ -194,12 +252,16 @@ export class WellnessGate {
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-    const { data: transactions } = await supabaseAdmin
+    const { data: transactions, error } = await supabaseAdmin
       .from("transactions")
       .select("amount, date")
       .eq("user_id", this.userId)
       .gte("date", threeMonthsAgo.toISOString())
       .gt("amount", 0);
+
+    if (error) {
+      throw new WellnessDataFetchError("transactions", error);
+    }
 
     if (!transactions || transactions.length === 0) {
       return 0; // No income data — will trigger no_income_data violation
@@ -217,12 +279,18 @@ export class WellnessGate {
   }
 
   private async getMonthlyDebtPayments(): Promise<number> {
-    const { data: debts } = await supabaseAdmin
-      .from("debts")
+    // `debt_accounts` — NOT `debts` (that table has never existed; see FND
+    // report). Columns verified against the live schema 2026-07-31.
+    const { data: debts, error } = await supabaseAdmin
+      .from("debt_accounts")
       .select("minimum_payment, is_active, balance")
       .eq("user_id", this.userId)
       .eq("is_active", true)
       .gt("balance", 0);
+
+    if (error) {
+      throw new WellnessDataFetchError("debt_accounts", error);
+    }
 
     if (!debts || debts.length === 0) {
       return 0;
@@ -236,11 +304,19 @@ export class WellnessGate {
   }
 
   private async checkEmergencyFund(): Promise<boolean> {
-    const { data: goals } = await supabaseAdmin
-      .from("savings_goals")
-      .select("current_amount, target_amount, category")
+    // `financial_goals` — NOT `savings_goals` (that table has never existed).
+    // The filter column is `type`, not `category`; the live CHECK constraint
+    // (`financial_goals_type_check`) confirms `'emergency_fund'` is a valid
+    // value. Verified against the live schema 2026-07-31.
+    const { data: goals, error } = await supabaseAdmin
+      .from("financial_goals")
+      .select("current_amount, target_amount, type")
       .eq("user_id", this.userId)
-      .eq("category", "emergency_fund");
+      .eq("type", "emergency_fund");
+
+    if (error) {
+      throw new WellnessDataFetchError("financial_goals", error);
+    }
 
     if (!goals || goals.length === 0) {
       return false;
