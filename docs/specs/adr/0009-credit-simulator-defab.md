@@ -1,6 +1,6 @@
 # ADR-0009 — Credit-score simulators: deterministic de-fab
 
-- **Status:** Proposed
+- **Status:** Accepted (owner sign-off 2026-07-26)
 - **Date:** 2026-07-26
 - **Deciders:** owner (product + compliance)
 - **Confidence:** medium (owner call)

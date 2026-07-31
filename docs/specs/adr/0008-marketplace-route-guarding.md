@@ -1,6 +1,6 @@
 # ADR-0008 — Marketplace route-guarding policy
 
-- **Status:** Proposed
+- **Status:** Accepted (owner sign-off 2026-07-26)
 - **Date:** 2026-07-26
 - **Deciders:** owner (product) + security
 - **Confidence:** medium (owner call)

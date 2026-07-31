@@ -1,6 +1,6 @@
 # ADR-0006 — Identity / credit-monitoring vendor
 
-- **Status:** Proposed
+- **Status:** Accepted (owner sign-off 2026-07-26)
 - **Date:** 2026-07-26
 - **Deciders:** owner (product + compliance)
 - **Confidence:** low (owner call)

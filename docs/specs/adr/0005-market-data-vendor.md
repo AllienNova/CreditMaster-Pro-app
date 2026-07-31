@@ -1,6 +1,6 @@
 # ADR-0005 — Canonical market-data / quotes vendor
 
-- **Status:** Proposed
+- **Status:** Accepted (owner sign-off 2026-07-26)
 - **Date:** 2026-07-26
 - **Deciders:** owner (product + finance)
 - **Confidence:** low (owner call)

@@ -235,6 +235,18 @@ Two-lane autonomous build off the finalized `docs/specs/` plan. Each slice: suba
 **Findings surfaced:** P0 review-leak (fixed `7963ded`); task #90 authed-review enumeration (FND-041-family, follow-up); task #111 `test:coverage:changed` crashes (maxBuffer — needs owner-approved bump); R-9 = start Docker daemon → local `supabase start` scratch DB unblocks M0 dry-run.
 **Session-limit deaths salvaged:** M4-1 web (`abbb358`), M2-1 web+mobile (`b36a0b2`/`94c6ecb`) — committed-but-unpushed, main-session verified + salvage-pushed.
 
+## 🔴 DEFAB-1 (`facae51`) — fabricated market data was driving LIVE trade signals
+Owner approved DEFAB-1 + ADR-0005 (Alpaca). Removing the fabrication uncovered **three** sites returning `Math.random()` random-walk OHLC as real market history — worse than the single site originally scoped:
+1. **`/api/trading/signals` (authed, LIVE)** — fell back to `makeSyntheticCandles` whenever `ALPACA_*` creds were absent or the call failed, feeding invented prices into the PCTT/RSI/regime/HTF engines and emitting **entry / stop / target / confidence** to users. Its real Alpaca path already exists (ADR-0005 is half-implemented) and is untouched.
+2. **`trading/autonomous/signal-scanner.fetchCandles`** — returned a random walk labelled "realistic synthetic data" to the **autonomous executor's** scan decisions.
+3. **`investments/services/MarketDataService.getHistoricalData`** — caught ANY provider error and substituted synthetic candles.
+
+All three generators deleted; unavailable data → empty set (all callers guard on length) or propagated error. **The fabrication was also masking two test defects it made green:** signal-generator's mock never implemented the real `getHistory` (the swallowed `TypeError` was replaced by synthetic bars) and its 2-bar fixture could never meet the ≥200-candle technical-analysis floor — so 12 tests asserted analysis of `Math.random()` data. Mock fixed to the real `{data:bars}` contract + deterministic 220-bar fixture. Verified: tsc 0, **65 suites / 977 tests green**.
+
+**Also landed:** coverage gate un-crashed (`1ae84ed`, owner-approved maxBuffer fix) → it now runs and reports **220 files <85% changed-line coverage branch-wide** — pre-existing debt that was invisible while the gate crashed. Surfaced for triage, not introduced here.
+
+**5 owner ADRs (0005-0009) marked Accepted** (sign-off 2026-07-26).
+
 ## ⏸ NATURAL PAUSE APPROACHING (after DEFAB-2 web)
 The ungated, no-DB queue drains to empty after DEFAB-2 web. **Everything remaining needs an unblock:**
 - **Docker (R-9)** → M0 reconcile migrations (audit_logs silent-failure + profile drift live bugs) + M3 orphaned-service new-table migrations + all M0-dependent routes (M2-4, M4-2/3/4, M5). Start Docker → I run local `supabase start` (ephemeral, zero prod risk) → dry-run-verify + land them.

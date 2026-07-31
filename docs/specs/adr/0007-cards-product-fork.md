@@ -1,6 +1,6 @@
 # ADR-0007 — Mobile "Cards" product direction
 
-- **Status:** Proposed
+- **Status:** Accepted (owner sign-off 2026-07-26)
 - **Date:** 2026-07-26
 - **Deciders:** owner (product)
 - **Confidence:** medium (owner call)
