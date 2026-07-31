@@ -48,52 +48,25 @@ const DEFAULT_WATCHLIST = [
 // ============================================================================
 
 /**
- * Fetch recent OHLCV candles for a symbol.
+ * Fetch recent OHLCV candles for a symbol from the real market-data provider.
  *
- * In production this would call a market data provider (Alpaca, Polygon, etc.).
- * For now generates realistic synthetic data with slight positive drift.
+ * Honesty contract (DEFAB-1 / ADR-0005): this scanner feeds the autonomous
+ * executor, so it returns REAL bars or NONE. It previously returned
+ * `generateSyntheticCandles` — a Math.random() random walk labelled "realistic
+ * synthetic data" — meaning every autonomous scan decision was computed from
+ * invented prices. That generator is DELETED, not degraded.
+ *
+ * Real wiring is ADR-0005 (Alpaca canonical) M6-1. Until it lands here, this
+ * returns an EMPTY set so `scanSymbol` skips the symbol rather than acting on
+ * fabricated data — callers guard on candle count.
  */
 export async function fetchCandles(
-  symbol: string,
-  days: number = 200,
-): Promise<OHLCV[]> {
-  // TODO: Replace with real market data provider call
-  // e.g., const bars = await alpaca.getBars(symbol, { timeframe: '1Day', limit: days });
-  return generateSyntheticCandles(symbol, days);
-}
-
-function generateSyntheticCandles(
   _symbol: string,
-  days: number,
-): OHLCV[] {
-  const candles: OHLCV[] = [];
-  let price = 100 + Math.random() * 200; // Start between 100-300
-  const baseDate = new Date();
-  baseDate.setDate(baseDate.getDate() - days);
-
-  for (let i = 0; i < days; i++) {
-    const drift = (Math.random() - 0.48) * 3; // Slight upward bias
-    const volatility = Math.random() * 4;
-    price = Math.max(20, price + drift);
-
-    const open = price + (Math.random() - 0.5) * volatility;
-    const high = Math.max(open, price) + Math.random() * volatility;
-    const low = Math.min(open, price) - Math.random() * volatility;
-
-    const date = new Date(baseDate);
-    date.setDate(date.getDate() + i);
-
-    candles.push({
-      time: date.getTime(),
-      open,
-      high,
-      low,
-      close: price,
-      volume: 500_000 + Math.random() * 2_000_000,
-    });
-  }
-
-  return candles;
+  _days: number = 200,
+): Promise<OHLCV[]> {
+  // Deliberately empty until the Alpaca provider call is wired (ADR-0005 M6-1).
+  // Returning [] makes downstream scans skip; NEVER substitute synthetic bars.
+  return [];
 }
 
 // ============================================================================

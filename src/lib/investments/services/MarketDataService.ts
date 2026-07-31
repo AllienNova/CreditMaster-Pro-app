@@ -2,8 +2,13 @@
  * Market Data Service
  *
  * Wraps UnifiedMarketDataService (Alpha Vantage → Polygon fallback).
- * Falls back to synthetic candle data when the unified service is unavailable
- * or returns insufficient data (< limit bars).
+ *
+ * Honesty contract (DEFAB-1 / ADR-0005): this service returns REAL market data
+ * or it fails. It previously fabricated `Math.random()` OHLC candles from a
+ * hardcoded per-symbol base price whenever the provider erred or returned too
+ * few bars, and served them to charts as genuine market history. That fallback
+ * is DELETED — provider errors now propagate so callers render an honest error
+ * state, and an empty result stays empty. Never reintroduce synthetic bars.
  */
 
 import { CandleData } from "../types/charting.types";
@@ -117,35 +122,32 @@ export class MarketDataService {
     timeframe: Timeframe,
     limit: number = 500,
   ): Promise<CandleData[]> {
-    try {
-      const interval = timeframeToInterval(timeframe);
-      const history = await this.unified.getHistory(
-        symbol,
-        AssetType.STOCK,
-        interval,
-        limit,
-      );
+    // No fabricated fallback (DEFAB-1): a provider failure PROPAGATES so the
+    // caller can render an honest error state, and an empty result stays empty.
+    // Synthetic Math.random() candles used to be returned here as if they were
+    // real market data — that fabrication is deleted, not degraded.
+    const interval = timeframeToInterval(timeframe);
+    const history = await this.unified.getHistory(
+      symbol,
+      AssetType.STOCK,
+      interval,
+      limit,
+    );
 
-      const candles = history.data
-        .slice(0, limit)
-        .map((bar) => ({
-          timestamp: bar.timestamp instanceof Date
+    return history.data
+      .slice(0, limit)
+      .map((bar) => ({
+        timestamp:
+          bar.timestamp instanceof Date
             ? bar.timestamp.getTime()
             : new Date(bar.timestamp).getTime(),
-          open: bar.open,
-          high: bar.high,
-          low: bar.low,
-          close: bar.close,
-          volume: bar.volume,
-        }))
-        .sort((a, b) => a.timestamp - b.timestamp);
-
-      if (candles.length === 0) throw new Error("No historical data returned");
-      return candles;
-    } catch {
-      // Fallback: generate synthetic candles when real data is unavailable
-      return this.generateSyntheticCandles(symbol, limit);
-    }
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+        volume: bar.volume,
+      }))
+      .sort((a, b) => a.timestamp - b.timestamp);
   }
 
   // ============================================================================
@@ -208,53 +210,6 @@ export class MarketDataService {
     this.subscribers.clear();
   }
 
-  // ============================================================================
-  // SYNTHETIC DATA FALLBACK (used when real data is unavailable)
-  // ============================================================================
-
-  private generateSyntheticCandles(symbol: string, limit: number): CandleData[] {
-    const candles: CandleData[] = [];
-    const basePrice = this.getSymbolBasePrice(symbol);
-    let currentPrice = basePrice;
-    const now = Date.now();
-
-    for (let i = limit - 1; i >= 0; i--) {
-      const change = (Math.random() - 0.48) * currentPrice * 0.02;
-      const open = currentPrice;
-      const close = currentPrice + change;
-      const high = Math.max(open, close) + Math.random() * Math.abs(change);
-      const low = Math.min(open, close) - Math.random() * Math.abs(change);
-
-      candles.push({
-        timestamp: now - i * 24 * 60 * 60 * 1000,
-        open,
-        high,
-        low,
-        close,
-        volume: Math.floor(Math.random() * 10000000) + 1000000,
-      });
-
-      currentPrice = close;
-    }
-
-    return candles;
-  }
-
-  private getSymbolBasePrice(symbol: string): number {
-    const prices: Record<string, number> = {
-      AAPL: 175,
-      MSFT: 380,
-      GOOGL: 140,
-      AMZN: 178,
-      TSLA: 250,
-      META: 505,
-      NVDA: 875,
-      BTC: 42000,
-      ETH: 2500,
-      SPY: 475,
-    };
-    return prices[symbol] || 100 + Math.random() * 100;
-  }
 }
 
 // ============================================================================

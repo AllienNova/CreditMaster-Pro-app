@@ -45,42 +45,16 @@ interface SignalFilter {
 }
 
 // ============================================================================
-// SYNTHETIC CANDLE FALLBACK
-// ============================================================================
-
-function makeSyntheticCandles(days: number): OHLCV[] {
-  const candles: OHLCV[] = [];
-  let price = 100 + Math.random() * 200;
-  const baseDate = new Date();
-  baseDate.setDate(baseDate.getDate() - days);
-
-  for (let i = 0; i < days; i++) {
-    const drift = (Math.random() - 0.48) * 3;
-    const volatility = Math.random() * 4;
-    price = Math.max(20, price + drift);
-
-    const open = price + (Math.random() - 0.5) * volatility;
-    const high = Math.max(open, price) + Math.random() * volatility;
-    const low = Math.min(open, price) - Math.random() * volatility;
-
-    const date = new Date(baseDate);
-    date.setDate(date.getDate() + i);
-
-    candles.push({
-      time: date.getTime(),
-      open,
-      high,
-      low,
-      close: price,
-      volume: 500_000 + Math.random() * 2_000_000,
-    });
-  }
-
-  return candles;
-}
-
-// ============================================================================
-// OHLCV FETCH — attempts real Alpaca data; falls back to synthetic
+// OHLCV FETCH — real Alpaca data, or an honest empty result
+//
+// Honesty contract (DEFAB-1 / ADR-0005): trade signals are only ever computed
+// from REAL market data. This route used to fall back to `makeSyntheticCandles`
+// — a Math.random() random walk — whenever ALPACA credentials were absent or
+// the provider call failed, and fed those invented prices into the PCTT/RSI/
+// regime/HTF engines, emitting entry, stop, target and confidence values to
+// authenticated users as if they were analysis of the real market. That
+// generator is DELETED. On unavailable data we return an empty candle set and
+// each engine skips (all callers guard on `length >= N`). Never reintroduce it.
 // ============================================================================
 
 async function fetchCandles(symbol: string, days = 200): Promise<OHLCV[]> {
@@ -131,11 +105,16 @@ async function fetchCandles(symbol: string, days = 200): Promise<OHLCV[]> {
         }
       }
     } catch {
-      // Fall through to synthetic
+      // Real-data failure: fall through to the honest empty result below.
+      // NEVER fabricate bars here — see the honesty contract above.
     }
   }
 
-  return makeSyntheticCandles(days);
+  // No real market data available (missing Alpaca credentials, provider error,
+  // or too few bars). Return EMPTY, never synthetic candles: every caller guards
+  // on `candles.length >= N`, so an empty result makes that engine skip instead
+  // of emitting a signal computed from invented prices.
+  return [];
 }
 
 // ============================================================================
