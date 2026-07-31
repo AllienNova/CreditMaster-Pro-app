@@ -40,6 +40,7 @@ import {
   sanitizeUserInput,
   sanitizeContextValue,
 } from "@/lib/aiml/sanitizer";
+import { debtService } from "@/lib/financial/debt-service";
 
 /**
  * Financial Chat Engine
@@ -710,7 +711,7 @@ export class FinancialChatEngine {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (this.supabase as any)
-        .from("portfolio_holdings")
+        .from("investment_holdings")
         .select("*")
         .eq("user_id", userId);
 
@@ -776,10 +777,15 @@ export class FinancialChatEngine {
         (sum: number, h: any) => sum + (h.gain_loss || 0),
         0,
       );
-      const totalCost = data.reduce(
-        (sum: number, h: any) => sum + (h.cost_basis || h.current_value || 0),
-        0,
-      );
+      // investment_holdings has no "cost_basis" column — cost basis is
+      // per-share average_cost * quantity (verified via \d+ investment_holdings).
+      const totalCost = data.reduce((sum: number, h: any) => {
+        const cost =
+          h.average_cost != null && h.quantity != null
+            ? h.average_cost * h.quantity
+            : h.current_value || 0;
+        return sum + cost;
+      }, 0);
       const overallReturn =
         totalCost > 0 ? (totalGainLoss / totalCost) * 100 : 0;
 
@@ -872,25 +878,45 @@ export class FinancialChatEngine {
     try {
       // Attempt to fetch real market data for basic analysis
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: holding } = (await (this.supabase as any)
-        .from("portfolio_holdings")
+      const { data: holding, error } = (await (this.supabase as any)
+        .from("investment_holdings")
         .select("*")
         .eq("user_id", context.userId)
         .eq("symbol", symbol.toUpperCase())
         .single()) as {
         data: {
           current_value?: number;
-          cost_basis?: number;
+          current_price?: number;
           quantity?: number;
+          gain_loss_percent?: number;
         } | null;
+        error: { code?: string; message?: string } | null;
       };
 
-      const currentValue = holding?.current_value || 0;
-      const costBasis = holding?.cost_basis || currentValue;
-      const gainLoss = currentValue - costBasis;
-      const returnPct = costBasis > 0 ? (gainLoss / costBasis) * 100 : 0;
+      // PGRST116 = .single() matched zero rows — the user genuinely doesn't
+      // hold this symbol. Any other error is a real data-access failure and
+      // must not be presented as "no position" — surface it via the catch
+      // block below instead of silently fabricating a confident recommendation.
+      if (error && error.code !== "PGRST116") {
+        throw new Error(error.message || "Failed to load holding data");
+      }
 
-      // Generate basic recommendation based on performance
+      if (!holding) {
+        return {
+          symbol: symbol.toUpperCase(),
+          recommendation: "RESEARCH",
+          confidence: 0,
+          targetPrice: null,
+          analysis: `No position data available for ${symbol.toUpperCase()}. Consider researching fundamentals before investing.`,
+        };
+      }
+
+      // Use the precomputed gain_loss_percent / current_price columns rather
+      // than re-deriving from a "cost_basis" column that does not exist on
+      // investment_holdings (verified via \d+ investment_holdings).
+      const currentValue = holding.current_value ?? 0;
+      const returnPct = holding.gain_loss_percent ?? 0;
+
       const recommendation =
         returnPct > 20
           ? "HOLD"
@@ -899,26 +925,23 @@ export class FinancialChatEngine {
             : returnPct > -10
               ? "HOLD"
               : "REVIEW";
-      const confidence = holding ? 0.7 : 0.5;
 
       return {
         symbol: symbol.toUpperCase(),
         recommendation,
-        confidence,
+        confidence: 0.7,
         targetPrice: currentValue * 1.1, // 10% upside target
-        currentPrice: currentValue / (holding?.quantity || 1),
+        currentPrice: holding.current_price ?? null,
         returnPct: Math.round(returnPct * 100) / 100,
-        analysis: holding
-          ? `${symbol.toUpperCase()} shows ${returnPct >= 0 ? "positive" : "negative"} returns of ${Math.abs(returnPct).toFixed(1)}%. ${recommendation === "BUY" ? "Consider adding to position." : recommendation === "REVIEW" ? "Review position for potential exit." : "Maintain current position."}`
-          : `No position data available for ${symbol.toUpperCase()}. Consider researching fundamentals before investing.`,
+        analysis: `${symbol.toUpperCase()} shows ${returnPct >= 0 ? "positive" : "negative"} returns of ${Math.abs(returnPct).toFixed(1)}%. ${recommendation === "BUY" ? "Consider adding to position." : recommendation === "REVIEW" ? "Review position for potential exit." : "Maintain current position."}`,
       };
     } catch (error) {
       // Chat engine error:('Investment analysis error:', error);
       return {
         symbol: symbol.toUpperCase(),
         recommendation: "RESEARCH",
-        confidence: 0.5,
-        targetPrice: 0,
+        confidence: 0,
+        targetPrice: null,
         analysis: `Unable to analyze ${symbol.toUpperCase()} at this time. Please consult financial research sources.`,
       };
     }
@@ -935,27 +958,27 @@ export class FinancialChatEngine {
     try {
       // Check if user has a position in this symbol
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: holding } = (await (this.supabase as any)
-        .from("portfolio_holdings")
+      const { data: holding, error } = (await (this.supabase as any)
+        .from("investment_holdings")
         .select("*")
         .eq("user_id", context.userId)
         .eq("symbol", symbol.toUpperCase())
         .single()) as {
-        data: {
-          current_value?: number;
-          cost_basis?: number;
-          quantity?: number;
-        } | null;
+        data: { gain_loss_percent?: number } | null;
+        error: { code?: string; message?: string } | null;
       };
 
-      // Generate signal based on position performance
+      // PGRST116 = .single() matched zero rows — genuinely no position. Any
+      // other error is a real data-access failure, not "no position": let it
+      // fall through to the catch block's honest "insufficient data" reply.
+      if (error && error.code !== "PGRST116") {
+        throw new Error(error.message || "Failed to load holding data");
+      }
+
+      // Generate signal based on position performance using the precomputed
+      // gain_loss_percent column (investment_holdings has no "cost_basis").
       if (holding) {
-        const gainLossPct =
-          (holding.cost_basis || 0) > 0
-            ? (((holding.current_value || 0) - (holding.cost_basis || 0)) /
-                (holding.cost_basis || 1)) *
-              100
-            : 0;
+        const gainLossPct = holding.gain_loss_percent ?? 0;
 
         let signal: "BUY" | "SELL" | "HOLD" = "HOLD";
         let strength = 50;
@@ -983,11 +1006,11 @@ export class FinancialChatEngine {
         };
       }
 
-      // No position - neutral signal suggesting research
+      // No position - honest zero-strength signal, not a fabricated "moderate hold"
       return {
         symbol: symbol.toUpperCase(),
         signal: "HOLD",
-        strength: 50,
+        strength: 0,
         timeframe: "1d",
         reason: "No current position - research before trading",
       };
@@ -996,7 +1019,7 @@ export class FinancialChatEngine {
       return {
         symbol: symbol.toUpperCase(),
         signal: "HOLD",
-        strength: 50,
+        strength: 0,
         timeframe: "1d",
         reason: "Insufficient data for signal generation",
       };
@@ -1109,14 +1132,13 @@ export class FinancialChatEngine {
    */
   private async optimizeDebt(userId: string): Promise<any> {
     try {
-      // Fetch user's debt accounts
-      const { data: accounts } = await this.supabase
-        .from("financial_accounts")
-        .select("*")
-        .eq("user_id", userId)
-        .in("account_type", ["credit_card", "loan", "line_of_credit"]);
+      // debtService.listDebts throws a real Error on a DB failure (it does
+      // not silently resolve {data: null}), so a genuinely empty result here
+      // means the user actually has no debt accounts.
+      const allDebts = await debtService.listDebts(userId);
+      const accounts = allDebts.filter((d) => d.isActive);
 
-      if (!accounts || accounts.length === 0) {
+      if (accounts.length === 0) {
         return {
           strategy: "none",
           estimatedPayoffTime: 0,
@@ -1126,11 +1148,11 @@ export class FinancialChatEngine {
       }
 
       const totalDebt = accounts.reduce(
-        (sum: number, acc: any) => sum + (acc.balance || 0),
+        (sum: number, acc) => sum + (acc.balance || 0),
         0,
       );
       const avgApr =
-        accounts.reduce((sum: number, acc: any) => sum + (acc.apr || 0), 0) /
+        accounts.reduce((sum: number, acc) => sum + (acc.interestRate || 0), 0) /
         accounts.length;
 
       // Recommend avalanche for high APR, snowball for motivation
@@ -1154,12 +1176,14 @@ export class FinancialChatEngine {
       };
     } catch (error) {
       // Chat engine error:('Debt optimization error:', error);
+      // A failed lookup must never present a confident strategy — that would
+      // fabricate advice from data we could not actually load.
       return {
-        strategy: "avalanche",
-        estimatedPayoffTime: 24,
-        totalInterestSaved: 0,
+        strategy: "unavailable",
+        estimatedPayoffTime: null,
+        totalInterestSaved: null,
         message:
-          "Unable to analyze debt accounts. Using default avalanche strategy recommendation.",
+          "Unable to load your debt accounts right now. Please try again shortly.",
       };
     }
   }
@@ -1170,29 +1194,35 @@ export class FinancialChatEngine {
    */
   private async assessRisk(context: ChatContext): Promise<any> {
     try {
-      // Fetch portfolio data for risk assessment
-      const { data: holdings } = await this.supabase
-        .from("portfolio_holdings")
+      // Fetch portfolio data for risk assessment. A real query failure must
+      // throw here (not silently resolve to null-as-zero) — otherwise a
+      // failed lookup and a genuinely empty portfolio are indistinguishable,
+      // and the risk score below gets computed from garbage.
+      const { data: holdings, error: holdingsError } = await this.supabase
+        .from("investment_holdings")
         .select("*")
         .eq("user_id", context.userId);
 
-      const { data: debts } = await this.supabase
-        .from("financial_accounts")
-        .select("balance, apr")
-        .eq("user_id", context.userId)
-        .in("account_type", ["credit_card", "loan"]);
+      if (holdingsError) {
+        throw new Error(
+          holdingsError.message || "Failed to load portfolio holdings",
+        );
+      }
+
+      // debtService.listDebts throws on a real DB failure rather than
+      // silently resolving {data: null}, so it can't masquerade as zero debt.
+      const allDebts = await debtService.listDebts(context.userId);
+      const debts = allDebts.filter((d) => d.isActive);
 
       const totalPortfolio =
         holdings?.reduce(
           (sum: number, h: any) => sum + (h.current_value || 0),
           0,
         ) || 0;
-      const totalDebt =
-        debts?.reduce((sum: number, d: any) => sum + (d.balance || 0), 0) || 0;
-      const highAprdDebt =
-        debts
-          ?.filter((d: any) => (d.apr || 0) > 15)
-          .reduce((sum: number, d: any) => sum + (d.balance || 0), 0) || 0;
+      const totalDebt = debts.reduce((sum, d) => sum + (d.balance || 0), 0);
+      const highAprdDebt = debts
+        .filter((d) => (d.interestRate || 0) > 15)
+        .reduce((sum, d) => sum + (d.balance || 0), 0);
 
       // Calculate risk factors
       const debtToAssetRatio =
@@ -1251,11 +1281,13 @@ export class FinancialChatEngine {
       };
     } catch (error) {
       // Chat engine error:('Risk assessment error:', error);
+      // A failed lookup must never present a confident risk score — that
+      // would fabricate an assessment from data we could not actually load.
       return {
-        riskScore: 65,
-        category: "moderate",
+        riskScore: null,
+        category: "unavailable",
         recommendations: [
-          "Complete your financial profile to get personalized risk assessment",
+          "Unable to load your financial data right now, so a risk assessment could not be calculated. Please try again shortly.",
         ],
       };
     }
@@ -1310,37 +1342,38 @@ export class FinancialChatEngine {
           break;
 
         case "networth":
-        case "net-worth":
+        case "net-worth": {
+          // getPortfolioData already returns null (not a fabricated $0) on a
+          // real query failure — preserve that "unknown" signal here too.
           const assets = await this.getPortfolioData(context.userId);
-          const { data: accounts } = await this.supabase
-            .from("financial_accounts")
-            .select("balance, account_type")
-            .eq("user_id", context.userId);
+          const totalAssets = assets?.totalValue ?? null;
 
-          const totalAssets =
-            (assets?.totalValue || 0) +
-            (accounts
-              ?.filter((a: any) => a.balance > 0)
-              .reduce((sum: number, a: any) => sum + a.balance, 0) || 0);
-          const totalLiabilities =
-            accounts
-              ?.filter(
-                (a: any) =>
-                  a.balance < 0 ||
-                  ["credit_card", "loan"].includes(a.account_type),
-              )
-              .reduce(
-                (sum: number, a: any) => sum + Math.abs(a.balance || 0),
-                0,
-              ) || 0;
+          // debtService.listDebts throws on a real DB failure rather than
+          // silently resolving {data: null}; a failed lookup must not be
+          // presented as "$0 liabilities" — that is exactly the "debt-free"
+          // fabrication class this fix removes elsewhere in this file.
+          let totalLiabilities: number | null;
+          try {
+            const activeDebts = (
+              await debtService.listDebts(context.userId)
+            ).filter((d) => d.isActive);
+            totalLiabilities = activeDebts.reduce(
+              (sum, d) => sum + (d.balance || 0),
+              0,
+            );
+          } catch {
+            totalLiabilities = null;
+          }
 
-          reportData.data = {
-            totalAssets,
-            totalLiabilities,
-            netWorth: totalAssets - totalLiabilities,
-          };
+          const netWorth =
+            totalAssets != null && totalLiabilities != null
+              ? totalAssets - totalLiabilities
+              : null;
+
+          reportData.data = { totalAssets, totalLiabilities, netWorth };
           reportData.title = "Net Worth Report";
           break;
+        }
 
         default:
           reportData.title = "Financial Summary Report";
