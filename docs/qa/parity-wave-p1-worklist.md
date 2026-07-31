@@ -266,6 +266,21 @@ Already fixed this session (chain now advances past them): `credit_reports` twin
 
 **This supersedes the critic's F-002 estimate:** drift isn't just column-level, it's a broken provisioning chain including a hard syntax error and an ordering bug.
 
+### ✅ RESOLVED — chain is provisionable (`8972a93`, `95991ab`)
+`supabase db reset` → **exit 0, 52 migrations applied, 0 errors, 143 public tables.** The database can be built from this repo for the first time. **9 distinct defects** fixed (not the 7 first counted — deeper ones only surfaced once earlier blockers cleared):
+1-2. `credit_reports` + `disputes` twins (missing `score`/`report_data`/`accounts`/`inquiries`, `strategy`/`creditor_name`/…)
+3. `financial_health_scores` — `UNIQUE(user_id, calculated_at::date)`: expressions are illegal in a table UNIQUE constraint → reworked as a UTC-pinned IMMUTABLE unique index
+4. `billing_profiles` called `trigger_set_timestamp()` that nothing defined
+5. perf migration indexed `chat_sessions` created **10 days later** → renamed `20260105`→`20260116000000`
+6-7. `subscriptions` + `audit_logs` twins (modelling conflicts flagged, not silently merged)
+8. cpfi twin pair — **42 generated ALTERs across 8 tables**, incl. `financial_goals.milestones` whose absence silently broke the FR-302 goal-milestone alert
+9. `investment_holdings`/`_transactions`/`financial_chat_messages` had no `user_id` on the winning shape
+**Plus hygiene:** 326 `CREATE POLICY` → DROP-then-CREATE across 29 files; 7 triggers → `CREATE OR REPLACE`; **6 files shared only 2 version numbers** (`20260110`×4, `20260204000000`×2) so `schema_migrations` could never record them all → renamed unique; `sample_data.sql` (a `YOUR_TEST_USER_ID` placeholder) moved out of `migrations/`; `config.toml` added.
+
+**Live bugs closed** (`95991ab`): `profiles.phone/address/city/state/zip/date_of_birth` (the profile route queries them today), `audit_logs.details/actor_email/…` (admin POST + audit-logger write them today — and audit-logger *swallows* the failure, so security audit logging is silently broken), and the **`transactions` table created for the first time** (Plaid writer + spending-analyzer both use it; none existed).
+
+**Honest M0 follow-ups (code, not schema):** unswallow `audit-logger.ts:84`; admin POST must supply `resource_type`; `plaid-service.ts` must write `is_pending` not `pending`; analyzer must index `category[0]`; `subscriptions` third-party concept needs its own table; ADR-0010 `audit_logs` split.
+
 ## ⏸ NATURAL PAUSE APPROACHING (after DEFAB-2 web)
 The ungated, no-DB queue drains to empty after DEFAB-2 web. **Everything remaining needs an unblock:**
 - **Docker (R-9)** → M0 reconcile migrations (audit_logs silent-failure + profile drift live bugs) + M3 orphaned-service new-table migrations + all M0-dependent routes (M2-4, M4-2/3/4, M5). Start Docker → I run local `supabase start` (ephemeral, zero prod risk) → dry-run-verify + land them.
