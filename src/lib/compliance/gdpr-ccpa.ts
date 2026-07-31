@@ -358,7 +358,16 @@ export class GDPRComplianceService {
       .eq("id", userId)
       .single();
 
-    if (error || !data) return null;
+    // PGRST116 ("no rows") is a legitimate "no profile" result. Any other
+    // error (permission denied, connection failure, malformed query) is a
+    // real failure and must propagate — silently reporting "no profile" for
+    // a GDPR Art. 15 export would misstate what data exists. Established
+    // idiom: see budget-service.ts getBudgetById.
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      throw new Error(`Failed to load profile for export: ${error.message}`);
+    }
+    if (!data) return null;
 
     return {
       id: data.id,
@@ -374,10 +383,19 @@ export class GDPRComplianceService {
   private async getUserCreditReports(
     userId: string,
   ): Promise<CreditReportRecord[]> {
-    const { data } = await this.db
+    const { data, error } = await this.db
       .from("credit_reports")
       .select("id, bureau, report_date, score, items")
       .eq("user_id", userId);
+
+    // A list query has no "not found" error code — an empty result set is a
+    // valid `{ data: [], error: null }`. Any non-null error is a real DB
+    // failure that must not be silently reported as "no credit reports."
+    if (error) {
+      throw new Error(
+        `Failed to load credit reports for export: ${error.message}`,
+      );
+    }
 
     return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
       id: r.id as string,
@@ -389,10 +407,14 @@ export class GDPRComplianceService {
   }
 
   private async getUserDisputes(userId: string): Promise<DisputeRecord[]> {
-    const { data } = await this.db
+    const { data, error } = await this.db
       .from("disputes")
       .select("id, status, created_at, description")
       .eq("user_id", userId);
+
+    if (error) {
+      throw new Error(`Failed to load disputes for export: ${error.message}`);
+    }
 
     return ((data ?? []) as Array<Record<string, unknown>>).map((d) => ({
       id: d.id as string,
@@ -405,10 +427,16 @@ export class GDPRComplianceService {
   private async getUserAIInteractions(
     userId: string,
   ): Promise<AIInteractionRecord[]> {
-    const { data } = await this.db
+    const { data, error } = await this.db
       .from("ai_interactions")
       .select("id, type, timestamp, prompt, response")
       .eq("user_id", userId);
+
+    if (error) {
+      throw new Error(
+        `Failed to load AI interactions for export: ${error.message}`,
+      );
+    }
 
     return ((data ?? []) as Array<Record<string, unknown>>).map((a) => ({
       id: a.id as string,
@@ -420,10 +448,14 @@ export class GDPRComplianceService {
   }
 
   private async getUserLogs(userId: string): Promise<LogRecord[]> {
-    const { data } = await this.db
+    const { data, error } = await this.db
       .from("audit_logs")
       .select("id, action, created_at, details")
       .eq("user_id", userId);
+
+    if (error) {
+      throw new Error(`Failed to load audit logs for export: ${error.message}`);
+    }
 
     return ((data ?? []) as Array<Record<string, unknown>>).map((l) => ({
       id: l.id as string,
@@ -761,7 +793,14 @@ export class ConsentManagementService {
       .eq("user_id", userId)
       .order("timestamp", { ascending: false });
 
-    if (error || !data) return [];
+    // A list query's "no rows" case is `{ data: [], error: null }` — a real,
+    // non-null error must propagate rather than being reported as "no
+    // consent history," which both the Art. 15 export and the consent route
+    // treat as ground truth.
+    if (error) {
+      throw new Error(`Failed to read consent history: ${error.message}`);
+    }
+    if (!data) return [];
 
     return (data as Array<Record<string, unknown>>).map((row) => ({
       userId: row.user_id as string,

@@ -42,11 +42,13 @@ type MockBuilder = Record<string, jest.Mock>;
  */
 function createChainableMock(opts?: {
   allRows?: Array<Record<string, unknown>>;
+  allRowsError?: string | null;
   maybeSingleRow?: Record<string, unknown> | null;
   maybeSingleError?: string | null;
   insertError?: string | null;
 }): MockBuilder {
   const allRows = opts?.allRows ?? [];
+  const allRowsErr = opts?.allRowsError !== undefined ? opts.allRowsError : null;
   // maybeSingleRow: explicit null means "no rows" (not a DB error)
   const maybeSingleRow =
     opts?.maybeSingleRow !== undefined ? opts.maybeSingleRow : null;
@@ -74,7 +76,10 @@ function createChainableMock(opts?: {
   // .order() is the terminal for getUserConsents AND chainable for hasConsent.
   // Returns a thenable-builder hybrid.
   b.order = jest.fn().mockImplementation(() => {
-    const resolved = Promise.resolve({ data: allRows, error: null });
+    const resolved = Promise.resolve({
+      data: allRowsErr ? null : allRows,
+      error: allRowsErr ? { message: allRowsErr } : null,
+    });
     Object.assign(resolved, b);
     return resolved;
   });
@@ -83,6 +88,7 @@ function createChainableMock(opts?: {
 
 function buildMockDb(opts?: {
   allRows?: Array<Record<string, unknown>>;
+  allRowsError?: string | null;
   maybeSingleRow?: Record<string, unknown> | null;
   maybeSingleError?: string | null;
   insertError?: string | null;
@@ -550,6 +556,40 @@ describe("ConsentManagementService — durable DB persistence", () => {
       const svc = new ConsentManagementService(db);
 
       expect(await svc.getUserConsents(userId)).toEqual([]);
+    });
+
+    it("resolving null data with no error also reports empty consent history", async () => {
+      // Defensive branch: `{ data: null, error: null }` shouldn't happen for a
+      // plain list query per the postgrest-js contract, but must still resolve
+      // to [] rather than crash if it ever does.
+      const db: DbClient = {
+        from: jest.fn().mockReturnValue({
+          insert: jest.fn().mockResolvedValue({ error: null }),
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          order: jest.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+        rpc: jest.fn().mockResolvedValue({ error: null }),
+        auth: { admin: { deleteUser: jest.fn().mockResolvedValue({ error: null }) } },
+      };
+      const svc = new ConsentManagementService(db);
+
+      expect(await svc.getUserConsents(userId)).toEqual([]);
+    });
+
+    it("throws on a genuine DB error instead of reporting empty consent history", async () => {
+      // Regression test (honesty fix, TASK-CMP privacy-routes wiring):
+      // getUserConsents used to `if (error || !data) return [];`, so a real
+      // failure (permission denied, connection drop) was indistinguishable
+      // from "user has never granted or withdrawn any consent" — both to the
+      // GDPR export and to GET /api/privacy/consent, which treat this as
+      // ground truth. Must fail before the fix, pass after.
+      const db = buildMockDb({ allRowsError: "permission denied for table consent_records" });
+      const svc = new ConsentManagementService(db);
+
+      await expect(svc.getUserConsents(userId)).rejects.toThrow(
+        "Failed to read consent history: permission denied for table consent_records",
+      );
     });
   });
 });
