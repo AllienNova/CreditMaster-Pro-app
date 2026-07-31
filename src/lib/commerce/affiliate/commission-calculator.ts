@@ -84,9 +84,16 @@ class CommissionCalculatorService {
     conversionType: ConversionType,
     value: number,
   ): Promise<number> {
-    // Get partner settings
+    // Get partner settings. A commission that cannot be resolved must fail
+    // loudly (the caller's webhook handler 5xxs and the sender retries) —
+    // silently recording a $0 commission for a missing/errored lookup is the
+    // defect this fixes (see 20260731000005_affiliate_partners_commission_rules.sql).
     const partner = await this.getPartner(partnerId);
-    if (!partner) return 0;
+    if (!partner) {
+      throw new Error(
+        `Cannot calculate commission: affiliate partner not found (${partnerId})`,
+      );
+    }
 
     // Check for custom rules
     const rule = await this.getCommissionRule(partnerId, conversionType, value);
@@ -383,9 +390,15 @@ class CommissionCalculatorService {
       .single();
 
     if (error) {
+      // No matching custom rule is a legitimate business case — the caller
+      // falls back to the partner's default commission settings.
       if (error.code === "PGRST116") return null;
-      // Don't throw for "no rows" error, just return null
-      return null;
+      // Any other error (missing table, connection failure, etc.) must not
+      // be silently treated the same as "no custom rule" — that masked a
+      // broken commission_rules lookup as a normal, ruleless commission.
+      throw new Error(
+        `Failed to look up commission rule for partner ${partnerId}: ${error.message}`,
+      );
     }
 
     return this.mapCommissionRule(data);
@@ -405,7 +418,17 @@ class CommissionCalculatorService {
       .eq("id", partnerId)
       .single();
 
-    if (error) return null;
+    if (error) {
+      // No matching row is a legitimate "this partner doesn't exist" answer.
+      if (error.code === "PGRST116") return null;
+      // Any other error (missing table, connection failure, etc.) must
+      // surface — calculateCommission throws on a null partner rather than
+      // recording a fake $0 commission, so this must not be conflated with
+      // "not found".
+      throw new Error(
+        `Failed to look up affiliate partner ${partnerId}: ${error.message}`,
+      );
+    }
 
     return {
       id: data.id,

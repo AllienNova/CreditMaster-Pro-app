@@ -246,19 +246,39 @@ describe("CommissionCalculatorService", () => {
       expect(result).toBe(20);
     });
 
-    it("should return 0 when partner not found", async () => {
+    it("should throw when partner not found (never silently record $0 commission)", async () => {
+      // FND: a missing/errored partner lookup previously fell through to
+      // `return 0`, which the affiliate webhook then persisted as a real
+      // revenue_events.commission_amount_cents value. A commission that
+      // cannot be resolved must fail loudly instead of recording a fake $0.
       mockBuilder.single.mockResolvedValueOnce({
         data: null,
-        error: { code: "PGRST116" },
+        error: { code: "PGRST116", message: "no rows" },
       });
 
-      const result = await commissionCalculator.calculateCommission(
-        "nonexistent",
-        "signup",
-        100,
-      );
+      await expect(
+        commissionCalculator.calculateCommission("nonexistent", "signup", 100),
+      ).rejects.toThrow(/partner/i);
+    });
 
-      expect(result).toBe(0);
+    it("should throw when the partner lookup errors for a reason other than not-found", async () => {
+      // A missing table (PostgREST "could not find the table in the schema
+      // cache") or any other DB error must never be silently treated the
+      // same as "not found" -> $0. This is the exact chain that produced the
+      // live bug: affiliate_partners didn't exist, every lookup errored, and
+      // the error was swallowed into a $0 commission.
+      mockBuilder.single.mockResolvedValueOnce({
+        data: null,
+        error: {
+          code: "PGRST205",
+          message:
+            "Could not find the table 'public.affiliate_partners' in the schema cache",
+        },
+      });
+
+      await expect(
+        commissionCalculator.calculateCommission("partner-1", "signup", 100),
+      ).rejects.toThrow(/partner/i);
     });
 
     it("should apply custom commission rule when available", async () => {
@@ -812,19 +832,19 @@ describe("CommissionCalculatorService", () => {
       expect(result).toBeNull();
     });
 
-    it("should return null on unexpected error (graceful fallback)", async () => {
+    it("should throw on unexpected (non-PGRST116) error instead of silently returning null", async () => {
+      // A table-missing or connection error must not be indistinguishable
+      // from "no custom rule for this partner", which is a legitimate null.
+      // Pre-fix, this code path fell through to a bare `return null` for
+      // every error code, masking real failures as "no custom rule".
       mockBuilder.single.mockResolvedValueOnce({
         data: null,
         error: { code: "OTHER", message: "unexpected" },
       });
 
-      const result = await commissionCalculator.getCommissionRule(
-        "partner-1",
-        "purchase",
-        100,
-      );
-
-      expect(result).toBeNull();
+      await expect(
+        commissionCalculator.getCommissionRule("partner-1", "purchase", 100),
+      ).rejects.toThrow(/commission rule/i);
     });
   });
 });

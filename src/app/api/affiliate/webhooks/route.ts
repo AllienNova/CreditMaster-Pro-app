@@ -118,7 +118,9 @@ export async function POST(request: NextRequest) {
     // Recompute commission server-side from trusted inputs.
     // The inbound data.commission is IGNORED — a signed webhook proves origin,
     // not that the body's money values are correct.
-    // calculateCommission returns 0 for an unknown/missing partner rather than throwing.
+    // calculateCommission throws for an unknown/unresolvable partner or rule
+    // lookup error rather than returning 0 — the catch block below turns that
+    // into a 500 so the sender retries instead of silently recording $0.
     const commissionAmount = await commissionCalculator.calculateCommission(
       partnerId,
       conversionTypeMap[eventType],
