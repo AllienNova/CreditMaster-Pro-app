@@ -1534,6 +1534,37 @@ describe("PayoutService", () => {
       // Should return null since no payouts meet minimum
       expect(result).toBeNull();
     });
+
+    // -------------------------------------------------------------------
+    // Dead-code landmine fix — payout_schedules is a phantom table today,
+    // so this query currently errors on every real call. Pre-fix, that
+    // error was silently swallowed (only `data` was destructured) and
+    // conflated with "no schedules are due," making this entry point a
+    // silent no-op that pays nobody with nothing in the logs to explain
+    // why. It must throw instead.
+    // -------------------------------------------------------------------
+
+    it("throws rather than silently returning null when the payout_schedules query errors", async () => {
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === "payout_schedules") {
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                lte: jest.fn().mockResolvedValue({
+                  data: null,
+                  error: { message: 'relation "payout_schedules" does not exist' },
+                }),
+              }),
+            }),
+          };
+        }
+        return mockBuilder;
+      });
+
+      await expect(service.processScheduledPayouts()).rejects.toThrow(
+        "Failed to fetch due payout schedules",
+      );
+    });
   });
 
   // ===========================================================================
@@ -1697,6 +1728,40 @@ describe("PayoutService", () => {
       expect(summary.totalPaid).toBe(0);
       expect(summary.payoutCount).toBe(0);
       expect(summary.averagePayoutAmount).toBe(0);
+    });
+
+    // -------------------------------------------------------------------
+    // Dead-code landmine fix — affiliate_conversions is a phantom table
+    // today, so this query currently errors on every real call. Pre-fix,
+    // getPendingEarnings only destructured `data` (ignoring `error`) and
+    // defaulted to summing an empty array, i.e. silently returning $0
+    // pending for every recipient. Any batch/schedule run built on that
+    // number pays nobody, with no visible failure. It must throw instead.
+    // -------------------------------------------------------------------
+
+    it("throws rather than silently treating a pending-earnings query error as $0 pending", async () => {
+      // getRecipientPayouts resolves with no payout history — irrelevant here
+      mockBuilder.order.mockResolvedValue({ data: [], error: null } as any);
+
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === "affiliate_conversions") {
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                in: jest.fn().mockResolvedValue({
+                  data: null,
+                  error: { message: 'relation "affiliate_conversions" does not exist' },
+                }),
+              }),
+            }),
+          };
+        }
+        return mockBuilder;
+      });
+
+      await expect(service.getPayoutSummary("recip-001")).rejects.toThrow(
+        "Failed to compute pending earnings",
+      );
     });
   });
 

@@ -3,6 +3,14 @@
  *
  * Manages payouts to affiliates, partners, and users.
  * Supports multiple payout methods and automated scheduling.
+ *
+ * Fail-LOUD contract for money-amount computations: getPendingEarnings and
+ * the due-schedule lookup in processScheduledPayouts both throw on a query
+ * error rather than defaulting to "$0 pending" / "nothing due." A wrong
+ * balance must never be computed as if it were a real one — the query
+ * currently errors on every call (affiliate_conversions and
+ * payout_schedules do not exist yet), and silently treating that as zero
+ * would starve every recipient's payout with no visible failure.
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -559,11 +567,21 @@ export class PayoutService {
     const now = new Date();
 
     // Get due schedules
-    const { data: schedules } = await supabase
+    const { data: schedules, error: schedulesError } = await supabase
       .from("payout_schedules")
       .select()
       .eq("is_active", true)
       .lte("next_payout_date", now.toISOString());
+
+    // Fail LOUD: a query error must never be indistinguishable from "no
+    // schedules are due" — that silent conflation is what would let this
+    // entry point become a no-op that pays nobody, with nothing in the
+    // logs to explain why.
+    if (schedulesError) {
+      throw new Error(
+        `Failed to fetch due payout schedules: ${schedulesError.message}`,
+      );
+    }
 
     if (!schedules || schedules.length === 0) {
       return null;
@@ -765,11 +783,20 @@ export class PayoutService {
 
   private async getPendingEarnings(recipientId: string): Promise<number> {
     // Get confirmed but unpaid conversions
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("affiliate_conversions")
       .select("commission_earned")
       .eq("partner_id", recipientId)
       .in("status", ["confirmed", "qualified"]);
+
+    // Fail LOUD: a query error must never be read as "$0 pending" — that
+    // silent default is what let a batch/schedule run believe every
+    // recipient has nothing owed, starving real payouts with no error.
+    if (error) {
+      throw new Error(
+        `Failed to compute pending earnings for ${recipientId}: ${error.message}`,
+      );
+    }
 
     return (data || []).reduce((sum, c) => sum + (c.commission_earned || 0), 0);
   }
