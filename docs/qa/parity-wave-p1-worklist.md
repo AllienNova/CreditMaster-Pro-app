@@ -292,6 +292,13 @@ Migration also gained `actor_role` + the `name`/`payment_channel`/`location` col
 
 **Remaining M0 follow-ups (need a decision, not just a fix):** the `subscriptions` twin — two domains (Stripe billing vs third-party subscription tracking) sharing one table name; and the ADR-0010 `audit_logs` split (UUID security log vs AI/observability events, unmergeable PK types). Both are currently *unblocked but unresolved*.
 
+### ✅ M0-10 erasure cascade — `transactions` now actually erasable
+`transactions` was **already listed** in the `delete_user_data_cascade` RPC, but it was one of **5 tables with no `CREATE TABLE` in any migration**, so the resilient wrapper had to skip it — GDPR Art. 17 erasure silently deleted nothing from it. Creating the table (`95991ab`) makes the cascade actually cover it. Verified against the live DB: `transactions` present, RPC present.
+
+The other 4 remain absent — triaged honestly:
+- `goals`, `savings_accounts`, `spending_categories` → **0 source files query them**: vestigial list entries, harmless (the guard skips them).
+- `ai_interactions` → queried at `gdpr-ccpa.ts:409`, in the **data-EXPORT (Art. 15) path**. That read targets a table that does not exist, so the subject-access export cannot return AI-interaction data. Minor but real; logged, not fixed here.
+
 ### ⚠ M0-11 (regenerate types) — ATTEMPTED, REVERTED, tracked as its own slice
 `supabase gen types typescript --local` against the now-provisionable DB produces **7,324 lines** vs the **1,184-line** copy checked in — the committed `src/lib/supabase/types.ts` is a stale hand-trimmed subset that still models the pre-M0 schema.
 
