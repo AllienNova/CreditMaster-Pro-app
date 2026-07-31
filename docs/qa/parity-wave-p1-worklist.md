@@ -279,7 +279,18 @@ Already fixed this session (chain now advances past them): `credit_reports` twin
 
 **Live bugs closed** (`95991ab`): `profiles.phone/address/city/state/zip/date_of_birth` (the profile route queries them today), `audit_logs.details/actor_email/…` (admin POST + audit-logger write them today — and audit-logger *swallows* the failure, so security audit logging is silently broken), and the **`transactions` table created for the first time** (Plaid writer + spending-analyzer both use it; none existed).
 
-**Honest M0 follow-ups (code, not schema):** unswallow `audit-logger.ts:84`; admin POST must supply `resource_type`; `plaid-service.ts` must write `is_pending` not `pending`; analyzer must index `category[0]`; `subscriptions` third-party concept needs its own table; ADR-0010 `audit_logs` split.
+### ✅ M0 code-side live bugs closed (`c568aaf`)
+All four resolved. *(That commit's message body was mangled by the shell — backticked identifiers were eaten; this is the accurate record.)*
+1. **`audit-logger.ts`** wrote **five** columns that don't exist (`actor_id`, `target_id`, `target_type`, plus an unsupplied NOT NULL `resource_type`) **and swallowed the error** → security audit logging was failing silently. Mapped to canonical columns per ADR-0010 (`actor_id`→`user_id`, `target_id`→`resource_id`, `target_type`→`resource_type` with an `"unspecified"` fallback); failure now logged with code + action. Still not rethrown — an audit outage must not take down the operation it audits, but it must be observable.
+2. **Admin audit POST** omitted the NOT NULL `resource_type` entirely → every admin audit write failed. Now supplies `resourceType` (default `"admin_action"`) + optional `resourceId`.
+3. **`plaid-service.storeTransaction`** wrote `pending`; the column is `is_pending`.
+4. **`spending-analyzer`** treated `transactions.category` as a string, but Plaid stores a `TEXT[]` hierarchy → narrowed once at the read boundary via `normalizeCategory()` (tolerates the legacy scalar, returns `"Uncategorized"` rather than an empty bucket key).
+Migration also gained `actor_role` + the `name`/`payment_channel`/`location` columns the Plaid writer sends, which the first cut of the table omitted.
+
+**Evidence:** `supabase db reset` exit 0 / 0 errors; `transactions` carries every column the writer sends; `tsc` 0; 137 pre-existing tests green. `audit-logger` had **no test file at all** — added one, **proven red-before-green** (5 failed against the pre-fix implementation, 5 pass after).
+**Not-tested:** the Plaid + analyzer paths mock Supabase, so those column fixes are verified against the live schema rather than by unit test.
+
+**Remaining M0 follow-ups (need a decision, not just a fix):** the `subscriptions` twin — two domains (Stripe billing vs third-party subscription tracking) sharing one table name; and the ADR-0010 `audit_logs` split (UUID security log vs AI/observability events, unmergeable PK types). Both are currently *unblocked but unresolved*.
 
 ## ⏸ NATURAL PAUSE APPROACHING (after DEFAB-2 web)
 The ungated, no-DB queue drains to empty after DEFAB-2 web. **Everything remaining needs an unblock:**
