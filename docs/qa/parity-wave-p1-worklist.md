@@ -319,6 +319,28 @@ The file was **never generated** — hand-authored at 384 lines (first commit 20
 
 **Tier 2/3 (real, lower urgency):** nullable DB columns assigned to non-null DTO fields across ~9 files (`new Date(null)` → 1970 silently); TEXT+CHECK columns vs app literal unions (checked: zero value mismatches — needs validated casts, not `any`).
 
+### ✅ Owner-approved remediation landed
+| Commit | What |
+|---|---|
+| `247fe9a` | DTI safety bypass fixed (`debt_accounts`, `financial_goals`/`type`), **fails closed** |
+| `59c82bb` | `tax_accounts` removed; routes read real `tax_profiles`; `accountLevelDataAvailable:false` surfaced so "not tracked" ≠ "zero accounts"; 13 tests |
+| `8e3422a` | **Real `orders`/`positions` tables + persistence** + erasure-cascade registration. 54 migrations apply from scratch, exit 0 |
+
+## 🔴🔴 THE REAL SCOPE — the 61 errors were a fraction of it (verified 2026-07-31)
+The type errors only ever exposed sites reachable by the *typed* client. Two further layers hide the same defect class, both confirmed by direct psql/grep:
+
+**(a) A second masking layer — the deliberately-untyped client.** `src/lib/supabase/client.ts` `getSupabase()`/`createClient()` carry **no `<Database>` generic**, by an explicit comment: *"the Database type only covers ~20 tables while the codebase uses 40+."* Every consumer is invisible to tsc **even after the types swap**. Found this way — phantom tables the debug team never saw because these files never errored:
+- `savings-automation-service.ts` — **6×** `.from("savings_goals")` (table never existed)
+- `savings-optimizer.ts` — `savings_goals` + `debts`
+- `financial-aggregation-service.ts` — `debts`
+
+**(b) Phantom COLUMNS, not just tables.** `tax_profiles` has **20 columns**; `mapDatabaseToProfile` reads **~27 that do not exist** — verified by psql, 14 of 15 sampled missing: `dividend_income`, `interest_income`, `rental_income`, `federal_withheld`, `state_withheld`, `mortgage_interest`, `property_taxes`, `charitable_donations`, `medical_expenses`, `student_loan_interest`, `age`, `target_retirement_age`, `risk_tolerance`, … plus a real name+type mismatch: code reads `dependents_data` (JSON array), live column is `dependents_count` (integer). All silently default via `Number(x) || 0`.
+**Implication: the tax engine computes on ~27 permanently-zero inputs.** It returns confident numbers derived from nothing.
+
+**The systemic pattern:** query a table/column that was never migrated → swallow the Postgrest error or default it → the feature *looks* like it works while computing on empty input. Same shape as the already-fixed `audit-logger` (5 nonexistent columns, swallowed), `plaid-service` (`pending` vs `is_pending`), and the DTI gate. This needs a repo-wide sweep, not one-off fixes.
+
+**Loose end:** `position-manager.ts:637` still carries `as unknown as PositionsTableClient` although `positions` is now real.
+
 ### ⚠ M0-11 (regenerate types) — ATTEMPTED, REVERTED, tracked as its own slice
 `supabase gen types typescript --local` against the now-provisionable DB produces **7,324 lines** vs the **1,184-line** copy checked in — the committed `src/lib/supabase/types.ts` is a stale hand-trimmed subset that still models the pre-M0 schema.
 
