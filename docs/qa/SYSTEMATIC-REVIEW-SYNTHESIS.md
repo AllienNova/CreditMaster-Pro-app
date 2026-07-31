@@ -1,6 +1,6 @@
 # Systematic Review — Synthesis
 
-> 2026-07-31. Every claim below is diffed against a **live** Postgres with all 57 migrations applied, not against migration files. Sources: `phantom-table-inventory.md` (mechanical sweep) + `triage-trading.md`, `triage-platform.md`, `triage-commerce.md`. The financial/savings slice was still in triage when this was written — **this synthesis is incomplete by exactly that slice.**
+> 2026-07-31. Every claim below is diffed against a **live** Postgres with all 57 migrations applied, not against migration files. Sources: `phantom-table-inventory.md` (mechanical sweep) + `triage-trading.md`, `triage-platform.md`, `triage-commerce.md`, `triage-financial.md`. **All four slices complete (148 tables triaged).**
 
 ## The finding
 
@@ -12,15 +12,17 @@
 
 Net effect: **a feature queries a table that was never migrated, the error is swallowed or defaulted, and the feature renders as empty/zero/false while appearing to work.**
 
-## Triage outcome (3 of 4 slices, 109 tables)
+## Triage outcome (all 4 slices, 148 tables)
 
 | Slice | RENAME | UNBUILT | DEAD | CRITICAL |
 |---|---:|---:|---:|---:|
 | Trading / investing | 3 | 14 | 18 | 3 |
 | Identity / credit / platform | 3 | 7 | 20 | 5 |
 | Commerce / growth | 2 | 4 | 38 | 2 |
+| Financial / savings / goals | 3 | 15 | 21 | 2 |
+| **Total** | **11** | **40** | **97** | **12** |
 
-**~70% is dead code.** The raw 147 substantially overstates user-facing impact — which is why triage mattered before any remediation plan.
+**~66% is dead code.** The raw 147 substantially overstates user-facing impact — which is why triage mattered before any remediation plan. Call-site counts are actively misleading: `scheduled_contributions` has the most sites in its slice (12) and zero user impact, while `debts` has 2 sites and is CRITICAL.
 
 ## CRITICAL — ranked by real-world harm
 
@@ -56,6 +58,17 @@ No `/api/privacy/*` or `/api/gdpr/*` endpoint exists. `exportUserData` (Art. 15/
 ### 10. Admin revenue permanently $0; analytics silently stores nothing
 `payments` absent → admin revenue/trend read $0 **beside a correct MRR** from the real `subscriptions` table, so it reads as "subscribers but no revenue". `analytics_events` absent → `POST /api/analytics/events` returns `200 {"success": true}` having stored 0% of events.
 
+### 11. The AI coach tells every user they are debt-free — ✅ verified by lead
+`financial_accounts` does not exist under any name. `financial-chat-engine.ts:1121` returns, verbatim:
+> `"No debt accounts found. Great job being debt-free!"`
+
+to **every** user, because the query failed — not because they have no debt. Congratulating a user on being debt-free while they carry debt is worse than showing an error. Same failure class as the DTI gate. 43 entry points; `credit-builder-service.ts:1068,1174` additionally substitute fabricated constants (`revolving: 2`, `averageAge = 3.5`) and present them as the user's real credit profile (FCRA-adjacent). `plaid-service.ts:287` has a literally empty `if (error) { /* comment */ }` — account sync reports success and persists nothing.
+
+### 12. `debts` → `debt_accounts`, and DTI reads 0 for everyone
+`savings-optimizer.ts:1372` swallows so "Pay Off High-Interest Debt" can never fire; `financial-aggregation-service.ts:236` computes `debtToIncomeRatio` from a total the `catch` at `:632` pins to 0, so `/api/financial/health-score` reports **DTI = 0 for every user**.
+
+> **⚠ RENAME TRAP — verified by lead.** `savings-optimizer.ts:1370` filters `.eq("status","active")`, but `debt_accounts` has **`is_active boolean` and no `status` column** (confirmed via information_schema). A string-only rename trades a 42P01 for a 42703 and looks fixed. The already-shipped wellness-gate fix (`247fe9a`) correctly used `.eq("is_active", true)`.
+
 ## Also confirmed live (fixed this session)
 DTI risk gate never fired (`247fe9a`) · orders/positions never persisted (`8e3422a`) · GDPR erasure aborted for every user (`6b8e838`) · security audit logging silently failing · `GET /api/profile` erroring on `avatar_url` (`5d28a4b`) · budgets entirely dead — creation errors, reads yield Invalid Date (fix in flight).
 
@@ -69,15 +82,24 @@ DTI risk gate never fired (`247fe9a`) · orders/positions never persisted (`8e34
 - `payout-service.ts` — 980 lines, real `stripe.transfers.create` with correct idempotency and cents handling, sitting on four absent tables with `getPendingEarnings` returning 0. **Whoever imports it next ships $0 payouts.**
 - `trading/lifecycle/demotion-rules.ts` fails **OPEN** on two phantom tables — missing data reads as "no risk veto"/"no recon break", the two triggers that demote a misbehaving strategy from `autonomous_live`. Its sibling `promotion-gates.ts` correctly fails closed.
 
+## Traps for whoever fixes this — each would produce a plausible wrong fix
+1. **`try/catch` around a postgrest call is not error handling.** `transaction-categorizer.ts:559` wraps a phantom upsert in `try/catch`, but postgrest-js **resolves** `{error}` rather than throwing — so the catch never fires and the error is discarded with no branch at all. This idiom reads as "handled" in review and isn't. Expect it elsewhere.
+2. **`debts` → `debt_accounts` also needs `status` → `is_active`** (see #12). A string-only rename swaps one error code for another.
+3. **`savings_goals` → `financial_goals` needs an ALTER, not just a rename** — only 7 of 17 mapped columns exist; `createGoal` inserts `category` and `start_date`, which are absent.
+4. **`bill_negotiations` is NOT the real `negotiations` table.** `negotiations` is collection-agency debt settlement (`collection_agency`, `settlement_percentage`); bill-rate negotiation state actually lives on `recurring_bills.negotiation_status`. Repointing it would silently corrupt two features.
+5. **`credit_builder_actions`: remove the `|| 8` fabrication BEFORE creating the table.** A legitimately empty `[]` is falsy, so the invented numbers survive the migration.
+6. **Barrel-only exports defeat path-based dead-code greps.** `commerce/`, `gamification/`, `goals/services/`, `trading/lifecycle/`, `financial/` all re-export dead modules; `src/lib/financial/index.ts` has zero importers.
+
 ## Method caveats — stated, not buried
 - **`pctt_positions` reachability is UNKNOWN**: constructors live in a separate Fly.io app (`fynvita-autonomous-trading`). If deployed, real positions are lost on restart; if not, LOW. Not resolvable from this repo.
 - **Barrel-only exports defeat path-based dead-code greps.** One agent's first reachability pass was wrong for this reason and it self-corrected. `commerce/`, `gamification/`, `goals/services/`, `trading/lifecycle/` all re-export dead modules.
 - **Phantom-column coverage is a floor, not a ceiling.** The `select("*")` + `row.field` pattern (which hid `tax_profiles`' ~27 phantom reads) needs real static analysis; a snake_case heuristic misattributed ~50% in spot checks and its 41 "suspects" are deliberately not quoted as findings.
 - **Commerce triage is static analysis + schema diff**, not runtime reproduction — the lead independently verified the $0-commission chain end to end.
-- **One slice (financial/savings) is missing from this synthesis.**
+- **All four slices are now included.** Remaining incompleteness is the phantom-COLUMN axis (above), not the table axis.
 
 ## Recommended order
-1. `credit_profiles` → `latest_credit_scores` and `portfolio_holdings` → `investment_holdings` — **pure renames, real data already exists**, closes 2 CRITICALs cheaply.
+0. **Delete fabricated user-facing copy first** — the `|| 8` credit-builder numbers and the "Great job being debt-free!" message. These actively mislead users and are a one-line change each; they should not wait behind schema work.
+1. `credit_profiles` → `latest_credit_scores`, `portfolio_holdings` → `investment_holdings`, `debts` → `debt_accounts` (+ `status`→`is_active`) — **pure renames, real data already exists**, closes 3 CRITICALs cheaply.
 2. `affiliate_partners` + `commission_rules` — stop recording $0 commissions; decide whether historical `revenue_events` zeros need backfill (**owner decision, money**).
 3. `plaid_items` / `plaid_accounts` — restores bank linking and net worth.
 4. Fail-closed sweep: `credit_builder_actions` (remove the `|| 8` fabrication *first* — it survives the migration), `bureau_disputes`, `credit_alerts`.
