@@ -153,7 +153,12 @@ export interface TaxProfile {
     | "medicaid"
     | "none";
 
-  // Retirement Accounts
+  // Retirement Accounts.
+  // NOTE: no account-level linkage table exists in the schema yet (no
+  // institution, balance, employer-match, vesting, or Plaid data source) —
+  // this is always [] today. That is a structural gap, not a per-user empty
+  // state; see ACCOUNT_LEVEL_DATA_AVAILABLE in the tax API routes that build
+  // TaxProfile from the database.
   accounts: TaxAccount[];
 
   // Current Year Contributions
