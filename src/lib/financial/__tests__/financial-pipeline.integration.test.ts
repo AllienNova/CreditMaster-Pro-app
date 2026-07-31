@@ -137,20 +137,24 @@ import { BillCalendarService } from "../bill-calendar-service";
 // MOCK DATA FACTORIES
 // ============================================================================
 
+// Uses the REAL `budgets` table columns (see budget-service.ts
+// `mapRowToBudget` / budget.types.ts `BudgetRow`) — the table has no
+// `name`, `budgeted_amount`, `spent_amount`, `period_start`, `period_end`,
+// or `is_active` column. `name` is synthesized from `category` by the
+// service, so it's intentionally absent here.
 const createMockBudgetRow = (overrides: Record<string, unknown> = {}) => ({
   id: "budget-1",
   user_id: "user-123",
-  name: "Food Budget",
   category: "dining_out",
-  budgeted_amount: 500,
-  spent_amount: 200,
+  amount: 500,
+  spent: 200,
   period: "monthly",
-  period_start: "2026-02-01T00:00:00Z",
-  period_end: "2026-02-28T23:59:59Z",
+  start_date: "2026-02-01T00:00:00Z",
+  end_date: "2026-02-28T23:59:59Z",
   rollover_enabled: false,
   rollover_amount: 0,
   alert_threshold: 80,
-  is_active: true,
+  status: "active",
   created_at: "2026-01-15T00:00:00Z",
   updated_at: "2026-02-01T00:00:00Z",
   ...overrides,
@@ -369,8 +373,8 @@ describe("Pipeline 1: Budget -> Transaction Categorization -> Spending Forecast"
           createMockBudgetRow({
             id: "budget-2",
             category: "transportation",
-            budgeted_amount: 300,
-            spent_amount: 100,
+            amount: 300,
+            spent: 100,
           }),
         ],
         error: null,
