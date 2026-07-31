@@ -464,12 +464,25 @@ describe("CMP-3: delete_user_data_cascade migration coverage (FND-058)", () => {
     expect(vTables.size).toBeGreaterThan(28);
   });
 
-  test("latest migration defining the function is the resilient rewrite", () => {
-    // 20260519000000_erasure_cascade_resilient.sql CREATE OR REPLACEs (supersedes)
-    // 20260518000002_expand_erasure_cascade.sql to add schema-drift resilience.
-    // It carries the identical v_tables array, so every coverage/permission/
-    // anonymisation assertion above now validates the resilient definition too.
-    expect(migrationFilename).toBe(RESILIENT_MIGRATION);
+  test("latest migration defining the function is schema-drift resilient", () => {
+    // 20260519000000_erasure_cascade_resilient.sql introduced the to_regclass()
+    // guard; 20260731000001_expand_erasure_cascade_orders_positions.sql (adding
+    // `orders`/`positions` for the trading-persistence migration) is now later
+    // and CREATE OR REPLACEs the function again, carrying the guard forward.
+    // Asserting on filename (the original form of this test) would need a
+    // manual bump every time a legitimate future migration extends v_tables
+    // further; asserting the actual invariant — whichever migration is latest
+    // must still be resilient — protects against a real regression (someone
+    // extending v_tables via a CREATE OR REPLACE that drops the guard) without
+    // being tied to a specific filename. migrationFilename/migrationSql above
+    // already resolve to "latest" via loadExpandedErasureMigration().
+    expect(migrationFilename).not.toBe("20260401000000_gdpr_erasure_rpc.sql");
+    expect(migrationFilename).not.toBe(
+      "20260518000002_expand_erasure_cascade.sql",
+    );
+    expect(migrationSql).toMatch(
+      /IF\s+to_regclass\('public\.'\s*\|\|\s*v_table\)\s+IS\s+NOT\s+NULL\s+THEN/i,
+    );
   });
 
   test("migration uses CREATE OR REPLACE FUNCTION", () => {

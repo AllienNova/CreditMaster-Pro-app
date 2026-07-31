@@ -39,6 +39,16 @@ jest.mock("@/lib/supabase/server", () => ({
 import { PositionManager } from "../position-manager";
 import type { Position, PositionClose, TradeRecord } from "../position-types";
 import type { Fill, Order } from "../../orders/order-types";
+import { createClient as _createClient } from "@/lib/supabase/server";
+
+// Cast to jest.Mock so we can re-apply its implementation after resetMocks
+// (jest.config.js sets resetMocks: true, which wipes jest.fn() implementations
+// — including this one from the jest.mock() factory above — before every
+// test). Prior to this fix, createClient() silently resolved to undefined
+// from the second test onward, so every persistPosition/loadPositions call
+// threw "Cannot read properties of undefined (reading 'from')" — invisible
+// only because persistPosition's old try/catch swallowed it unconditionally.
+const mockedCreateClient = _createClient as jest.Mock;
 
 // ============================================================================
 // HELPERS
@@ -107,6 +117,11 @@ describe("PositionManager", () => {
   let manager: PositionManager;
 
   beforeEach(() => {
+    // Re-apply createClient's mock implementation (resetMocks: true clears
+    // it after every test — see comment on mockedCreateClient above).
+    mockedCreateClient.mockImplementation(() =>
+      Promise.resolve(mockSupabaseClient),
+    );
     resetChainMocks();
     manager = makeManager();
   });
@@ -446,12 +461,60 @@ describe("PositionManager", () => {
   // ==========================================================================
 
   describe("loadPositions", () => {
-    it("should load positions from supabase", async () => {
-      mockSingle.mockResolvedValue({ data: null, error: null });
-      // The select chain returns data array (not single)
-      mockEq.mockResolvedValueOnce({ data: [], error: null } as any);
+    it("should resolve without throwing when the DB returns no rows", async () => {
+      // loadPositions() chains TWO .eq() calls (user_id, then status) before
+      // awaiting the result — only the second (terminal) call settles the
+      // Postgrest response; the first must still return a chainable object.
+      mockEq
+        .mockReturnValueOnce({ eq: mockEq })
+        .mockResolvedValueOnce({ data: [], error: null } as any);
 
       await expect(manager.loadPositions("user-1")).resolves.not.toThrow();
+      expect(manager.getOpenPositions()).toHaveLength(0);
+    });
+
+    it("should populate in-memory positions from the returned rows", async () => {
+      const dbRow = {
+        id: "POS-db-1",
+        user_id: "user-1",
+        account_id: "account-1",
+        symbol: "AAPL",
+        side: "long",
+        quantity: 10,
+        avg_entry_price: 150,
+        current_price: 150,
+        cost_basis: 1500,
+        market_value: 1500,
+        unrealized_pl: 0,
+        unrealized_pl_percent: 0,
+        realized_pl: 0,
+        total_pl: 0,
+        opened_at: "2026-01-01T00:00:00.000Z",
+        last_updated_at: "2026-01-01T00:00:00.000Z",
+        status: "open",
+      };
+      mockEq
+        .mockReturnValueOnce({ eq: mockEq })
+        .mockResolvedValueOnce({ data: [dbRow], error: null } as any);
+
+      await manager.loadPositions("user-1");
+
+      const loaded = manager.getPositionBySymbol("AAPL");
+      expect(loaded).toBeDefined();
+      expect(loaded!.id).toBe("POS-db-1");
+      expect(loaded!.quantity).toBe(10);
+      expect(loaded!.status).toBe("open");
+    });
+
+    it("should log and rethrow when the DB returns an error", async () => {
+      mockEq
+        .mockReturnValueOnce({ eq: mockEq })
+        .mockResolvedValueOnce({
+          data: null,
+          error: { message: "relation does not exist", code: "42P01" },
+        } as any);
+
+      await expect(manager.loadPositions("user-1")).rejects.toBeTruthy();
     });
   });
 
@@ -460,17 +523,56 @@ describe("PositionManager", () => {
   // ==========================================================================
 
   describe("persist operations", () => {
-    it("should persist position to supabase on open", async () => {
-      // persistPosition is called internally during openPosition
+    // Regression guard for the original defect: the `positions` table did
+    // not exist in any migration, and every write silently no-op'd because
+    // persistPosition's try/catch never read `error` off the upsert result.
+    // supabase/migrations/20260731000000_trading_orders_positions.sql
+    // creates the table; these tests prove the code targets it by name with
+    // the correct payload, and that a write failure is no longer swallowed.
+    it("persists via .from(\"positions\") with the correct upsert payload", async () => {
       mockSingle.mockResolvedValue({ data: {}, error: null });
 
       const fill = makeFill();
       const order = makeOrder();
-      await manager.openPosition(fill, order, "user-1", "account-1");
+      const position = await manager.openPosition(
+        fill,
+        order,
+        "user-1",
+        "account-1",
+      );
 
-      // The from call for positions should have happened
-      // (may or may not depending on implementation -- it's called on openPosition)
-      expect(manager.getPosition).toBeDefined();
+      expect(mockFrom).toHaveBeenCalledWith("positions");
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: position.id,
+          user_id: "user-1",
+          account_id: "account-1",
+          symbol: "AAPL",
+          side: "long",
+          quantity: 10,
+          avg_entry_price: 150,
+          status: "open",
+        }),
+      );
+    });
+
+    it("throws when the DB upsert returns an error (no silent data loss)", async () => {
+      mockUpsert.mockReturnValueOnce({
+        eq: mockEq,
+        select: mockSelect,
+        then: (resolve: (v: unknown) => unknown) =>
+          Promise.resolve({
+            data: null,
+            error: { message: "relation \"positions\" does not exist", code: "42P01" },
+          }).then(resolve),
+      } as unknown as ReturnType<typeof mockUpsert>);
+
+      const fill = makeFill();
+      const order = makeOrder();
+
+      await expect(
+        manager.openPosition(fill, order, "user-1", "account-1"),
+      ).rejects.toThrow(/Failed to persist position/);
     });
   });
 });

@@ -214,11 +214,16 @@ describe("OrderManager Integration Tests", () => {
   let orderManager: OrderManager;
   let positionManager: PositionManager;
   let broker: BrokerClient;
+  // Captured so individual tests can assert which table name(s) `.from()`
+  // was called with — the direct regression guard against a silently wrong
+  // or missing table (the original defect this whole task fixes).
+  let mockFromSpy: jest.Mock;
 
   beforeEach(() => {
     // Re-apply createClient mock (resetMocks: true clears implementations)
+    mockFromSpy = jest.fn(() => makeMockSupabaseChain());
     mockedCreateClient.mockImplementation(async () => ({
-      from: jest.fn(() => makeMockSupabaseChain()),
+      from: mockFromSpy,
     }));
 
     orderManager = createOrderManager({
@@ -2433,6 +2438,123 @@ describe("OrderManager Integration Tests", () => {
         offset: 0,
       });
       expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  // ==========================================================================
+  // 19b. PERSISTENCE — real table targeting + write-error surfacing (TASK:
+  // orders/positions durable persistence). Regression guard for the original
+  // defect: the `orders` table did not exist in any migration, and every
+  // write silently no-op'd because persistOrder's try/catch never even read
+  // `error` off the upsert result. supabase/migrations/
+  // 20260731000000_trading_orders_positions.sql creates the table; these
+  // tests prove the code targets it by name and that a write failure is no
+  // longer swallowed.
+  // ==========================================================================
+
+  describe("Persistence — orders table targeting and error surfacing", () => {
+    it("createOrder() persists via .from(\"orders\") — not a different/missing table", async () => {
+      await orderManager.createOrder(
+        makeBuyMarketRequest(),
+        TEST_USER_ID,
+        TEST_ACCOUNT_ID,
+      );
+
+      expect(mockFromSpy).toHaveBeenCalledWith("orders");
+    });
+
+    it("getOrders() queries .from(\"orders\") — not a different/missing table", async () => {
+      await orderManager.getOrders({ userId: TEST_USER_ID });
+
+      expect(mockFromSpy).toHaveBeenCalledWith("orders");
+    });
+
+    it("createOrder() rethrows when the DB upsert returns an error (no silent data loss)", async () => {
+      const errorChain = makeMockSupabaseChain();
+      (errorChain as unknown as { then: unknown }).then = (
+        resolve: (v: unknown) => unknown,
+      ) =>
+        Promise.resolve({
+          data: null,
+          error: { message: "relation \"orders\" does not exist", code: "42P01" },
+        }).then(resolve);
+      mockFromSpy.mockImplementationOnce(() => errorChain);
+
+      await expect(
+        orderManager.createOrder(
+          makeBuyMarketRequest(),
+          TEST_USER_ID,
+          TEST_ACCOUNT_ID,
+        ),
+      ).rejects.toThrow(/Failed to persist order/);
+    });
+
+    it("getOrders() throws (not an empty array) when the DB returns an error", async () => {
+      const errorChain = makeMockSupabaseChain();
+      (errorChain as unknown as { then: unknown }).then = (
+        resolve: (v: unknown) => unknown,
+      ) =>
+        Promise.resolve({
+          data: null,
+          error: { message: "connection reset", code: "08006" },
+        }).then(resolve);
+      mockFromSpy.mockImplementationOnce(() => errorChain);
+
+      await expect(
+        orderManager.getOrders({ userId: TEST_USER_ID }),
+      ).rejects.toThrow(/Failed to fetch orders/);
+    });
+
+    it("round-trips: order written via createOrder maps back correctly from a stored row", async () => {
+      const { order } = await orderManager.createOrder(
+        makeBuyLimitRequest({ symbol: "RTRIP", quantity: 25, limitPrice: 42 }),
+        TEST_USER_ID,
+        TEST_ACCOUNT_ID,
+      );
+
+      // Simulate the exact row shape the DB would return for the order just
+      // "written" above (snake_case columns, ISO timestamp strings).
+      const storedRow = {
+        id: order!.id,
+        broker_id: null,
+        user_id: TEST_USER_ID,
+        account_id: TEST_ACCOUNT_ID,
+        symbol: "RTRIP",
+        side: "buy",
+        quantity: 25,
+        type: "limit",
+        limit_price: 42,
+        stop_price: null,
+        time_in_force: "day",
+        status: "pending",
+        filled_qty: 0,
+        filled_avg_price: null,
+        created_at: order!.createdAt.toISOString(),
+        submitted_at: null,
+        filled_at: null,
+        cancelled_at: null,
+        updated_at: order!.updatedAt.toISOString(),
+        error_message: null,
+        reject_reason: null,
+        estimated_value: 1050,
+        signal_id: null,
+        strategy_id: null,
+        notes: null,
+      };
+      const readChain = makeMockSupabaseChain();
+      (readChain as unknown as { then: unknown }).then = (
+        resolve: (v: unknown) => unknown,
+      ) =>
+        Promise.resolve({ data: [storedRow], error: null }).then(resolve);
+      mockFromSpy.mockImplementationOnce(() => readChain);
+
+      const [readBack] = await orderManager.getOrders({ userId: TEST_USER_ID });
+
+      expect(readBack.id).toBe(order!.id);
+      expect(readBack.symbol).toBe("RTRIP");
+      expect(readBack.quantity).toBe(25);
+      expect(readBack.limitPrice).toBe(42);
+      expect(readBack.status).toBe("pending");
     });
   });
 
