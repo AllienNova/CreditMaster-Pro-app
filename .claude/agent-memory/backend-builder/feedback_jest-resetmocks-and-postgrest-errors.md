@@ -1,0 +1,18 @@
+---
+name: jest-resetmocks-and-postgrest-errors
+description: Two recurring gotchas when writing/testing Supabase persistence code in this repo — jest resetMocks wiping jest.mock() factories, and postgrest-js resolving {error} instead of throwing.
+metadata:
+  type: feedback
+---
+
+**1. jest.config.js sets `resetMocks: true` globally.** This wipes the implementation of every `jest.fn()` — including ones created inside a `jest.mock("@/lib/supabase/server", () => ({ createClient: jest.fn(...) }))` factory — before every single test, not just call history. Any test file mocking `createClient()` MUST re-apply the implementation in its own `beforeEach` (cast the imported mock to `jest.Mock` and call `.mockImplementation(...)` again each time), or `createClient()` silently resolves to `undefined` from the second test onward.
+
+**Why:** Found 2026-07-31 while fixing `src/lib/trading/positions/__tests__/position-manager.test.ts` (orders/positions persistence task). Its `resetChainMocks()` helper reset the chain method mocks (`select`/`eq`/`upsert`/...) but never re-applied `createClient`'s own implementation. 19 of 26 tests in that file were passing by accident — `createClient()` returned `undefined`, `supabase.from(...)` threw `TypeError: Cannot read properties of undefined (reading 'from')`, and the old code's blanket try/catch swallowed it silently. The bug was invisible until the try/catch was removed (to stop swallowing real persistence failures) and the tests started failing loudly. `src/lib/trading/__tests__/order-manager.test.ts` already had the correct pattern (`mockedCreateClient.mockImplementation(...)` inside its own `beforeEach`, with a comment explaining why) — that file is the reference to copy from.
+
+**How to apply:** Before writing or trusting any new jest test that mocks `@/lib/supabase/server`'s `createClient`, confirm the mock's implementation is re-applied in `beforeEach`, not just declared once at module scope. A test that "passes" on a mock returning `undefined` is not exercising the code path it claims to.
+
+**2. postgrest-js resolves `{ data, error }` — it does not throw on a DB/Postgrest-level error.** Confirmed by reading `node_modules/@supabase/postgrest-js/src/PostgrestBuilder.ts`: `.then()` only rejects on a genuine network/fetch failure (and even that gets caught and re-resolved as `{error, data: null, ...}` unless `.throwOnError()` was explicitly chained). This means a bare `try { await supabase.from(x).upsert(y); } catch { /* swallow */ }` catches essentially nothing related to the actual DB — a relation-does-not-exist error, a constraint violation, an RLS denial all come back as a resolved `{error}`, invisible unless the code destructures and checks it.
+
+**Why:** Root cause of the original defect this task fixed — `order-manager.ts`/`position-manager.ts` never even read `{error}` off `.upsert()`'s result, so every write to the (nonexistent) `orders`/`positions` tables silently no-op'd for the entire history of those files, and the surrounding try/catch never had anything to catch.
+
+**How to apply:** When writing or reviewing ANY Supabase persistence code in this repo, the checklist is: destructure `{ error }` from every `.upsert()`/`.insert()`/`.update()`/`.select()` call, check it explicitly, and decide deliberately whether to throw/log/return based on whether silent failure would mean data loss (write paths) or a misleading empty result (list/read paths) — never rely on an ambient try/catch to catch a DB error, because it won't. See [[project-gdpr-erasure-cascade-broken]] for a second instance of a swallowed/misfired error path found via this same lens.
