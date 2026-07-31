@@ -39,9 +39,21 @@ CREATE TABLE IF NOT EXISTS financial_health_scores (
   insurance_score INTEGER CHECK (insurance_score >= 0 AND insurance_score <= 100),
   breakdown JSONB DEFAULT '{}',
   recommendations JSONB DEFAULT '[]',
-  calculated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, calculated_at::date)
+  calculated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- M0 fix: `UNIQUE(user_id, calculated_at::date)` was declared inline above.
+-- Postgres does not accept an expression in a table-level UNIQUE constraint
+-- (only plain column names), so this migration aborted with
+-- `syntax error at or near "::"` and every later migration in the chain never
+-- ran. The one-row-per-user-per-day intent is preserved as a unique INDEX,
+-- which is where expressions are allowed.
+-- The cast is pinned to UTC: `timestamptz::date` alone is not IMMUTABLE (its
+-- result depends on the session TimeZone), which Postgres rejects in an index
+-- expression. `AT TIME ZONE 'UTC'` yields a timestamp whose ::date cast is
+-- immutable, so uniqueness is one row per user per UTC day.
+CREATE UNIQUE INDEX IF NOT EXISTS financial_health_scores_user_day_uniq
+  ON financial_health_scores (user_id, (((calculated_at AT TIME ZONE 'UTC'))::date));
 
 -- ============================================================================
 -- FINANCIAL INSIGHTS TABLE
@@ -290,156 +302,192 @@ ALTER TABLE financial_chat_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE financial_chat_messages ENABLE ROW LEVEL SECURITY;
 
 -- Financial Goals Policies
+DROP POLICY IF EXISTS "Users can view their own financial goals" ON financial_goals;
 CREATE POLICY "Users can view their own financial goals"
   ON financial_goals FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own financial goals" ON financial_goals;
 CREATE POLICY "Users can create their own financial goals"
   ON financial_goals FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own financial goals" ON financial_goals;
 CREATE POLICY "Users can update their own financial goals"
   ON financial_goals FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own financial goals" ON financial_goals;
 CREATE POLICY "Users can delete their own financial goals"
   ON financial_goals FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Financial Health Scores Policies
+DROP POLICY IF EXISTS "Users can view their own health scores" ON financial_health_scores;
 CREATE POLICY "Users can view their own health scores"
   ON financial_health_scores FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own health scores" ON financial_health_scores;
 CREATE POLICY "Users can create their own health scores"
   ON financial_health_scores FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Financial Insights Policies
+DROP POLICY IF EXISTS "Users can view their own insights" ON financial_insights;
 CREATE POLICY "Users can view their own insights"
   ON financial_insights FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own insights" ON financial_insights;
 CREATE POLICY "Users can create their own insights"
   ON financial_insights FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own insights" ON financial_insights;
 CREATE POLICY "Users can update their own insights"
   ON financial_insights FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Recurring Bills Policies
+DROP POLICY IF EXISTS "Users can view their own recurring bills" ON recurring_bills;
 CREATE POLICY "Users can view their own recurring bills"
   ON recurring_bills FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own recurring bills" ON recurring_bills;
 CREATE POLICY "Users can create their own recurring bills"
   ON recurring_bills FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own recurring bills" ON recurring_bills;
 CREATE POLICY "Users can update their own recurring bills"
   ON recurring_bills FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own recurring bills" ON recurring_bills;
 CREATE POLICY "Users can delete their own recurring bills"
   ON recurring_bills FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Budgets Policies
+DROP POLICY IF EXISTS "Users can view their own budgets" ON budgets;
 CREATE POLICY "Users can view their own budgets"
   ON budgets FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own budgets" ON budgets;
 CREATE POLICY "Users can create their own budgets"
   ON budgets FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own budgets" ON budgets;
 CREATE POLICY "Users can update their own budgets"
   ON budgets FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own budgets" ON budgets;
 CREATE POLICY "Users can delete their own budgets"
   ON budgets FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Investment Portfolios Policies
+DROP POLICY IF EXISTS "Users can view their own portfolios" ON investment_portfolios;
 CREATE POLICY "Users can view their own portfolios"
   ON investment_portfolios FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own portfolios" ON investment_portfolios;
 CREATE POLICY "Users can create their own portfolios"
   ON investment_portfolios FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own portfolios" ON investment_portfolios;
 CREATE POLICY "Users can update their own portfolios"
   ON investment_portfolios FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own portfolios" ON investment_portfolios;
 CREATE POLICY "Users can delete their own portfolios"
   ON investment_portfolios FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Investment Holdings Policies (through portfolio ownership)
+DROP POLICY IF EXISTS "Users can view holdings in their portfolios" ON investment_holdings;
 CREATE POLICY "Users can view holdings in their portfolios"
   ON investment_holdings FOR SELECT
   USING (portfolio_id IN (SELECT id FROM investment_portfolios WHERE user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can create holdings in their portfolios" ON investment_holdings;
 CREATE POLICY "Users can create holdings in their portfolios"
   ON investment_holdings FOR INSERT
   WITH CHECK (portfolio_id IN (SELECT id FROM investment_portfolios WHERE user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can update holdings in their portfolios" ON investment_holdings;
 CREATE POLICY "Users can update holdings in their portfolios"
   ON investment_holdings FOR UPDATE
   USING (portfolio_id IN (SELECT id FROM investment_portfolios WHERE user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can delete holdings in their portfolios" ON investment_holdings;
 CREATE POLICY "Users can delete holdings in their portfolios"
   ON investment_holdings FOR DELETE
   USING (portfolio_id IN (SELECT id FROM investment_portfolios WHERE user_id = auth.uid()));
 
 -- Investment Transactions Policies (through portfolio ownership)
+DROP POLICY IF EXISTS "Users can view transactions in their portfolios" ON investment_transactions;
 CREATE POLICY "Users can view transactions in their portfolios"
   ON investment_transactions FOR SELECT
   USING (portfolio_id IN (SELECT id FROM investment_portfolios WHERE user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can create transactions in their portfolios" ON investment_transactions;
 CREATE POLICY "Users can create transactions in their portfolios"
   ON investment_transactions FOR INSERT
   WITH CHECK (portfolio_id IN (SELECT id FROM investment_portfolios WHERE user_id = auth.uid()));
 
 -- Trading Signals Policies
+DROP POLICY IF EXISTS "Users can view their own trading signals" ON trading_signals;
 CREATE POLICY "Users can view their own trading signals"
   ON trading_signals FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own trading signals" ON trading_signals;
 CREATE POLICY "Users can create their own trading signals"
   ON trading_signals FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own trading signals" ON trading_signals;
 CREATE POLICY "Users can update their own trading signals"
   ON trading_signals FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Financial Chat Sessions Policies
+DROP POLICY IF EXISTS "Users can view their own chat sessions" ON financial_chat_sessions;
 CREATE POLICY "Users can view their own chat sessions"
   ON financial_chat_sessions FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own chat sessions" ON financial_chat_sessions;
 CREATE POLICY "Users can create their own chat sessions"
   ON financial_chat_sessions FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own chat sessions" ON financial_chat_sessions;
 CREATE POLICY "Users can update their own chat sessions"
   ON financial_chat_sessions FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own chat sessions" ON financial_chat_sessions;
 CREATE POLICY "Users can delete their own chat sessions"
   ON financial_chat_sessions FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Financial Chat Messages Policies (through session ownership)
+DROP POLICY IF EXISTS "Users can view messages in their sessions" ON financial_chat_messages;
 CREATE POLICY "Users can view messages in their sessions"
   ON financial_chat_messages FOR SELECT
   USING (session_id IN (SELECT id FROM financial_chat_sessions WHERE user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can create messages in their sessions" ON financial_chat_messages;
 CREATE POLICY "Users can create messages in their sessions"
   ON financial_chat_messages FOR INSERT
   WITH CHECK (session_id IN (SELECT id FROM financial_chat_sessions WHERE user_id = auth.uid()));

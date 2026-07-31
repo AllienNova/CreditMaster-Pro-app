@@ -19,8 +19,10 @@ CREATE TABLE IF NOT EXISTS strategy_lifecycle (
 
 -- RLS
 ALTER TABLE strategy_lifecycle ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can read own strategy lifecycle" ON strategy_lifecycle;
 CREATE POLICY "Users can read own strategy lifecycle"
   ON strategy_lifecycle FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can manage own strategy lifecycle" ON strategy_lifecycle;
 CREATE POLICY "Users can manage own strategy lifecycle"
   ON strategy_lifecycle FOR ALL USING (auth.uid() = user_id);
 

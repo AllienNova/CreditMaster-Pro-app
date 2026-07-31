@@ -13,7 +13,9 @@ CREATE TABLE user_credits (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE user_credits ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users read own credits" ON user_credits;
 CREATE POLICY "Users read own credits" ON user_credits FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Service role manages credits" ON user_credits;
 CREATE POLICY "Service role manages credits" ON user_credits FOR ALL USING (auth.role() = 'service_role');
 
 -- Credit transaction log (immutable audit trail)
@@ -32,7 +34,9 @@ CREATE TABLE credit_transactions (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE credit_transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users read own transactions" ON credit_transactions;
 CREATE POLICY "Users read own transactions" ON credit_transactions FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Service role inserts transactions" ON credit_transactions;
 CREATE POLICY "Service role inserts transactions" ON credit_transactions FOR INSERT WITH CHECK (true);
 CREATE INDEX idx_credit_tx_user ON credit_transactions(user_id, created_at DESC);
 
@@ -47,7 +51,9 @@ CREATE TABLE credit_purchases (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE credit_purchases ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users read own purchases" ON credit_purchases;
 CREATE POLICY "Users read own purchases" ON credit_purchases FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Service role manages purchases" ON credit_purchases;
 CREATE POLICY "Service role manages purchases" ON credit_purchases FOR ALL USING (auth.role() = 'service_role');
 
 -- Add-on subscriptions (recurring bundles)
@@ -62,7 +68,9 @@ CREATE TABLE addon_subscriptions (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE addon_subscriptions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users read own addons" ON addon_subscriptions;
 CREATE POLICY "Users read own addons" ON addon_subscriptions FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Service role manages addons" ON addon_subscriptions;
 CREATE POLICY "Service role manages addons" ON addon_subscriptions FOR ALL USING (auth.role() = 'service_role');
 CREATE INDEX idx_addon_user ON addon_subscriptions(user_id);
 

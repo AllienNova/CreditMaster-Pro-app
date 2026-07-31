@@ -23,6 +23,7 @@ CREATE INDEX idx_adverse_action_notice_date ON adverse_action_notices(notice_dat
 ALTER TABLE adverse_action_notices ENABLE ROW LEVEL SECURITY;
 
 -- Users can only read their own notices
+DROP POLICY IF EXISTS "Users read own adverse action notices" ON adverse_action_notices;
 CREATE POLICY "Users read own adverse action notices"
   ON adverse_action_notices FOR SELECT
   USING (auth.uid() = user_id);
@@ -30,6 +31,7 @@ CREATE POLICY "Users read own adverse action notices"
 -- Only service role can insert (server-side only).
 -- `TO service_role` restricts the policy so authenticated clients cannot
 -- bypass FCRA validation by inserting notices directly.
+DROP POLICY IF EXISTS "Service role inserts adverse action notices" ON adverse_action_notices;
 CREATE POLICY "Service role inserts adverse action notices"
   ON adverse_action_notices FOR INSERT
   TO service_role
@@ -51,6 +53,7 @@ CREATE INDEX idx_consent_records_user_id ON consent_records(user_id);
 
 ALTER TABLE consent_records ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users read own consent records" ON consent_records;
 CREATE POLICY "Users read own consent records"
   ON consent_records FOR SELECT
   USING (auth.uid() = user_id);
@@ -58,6 +61,7 @@ CREATE POLICY "Users read own consent records"
 -- Only the service role can write/update/delete consent records.
 -- Authenticated clients can read their own rows via the SELECT policy above,
 -- but cannot forge rows for arbitrary user_ids.
+DROP POLICY IF EXISTS "Service role manages consent records" ON consent_records;
 CREATE POLICY "Service role manages consent records"
   ON consent_records FOR ALL
   TO service_role

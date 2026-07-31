@@ -10,5 +10,6 @@ CREATE TABLE IF NOT EXISTS user_risk_settings (
   UNIQUE(user_id)
 );
 ALTER TABLE user_risk_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own risk settings" ON user_risk_settings;
 CREATE POLICY "Users manage own risk settings" ON user_risk_settings
   FOR ALL USING (auth.uid() = user_id);

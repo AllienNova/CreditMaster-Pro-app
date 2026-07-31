@@ -116,5 +116,7 @@ CREATE INDEX idx_tax_audit_log_user ON tax_audit_log(user_id, created_at);
 ALTER TABLE tax_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tax_recommendations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tax_profiles_policy ON tax_profiles;
 CREATE POLICY tax_profiles_policy ON tax_profiles FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS tax_recommendations_policy ON tax_recommendations;
 CREATE POLICY tax_recommendations_policy ON tax_recommendations FOR ALL USING (auth.uid() = user_id);

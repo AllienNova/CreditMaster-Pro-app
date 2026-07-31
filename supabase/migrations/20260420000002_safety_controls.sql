@@ -43,12 +43,14 @@ CREATE INDEX IF NOT EXISTS kill_switch_events_created_at_idx
 ALTER TABLE kill_switch_events ENABLE ROW LEVEL SECURITY;
 
 -- Service role (server-side) can read and insert; no client-side mutations
+DROP POLICY IF EXISTS "Service role manages kill switch events" ON kill_switch_events;
 CREATE POLICY "Service role manages kill switch events"
   ON kill_switch_events
   FOR ALL
   USING (auth.role() = 'service_role');
 
 -- Admins and super-admins can read for audit purposes
+DROP POLICY IF EXISTS "Admins read kill switch events" ON kill_switch_events;
 CREATE POLICY "Admins read kill switch events"
   ON kill_switch_events
   FOR SELECT
@@ -102,11 +104,13 @@ CREATE INDEX IF NOT EXISTS dual_control_requests_created_at_idx
 
 ALTER TABLE dual_control_requests ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Service role manages dual control requests" ON dual_control_requests;
 CREATE POLICY "Service role manages dual control requests"
   ON dual_control_requests
   FOR ALL
   USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Admins read dual control requests" ON dual_control_requests;
 CREATE POLICY "Admins read dual control requests"
   ON dual_control_requests
   FOR SELECT
@@ -165,11 +169,13 @@ CREATE INDEX IF NOT EXISTS incidents_raised_at_idx
 
 ALTER TABLE incidents ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Service role manages incidents" ON incidents;
 CREATE POLICY "Service role manages incidents"
   ON incidents
   FOR ALL
   USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Admins read incidents" ON incidents;
 CREATE POLICY "Admins read incidents"
   ON incidents
   FOR SELECT
@@ -221,11 +227,13 @@ CREATE INDEX IF NOT EXISTS trading_audit_trail_action_idx
 
 ALTER TABLE trading_audit_trail ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Service role manages audit trail" ON trading_audit_trail;
 CREATE POLICY "Service role manages audit trail"
   ON trading_audit_trail
   FOR ALL
   USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Admins read audit trail" ON trading_audit_trail;
 CREATE POLICY "Admins read audit trail"
   ON trading_audit_trail
   FOR SELECT

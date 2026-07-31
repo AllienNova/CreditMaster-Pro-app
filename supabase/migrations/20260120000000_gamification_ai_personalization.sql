@@ -335,58 +335,92 @@ ALTER TABLE community_challenges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE nudge_definitions ENABLE ROW LEVEL SECURITY;
 
 -- User progress policies
+DROP POLICY IF EXISTS "Users can view own progress" ON user_progress;
 CREATE POLICY "Users can view own progress" ON user_progress FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own progress" ON user_progress;
 CREATE POLICY "Users can update own progress" ON user_progress FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "System can insert progress" ON user_progress;
 CREATE POLICY "System can insert progress" ON user_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- User badges policies
+DROP POLICY IF EXISTS "Users can view own badges" ON user_badges;
 CREATE POLICY "Users can view own badges" ON user_badges FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "System can insert badges" ON user_badges;
 CREATE POLICY "System can insert badges" ON user_badges FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own badges" ON user_badges;
 CREATE POLICY "Users can update own badges" ON user_badges FOR UPDATE USING (auth.uid() = user_id);
 
 -- Badge progress policies
+DROP POLICY IF EXISTS "Users can view own badge progress" ON badge_progress;
 CREATE POLICY "Users can view own badge progress" ON badge_progress FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "System can manage badge progress" ON badge_progress;
 CREATE POLICY "System can manage badge progress" ON badge_progress FOR ALL USING (auth.uid() = user_id);
 
 -- XP transactions policies
+DROP POLICY IF EXISTS "Users can view own xp transactions" ON xp_transactions;
 CREATE POLICY "Users can view own xp transactions" ON xp_transactions FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "System can insert xp transactions" ON xp_transactions;
 CREATE POLICY "System can insert xp transactions" ON xp_transactions FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Quest progress policies
+DROP POLICY IF EXISTS "Users can view own quest progress" ON user_quest_progress;
 CREATE POLICY "Users can view own quest progress" ON user_quest_progress FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "System can manage quest progress" ON user_quest_progress;
 CREATE POLICY "System can manage quest progress" ON user_quest_progress FOR ALL USING (auth.uid() = user_id);
 
 -- Challenge participation policies
+DROP POLICY IF EXISTS "Users can view own challenge participation" ON user_challenge_participation;
 CREATE POLICY "Users can view own challenge participation" ON user_challenge_participation FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can join challenges" ON user_challenge_participation;
 CREATE POLICY "Users can join challenges" ON user_challenge_participation FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "System can update challenge participation" ON user_challenge_participation;
 CREATE POLICY "System can update challenge participation" ON user_challenge_participation FOR UPDATE USING (auth.uid() = user_id);
 
 -- Public definitions policies (read-only for all authenticated users)
+DROP POLICY IF EXISTS "Anyone can view badge definitions" ON badge_definitions;
 CREATE POLICY "Anyone can view badge definitions" ON badge_definitions FOR SELECT TO authenticated USING (is_active = TRUE);
+DROP POLICY IF EXISTS "Anyone can view level definitions" ON level_definitions;
 CREATE POLICY "Anyone can view level definitions" ON level_definitions FOR SELECT TO authenticated USING (TRUE);
+DROP POLICY IF EXISTS "Anyone can view active quests" ON daily_quests;
 CREATE POLICY "Anyone can view active quests" ON daily_quests FOR SELECT TO authenticated USING (is_active = TRUE);
+DROP POLICY IF EXISTS "Anyone can view active challenges" ON community_challenges;
 CREATE POLICY "Anyone can view active challenges" ON community_challenges FOR SELECT TO authenticated USING (is_active = TRUE);
+DROP POLICY IF EXISTS "Anyone can view active nudges" ON nudge_definitions;
 CREATE POLICY "Anyone can view active nudges" ON nudge_definitions FOR SELECT TO authenticated USING (is_active = TRUE);
 
 -- AI personalization policies
+DROP POLICY IF EXISTS "Users can view own financial profile" ON user_financial_profiles;
 CREATE POLICY "Users can view own financial profile" ON user_financial_profiles FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own financial profile" ON user_financial_profiles;
 CREATE POLICY "Users can update own financial profile" ON user_financial_profiles FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "System can insert financial profile" ON user_financial_profiles;
 CREATE POLICY "System can insert financial profile" ON user_financial_profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view own spending patterns" ON spending_patterns;
 CREATE POLICY "Users can view own spending patterns" ON spending_patterns FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "System can manage spending patterns" ON spending_patterns;
 CREATE POLICY "System can manage spending patterns" ON spending_patterns FOR ALL USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view own nudge history" ON nudge_history;
 CREATE POLICY "Users can view own nudge history" ON nudge_history FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "System can insert nudge history" ON nudge_history;
 CREATE POLICY "System can insert nudge history" ON nudge_history FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own nudge history" ON nudge_history;
 CREATE POLICY "Users can update own nudge history" ON nudge_history FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view own coaching sessions" ON ai_coaching_sessions;
 CREATE POLICY "Users can view own coaching sessions" ON ai_coaching_sessions FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "System can manage coaching sessions" ON ai_coaching_sessions;
 CREATE POLICY "System can manage coaching sessions" ON ai_coaching_sessions FOR ALL USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view own goals" ON goal_tracking;
 CREATE POLICY "Users can view own goals" ON goal_tracking FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can manage own goals" ON goal_tracking;
 CREATE POLICY "Users can manage own goals" ON goal_tracking FOR ALL USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view own spending alerts" ON emotional_spending_alerts;
 CREATE POLICY "Users can view own spending alerts" ON emotional_spending_alerts FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "System can manage spending alerts" ON emotional_spending_alerts;
 CREATE POLICY "System can manage spending alerts" ON emotional_spending_alerts FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================================================

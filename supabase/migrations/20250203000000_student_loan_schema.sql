@@ -325,137 +325,168 @@ ALTER TABLE monitoring_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE performance_analytics ENABLE ROW LEVEL SECURITY;
 
 -- Student Loans policies
+DROP POLICY IF EXISTS "Users can view their own loans" ON student_loans;
 CREATE POLICY "Users can view their own loans"
   ON student_loans FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own loans" ON student_loans;
 CREATE POLICY "Users can insert their own loans"
   ON student_loans FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own loans" ON student_loans;
 CREATE POLICY "Users can update their own loans"
   ON student_loans FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own loans" ON student_loans;
 CREATE POLICY "Users can delete their own loans"
   ON student_loans FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Student Loan Strategies policies
+DROP POLICY IF EXISTS "Users can view their own strategies" ON student_loan_strategies;
 CREATE POLICY "Users can view their own strategies"
   ON student_loan_strategies FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own strategies" ON student_loan_strategies;
 CREATE POLICY "Users can insert their own strategies"
   ON student_loan_strategies FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own strategies" ON student_loan_strategies;
 CREATE POLICY "Users can update their own strategies"
   ON student_loan_strategies FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own strategies" ON student_loan_strategies;
 CREATE POLICY "Users can delete their own strategies"
   ON student_loan_strategies FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Servicer Profiles policies (public read, admin write)
+DROP POLICY IF EXISTS "Anyone can view servicer profiles" ON servicer_profiles;
 CREATE POLICY "Anyone can view servicer profiles"
   ON servicer_profiles FOR SELECT
   USING (true);
 
 -- Federal Program Applications policies
+DROP POLICY IF EXISTS "Users can view their own applications" ON federal_program_applications;
 CREATE POLICY "Users can view their own applications"
   ON federal_program_applications FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own applications" ON federal_program_applications;
 CREATE POLICY "Users can insert their own applications"
   ON federal_program_applications FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own applications" ON federal_program_applications;
 CREATE POLICY "Users can update their own applications"
   ON federal_program_applications FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Servicer Communications policies
+DROP POLICY IF EXISTS "Users can view their own communications" ON servicer_communications;
 CREATE POLICY "Users can view their own communications"
   ON servicer_communications FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own communications" ON servicer_communications;
 CREATE POLICY "Users can insert their own communications"
   ON servicer_communications FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own communications" ON servicer_communications;
 CREATE POLICY "Users can update their own communications"
   ON servicer_communications FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Regulatory Complaints policies
+DROP POLICY IF EXISTS "Users can view their own complaints" ON regulatory_complaints;
 CREATE POLICY "Users can view their own complaints"
   ON regulatory_complaints FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own complaints" ON regulatory_complaints;
 CREATE POLICY "Users can insert their own complaints"
   ON regulatory_complaints FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own complaints" ON regulatory_complaints;
 CREATE POLICY "Users can update their own complaints"
   ON regulatory_complaints FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Credit Report Monitoring policies
+DROP POLICY IF EXISTS "Users can view their own credit monitoring" ON credit_report_monitoring;
 CREATE POLICY "Users can view their own credit monitoring"
   ON credit_report_monitoring FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own credit monitoring" ON credit_report_monitoring;
 CREATE POLICY "Users can insert their own credit monitoring"
   ON credit_report_monitoring FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Document Analyses policies
+DROP POLICY IF EXISTS "Users can view their own document analyses" ON document_analyses;
 CREATE POLICY "Users can view their own document analyses"
   ON document_analyses FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own document analyses" ON document_analyses;
 CREATE POLICY "Users can insert their own document analyses"
   ON document_analyses FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- ML Predictions policies
+DROP POLICY IF EXISTS "Users can view their own predictions" ON ml_predictions;
 CREATE POLICY "Users can view their own predictions"
   ON ml_predictions FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own predictions" ON ml_predictions;
 CREATE POLICY "Users can insert their own predictions"
   ON ml_predictions FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Servicer Errors policies
+DROP POLICY IF EXISTS "Users can view their own servicer errors" ON servicer_errors;
 CREATE POLICY "Users can view their own servicer errors"
   ON servicer_errors FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own servicer errors" ON servicer_errors;
 CREATE POLICY "Users can insert their own servicer errors"
   ON servicer_errors FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own servicer errors" ON servicer_errors;
 CREATE POLICY "Users can update their own servicer errors"
   ON servicer_errors FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Monitoring Events policies
+DROP POLICY IF EXISTS "Users can view their own monitoring events" ON monitoring_events;
 CREATE POLICY "Users can view their own monitoring events"
   ON monitoring_events FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own monitoring events" ON monitoring_events;
 CREATE POLICY "Users can insert their own monitoring events"
   ON monitoring_events FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Performance Analytics policies
+DROP POLICY IF EXISTS "Users can view their own analytics" ON performance_analytics;
 CREATE POLICY "Users can view their own analytics"
   ON performance_analytics FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own analytics" ON performance_analytics;
 CREATE POLICY "Users can insert their own analytics"
   ON performance_analytics FOR INSERT
   WITH CHECK (auth.uid() = user_id);

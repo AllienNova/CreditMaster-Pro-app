@@ -85,7 +85,9 @@ RETURNS TABLE (
   id UUID,
   role TEXT,
   content TEXT,
-  timestamp TIMESTAMPTZ,
+  -- Quoted: `timestamp` is a type keyword, so a bare `timestamp TIMESTAMPTZ`
+  -- column definition is a syntax error here and aborted the migration chain.
+  "timestamp" TIMESTAMPTZ,
   metadata JSONB,
   intent_type TEXT,
   intent_confidence NUMERIC

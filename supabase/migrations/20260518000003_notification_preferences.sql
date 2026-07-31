@@ -40,23 +40,28 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
 -- Row Level Security: owner-only access
 ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own notification preferences" ON notification_preferences;
 CREATE POLICY "Users can view own notification preferences"
     ON notification_preferences FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own notification preferences" ON notification_preferences;
 CREATE POLICY "Users can insert own notification preferences"
     ON notification_preferences FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own notification preferences" ON notification_preferences;
 CREATE POLICY "Users can update own notification preferences"
     ON notification_preferences FOR UPDATE
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own notification preferences" ON notification_preferences;
 CREATE POLICY "Users can delete own notification preferences"
     ON notification_preferences FOR DELETE
     USING (auth.uid() = user_id);
 
 -- Service role can manage all rows (for server-side upsert via service key)
+DROP POLICY IF EXISTS "Service role can manage all notification preferences" ON notification_preferences;
 CREATE POLICY "Service role can manage all notification preferences"
     ON notification_preferences FOR ALL
     USING (auth.role() = 'service_role');

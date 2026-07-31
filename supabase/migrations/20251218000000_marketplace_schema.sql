@@ -126,9 +126,11 @@ ALTER TABLE marketplace_reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tradelines ENABLE ROW LEVEL SECURITY;
 
 -- Providers: Public read, admin write
+DROP POLICY IF EXISTS "Public can read providers" ON marketplace_providers;
 CREATE POLICY "Public can read providers" ON marketplace_providers
     FOR SELECT TO authenticated, anon USING (true);
 
+DROP POLICY IF EXISTS "Admin can manage providers" ON marketplace_providers;
 CREATE POLICY "Admin can manage providers" ON marketplace_providers
     FOR ALL TO authenticated
     USING (
@@ -140,9 +142,11 @@ CREATE POLICY "Admin can manage providers" ON marketplace_providers
     );
 
 -- Products: Public read active products, admin write
+DROP POLICY IF EXISTS "Public can read active products" ON marketplace_products;
 CREATE POLICY "Public can read active products" ON marketplace_products
     FOR SELECT TO authenticated, anon USING (active = true);
 
+DROP POLICY IF EXISTS "Admin can manage products" ON marketplace_products;
 CREATE POLICY "Admin can manage products" ON marketplace_products
     FOR ALL TO authenticated
     USING (
@@ -154,21 +158,26 @@ CREATE POLICY "Admin can manage products" ON marketplace_products
     );
 
 -- Reviews: Public read, authenticated create/update own
+DROP POLICY IF EXISTS "Public can read reviews" ON marketplace_reviews;
 CREATE POLICY "Public can read reviews" ON marketplace_reviews
     FOR SELECT TO authenticated, anon USING (true);
 
+DROP POLICY IF EXISTS "Users can create reviews" ON marketplace_reviews;
 CREATE POLICY "Users can create reviews" ON marketplace_reviews
     FOR INSERT TO authenticated
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own reviews" ON marketplace_reviews;
 CREATE POLICY "Users can update own reviews" ON marketplace_reviews
     FOR UPDATE TO authenticated
     USING (auth.uid() = user_id);
 
 -- Tradelines: Public read available, admin write
+DROP POLICY IF EXISTS "Public can read available tradelines" ON tradelines;
 CREATE POLICY "Public can read available tradelines" ON tradelines
     FOR SELECT TO authenticated, anon USING (available = true);
 
+DROP POLICY IF EXISTS "Admin can manage tradelines" ON tradelines;
 CREATE POLICY "Admin can manage tradelines" ON tradelines
     FOR ALL TO authenticated
     USING (

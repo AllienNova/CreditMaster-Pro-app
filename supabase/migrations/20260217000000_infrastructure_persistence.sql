@@ -56,6 +56,34 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   action TEXT
 );
 
+-- ---------------------------------------------------------------------------
+-- Twin-schema reconciliation (M0 / ADR-0001, ADR-0010).
+--
+-- `002_production_enhancements.sql` already declares `CREATE TABLE IF NOT
+-- EXISTS audit_logs` as the SECURITY audit log (id UUID, action,
+-- resource_type NOT NULL, old_values/new_values). It sorts first, so the
+-- AI/observability-event shape created above is skipped and provisioning
+-- aborted on the `event_type` index below.
+--
+-- ⚠ Per ADR-0010 the correct end state is a SPLIT: `audit_logs` stays the
+-- UUID-keyed security log, and AI/observability events move to their own
+-- `system_event_logs` table (the two shapes disagree on primary-key type, which
+-- cannot be reconciled additively). The ALTERs below only unblock provisioning
+-- by widening `audit_logs` to the union of columns; they do NOT implement the
+-- split, which requires moving this file's writers and is tracked as M0-1.
+-- ---------------------------------------------------------------------------
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS event_type TEXT;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS level TEXT;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS message TEXT;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS session_id TEXT;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS metadata JSONB;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS duration NUMERIC;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS cost NUMERIC;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS tokens INTEGER;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS model TEXT;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS error JSONB;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS severity TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs (user_id) WHERE user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_audit_logs_event_type ON audit_logs (event_type);
