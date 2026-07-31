@@ -1,0 +1,12 @@
+---
+name: audit-logs-missing-from-generated-types
+description: audit_logs has no entry at all in src/lib/supabase/types.ts, so the typed supabaseAdmin client can't insert into it — use a plain untyped createClient instead, matching existing precedent.
+metadata:
+  type: feedback
+---
+
+`audit_logs` is a real, live table (confirmed via `\d audit_logs` against the local Supabase — 28 columns, `resource_type` NOT NULL with a `'unspecified'` default added 2026-07-31) but has **zero** entry in the generated `Database` type at `src/lib/supabase/types.ts` (confirmed: `grep -n "audit_logs" src/lib/supabase/types.ts` returns nothing). `supabaseAdmin` (from `@/lib/supabase/server` / `@/lib/supabase/admin`) is constructed as `SupabaseClient<Database>`, so `supabaseAdmin.from("audit_logs").insert({...})` type-checks the payload against `never` and fails with `TS2769: No overload matches this call` — not a real logic bug, just the generated types not knowing the table exists.
+
+**Why:** Hit this 2026-07-31 wiring `/api/privacy/*` (GDPR routes) — needed a direct `audit_logs` insert for a route-level audit trail. `gdpr-ccpa.ts` itself sidesteps this by using a hand-written structural `DbClient` type (`from: (table: string) => any`), not the generated `Database` type, so it never hits this. Two OTHER existing call sites independently hit the same wall and already worked around it the same way: `src/lib/audit/audit-logger.ts` and `src/app/api/admin/audit/route.ts` both construct their own client via plain `createClient(url, key)` from `@supabase/supabase-js` with **no** `<Database>` generic, rather than importing the typed `supabaseAdmin` singleton.
+
+**How to apply:** Any new code that needs to write directly to `audit_logs` (not through `gdpr-ccpa.ts`'s own `DbClient`-typed service methods) should construct its own untyped client the same way — do NOT import `supabaseAdmin` for this table, and do NOT touch `src/lib/supabase/types.ts` to add the missing entry unless that's explicitly the task (it's a shared generated file — regenerating/hand-editing it outside a dedicated task risks pulling in unrelated schema drift, per [[route-deletion-stale-generated-artifacts]]). This is the same defect class as [[tax-profiles-schema-drift]] (generated/hand-written schema representation lagging the live DB) but manifests as a compile-time block rather than a silent runtime default, so it's self-correcting — you can't ship code that gets this wrong.
