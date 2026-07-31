@@ -247,6 +247,25 @@ All three generators deleted; unavailable data → empty set (all callers guard 
 
 **5 owner ADRs (0005-0009) marked Accepted** (sign-off 2026-07-26).
 
+## 🔴 M0 VERIFIED: the database CANNOT be provisioned from this repo (2026-07-26)
+Docker up → `supabase init` (config.toml was missing — the gap that made ordering unverifiable) → local ephemeral stack → **every migration applied individually against a clean DB**. This is measured, not inferred.
+
+**Result: 46 of 53 apply clean; 7 FAIL.** A plain `supabase start` aborts on the first one, so a fresh environment cannot be built at all.
+
+| # | Migration | Error | Class |
+|---|---|---|---|
+| 1 | `20250204000000_credit_repair_schema` :416 | policy "Users can view their own credit reports" already exists | twin collision (RLS policies aren't `IF NOT EXISTS`) |
+| 2 | `20250207000000_financial_intelligence_schema` :44 | **syntax error at or near `::`** | genuinely broken SQL |
+| 3 | `20250211000000_billing_profiles` :33 | function `trigger_set_timestamp()` does not exist | missing dependency |
+| 4 | `20260105_performance_optimizations` :14 | relation `chat_sessions` does not exist | **ordering bug** — indexes a table created 10 days later (`20260115_create_financial_chat_tables`) |
+| 5 | `20260110_subscriptions` :44 | column `next_billing_date` does not exist | **subscriptions twin confirmed** |
+| 6 | `20260217000000_infrastructure_persistence` :61 | column `event_type` does not exist | **audit_logs twin confirmed** |
+| 7 | `sample_data.sql` :27 | invalid uuid `"YOUR_TEST_USER_ID"` | placeholder seed file shipped in `migrations/` |
+
+Already fixed this session (chain now advances past them): `credit_reports` twin (`score`/`report_data`/`accounts`/`inquiries`/… added via idempotent ALTERs) and `disputes` twin (`strategy`/`creditor_name`/`inaccuracy_type`/… ). Both additive + idempotent per ADR-0001 — no-ops where the file's own CREATE ran, healing path where the earlier twin's did.
+
+**This supersedes the critic's F-002 estimate:** drift isn't just column-level, it's a broken provisioning chain including a hard syntax error and an ordering bug.
+
 ## ⏸ NATURAL PAUSE APPROACHING (after DEFAB-2 web)
 The ungated, no-DB queue drains to empty after DEFAB-2 web. **Everything remaining needs an unblock:**
 - **Docker (R-9)** → M0 reconcile migrations (audit_logs silent-failure + profile drift live bugs) + M3 orphaned-service new-table migrations + all M0-dependent routes (M2-4, M4-2/3/4, M5). Start Docker → I run local `supabase start` (ephemeral, zero prod risk) → dry-run-verify + land them.

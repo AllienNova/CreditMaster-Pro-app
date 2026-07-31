@@ -111,6 +111,45 @@ CREATE TABLE IF NOT EXISTS credit_reports (
 );
 
 -- Create indexes for credit_reports
+-- ---------------------------------------------------------------------------
+-- Twin-schema reconciliation (M0 / ADR-0001).
+--
+-- `20250107_credit_bureau_tables.sql` also declares `CREATE TABLE IF NOT EXISTS
+-- credit_reports`, with a DIFFERENT shape (credit_score / raw_data /
+-- parsed_data). It sorts first, so the CREATE above is skipped and the columns
+-- this file's indexes and the application code rely on (score, report_data,
+-- accounts, inquiries, collections, public_records) never exist. Provisioning
+-- then died here: `ERROR: column "score" does not exist` on the index below —
+-- the whole migration chain aborted, so the database could not be built from
+-- this repo at all.
+--
+-- These ALTERs converge the table to the union of both shapes. They are
+-- additive and idempotent: no-ops when this file's CREATE did run, and the
+-- healing path when 20250107's did. Nothing is dropped or retyped, so an
+-- already-provisioned database is safe.
+-- ---------------------------------------------------------------------------
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS report_data JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS score INTEGER;
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS accounts JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS inquiries JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS collections JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS public_records JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+-- Range check for `score` mirrors the CREATE above. Added separately because
+-- ADD COLUMN IF NOT EXISTS cannot carry a named constraint idempotently.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'credit_reports_score_range'
+  ) THEN
+    ALTER TABLE credit_reports
+      ADD CONSTRAINT credit_reports_score_range
+      CHECK (score IS NULL OR (score >= 300 AND score <= 850));
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_credit_reports_user_id ON credit_reports(user_id);
 CREATE INDEX IF NOT EXISTS idx_credit_reports_bureau ON credit_reports(bureau);
 CREATE INDEX IF NOT EXISTS idx_credit_reports_report_date ON credit_reports(report_date DESC);
@@ -160,6 +199,52 @@ CREATE TABLE IF NOT EXISTS disputes (
 );
 
 -- Create indexes for disputes
+-- ---------------------------------------------------------------------------
+-- Twin-schema reconciliation (M0 / ADR-0001) — same pattern as credit_reports.
+--
+-- `001_initial_schema.sql` also declares `CREATE TABLE IF NOT EXISTS disputes`
+-- with a narrower shape (no strategy / creditor_name / account_number /
+-- balance / inaccuracy_type / response_received_at / notes / updated_at). It
+-- sorts first, so the CREATE above is skipped and provisioning died on the
+-- `strategy` index below. Additive + idempotent: no-op when this file's CREATE
+-- ran, healing path when 001's did. Nothing dropped or retyped.
+--
+-- NOTE: the two shapes also disagree on CHECK constraints (001 omits the
+-- 'escalated' status and the 'pending' outcome). Widening an existing CHECK is
+-- NOT additive, so it is deliberately NOT done here — tracked as an M0
+-- follow-up rather than silently altering validation on a populated table.
+-- ---------------------------------------------------------------------------
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS creditor_name TEXT;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS account_number TEXT;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS balance DECIMAL(12, 2);
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS inaccuracy_type TEXT;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS strategy TEXT;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS response_received_at TIMESTAMPTZ;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'disputes_strategy_allowed'
+  ) THEN
+    ALTER TABLE disputes
+      ADD CONSTRAINT disputes_strategy_allowed
+      CHECK (strategy IS NULL OR strategy IN (
+        'basic_dispute',
+        'debt_validation',
+        'method_of_verification',
+        'procedural_violation',
+        'statute_of_limitations',
+        'identity_theft',
+        'mixed_file',
+        'creditor_direct',
+        'goodwill',
+        'pay_for_delete'
+      ));
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_disputes_user_id ON disputes(user_id);
 CREATE INDEX IF NOT EXISTS idx_disputes_status ON disputes(status);
 CREATE INDEX IF NOT EXISTS idx_disputes_bureau ON disputes(bureau);
