@@ -100,7 +100,8 @@ export const POST = withRole(
       // action to an arbitrary spoofed userId/ipAddress. Both are derived
       // server-side: user_id from the authenticated session, ip_address from
       // the request headers.
-      const { action, details } = await request.json();
+      const { action, details, resourceType, resourceId } =
+        await request.json();
       const ipAddress =
         request.headers.get("x-forwarded-for") ||
         request.headers.get("x-real-ip") ||
@@ -112,6 +113,12 @@ export const POST = withRole(
           action,
           user_id: user.id,
           details,
+          // `resource_type` is NOT NULL on audit_logs. This insert omitted it
+          // entirely, so every admin audit write failed against the live
+          // schema. Callers may name the resource; otherwise it is recorded
+          // honestly as an unspecified admin action rather than left null.
+          resource_type: resourceType || "admin_action",
+          resource_id: resourceId ?? null,
           ip_address: ipAddress,
           created_at: new Date().toISOString(),
         })

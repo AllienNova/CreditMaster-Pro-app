@@ -64,13 +64,18 @@ function getSupabaseClient() {
 export async function logAuditEvent(event: AuditEvent): Promise<void> {
   const supabase = getSupabaseClient();
   try {
+    // Column names are mapped to the CANONICAL audit_logs shape (ADR-0010).
+    // This writer previously invented its own vocabulary — actor_id, target_id,
+    // target_type — none of which exist on the table, so every insert failed.
+    // `resource_type` is NOT NULL, so `targetType` falls back to a non-empty
+    // marker rather than nulling the constraint out.
     const entry = {
       action: event.action,
-      actor_id: event.actorId,
+      user_id: event.actorId,
       actor_email: event.actorEmail,
       actor_role: event.actorRole,
-      target_id: event.targetId,
-      target_type: event.targetType,
+      resource_id: event.targetId,
+      resource_type: event.targetType || "unspecified",
       details: event.details,
       ip_address: event.ipAddress,
       user_agent: event.userAgent,
@@ -82,11 +87,23 @@ export async function logAuditEvent(event: AuditEvent): Promise<void> {
     const { error } = await supabase.from("audit_logs").insert(entry);
 
     if (error) {
-      // AuditLogger error: Failed to log audit event
+      // A dropped audit record is a compliance failure, not a nuisance: this
+      // used to be swallowed silently, so audit logging failed for months
+      // against a schema that never had these columns. Surface it loudly.
+      // Deliberately not rethrown — an audit outage must not take down the
+      // caller's operation — but it MUST be observable.
+      console.error("[audit-logger] failed to persist audit event", {
+        action: event.action,
+        resourceType: event.targetType || "unspecified",
+        code: error.code,
+        message: error.message,
+      });
     }
-  } catch (_error) {
-    // AuditLogger error: Audit logging error
-    void _error;
+  } catch (error) {
+    console.error("[audit-logger] unexpected error persisting audit event", {
+      action: event.action,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 

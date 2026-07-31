@@ -88,6 +88,24 @@ interface Transaction {
   created_at: Date;
 }
 
+const UNCATEGORIZED = "Uncategorized";
+
+/**
+ * Narrow a stored `transactions.category` (TEXT[], Plaid's hierarchy, most
+ * general first) to the single string this analyzer works in. Tolerates the
+ * legacy scalar shape and never returns an empty key.
+ */
+function normalizeCategory(raw: unknown): string {
+  if (Array.isArray(raw)) {
+    const first = raw.find(
+      (c): c is string => typeof c === "string" && c.trim().length > 0,
+    );
+    return first ?? UNCATEGORIZED;
+  }
+  if (typeof raw === "string" && raw.trim().length > 0) return raw;
+  return UNCATEGORIZED;
+}
+
 interface CategoryStats {
   category: string;
   mean: number;
@@ -590,6 +608,14 @@ export class SpendingAnalyzer {
       ...t,
       date: new Date(t.date),
       created_at: new Date(t.created_at),
+      // `transactions.category` is TEXT[] — Plaid returns a category hierarchy
+      // (most general first) and the writer stores it verbatim. Everything
+      // downstream of this method treats `category` as a single string, so the
+      // array is narrowed to its leading element here, at the one read
+      // boundary, rather than being coerced ad hoc at each use site. An empty
+      // array becomes "Uncategorized" rather than `undefined`, which would
+      // silently bucket spend under a blank key.
+      category: normalizeCategory(t.category),
     }));
   }
 

@@ -418,7 +418,10 @@ class PlaidService {
       name: transaction.name,
       merchant_name: transaction.merchantName,
       category: transaction.category,
-      pending: transaction.pending,
+      // Column is `is_pending` (it pairs with `is_recurring`, which the
+      // spending analyzer reads). This wrote `pending`, a column that does not
+      // exist on the transactions table.
+      is_pending: transaction.pending,
       payment_channel: transaction.paymentChannel,
       location: transaction.location,
       created_at: transaction.createdAt.toISOString(),

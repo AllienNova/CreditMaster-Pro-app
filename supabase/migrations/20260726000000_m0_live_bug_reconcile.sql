@@ -40,6 +40,9 @@ ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS details JSONB;
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS type TEXT;
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS category TEXT;
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS actor_email TEXT;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS actor_role TEXT;
+-- `target_type` is retained only for rows written before audit-logger.ts was
+-- mapped onto the canonical `resource_type`/`resource_id` columns (ADR-0010).
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS target_type TEXT;
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS success BOOLEAN;
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS error_message TEXT;
@@ -78,7 +81,12 @@ CREATE TABLE IF NOT EXISTS transactions (
   transaction_id TEXT,
   date DATE NOT NULL,
   amount DECIMAL(15, 2) NOT NULL,
+  -- `name`, `payment_channel` and `location` are also written by
+  -- plaid-service.storeTransaction; omitting them would fail every upsert.
+  name TEXT,
   merchant_name TEXT,
+  payment_channel TEXT,
+  location JSONB,
   category TEXT[] DEFAULT '{}',
   subcategory TEXT,
   is_pending BOOLEAN DEFAULT FALSE,
