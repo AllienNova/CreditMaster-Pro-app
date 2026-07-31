@@ -442,11 +442,22 @@ describe("CMP-3: delete_user_data_cascade migration coverage (FND-058)", () => {
     );
   });
 
-  test("audit_logs UPDATE uses ::text cast to handle TEXT user_id column", () => {
-    // The authoritative audit_logs schema (20260217000000) defines user_id as TEXT.
-    // Without ::text the WHERE clause would throw a UUID vs TEXT type error.
+  test("audit_logs UPDATE casts BOTH sides, so it works against either twin shape", () => {
+    // This test previously asserted `WHERE user_id = p_user_id::text` on the
+    // premise that "the authoritative audit_logs schema (20260217000000)
+    // defines user_id as TEXT". That premise is FALSE and the assertion pinned
+    // a live P0: `audit_logs` is declared by BOTH 002_production_enhancements
+    // and 20260217000000, and 002 sorts FIRST — so its shape wins and the live
+    // column is `uuid` (verified against the running DB: information_schema
+    // reports uuid). Comparing uuid = text raised
+    // `operator does not exist: uuid = text`, which aborted the whole function
+    // — the body is one implicit transaction, so GDPR Art. 17 erasure deleted
+    // NOTHING, for every user.
+    //
+    // The invariant that is actually correct — and that survives the twin being
+    // reconciled either way later — is that BOTH sides are cast to text.
     expect(migrationSql).toMatch(
-      /UPDATE\s+audit_logs[\s\S]*?WHERE\s+user_id\s*=\s*p_user_id::text/i,
+      /UPDATE\s+audit_logs[\s\S]*?WHERE\s+user_id::text\s*=\s*p_user_id::text/i,
     );
   });
 
