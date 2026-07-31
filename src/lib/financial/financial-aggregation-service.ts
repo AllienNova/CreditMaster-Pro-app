@@ -6,6 +6,7 @@
  */
 
 import { getSupabase } from "@/lib/supabase/client";
+import { logger } from "@/lib/monitoring/logger";
 
 const supabase = getSupabase();
 import { budgetService } from "./budget-service";
@@ -51,6 +52,19 @@ import {
 } from "./types/financial-context.types";
 import { Budget, BudgetCategoryValue } from "./types/budget.types";
 import { Debt, DebtOverview } from "./types/debt-payoff.types";
+
+// `getSupabase()` is untyped (see src/lib/supabase/client.ts), so `.from()`
+// query results are not checked against the live schema at compile time.
+// This mirrors the row shape verified live against `public.credit_scores`
+// (`\d+ credit_scores`) — id, user_id, bureau, score, score_date, created_at.
+interface CreditScoreQueryRow {
+  id: string;
+  user_id: string;
+  bureau: string;
+  score: number;
+  score_date: string;
+  created_at: string;
+}
 
 // ============================================================================
 // CACHE CONFIGURATION
@@ -589,8 +603,14 @@ export class FinancialAggregationService {
     userId: string,
   ): Promise<AggregatedFinancialContext["debt"]> {
     try {
+      // `debt_accounts` — NOT `debts` (that table has never existed).
+      // PostgREST resolves an {error} for an unknown table instead of
+      // throwing, and the catch below used to silently map that into
+      // "zero debt" — so debtToIncomeRatio read 0 for every user
+      // regardless of real debt. Verified against the live schema
+      // 2026-07-31 (see wellness-gate.ts for the same fix pattern).
       const { data, error } = await supabase
-        .from("debts")
+        .from("debt_accounts")
         .select("*")
         .eq("user_id", userId)
         .eq("is_active", true);
@@ -629,7 +649,21 @@ export class FinancialAggregationService {
         totalDebt: overview.totalDebt,
         monthlyPayments: overview.totalMinimumPayments,
       };
-    } catch {
+    } catch (error) {
+      // A failed debt lookup must not silently read as "this user has no
+      // debt" — that is exactly what masked the debtToIncomeRatio-is-always-
+      // zero bug. Log it so it is observable/alertable, but still degrade to
+      // empty debt data rather than rethrowing: this fetcher is one of ~9
+      // run in parallel via Promise.all in getAggregatedContext(), and
+      // throwing here would fail the user's entire dashboard (budgets,
+      // spending, net worth, etc.) over one section's transient error — a
+      // disproportionate blast radius for a point-in-time snapshot
+      // aggregator whose sibling fetchers all degrade gracefully the same way.
+      logger.error(
+        "Failed to fetch debt_accounts data",
+        error instanceof Error ? error : new Error(String(error)),
+        { userId },
+      );
       return this.getEmptyDebtData();
     }
   }
@@ -748,33 +782,74 @@ export class FinancialAggregationService {
     };
   }
 
+  /**
+   * `credit_scores` is the canonical credit-score table already read by
+   * every other consumer in this codebase (credit-monitoring-service,
+   * credit-repair-service, credit-builder-service, the /api/profile route).
+   * `credit_profiles` does not exist on the live schema, so this always
+   * silently fell back to a zero score for every user.
+   *
+   * `currentScore` is the single most-recently-recorded score across all
+   * bureaus (not a per-bureau breakdown) — the same "latest row wins"
+   * convention those other callers already use. `bureauScores` stays `[]`
+   * because nothing downstream of this aggregator reads it (verified: no
+   * consumer of `AggregatedFinancialContext.credit.bureauScores` exists).
+   *
+   * `scoreChange` diffs the latest row against the next-most-recent row
+   * regardless of bureau, matching the trend calculation already used in
+   * `credit-builder-service.ts`.
+   *
+   * `activeDisputes`/`resolvedDisputes` have no wired data source on this
+   * schema — `0` here is an explicit "not tracked yet" default, not a read
+   * of a real column (no such columns exist on `credit_scores`).
+   */
   private async fetchCreditData(userId: string): Promise<CreditSummary> {
-    const { data } = await supabase
-      .from("credit_profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("credit_scores")
+        .select("*")
+        .eq("user_id", userId)
+        .order("score_date", { ascending: false })
+        .limit(2);
 
-    if (!data) {
+      if (error) throw error;
+
+      const rows = (data ?? []) as CreditScoreQueryRow[];
+      const [latest, previous] = rows;
+      if (!latest) {
+        return this.getEmptyCreditProfile();
+      }
+
+      const scoreChange = previous ? latest.score - previous.score : 0;
+
+      return {
+        currentScore: latest.score,
+        scoreChange,
+        scoreChangeDirection:
+          scoreChange > 0 ? "up" : scoreChange < 0 ? "down" : "stable",
+        lastUpdated: new Date(latest.score_date),
+        scoreHistory: [],
+        factors: [],
+        activeDisputes: 0,
+        resolvedDisputes: 0,
+        bureauScores: [],
+      };
+    } catch (error) {
+      // A failed lookup must not silently read as "this user has no credit
+      // score" — that is exactly what masked the currentScore-is-always-zero
+      // bug (see class-level doc comment above). Log it so it is
+      // observable/alertable, but still degrade to the empty profile rather
+      // than rethrowing: this fetcher is one of ~9 run in parallel via
+      // Promise.all in getAggregatedContext(), and throwing here would fail
+      // the user's entire dashboard over one section's transient error —
+      // matches the same resilience tradeoff fetchDebtData makes below.
+      logger.error(
+        "Failed to fetch credit score data",
+        error instanceof Error ? error : new Error(String(error)),
+        { userId },
+      );
       return this.getEmptyCreditProfile();
     }
-
-    return {
-      currentScore: data.score || 0,
-      scoreChange: data.score_change || 0,
-      scoreChangeDirection:
-        data.score_change > 0
-          ? "up"
-          : data.score_change < 0
-            ? "down"
-            : "stable",
-      lastUpdated: new Date(data.updated_at),
-      scoreHistory: [],
-      factors: [],
-      activeDisputes: data.active_disputes || 0,
-      resolvedDisputes: data.resolved_disputes || 0,
-      bureauScores: [],
-    };
   }
 
   private async fetchGoalsData(userId: string): Promise<FinancialGoal[]> {

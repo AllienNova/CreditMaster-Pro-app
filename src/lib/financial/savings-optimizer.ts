@@ -10,6 +10,7 @@
  */
 
 import { getSupabase } from "@/lib/supabase/client";
+import { logger } from "@/lib/monitoring/logger";
 
 const supabase = getSupabase();
 import { getModelRouter, TaskType } from "@/lib/model-router";
@@ -1363,13 +1364,35 @@ Provide brief, actionable insights (1-2 sentences each).`;
    * Check if user has high-interest debt
    */
   private async hasHighInterestDebt(userId: string): Promise<boolean> {
+    // `debt_accounts` — NOT `debts` (that table has never existed).
+    // PostgREST resolves an {error} for an unknown table instead of
+    // throwing, so this silently disabled the "Pay Off High-Interest Debt"
+    // recommendation for every user. The active-row filter is `is_active`,
+    // not `status` — `debt_accounts` has no `status` column. Verified
+    // against the live schema 2026-07-31 (see wellness-gate.ts for the
+    // same fix pattern).
     const { data: debts, error } = await supabase
-      .from("debts")
+      .from("debt_accounts")
       .select("interest_rate")
       .eq("user_id", userId)
-      .eq("status", "active");
+      .eq("is_active", true);
 
-    if (error || !debts) {
+    if (error) {
+      // A failed lookup must not silently read as "no high-interest debt" —
+      // that is exactly what hid this bug for every user. Log and fail safe
+      // (no recommendation) rather than throwing: this check runs inline in
+      // generateSavingsGoalRecommendations() without a surrounding
+      // try/catch, and throwing would also take down the emergency-fund and
+      // retirement recommendations generated alongside it.
+      logger.error(
+        "Failed to fetch debt_accounts for high-interest-debt check",
+        new Error(error.message),
+        { userId },
+      );
+      return false;
+    }
+
+    if (!debts) {
       return false;
     }
 
