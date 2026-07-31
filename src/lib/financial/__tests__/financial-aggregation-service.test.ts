@@ -531,4 +531,109 @@ describe("FinancialAggregationService", () => {
       loggerErrorSpy.mockRestore();
     });
   });
+
+  describe("Linked accounts (financial_accounts, not plaid_accounts)", () => {
+    // Regression coverage: fetchAccounts used to query a "plaid_accounts"
+    // table that has never existed in the live schema (plaid-service.ts, the
+    // writer, has always used "financial_accounts" — see
+    // 20260731000006_plaid_items_accounts.sql). PostgREST resolves an
+    // {error} for an unknown table instead of throwing, and the code only
+    // checked `error || !data` — discarding that error entirely — so every
+    // user's net worth silently read $0 regardless of real linked-account
+    // balances.
+    const linkedAccountRows = [
+      {
+        id: "item-1_acct-1",
+        item_id: "item-1",
+        user_id: testUserId,
+        account_id: "acct-1",
+        institution_name: "Chase",
+        account_name: "Total Checking",
+        account_type: "checking",
+        current_balance: 5000,
+        available_balance: 4800,
+        mask: "4567",
+        last_synced: "2026-07-01T00:00:00.000Z",
+        created_at: "2026-07-01T00:00:00.000Z",
+      },
+      {
+        id: "item-1_acct-2",
+        item_id: "item-1",
+        user_id: testUserId,
+        account_id: "acct-2",
+        institution_name: "Chase",
+        account_name: "Freedom Card",
+        account_type: "credit",
+        current_balance: -1200,
+        available_balance: null,
+        mask: "8901",
+        last_synced: "2026-07-01T00:00:00.000Z",
+        created_at: "2026-07-01T00:00:00.000Z",
+      },
+    ];
+
+    it("computes a non-zero net worth from real financial_accounts rows", async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "financial_accounts") {
+          return createMockChain({ data: linkedAccountRows, error: null });
+        }
+        return createMockChain();
+      });
+
+      const snapshot = await service.getFinancialSnapshot(testUserId);
+
+      // assets: 5000 (checking) ; liabilities: 1200 (credit, abs value)
+      expect(snapshot.totalAssets).toBe(5000);
+      expect(snapshot.totalLiabilities).toBe(1200);
+      expect(snapshot.netWorth).toBe(3800);
+    });
+
+    it("maps mask -> lastFourDigits and last_synced -> lastUpdatedAt (not the nonexistent last_four_digits/updated_at columns)", async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "financial_accounts") {
+          return createMockChain({ data: linkedAccountRows, error: null });
+        }
+        return createMockChain();
+      });
+
+      const context = await service.getAggregatedContext(testUserId, {
+        forceRefresh: true,
+      });
+
+      const checking = context.accounts.checking[0];
+      expect(checking.lastFourDigits).toBe("4567");
+      expect(checking.lastUpdatedAt).toEqual(new Date("2026-07-01T00:00:00.000Z"));
+    });
+
+    it("surfaces (does not silently swallow) a financial_accounts query error instead of reporting $0 net worth", async () => {
+      const loggerErrorSpy = jest
+        .spyOn(logger, "error")
+        .mockImplementation(() => {});
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "financial_accounts") {
+          return createMockChain({
+            data: null,
+            error: { message: "connection reset", code: "08006" },
+          });
+        }
+        return createMockChain();
+      });
+
+      const context = await service.getAggregatedContext(testUserId, {
+        forceRefresh: true,
+      });
+
+      // Fails safe to empty accounts (does not crash the whole aggregation)...
+      expect(context.accounts.totalAssets).toBe(0);
+      expect(context.netWorth.current).toBe(0);
+      // ...but the failure must be observable, not silent.
+      expect(loggerErrorSpy).toHaveBeenCalled();
+      const [message, loggedError] = loggerErrorSpy.mock.calls[0];
+      expect(String(message)).toContain("financial_accounts");
+      expect(loggedError).toBeInstanceOf(Error);
+
+      loggerErrorSpy.mockRestore();
+    });
+  });
 });

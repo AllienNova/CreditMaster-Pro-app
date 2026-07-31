@@ -24,15 +24,30 @@ process.env.NEXT_PUBLIC_APP_URL = "https://app.fynvita.test";
 
 // ---------------------------------------------------------------------------
 // Supabase mock (getSupabase from @/lib/supabase/client)
+//
+// plaid-service.ts reads plaid_items/financial_accounts via a lazily
+// constructed service-role client (getServiceRoleClient(), built on
+// @supabase/supabase-js's createClient — see plaid-service.ts's top-of-file
+// comment for why: neither table is in the generated Database type, so the
+// shared typed supabaseAdmin can't query them without touching types.ts or
+// an `any` cast) and transactions via getSupabase() (@/lib/supabase/client).
+// Both mocks share the SAME underlying `mockFrom` spy so every existing
+// assertion below (`supabaseClient().from`) keeps working regardless of
+// which client the production code actually calls.
 // ---------------------------------------------------------------------------
-jest.mock("@/lib/supabase/client", () => {
-  const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
-});
+const mockFrom = jest.fn();
 
-/** Helper: get the mock supabase client */
+jest.mock("@/lib/supabase/client", () => ({
+  getSupabase: () => ({ from: mockFrom }),
+}));
+
+jest.mock("@supabase/supabase-js", () => ({
+  createClient: () => ({ from: mockFrom }),
+}));
+
+/** Helper: get the mock supabase client (shared spy, either import path) */
 function supabaseClient() {
-  return require("@/lib/supabase/client").getSupabase();
+  return { from: mockFrom };
 }
 
 /**
@@ -526,6 +541,31 @@ describe("PlaidService", () => {
         (c: any[]) => c[0] === "financial_accounts",
       );
       expect(financialAccountsCalls).toHaveLength(2);
+    });
+
+    // Regression coverage: storeAccount's upsert error branch used to be an
+    // empty comment (no-op) — a failed write reported success to
+    // syncAccounts()'s caller while persisting nothing. Must now surface.
+    it("throws when storing an account fails instead of silently swallowing the error", async () => {
+      const tokenChain = buildChain({
+        data: { access_token: "access-token-abc" },
+        error: null,
+      });
+      const storeChain = buildChain({
+        data: null,
+        error: { message: "duplicate key value violates unique constraint" },
+      });
+
+      supabaseClient().from.mockImplementation((table: string) => {
+        if (table === "plaid_items") return tokenChain;
+        return storeChain;
+      });
+
+      mockAccountsGet.mockResolvedValue(plaidSdkAccountsResponse);
+
+      await expect(
+        plaidService.syncAccounts("item-abc", "user-123"),
+      ).rejects.toThrow("Failed to store account");
     });
 
     it("should throw when access token not found", async () => {

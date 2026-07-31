@@ -17,6 +17,17 @@ jest.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
+// plaid_items/financial_accounts reads go through a lazily constructed
+// service-role client built on @supabase/supabase-js's createClient (see
+// plaid-service.ts's getServiceRoleClient()) — same shared mockFrom spy as
+// @/lib/supabase/client above so the IDOR assertions below keep working
+// unchanged.
+jest.mock("@supabase/supabase-js", () => ({
+  createClient: () => ({
+    from: mockFrom,
+  }),
+}));
+
 jest.mock("@/lib/financial/plaid-client", () => ({
   getPlaidClient: () => mockPlaidClient,
 }));

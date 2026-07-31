@@ -380,13 +380,40 @@ export class FinancialAggregationService {
     };
   }
 
+  /**
+   * `financial_accounts` — NOT `plaid_accounts` (that table has never
+   * existed in any migration; plaid-service.ts, the writer, has always used
+   * `financial_accounts` — see 20260731000006_plaid_items_accounts.sql for
+   * the consolidation rationale). PostgREST resolves an {error} for an
+   * unknown table instead of throwing, and this used to only check
+   * `error || !data` and silently map both into getEmptyAccounts() — so
+   * every user's net worth read $0 regardless of real linked-account
+   * balances. Verified against the live schema 2026-07-31.
+   */
   private async fetchAccounts(userId: string): Promise<AggregatedAccounts> {
     const { data, error } = await supabase
-      .from("plaid_accounts")
+      .from("financial_accounts")
       .select("*")
       .eq("user_id", userId);
 
-    if (error || !data) {
+    if (error) {
+      // A failed account lookup must not silently read as "this user has no
+      // linked accounts" — that is exactly what masked the net-worth-is-
+      // always-zero bug above. Log it so it is observable/alertable, but
+      // still degrade to empty accounts rather than rethrowing: this
+      // fetcher is one of ~9 run in parallel via Promise.all in
+      // getAggregatedContext(), and throwing here would fail the user's
+      // entire dashboard over one section's transient error — matches the
+      // same resilience tradeoff fetchDebtData/fetchCreditData make below.
+      logger.error(
+        "Failed to fetch financial_accounts data",
+        error instanceof Error ? error : new Error(String(error)),
+        { userId },
+      );
+      return this.getEmptyAccounts();
+    }
+
+    if (!data) {
       return this.getEmptyAccounts();
     }
 
@@ -1538,10 +1565,14 @@ export class FinancialAggregationService {
       availableBalance: row.available_balance as number,
       creditLimit: row.credit_limit as number,
       interestRate: row.interest_rate as number,
-      lastFourDigits: row.last_four_digits as string,
+      // `mask`/`last_synced` are the real financial_accounts columns
+      // (plaid-service.ts storeAccount) — `last_four_digits`/`updated_at`
+      // don't exist on this table and previously read as undefined on every
+      // row.
+      lastFourDigits: row.mask as string,
       isLinked: true,
-      lastUpdatedAt: row.updated_at
-        ? new Date(row.updated_at as string)
+      lastUpdatedAt: row.last_synced
+        ? new Date(row.last_synced as string)
         : new Date(),
     };
   }

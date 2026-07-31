@@ -5,10 +5,45 @@
  */
 
 import { CountryCode, Products } from "plaid";
+import {
+  createClient as createSupabaseClient,
+  SupabaseClient,
+} from "@supabase/supabase-js";
 import { getPlaidClient } from "@/lib/financial/plaid-client";
 import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
+
+/**
+ * Service-role client for plaid_items/financial_accounts.
+ *
+ * Neither table is in the generated `Database` type (src/lib/supabase/
+ * types.ts covers ~27 of the 40+ real tables), so the shared, typed
+ * `supabaseAdmin` (@/lib/supabase/admin) rejects `.from("plaid_items")` at
+ * compile time with no way to fix it here short of editing types.ts
+ * (explicitly out of scope for this change) or an `any` cast (forbidden).
+ * Untyped, matching getSupabase()'s own documented rationale above and the
+ * ManualAccountService constructor pattern (manual-account-service.ts) —
+ * NOT the anon-keyed getSupabase(), because plaid_items/financial_accounts
+ * are service-role-only (see 20260731000006_plaid_items_accounts.sql): the
+ * access token is a live bank credential, and the anon-keyed singleton
+ * carries no session, so it can never satisfy that RLS design anyway.
+ *
+ * Lazily constructed (not a module-scope `createClient` call) for the same
+ * reason getSupabase() is a Proxy: `next build`'s page-data-collection phase
+ * imports every route module with no runtime env, and an eager
+ * `createClient()` would abort the build with "supabaseUrl is required".
+ */
+let _supabaseServiceRole: SupabaseClient | null = null;
+function getServiceRoleClient(): SupabaseClient {
+  if (!_supabaseServiceRole) {
+    _supabaseServiceRole = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+  }
+  return _supabaseServiceRole;
+}
 
 // Types
 export interface PlaidLinkToken {
@@ -160,7 +195,13 @@ class PlaidService {
     itemId: string,
     accessToken: string,
   ): Promise<void> {
-    const { error } = await supabase.from("plaid_items").insert({
+    // plaid_items is service-role-only (RLS has zero policies for
+    // anon/authenticated — see 20260731000006_plaid_items_accounts.sql):
+    // the access token is a live bank credential, so this write must use
+    // getServiceRoleClient(), not the anon-keyed getSupabase() singleton
+    // used elsewhere in this file for the (non-credential) transactions
+    // table.
+    const { error } = await getServiceRoleClient().from("plaid_items").insert({
       user_id: userId,
       item_id: itemId,
       access_token: accessToken,
@@ -185,7 +226,8 @@ class PlaidService {
    * Get access token for item — scoped to userId to prevent IDOR (FND-037)
    */
   private async getAccessToken(itemId: string, userId: string): Promise<string> {
-    const { data, error } = await supabase
+    // getServiceRoleClient() — see storeAccessToken above; same service-role-only table.
+    const { data, error } = await getServiceRoleClient()
       .from("plaid_items")
       .select("access_token")
       .eq("item_id", itemId)
@@ -203,7 +245,15 @@ class PlaidService {
    * Get accounts for user
    */
   async getAccounts(userId: string): Promise<PlaidAccount[]> {
-    const { data, error } = await supabase
+    // getServiceRoleClient(): financial_accounts grants authenticated
+    // SELECT-only via RLS scoped to auth.uid() = user_id, which the
+    // anon-keyed getSupabase() singleton can never satisfy (no per-request
+    // session is attached to it). This route-level call is already
+    // user-scoped by the explicit .eq("user_id", userId) filter below (same
+    // IDOR-safe pattern as getAccessToken/getTransactions in this file), so
+    // bypassing RLS here is safe and necessary for the query to return real
+    // rows.
+    const { data, error } = await getServiceRoleClient()
       .from("financial_accounts")
       .select("*")
       .eq("user_id", userId)
@@ -265,7 +315,11 @@ class PlaidService {
    * Store account in database
    */
   private async storeAccount(account: PlaidAccount): Promise<void> {
-    const { error } = await supabase.from("financial_accounts").upsert({
+    // getServiceRoleClient() — see getAccounts above; financial_accounts
+    // writes are service-role-only (sync-derived, never user-editable via RLS).
+    const { error } = await getServiceRoleClient()
+      .from("financial_accounts")
+      .upsert({
       id: account.id,
       item_id: account.itemId,
       user_id: account.userId,
@@ -283,8 +337,13 @@ class PlaidService {
       created_at: account.createdAt.toISOString(),
     });
 
+    // Previously an empty comment (no-op): a failed upsert reported success
+    // to syncAccounts()'s caller while persisting nothing. Throw, matching
+    // storeAccessToken's sibling pattern in this file — syncAccounts()
+    // already wraps its loop in try/catch and rethrows, so this correctly
+    // aborts the sync instead of silently dropping the account.
     if (error) {
-      // PlaidService error: Error storing account
+      throw new Error("Failed to store account");
     }
   }
 
