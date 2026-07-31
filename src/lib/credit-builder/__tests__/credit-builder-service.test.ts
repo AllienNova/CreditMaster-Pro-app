@@ -69,6 +69,91 @@ async function loadSvc(
 }
 
 // ============================================================================
+// Helper: like loadSvc, but also isolates @/lib/monitoring/logger so its
+// `error` calls can be asserted on. A plain `jest.spyOn(logger, "error")` on
+// the statically-imported logger does NOT see calls made by the service
+// loaded via jest.isolateModules() above — isolateModules gives every
+// module required inside it (including transitive ones like the logger)
+// its own fresh registry, decoupled from modules required outside it.
+// ============================================================================
+
+async function loadSvcWithLoggerSpy(chain: { from: jest.Mock }) {
+  const loggerErrorMock = jest.fn();
+  let svc!: typeof import("../credit-builder-service")["default"];
+
+  jest.isolateModules(() => {
+    jest.doMock("@/lib/supabase/client", () => ({
+      createClient: jest.fn().mockReturnValue(chain),
+    }));
+    jest.doMock("@/lib/ai-orchestrator", () => ({
+      getAIOrchestrator: jest.fn().mockReturnValue({
+        quickResponse: jest.fn().mockRejectedValue(new Error("AI down")),
+      }),
+    }));
+    jest.doMock("@/lib/monitoring/logger", () => ({
+      logger: {
+        error: loggerErrorMock,
+        warn: jest.fn(),
+        info: jest.fn(),
+        debug: jest.fn(),
+      },
+    }));
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    svc = require("../credit-builder-service").default;
+  });
+
+  return { svc, loggerErrorMock };
+}
+
+// ============================================================================
+// Table-aware chain factory for getProgress — that method reads THREE
+// tables in one call (credit_scores, credit_builder_actions, profiles) and
+// two of them are both plain (non-.single()) selects, so the shared
+// makeChain()'s single `selectResult` can't give scores and actions
+// independent data. This gives each table its own result.
+// ============================================================================
+
+function tableChain(result: { data: unknown; error: unknown }) {
+  const chain: Record<string, jest.Mock> = {};
+  ["select", "eq", "order", "limit", "range"].forEach((m) => {
+    chain[m] = jest.fn().mockReturnValue(chain);
+  });
+  chain.single = jest.fn().mockResolvedValue(result);
+  chain.then = jest.fn((resolve: (v: unknown) => unknown) =>
+    Promise.resolve(result).then(resolve),
+  );
+  return chain;
+}
+
+function makeProgressChain(config: {
+  scores?: { data: unknown[] | null; error?: unknown };
+  actions?: { data: unknown[] | null; error?: unknown };
+  profile?: { data: unknown; error?: unknown };
+}) {
+  const scoresChain = tableChain({
+    data: config.scores?.data ?? [],
+    error: config.scores?.error ?? null,
+  });
+  const actionsChain = tableChain({
+    data: config.actions?.data ?? [],
+    error: config.actions?.error ?? null,
+  });
+  const profileChain = tableChain({
+    data: config.profile?.data ?? null,
+    error: config.profile?.error ?? null,
+  });
+
+  return {
+    from: jest.fn((table: string) => {
+      if (table === "credit_scores") return scoresChain;
+      if (table === "credit_builder_actions") return actionsChain;
+      if (table === "profiles") return profileChain;
+      return tableChain({ data: null, error: null });
+    }),
+  };
+}
+
+// ============================================================================
 // calculateCreditBuilderScore
 // ============================================================================
 
@@ -382,11 +467,20 @@ describe("CreditBuilderService › getRecommendedActions", () => {
 // ============================================================================
 
 describe("CreditBuilderService › analyzeCreditMix", () => {
-  it("returns default installment:1 revolving:2 when no accounts returned", async () => {
+  it("returns an honest all-zero mix (not a fabricated installment:1 revolving:2) when no accounts returned", async () => {
+    // Regression coverage: `current` used to start at a plausible-looking
+    // {installment:1, revolving:2, ...} that only got overwritten when real
+    // rows came back - so a user with zero financial_accounts rows was told
+    // they had 1 installment + 2 revolving accounts. Empty must read as
+    // honest zero, not an invented mix.
     const svc = await loadSvc(makeChain({ selectResult: { data: null, error: null } }));
     const result = await svc.analyzeCreditMix("user-1");
-    expect(result.current.installment).toBe(1);
-    expect(result.current.revolving).toBe(2);
+    expect(result.current).toEqual({
+      installment: 0,
+      revolving: 0,
+      mortgage: 0,
+      other: 0,
+    });
   });
 
   it("recommends add_installment when installment count < ideal (2)", async () => {
@@ -439,22 +533,27 @@ describe("CreditBuilderService › analyzeCreditMix", () => {
 // ============================================================================
 
 describe("CreditBuilderService › analyzeCreditAge", () => {
-  it("returns default averageAge:3.5 when no accounts returned", async () => {
+  // Regression coverage: averageAge/oldestAccount/newestAccount used to
+  // start at plausible-looking invented values (3.5 / 7 / 0.5 years) that
+  // only got overwritten when real account rows came back - so a user with
+  // zero financial_accounts rows was told they had a ~3.5 year old credit
+  // history. Empty must read as honest zero, not an invented age.
+  it("returns an honest averageAge:0 (not a fabricated 3.5) when no accounts returned", async () => {
     const svc = await loadSvc(makeChain({ selectResult: { data: null, error: null } }));
     const result = await svc.analyzeCreditAge("user-1");
-    expect(result.averageAge).toBe(3.5);
+    expect(result.averageAge).toBe(0);
   });
 
-  it("returns default oldestAccount:7 when no accounts returned", async () => {
+  it("returns an honest oldestAccount:0 (not a fabricated 7) when no accounts returned", async () => {
     const svc = await loadSvc(makeChain({ selectResult: { data: null, error: null } }));
     const result = await svc.analyzeCreditAge("user-1");
-    expect(result.oldestAccount).toBe(7);
+    expect(result.oldestAccount).toBe(0);
   });
 
-  it("returns default newestAccount:0.5 when no accounts returned", async () => {
+  it("returns an honest newestAccount:0 (not a fabricated 0.5) when no accounts returned", async () => {
     const svc = await loadSvc(makeChain({ selectResult: { data: null, error: null } }));
     const result = await svc.analyzeCreditAge("user-1");
-    expect(result.newestAccount).toBe(0.5);
+    expect(result.newestAccount).toBe(0);
   });
 
   it("returns two recommendations", async () => {
@@ -593,37 +692,115 @@ describe("CreditBuilderService › getAuthorizedUserStrategies", () => {
 // ============================================================================
 
 describe("CreditBuilderService › getProgress", () => {
-  it("returns default progress with startScore:580 when DB throws", async () => {
-    // Make the chain thenable throw to trigger the catch block
+  // Regression coverage: getProgress used to wrap everything in a try/catch
+  // that swallowed ANY failure - including genuine query errors - into a
+  // wholesale fake profile (startScore:580, currentScore:650, targetScore:
+  // 720, actionsCompleted:8, actionsTotal:12, a hardcoded 90-day tenure,
+  // plus fabricated milestone achievedAt dates). That response was 100%
+  // invented and indistinguishable from real data. The route
+  // (app/api/credit-builder/progress/route.ts) already has its own catch
+  // block that returns a proper 500, so letting a genuine failure propagate
+  // here is more honest than disguising it as a successful response.
+  it("propagates a genuine query failure instead of returning a fabricated fallback profile", async () => {
     const chain = makeChain();
     chain.then = jest.fn(
       (_resolve: unknown, reject: ((e: Error) => unknown) | undefined) =>
         Promise.reject(new Error("db error")).catch(reject ?? (() => undefined)),
     );
     const svc = await loadSvc(chain);
-    const result = await svc.getProgress("user-1");
-    expect(result.startScore).toBe(580);
+    await expect(svc.getProgress("user-1")).rejects.toThrow("db error");
   });
 
-  it("returns userId in default progress response", async () => {
-    const chain = makeChain();
-    chain.then = jest.fn(
-      (_resolve: unknown, reject: ((e: Error) => unknown) | undefined) =>
-        Promise.reject(new Error("db error")).catch(reject ?? (() => undefined)),
+  it("returns an honest all-zero progress (not fabricated 580/650/720/8/12/90/85) when the user has no tracked data", async () => {
+    const svc = await loadSvc(
+      makeProgressChain({
+        scores: { data: [] },
+        actions: { data: [] },
+        profile: { data: null },
+      }),
     );
-    const svc = await loadSvc(chain);
     const result = await svc.getProgress("user-1");
-    expect(result.userId).toBe("user-1");
-  });
-
-  it("default progress has 3 milestones", async () => {
-    const chain = makeChain();
-    chain.then = jest.fn(
-      (_resolve: unknown, reject: ((e: Error) => unknown) | undefined) =>
-        Promise.reject(new Error("db error")).catch(reject ?? (() => undefined)),
-    );
-    const svc = await loadSvc(chain);
-    const result = await svc.getProgress("user-1");
+    expect(result).toMatchObject({
+      userId: "user-1",
+      startScore: 0,
+      currentScore: 0,
+      targetScore: 0,
+      pointsGained: 0,
+      daysActive: 0,
+      actionsCompleted: 0,
+      actionsTotal: 0,
+      successRate: 0,
+    });
     expect(result.milestones).toHaveLength(3);
+    expect(result.milestones.every((m) => !m.achieved)).toBe(true);
+  });
+
+  it("computes real startScore/currentScore/pointsGained from credit_scores rows instead of 580/650", async () => {
+    const svc = await loadSvc(
+      makeProgressChain({
+        scores: {
+          data: [
+            { score: 610, created_at: "2026-01-01T00:00:00.000Z" },
+            { score: 655, created_at: "2026-06-01T00:00:00.000Z" },
+          ],
+        },
+      }),
+    );
+    const result = await svc.getProgress("user-1");
+    expect(result.startScore).toBe(610);
+    expect(result.currentScore).toBe(655);
+    expect(result.pointsGained).toBe(45);
+  });
+
+  it("computes real daysActive from profiles.created_at instead of a hardcoded 90", async () => {
+    const thirtyDaysAgo = new Date(
+      Date.now() - 30 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const svc = await loadSvc(
+      makeProgressChain({ profile: { data: { created_at: thirtyDaysAgo } } }),
+    );
+    const result = await svc.getProgress("user-1");
+    expect(result.daysActive).toBeGreaterThanOrEqual(29);
+    expect(result.daysActive).toBeLessThanOrEqual(31);
+  });
+
+  it("does not coerce a legitimately-zero completed count back up to 8 (the || self-heal bug)", async () => {
+    // `actions?.filter(...).length || 8` used to treat a real 0 as falsy and
+    // re-substitute the fabricated constant - so even once
+    // credit_builder_actions exists and returns real rows, a user with zero
+    // completed actions out of several tracked ones would still read 8.
+    const svc = await loadSvc(
+      makeProgressChain({
+        actions: {
+          data: [
+            { id: "a1", completed: false },
+            { id: "a2", completed: false },
+            { id: "a3", completed: false },
+          ],
+        },
+      }),
+    );
+    const result = await svc.getProgress("user-1");
+    expect(result.actionsCompleted).toBe(0);
+    expect(result.actionsTotal).toBe(3);
+    expect(result.successRate).toBe(0);
+  });
+
+  it("logs (does not silently swallow) a credit_scores read error while still degrading to the honest empty state", async () => {
+    const { svc, loggerErrorMock } = await loadSvcWithLoggerSpy(
+      makeProgressChain({
+        scores: {
+          data: null,
+          error: { message: "connection reset", code: "08006" },
+        },
+      }),
+    );
+    const result = await svc.getProgress("user-1");
+
+    expect(result.currentScore).toBe(0);
+    expect(loggerErrorMock).toHaveBeenCalled();
+    const [message, loggedError] = loggerErrorMock.mock.calls[0];
+    expect(String(message)).toContain("credit_scores");
+    expect(loggedError).toBeInstanceOf(Error);
   });
 });
