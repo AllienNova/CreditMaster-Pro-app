@@ -292,6 +292,15 @@ Migration also gained `actor_role` + the `name`/`payment_channel`/`location` col
 
 **Remaining M0 follow-ups (need a decision, not just a fix):** the `subscriptions` twin — two domains (Stripe billing vs third-party subscription tracking) sharing one table name; and the ADR-0010 `audit_logs` split (UUID security log vs AI/observability events, unmergeable PK types). Both are currently *unblocked but unresolved*.
 
+### ⚠ M0-11 (regenerate types) — ATTEMPTED, REVERTED, tracked as its own slice
+`supabase gen types typescript --local` against the now-provisionable DB produces **7,324 lines** vs the **1,184-line** copy checked in — the committed `src/lib/supabase/types.ts` is a stale hand-trimmed subset that still models the pre-M0 schema.
+
+Applying it turns `tsc` from **0 → 61 errors across 15 files** (`tax/retirement`, `tax/analyze`, `marketplace/*`, `disputes`, `documents`, `notifications`, `subscriptions`, `credit-repair/db-legacy`, …). Mostly `TS2589 Type instantiation is excessively deep` plus overload/assignability failures on `.from(...)` calls.
+
+**The finding, not just the blocker:** those 61 errors are *real* — the stale subset omitted most tables, so those query sites silently fell back to permissive typing and **were never type-checked against the actual schema**. Regenerating doesn't create the problem, it reveals it.
+
+**Reverted deliberately** to keep the build green (a broken `tsc` is worse than known drift). The generated output is preserved at `docs/qa/schema-types.generated.reference.ts` for the follow-up slice. Do NOT "fix" this with `any`/`@ts-ignore` — the 15 sites need real typing.
+
 ## ⏸ NATURAL PAUSE APPROACHING (after DEFAB-2 web)
 The ungated, no-DB queue drains to empty after DEFAB-2 web. **Everything remaining needs an unblock:**
 - **Docker (R-9)** → M0 reconcile migrations (audit_logs silent-failure + profile drift live bugs) + M3 orphaned-service new-table migrations + all M0-dependent routes (M2-4, M4-2/3/4, M5). Start Docker → I run local `supabase start` (ephemeral, zero prod risk) → dry-run-verify + land them.
