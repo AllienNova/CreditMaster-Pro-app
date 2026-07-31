@@ -105,3 +105,24 @@ DTI risk gate never fired (`247fe9a`) · orders/positions never persisted (`8e34
 4. Fail-closed sweep: `credit_builder_actions` (remove the `|| 8` fabrication *first* — it survives the migration), `bureau_disputes`, `credit_alerts`.
 5. Neutralise latent risks: delete or schema-back `payout-service.ts`; invert the `demotion-rules.ts` guards.
 6. Structural: land the real `types.ts` **together with** removing the untyped-client carve-out — separately, either gives false confidence.
+
+## Two coordination/architecture findings from the build phase (2026-07-31)
+
+### A. The erasure cascade is a concurrency hazard — serialise it
+`delete_user_data_cascade` is redefined **wholesale** via `CREATE OR REPLACE` with a **hardcoded `v_tables` array**; it is NOT additive. Each migration that registers a table reproduces the entire array. With multiple builders adding tables concurrently, **whichever migration file sorts last silently drops the others' tables** from GDPR Art. 17 erasure.
+
+This was predicted, then **observed**: a builder's erasure migration (`000008`) landed covering its own tables but not the Plaid tables still in flight. It was reverted (`9ba9c5d`) and the step serialised to a single consolidated migration owned by the lead.
+
+**Guard status — measured, and the nuance matters.** `gdpr-erasure-cascade.test.ts` DOES assert array contents (127 expected entries: "original 28 preserved", seed deltas, full deltas, plus excluded tables asserted absent). So the array is not unguarded. But **newly added tables are only guarded once someone adds them to the test's expected list** — `transactions` is there; `orders`/`positions` were not. The unguarded set is precisely the newest additions, i.e. exactly those at risk in a race. **Any table added to the cascade must also be added to the test's expected list.**
+
+### B. `getSupabase()` (anon key, no JWT) cannot read RLS-protected tables — but it fails LOUD
+`src/lib/supabase/client.ts` builds its client with `NEXT_PUBLIC_SUPABASE_ANON_KEY` and forwards no user session, so `auth.uid()` is NULL.
+
+A hypothesis was raised that this would yield **silent empty results** on every RLS-protected read — which would be the same defect class as the phantom tables. **Tested against the live stack, that is wrong:**
+```
+GET /rest/v1/transactions  (anon key, no user JWT)
+-> 42501 "permission denied for table transactions"
+```
+The `anon` role holds no GRANT on these tables, so PostgREST fails **closed and loudly** — the opposite of silent-empty. The correct clients already exist in `src/lib/supabase/server.ts` (`createServerClient` forwards the session; a separate service-role client throws if its key is absent).
+
+**Implication:** services must not use `getSupabase()` for server-side reads of RLS-protected tables — not because data is silently lost, but because the call will error. Recorded as an architecture note, NOT as a data-integrity defect.
