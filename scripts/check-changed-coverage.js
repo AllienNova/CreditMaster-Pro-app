@@ -26,7 +26,15 @@ const THRESHOLD = 85;
 const COVERAGE_PATH = path.join(process.cwd(), "coverage", "coverage-final.json");
 
 function git(args) {
-  return execFileSync("git", args, { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+  // maxBuffer: git diff against a heavily-diverged base ref (branch vs main)
+  // exceeds Node's 1 MB execFileSync default and crashes with ENOBUFS. 256 MB
+  // headroom un-crashes the gate. THRESHOLD/exclusions/logic unchanged — this is
+  // a crash fix, not a gate-weakening change (owner-approved).
+  return execFileSync("git", args, {
+    encoding: "utf8",
+    stdio: ["pipe", "pipe", "pipe"],
+    maxBuffer: 256 * 1024 * 1024,
+  }).trim();
 }
 
 function resolveBaseRef() {
