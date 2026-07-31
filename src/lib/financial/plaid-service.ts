@@ -245,14 +245,13 @@ class PlaidService {
    * Get accounts for user
    */
   async getAccounts(userId: string): Promise<PlaidAccount[]> {
-    // getServiceRoleClient(): financial_accounts grants authenticated
-    // SELECT-only via RLS scoped to auth.uid() = user_id, which the
-    // anon-keyed getSupabase() singleton can never satisfy (no per-request
-    // session is attached to it). This route-level call is already
+    // getServiceRoleClient(): financial_accounts has no authenticated grant
+    // (20260731000009 revoked it — see that migration for why), so the
+    // anon-keyed getSupabase() singleton would get a 42501 permission-denied
+    // error on every call, never real rows. This route-level call is already
     // user-scoped by the explicit .eq("user_id", userId) filter below (same
     // IDOR-safe pattern as getAccessToken/getTransactions in this file), so
-    // bypassing RLS here is safe and necessary for the query to return real
-    // rows.
+    // using the service-role client here is safe and necessary.
     const { data, error } = await getServiceRoleClient()
       .from("financial_accounts")
       .select("*")

@@ -389,6 +389,19 @@ export class FinancialAggregationService {
    * `error || !data` and silently map both into getEmptyAccounts() — so
    * every user's net worth read $0 regardless of real linked-account
    * balances. Verified against the live schema 2026-07-31.
+   *
+   * KNOWN REMAINING GAP: `supabase` here is the anon-keyed getSupabase()
+   * singleton (module-level, no per-request session — auth.uid() is always
+   * NULL for it), and financial_accounts has no authenticated grant
+   * (20260731000009). So this query gets a genuine 42501 permission-denied
+   * error on every real call, not just on transient failures — the error
+   * branch below is now reachable and observable (the actual fix in this
+   * commit), but net worth computed via THIS fetcher still reads $0 in
+   * production until this method (like its ~8 siblings in this file) moves
+   * to a service-role-capable client. plaid-service.ts's getAccounts()
+   * already does this correctly for the same table; broadening it to every
+   * fetch* method here is a separate, file-wide architectural change beyond
+   * this fix's scope.
    */
   private async fetchAccounts(userId: string): Promise<AggregatedAccounts> {
     const { data, error } = await supabase
