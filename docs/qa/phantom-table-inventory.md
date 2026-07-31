@@ -209,6 +209,30 @@
 | `src/lib/financial/gig-income-service.ts` | 8 |
 | `src/lib/financial/manual-account-service.ts` | 6 |
 
+---
+
+# Axis 2 — phantom COLUMNS on tables that DO exist
+
+The table sweep above is only half the defect class. A query can name a real table and still read columns that were never migrated — same silent failure, same "feature computes on nothing" outcome.
+
+## 2a. Explicit `.select("a, b")` — fully swept
+Diffed every explicit select-list against the live schema. **19 hits, of which 4 (`*.count`) were false positives** from Postgrest's `.select("*", { count: "exact" })` syntax — verified and discarded. Confirmed live bug from this pass:
+
+- **`profiles.avatar_url` did not exist** → `GET /api/profile` failed outright with `ERROR: column "avatar_url" does not exist`. `profiles` is ANOTHER twin (`001` beats `20251217000001`), so `avatar_url`, `onboarding_completed`, `preferences` were never created. **Fixed: `5d28a4b`.**
+
+## 2b. `select("*")` + `row.some_field` — PARTIALLY swept, floor not ceiling
+This is the far more common pattern and the one that hid `tax_profiles`' ~27 phantom column reads. It cannot be caught by reading select-lists; it requires analysing property access on query results.
+
+Heuristic used: app fields are camelCase, so a **snake_case property access** inside a file whose only real `.from()` is table X is likely a column read of X. That surfaced **41 distinct suspects**.
+
+**⚠ This heuristic misattributes.** In a 2-case spot check it was ~50% wrong: `financial_goals.is_active` was really a `goal_investment_links` row (itself a phantom table) handled in a file that queries `financial_goals`. **Do not quote 41 as a finding count** — each suspect needs individual verification against the live schema.
+
+Confirmed real from that spot check:
+- **`budgets`**: code reads `period_start` / `period_end` / `is_active`; the live table has `start_date` / `end_date` / `status`. So `budget-service.ts:252-258` produces `new Date(undefined)` → **Invalid Date** for every budget's period boundaries, and `isActive: undefined`. Rename-class bug, **not yet fixed**.
+- **`tax_profiles`**: ~27 phantom column reads (verified earlier: 14 of 15 sampled missing, plus `dependents_data` vs the real `dependents_count`) → the tax engine computes on permanently-zero inputs. **Not yet fixed — needs a product decision** (extend the schema vs. accept defaults).
+
+**Honest limit:** axis 2b is measured, not complete. The true count of phantom column reads is unknown and higher than what is listed here.
+
 ## Triage required (not yet done)
 
 Each phantom table is one of: **(a)** a rename (a real table exists under another name — fix the call), **(b)** a genuinely unbuilt feature (build the migration, or delete the code that pretends to work), or **(c)** dead/unreachable code (delete).
