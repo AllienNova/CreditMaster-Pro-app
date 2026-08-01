@@ -394,7 +394,10 @@ export class GDPRComplianceService {
   private async getUserProfile(userId: string): Promise<UserProfile | null> {
     const { data, error } = await this.db
       .from("profiles")
-      .select("id, email, name, phone, address, created_at, updated_at")
+      // `name` does not exist on profiles; the real column is `full_name`.
+      // Selecting a nonexistent column makes PostgREST error the WHOLE query,
+      // so this threw on every export — see this file's companion fix.
+      .select("id, email, full_name, phone, address, created_at, updated_at")
       .eq("id", userId)
       .single();
 
@@ -412,7 +415,7 @@ export class GDPRComplianceService {
     return {
       id: data.id,
       email: data.email,
-      name: data.name,
+      name: data.full_name,
       phone: data.phone,
       address: data.address,
       createdAt: new Date(data.created_at),
@@ -425,7 +428,13 @@ export class GDPRComplianceService {
   ): Promise<CreditReportRecord[]> {
     const { data, error } = await this.db
       .from("credit_reports")
-      .select("id, bureau, report_date, score, items")
+      // `items` does not exist. The report's itemised content lives in
+      // `accounts`, `inquiries`, `collections` and `public_records` — all four
+      // are personal data and Art. 15 requires all of them, so the export
+      // widens rather than picking one.
+      .select(
+        "id, bureau, report_date, score, accounts, inquiries, collections, public_records",
+      )
       .eq("user_id", userId);
 
     // A list query has no "not found" error code — an empty result set is a
@@ -442,14 +451,22 @@ export class GDPRComplianceService {
       bureau: r.bureau as string,
       reportDate: new Date(r.report_date as string),
       score: r.score as number | undefined,
-      items: r.items as unknown[],
+      // Flattened from the four real itemised columns. Omitting any of them
+      // would narrow the Art. 15 response.
+      items: [
+        ...((r.accounts as unknown[]) ?? []),
+        ...((r.inquiries as unknown[]) ?? []),
+        ...((r.collections as unknown[]) ?? []),
+        ...((r.public_records as unknown[]) ?? []),
+      ],
     }));
   }
 
   private async getUserDisputes(userId: string): Promise<DisputeRecord[]> {
     const { data, error } = await this.db
       .from("disputes")
-      .select("id, status, created_at, description")
+      // `description` does not exist; the real column is `item_description`.
+      .select("id, status, created_at, item_description")
       .eq("user_id", userId);
 
     if (error) {
@@ -460,7 +477,7 @@ export class GDPRComplianceService {
       id: d.id as string,
       status: d.status as string,
       createdAt: new Date(d.created_at as string),
-      description: d.description as string | undefined,
+      description: d.item_description as string | undefined,
     }));
   }
 
@@ -658,7 +675,10 @@ export class GDPRComplianceService {
     // Fetch email from profiles — avoid logging PII in the error path.
     const { data: profile } = await this.db
       .from("profiles")
-      .select("email, name")
+      // `full_name`, not `name` — selecting a nonexistent column errors the
+      // whole query, which would have silently cost this user their breach
+      // notification (the result is destructured without checking `error`).
+      .select("email, full_name")
       .eq("id", userId)
       .single();
 
