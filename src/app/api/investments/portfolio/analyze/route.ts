@@ -156,14 +156,22 @@ export const GET = withAuth(async (_request: NextRequest, user: AuthedUser) => {
       });
     }
 
-    // Transform to PortfolioHolding format
+    // Transform to PortfolioHolding format. investment_holdings has no
+    // "shares", "cost_basis", or "asset_class" column — verified live via
+    // \d+ investment_holdings (same schema already fixed in
+    // src/lib/ai/financial-chat-engine.ts, commit 058a501). Real columns:
+    // quantity, average_cost (per-share — matches PortfolioAnalysisService's
+    // `h.shares * h.costBasis` usage), current_price, asset_type. Before this
+    // fix, shares/costBasis silently read `undefined` and assetClass
+    // silently defaulted to "stock" for every holding regardless of its
+    // real asset type.
     const holdings = holdingsData.map((h) => ({
       symbol: h.symbol,
-      shares: h.shares,
-      costBasis: h.cost_basis,
-      currentPrice: h.current_price || h.cost_basis,
+      shares: h.quantity,
+      costBasis: h.average_cost,
+      currentPrice: h.current_price || h.average_cost,
       sector: h.sector,
-      assetClass: h.asset_class || "stock",
+      assetClass: h.asset_type || "stock",
     }));
 
     // Run analysis

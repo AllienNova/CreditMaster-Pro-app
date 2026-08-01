@@ -4,6 +4,7 @@
  */
 
 import { NextRequest } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 const mockValidateFromHeaders = jest.fn();
 const mockResolveRoleFromDb = jest.fn();
@@ -196,5 +197,100 @@ describe("per-element validation – POST /api/investments/portfolio/analyze (TA
     // The response must have only a plain error string, not nested Zod structure
     expect(typeof json.error).toBe("string");
     expect(Object.keys(json)).toEqual(["error"]);
+  });
+});
+
+describe("GET /api/investments/portfolio/analyze — column mapping (regression)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: AUTHENTICATED_USER,
+    });
+    mockResolveRoleFromDb.mockResolvedValue("user");
+
+    // jest.config.js sets resetMocks/restoreMocks: true, which wipes the
+    // jest.mock(...) factory's .mockImplementation() on
+    // PortfolioAnalysisService before this test runs (see
+    // feedback_jest-resetmocks-and-postgrest-errors memory) — re-apply it
+    // here rather than rely on the module-load-time factory default.
+    const { PortfolioAnalysisService } = jest.requireMock(
+      "@/lib/investments/services/PortfolioAnalysisService",
+    ) as { PortfolioAnalysisService: jest.Mock };
+    PortfolioAnalysisService.mockImplementation(() => ({
+      analyzePortfolio: jest.fn().mockReturnValue({
+        totalValue: 1000,
+        totalCostBasis: 900,
+        totalGainLoss: 100,
+        totalGainLossPercent: 11.11,
+        beta: 1.0,
+        alpha: 0.05,
+        sharpeRatio: 1.2,
+        sortinoRatio: 1.5,
+        maxDrawdown: 0.1,
+        volatility: 0.2,
+        valueAtRisk: { daily95: 10, daily99: 15, weekly95: 25, monthly95: 45 },
+        correlationToMarket: 0.85,
+        diversificationScore: 60,
+        concentrationRisk: 30,
+        sectorExposure: {},
+        assetClassAllocation: {},
+        dailyReturn: 0.01,
+        weeklyReturn: 0.05,
+        monthlyReturn: 0.2,
+        ytdReturn: 1.5,
+        annualizedReturn: 10,
+      }),
+      analyzeDiversification: jest.fn().mockReturnValue({
+        score: 60,
+        sectorDiversification: 50,
+        assetClassDiversification: 70,
+        geographicDiversification: 50,
+        recommendations: [],
+        overweightedSectors: [],
+        underweightedSectors: [],
+      }),
+    }));
+  });
+
+  it("maps investment_holdings' real columns (quantity/average_cost/asset_type), not the phantom shares/cost_basis/asset_class columns", async () => {
+    // investment_holdings has no "shares", "cost_basis", or "asset_class"
+    // column — verified live via \d+ investment_holdings. Real columns:
+    // quantity, average_cost (per-share), current_price, asset_type.
+    const dbRow = {
+      symbol: "AAPL",
+      quantity: 10,
+      average_cost: 150,
+      current_price: 175,
+      sector: "Technology",
+      asset_type: "etf",
+    };
+    const mockEq = jest.fn().mockResolvedValue({ data: [dbRow], error: null });
+    const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+    const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
+    (createClient as jest.Mock).mockReturnValue({ from: mockFrom });
+
+    const res = await GET(createUnauthRequest(ANALYZE_URL, "GET"));
+    expect(res.status).toBe(200);
+
+    const { PortfolioAnalysisService } = jest.requireMock(
+      "@/lib/investments/services/PortfolioAnalysisService",
+    ) as { PortfolioAnalysisService: jest.Mock };
+    const instance = PortfolioAnalysisService.mock.results[0].value;
+    const [mappedHoldings] = instance.analyzePortfolio.mock.calls[0];
+
+    // Before the fix: shares/costBasis read `undefined` (h.shares and
+    // h.cost_basis don't exist on the row) and assetClass silently
+    // defaulted to "stock" (h.asset_class doesn't exist either) instead of
+    // surfacing the real "etf" value — a wrong-but-plausible value, not a
+    // visible failure.
+    expect(mappedHoldings[0]).toEqual({
+      symbol: "AAPL",
+      shares: 10,
+      costBasis: 150,
+      currentPrice: 175,
+      sector: "Technology",
+      assetClass: "etf",
+    });
   });
 });
