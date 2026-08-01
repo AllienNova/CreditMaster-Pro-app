@@ -26,6 +26,8 @@ jest.mock("@supabase/supabase-js", () => ({
 // Import AFTER mocks are registered
 import { GET } from "../metrics/route";
 import { NextRequest } from "next/server";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function makeRequest(url = "http://localhost:3000/api/admin/metrics") {
@@ -207,6 +209,31 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
 
       // 79 + 29 = 108
       expect(body.metrics.revenue).toBe(108);
+    });
+
+    it("does not select `plan`, which does not exist on subscriptions", () => {
+      // `plan` is not a column on subscriptions, and this route never read it —
+      // but naming it errored the ENTIRE query, so activeSubscriptions and mrr
+      // were both structurally zero, exactly as revenue was.
+      //
+      // This asserts against the route SOURCE rather than through the mock on
+      // purpose: a mocked client happily returns any column you ask for, so
+      // every existing assertion in this suite about those two numbers passed
+      // while the real database would have rejected the query outright. That
+      // blind spot is why scripts/audit-phantom-columns.js exists; this test is
+      // the narrow, CI-visible guard for the one route.
+      const routeSrc = readFileSync(
+        join(process.cwd(), "src/app/api/admin/metrics/route.ts"),
+        "utf8",
+      );
+      const afterFrom = routeSrc.split('.from("subscriptions")')[1] ?? "";
+      // Match the .select() STRING ARGUMENT only. Matching raw source would
+      // also catch the explanatory comment above the call, which names the bad
+      // column on purpose — it did exactly that on the first attempt.
+      const selectArg = afterFrom.match(/\.select\(\s*"([^"]*)"/)?.[1];
+
+      expect(selectArg).toBeDefined();
+      expect(selectArg!.split(",").map((c) => c.trim())).not.toContain("plan");
     });
 
     it("returns 500 on a payments query error rather than reporting $0 revenue", async () => {

@@ -44,7 +44,11 @@ export const GET = withRole(
           .select("id, status, created_at", { count: "exact" }),
         supabase
           .from("subscriptions")
-          .select("id, plan, status, amount", { count: "exact" }),
+          // `plan` does NOT exist on subscriptions and was never read here.
+          // Selecting it errored the entire query, so activeSubscriptions and
+          // mrr were both structurally zero — the same failure this route had
+          // on revenue. Found by scripts/audit-phantom-columns.js.
+          .select("id, status, amount", { count: "exact" }),
         supabase
           .from("payments")
           .select("amount_cents, paid_at")
