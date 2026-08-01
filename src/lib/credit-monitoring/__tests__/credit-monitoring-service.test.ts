@@ -502,10 +502,12 @@ describe("CreditMonitoringService", () => {
         error: null,
       });
 
-      // getMonitoringSettings (default threshold 10 -- error path returns defaults)
+      // getMonitoringSettings: no settings row yet for this user (PGRST116
+      // — a genuine "no rows", not a failure) -- falls back to the default
+      // threshold of 10.
       mockSupabase.single.mockResolvedValueOnce({
         data: null,
-        error: { message: "Not found" },
+        error: { code: "PGRST116", message: "no rows returned" },
       });
 
       // createAlert
@@ -679,6 +681,48 @@ describe("CreditMonitoringService", () => {
       expect(result!.score).toBe(725);
     });
 
+    it("should still return the saved score when getMonitoringSettings itself fails (a settings-fetch failure must not mask an already-successful score save)", async () => {
+      // getCurrentScores - previous score exists, well past threshold
+      mockSupabase.limit.mockResolvedValueOnce({
+        data: [makeScoreRow({ bureau: "experian", score: 700 })],
+        error: null,
+      });
+
+      // insert for new score succeeds -> .select().single()
+      mockSupabase.single.mockResolvedValueOnce({
+        data: {
+          id: "score-saved-settings-failed",
+          user_id: TEST_USER_ID,
+          bureau: "experian",
+          score: 725,
+          score_date: "2026-02-20T00:00:00Z",
+          factors,
+          created_at: "2026-02-20T00:00:00Z",
+        },
+        error: null,
+      });
+
+      // getMonitoringSettings -> .single() fails for a real reason (not
+      // PGRST116), so it throws instead of degrading to defaults.
+      mockSupabase.single.mockResolvedValueOnce({
+        data: null,
+        error: { code: "42501", message: "permission denied" },
+      });
+
+      const result = await creditMonitoringService.addCreditScore(
+        TEST_USER_ID,
+        "experian",
+        725,
+        factors,
+      );
+
+      // The score row was already committed — its own save must be reported
+      // as a success regardless of the settings-fetch failure above.
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe("score-saved-settings-failed");
+      expect(result!.score).toBe(725);
+    });
+
     it("should set severity to high when change >= 20 points", async () => {
       // getCurrentScores - previous score
       mockSupabase.limit.mockResolvedValueOnce({
@@ -800,10 +844,10 @@ describe("CreditMonitoringService", () => {
       expect(result.alertPreferences.smsNotifications).toBe(false);
     });
 
-    it("should return default settings when database returns error", async () => {
+    it("should return default settings when no row exists yet (PGRST116 — first visit, not a failure)", async () => {
       mockSupabase.single.mockResolvedValueOnce({
         data: null,
-        error: { message: "PGRST116 not found" },
+        error: { code: "PGRST116", message: "no rows returned" },
       });
 
       const result =
@@ -821,6 +865,19 @@ describe("CreditMonitoringService", () => {
       expect(result.alertPreferences.fraudAlerts).toBe(true);
       expect(result.alertPreferences.emailNotifications).toBe(true);
       expect(result.alertPreferences.smsNotifications).toBe(false);
+    });
+
+    it("should throw (not silently return defaults) on a real query failure — collapsing a genuine error into 'first visit' defaults would mask the failure as a normal empty state", async () => {
+      mockSupabase.single.mockResolvedValueOnce({
+        data: null,
+        error: { code: "42501", message: "permission denied for table credit_monitoring_settings" },
+      });
+
+      await expect(
+        creditMonitoringService.getMonitoringSettings(TEST_USER_ID),
+      ).rejects.toThrow(
+        "Failed to fetch monitoring settings: permission denied for table credit_monitoring_settings",
+      );
     });
 
     it("should use score_change_threshold from DB, defaulting to 10 if falsy", async () => {

@@ -214,18 +214,24 @@ class CreditMonitoringService {
 
       if (error) throw error;
 
-      // Create alert if score changed significantly
+      // Create alert if score changed significantly.
+      //
+      // The score row above is already saved — a failure anywhere in this
+      // block (reading settings to decide whether to alert, or creating the
+      // alert itself) is a secondary side effect and must not null out that
+      // already-successful result (same shape as the submitDispute fix: a
+      // committed primary action must not be masked by a downstream
+      // failure). getMonitoringSettings() now throws on a real fetch error
+      // (see its own doc comment) rather than always degrading to defaults,
+      // so it has to sit inside this same try/catch as createAlert — both
+      // are best-effort steps of "attempt to raise a change alert," and
+      // neither may propagate out to the outer catch below.
       if (previousScore) {
         const change = score - previousScore;
-        const settings = await this.getMonitoringSettings(userId);
+        try {
+          const settings = await this.getMonitoringSettings(userId);
 
-        if (Math.abs(change) >= settings.scoreChangeThreshold) {
-          // The score row above is already saved — an alert-creation failure
-          // here is a secondary side effect and must not null out that
-          // already-successful result (same shape as the submitDispute fix:
-          // a committed primary action must not be masked by a downstream
-          // failure). Caught and dropped locally, not propagated.
-          try {
+          if (Math.abs(change) >= settings.scoreChangeThreshold) {
             await this.createAlert(userId, {
               type: change > 0 ? "score_increase" : "score_decrease",
               bureau,
@@ -234,9 +240,10 @@ class CreditMonitoringService {
               severity: Math.abs(change) >= 20 ? "high" : "medium",
               data: { previousScore, newScore: score, change },
             });
-          } catch (alertError) {
-            // Credit monitoring error: creating score-change alert (non-fatal)
           }
+        } catch (alertError) {
+          // Credit monitoring error: fetching settings or creating the
+          // score-change alert (non-fatal)
         }
       }
 
@@ -256,18 +263,24 @@ class CreditMonitoringService {
   }
 
   /**
-   * Get monitoring settings
+   * Get monitoring settings.
+   *
+   * PGRST116 ("no rows") means this user has never saved settings yet — a
+   * legitimate first-visit state, not a failure, so it degrades to defaults.
+   * Any other error code (RLS denial, network failure, etc.) THROWS instead
+   * of silently returning the same defaults: collapsing both cases together
+   * would mask a real read failure as "this user just hasn't configured
+   * monitoring," the same false-all-clear shape as the getAlerts fix above.
    */
   async getMonitoringSettings(userId: string): Promise<MonitoringSettings> {
-    try {
-      const { data, error } = await supabase
-        .from("credit_monitoring_settings")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
+    const { data, error } = await supabase
+      .from("credit_monitoring_settings")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
 
-      if (error) {
-        // Return default settings if not found
+    if (error) {
+      if (error.code === "PGRST116") {
         return {
           userId,
           experianEnabled: true,
@@ -285,19 +298,17 @@ class CreditMonitoringService {
           scoreChangeThreshold: 10,
         };
       }
-
-      return {
-        userId: data.user_id,
-        experianEnabled: data.experian_enabled,
-        equifaxEnabled: data.equifax_enabled,
-        transunionEnabled: data.transunion_enabled,
-        alertPreferences: data.alert_preferences,
-        scoreChangeThreshold: data.score_change_threshold || 10,
-      };
-    } catch (error) {
-      // Credit monitoring error: fetching monitoring settings
-      throw error;
+      throw new Error(`Failed to fetch monitoring settings: ${error.message}`);
     }
+
+    return {
+      userId: data.user_id,
+      experianEnabled: data.experian_enabled,
+      equifaxEnabled: data.equifax_enabled,
+      transunionEnabled: data.transunion_enabled,
+      alertPreferences: data.alert_preferences,
+      scoreChangeThreshold: data.score_change_threshold || 10,
+    };
   }
 
   /**
