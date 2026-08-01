@@ -127,7 +127,7 @@ function objectLiteralAt(text, from) {
   return null;
 }
 
-const WINDOW = 400; // chars after .from() in which a chained call still counts
+const WINDOW = 400; // max chars after .from() in which a chained call counts
 
 function auditFile(file, schema, findings) {
   const text = readFileSync(file, "utf8");
@@ -140,7 +140,17 @@ function auditFile(file, schema, findings) {
     const cols = schema.get(table);
     if (!cols) continue; // phantom TABLE — a different audit covers that axis
 
-    const tail = text.slice(m.index, m.index + WINDOW);
+    // Stop the window at the NEXT .from(), not just at a fixed character count.
+    // Without this the scan attributes a later query's columns to this table:
+    // it reported `action`/`details` against user_settings in
+    // api/email/unsubscribe/route.ts when both belong to an audit_logs insert
+    // ~10 lines further down. A false positive costs triage time and erodes
+    // trust in the whole report, so the window is bounded by structure first
+    // and length second.
+    const nextFrom = text.slice(m.index + 1).search(/\.from\(\s*["'`][a-z0-9_]+["'`]\s*\)/);
+    const limit =
+      nextFrom === -1 ? WINDOW : Math.min(WINDOW, nextFrom + 1);
+    const tail = text.slice(m.index, m.index + limit);
     const line = text.slice(0, m.index).split("\n").length;
 
     const sel = tail.match(/\.select\(\s*["'`]([^"'`]+)["'`]/);

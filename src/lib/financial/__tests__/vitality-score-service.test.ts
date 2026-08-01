@@ -579,16 +579,23 @@ describe("FinancialVitalityScoreService", () => {
       await vitalityScoreService.calculateVitalityScore("u1");
 
       expect(upsertMock.upsert).toHaveBeenCalledWith(
+        // Real column names. The payload previously spread `scores`, whose keys
+        // are overall/credit/spending/savings/debt/investments — none of which
+        // are columns on vitality_score_history (they are *_score). This
+        // assertion pinned that fictional shape, so it passed while the write
+        // could never have succeeded. The null-not-zero property it exists to
+        // protect is unchanged and still asserted below.
         expect.objectContaining({
           user_id: "u1",
-          overall: EXP_OVERALL,
-          credit: EXP_CREDIT,
-          spending: EXP_SPENDING,
-          savings: EXP_SAVINGS,
-          debt: null, // unavailable → persisted as null, never a fabricated 0
-          investments: EXP_INVESTMENTS,
+          period_type: "daily",
+          overall_score: EXP_OVERALL,
+          credit_score: EXP_CREDIT,
+          spending_score: EXP_SPENDING,
+          savings_score: EXP_SAVINGS,
+          debt_score: null, // unavailable → persisted as null, never a fabricated 0
+          investments_score: EXP_INVESTMENTS,
         }),
-        { onConflict: "user_id,date" },
+        { onConflict: "user_id,period_type,period_start" },
       );
     });
   });
@@ -1086,11 +1093,11 @@ describe("FinancialVitalityScoreService", () => {
       expect(result.overall).not.toBeNull();
       expect(upsertMock.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          credit: null, // transiently unavailable → null, never a fabricated 0
-          debt: null, // always-unavailable debt likewise null
-          overall: result.overall,
+          credit_score: null, // transiently unavailable → null, never a fabricated 0
+          debt_score: null, // always-unavailable debt likewise null
+          overall_score: result.overall,
         }),
-        { onConflict: "user_id,date" },
+        { onConflict: "user_id,period_type,period_start" },
       );
     });
   });

@@ -1120,16 +1120,38 @@ class FinancialVitalityScoreService {
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Upsert to avoid duplicates for same day
+    // Upsert to avoid duplicates for same day.
+    //
+    // Uses the table's CANONICAL columns: period_start (a date) with
+    // period_type. There is no `date` column and no `updated_at` on
+    // vitality_score_history, so the previous payload failed outright and score
+    // history was never recorded for anyone. A `date` column was NOT added
+    // beside period_start — a synonym for an existing column is the twin-column
+    // defect this wave is removing.
+    //
+    // The onConflict target is backed by the unique index added in
+    // 20260731000160; without it this upsert had no constraint to conflict on.
     await supabase.from("vitality_score_history").upsert(
       {
         user_id: userId,
-        date: today,
-        ...scores,
-        updated_at: new Date().toISOString(),
+        period_type: "daily",
+        period_start: today,
+        period_end: today,
+        // Mapped explicitly rather than spread. `scores` is keyed
+        // overall/credit/spending/savings/debt/investments; the columns are
+        // *_score. Spreading it wrote SIX column names that do not exist, so
+        // this upsert could never have succeeded — and a spread is invisible to
+        // scripts/audit-phantom-columns.js, which is why this survived the
+        // audit that found the `date` mismatch beside it.
+        overall_score: scores.overall,
+        credit_score: scores.credit,
+        spending_score: scores.spending,
+        savings_score: scores.savings,
+        debt_score: scores.debt,
+        investments_score: scores.investments,
       },
       {
-        onConflict: "user_id,date",
+        onConflict: "user_id,period_type,period_start",
       },
     );
   }

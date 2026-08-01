@@ -191,10 +191,20 @@ async function sendFollowupEmail(
  */
 async function updateLastFollowup(disputeId: string): Promise<void> {
   const supabase = getSupabaseClient();
-  await supabase
+  const { error } = await supabase
     .from("disputes")
     .update({ last_followup_at: new Date().toISOString() })
     .eq("id", disputeId);
+
+  // Fire-and-forget here meant the follow-up timestamp was never recorded and
+  // the cron could not tell an already-followed-up dispute from a fresh one —
+  // so the same user could be emailed about the same dispute repeatedly.
+  if (error) {
+    console.error("Failed to record dispute follow-up timestamp", {
+      disputeId,
+      error,
+    });
+  }
 }
 
 function getEmailSubject(type: string): string {
