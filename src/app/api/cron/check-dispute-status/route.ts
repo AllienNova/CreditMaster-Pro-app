@@ -63,7 +63,7 @@ export async function GET(request: Request) {
       results.updated++;
 
       // Create notification for user
-      await supabase.from("notifications").insert({
+      const { error: notifyError } = await supabase.from("notifications").insert({
         user_id: dispute.user_id,
         type: "dispute_overdue",
         title: "Dispute Response Overdue",
@@ -71,6 +71,11 @@ export async function GET(request: Request) {
         data: { dispute_id: dispute.id },
         read: false,
       });
+      if (notifyError) {
+        // Fire-and-forget here meant a failed insert looked like a delivered
+        // notification: the cron reported success and the user was never told.
+        console.error("Failed to create notification", notifyError);
+      }
 
       results.notifications++;
     }

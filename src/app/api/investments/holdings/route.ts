@@ -101,26 +101,34 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     }
 
     // Check if holding already exists for this symbol
+    // Real columns are `quantity` and `average_cost`; `shares` and
+    // `average_cost_basis` exist nowhere on investment_holdings. Naming them
+    // errored the whole SELECT, so `existing` was always undefined and this
+    // route ALWAYS took the insert branch — silently creating a duplicate
+    // holding row per POST instead of averaging into the existing one, and
+    // never updating a position. The API's own request field names
+    // (body.shares / body.averageCostBasis) are unchanged; only the column
+    // names are corrected.
     const { data: existing } = await supabase
       .from("investment_holdings")
-      .select("id, shares, average_cost_basis")
+      .select("id, quantity, average_cost")
       .eq("user_id", userId)
       .eq("symbol", body.symbol.toUpperCase())
       .single();
 
     if (existing) {
       // Update existing holding with new average cost basis
-      const newTotalShares = existing.shares + body.shares;
+      const newTotalShares = existing.quantity + body.shares;
       const newTotalCost =
-        existing.shares * existing.average_cost_basis +
+        existing.quantity * existing.average_cost +
         body.shares * body.averageCostBasis;
       const newAvgCost = newTotalCost / newTotalShares;
 
       const { data, error } = await supabase
         .from("investment_holdings")
         .update({
-          shares: newTotalShares,
-          average_cost_basis: newAvgCost,
+          quantity: newTotalShares,
+          average_cost: newAvgCost,
           updated_at: new Date().toISOString(),
         })
         .eq("id", existing.id)
@@ -143,8 +151,8 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
         user_id: userId,
         symbol: body.symbol.toUpperCase(),
         name: body.name || body.symbol.toUpperCase(),
-        shares: body.shares,
-        average_cost_basis: body.averageCostBasis,
+        quantity: body.shares,
+        average_cost: body.averageCostBasis,
         current_price: body.averageCostBasis,
         asset_type: body.assetType || "stock",
         sector: body.sector,
@@ -171,8 +179,13 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
 });
 
 function transformHolding(h: Record<string, unknown>): Holding {
-  const shares = h.shares as number;
-  const avgCost = h.average_cost_basis as number;
+  // Reads off a `select("*")`, so these never errored — they just came back
+  // undefined, and every derived figure below (value, gainLoss, gainLossPercent)
+  // resolved to NaN. This is the phantom-column case a query-level audit cannot
+  // see: the column list is a wildcard, and the mismatch only appears where the
+  // row is destructured. Real columns are `quantity` and `average_cost`.
+  const shares = h.quantity as number;
+  const avgCost = h.average_cost as number;
   const currentPrice = (h.current_price as number) || avgCost;
   return {
     id: h.id as string,

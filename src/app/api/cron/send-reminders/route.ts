@@ -40,7 +40,7 @@ export async function GET(request: Request) {
       .gt("sent_at", new Date(sevenDaysAgo.getTime() - 86400000).toISOString());
 
     for (const dispute of pendingDisputes || []) {
-      await supabase.from("notifications").insert({
+      const { error: notifyError } = await supabase.from("notifications").insert({
         user_id: dispute.user_id,
         type: "dispute_reminder",
         title: "Check Your Dispute Status",
@@ -48,6 +48,11 @@ export async function GET(request: Request) {
         data: { dispute_id: dispute.id },
         read: false,
       });
+      if (notifyError) {
+        // Fire-and-forget here meant a failed insert looked like a delivered
+        // notification: the cron reported success and the user was never told.
+        console.error("Failed to create notification", notifyError);
+      }
       results.reminders++;
     }
 
@@ -62,7 +67,7 @@ export async function GET(request: Request) {
       .lt("created_at", threeDaysAgo.toISOString());
 
     for (const dispute of draftDisputes || []) {
-      await supabase.from("notifications").insert({
+      const { error: notifyError } = await supabase.from("notifications").insert({
         user_id: dispute.user_id,
         type: "draft_reminder",
         title: "Complete Your Dispute",
@@ -70,6 +75,11 @@ export async function GET(request: Request) {
         data: { dispute_id: dispute.id },
         read: false,
       });
+      if (notifyError) {
+        // Fire-and-forget here meant a failed insert looked like a delivered
+        // notification: the cron reported success and the user was never told.
+        console.error("Failed to create notification", notifyError);
+      }
       results.followUps++;
     }
 
@@ -82,7 +92,7 @@ export async function GET(request: Request) {
         .eq("notification_preferences->score_reminders", true);
 
       for (const user of users || []) {
-        await supabase.from("notifications").insert({
+        const { error: notifyError } = await supabase.from("notifications").insert({
           user_id: user.id,
           type: "score_reminder",
           title: "Monthly Credit Check",
@@ -91,6 +101,11 @@ export async function GET(request: Request) {
           data: {},
           read: false,
         });
+        if (notifyError) {
+          // Fire-and-forget here meant a failed insert looked like a delivered
+          // notification: the cron reported success and the user was never told.
+          console.error("Failed to create notification", notifyError);
+        }
         results.scoreUpdates++;
       }
     }
