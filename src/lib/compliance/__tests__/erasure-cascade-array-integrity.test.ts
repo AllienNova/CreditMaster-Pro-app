@@ -44,6 +44,8 @@ const DELIBERATE_EXCLUSIONS = [
   "analytics_events", // ON DELETE SET NULL; anonymised aggregate history is retained
 ] as const;
 
+const ROUND_5_ADDITIONS = ["investment_history"] as const;
+
 const ROUND_4_ADDITIONS = [
   "shared_goal_members",
   "financial_journeys",
@@ -161,7 +163,7 @@ describe("delete_user_data_cascade v_tables integrity", () => {
     expect(duplicates).toEqual([]);
   });
 
-  it.each([...ROUND_2_ADDITIONS, ...ROUND_3_ADDITIONS, ...ROUND_4_ADDITIONS])(
+  it.each([...ROUND_2_ADDITIONS, ...ROUND_3_ADDITIONS, ...ROUND_4_ADDITIONS, ...ROUND_5_ADDITIONS])(
     "registers %s for erasure",
     (table) => {
       expect(sql).toMatch(new RegExp(`^\\s*'${table}'`, "m"));

@@ -860,7 +860,12 @@ export class FinancialChatEngine {
   private async getRiskProfile(userId: string): Promise<any> {
     try {
       const { data, error } = await this.supabase
-        .from("risk_profiles")
+        // `risk_profiles` does not exist. The real per-user risk table is
+        // `user_risk_settings` (settings jsonb, kill_switch, equity,
+        // peak_equity). The result is passed to the LLM as opaque context and
+        // no field is accessed downstream, so the rename is behaviour-
+        // preserving — it just returns real data instead of always throwing.
+        .from("user_risk_settings")
         .select("*")
         .eq("user_id", userId)
         .single();
