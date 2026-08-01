@@ -109,6 +109,23 @@ function makeInvoice(overrides: Partial<Stripe.Invoice> = {}): Stripe.Invoice {
   } as unknown as Stripe.Invoice;
 }
 
+/**
+ * Point the Supabase double at the right shape per table.
+ *
+ * handleInvoicePaid touches two tables: `subscriptions` (select→eq→single, to
+ * resolve the user for the credit reset) and `payments` (upsert, the revenue
+ * ledger). A single mockReturnValue can only model one of them, so tests that
+ * care about the subscription lookup pass their own select mock here and get a
+ * working ledger stub for free.
+ */
+function wireSupabaseTables(mockSelect: jest.Mock): jest.Mock {
+  const mockUpsert = jest.fn().mockResolvedValue({ error: null });
+  mockSupabaseFrom.mockImplementation((table: string) =>
+    table === "payments" ? { upsert: mockUpsert } : { select: mockSelect },
+  );
+  return mockUpsert;
+}
+
 function makePaymentIntent(
   overrides: Partial<Stripe.PaymentIntent> = {},
 ): Stripe.PaymentIntent {
@@ -148,6 +165,16 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
     // Default: event not yet processed; mark succeeds.
     mockIsWebhookEventProcessed.mockResolvedValue(false);
     mockMarkWebhookEventProcessed.mockResolvedValue(undefined);
+    // Default DB double. handleInvoicePaid now always writes the revenue
+    // ledger, including for one-off invoices with no subscription, so `from()`
+    // must return something usable even in tests that never opt into wiring it.
+    wireSupabaseTables(
+      jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      }),
+    );
   });
 
   afterEach(() => {
@@ -167,7 +194,7 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
           }),
         }),
       });
-      mockSupabaseFrom.mockReturnValue({ select: mockSelect });
+      wireSupabaseTables(mockSelect);
       mockGetCustomer.mockResolvedValue({
         id: "cus_test_123",
         email: "user@example.com",
@@ -222,7 +249,7 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
           }),
         }),
       });
-      mockSupabaseFrom.mockReturnValue({ select: mockSelect });
+      wireSupabaseTables(mockSelect);
       mockGetCustomer.mockResolvedValue({
         id: "cus_test_123",
         email: null,
@@ -267,7 +294,7 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
           }),
         }),
       });
-      mockSupabaseFrom.mockReturnValue({ select: mockSelect });
+      wireSupabaseTables(mockSelect);
       mockGetCustomer.mockResolvedValue({
         id: "cus_test_123",
         email: "user@example.com",
@@ -299,7 +326,7 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
           }),
         }),
       });
-      mockSupabaseFrom.mockReturnValue({ select: mockSelect });
+      wireSupabaseTables(mockSelect);
       mockGetCustomer.mockResolvedValue({
         id: "cus_test_123",
         email: "user@example.com",
@@ -365,7 +392,7 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
           }),
         }),
       });
-      mockSupabaseFrom.mockReturnValue({ select: mockSelect });
+      wireSupabaseTables(mockSelect);
       mockGetCustomer.mockResolvedValue({
         id: "cus_test_123",
         email: "user@example.com",
@@ -386,6 +413,169 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
       );
       // Defaults to free tier — does not throw
       expect(mockResetCreditsForTier).toHaveBeenCalledWith("user_5", "free");
+    });
+  });
+
+  // ── Revenue ledger (payments table) ───────────────────────────────────────
+  //
+  // Before this suite existed, NOTHING in the codebase recorded a payment.
+  // handleInvoicePaid touched only `subscriptions` (credit-allowance reset), so
+  // every paid invoice left no financial record. /api/admin/metrics then read a
+  // `payments` table that no migration created, and collapsed the resulting
+  // PostgREST error to `|| 0` — making admin revenue structurally incapable of
+  // being non-zero.
+  //
+  // See supabase/migrations/20260731000020_payments_revenue_ledger.sql.
+
+  describe("handleInvoicePaid: revenue ledger", () => {
+    function wireLedger(
+      upsertResult: { error: { message: string } | null } = { error: null },
+    ) {
+      const mockUpsert = jest.fn().mockResolvedValue(upsertResult);
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "payments") return { upsert: mockUpsert };
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              single: jest.fn().mockResolvedValue({
+                data: { user_id: "user_1", stripe_price_id: "price_free" },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      });
+      return mockUpsert;
+    }
+
+    beforeEach(() => {
+      mockGetCustomer.mockResolvedValue({
+        id: "cus_test_123",
+        email: "user@example.com",
+        name: "Test User",
+      });
+      mockResetCreditsForTier.mockResolvedValue(undefined);
+      mockSendPaymentSuccessEmail.mockResolvedValue(undefined);
+    });
+
+    it("records the payment in the revenue ledger", async () => {
+      const mockUpsert = wireLedger();
+
+      await stripeService.handleWebhookEvent({
+        id: "evt_ledger_1",
+        type: "invoice.paid",
+        data: { object: makeInvoice() },
+      } as unknown as Stripe.Event);
+
+      expect(mockSupabaseFrom).toHaveBeenCalledWith("payments");
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stripe_invoice_id: "in_test_123",
+          stripe_customer_id: "cus_test_123",
+          stripe_subscription_id: "sub_test_123",
+          stripe_event_id: "evt_ledger_1",
+          user_id: "user_1",
+          currency: "usd",
+        }),
+        expect.objectContaining({
+          onConflict: "stripe_invoice_id",
+          ignoreDuplicates: true,
+        }),
+      );
+    });
+
+    it("stores amount_paid verbatim as integer cents, with no unit conversion", async () => {
+      // Regression guard for the dollar/cent bug class that has already shipped
+      // twice on live money paths (FND-024 payout, B1 calculateFees). Stripe
+      // sends MINOR UNITS; 9999 must land as 9999, never 99.99 and never
+      // 999900.
+      const mockUpsert = wireLedger();
+
+      await stripeService.handleWebhookEvent({
+        id: "evt_ledger_units",
+        type: "invoice.paid",
+        data: { object: makeInvoice({ amount_paid: 9999 }) },
+      } as unknown as Stripe.Event);
+
+      const row = mockUpsert.mock.calls[0][0] as { amount_cents: number };
+      expect(row.amount_cents).toBe(9999);
+      expect(Number.isInteger(row.amount_cents)).toBe(true);
+    });
+
+    it("throws when the ledger write fails so Stripe retries", async () => {
+      // A payment that Stripe took but we failed to record must NOT return 2xx.
+      // Swallowing here would lose the revenue record permanently.
+      wireLedger({ error: { message: "relation payments does not exist" } });
+
+      await expect(
+        stripeService.handleWebhookEvent({
+          id: "evt_ledger_fail",
+          type: "invoice.paid",
+          data: { object: makeInvoice() },
+        } as unknown as Stripe.Event),
+      ).rejects.toThrow(/payments/i);
+    });
+
+    it("records the payment BEFORE sending the confirmation email", async () => {
+      // Mirrors the handler's documented "DB work FIRST, email LAST" ordering:
+      // a failed ledger write must not have already emailed the customer.
+      const order: string[] = [];
+      const mockUpsert = jest.fn().mockImplementation(async () => {
+        order.push("ledger");
+        return { error: null };
+      });
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "payments") return { upsert: mockUpsert };
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              single: jest.fn().mockResolvedValue({
+                data: { user_id: "user_1", stripe_price_id: "price_free" },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      });
+      mockSendPaymentSuccessEmail.mockImplementation(async () => {
+        order.push("email");
+      });
+
+      await stripeService.handleWebhookEvent({
+        id: "evt_ledger_order",
+        type: "invoice.paid",
+        data: { object: makeInvoice() },
+      } as unknown as Stripe.Event);
+
+      expect(order).toEqual(["ledger", "email"]);
+    });
+
+    it("still records the payment when the invoice has no subscription", async () => {
+      // A one-off invoice has no subscription to resolve a user from. The
+      // payment is money the business received either way — record it
+      // unattributed rather than dropping it.
+      const mockUpsert = jest.fn().mockResolvedValue({ error: null });
+      mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === "payments") return { upsert: mockUpsert };
+        return { select: jest.fn() };
+      });
+
+      await stripeService.handleWebhookEvent({
+        id: "evt_ledger_oneoff",
+        type: "invoice.paid",
+        data: {
+          object: makeInvoice({ parent: null as unknown as undefined }),
+        },
+      } as unknown as Stripe.Event);
+
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stripe_invoice_id: "in_test_123",
+          user_id: null,
+          stripe_subscription_id: null,
+        }),
+        expect.anything(),
+      );
     });
   });
 

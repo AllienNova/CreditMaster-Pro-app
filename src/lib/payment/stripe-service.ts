@@ -647,6 +647,20 @@ class StripePaymentService {
       // is sent. Do not move the email above the credit reset.
       // ─────────────────────────────────────────────────────────────────────
 
+      const { supabaseAdmin } = await import("../supabase/server");
+      // The checked-in Database types are a stale subset that omits most
+      // tables (see docs/qa/SYSTEMATIC-REVIEW-SYNTHESIS.md — regenerating them
+      // is its own slice, currently 61 tsc errors across 15 files). Reusing the
+      // one existing cast here rather than introducing a second one.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      // Resolved from the subscription record below when this invoice belongs
+      // to a subscription. A one-off invoice leaves both null — the payment is
+      // still recorded, just unattributed.
+      let resolvedUserId: string | null = null;
+      let resolvedSubId: string | null = null;
+
       // Reset monthly credit allowance on subscription renewal
       const subDetails = invoice.parent?.subscription_details;
       if (subDetails?.subscription) {
@@ -654,10 +668,7 @@ class StripePaymentService {
           typeof subDetails.subscription === "string"
             ? subDetails.subscription
             : subDetails.subscription.id;
-
-        const { supabaseAdmin } = await import("../supabase/server");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const db = supabaseAdmin as any;
+        resolvedSubId = stripeSubId;
 
         // Look up the user from the subscription record
         const { data: subRecord } = await db
@@ -667,6 +678,7 @@ class StripePaymentService {
           .single();
 
         if (subRecord) {
+          resolvedUserId = subRecord.user_id ?? null;
           const { resetCreditsForTier } = await import(
             "../credits/credit-reset"
           );
@@ -689,6 +701,43 @@ class StripePaymentService {
 
           await resetCreditsForTier(subRecord.user_id, tier);
         }
+      }
+
+      // ── Revenue ledger ───────────────────────────────────────────────────
+      // Record the payment. Before this existed, NOTHING in the codebase wrote
+      // a financial record for a paid invoice — this handler touched only
+      // `subscriptions`, so /api/admin/metrics reported $0 revenue forever.
+      //
+      // amount_paid is ALREADY in minor units; it is stored verbatim with no
+      // arithmetic. Two dollar/cent unit bugs have already shipped on live
+      // money paths here (FND-024, B1) — do not "convert" this.
+      //
+      // Idempotent on stripe_invoice_id: this handler rethrows so Stripe
+      // retries, and a retry must not book the same invoice as revenue twice.
+      const { error: ledgerError } = await db.from("payments").upsert(
+        {
+          user_id: resolvedUserId,
+          stripe_invoice_id: invoice.id,
+          stripe_event_id: eventId,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: resolvedSubId,
+          amount_cents: invoice.amount_paid,
+          currency: invoice.currency,
+          status: "paid",
+          paid_at: new Date(
+            (invoice.status_transitions?.paid_at ?? Math.floor(Date.now() / 1000)) * 1000,
+          ).toISOString(),
+        },
+        { onConflict: "stripe_invoice_id", ignoreDuplicates: true },
+      );
+
+      if (ledgerError) {
+        // Stripe took the customer's money. Failing to record it is a lost
+        // financial record, not a cosmetic issue — throw so this returns non-2xx
+        // and Stripe redelivers.
+        throw new Error(
+          `Failed to record payment in revenue ledger (payments) for invoice ${invoice.id}: ${ledgerError.message}`,
+        );
       }
 
       // Send payment confirmation email — always last so a retry after a

@@ -47,9 +47,21 @@ export const GET = withRole(
           .select("id, plan, status, amount", { count: "exact" }),
         supabase
           .from("payments")
-          .select("amount, created_at")
-          .gte("created_at", startDate.toISOString()),
+          .select("amount_cents, paid_at")
+          .gte("paid_at", startDate.toISOString()),
       ]);
+
+    // Revenue must never be silently reported as zero. Until
+    // 20260731000020_payments_revenue_ledger.sql this route queried a table
+    // that no migration created; PostgREST RESOLVES an {error} rather than
+    // throwing, and the `|| 0` below turned that into a confident "$0 revenue"
+    // on the admin dashboard. A broken query and a genuinely empty period must
+    // not look identical to an operator.
+    if (revenueResult.error) {
+      throw new Error(
+        `Failed to load revenue from payments ledger: ${revenueResult.error.message}`,
+      );
+    }
 
     const totalUsers = usersResult.count || 0;
     const totalDisputes = disputesResult.count || 0;
@@ -62,8 +74,12 @@ export const GET = withRole(
         ?.filter((s) => s.status === "active")
         .reduce((sum, s) => sum + (s.amount || 0), 0) || 0;
 
-    const revenue =
-      revenueResult.data?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+    // amount_cents is integer MINOR UNITS (see the migration's header). Sum in
+    // cents, divide once at this presentation boundary — never mix the units.
+    const revenueCents =
+      revenueResult.data?.reduce((sum, p) => sum + (p.amount_cents || 0), 0) ||
+      0;
+    const revenue = revenueCents / 100;
 
     const successfulDisputes =
       disputesResult.data?.filter((d) => d.status === "resolved").length || 0;
@@ -100,10 +116,16 @@ export const GET = withRole(
           startDate,
           "created_at",
         ),
+        // Normalised to dollars here so the trend series carries the same unit
+        // as the `revenue` total above. Mixing cents and dollars across two
+        // fields of one response is how the prior unit bugs happened.
         revenue: generateTrendData(
-          revenueResult.data || [],
+          (revenueResult.data || []).map((p) => ({
+            paid_at: p.paid_at,
+            amount: (p.amount_cents || 0) / 100,
+          })),
           startDate,
-          "created_at",
+          "paid_at",
           "amount",
         ),
       },
