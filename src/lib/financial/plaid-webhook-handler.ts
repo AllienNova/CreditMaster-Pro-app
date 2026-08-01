@@ -15,10 +15,45 @@
  */
 
 import * as jose from "jose";
+import {
+  createClient as createSupabaseClient,
+  SupabaseClient,
+} from "@supabase/supabase-js";
 import { getPlaidClient } from "@/lib/financial/plaid-client";
 import { plaidService } from "@/lib/financial/plaid-service";
-import { getSupabase } from "@/lib/supabase/client";
 import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
+
+// ---------------------------------------------------------------------------
+// Service-role Supabase client
+// ---------------------------------------------------------------------------
+//
+// Webhook handlers run with no user session at all — Plaid calls this
+// endpoint server-to-server, so there is never a JWT to forward. The
+// anon-keyed getSupabase() singleton this file used to import from
+// @/lib/supabase/client can therefore never work here: auth.uid() is
+// always NULL for it, and plaid_items/transactions gate writes behind
+// auth.uid() = user_id RLS policies an anonymous session can never satisfy.
+// Every write in this file already targets a specific row via an explicit
+// .eq("item_id", ...) / .in("transaction_id", ...) filter, so moving to a
+// service-role client (which bypasses RLS but not those filters) is safe —
+// it does not widen which rows a given webhook call can touch.
+//
+// Mirrors plaid-service.ts's getServiceRoleClient(): untyped, because
+// plaid_items and transactions sit outside the generated Database type in
+// src/lib/supabase/types.ts, and lazily constructed (not a module-scope
+// createClient() call) because next build's page-data-collection phase
+// imports every route module with no runtime env — an eager call would
+// abort the build with "supabaseUrl is required".
+let _supabaseServiceRole: SupabaseClient | null = null;
+function getServiceRoleClient(): SupabaseClient {
+  if (!_supabaseServiceRole) {
+    _supabaseServiceRole = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+  }
+  return _supabaseServiceRole;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -336,8 +371,7 @@ class PlaidWebhookService {
       `[PlaidWebhook] Removing ${removedIds.length} transactions for item_id=${event.item_id}`,
     );
 
-    const supabase = getSupabase();
-    const { error } = await supabase
+    const { error } = await getServiceRoleClient()
       .from("transactions")
       .delete()
       .in("transaction_id", removedIds);
@@ -362,8 +396,7 @@ class PlaidWebhookService {
         `message=${errorInfo?.error_message ?? "unknown"}`,
     );
 
-    const supabase = getSupabase();
-    const { error } = await supabase
+    const { error } = await getServiceRoleClient()
       .from("plaid_items")
       .update({
         error_type: errorInfo?.error_type ?? null,
@@ -392,8 +425,7 @@ class PlaidWebhookService {
         `expires=${event.consent_expiration_time ?? "unknown"}`,
     );
 
-    const supabase = getSupabase();
-    const { error } = await supabase
+    const { error } = await getServiceRoleClient()
       .from("plaid_items")
       .update({
         consent_expiration_time: event.consent_expiration_time ?? null,
@@ -416,8 +448,7 @@ class PlaidWebhookService {
    * Look up the user_id that owns a given item_id.
    */
   private async getUserIdForItem(itemId: string): Promise<string | null> {
-    const supabase = getSupabase();
-    const { data, error } = await supabase
+    const { data, error } = await getServiceRoleClient()
       .from("plaid_items")
       .select("user_id")
       .eq("item_id", itemId)

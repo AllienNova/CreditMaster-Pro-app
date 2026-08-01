@@ -28,14 +28,25 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
 // ---------------------------------------------------------------------------
 // Supabase mock
 // ---------------------------------------------------------------------------
+// plaid-webhook-handler.ts now reads via a lazily-constructed service-role
+// client (createClient from @supabase/supabase-js), not the anon-keyed
+// getSupabase() singleton — mirrors plaid-service.test.ts's dual-mock
+// convention so both client entry points resolve to the same shared
+// mockFrom spy. getSupabase() is mocked too even though the source no
+// longer imports it: harmless, and keeps this file resilient if any future
+// handler reintroduces that import path.
+const mockFrom = jest.fn();
+
 jest.mock("@/lib/supabase/client", () => {
-  const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
+  return { getSupabase: () => ({ from: mockFrom }) };
 });
 
+jest.mock("@supabase/supabase-js", () => ({
+  createClient: () => ({ from: mockFrom }),
+}));
+
 function supabaseClient() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require("@/lib/supabase/client").getSupabase();
+  return { from: mockFrom };
 }
 
 function buildChain(resolvedValue: {

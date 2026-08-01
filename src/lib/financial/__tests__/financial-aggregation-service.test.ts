@@ -13,6 +13,15 @@ jest.mock("@/lib/supabase/client", () => {
   };
 });
 
+// financial-aggregation-service.ts now reads via a lazily-constructed
+// service-role client (createClient from @supabase/supabase-js), not the
+// anon-keyed getSupabase() singleton above — mirrors plaid-service.test.ts's
+// dual-mock convention so both the old and new client entry points resolve
+// to the same shared mockFrom spy.
+jest.mock("@supabase/supabase-js", () => ({
+  createClient: () => ({ from: mockFrom }),
+}));
+
 type MockChain = Record<
   string,
   jest.Mock | ((resolve: (v: unknown) => unknown) => Promise<unknown>)
