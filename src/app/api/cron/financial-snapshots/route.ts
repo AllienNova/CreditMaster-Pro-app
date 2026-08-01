@@ -31,6 +31,21 @@ import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 /** Users processed per batch, to bound memory on a large account base. */
 const USER_BATCH_SIZE = 500;
 
+/**
+ * Stop starting new users after this long and report the run as incomplete.
+ *
+ * vercel.json gives this route maxDuration 300s. Each user costs ~8 queries, so
+ * a large enough account base WILL outgrow that. Hitting the platform timeout
+ * would kill the function mid-write with no report and no record of where it
+ * stopped — the run would simply vanish. Stopping ourselves at a margin below
+ * the limit means an over-long run degrades into an honest partial result
+ * (`complete: false` plus the count processed) instead of a silent death.
+ *
+ * When this starts tripping, the fix is a resumable cursor, not a bigger
+ * number.
+ */
+const TIME_BUDGET_MS = 240_000;
+
 function getSupabase(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -205,9 +220,15 @@ export async function GET(request: Request) {
 
     const results = { users: 0, snapshots: 0, failures: 0 };
     const errors: Array<{ userId: string; message: string }> = [];
+    const startedAt = Date.now();
+    let complete = true;
 
     let offset = 0;
     for (;;) {
+      if (Date.now() - startedAt > TIME_BUDGET_MS) {
+        complete = false;
+        break;
+      }
       const { data: profiles, error } = await supabase
         .from("profiles")
         .select("id")
@@ -217,6 +238,10 @@ export async function GET(request: Request) {
       if (!profiles || profiles.length === 0) break;
 
       for (const profile of profiles) {
+        if (Date.now() - startedAt > TIME_BUDGET_MS) {
+          complete = false;
+          break;
+        }
         results.users++;
         try {
           await snapshotUser(
@@ -238,7 +263,7 @@ export async function GET(request: Request) {
         }
       }
 
-      if (profiles.length < USER_BATCH_SIZE) break;
+      if (!complete || profiles.length < USER_BATCH_SIZE) break;
       offset += USER_BATCH_SIZE;
     }
 
@@ -246,12 +271,13 @@ export async function GET(request: Request) {
     // clean success to whatever monitors this endpoint.
     return NextResponse.json(
       {
-        success: results.failures === 0,
+        success: results.failures === 0 && complete,
+        complete,
         date: today,
         ...results,
         errors: errors.slice(0, 20),
       },
-      { status: results.failures > 0 ? 207 : 200 },
+      { status: results.failures > 0 || !complete ? 207 : 200 },
     );
   } catch (error) {
     console.error("Financial snapshot cron failed", error);
