@@ -1062,24 +1062,63 @@ export class FinancialAggregationService {
     }));
   }
 
+  /**
+   * `health_score_history` — NOT `financial_health_scores` — has never
+   * existed on the live schema (verified 2026-08-01). The real table is
+   * already actively written by health-score-calculator.ts/-v2.ts's
+   * saveScore() on every health-score calculation, so unlike this
+   * aggregator's other empty trend tables (net_worth_history,
+   * savings_history — no producer exists for either), this rename
+   * restores genuinely growing history, not just an honest-empty result.
+   * Column mapping: `date`->`calculated_at`, `score`->`overall_score`;
+   * `grade` has no column anywhere on this table and must be derived —
+   * same 90/80/70/60 letter thresholds as HealthScoreCalculator.getGrade()
+   * (health-score-calculator.ts:374), duplicated here since that method is
+   * private to its class.
+   *
+   * Stays on the module's anon `supabase` client, matching every other
+   * fetch* method in this file — the anon-key/RLS gap that leaves all of
+   * them reading empty for authenticated users is a separate, file-wide
+   * client-authority fix owned elsewhere. This method's job is the
+   * table/column truth (PostgREST's "relation does not exist" vs. a real,
+   * empty-but-reachable table); it composes with that other fix once both
+   * land.
+   */
   private async fetchHealthScoreHistory(
     userId: string,
     startDate: Date,
     endDate: Date,
   ): Promise<HealthScoreHistoryPoint[]> {
-    const { data } = await supabase
-      .from("health_score_history")
-      .select("date, score, grade")
+    const { data, error } = await supabase
+      .from("financial_health_scores")
+      .select("calculated_at, overall_score")
       .eq("user_id", userId)
-      .gte("date", startDate.toISOString())
-      .lte("date", endDate.toISOString())
-      .order("date", { ascending: true });
+      .gte("calculated_at", startDate.toISOString())
+      .lte("calculated_at", endDate.toISOString())
+      .order("calculated_at", { ascending: true });
+
+    if (error) {
+      logger.error(
+        "Failed to fetch financial_health_scores history",
+        new Error(error.message),
+        { userId },
+      );
+      return [];
+    }
 
     return (data || []).map((d) => ({
-      date: new Date(d.date),
-      score: d.score,
-      grade: d.grade,
+      date: new Date(d.calculated_at),
+      score: d.overall_score,
+      grade: this.scoreToGrade(d.overall_score),
     }));
+  }
+
+  private scoreToGrade(score: number): "A" | "B" | "C" | "D" | "F" {
+    if (score >= 90) return "A";
+    if (score >= 80) return "B";
+    if (score >= 70) return "C";
+    if (score >= 60) return "D";
+    return "F";
   }
 
   // ==========================================================================

@@ -421,6 +421,85 @@ describe("FinancialAggregationService", () => {
     });
   });
 
+  describe("fetchHealthScoreHistory (financial_health_scores, not health_score_history — regression)", () => {
+    let loggerErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      // jest.config.js sets restoreMocks: true, which fully detaches a
+      // jest.spyOn before every test — must be re-created fresh here.
+      loggerErrorSpy = jest.spyOn(logger, "error").mockImplementation();
+    });
+
+    it("logs the failure and still returns an empty history on a query error", async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "financial_health_scores") {
+          return createMockChain({
+            data: null,
+            error: { message: "relation health_score_history does not exist" },
+          });
+        }
+        return createMockChain();
+      });
+
+      const trends = await service.getFinancialTrends(testUserId, {
+        period: "30d",
+      });
+
+      expect(trends.healthScoreHistory).toEqual([]);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        "Failed to fetch financial_health_scores history",
+        expect.any(Error),
+        { userId: testUserId },
+      );
+    });
+
+    it("maps real rows using the actual column names (calculated_at/overall_score, not date/score) and derives grade — there is no grade column", async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "financial_health_scores") {
+          return createMockChain({
+            data: [
+              { calculated_at: "2026-06-01T00:00:00.000Z", overall_score: 92 },
+              { calculated_at: "2026-07-01T00:00:00.000Z", overall_score: 74 },
+              { calculated_at: "2026-07-15T00:00:00.000Z", overall_score: 55 },
+            ],
+            error: null,
+          });
+        }
+        return createMockChain();
+      });
+
+      const trends = await service.getFinancialTrends(testUserId, {
+        period: "30d",
+      });
+
+      expect(trends.healthScoreHistory).toHaveLength(3);
+      expect(trends.healthScoreHistory[0]).toEqual({
+        date: new Date("2026-06-01T00:00:00.000Z"),
+        score: 92,
+        grade: "A",
+      });
+      expect(trends.healthScoreHistory[1].grade).toBe("C");
+      expect(trends.healthScoreHistory[2].grade).toBe("F");
+      expect(loggerErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it("treats a null data payload with no error as an empty (not broken) history", async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "financial_health_scores") {
+          return createMockChain({ data: null, error: null });
+        }
+        return createMockChain();
+      });
+
+      const trends = await service.getFinancialTrends(testUserId, {
+        period: "30d",
+      });
+
+      expect(trends.healthScoreHistory).toEqual([]);
+      expect(loggerErrorSpy).not.toHaveBeenCalled();
+    });
+  });
+
   describe("cache management", () => {
     it("should clear cache for specific user", async () => {
       await service.getAggregatedContext(testUserId);
