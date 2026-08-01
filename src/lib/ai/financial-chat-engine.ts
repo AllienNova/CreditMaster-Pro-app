@@ -812,18 +812,24 @@ export class FinancialChatEngine {
   }
 
   /**
-   * Get user preferences
+   * Get user preferences.
+   *
+   * There is no standalone `user_preferences` table -- preferences live as
+   * a JSONB column on `profiles` (profiles.preferences). Callers of this
+   * method only ever pass the result through as opaque AI-prompt context
+   * (no field-level access), so returning that JSONB blob directly
+   * preserves the existing `Promise<any>` contract.
    */
   private async getUserPreferences(userId: string): Promise<any> {
     try {
       const { data, error } = await this.supabase
-        .from("user_preferences")
-        .select("*")
-        .eq("user_id", userId)
+        .from("profiles")
+        .select("preferences")
+        .eq("id", userId)
         .single();
 
       if (error) throw error;
-      return data;
+      return data?.preferences ?? null;
     } catch (error) {
       // Chat engine error:('Failed to get user preferences:', error);
       return null;

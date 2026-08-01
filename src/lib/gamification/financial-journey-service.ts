@@ -578,7 +578,7 @@ export class FinancialJourneyService {
   }
 
   async getUserJourney(userId: string): Promise<FinancialJourney | null> {
-    const { data } = await this.supabase
+    const { data, error } = await this.supabase
       .from("financial_journeys")
       .select("*")
       .eq("user_id", userId)
@@ -586,6 +586,7 @@ export class FinancialJourneyService {
       .limit(1)
       .single();
 
+    if (error && error.code !== "PGRST116") throw error;
     return data ? this.fromDbFormat(data) : null;
   }
 
@@ -673,12 +674,13 @@ export class FinancialJourneyService {
   private async getJourneyById(
     journeyId: string,
   ): Promise<FinancialJourney | null> {
-    const { data } = await this.supabase
+    const { data, error } = await this.supabase
       .from("financial_journeys")
       .select("*")
       .eq("id", journeyId)
       .single();
 
+    if (error && error.code !== "PGRST116") throw error;
     return data ? this.fromDbFormat(data) : null;
   }
 

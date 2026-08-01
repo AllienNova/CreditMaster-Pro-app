@@ -255,7 +255,7 @@ export class NudgeEngine {
 
     try {
       const { data: userData } = await this.supabase
-        .from("users")
+        .from("profiles")
         .select("email")
         .eq("id", request.userId)
         .single();
@@ -279,7 +279,7 @@ export class NudgeEngine {
 
     try {
       const { data: userData } = await this.supabase
-        .from("users")
+        .from("profiles")
         .select("phone")
         .eq("id", request.userId)
         .single();

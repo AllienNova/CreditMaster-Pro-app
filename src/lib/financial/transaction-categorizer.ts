@@ -241,7 +241,7 @@ export class TransactionCategorizer {
 
     // Fetch transactions from database
     const { data: transactions } = await supabase
-      .from("plaid_transactions")
+      .from("transactions")
       .select("*")
       .eq("user_id", userId)
       .gte("date", startDate.toISOString())
@@ -327,7 +327,7 @@ export class TransactionCategorizer {
     startDate.setDate(startDate.getDate() - 90);
 
     const { data: transactions } = await supabase
-      .from("plaid_transactions")
+      .from("transactions")
       .select("*")
       .eq("user_id", userId)
       .gte("date", startDate.toISOString())
@@ -911,7 +911,7 @@ Respond in JSON format:
   ): Promise<boolean> {
     // Check if merchant has recurring pattern
     const { data } = await supabase
-      .from("plaid_transactions")
+      .from("transactions")
       .select("*")
       .eq("user_id", transaction.userId)
       .eq("merchant_name", transaction.merchantName)
