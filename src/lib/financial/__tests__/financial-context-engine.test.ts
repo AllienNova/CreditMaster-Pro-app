@@ -6,6 +6,13 @@
  * These are unit tests for the class structure and exports.
  */
 
+// Mock Supabase — singleton to ensure source and test share the same object
+// (matches budget-service.test.ts's established pattern for this repo).
+jest.mock("@/lib/supabase/client", () => {
+  const _client = { from: jest.fn() };
+  return { getSupabase: () => _client };
+});
+
 import {
   FinancialContextEngine,
   financialContextEngine,
@@ -137,6 +144,109 @@ describe("FinancialContextEngine", () => {
       };
       expect(fullOptions.includeTransactions).toBe(false);
       expect(fullOptions.transactionDays).toBe(60);
+    });
+  });
+
+  describe("getFinancialAlerts (financial_alerts table — regression)", () => {
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      // jest.config.js sets restoreMocks: true, which fully detaches a
+      // jest.spyOn before every test — must be re-created fresh here, not
+      // declared once at describe-scope.
+      consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+    });
+
+    function getAlerts(userId: string) {
+      // getFinancialAlerts is private; the engine under test is the class
+      // itself so this exercises the real query-building/mapping logic.
+      return (
+        financialContextEngine as unknown as {
+          getFinancialAlerts: (userId: string) => Promise<unknown[]>;
+        }
+      ).getFinancialAlerts(userId);
+    }
+
+    it("maps a real row into a FinancialAlert without logging an error", async () => {
+      const row = {
+        id: "alert-1",
+        type: "bill_due",
+        severity: "warning",
+        title: "Rent due soon",
+        message: "Your rent is due in 3 days",
+        action_required: true,
+        action_type: "pay_bill",
+        action_data: { billId: "bill-1" },
+        dismissed: false,
+        expires_at: null,
+        created_at: "2026-07-01T00:00:00Z",
+      };
+      const chain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        or: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [row], error: null }),
+      };
+      const supabase = require("@/lib/supabase/client").getSupabase();
+      supabase.from.mockReturnValue(chain);
+
+      const alerts = await getAlerts("user-123");
+
+      expect(alerts).toEqual([
+        expect.objectContaining({
+          id: "alert-1",
+          type: "bill_due",
+          severity: "warning",
+          title: "Rent due soon",
+          actionRequired: true,
+          actionType: "pay_bill",
+        }),
+      ]);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it("returns [] without logging when the user genuinely has no alerts", async () => {
+      const chain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        or: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
+      };
+      const supabase = require("@/lib/supabase/client").getSupabase();
+      supabase.from.mockReturnValue(chain);
+
+      const alerts = await getAlerts("user-123");
+
+      expect(alerts).toEqual([]);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it("logs the failure and still returns [] on a query error — a broken read must not read as 'no alerts'", async () => {
+      const chain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        or: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: "permission denied for table financial_alerts" },
+        }),
+      };
+      const supabase = require("@/lib/supabase/client").getSupabase();
+      supabase.from.mockReturnValue(chain);
+
+      const alerts = await getAlerts("user-123");
+
+      expect(alerts).toEqual([]);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "getFinancialAlerts failed",
+        expect.objectContaining({
+          userId: "user-123",
+          error: "permission denied for table financial_alerts",
+        }),
+      );
     });
   });
 });

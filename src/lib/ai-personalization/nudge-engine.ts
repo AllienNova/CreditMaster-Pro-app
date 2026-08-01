@@ -230,32 +230,20 @@ export class NudgeEngine {
   }
 
   /**
-   * Send push notification via Firebase Cloud Messaging or OneSignal.
-   * Integration requires: user_devices table with push_token column,
-   * and FIREBASE_SERVICE_ACCOUNT or ONESIGNAL_API_KEY env variable.
+   * Push notification delivery (Firebase Cloud Messaging / OneSignal) is not
+   * wired up: there is no device-token store and no push-provider client
+   * configured anywhere in this codebase. This previously queried a
+   * "user_devices" table that was never migrated — since postgrest resolves
+   * an error object rather than throwing, the surrounding try/catch never
+   * fired, so the phantom query silently no-opped exactly like this explicit
+   * early return does. Logging honestly here instead of pretending to query
+   * device tokens that don't exist.
    */
   private async sendPushNotification(request: NudgeRequest): Promise<void> {
-    // Nudge engine: Sending push notification
-
-    try {
-      const { data: deviceTokens } = await this.supabase
-        .from("user_devices")
-        .select("push_token")
-        .eq("user_id", request.userId);
-
-      if (deviceTokens && deviceTokens.length > 0) {
-        // Push notification service integration available
-        const tokens = deviceTokens
-          .map((d: { push_token: string }) => d.push_token)
-          .filter(Boolean);
-        if (tokens.length > 0) {
-          // Nudge engine: Would send to device(s)
-        }
-      }
-    } catch (error) {
-      // Table may not exist yet - log and continue
-      // Nudge engine: Device tokens not available
-    }
+    console.warn("Push notification channel is not implemented", {
+      userId: request.userId,
+      nudgeType: request.nudgeType,
+    });
   }
 
   /**

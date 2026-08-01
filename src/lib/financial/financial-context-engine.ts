@@ -856,7 +856,7 @@ export class FinancialContextEngine {
    * Get financial alerts for a user
    */
   private async getFinancialAlerts(userId: string): Promise<FinancialAlert[]> {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("financial_alerts")
       .select("*")
       .eq("user_id", userId)
@@ -864,6 +864,17 @@ export class FinancialContextEngine {
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .order("severity", { ascending: false })
       .limit(20);
+
+    if (error) {
+      // A query failure must not be indistinguishable from "no alerts" —
+      // log it so a broken read is diagnosable, but don't reject the wider
+      // Promise.all in getFinancialContext() over one sub-fetch.
+      console.error("getFinancialAlerts failed", {
+        userId,
+        error: error.message,
+      });
+      return [];
+    }
 
     return (data || []).map((a) => ({
       id: a.id,

@@ -554,18 +554,11 @@ export class TransactionCategorizer {
         });
       }
 
-      // Optionally: Store in database for persistence
-      try {
-        await supabase.from("merchant_categories").upsert({
-          merchant_name: merchantLower,
-          category: correction.correctedCategory,
-          confidence: newConfidence,
-          user_id: userId,
-          updated_at: new Date().toISOString(),
-        });
-      } catch (error) {
-        // Transaction categorizer warning: Failed to persist merchant category
-      }
+      // Persistence is in-memory only (merchantCategoryCache, process
+      // lifetime) — there is no "merchant_categories" table backing this,
+      // and this class has no production caller today (see
+      // docs/qa/phantom-table-inventory.md), so there is nothing wired to a
+      // real store to persist to.
     }
 
     // Transaction categorizer: Trained on user corrections
@@ -598,34 +591,8 @@ export class TransactionCategorizer {
       };
     }
 
-    // 3. Check database
-    try {
-      const { data } = await supabase
-        .from("merchant_categories")
-        .select("*")
-        .eq("merchant_name", merchantLower)
-        .order("confidence", { ascending: false })
-        .limit(3);
-
-      if (data && data.length > 0) {
-        const primary = data[0];
-        const alternatives = data.slice(1).map((d) => ({
-          category: d.category as BudgetCategoryValue,
-          confidence: d.confidence,
-        }));
-
-        return {
-          category: primary.category as BudgetCategoryValue,
-          confidence: primary.confidence,
-          alternativeCategories:
-            alternatives.length > 0 ? alternatives : undefined,
-        };
-      }
-    } catch (error) {
-      // Transaction categorizer warning: Failed to fetch merchant category from database
-    }
-
-    // 4. Use AI
+    // 3. Use AI (no "merchant_categories" table backs this class — see
+    // trainOnUserCorrections() above)
     try {
       const aiSuggestion = await this.getAICategorySuggestion(merchant);
       return aiSuggestion;
@@ -633,7 +600,7 @@ export class TransactionCategorizer {
       // Transaction categorizer warning: AI category suggestion failed
     }
 
-    // 5. Fallback
+    // 4. Fallback
     return {
       category: "other",
       confidence: 50,
