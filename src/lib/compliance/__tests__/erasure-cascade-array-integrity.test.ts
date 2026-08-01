@@ -42,6 +42,11 @@ const DELIBERATE_EXCLUSIONS = [
   "audit_logs", // security/compliance trail
   "tax_audit_log", // statutory tax retention
   "analytics_events", // ON DELETE SET NULL; anonymised aggregate history is retained
+  // ON DELETE SET NULL: a conversion records a commission OWED TO A PARTNER.
+  // That obligation survives the converting user's erasure, so the row is
+  // pseudonymised (user_id nulled by the FK) rather than deleted — same
+  // reasoning as payments.
+  "affiliate_conversions",
 ] as const;
 
 const ROUND_5_ADDITIONS = ["investment_history"] as const;

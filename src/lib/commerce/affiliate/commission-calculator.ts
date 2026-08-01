@@ -460,11 +460,23 @@ class CommissionCalculatorService {
   private async getCommissionTiers(
     partnerId: string,
   ): Promise<Array<{ minVolume: number; multiplier: number }>> {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("commission_tiers")
       .select("min_volume, multiplier")
       .eq("partner_id", partnerId)
       .order("min_volume", { ascending: true });
+
+    // `error` was not destructured at all, so a failed lookup returned [] and
+    // calculateTieredCommission silently applied NO tier multiplier — every
+    // high-volume partner paid at the base rate, with nothing to indicate the
+    // tiers had not been read. A partner with no tiers configured is a
+    // legitimate empty result; a failed query is not, and the two must not look
+    // the same on a path that decides what someone is paid.
+    if (error) {
+      throw new Error(
+        `Failed to load commission tiers for partner ${partnerId}: ${error.message}`,
+      );
+    }
 
     return (data || []).map((row) => ({
       minVolume: row.min_volume,
