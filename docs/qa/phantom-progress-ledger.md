@@ -82,22 +82,46 @@ pending an owner decision:
   `users` is suspicious: `auth.users` exists but `public.users` does not, and
   `nudge-engine.ts` queries the bare name.
 
-## Operational finding: bare `git stash` destroys concurrent work
+## Operational finding: stashing a file another agent is editing
 
-Five agents share `.worktrees/wave-7-foundation`. One ran a **bare** `git stash`,
-which reverted *every* agent's uncommitted files, not just its own. It silently
-wiped in-progress edits to three files mid-task; they had to be redone.
+> **CORRECTION.** An earlier version of this section — and a warning I broadcast
+> to four agents — asserted that an agent had run a **bare** `git stash` that
+> "reverted every agent's uncommitted files." **That attribution was wrong, and
+> the correction matters because the mitigation it implies is different.**
+>
+> The command was in fact pathspec-scoped, to exactly the three files it
+> disrupted. The decisive evidence: a bare `git stash` stashes the **index** as
+> well, so that agent's 15 *staged* deletions would have been swept away too.
+> They were not — all 15 landed intact in `df3e1f0`. My "bare stash" reading came
+> from `git stash show --stat` listing 18 files, which reports the stash commit's
+> full tree-relative diff rather than only the pathspec'd entries. I mistook a
+> reporting quirk for the command's scope, and broadcast it before checking.
 
-`stash@{0}` still holds 18 files from that sweep, mixing one agent's work with
-another's now-stale copies. It was **not dropped** — dropping it would destroy
-work that may exist nowhere else. It is the originating agent's to resolve, and
-a blind `git stash pop` must not be run: it would revert newer commits,
-including a live money-path fix.
+**What actually happened, which is still a real hazard.** `git stash push --
+<path>` reverts the named paths to HEAD **on disk** for as long as the stash is
+active. Scoping correctly prevented collateral damage to unrelated files. But
+the three paths chosen were files *another agent was actively editing at that
+moment*, so that agent's uncommitted work vanished from disk mid-task and had to
+be redone.
 
-Standing rules issued to all agents: never bare `git stash` / `git checkout --
-.` / `git reset --hard`; path-scope every revert; prefer writing the failing
-test before touching source so no stash is needed; **commit early and often**,
-because uncommitted work in a shared worktree is not safe.
+**So the rule is not "path-scope your stash" — that was already being done.** The
+rule is about **ownership and recency**:
+
+- Before stashing any file, check `git log -1 --format=%cr -- <path>` and
+  `git status`. If a file is being touched right now by someone else, do not
+  stash it at all.
+- Prefer attribution that never touches the file: reason from `git diff` /
+  `git status` output directly. In this case that alone would have sufficed.
+- Better still, write the failing test **before** touching source — true TDD
+  order needs no stash whatsoever.
+- **Commit early and often.** Uncommitted work in a shared worktree is exposed
+  to any teammate's legitimate, correctly-scoped git operation.
+
+**Resolution.** The originating agent verified both sides lost nothing — all 17
+of its files are in `df3e1f0`, and the disrupted `stripe-service.ts` is at
+`4f552bd`, which postdates the stash copy — then dropped it. `git stash list`
+now holds only an unrelated pre-existing `WIP on main` entry. Nothing was
+discarded on inference.
 
 ## Method
 
