@@ -1587,13 +1587,28 @@ describe("PayoutService", () => {
     });
 
     it("should return null when payout not found", async () => {
+      // PGRST116 is what postgrest actually returns for "no matching row" from
+      // .single(). The old fixture used a bare { message } with no code, which
+      // the pre-fix code never branched on — it collapsed EVERY error into
+      // null, so this test passed without exercising the distinction it names.
       mockBuilder.single.mockResolvedValue({
         data: null,
-        error: { message: "Not found" },
+        error: { code: "PGRST116", message: "no rows returned" },
       });
 
       const result = await service.getPayout("nonexistent");
       expect(result).toBeNull();
+    });
+
+    it("THROWS on a real lookup failure instead of reporting no payout", async () => {
+      // A payout that exists but could not be read must not be reported as
+      // absent — a caller seeing null may reissue a payout that already went out.
+      mockBuilder.single.mockResolvedValue({
+        data: null,
+        error: { code: "42501", message: "permission denied" },
+      });
+
+      await expect(service.getPayout("p-1")).rejects.toThrow(/permission denied/);
     });
   });
 

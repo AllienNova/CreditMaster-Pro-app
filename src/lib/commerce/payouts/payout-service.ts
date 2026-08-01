@@ -253,7 +253,7 @@ export class PayoutService {
     }
 
     // Update with provider ID
-    await supabase
+    const { error: inTransitError } = await supabase
       .from("payouts")
       .update({
         provider_payout_id: providerPayoutId,
@@ -261,6 +261,16 @@ export class PayoutService {
         processed_at: new Date().toISOString(),
       })
       .eq("id", payout.id);
+
+    // The provider has ALREADY been told to send money at this point. If the
+    // row does not record "in_transit" with the provider's id, reconciliation
+    // cannot match the outbound transfer to this payout, and a retry would
+    // send it again.
+    if (inTransitError) {
+      throw new Error(
+        `Payout ${payout.id} was sent to the provider but could not be marked in_transit: ${inTransitError.message}`,
+      );
+    }
 
     return {
       ...payout,
@@ -427,7 +437,9 @@ export class PayoutService {
   ): Promise<string> {
     const reference = this.generateReference();
 
-    await supabase.from("manual_payout_queue").insert({
+    const { error: queueError } = await supabase
+      .from("manual_payout_queue")
+      .insert({
       payout_id: payout.id,
       reference,
       recipient_name: recipient.name,
@@ -440,6 +452,17 @@ export class PayoutService {
       paypal_email: recipient.paypalEmail,
       created_at: new Date().toISOString(),
     });
+
+    // This is the FALLBACK rail — it runs when an automated payout could not be
+    // sent. A fire-and-forget insert meant the queue entry could vanish while
+    // the caller still marked the payout "in_transit", producing a payout that
+    // is owed, believed to be moving, and recorded nowhere. Fail loudly: an
+    // unqueued manual payout must not look like a queued one.
+    if (queueError) {
+      throw new Error(
+        `Failed to queue manual payout ${payout.id} (ref ${reference}): ${queueError.message}`,
+      );
+    }
 
     return reference;
   }
@@ -457,7 +480,7 @@ export class PayoutService {
     const totalAmount = requests.reduce((sum, r) => sum + r.amount, 0);
 
     // Create batch record
-    await supabase.from("payout_batches").insert({
+    const { error: batchError } = await supabase.from("payout_batches").insert({
       id: batchId,
       status: "pending",
       total_amount: totalAmount,
@@ -467,6 +490,14 @@ export class PayoutService {
       failure_count: 0,
       created_at: new Date().toISOString(),
     });
+
+    // Without the batch row the individual payouts still process but are
+    // unreconcilable — there is no record of what was meant to go out together.
+    if (batchError) {
+      throw new Error(
+        `Failed to create payout batch ${batchId}: ${batchError.message}`,
+      );
+    }
 
     // Process payouts
     const payouts: Payout[] = [];
@@ -493,7 +524,7 @@ export class PayoutService {
           ? "failed"
           : "partial";
 
-    await supabase
+    const { error: batchUpdateError } = await supabase
       .from("payout_batches")
       .update({
         status,
@@ -502,6 +533,14 @@ export class PayoutService {
         completed_at: new Date().toISOString(),
       })
       .eq("id", batchId);
+
+    // A batch stuck at "pending" after its payouts finished is indistinguishable
+    // from one that never ran.
+    if (batchUpdateError) {
+      throw new Error(
+        `Failed to finalise payout batch ${batchId}: ${batchUpdateError.message}`,
+      );
+    }
 
     return {
       id: batchId,
@@ -611,13 +650,22 @@ export class PayoutService {
           schedule.day_of_month,
         );
 
-        await supabase
+        const { error: scheduleError } = await supabase
           .from("payout_schedules")
           .update({
             last_payout_date: now.toISOString(),
             next_payout_date: nextPayoutDate.toISOString(),
           })
           .eq("id", schedule.id);
+
+        // If the schedule's cursor does not advance, the next run treats this
+        // schedule as still due and pays it again. Losing this write is a
+        // duplicate-payout bug, not a bookkeeping nit.
+        if (scheduleError) {
+          throw new Error(
+            `Failed to advance payout schedule ${schedule.id}: ${scheduleError.message}`,
+          );
+        }
       }
     }
 
@@ -642,7 +690,14 @@ export class PayoutService {
       .eq("id", payoutId)
       .single();
 
-    if (error) return null;
+    // PGRST116 is a genuine "no such payout". Any other error means the payout
+    // may well exist and we simply could not read it — returning null there
+    // reports "no payout" for what is actually a failed lookup.
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      throw new Error(`Failed to load payout ${payoutId}: ${error.message}`);
+    }
+    if (!data) return null;
     return this.mapPayout(data);
   }
 
@@ -885,7 +940,20 @@ export class PayoutService {
       updateData.failure_reason = failureReason;
     }
 
-    await supabase.from("payouts").update(updateData).eq("id", payoutId);
+    const { error: statusError } = await supabase
+      .from("payouts")
+      .update(updateData)
+      .eq("id", payoutId);
+
+    // The single most dangerous silent failure in this file: this is what
+    // records that a payout reached "paid" or "failed". Losing it leaves the
+    // row stuck at its previous status, so a reconciliation or retry job would
+    // treat an already-sent payout as unsent. Money can go out twice.
+    if (statusError) {
+      throw new Error(
+        `Failed to update payout ${payoutId} to status ${status}: ${statusError.message}`,
+      );
+    }
   }
 
   private calculateNextPayoutDate(
