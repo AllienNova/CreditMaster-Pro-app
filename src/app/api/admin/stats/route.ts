@@ -11,15 +11,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { withRole } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
+import {
+  tierFromPriceId,
+  type SubscriptionTier,
+} from "@/lib/payment/tier-mapping";
 
-// 6-tier price map (CLAUDE.md §10 — Free/Standard/Pro/Family Duo/Family/Family Plus)
-const PRICE_MAP: Record<string, number> = {
+// 6-tier price map (CLAUDE.md §10 — Free/Standard/Pro/Family Duo/Family/Family
+// Plus). Keyed by SubscriptionTier's canonical hyphenated ids (tier-mapping.ts)
+// — NOT the "family_duo"/"family_plus" underscored spelling used in display
+// copy elsewhere. Record<SubscriptionTier, ...> makes a missing tier a
+// compile error instead of a silent $0.
+const PRICE_MAP: Record<SubscriptionTier, number> = {
   free: 0,
   standard: 29.99,
   pro: 99.99,
-  family_duo: 159.99,
+  "family-duo": 159.99,
   family: 199.99,
-  family_plus: 399.99,
+  "family-plus": 399.99,
 };
 
 export const GET = withRole(
@@ -62,17 +70,25 @@ export const GET = withRole(
       if (disputesResult.error) throw disputesResult.error;
       if (resolvedDisputesResult.error) throw resolvedDisputesResult.error;
 
-      // Monthly revenue from active subscriptions using the real 6-tier priceMap
+      // subscriptions has no "plan" column (verified live via \d+
+      // subscriptions -- it's an overloaded table also used by the
+      // detected-recurring-bill tracking feature). The canonical tier lives
+      // in stripe_price_id, resolved via tierFromPriceId() (FND-018's fix).
+      // tierFromPriceId THROWS on an unresolvable price ID rather than
+      // silently defaulting to a tier -- an active row with a stale/unknown
+      // price is a provisioning bug, and understating MRR by silently
+      // excluding it would be exactly the kind of wrong-but-plausible number
+      // this route's header promises never to produce.
       const { data: subscriptions, error: revenueError } = await supabase
         .from("subscriptions")
-        .select("plan")
+        .select("stripe_price_id")
         .eq("status", "active");
 
       if (revenueError) throw revenueError;
 
       const monthlyRevenue =
         subscriptions?.reduce((total, sub) => {
-          return total + (PRICE_MAP[sub.plan] ?? 0);
+          return total + PRICE_MAP[tierFromPriceId(sub.stripe_price_id)];
         }, 0) ?? 0;
 
       // User growth: last 30 days vs previous 30 days

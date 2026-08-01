@@ -74,9 +74,9 @@ describe("ADM-2 – analytics returns real DB data", () => {
     revenueSubscriptions,
   }: {
     disputeCounts: Array<{ status: string; count: number }>;
-    subscriptionCounts: Array<{ plan: string; count: number }>;
+    subscriptionCounts: Array<{ stripe_price_id: string; count: number }>;
     profileCount: number;
-    revenueSubscriptions: Array<{ plan: string }>;
+    revenueSubscriptions: Array<{ stripe_price_id: string }>;
   }) {
     // disputes by status
     const disputeSelectMock = jest.fn().mockResolvedValue({
@@ -130,20 +130,20 @@ describe("ADM-2 – analytics returns real DB data", () => {
     // 10 standard + 4 pro
     const subRangeMock = jest.fn().mockResolvedValue({
       data: [
-        { plan: "standard" },
-        { plan: "standard" },
-        { plan: "standard" },
-        { plan: "standard" },
-        { plan: "standard" },
-        { plan: "standard" },
-        { plan: "standard" },
-        { plan: "standard" },
-        { plan: "standard" },
-        { plan: "standard" },
-        { plan: "pro" },
-        { plan: "pro" },
-        { plan: "pro" },
-        { plan: "pro" },
+        { stripe_price_id: "price_standard" },
+        { stripe_price_id: "price_standard" },
+        { stripe_price_id: "price_standard" },
+        { stripe_price_id: "price_standard" },
+        { stripe_price_id: "price_standard" },
+        { stripe_price_id: "price_standard" },
+        { stripe_price_id: "price_standard" },
+        { stripe_price_id: "price_standard" },
+        { stripe_price_id: "price_standard" },
+        { stripe_price_id: "price_standard" },
+        { stripe_price_id: "price_pro" },
+        { stripe_price_id: "price_pro" },
+        { stripe_price_id: "price_pro" },
+        { stripe_price_id: "price_pro" },
       ],
       error: null,
     });
@@ -223,7 +223,7 @@ describe("ADM-2 – stats returns real DB data with 6-tier priceMap", () => {
     activeSubCount: number,
     totalDisputeCount: number,
     resolvedDisputeCount: number,
-    revenueSubs: Array<{ plan: string }>,
+    revenueSubs: Array<{ stripe_price_id: string }>,
     recentCount: number,
     previousCount: number,
   ) {
@@ -284,12 +284,12 @@ describe("ADM-2 – stats returns real DB data with 6-tier priceMap", () => {
       100, // totalDisputeCount
       80,  // resolvedDisputeCount
       [
-        { plan: "standard" },
-        { plan: "pro" },
-        { plan: "family_duo" },
-        { plan: "family" },
-        { plan: "family_plus" },
-        { plan: "free" },
+        { stripe_price_id: "price_standard" },
+        { stripe_price_id: "price_pro" },
+        { stripe_price_id: "price_family_duo" },
+        { stripe_price_id: "price_family" },
+        { stripe_price_id: "price_family_plus" },
+        { stripe_price_id: "price_free" },
       ],
       20, // recentCount
       10, // previousCount

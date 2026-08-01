@@ -250,10 +250,10 @@ describe("Admin Analytics API – GET /api/admin/analytics", () => {
       // subscriptions plan-counts: .select("plan").range() — terminal (1st subs call)
       const subPlanRangeMock = jest.fn().mockResolvedValue({
         data: [
-          { plan: "free" },
-          { plan: "standard" },
-          { plan: "pro" },
-          { plan: "family_duo" },
+          { stripe_price_id: "price_free" },
+          { stripe_price_id: "price_standard" },
+          { stripe_price_id: "price_pro" },
+          { stripe_price_id: "price_family_duo" },
         ],
         error: null,
       });
@@ -385,7 +385,13 @@ describe("Admin Analytics API – GET /api/admin/analytics", () => {
       expect(tiers).toContain("free");
       expect(tiers).toContain("standard");
       expect(tiers).toContain("pro");
-      expect(tiers).toContain("family_duo");
+      // "family-duo", hyphenated — the canonical SubscriptionTier value from
+      // tier-mapping.ts. The old assertion said "family_duo", which is not a
+      // member of that union and never was; it only passed because the route
+      // echoed back whatever string the fixture's (nonexistent) `plan` column
+      // happened to hold. Now the tier is derived from stripe_price_id, so the
+      // canonical spelling is the only one that can appear.
+      expect(tiers).toContain("family-duo");
     });
 
     it("should return topFeatures as an array with feature and usage", async () => {

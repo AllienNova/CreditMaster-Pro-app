@@ -9,6 +9,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { withRole } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
+import {
+  tierFromPriceId,
+  type SubscriptionTier,
+} from "@/lib/payment/tier-mapping";
 
 function getSupabaseClient() {
   return createClient(
@@ -55,9 +59,14 @@ export const GET = withRole(
     );
 
     // ── subscriptions by plan ──────────────────────────────────────────────
+    // subscriptions has no "plan" column (verified live via \d+
+    // subscriptions). Real tier comes from stripe_price_id via
+    // tierFromPriceId() (FND-018) -- see admin/stats/route.ts for the full
+    // rationale on why an unresolvable price ID throws instead of being
+    // silently excluded from the count.
     const { data: subRows, error: subError } = await supabase
       .from("subscriptions")
-      .select("plan")
+      .select("stripe_price_id")
       .range(0, 99999);
 
     if (subError) {
@@ -69,7 +78,7 @@ export const GET = withRole(
 
     const tierCounts: Record<string, number> = {};
     for (const row of subRows ?? []) {
-      const t = row.plan as string;
+      const t = tierFromPriceId(row.stripe_price_id);
       tierCounts[t] = (tierCounts[t] ?? 0) + 1;
     }
     const subscriptionsByTier = Object.entries(tierCounts).map(
@@ -113,14 +122,18 @@ export const GET = withRole(
       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ];
 
-    // 6-tier price map (CLAUDE.md §10)
-    const priceMap: Record<string, number> = {
+    // 6-tier price map (CLAUDE.md §10). Keyed by SubscriptionTier's
+    // canonical hyphenated ids (tier-mapping.ts) -- NOT the
+    // "family_duo"/"family_plus" underscored spelling used in display copy
+    // elsewhere. Record<SubscriptionTier, ...> makes a missing tier a
+    // compile error instead of a silent $0.
+    const priceMap: Record<SubscriptionTier, number> = {
       free: 0,
       standard: 29.99,
       pro: 99.99,
-      family_duo: 159.99,
+      "family-duo": 159.99,
       family: 199.99,
-      family_plus: 399.99,
+      "family-plus": 399.99,
     };
 
     const currentMonth = new Date().getMonth();
@@ -136,7 +149,7 @@ export const GET = withRole(
 
       const { data: revSubs, error: revError } = await supabase
         .from("subscriptions")
-        .select("plan")
+        .select("stripe_price_id")
         .eq("status", "active")
         .gte("created_at", start.toISOString())
         .lte("created_at", end.toISOString());
@@ -149,7 +162,7 @@ export const GET = withRole(
       }
 
       const revenue = (revSubs ?? []).reduce(
-        (total, sub) => total + (priceMap[sub.plan] ?? 0),
+        (total, sub) => total + priceMap[tierFromPriceId(sub.stripe_price_id)],
         0,
       );
 

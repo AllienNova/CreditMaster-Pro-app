@@ -148,9 +148,9 @@ describe("Admin Stats API – GET /api/admin/stats", () => {
       // real 6-tier priceMap (standard=29.99, pro=99.99, family=199.99)
       const revenueSubsEq = jest.fn().mockResolvedValue({
         data: [
-          { plan: "standard" },
-          { plan: "pro" },
-          { plan: "family" },
+          { stripe_price_id: "price_standard" },
+          { stripe_price_id: "price_pro" },
+          { stripe_price_id: "price_family" },
         ],
         error: null,
       });
