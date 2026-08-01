@@ -136,7 +136,10 @@ class SessionService {
       const { error } = await supabase
         .from("sessions")
         .update({
-          last_active_at: new Date().toISOString(),
+          // Real column is `last_activity`; `last_active_at` exists nowhere on
+          // public.sessions, so every session-activity update failed and
+          // updateSessionActivity always returned success:false.
+          last_activity: new Date().toISOString(),
         })
         .eq("id", sessionId);
 

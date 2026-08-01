@@ -619,7 +619,9 @@ export class GoodwillLetterService {
       .from("goodwill_letters")
       .update({
         status: "sent",
-        sent_date: new Date().toISOString(),
+        // Real column is `sent_at`; `sent_date` does not exist, so marking a
+        // goodwill letter sent errored and the letter stayed in its old status.
+        sent_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", letterId)
