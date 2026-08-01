@@ -41,6 +41,20 @@ const DELIBERATE_EXCLUSIONS = [
   "payments", // revenue ledger; user_id is ON DELETE SET NULL by design
   "audit_logs", // security/compliance trail
   "tax_audit_log", // statutory tax retention
+  "analytics_events", // ON DELETE SET NULL; anonymised aggregate history is retained
+] as const;
+
+const ROUND_4_ADDITIONS = [
+  "shared_goal_members",
+  "financial_journeys",
+  "gig_platforms",
+  "gig_income",
+  "gig_deductions",
+  "net_worth_history",
+  "savings_history",
+  "properties",
+  "crypto_wallets",
+  "crypto_price_alerts",
 ] as const;
 
 const ROUND_3_ADDITIONS = [
@@ -147,7 +161,7 @@ describe("delete_user_data_cascade v_tables integrity", () => {
     expect(duplicates).toEqual([]);
   });
 
-  it.each([...ROUND_2_ADDITIONS, ...ROUND_3_ADDITIONS])(
+  it.each([...ROUND_2_ADDITIONS, ...ROUND_3_ADDITIONS, ...ROUND_4_ADDITIONS])(
     "registers %s for erasure",
     (table) => {
       expect(sql).toMatch(new RegExp(`^\\s*'${table}'`, "m"));
