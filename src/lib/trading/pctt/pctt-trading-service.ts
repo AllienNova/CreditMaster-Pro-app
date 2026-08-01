@@ -11,6 +11,7 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/monitoring/logger";
 import {
   PCTTEngine,
   createPCTTEngine,
@@ -803,12 +804,34 @@ export class PCTTTradingService {
 
   // ============================================================================
   // PERSISTENCE
+  //
+  // pctt_positions does not exist in the Next.js app's Supabase project as of
+  // Wave 7 (docs/qa/triage-trading.md): a repo-wide grep found the only real
+  // constructors of PCTTTradingService in src/lib/trading/autonomous/, whose
+  // standalone-server.ts is explicitly "the Fly.io autonomous trading
+  // service... runs independently of the Next.js app" (its own fly.toml at
+  // src/lib/trading/autonomous/deploy/). Whether that service is deployed —
+  // and therefore whether real broker positions are silently lost on every
+  // restart — cannot be determined from this repo; it is an infrastructure
+  // fact, not a code fact. Left unresolved rather than guessed at.
+  //
+  // These three methods used to discard every {error} outright. That is now
+  // fixed to log loudly (logger.error, not console.error, so it surfaces
+  // through whatever the Fly.io deployment's log pipeline is) instead of
+  // throwing: savePosition/closePositionInDb are called AFTER the broker
+  // order has already succeeded and the real trade has already happened
+  // (pctt-trading-service.ts's executeSetup/closePosition callers already
+  // mutated this.activePositions in memory) — throwing here would risk an
+  // uncaught rejection unwinding past a real, filled broker order with no
+  // caller positioned to reconcile that inconsistency. Logging loudly is the
+  // safe middle ground: diagnosable without corrupting an already-successful
+  // trade result.
   // ============================================================================
 
   private async savePosition(position: ActivePosition): Promise<void> {
     const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from("pctt_positions").upsert({
+    const { error } = await (supabase as any).from("pctt_positions").upsert({
       id: position.id,
       user_id: this.userId,
       symbol: position.symbol,
@@ -827,6 +850,14 @@ export class PCTTTradingService {
       entry_time: position.entryTime.toISOString(),
       status: position.status,
     });
+
+    if (error) {
+      logger.error(
+        `Failed to persist PCTT position ${position.id} — it will not survive a process restart`,
+        new Error(error.message),
+        { userId: this.userId, positionId: position.id, symbol: position.symbol },
+      );
+    }
   }
 
   private async closePositionInDb(
@@ -837,7 +868,7 @@ export class PCTTTradingService {
   ): Promise<void> {
     const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    const { error } = await (supabase as any)
       .from("pctt_positions")
       .update({
         exit_price: exitPrice,
@@ -847,16 +878,32 @@ export class PCTTTradingService {
         status: "closed",
       })
       .eq("id", positionId);
+
+    if (error) {
+      logger.error(
+        `Failed to persist PCTT position close ${positionId} — the position row will still read "open" after this process exits`,
+        new Error(error.message),
+        { userId: this.userId, positionId },
+      );
+    }
   }
 
   async loadPositions(): Promise<void> {
     const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("pctt_positions")
       .select("*")
       .eq("user_id", this.userId)
       .eq("status", "open");
+
+    if (error) {
+      logger.error(
+        `Failed to load PCTT positions for user ${this.userId} — starting with zero known open positions, which may not reflect real broker state`,
+        new Error(error.message),
+        { userId: this.userId },
+      );
+    }
 
     if (data) {
       for (const row of data) {

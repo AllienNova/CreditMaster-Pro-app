@@ -177,10 +177,16 @@ export async function runScanCycle(
     }
   }
 
-  // Persist scan cycle to DB
+  // Persist scan cycle to DB. autonomous_scan_logs does not exist in the
+  // Next.js app's Supabase project as of Wave 7 (docs/qa/triage-trading.md)
+  // — same Fly.io-only reachability question as autonomous_execution_logs
+  // above. The bare try/catch here was dead code for that failure mode:
+  // postgrest-js resolves `{ error }` instead of throwing, so a missing
+  // table never reached the catch. Now the resolved `error` is checked
+  // directly, so a failed write is finally logged.
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabaseAdmin as any)
+    const { error } = await (supabaseAdmin as any)
       .from("autonomous_scan_logs")
       .insert({
         cycle_id: cycleId,
@@ -192,9 +198,15 @@ export async function runScanCycle(
         trades_queued: tradesQueued,
         errors: errors.length > 0 ? errors : null,
       });
-  } catch {
+
+    if (error) {
+      console.error(
+        `[autonomous] Failed to persist scan cycle ${cycleId}: ${error.message}`,
+      );
+    }
+  } catch (err) {
     // Non-blocking — scan log persistence failure shouldn't halt the pipeline
-    console.error(`[autonomous] Failed to persist scan cycle ${cycleId}`);
+    console.error(`[autonomous] Failed to persist scan cycle ${cycleId}`, err);
   }
 
   return {

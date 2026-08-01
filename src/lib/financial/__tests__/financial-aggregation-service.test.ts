@@ -283,6 +283,144 @@ describe("FinancialAggregationService", () => {
     });
   });
 
+  describe("fetchDebtHistory (debt_history table — regression)", () => {
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      // jest.config.js sets restoreMocks: true, which fully detaches a
+      // jest.spyOn before every test — must be re-created fresh here.
+      consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+    });
+
+    it("logs the failure and still returns an empty trend on a query error — a broken read must not read as 'no debt history'", async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "debt_history") {
+          return createMockChain({
+            data: null,
+            error: { message: "relation debt_history does not exist" },
+          });
+        }
+        return createMockChain();
+      });
+
+      const trends = await service.getFinancialTrends(testUserId, {
+        period: "30d",
+      });
+
+      expect(trends.debtTrend.values).toEqual([]);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "fetchDebtHistory failed",
+        expect.objectContaining({
+          userId: testUserId,
+          error: "relation debt_history does not exist",
+        }),
+      );
+    });
+
+    it("maps real rows into trend data points without logging an error", async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "debt_history") {
+          return createMockChain({
+            data: [
+              { date: "2026-06-01", total_debt: 5000 },
+              { date: "2026-07-01", total_debt: 4500 },
+              // total_debt: 0 exercises the `d.total_debt || 0` fallback —
+              // a debt-free snapshot, not a missing/malformed row.
+              { date: "2026-07-15", total_debt: 0 },
+            ],
+            error: null,
+          });
+        }
+        return createMockChain();
+      });
+
+      const trends = await service.getFinancialTrends(testUserId, {
+        period: "30d",
+      });
+
+      expect(trends.debtTrend.values).toHaveLength(3);
+      expect(trends.debtTrend.values[0].value).toBe(5000);
+      expect(trends.debtTrend.values[1].value).toBe(4500);
+      expect(trends.debtTrend.values[2].value).toBe(0);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it("treats a null data payload with no error as an empty (not broken) history", async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "debt_history") {
+          return createMockChain({ data: null, error: null });
+        }
+        return createMockChain();
+      });
+
+      const trends = await service.getFinancialTrends(testUserId, {
+        period: "30d",
+      });
+
+      expect(trends.debtTrend.values).toEqual([]);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("fetchInvestmentHistory (investment_history table — regression)", () => {
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      // jest.config.js sets restoreMocks: true, which fully detaches a
+      // jest.spyOn before every test — must be re-created fresh here.
+      consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+    });
+
+    it("logs the failure and still returns an empty trend on a query error — a broken read must not read as 'no investment history'", async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "investment_history") {
+          return createMockChain({
+            data: null,
+            error: { message: "relation investment_history does not exist" },
+          });
+        }
+        return createMockChain();
+      });
+
+      const trends = await service.getFinancialTrends(testUserId, {
+        period: "30d",
+      });
+
+      expect(trends.investmentTrend.values).toEqual([]);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "fetchInvestmentHistory failed",
+        expect.objectContaining({
+          userId: testUserId,
+          error: "relation investment_history does not exist",
+        }),
+      );
+    });
+
+    it("maps real rows into trend data points without logging an error", async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "investment_history") {
+          return createMockChain({
+            data: [
+              { date: "2026-06-01", total_value: 42000 },
+              { date: "2026-07-01", total_value: 45500 },
+            ],
+            error: null,
+          });
+        }
+        return createMockChain();
+      });
+
+      const trends = await service.getFinancialTrends(testUserId, {
+        period: "30d",
+      });
+
+      expect(trends.investmentTrend.values).toHaveLength(2);
+      expect(trends.investmentTrend.values[0].value).toBe(42000);
+      expect(trends.investmentTrend.values[1].value).toBe(45500);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+  });
+
   describe("cache management", () => {
     it("should clear cache for specific user", async () => {
       await service.getAggregatedContext(testUserId);

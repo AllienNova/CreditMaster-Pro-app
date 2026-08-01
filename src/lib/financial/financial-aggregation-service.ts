@@ -1005,13 +1005,21 @@ export class FinancialAggregationService {
     startDate: Date,
     endDate: Date,
   ): Promise<TrendDataPoint[]> {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("debt_history")
       .select("date, total_debt")
       .eq("user_id", userId)
       .gte("date", startDate.toISOString())
       .lte("date", endDate.toISOString())
       .order("date", { ascending: true });
+
+    if (error) {
+      // A query failure must not read as "no debt history" — log it so a
+      // broken trend fetch is diagnosable, but don't reject the wider
+      // Promise.all in getFinancialTrends() over one sub-fetch.
+      console.error("fetchDebtHistory failed", { userId, error: error.message });
+      return [];
+    }
 
     return (data || []).map((d) => ({
       date: new Date(d.date),
@@ -1024,13 +1032,29 @@ export class FinancialAggregationService {
     startDate: Date,
     endDate: Date,
   ): Promise<TrendDataPoint[]> {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("investment_history")
       .select("date, total_value")
       .eq("user_id", userId)
       .gte("date", startDate.toISOString())
       .lte("date", endDate.toISOString())
       .order("date", { ascending: true });
+
+    if (error) {
+      // A query failure must not read as "no investment history" — log it
+      // so a broken trend fetch is diagnosable, but don't reject the wider
+      // Promise.all in getFinancialTrends() over one sub-fetch. Matches
+      // fetchDebtHistory() above: investment_history is still an unbuilt
+      // table today (same as its savings_history/debt_history/
+      // health_score_history siblings feeding this same aggregation), so
+      // this branch is live on every call until someone builds all four
+      // trend tables together — see docs/qa/triage-trading.md.
+      console.error("fetchInvestmentHistory failed", {
+        userId,
+        error: error.message,
+      });
+      return [];
+    }
 
     return (data || []).map((d) => ({
       date: new Date(d.date),

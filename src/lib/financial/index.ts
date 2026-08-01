@@ -4,37 +4,12 @@
  * Centralized exports for all financial services
  */
 
-// Spending Limit Alerts
-export {
-  SpendingLimitAlertsService,
-  getSpendingLimitAlertsService,
-  type SpendingLimit,
-  type SpendingAlert,
-  type SpendingAnalysis,
-  type LimitPeriod,
-  type AlertSeverity,
-  type AlertStatus,
-  type LimitType,
-  type LimitSummary,
-} from "./spending-limit-alerts-service";
-
-// Manual Account Entry
-export {
-  ManualAccountService,
-  getManualAccountService,
-  type ManualAccount,
-  type ManualAccountType,
-  type AccountCategory,
-  type AccountDetails,
-  type RealEstateDetails,
-  type VehicleDetails,
-  type CryptoDetails,
-  type CollectibleDetails,
-  type LoanDetails,
-  type GenericDetails,
-  type ValueHistoryEntry,
-  type NetWorthSummary,
-} from "./manual-account-service";
+// Manual Account Entry: deleted (Wave 7 remediation, trading/assets cluster).
+// Queried the phantom "manual_accounts" table (never migrated) and had zero
+// importers of this barrel from outside src/lib/financial itself, confirmed
+// via repo-wide grep before deletion — same orphaned-service pattern as
+// crypto-wallet-service.ts and real-estate-tracking-service.ts. See
+// docs/qa/triage-trading.md.
 
 // Bill Calendar
 export { BillCalendarService } from "./bill-calendar-service";

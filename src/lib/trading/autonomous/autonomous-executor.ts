@@ -352,6 +352,15 @@ async function triggerAutonomousKillSwitch(
   }
 }
 
+// autonomous_execution_logs does not exist in the Next.js app's Supabase
+// project as of Wave 7 (docs/qa/triage-trading.md): this whole autonomous/
+// directory only runs on the separate Fly.io autonomous-trading service, so
+// whether the table is needed at all depends on infrastructure state this
+// repo can't answer. The try/catch below used to be dead code for that
+// specific failure: postgrest-js resolves `{ error }` rather than throwing,
+// so a missing-table response was never an exception and the catch never
+// ran. Now the resolved `error` is actually checked, so this audit-log
+// write finally logs its own failure instead of silently doing nothing.
 async function logAutonomousExecution(
   userId: string,
   scanResult: ScanResult,
@@ -359,21 +368,32 @@ async function logAutonomousExecution(
 ): Promise<void> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabaseAdmin as any).from("autonomous_execution_logs").insert({
-      user_id: userId,
-      symbol: scanResult.symbol,
-      side: scanResult.side,
-      q_score: scanResult.qScore,
-      entry_price: executionResult.entryPrice,
-      stop_loss: executionResult.stopLoss,
-      take_profit: executionResult.takeProfit,
-      order_id: executionResult.orderId,
-      success: executionResult.success,
-      error: executionResult.error,
-      operating_mode: executionResult.operatingMode,
-    });
-  } catch {
-    // Non-blocking
-    console.error(`[autonomous] Failed to log execution for ${scanResult.symbol}`);
+    const { error } = await (supabaseAdmin as any)
+      .from("autonomous_execution_logs")
+      .insert({
+        user_id: userId,
+        symbol: scanResult.symbol,
+        side: scanResult.side,
+        q_score: scanResult.qScore,
+        entry_price: executionResult.entryPrice,
+        stop_loss: executionResult.stopLoss,
+        take_profit: executionResult.takeProfit,
+        order_id: executionResult.orderId,
+        success: executionResult.success,
+        error: executionResult.error,
+        operating_mode: executionResult.operatingMode,
+      });
+
+    if (error) {
+      console.error(
+        `[autonomous] Failed to log execution for ${scanResult.symbol}: ${error.message}`,
+      );
+    }
+  } catch (err) {
+    // Non-blocking — genuine network/exception failures land here
+    console.error(
+      `[autonomous] Failed to log execution for ${scanResult.symbol}`,
+      err,
+    );
   }
 }
