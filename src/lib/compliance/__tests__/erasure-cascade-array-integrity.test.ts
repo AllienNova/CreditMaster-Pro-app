@@ -43,6 +43,20 @@ const DELIBERATE_EXCLUSIONS = [
   "tax_audit_log", // statutory tax retention
 ] as const;
 
+const ROUND_3_ADDITIONS = [
+  "credit_builder_applications",
+  "rent_reporting_accounts",
+  "rent_payments",
+  "bill_negotiations",
+  "bill_negotiation_outcomes",
+  "budget_alerts",
+  "financial_alerts",
+  "investment_alerts",
+  "debt_history",
+  "email_logs",
+  "trading_journal",
+] as const;
+
 /** Registered by the 20260731000050 round-2 consolidation. */
 const ROUND_2_ADDITIONS = [
   "credit_builder_actions",
@@ -133,9 +147,12 @@ describe("delete_user_data_cascade v_tables integrity", () => {
     expect(duplicates).toEqual([]);
   });
 
-  it.each(ROUND_2_ADDITIONS)("registers %s for erasure", (table) => {
-    expect(sql).toMatch(new RegExp(`^\\s*'${table}'`, "m"));
-  });
+  it.each([...ROUND_2_ADDITIONS, ...ROUND_3_ADDITIONS])(
+    "registers %s for erasure",
+    (table) => {
+      expect(sql).toMatch(new RegExp(`^\\s*'${table}'`, "m"));
+    },
+  );
 
   it.each(DELIBERATE_EXCLUSIONS)(
     "does NOT register %s — retention is deliberate, see the migration header",
