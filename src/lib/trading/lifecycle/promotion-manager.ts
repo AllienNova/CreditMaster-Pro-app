@@ -30,14 +30,35 @@ const strategyLifecycle = () => db.from("strategy_lifecycle");
 const lifecycleAudit = () => db.from("lifecycle_audit");
 
 // ============================================================================
+// ERRORS
+// ============================================================================
+
+/**
+ * Raised when the lifecycle stage of a strategy cannot be determined.
+ *
+ * The stage gates autonomous trading, so an unreadable stage must stop the
+ * caller rather than resolve to a guess. Mirrors WellnessDataFetchError in
+ * trading/risk/wellness-gate.ts and the fail-closed demotion checks in
+ * ./demotion-rules.ts.
+ */
+export class LifecycleStateUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "LifecycleStateUnavailableError";
+  }
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
 export interface StrategyLifecycleRecord {
   id: string;
   strategy_id: string;
-  current_stage: LifecycleStage;
-  entered_stage_at: string;
+  /** Canonical column is `stage`; there is no `current_stage` column. */
+  stage: LifecycleStage;
+  /** Canonical column is `dwell_start`; there is no `entered_stage_at`. */
+  dwell_start: string;
   promoted_count: number;
   demoted_count: number;
   created_at: string;
@@ -79,13 +100,32 @@ export class PromotionManager {
    */
   async getStrategyStage(strategyId: string): Promise<LifecycleStage> {
     const { data, error } = await strategyLifecycle()
-      .select("current_stage")
+      .select("stage")
       .eq("strategy_id", strategyId)
       .single();
 
-    if (error || !data) return "research";
+    // PGRST116 = no matching row. That is the legitimate "this strategy has
+    // never been staged" case and correctly defaults to the lowest stage.
+    if (error?.code === "PGRST116") return "research";
 
-    return data.current_stage as LifecycleStage;
+    // Any OTHER error means the stage is UNKNOWN, and this value gates
+    // autonomous trading. The previous code collapsed both cases into
+    // `return "research"`, and because it selected a column that does not
+    // exist (current_stage; the real column is `stage`) the error branch fired
+    // on EVERY call — so every strategy reported the lowest stage
+    // unconditionally, and callers went on to overwrite real stage state
+    // computed from a value that was never read. Refuse to guess instead:
+    // this mirrors the fail-closed hardening applied to the sibling
+    // demotion-rules.ts in dc4980e.
+    if (error) {
+      throw new LifecycleStateUnavailableError(
+        `Cannot determine lifecycle stage for strategy ${strategyId}: ${error.message}`,
+      );
+    }
+
+    if (!data) return "research";
+
+    return data.stage as LifecycleStage;
   }
 
   /**
@@ -220,34 +260,59 @@ export class PromotionManager {
       .eq("strategy_id", strategyId)
       .single();
 
+    // Column names below are the CANONICAL ones on strategy_lifecycle: `stage`
+    // and `dwell_start`. The previous code wrote `current_stage` /
+    // `entered_stage_at`, which do not exist on that table, so every write
+    // failed with PGRST204 — and because the result was awaited without ever
+    // reading `error`, the failure was silent and the state machine recorded
+    // nothing. promoted_count / demoted_count were genuinely missing and are
+    // added by 20260731000070.
     if (existing) {
-      await strategyLifecycle()
+      const { error: updateError } = await strategyLifecycle()
         .update({
-          current_stage: toStage,
-          entered_stage_at: now,
+          stage: toStage,
+          dwell_start: now,
           promoted_count: isPromotion
             ? (existing.promoted_count ?? 0) + 1
             : existing.promoted_count ?? 0,
           demoted_count: !isPromotion
             ? (existing.demoted_count ?? 0) + 1
             : existing.demoted_count ?? 0,
+          ...(isPromotion ? { promoted_at: now } : { demoted_at: now }),
+          ...(isPromotion ? {} : { demotion_reason: reason ?? null }),
           updated_at: now,
         })
         .eq("strategy_id", strategyId);
+
+      if (updateError) {
+        throw new LifecycleStateUnavailableError(
+          `Failed to record ${action} for strategy ${strategyId}: ${updateError.message}`,
+        );
+      }
     } else {
-      await strategyLifecycle().insert({
+      const { error: insertError } = await strategyLifecycle().insert({
         strategy_id: strategyId,
-        current_stage: toStage,
-        entered_stage_at: now,
+        stage: toStage,
+        dwell_start: now,
         promoted_count: isPromotion ? 1 : 0,
         demoted_count: !isPromotion ? 1 : 0,
+        ...(isPromotion ? { promoted_at: now } : { demoted_at: now }),
+        ...(isPromotion ? {} : { demotion_reason: reason ?? null }),
         created_at: now,
         updated_at: now,
       });
+
+      if (insertError) {
+        throw new LifecycleStateUnavailableError(
+          `Failed to create lifecycle record for strategy ${strategyId}: ${insertError.message}`,
+        );
+      }
     }
 
-    // Write audit trail
-    await lifecycleAudit().insert({
+    // Write audit trail. A stage transition whose audit row is lost is a
+    // half-recorded state change on a safety-critical machine, so this throws
+    // rather than being fire-and-forget as it was before.
+    const { error: auditError } = await lifecycleAudit().insert({
       strategy_id: strategyId,
       action,
       from_stage: fromStage,
@@ -255,6 +320,12 @@ export class PromotionManager {
       reason: reason ?? `${action} from ${fromStage} to ${toStage}`,
       created_at: now,
     });
+
+    if (auditError) {
+      throw new LifecycleStateUnavailableError(
+        `Failed to write lifecycle audit row for strategy ${strategyId}: ${auditError.message}`,
+      );
+    }
   }
 }
 

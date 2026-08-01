@@ -80,7 +80,10 @@ jest.mock("@/lib/trading/config", () => ({
 
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getPolicy } from "@/lib/trading/config";
-import { PromotionManager } from "../promotion-manager";
+import {
+  PromotionManager,
+  LifecycleStateUnavailableError,
+} from "../promotion-manager";
 import { evaluateGates, getNextStage, getPreviousStage, stageIndex } from "../promotion-gates";
 import { checkDemotionTriggers } from "../demotion-rules";
 import type { LifecycleStage } from "@/lib/trading/config";
@@ -501,16 +504,45 @@ describe("PromotionManager", () => {
 
   describe("getStrategyStage", () => {
     it("returns research when no lifecycle record exists", async () => {
-      const lifecycleChain = chainBuilder({ data: null, error: { message: "not found" } });
+      // PGRST116 is what postgrest actually returns for "no matching row" from
+      // .single(). The old fixture used a bare { message } with no code, which
+      // the pre-fix code never branched on — it collapsed EVERY error into
+      // "research", so this test passed without exercising the distinction it
+      // claims to cover.
+      const lifecycleChain = chainBuilder({
+        data: null,
+        error: { code: "PGRST116", message: "no rows returned" },
+      });
       setupTableMocks({ strategy_lifecycle: lifecycleChain });
 
       const stage = await manager.getStrategyStage("strat-1");
       expect(stage).toBe("research");
     });
 
+    it("THROWS on a genuine query error instead of defaulting to research", async () => {
+      // The stage gates autonomous trading. Before this fix getStrategyStage
+      // selected a column that does not exist (current_stage; the real column
+      // is `stage`), so the error branch fired on EVERY call and every strategy
+      // silently reported the lowest stage. Callers then wrote real stage state
+      // derived from a value that had never been read.
+      //
+      // This is the same fail-open class that dc4980e closed in the sibling
+      // demotion-rules.ts. An unreadable stage must stop the caller, not
+      // resolve to a guess.
+      const lifecycleChain = chainBuilder({
+        data: null,
+        error: { code: "42501", message: "permission denied" },
+      });
+      setupTableMocks({ strategy_lifecycle: lifecycleChain });
+
+      await expect(manager.getStrategyStage("strat-1")).rejects.toThrow(
+        LifecycleStateUnavailableError,
+      );
+    });
+
     it("returns the stored stage from database", async () => {
       const lifecycleChain = chainBuilder({
-        data: { current_stage: "paper" },
+        data: { stage:"paper" },
         error: null,
       });
       setupTableMocks({ strategy_lifecycle: lifecycleChain });
@@ -527,7 +559,7 @@ describe("PromotionManager", () => {
   describe("attemptPromotion", () => {
     it("rejects promotion from autonomous_live (already at max)", async () => {
       const lifecycleChain = chainBuilder({
-        data: { current_stage: "autonomous_live" },
+        data: { stage:"autonomous_live" },
         error: null,
       });
       setupTableMocks({ strategy_lifecycle: lifecycleChain });
@@ -537,9 +569,58 @@ describe("PromotionManager", () => {
       expect(result.reason).toContain("highest stage");
     });
 
+    it("THROWS when the lifecycle_audit write fails, rather than half-recording the transition", async () => {
+      // `lifecycle_audit` existed in no migration until 20260731000070, and the
+      // insert was fire-and-forget — awaited, but its `error` never read. So
+      // every transition wrote a strategy_lifecycle row and silently discarded
+      // its audit row: half the state of a safety-critical state machine, lost
+      // with no signal.
+      //
+      // NOTE ON THE FIXTURE: makeInsertChain() is deliberately NOT used here.
+      // It is not thenable, so `await chain.insert(...)` yields the chain object
+      // and destructuring `{ error }` off it gives undefined — meaning the audit
+      // failure path is UNREACHABLE through that helper. A mutation that
+      // re-swallows this error passes the whole suite when built on it. Use the
+      // thenable chainBuilder so the rejection is actually observable.
+      const lifecycleChain = chainBuilder({
+        data: { stage: "research", id: "lc-1", promoted_count: 0, demoted_count: 0 },
+        error: null,
+      });
+      const metricsChain = chainBuilder({
+        data: {
+          signal_count: 100,
+          sharpe_ratio: 0.5,
+          max_drawdown_pct: 0.05,
+          hit_rate_pct: 0.5,
+          correlation: 0.5,
+          sev1_free_days: 5,
+          fill_sim_error_bps: 1,
+          trade_count: 10,
+          slippage_bps: 2,
+          has_violations: false,
+          dwell_days: 2,
+        },
+        error: null,
+      });
+      const failingAuditChain = chainBuilder({
+        data: null,
+        error: { message: 'relation "lifecycle_audit" does not exist' },
+      });
+
+      setupTableMocks({
+        strategy_lifecycle: lifecycleChain,
+        strategy_metrics: metricsChain,
+        lifecycle_audit: failingAuditChain,
+      });
+
+      await expect(manager.attemptPromotion("strat-1")).rejects.toThrow(
+        LifecycleStateUnavailableError,
+      );
+    });
+
     it("promotes from research to replay when gates pass", async () => {
       const lifecycleChain = chainBuilder({
-        data: { current_stage: "research", id: "lc-1", promoted_count: 0, demoted_count: 0 },
+        data: { stage:"research", id: "lc-1", promoted_count: 0, demoted_count: 0 },
         error: null,
       });
       const metricsChain = chainBuilder({
@@ -574,7 +655,7 @@ describe("PromotionManager", () => {
 
     it("rejects promotion when gates fail", async () => {
       const lifecycleChain = chainBuilder({
-        data: { current_stage: "replay" },
+        data: { stage:"replay" },
         error: null,
       });
       const metricsChain = chainBuilder({
@@ -607,7 +688,7 @@ describe("PromotionManager", () => {
 
     it("rejects promotion when metrics are missing", async () => {
       const lifecycleChain = chainBuilder({
-        data: { current_stage: "research" },
+        data: { stage:"research" },
         error: null,
       });
       const metricsChain = chainBuilder({ data: null, error: { message: "not found" } });
@@ -631,7 +712,7 @@ describe("PromotionManager", () => {
     it("demotes one stage down", async () => {
       const lifecycleChain = chainBuilder({
         data: {
-          current_stage: "paper",
+          stage:"paper",
           id: "lc-1",
           promoted_count: 3,
           demoted_count: 0,
@@ -651,7 +732,7 @@ describe("PromotionManager", () => {
 
     it("returns research if already at research (no further demotion)", async () => {
       const lifecycleChain = chainBuilder({
-        data: { current_stage: "research" },
+        data: { stage:"research" },
         error: null,
       });
       setupTableMocks({ strategy_lifecycle: lifecycleChain });
@@ -668,7 +749,7 @@ describe("PromotionManager", () => {
   describe("canTrade", () => {
     it("returns not allowed for research stage (0% budget)", async () => {
       const lifecycleChain = chainBuilder({
-        data: { current_stage: "research" },
+        data: { stage:"research" },
         error: null,
       });
       setupTableMocks({ strategy_lifecycle: lifecycleChain });
@@ -680,7 +761,7 @@ describe("PromotionManager", () => {
 
     it("returns not allowed for replay stage (0% budget)", async () => {
       const lifecycleChain = chainBuilder({
-        data: { current_stage: "replay" },
+        data: { stage:"replay" },
         error: null,
       });
       setupTableMocks({ strategy_lifecycle: lifecycleChain });
@@ -692,7 +773,7 @@ describe("PromotionManager", () => {
 
     it("returns not allowed for shadow stage (0% budget)", async () => {
       const lifecycleChain = chainBuilder({
-        data: { current_stage: "shadow" },
+        data: { stage:"shadow" },
         error: null,
       });
       setupTableMocks({ strategy_lifecycle: lifecycleChain });
@@ -704,7 +785,7 @@ describe("PromotionManager", () => {
 
     it("returns allowed for paper stage (0.5% budget, 10 positions)", async () => {
       const lifecycleChain = chainBuilder({
-        data: { current_stage: "paper" },
+        data: { stage:"paper" },
         error: null,
       });
       setupTableMocks({ strategy_lifecycle: lifecycleChain });
@@ -717,7 +798,7 @@ describe("PromotionManager", () => {
 
     it("returns allowed for supervised_live (25% budget, 5 positions)", async () => {
       const lifecycleChain = chainBuilder({
-        data: { current_stage: "supervised_live" },
+        data: { stage:"supervised_live" },
         error: null,
       });
       setupTableMocks({ strategy_lifecycle: lifecycleChain });
@@ -730,7 +811,7 @@ describe("PromotionManager", () => {
 
     it("returns allowed for autonomous_live (100% budget, unlimited positions)", async () => {
       const lifecycleChain = chainBuilder({
-        data: { current_stage: "autonomous_live" },
+        data: { stage:"autonomous_live" },
         error: null,
       });
       setupTableMocks({ strategy_lifecycle: lifecycleChain });
