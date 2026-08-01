@@ -178,28 +178,32 @@ export class SharedGoalsService {
     if (error) throw error;
 
     // Add creator as owner
-    await this.supabase.from("shared_goal_members").insert({
-      id: crypto.randomUUID(),
-      goal_id: newGoal.id,
-      user_id: creatorId,
-      display_name: creatorName,
-      role: "owner",
-      total_contributed: 0,
-      contribution_count: 0,
-      show_contribution_amounts: true,
-      is_active: true,
-      joined_at: now.toISOString(),
-    });
+    const { error: memberError } = await this.supabase
+      .from("shared_goal_members")
+      .insert({
+        id: crypto.randomUUID(),
+        goal_id: newGoal.id,
+        user_id: creatorId,
+        display_name: creatorName,
+        role: "owner",
+        total_contributed: 0,
+        contribution_count: 0,
+        show_contribution_amounts: true,
+        is_active: true,
+        joined_at: now.toISOString(),
+      });
+    if (memberError) throw memberError;
 
     return this.goalFromDb(data);
   }
 
   async getGoal(goalId: string): Promise<SharedGoal | null> {
-    const { data } = await this.supabase
+    const { data, error } = await this.supabase
       .from("shared_goals")
       .select("*")
       .eq("id", goalId)
       .single();
+    if (error && error.code !== "PGRST116") throw error;
     if (!data) return null;
     const goal = this.goalFromDb(data);
     goal.members = await this.getMembers(goalId);
@@ -207,40 +211,50 @@ export class SharedGoalsService {
   }
 
   async getUserGoals(userId: string): Promise<SharedGoal[]> {
-    const { data: memberData } = await this.supabase
+    const { data: memberData, error: memberError } = await this.supabase
       .from("shared_goal_members")
       .select("goal_id")
       .eq("user_id", userId)
       .eq("is_active", true);
+    if (memberError) throw memberError;
     if (!memberData?.length) return [];
 
-    const { data } = await this.supabase
+    const { data, error } = await this.supabase
       .from("shared_goals")
       .select("*")
       .in(
         "id",
         memberData.map((m) => m.goal_id),
       );
+    if (error) throw error;
     return (data || []).map(this.goalFromDb);
   }
 
   async getMembers(goalId: string): Promise<SharedGoalMember[]> {
-    const { data } = await this.supabase
+    const { data, error } = await this.supabase
       .from("shared_goal_members")
       .select("*")
       .eq("goal_id", goalId)
       .eq("is_active", true);
+    if (error) throw error;
     return (data || []).map(this.memberFromDb);
   }
 
+  /**
+   * A real query failure must never present the same way as "genuinely not
+   * a member" — the latter is an expected authorization outcome, the former
+   * is a system failure that should surface as one, not get relabeled into
+   * a misleading "Not a member" error.
+   */
   private async assertMember(goalId: string, userId: string): Promise<void> {
-    const { data } = await this.supabase
+    const { data, error } = await this.supabase
       .from("shared_goal_members")
       .select("id")
       .eq("goal_id", goalId)
       .eq("user_id", userId)
       .eq("is_active", true)
       .single();
+    if (error && error.code !== "PGRST116") throw error;
     if (!data) throw new Error("Not a member of this goal");
   }
 
@@ -278,30 +292,35 @@ export class SharedGoalsService {
     userId: string,
     displayName: string,
   ): Promise<void> {
-    const { data: inv } = await this.supabase
+    const { data: inv, error: invError } = await this.supabase
       .from("shared_goal_invitations")
       .select("*")
       .eq("id", invitationId)
       .single();
+    if (invError && invError.code !== "PGRST116") throw invError;
     if (!inv || inv.status !== "pending") throw new Error("Invalid invitation");
 
-    await this.supabase.from("shared_goal_members").insert({
-      id: crypto.randomUUID(),
-      goal_id: inv.goal_id,
-      user_id: userId,
-      display_name: displayName,
-      role: inv.role,
-      total_contributed: 0,
-      contribution_count: 0,
-      show_contribution_amounts: true,
-      is_active: true,
-      joined_at: new Date().toISOString(),
-    });
+    const { error: memberError } = await this.supabase
+      .from("shared_goal_members")
+      .insert({
+        id: crypto.randomUUID(),
+        goal_id: inv.goal_id,
+        user_id: userId,
+        display_name: displayName,
+        role: inv.role,
+        total_contributed: 0,
+        contribution_count: 0,
+        show_contribution_amounts: true,
+        is_active: true,
+        joined_at: new Date().toISOString(),
+      });
+    if (memberError) throw memberError;
 
-    await this.supabase
+    const { error: updateError } = await this.supabase
       .from("shared_goal_invitations")
       .update({ status: "accepted" })
       .eq("id", invitationId);
+    if (updateError) throw updateError;
   }
 
   async recordContribution(
@@ -353,7 +372,7 @@ export class SharedGoalsService {
     content: string,
   ): Promise<void> {
     await this.assertMember(goalId, userId);
-    await this.supabase.from("shared_goal_updates").insert({
+    const { error } = await this.supabase.from("shared_goal_updates").insert({
       id: crypto.randomUUID(),
       goal_id: goalId,
       author_name: authorName,
@@ -361,16 +380,18 @@ export class SharedGoalsService {
       content,
       created_at: new Date().toISOString(),
     });
+    if (error) throw error;
   }
 
   async getUpdates(goalId: string, userId: string): Promise<GoalUpdate[]> {
     await this.assertMember(goalId, userId);
-    const { data } = await this.supabase
+    const { data, error } = await this.supabase
       .from("shared_goal_updates")
       .select("*")
       .eq("goal_id", goalId)
       .order("created_at", { ascending: false })
       .limit(50);
+    if (error) throw error;
     return (data || []).map(this.updateFromDb);
   }
 
