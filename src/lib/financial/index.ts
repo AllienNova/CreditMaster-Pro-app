@@ -4,27 +4,6 @@
  * Centralized exports for all financial services
  */
 
-// Auto-Save Rules
-export {
-  AutoSaveRulesService,
-  getAutoSaveRulesService,
-  type AutoSaveRule,
-  type RuleType,
-  type RuleStatus,
-  type RuleFrequency,
-  type TriggerType,
-  type RuleConfig,
-  type RoundUpConfig,
-  type PercentageConfig,
-  type FixedAmountConfig,
-  type GoalContributionConfig,
-  type PaycheckSplitConfig,
-  type SurplusSweepConfig,
-  type WindfallCaptureConfig,
-  type SaveTransfer,
-  type RuleSummary,
-} from "./auto-save-rules-service";
-
 // Spending Limit Alerts
 export {
   SpendingLimitAlertsService,

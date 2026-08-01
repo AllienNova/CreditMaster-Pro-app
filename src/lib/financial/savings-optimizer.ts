@@ -10,9 +10,43 @@
  */
 
 import { getSupabase } from "@/lib/supabase/client";
+import {
+  createClient as createSupabaseClient,
+  SupabaseClient,
+} from "@supabase/supabase-js";
 import { logger } from "@/lib/monitoring/logger";
 
 const supabase = getSupabase();
+
+/**
+ * Service-role client for getExistingGoals()'s `financial_goals` read only
+ * — see that method's doc comment for why getSupabase() can't satisfy its
+ * RLS policy. Untyped (not the shared `supabaseAdmin` from
+ * @/lib/supabase/server): financial_goals' new savings-automation columns
+ * (category, start_date, ...) aren't in the generated `Database` type, so
+ * the typed client's `<Database>` generic infers `never` and rejects the
+ * call at compile time — same root cause and fix as plaid-service.ts's
+ * getServiceRoleClient(). Scoped to this one call site rather than
+ * swapping the file's ~140 other queries, which belong to other tables /
+ * other triage clusters outside this fix's scope.
+ */
+let _savingsGoalsServiceRoleClient: SupabaseClient | null = null;
+function getServiceRoleClient(): SupabaseClient {
+  if (!_savingsGoalsServiceRoleClient) {
+    _savingsGoalsServiceRoleClient = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+  }
+  return _savingsGoalsServiceRoleClient;
+}
+const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_target, prop, receiver) {
+    const client = getServiceRoleClient();
+    const value = Reflect.get(client, prop, receiver);
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+});
 import { getModelRouter, TaskType } from "@/lib/model-router";
 import type {
   SavingsAnalysis,
@@ -1319,10 +1353,25 @@ Provide brief, actionable insights (1-2 sentences each).`;
 
   /**
    * Get existing savings goals for user
+   *
+   * `savings_goals` has never existed on the live schema — the real table
+   * is `financial_goals` (verified 2026-07-31; see savings-automation-
+   * service.ts, the reachable writer of this same table, for the full
+   * rename rationale). Uses `supabaseAdmin`: `getSupabase()` (this class's
+   * file-level client) carries no forwarded JWT, so `auth.uid()` is NULL
+   * and `financial_goals`' `auth.uid() = user_id` RLS policies would filter
+   * out every row — the service already scopes explicitly via
+   * `.eq("user_id", userId)` below, so bypassing RLS does not widen access.
+   *
+   * `progress_percentage`/`projected_completion_date`/`on_track` are not
+   * persisted columns — nothing in this codebase writes them. Computed
+   * in-memory here using the same formula savings-automation-service.ts's
+   * mapGoalFromDb() already uses, rather than adding three always-NULL
+   * columns that no writer would ever populate.
    */
   private async getExistingGoals(userId: string): Promise<SavingsGoal[]> {
-    const { data: goals, error } = await supabase
-      .from("savings_goals")
+    const { data: goals, error } = await supabaseAdmin
+      .from("financial_goals")
       .select("*")
       .eq("user_id", userId)
       .in("status", ["active", "paused"]);
@@ -1332,32 +1381,66 @@ Provide brief, actionable insights (1-2 sentences each).`;
       return [];
     }
 
-    return goals.map((g) => ({
-      id: g.id,
-      userId: g.user_id,
-      name: g.name,
-      category: g.category,
-      status: g.status,
-      targetAmount: g.target_amount,
-      currentAmount: g.current_amount,
-      targetDate: g.target_date ? new Date(g.target_date) : undefined,
-      startDate: new Date(g.start_date),
-      completedAt: g.completed_at ? new Date(g.completed_at) : undefined,
-      autoSaveEnabled: g.auto_save_enabled,
-      linkedRuleIds: g.linked_rule_ids || [],
-      priority: g.priority,
-      progressPercentage: g.progress_percentage,
-      projectedCompletionDate: g.projected_completion_date
-        ? new Date(g.projected_completion_date)
-        : undefined,
-      onTrack: g.on_track,
-      contributions: [],
-      icon: g.icon,
-      color: g.color,
-      notes: g.notes,
-      createdAt: new Date(g.created_at),
-      updatedAt: new Date(g.updated_at),
-    }));
+    const now = new Date();
+
+    return goals.map((g) => {
+      const targetDate = g.target_date ? new Date(g.target_date) : undefined;
+      const startDate = new Date(g.start_date);
+
+      let progressPercentage = 0;
+      let onTrack = true;
+      let projectedCompletionDate: Date | undefined;
+
+      if (g.target_amount > 0) {
+        progressPercentage = Math.min(
+          100,
+          (g.current_amount / g.target_amount) * 100,
+        );
+      }
+
+      if (targetDate && g.current_amount < g.target_amount) {
+        const totalDays =
+          (targetDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        const elapsedDays =
+          (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        const expectedProgress = (elapsedDays / totalDays) * 100;
+        onTrack = progressPercentage >= expectedProgress * 0.9;
+
+        if (g.current_amount > 0 && elapsedDays > 0) {
+          const dailyRate = g.current_amount / elapsedDays;
+          const remainingAmount = g.target_amount - g.current_amount;
+          const daysToComplete = remainingAmount / dailyRate;
+          projectedCompletionDate = new Date(
+            now.getTime() + daysToComplete * 24 * 60 * 60 * 1000,
+          );
+        }
+      }
+
+      return {
+        id: g.id,
+        userId: g.user_id,
+        name: g.name,
+        category: g.category,
+        status: g.status,
+        targetAmount: g.target_amount,
+        currentAmount: g.current_amount,
+        targetDate,
+        startDate,
+        completedAt: g.completed_at ? new Date(g.completed_at) : undefined,
+        autoSaveEnabled: g.auto_save_enabled,
+        linkedRuleIds: g.linked_rule_ids || [],
+        priority: g.priority,
+        progressPercentage: Math.round(progressPercentage * 10) / 10,
+        projectedCompletionDate,
+        onTrack,
+        contributions: [],
+        icon: g.icon,
+        color: g.color,
+        notes: g.notes,
+        createdAt: new Date(g.created_at),
+        updatedAt: new Date(g.updated_at),
+      };
+    });
   }
 
   /**

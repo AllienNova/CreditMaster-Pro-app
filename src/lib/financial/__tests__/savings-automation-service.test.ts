@@ -17,18 +17,33 @@ import type {
 } from "../types/savings.types";
 
 // ---------------------------------------------------------------------------
-// Mock Supabase (uses @/lib/supabase/client with getSupabase pattern)
+// Mock Supabase
+//
+// savings-automation-service.ts reads/writes financial_goals and the three
+// savings_* tables via a lazily constructed service-role client built on
+// @supabase/supabase-js's createClient directly (not getSupabase()) — see
+// the service's top-of-file comment: none of these tables/columns are in
+// the generated Database type, so the shared typed supabaseAdmin can't
+// query them without touching types.ts or an `any` cast (same root cause
+// as plaid-service.ts's getServiceRoleClient(), mocked the same way there).
+// Both mocks below share the SAME underlying spy so this suite doesn't
+// depend on which import path the production code actually calls.
 // ---------------------------------------------------------------------------
-jest.mock("@/lib/supabase/client", () => {
-  const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
-});
+const fromSpy = jest.fn();
+
+jest.mock("@/lib/supabase/client", () => ({
+  getSupabase: () => ({ from: fromSpy }),
+}));
+
+jest.mock("@supabase/supabase-js", () => ({
+  createClient: () => ({ from: fromSpy }),
+}));
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 function supabase() {
-  return require("@/lib/supabase/client").getSupabase();
+  return { from: fromSpy };
 }
 
 const NOW = "2026-02-20T12:00:00.000Z";
@@ -321,7 +336,7 @@ describe("SavingsAutomationService", () => {
       const contribRow = makeContributionRow();
       const sb = supabase();
       sb.from.mockImplementation((table: string) => {
-        if (table === "savings_goals") {
+        if (table === "financial_goals") {
           return chainMock({ data: [goalRow], error: null });
         }
         // savings_contributions
@@ -348,7 +363,7 @@ describe("SavingsAutomationService", () => {
       const contribRow = makeContributionRow();
       const sb = supabase();
       sb.from.mockImplementation((table: string) => {
-        if (table === "savings_goals") {
+        if (table === "financial_goals") {
           return chainMock({ data: goalRow, error: null });
         }
         return chainMock({ data: [contribRow], error: null });
@@ -467,7 +482,7 @@ describe("SavingsAutomationService", () => {
           // getContributions — returns array (awaited without .single())
           return chainMock({ data: [contribRow], error: null });
         }
-        // savings_goals — both getGoal and update
+        // financial_goals — both getGoal and update
         return chainMock({ data: goalRow, error: null });
       });
 
@@ -595,7 +610,7 @@ describe("SavingsAutomationService", () => {
         if (table === "savings_rules") {
           return chainMock({ data: [ruleRow], error: null });
         }
-        if (table === "savings_goals") {
+        if (table === "financial_goals") {
           return chainMock({ data: [goalRow], error: null });
         }
         if (table === "savings_contributions") {
