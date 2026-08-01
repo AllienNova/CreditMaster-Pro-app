@@ -95,9 +95,14 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
       { id: "s2", plan: "basic", status: "active", amount: 29 },
       { id: "s3", plan: "premium", status: "canceled", amount: 79 },
     ];
+    // The payments ledger stores INTEGER MINOR UNITS in amount_cents, and the
+    // period column is paid_at. This fixture previously used `amount` and
+    // `created_at` — neither of which exists on the table
+    // (20260731000020_payments_revenue_ledger.sql). 7900 + 2900 cents = $108,
+    // preserving this suite's original expectation.
     const paymentsData = [
-      { amount: 79, created_at: new Date().toISOString() },
-      { amount: 29, created_at: new Date().toISOString() },
+      { amount_cents: 7900, paid_at: new Date().toISOString() },
+      { amount_cents: 2900, paid_at: new Date().toISOString() },
     ];
 
     beforeEach(() => {
@@ -202,6 +207,36 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
 
       // 79 + 29 = 108
       expect(body.metrics.revenue).toBe(108);
+    });
+
+    it("returns 500 on a payments query error rather than reporting $0 revenue", async () => {
+      // Before 20260731000020 this route queried a `payments` table that no
+      // migration created. PostgREST RESOLVES an {error} rather than throwing,
+      // and the route collapsed it with `|| 0` — so the admin dashboard showed
+      // a confident "$0 revenue" that was structurally incapable of being
+      // anything else. A broken query and a genuinely empty period must not be
+      // indistinguishable to an operator.
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "payments") {
+          return {
+            select: jest.fn().mockReturnValue({
+              gte: jest.fn().mockResolvedValue({
+                data: null,
+                error: { message: "permission denied for table payments" },
+              }),
+            }),
+          };
+        }
+        return {
+          select: jest.fn().mockResolvedValue({ data: [], count: 0 }),
+        };
+      });
+
+      const res = await GET(makeRequest());
+      expect(res.status).toBe(500);
+
+      const body = await res.json();
+      expect(body.metrics?.revenue).toBeUndefined();
     });
 
     it("should include the requested period in the response", async () => {
