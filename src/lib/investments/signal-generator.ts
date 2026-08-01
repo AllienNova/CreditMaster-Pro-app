@@ -1336,18 +1336,35 @@ Format as a JSON array of strings.`;
 
     // Update signal status
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    // Canonical columns. Three of the six names used before did not exist and
+    // had real equivalents (exit_price -> outcome_price, closed_at ->
+    // outcome_date, actual_return -> outcome_return_percent); `status` was
+    // redundant with `outcome`, set in the same statement, so closing the
+    // signal now clears `is_active` — the real column that expresses it.
+    // entry_price and executed_at are genuinely new (20260731000170): the table
+    // recorded how a signal ENDED but never how it BEGAN.
+    //
+    // The whole UPDATE failed on the first nonexistent name, so no signal
+    // outcome was ever persisted — trackSignalOutcome returned its result
+    // object to the caller while the row stayed untouched.
+    const { error: outcomeError } = await (supabase as any)
       .from("trading_signals")
       .update({
-        status: outcome.status,
+        is_active: false,
         entry_price: outcome.entryPrice,
-        exit_price: outcome.exitPrice,
+        outcome_price: outcome.exitPrice,
         executed_at: entryDate.toISOString(),
-        closed_at: exitDate?.toISOString(),
+        outcome_date: exitDate?.toISOString(),
         outcome: outcomeType,
-        actual_return: returnPercent,
+        outcome_return_percent: returnPercent,
       })
       .eq("id", signalId);
+
+    if (outcomeError) {
+      throw new Error(
+        `Failed to persist signal outcome for ${signalId}: ${outcomeError.message}`,
+      );
+    }
 
     return signalOutcome;
   }
