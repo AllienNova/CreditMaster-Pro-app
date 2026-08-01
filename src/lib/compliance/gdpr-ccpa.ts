@@ -64,6 +64,46 @@ export interface AIInteractionRecord {
   timestamp: Date;
   prompt?: string;
   response?: string;
+  /**
+   * Present for coaching sessions, whose subject line is personal data in its
+   * own right and has no other field to live in. Optional so the two
+   * message-shaped sources are unaffected.
+   */
+  topic?: string;
+}
+
+/**
+ * Normalise one chat-message row into an export record.
+ *
+ * A message row carries a single `content` plus a `role`, not a prompt/response
+ * pair. Placing the user's own words in `prompt` and everything else in
+ * `response` keeps the exported record faithful to who authored what.
+ */
+function toInteraction(row: {
+  id: string;
+  source: string;
+  role?: string;
+  content?: string;
+  at: string;
+}): AIInteractionRecord {
+  const isUser = row.role === "user";
+  return {
+    id: row.id,
+    type: `${row.source}:${row.role ?? "unknown"}`,
+    timestamp: new Date(row.at),
+    prompt: isUser ? row.content : undefined,
+    response: isUser ? undefined : row.content,
+  };
+}
+
+/**
+ * Render a jsonb column for export. Returns undefined for null/absent so the
+ * field is omitted rather than exported as the string "null".
+ */
+function serialiseJsonField(value: unknown): string | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value === "string") return value;
+  return JSON.stringify(value);
 }
 
 export interface LogRecord {
@@ -424,27 +464,133 @@ export class GDPRComplianceService {
     }));
   }
 
+  /**
+   * Art. 15 export of the user's AI interactions.
+   *
+   * This previously queried a single table, `ai_interactions`, which exists in
+   * NO migration. Combined with the honest-failure fix, that meant EVERY data
+   * export threw — the right of access was completely unexercisable. Before
+   * that fix it was worse: the error was swallowed and the export reported
+   * success with an empty AI section, which is an affirmative misstatement to
+   * the data subject.
+   *
+   * There is no single AI table. The user's AI data is spread across three
+   * real tables, and a right-of-access response that returned only one of them
+   * would be incomplete:
+   *
+   *   chat_messages           — general assistant. Has NO user_id column; it
+   *                             is reachable only through
+   *                             chat_sessions.user_id via session_id. A naive
+   *                             .eq("user_id", ...) here fails at runtime.
+   *   financial_chat_messages — financial assistant. Carries user_id directly.
+   *   ai_coaching_sessions    — coaching. Carries user_id directly.
+   *
+   * Every query throws on error rather than degrading to []: silently dropping
+   * a category from someone's own data export is the failure mode this whole
+   * method exists to avoid.
+   */
   private async getUserAIInteractions(
     userId: string,
   ): Promise<AIInteractionRecord[]> {
-    const { data, error } = await this.db
-      .from("ai_interactions")
-      .select("id, type, timestamp, prompt, response")
+    const records: AIInteractionRecord[] = [];
+
+    // ── chat_messages, reached via the user's sessions ──────────────────────
+    const { data: sessionRows, error: sessionError } = await this.db
+      .from("chat_sessions")
+      .select("id")
       .eq("user_id", userId);
 
-    if (error) {
+    if (sessionError) {
       throw new Error(
-        `Failed to load AI interactions for export: ${error.message}`,
+        `Failed to load chat sessions for export: ${sessionError.message}`,
       );
     }
 
-    return ((data ?? []) as Array<Record<string, unknown>>).map((a) => ({
-      id: a.id as string,
-      type: a.type as string,
-      timestamp: new Date(a.timestamp as string),
-      prompt: a.prompt as string | undefined,
-      response: a.response as string | undefined,
-    }));
+    const sessionIds = ((sessionRows ?? []) as Array<{ id: string }>).map(
+      (s) => s.id,
+    );
+
+    // Skip the follow-up entirely when there are no sessions — an empty IN ()
+    // list is not a meaningful query.
+    if (sessionIds.length > 0) {
+      const { data: messageRows, error: messageError } = await this.db
+        .from("chat_messages")
+        .select("id, role, content, timestamp")
+        .in("session_id", sessionIds);
+
+      if (messageError) {
+        throw new Error(
+          `Failed to load chat messages for export: ${messageError.message}`,
+        );
+      }
+
+      records.push(
+        ...((messageRows ?? []) as Array<Record<string, unknown>>).map((m) =>
+          toInteraction({
+            id: m.id as string,
+            source: "chat",
+            role: m.role as string | undefined,
+            content: m.content as string | undefined,
+            at: m.timestamp as string,
+          }),
+        ),
+      );
+    }
+
+    // ── financial_chat_messages ────────────────────────────────────────────
+    const { data: finRows, error: finError } = await this.db
+      .from("financial_chat_messages")
+      .select("id, role, content, created_at")
+      .eq("user_id", userId);
+
+    if (finError) {
+      throw new Error(
+        `Failed to load financial chat messages for export: ${finError.message}`,
+      );
+    }
+
+    records.push(
+      ...((finRows ?? []) as Array<Record<string, unknown>>).map((m) =>
+        toInteraction({
+          id: m.id as string,
+          source: "financial_chat",
+          role: m.role as string | undefined,
+          content: m.content as string | undefined,
+          at: m.created_at as string,
+        }),
+      ),
+    );
+
+    // ── ai_coaching_sessions ───────────────────────────────────────────────
+    const { data: coachRows, error: coachError } = await this.db
+      .from("ai_coaching_sessions")
+      .select("id, session_type, topic, content, user_response, created_at")
+      .eq("user_id", userId);
+
+    if (coachError) {
+      throw new Error(
+        `Failed to load AI coaching sessions for export: ${coachError.message}`,
+      );
+    }
+
+    records.push(
+      ...((coachRows ?? []) as Array<Record<string, unknown>>).map((c) => ({
+        id: c.id as string,
+        type: `coaching:${(c.session_type as string) ?? "unknown"}`,
+        timestamp: new Date(c.created_at as string),
+        topic: (c.topic as string | undefined) ?? undefined,
+        // user_response is the data subject's own input, content is the
+        // model's output. Both are personal data and both must be exported.
+        prompt: serialiseJsonField(c.user_response),
+        response: serialiseJsonField(c.content),
+      })),
+    );
+
+    // Chronological so the export reads as one coherent history rather than
+    // three concatenated blocks.
+    return records.sort(
+      (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
+    );
   }
 
   private async getUserLogs(userId: string): Promise<LogRecord[]> {

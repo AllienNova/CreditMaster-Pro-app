@@ -41,6 +41,9 @@ function makeThenableChain(result: TableResult): Record<string, unknown> {
   const chain: Record<string, unknown> = {
     select: jest.fn(() => chain),
     eq: jest.fn(() => chain),
+    // chat_messages is reached by session_id IN (...) because that table has
+    // no user_id column of its own.
+    in: jest.fn(() => chain),
     single: jest.fn(() => Promise.resolve(result)),
     then: (
       onResolve: (v: TableResult) => unknown,
@@ -65,7 +68,12 @@ const DEFAULT_TABLES: Record<string, TableResult> = {
   },
   credit_reports: { data: [], error: null },
   disputes: { data: [], error: null },
-  ai_interactions: { data: [], error: null },
+  // AI interactions come from three real tables, not one. `ai_interactions`
+  // never existed in any migration.
+  chat_sessions: { data: [], error: null },
+  chat_messages: { data: [], error: null },
+  financial_chat_messages: { data: [], error: null },
+  ai_coaching_sessions: { data: [], error: null },
   audit_logs: { data: [], error: null },
 };
 
@@ -151,14 +159,146 @@ describe("GDPRComplianceService.exportUserData — Art. 15/20 honest failure", (
     );
   });
 
-  it("a genuine ai_interactions query error throws instead of reporting zero interactions", async () => {
+  // ── AI interactions: three sources, all mandatory ────────────────────────
+  //
+  // The old code queried one table, `ai_interactions`, which exists in NO
+  // migration — so every export threw and the right of access was
+  // unexercisable. Art. 15 requires ALL of the user's AI data, so a partial
+  // answer from one of the three real tables is a compliance defect, not a
+  // shortfall in polish.
+
+  it("gathers AI interactions from all three real tables", async () => {
     const db = buildMockDb({
-      ai_interactions: { data: null, error: { message: "relation missing" } },
+      chat_sessions: { data: [{ id: "s1" }], error: null },
+      chat_messages: {
+        data: [
+          {
+            id: "m1",
+            role: "user",
+            content: "how do I budget?",
+            timestamp: "2026-01-02T00:00:00Z",
+          },
+          {
+            id: "m2",
+            role: "assistant",
+            content: "start with fixed costs",
+            timestamp: "2026-01-03T00:00:00Z",
+          },
+        ],
+        error: null,
+      },
+      financial_chat_messages: {
+        data: [
+          {
+            id: "f1",
+            role: "user",
+            content: "am I overspending?",
+            created_at: "2026-01-04T00:00:00Z",
+          },
+        ],
+        error: null,
+      },
+      ai_coaching_sessions: {
+        data: [
+          {
+            id: "c1",
+            session_type: "debt",
+            topic: "avalanche vs snowball",
+            content: { advice: "avalanche" },
+            user_response: { choice: "snowball" },
+            created_at: "2026-01-01T00:00:00Z",
+          },
+        ],
+        error: null,
+      },
+    });
+    const svc = new GDPRComplianceService(db);
+
+    const result = await svc.exportUserData("u1");
+    const ai = result.data.aiInteractions;
+
+    expect(ai).toHaveLength(4);
+    // Sorted chronologically across all three sources, not concatenated.
+    expect(ai.map((a) => a.id)).toEqual(["c1", "m1", "m2", "f1"]);
+
+    // The user's own words land in `prompt`; the model's in `response`.
+    expect(ai.find((a) => a.id === "m1")).toMatchObject({
+      type: "chat:user",
+      prompt: "how do I budget?",
+      response: undefined,
+    });
+    expect(ai.find((a) => a.id === "m2")).toMatchObject({
+      type: "chat:assistant",
+      prompt: undefined,
+      response: "start with fixed costs",
+    });
+    expect(ai.find((a) => a.id === "f1")?.type).toBe("financial_chat:user");
+    // jsonb columns are serialised, and topic is preserved rather than dropped.
+    expect(ai.find((a) => a.id === "c1")).toMatchObject({
+      type: "coaching:debt",
+      topic: "avalanche vs snowball",
+      prompt: '{"choice":"snowball"}',
+      response: '{"advice":"avalanche"}',
+    });
+  });
+
+  it("skips the chat_messages query when the user has no sessions", async () => {
+    // An empty IN () list is not a meaningful query — and issuing one risks
+    // matching everything rather than nothing.
+    const db = buildMockDb({ chat_sessions: { data: [], error: null } });
+    const svc = new GDPRComplianceService(db);
+
+    await svc.exportUserData("u1");
+
+    const tablesQueried = (db.from as jest.Mock).mock.calls.map((c) => c[0]);
+    expect(tablesQueried).not.toContain("chat_messages");
+  });
+
+  it("a genuine chat_sessions query error throws instead of reporting zero interactions", async () => {
+    const db = buildMockDb({
+      chat_sessions: { data: null, error: { message: "relation missing" } },
     });
     const svc = new GDPRComplianceService(db);
 
     await expect(svc.exportUserData("u1")).rejects.toThrow(
-      "Failed to load AI interactions for export: relation missing",
+      "Failed to load chat sessions for export: relation missing",
+    );
+  });
+
+  it("a genuine chat_messages query error throws instead of silently omitting them", async () => {
+    const db = buildMockDb({
+      chat_sessions: { data: [{ id: "s1" }], error: null },
+      chat_messages: { data: null, error: { message: "permission denied" } },
+    });
+    const svc = new GDPRComplianceService(db);
+
+    await expect(svc.exportUserData("u1")).rejects.toThrow(
+      "Failed to load chat messages for export: permission denied",
+    );
+  });
+
+  it("a genuine financial_chat_messages query error throws", async () => {
+    const db = buildMockDb({
+      financial_chat_messages: {
+        data: null,
+        error: { message: "connection reset" },
+      },
+    });
+    const svc = new GDPRComplianceService(db);
+
+    await expect(svc.exportUserData("u1")).rejects.toThrow(
+      "Failed to load financial chat messages for export: connection reset",
+    );
+  });
+
+  it("a genuine ai_coaching_sessions query error throws", async () => {
+    const db = buildMockDb({
+      ai_coaching_sessions: { data: null, error: { message: "timeout" } },
+    });
+    const svc = new GDPRComplianceService(db);
+
+    await expect(svc.exportUserData("u1")).rejects.toThrow(
+      "Failed to load AI coaching sessions for export: timeout",
     );
   });
 
