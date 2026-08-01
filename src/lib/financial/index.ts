@@ -11,8 +11,19 @@
 // crypto-wallet-service.ts and real-estate-tracking-service.ts. See
 // docs/qa/triage-trading.md.
 
-// Bill Calendar
-export { BillCalendarService } from "./bill-calendar-service";
+// Bill Calendar: deleted (Wave 7 remediation, alerts/bills/spending cluster).
+// scheduleReminders() wrote bill_reminders rows keyed off a `bills` row shaped
+// with columns that were never migrated (name, payee, due_day,
+// autopay_enabled, autopay_account_id, reminder_days_before, reminder_types,
+// website_url, account_number, is_active) — every read/write against those
+// columns was a phantom-column bug. git log --follow showed no real feature
+// history (reformat/bulk-authorship commits only) and grep confirmed zero
+// importers outside this barrel and its own test. The only other writer of
+// `bills`, bill-detection-service.ts, uses exclusively the real columns
+// (merchant_name, category, amount, frequency, next_due_date, last_paid_date,
+// last_paid_amount, status, is_auto_pay, account_id, notes), so deleting this
+// service removes the bug along with its only source — nothing is left
+// unexplained. See docs/qa/phantom-table-inventory.md.
 
 // Budget Service
 export { BudgetService } from "./budget-service";
