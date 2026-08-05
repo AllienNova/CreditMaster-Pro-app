@@ -19,6 +19,17 @@
  *     .in("user_id", ...)   batch reads
  *     .eq("id", userId)     for `profiles`, whose primary key IS the user id
  *
+ * Findings are split into three kinds because they need three different
+ * responses, and lumping them together would train the reader to skim past all
+ * of them:
+ *   none — no scoping predicate at all. A read here returns EVERY user's rows.
+ *   fk   — scoped by a parent key (`.eq("goal_id", ...)`).
+ *   pk   — scoped by `.eq("id", ...)`, so it can only ever return ONE row.
+ * `fk` and `pk` are frequently correct: the id was resolved from an
+ * owner-scoped query upstream. They are frequently NOT: the id came straight
+ * off a request path. This script cannot tell the two apart, so it reports them
+ * for a human to confirm rather than guessing.
+ *
  * HONEST LIMITS. Regex over source text, same family as
  * audit-phantom-columns.js: a chain split unusually, a filter applied via a
  * helper, or a table name held in a variable are all invisible to it. A clean
@@ -36,11 +47,10 @@ const { join, relative } = require("path");
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
-const WINDOW = 500; // chars of chain considered after .from()
 
 const FROM_PATTERN = /\.from\(\s*["'`]([a-z0-9_]+)["'`]\s*\)/g;
 const OWNER_FILTER = /\.(eq|in)\(\s*["'`]user_id["'`]/;
-const PROFILE_PK_FILTER = /\.eq\(\s*["'`]id["'`]/;
+const PK_FILTER = /\.(eq|in)\(\s*["'`]id["'`]/;
 /**
  * Scoping by a parent key rather than user_id directly — e.g.
  * `.eq("goal_id", ...)` or `.eq("item_id", ...)`. This is often CORRECT: a
@@ -89,33 +99,58 @@ function stripComments(text) {
     .replace(/^[ \t]*\/\/.*$/gm, (m) => " ".repeat(m.length));
 }
 
+/**
+ * Extent of the query chain that starts at `.from(` — up to the `;` that ends
+ * the statement, tracking bracket depth and quotes so a `;` inside an object
+ * literal, arrow function, or string does not cut the chain short.
+ *
+ * This replaced a fixed 500-character window, which silently truncated any
+ * chain with a large `.update({...})` payload: bill-negotiation-service.ts:376
+ * carries its `.eq("user_id", userId)` 14 lines below the `.from(`, so the
+ * window ended before it and the query was reported as unscoped when it was
+ * not. A magic number cannot express "the rest of this statement"; bracket
+ * balance can.
+ */
+function chainExtent(text, at) {
+  let depth = 0;
+  let quote = null;
+  for (let i = at; i < text.length; i++) {
+    const c = text[i];
+    if (quote) {
+      if (c === "\\") i++;
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") quote = c;
+    else if (c === "(" || c === "[" || c === "{") depth++;
+    else if (c === ")" || c === "]" || c === "}") depth--;
+    else if (c === ";" && depth <= 0) return i;
+  }
+  return text.length;
+}
+
 function audit(text, rel, userScoped, findings) {
   for (const match of text.matchAll(FROM_PATTERN)) {
     const table = match[1];
     if (!userScoped.has(table)) continue; // no user_id column — nothing to scope
 
     const at = match.index;
-    const rest = text.slice(at + 1);
-    const nextFrom = rest.search(/\.from\(\s*["'`][a-z0-9_]+["'`]\s*\)/);
-    const limit = nextFrom === -1 ? WINDOW : Math.min(WINDOW, nextFrom + 1);
-    const chain = text.slice(at, at + limit);
+    const chain = text.slice(at, chainExtent(text, at));
 
-    const scoped =
-      OWNER_FILTER.test(chain) ||
-      (table === "profiles" && PROFILE_PK_FILTER.test(chain));
-
-    if (scoped) continue;
+    // `profiles` is keyed BY the user id, so `.eq("id", userId)` is true owner
+    // scoping there, not merely a single-row lookup.
+    if (OWNER_FILTER.test(chain)) continue;
+    if (table === "profiles" && PK_FILTER.test(chain)) continue;
 
     const fk = chain.match(FK_FILTER);
+    const pk = PK_FILTER.test(chain);
     findings.push({
       file: rel,
       line: text.slice(0, at).split("\n").length,
       table,
       op: operationOf(chain),
-      // "fk" = scoped by a parent key; needs a human to confirm the parent was
-      // owner-checked. "none" = no scoping predicate at all.
-      kind: fk ? "fk" : "none",
-      via: fk ? fk[2] : null,
+      kind: fk ? "fk" : pk ? "pk" : "none",
+      via: fk ? fk[2] : pk ? "id" : null,
     });
   }
 }
@@ -145,9 +180,11 @@ function main() {
   console.log(`files on service role        : ${converted.length}`);
   const unscoped = findings.filter((f) => f.kind === "none");
   const fkScoped = findings.filter((f) => f.kind === "fk");
+  const pkScoped = findings.filter((f) => f.kind === "pk");
 
   console.log(`NO owner filter at all       : ${unscoped.length}`);
-  console.log(`scoped via a parent key      : ${fkScoped.length}\n`);
+  console.log(`scoped via a parent key      : ${fkScoped.length}`);
+  console.log(`scoped to a single row by id : ${pkScoped.length}\n`);
 
   if (unscoped.length) console.log("UNSCOPED (fix these):");
   for (const f of unscoped) {
@@ -156,6 +193,11 @@ function main() {
   if (fkScoped.length) console.log("\nFK-SCOPED (confirm the parent is owner-checked):");
   for (const f of fkScoped) {
     console.log(`  ${f.op.padEnd(6)} ${f.table.padEnd(28)} via ${String(f.via).padEnd(16)} ${f.file}:${f.line}`);
+  }
+  if (pkScoped.length)
+    console.log("\nPK-SCOPED (confirm the id was resolved from an owner-scoped query):");
+  for (const f of pkScoped) {
+    console.log(`  ${f.op.padEnd(6)} ${f.table.padEnd(28)} via id           ${f.file}:${f.line}`);
   }
 
   // An insert legitimately supplies user_id in its payload rather than as a

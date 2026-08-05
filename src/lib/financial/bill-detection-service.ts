@@ -1,6 +1,7 @@
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+// Lazy: the service-role key is not required at import time.
+const supabase = () => getServiceRoleClient();
 import type {
   Bill,
   BillPayment,
@@ -55,7 +56,7 @@ class BillDetectionService {
     userId: string,
     options?: { activeOnly?: boolean; category?: BillCategory },
   ): Promise<Bill[]> {
-    let query = supabase
+    let query = supabase()
       .from("bills")
       .select("*")
       .eq("user_id", userId)
@@ -82,7 +83,7 @@ class BillDetectionService {
    * Get a single bill by ID
    */
   async getBillById(billId: string, userId: string): Promise<Bill | null> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("bills")
       .select("*")
       .eq("id", billId)
@@ -103,7 +104,7 @@ class BillDetectionService {
    * Create a new bill
    */
   async createBill(userId: string, input: BillCreateInput): Promise<Bill> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("bills")
       .insert({
         user_id: userId,
@@ -153,7 +154,7 @@ class BillDetectionService {
     if (input.accountId !== undefined) updateData.account_id = input.accountId;
     if (input.notes !== undefined) updateData.notes = input.notes;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("bills")
       .update(updateData)
       .eq("id", billId)
@@ -172,7 +173,7 @@ class BillDetectionService {
    * Delete a bill
    */
   async deleteBill(billId: string, userId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabase()
       .from("bills")
       .delete()
       .eq("id", billId)
@@ -229,7 +230,7 @@ class BillDetectionService {
       new Date(endDate.getTime() - 180 * 24 * 60 * 60 * 1000); // 6 months
 
     try {
-      const { data: transactions, error } = await supabase
+      const { data: transactions, error } = await supabase()
         .from("transactions")
         .select("*")
         .eq("user_id", userId)
@@ -543,7 +544,7 @@ class BillDetectionService {
 
     const isLate = input.paidDate > bill.nextDueDate;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("bill_payments")
       .insert({
         bill_id: input.billId,
@@ -583,7 +584,7 @@ class BillDetectionService {
     billId: string,
     userId: string,
   ): Promise<BillPayment[]> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("bill_payments")
       .select("*")
       .eq("bill_id", billId)

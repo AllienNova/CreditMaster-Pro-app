@@ -9,7 +9,7 @@ import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { goalPlanner } from "@/lib/financial/goal-planner";
 
 export const POST = withAuth(
-  async (request: NextRequest, _user: AuthedUser) => {
+  async (request: NextRequest, user: AuthedUser) => {
     try {
       // The guard does not forward Next's route `params`; the path ends in
       // /goals/[goalId]/simulate, so goalId is the second-to-last segment.
@@ -28,6 +28,7 @@ export const POST = withAuth(
 
       const simulation = await goalPlanner.simulateGoal({
         goalId,
+        userId: user.id,
         scenarios: scenarios.map(
           (s: { monthlyContribution: number; targetDate?: string }) => ({
             monthlyContribution: parseFloat(String(s.monthlyContribution)),

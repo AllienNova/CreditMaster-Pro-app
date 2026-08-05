@@ -1,11 +1,11 @@
 {
   "verdict": "PASS",
-  "timestamp": 1779042502,
-  "git_hash": "785b789ea5c2f4b763021dad195e30dc3e236220",
-  "scope": "Credit vertical (CRD-1..4) gate",
-  "tests": "15791 passed, 0 failed, 19 skipped",
+  "timestamp": 1779058737,
+  "git_hash": "a8de39b85cfd94c3932b0667ba09ce1bfa1fd2d2",
+  "scope": "Ancillary vertical (ANC-1..3) gate",
+  "tests": "15875 passed, 0 failed, 19 skipped (761 suites)",
   "type_check": "tsc --noEmit 0 errors",
-  "test_idor": "100 passing (was 58 pre-Credit)",
-  "changed_coverage": "all changed files >=85% (types.ts pure-types false-positive aside)",
+  "test_idor": "164 passing",
+  "changed_coverage": "all changed files >=85% on changed lines",
   "proof_of_life": "not run — vertical-completion gate, app not started"
 }

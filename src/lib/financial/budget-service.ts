@@ -5,10 +5,11 @@
  * spending tracking, alerts, and intelligent recommendations.
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
-const supabase = getSupabase();
+// Lazy: the service-role key is not required at import time.
+const supabase = () => getServiceRoleClient();
 import {
   Budget,
   BudgetPeriod,
@@ -312,7 +313,7 @@ export class BudgetService {
   async createBudget(input: CreateBudgetInput): Promise<Budget> {
     const { start, end } = calculatePeriodDates(input.period);
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budgets")
       .insert({
         user_id: input.userId,
@@ -353,7 +354,7 @@ export class BudgetService {
     budgetId: string,
     userId: string,
   ): Promise<Budget | null> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budgets")
       .select("*")
       .eq("id", budgetId)
@@ -378,7 +379,7 @@ export class BudgetService {
     userId: string,
     options?: { activeOnly?: boolean; category?: BudgetCategoryValue },
   ): Promise<Budget[]> {
-    let query = supabase.from("budgets").select("*").eq("user_id", userId);
+    let query = supabase().from("budgets").select("*").eq("user_id", userId);
 
     if (options?.activeOnly) {
       query = query.eq("status", "active");
@@ -442,7 +443,7 @@ export class BudgetService {
       updateData.end_date = end.toISOString();
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budgets")
       .update(updateData)
       .eq("id", budgetId)
@@ -461,7 +462,7 @@ export class BudgetService {
    * Delete a budget
    */
   async deleteBudget(budgetId: string, userId: string): Promise<boolean> {
-    const { error } = await supabase
+    const { error } = await supabase()
       .from("budgets")
       .delete()
       .eq("id", budgetId)
@@ -490,7 +491,7 @@ export class BudgetService {
 
     const newSpentAmount = current.spentAmount + amount;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budgets")
       .update({
         spent: newSpentAmount,
@@ -533,7 +534,7 @@ export class BudgetService {
       rolloverAmount = current.remainingAmount;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budgets")
       .update({
         spent: 0,
@@ -659,7 +660,7 @@ export class BudgetService {
       throw new Error("Rollover amount cannot be negative");
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budgets")
       .update({
         rollover_amount: newRolloverAmount,
@@ -871,7 +872,7 @@ export class BudgetService {
    * Create a budget alert
    */
   async createAlert(input: CreateBudgetAlertInput): Promise<BudgetAlert> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budget_alerts")
       .insert({
         user_id: input.userId,
@@ -902,7 +903,7 @@ export class BudgetService {
     userId: string,
     options?: { unreadOnly?: boolean; limit?: number },
   ): Promise<BudgetAlert[]> {
-    let query = supabase
+    let query = supabase()
       .from("budget_alerts")
       .select("*")
       .eq("user_id", userId)
@@ -927,7 +928,7 @@ export class BudgetService {
    * Mark alert as read
    */
   async markAlertAsRead(alertId: string, userId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabase()
       .from("budget_alerts")
       .update({ read: true })
       .eq("id", alertId)
@@ -942,7 +943,7 @@ export class BudgetService {
    * Dismiss alert
    */
   async dismissAlert(alertId: string, userId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabase()
       .from("budget_alerts")
       .update({ dismissed: true })
       .eq("id", alertId)
@@ -1230,7 +1231,7 @@ export class BudgetService {
       if (!ownerRow) continue;
 
       // Fetch the budget data — use the owner's userId so the query works
-      const { data: budgetData, error: budgetError } = await supabase
+      const { data: budgetData, error: budgetError } = await supabase()
         .from("budgets")
         .select("*")
         .eq("id", budgetId)
@@ -1400,7 +1401,7 @@ export class BudgetService {
     >();
 
     for (const entry of uniqueBudgetEntries) {
-      const { data: budgetData } = await supabase
+      const { data: budgetData } = await supabase()
         .from("budgets")
         .select("*")
         .eq("id", entry.budget_id)
@@ -1551,7 +1552,7 @@ export class BudgetService {
     userId: string,
   ): Promise<SharedBudget> {
     // Fetch the base budget
-    const { data: budgetData, error: budgetError } = await supabase
+    const { data: budgetData, error: budgetError } = await supabase()
       .from("budgets")
       .select("*")
       .eq("id", budgetId)
@@ -1714,7 +1715,7 @@ export class BudgetService {
     };
 
     // Check if user is the budget owner
-    const { data: budgetData } = await supabase
+    const { data: budgetData } = await supabase()
       .from("budgets")
       .select("user_id")
       .eq("id", budgetId)
@@ -1772,7 +1773,7 @@ export class BudgetService {
 
     const sharedBudgets: SharedBudget[] = [];
     for (const row of pendingRows as SharedBudgetMemberRow[]) {
-      const { data: budgetData } = await supabase
+      const { data: budgetData } = await supabase()
         .from("budgets")
         .select("*")
         .eq("id", row.budget_id)

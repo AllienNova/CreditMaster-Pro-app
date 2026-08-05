@@ -9,7 +9,7 @@
  * - AI-powered recommendations
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { getModelRouter, TaskType } from "@/lib/model-router";
 import { financialContextEngine } from "./financial-context-engine";
 import { FinancialContext } from "./types/financial-context.types";
@@ -153,7 +153,7 @@ class GoalPlanner {
    * Get all goals for a user
    */
   async getUserGoals(userId: string): Promise<FinancialGoalPlan[]> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
     const { data, error } = await supabase
       .from("financial_goals")
       .select("*")
@@ -176,7 +176,7 @@ class GoalPlanner {
     goalId: string,
     newAmount: number,
   ): Promise<FinancialGoalPlan | null> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
 
     // Fetch current goal
     const { data: goal, error: fetchError } = await supabase
@@ -235,14 +235,19 @@ class GoalPlanner {
    * Simulate different goal scenarios
    */
   async simulateGoal(request: SimulateGoalRequest): Promise<GoalSimulation> {
-    const { goalId, scenarios: scenarioParams } = request;
+    const { goalId, userId, scenarios: scenarioParams } = request;
 
-    // Get the goal
-    const supabase = getSupabase();
+    // Get the goal. The `user_id` filter is load-bearing, not defensive: this
+    // runs on the service-role client, which bypasses RLS, so without it any
+    // authenticated caller could simulate — and thereby read the target and
+    // current amounts of — any other user's goal by its id. Matches the
+    // scoping every other method on this class already uses.
+    const supabase = getServiceRoleClient();
     const { data: goalData } = await supabase
       .from("financial_goals")
       .select("*")
       .eq("id", goalId)
+      .eq("user_id", userId)
       .single();
 
     if (!goalData) {
@@ -527,7 +532,7 @@ class GoalPlanner {
   }
 
   private async saveGoalToDatabase(goal: FinancialGoalPlan): Promise<void> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("financial_goals").insert({
       id: goal.id,

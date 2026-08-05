@@ -431,6 +431,12 @@ export interface CreateGoalPlanRequest {
 
 export interface SimulateGoalRequest {
   goalId: string;
+  /**
+   * Owner of the goal. Required, not optional: the lookup runs on the
+   * service-role client, which bypasses RLS, so this is the only thing
+   * stopping one user from simulating another user's goal.
+   */
+  userId: string;
   scenarios: Array<{
     monthlyContribution: number;
     targetDate?: Date;

@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Debt } from "@/lib/financial/types/debt-payoff.types";
 
 // ---------------------------------------------------------------------------
@@ -82,7 +82,7 @@ function rowToDebt(row: DebtRow): Debt {
 
 class DebtService {
   async listDebts(userId: string): Promise<Debt[]> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
     const { data, error } = await supabase
       .from("debt_accounts")
       .select("*")
@@ -98,7 +98,7 @@ class DebtService {
 
   async createDebt(userId: string, input: DebtInput): Promise<Debt> {
     const validated = debtInputSchema.parse(input);
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
 
     const { data, error } = await supabase
       .from("debt_accounts")
@@ -129,7 +129,7 @@ class DebtService {
 
   async updateDebt(debtId: string, userId: string, patch: DebtPatch): Promise<Debt> {
     const validated = debtPatchSchema.parse(patch);
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
 
     // Verify ownership before updating.
     const { data: existing, error: fetchError } = await supabase
@@ -170,7 +170,7 @@ class DebtService {
   }
 
   async deleteDebt(debtId: string, userId: string): Promise<void> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
     const { error } = await supabase
       .from("debt_accounts")
       .delete()
