@@ -1,12 +1,12 @@
 # Fynvita — Single Source of Truth (SSOT)
 
-> **VERSION-013 — AUDIT-DRIVEN RE-BASELINE** (2026-05-03)
+> **VERSION-014 — LEAD ARCHITECT RE-BASELINE** (2026-05-24)
 >
-> **The prior "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010 to VERSION-012) is invalidated.** A 9-domain comprehensive code review (27 reviewer agents, 2026-05-01 to 2026-05-03) opened **33 CRITICAL** + 38 HIGH findings. Wave 7 (Security & Correctness Remediation) has been opened to close them. No new feature work begins until Wave 7 closes per `build_order_blueprint.md`.
+> **The prior "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010 to VERSION-012) is invalidated.** A 9-domain comprehensive code review (27 reviewer agents, 2026-05-01 to 2026-05-03) opened **33 CRITICAL + 38 HIGH** findings (71 enumerated). **Lead Architect deep-dive verification (2026-05-24) added 7 more (FND-072..078: 2 C + 1 H + 2 M + 2 L), for a reconciled running total of 35 CRITICAL + 39 HIGH + 2 MEDIUM + 2 LOW = 78 enumerated findings, and expanded the plan to Waves 8-10.** Waves 7-10 must close before public launch. See `MASTER-IMPLEMENTATION-PLAN.md` Appendices A-G for full verification results and ship roadmap.
 >
 > Pre-launch status (no live users yet) means there is **no current GDPR Art. 33 / CCPA disclosure obligation**, but every finding must close before public launch.
 >
-> Audit detail: see `docs/ssot/gap_analysis.md` (FND-001 through FND-071). Roadmap: see `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7.
+> Audit detail: see `docs/ssot/gap_analysis.md` (FND-001 through FND-078). Roadmap: see `MASTER-IMPLEMENTATION-PLAN.md` Appendices A-G.
 
 ---
 
@@ -15,10 +15,10 @@
 > All other documents defer to this file. When in conflict, this file wins.
 >
 > **Companion artifacts** (all in `docs/ssot/`):
-> - `gap_analysis.md` — **NEW (VERSION-013)** — 71-finding audit register
+> - `gap_analysis.md` — **(VERSION-014)** — 78-finding audit register (FND-001..078)
 > - `task_extraction.md` — 80 normalized tasks with stable IDs
 > - `dependency_graph.md` — Module and task-level dependencies
-> - `build_order_blueprint.md` — 7-wave build plan with merge gates (Wave 7 opened 2026-05-03)
+> - `build_order_blueprint.md` — 11-wave build plan with merge gates (Waves 0–10; Wave 7 created 2026-05-03, work opens 2026-05-24)
 > - `repo_inventory.md` — Complete repository inventory
 > - `MASTER-IMPLEMENTATION-PLAN.md` — Executable Task Cards (Step 5)
 > - `traceability_matrix.md` — REQ→Build target proof (Step 6)
@@ -124,7 +124,7 @@
 | Test files (Playwright)        | 16      | .spec.ts under e2e/                               |
 | Total test files               | 576     | Sum of all test frameworks                        |
 | Test suites (Jest)             | 504     | npm test — all passing (506 total, 2 skipped)     |
-| Test cases (Jest)              | 13,585  | npm test — all passing (13,604 total, 19 skipped) |
+| Test cases (Jest)              | 13,585  | 2026-03-02 web baseline (13,604 total, 19 skipped). **Superseded by §19 / Appendix A (VERSION-014): 14,932 passing, 35 failing** once mobile + time-dependent PCTT suites are included. |
 | Documentation files            | 134     | Markdown files in docs/ + root                    |
 | npm dependencies               | 33      | package.json dependencies                         |
 | npm devDependencies            | 30      | package.json devDependencies                      |
@@ -1483,18 +1483,20 @@ See `docs/archive/ARCHIVE-INDEX.md` for the full list with archival status.
 
 ---
 
-## §19. Audit Findings — Wave 7 Remediation (VERSION-013)
+## §19. Audit Findings — Wave 7 Remediation (VERSION-014)
 
-> Added 2026-05-03 in response to comprehensive 9-domain code review.
-> Full register: `docs/ssot/gap_analysis.md` (FND-001 through FND-071).
+> Added 2026-05-03 in response to comprehensive 9-domain code review; Theme 10 added 2026-05-24; counts reconciled 2026-06-26.
+> Full register: `docs/ssot/gap_analysis.md` (FND-001 through FND-078).
 > Roadmap: `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7.
 
 **Headline numbers**:
-- Findings opened: **33 CRITICAL** + 38 HIGH (across 9 domains)
+- Findings opened: **35 CRITICAL + 39 HIGH + 2 MEDIUM + 2 LOW = 78 enumerated** (original 9-domain audit = 33 C + 38 H = 71; Theme 10 added 7 on 2026-05-24: FND-072..078)
 - Domains FAIL on audit: Auth+middleware, Payments+Subs, Commerce, Financial services, Investments, Notifications, Admin, AI+Compliance, Mobile (all 9)
 - User exposure today: **None** (no live users — Fynvita is pre-launch, branded as financial-education company)
 - Pre-launch disclosure obligations: not currently triggered; re-evaluate before public launch
-- Tests passed (13,585) but did not catch any of the 33 criticals — detection-gap remediation is part of Wave 7
+- Tests: 14,932 passing, 35 failed (time-dependent PCTT tests), 19 skipped — did not catch any criticals
+- New waves added: Wave 8 (AI Provider Resilience), Wave 9 (Mobile Launch), Wave 10 (Visual Polish & Ship)
+- Ship target: **2026-08-16** (12 weeks from Wave 7 work-start 2026-05-24)
 
 **Themes**:
 1. Auth/RBAC structurally broken (admin endpoints unauth'd, `user_metadata` self-promotion to admin, AIML key reused as inbound auth, middleware whitelists `/api/*`, hardcoded admin emails, enterprise-tier=admin)
@@ -1502,12 +1504,18 @@ See `docs/archive/ARCHIVE-INDEX.md` for the full list with archival status.
 3. Money correctness (Stripe payouts pass dollars to cents-only API → 1% of intended; no idempotency on commerce payouts; affiliate self-referral fraud; non-atomic referral-code increment)
 4. Mock-data-as-production (admin analytics returns `Math.random()`, debt API returns hardcoded mock debts, 5 AI-insight routes return static mocks, mobile dispute screen uses `setTimeout` mock data)
 
-**Wave 7 status**: Phase 0 (Prereqs) opens 2026-05-03. Estimated 4 weeks, ~60 tasks, parallel SEC/BE/MOB/DEVOPS streams. Exit gates: every CRITICAL has linked closed task; CI gates active for route-auth, IDOR, mock-data, money-type, npm audit; SEC sign-off on `PUBLIC_ROUTES.ts`, webhook signatures, PII redaction, IDOR audit script.
+**Wave 7 status**: Phase 0 (Prereqs) opens 2026-05-24. Estimated 4 weeks, 60 tasks, parallel SEC/BE/MOB/DEVOPS streams.
+**Wave 8 status**: AI Provider Resilience & OpenRouter integration. 12 tasks, 2 weeks.
+**Wave 9 status**: Mobile Hardening & App Store Readiness. 20 tasks, 3 weeks.
+**Wave 10 status**: Visual Polish, Marketing Site & Launch. 22 tasks, 3 weeks.
+**Total tasks**: 230 unique (each counted once; Wave 7 = 60, Wave 8 = 12, Wave 9 = 13 net-new, Wave 10 = 20, + 125 originals). Ship target: **2026-08-16** (12 weeks from Wave 7 work-start 2026-05-24). See `MASTER-IMPLEMENTATION-PLAN.md` Appendix G.
 
 ---
 
 _Single Source of Truth for the Fynvita platform._
-_Original: 2026-02-16 | Last verified: 2026-02-23 | DICE v3.3 canonical: 2026-02-25_
+_Original: 2026-02-16 | Last verified: 2026-05-24 | DICE v3.3 canonical: 2026-02-25_
 _VERSION-009 (2026-03-01): Added §16.4.8-§16.4.11 (Plaid, DriveWealth, Multi-Broker, Affiliate). 13 new tasks (Wave 6). Total: 125 tasks (112 DONE + 13 planned)._
 _VERSION-013 (2026-05-03): **AUDIT-DRIVEN RE-BASELINE.** Invalidates "100% done" claim. Opens Wave 7 (Security & Correctness Remediation) with 33 CRITICAL + 38 HIGH findings. See `gap_analysis.md`._
+_VERSION-014 (2026-05-24): **LEAD ARCHITECT RE-BASELINE.** Deep-dive verification adds 7 findings (FND-072..078). Opens Waves 8-10 (AI Providers, Mobile Launch, Visual Polish). See `MASTER-IMPLEMENTATION-PLAN.md` Appendices A-G._
+_VERSION-014.1 (2026-06-26): **COUNT RECONCILIATION.** Corrected finding totals to the true enumerated sum (35 C + 39 H + 2 M + 2 L = 78) across §19, the banner, and `gap_analysis.md` §1/§3, which previously disagreed (33/38 vs an erroneous 40/45/85). Reconciled task-ID namespaces and Wave 8-10 task counts; see `MASTER-IMPLEMENTATION-PLAN.md` Appendix C/D/G._
 _DICE v3.3 Step 4 output — companion artifacts in `docs/ssot/`._

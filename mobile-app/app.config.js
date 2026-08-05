@@ -120,9 +120,9 @@ export default {
       router: {
         origin: false,
       },
-      // eas: {
-      //   projectId: process.env.EAS_PROJECT_ID || "fynvita-app",
-      // },
+      eas: {
+        projectId: "40f2866c-c0be-4537-8288-681588999236",
+      },
       // Runtime environment variables
       apiUrl: process.env.EXPO_PUBLIC_API_URL || "https://api.fynvita.com",
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,

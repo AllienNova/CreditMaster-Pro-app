@@ -1,58 +1,69 @@
-# Context Recovery — Compaction #161
-> Auto-generated at 2026-04-28T04:55:25Z by pre-compact hook. Read this to restore session state.
+# Context Recovery — Compaction #457
+> Auto-generated at 2026-07-21T07:57:05Z by pre-compact hook. Read this to restore session state.
 
 ## Working Directory
 `/Users/kimalhonourdjam/Documents/Projects/Github Projects/Fynvita`
 
 ## Git State
 - **Branch:** feat/asset-system-regen
-- **Last commit:** af105e4 feat(credits): add credit UI components, mobile store, pricing update, tests
+- **Last commit:** a6331ed chore: add Claude Code agents/teams/rules + require gstack
 
 ### Recent Commits
 ```
-af105e4 feat(credits): add credit UI components, mobile store, pricing update, tests
-3ec44fb feat(credits): add purchase, balance, history, addon APIs + webhook integration
-df25b2f feat(credits): integrate credit checks into trading signals, orders, backtest, chat, disputes
-105fbc5 feat(credits): add credit system foundation — schema, service, costs, types
-1854796 fix(ui): prevent pricing card overlap on XL screens
+a6331ed chore: add Claude Code agents/teams/rules + require gstack
+cd8fc21 chore: gitignore .worktrees/
+ed1bedc docs(plan): revise Foundation plan iteration 3 (N1-N2, S8-S11)
+b10e012 docs(plan): revise Foundation plan after adversarial review (B1-B3, S1-S7)
+37596c6 docs(plan): add Foundation block implementation plan (Wave 7 Phase 0+1)
 ```
 
 ### Uncommitted Changes
 ```
+ M .claude/settings.local.json
+ M .gitignore
+ M CLAUDE.md
  M TASK_TRACKER.md
- M context-recovery.md
+D  context-recovery.md
+R  docs/testing/DEVICE_TESTING_PLAN.md -> docs/Testing/DEVICE_TESTING_PLAN.md
+R  docs/testing/SUITE_DOCUMENTATION.md -> docs/Testing/SUITE_DOCUMENTATION.md
+ M docs/ssot/MASTER-IMPLEMENTATION-PLAN.md
+ M docs/ssot/SSOT.md
+ M docs/ssot/gap_analysis.md
+ M docs/ssot/health_metrics.md
  M mobile-app/.expo/types/router.d.ts
- M mobile-app/ios/Fynvita.xcodeproj/project.pbxproj
- M mobile-app/ios/Podfile.lock
-?? .playwright-mcp/page-2026-04-27T17-51-53-935Z.yml
-?? .playwright-mcp/page-2026-04-27T17-52-11-192Z.png
-?? .playwright-mcp/page-2026-04-27T17-52-48-355Z.png
-?? .playwright-mcp/page-2026-04-27T17-53-07-059Z.png
-?? .playwright-mcp/page-2026-04-27T17-53-26-809Z.png
-?? .playwright-mcp/page-2026-04-27T19-56-35-421Z.yml
-?? .playwright-mcp/page-2026-04-27T19-56-44-256Z.png
-?? .playwright-mcp/page-2026-04-27T19-57-01-250Z.yml
-?? .playwright-mcp/page-2026-04-27T19-57-26-759Z.png
-?? .playwright-mcp/page-2026-04-27T19-57-46-014Z.png
-?? .playwright-mcp/page-2026-04-27T19-57-59-768Z.yml
-?? .playwright-mcp/page-2026-04-27T19-58-12-150Z.yml
-?? .playwright-mcp/page-2026-04-27T19-58-20-679Z.png
-?? .playwright-mcp/page-2026-04-27T20-00-17-697Z.yml
-?? .playwright-mcp/page-2026-04-27T20-04-28-435Z.yml
+ M mobile-app/.gitignore
+ M mobile-app/app.config.js
+ M mobile-app/eas.json
+?? .agents/
+?? .codex/
+?? .easignore
+?? .vercelignore
+?? AGENTS.md
 ```
 
 ### Modified Files
 ```
+.claude/settings.local.json
+.gitignore
+CLAUDE.md
 context-recovery.md
+docs/ssot/gap_analysis.md
+docs/ssot/health_metrics.md
+docs/ssot/MASTER-IMPLEMENTATION-PLAN.md
+docs/ssot/SSOT.md
+docs/Testing/DEVICE_TESTING_PLAN.md
+docs/Testing/SUITE_DOCUMENTATION.md
 mobile-app/.expo/types/router.d.ts
-mobile-app/ios/Fynvita.xcodeproj/project.pbxproj
-mobile-app/ios/Podfile.lock
+mobile-app/.gitignore
+mobile-app/app.config.js
+mobile-app/eas.json
 TASK_TRACKER.md
 ```
 
 ## Task State
 # Task Tracker
-> Auto-maintained by Claude Code hooks. Last updated: 2026-04-28T04:55:25Z
+> Auto-maintained by Claude Code hooks. Last updated: 2026-07-21T07:57:05Z
+> Checkpoint log is a rolling window of the 3 most recent entries (older entries pruned 2026-06-26 to keep git history clean).
 
 ## In Progress
 
@@ -63,24 +74,19 @@ TASK_TRACKER.md
 ## Backlog
 
 ---
-_Session checkpoint at 2026-04-16T13:19:49Z | Branch: feat/asset-system-regen | Uncommitted files: 71_
+_Session checkpoint at 2026-05-16T00:55:13Z | Branch: feat/asset-system-regen | Uncommitted files: 26_
 
 ---
-_Session checkpoint at 2026-04-16T13:36:32Z | Branch: feat/asset-system-regen | Uncommitted files: 61_
+_Session checkpoint at 2026-05-16T00:59:07Z | Branch: feat/asset-system-regen | Uncommitted files: 26_
 
 ---
-_Session checkpoint at 2026-04-19T07:41:02Z | Branch: feat/asset-system-regen | Uncommitted files: 37_
+_Session checkpoint at 2026-05-16T01:01:51Z | Branch: feat/asset-system-regen | Uncommitted files: 26_
 
 ---
-_Session checkpoint at 2026-04-19T08:15:20Z | Branch: feat/asset-system-regen | Uncommitted files: 67_
+_Session checkpoint at 2026-06-28T06:59:34Z | Branch: feat/asset-system-regen | Uncommitted files: 21_
 
 ---
-_Session checkpoint at 2026-04-20T05:10:47Z | Branch: feat/asset-system-regen | Uncommitted files: 39_
-
----
-_Session checkpoint at 2026-04-20T05:33:02Z | Branch: feat/asset-system-regen | Uncommitted files: 39_
-
----
+_Session checkpoint at 2026-07-21T07:57:05Z | Branch: feat/asset-system-regen | Uncommitted files: 25_
 
 ## TODOs
 No TODOS.md found.

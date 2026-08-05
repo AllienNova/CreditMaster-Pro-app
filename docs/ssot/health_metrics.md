@@ -1,5 +1,7 @@
 # Health Metrics — Quality Scorecard
 
+> **VERSION-014.1 — COUNT RECONCILIATION 2026-06-26.** The dated VERSION-013/VERSION-014 narrative below is a 2026-05-03 snapshot (before Theme 10 was added 2026-05-24) and is preserved as historical record. Current canonical figures: **35 CRITICAL + 39 HIGH + 2 MEDIUM + 2 LOW = 78 findings** (FND-001..078) and **230 unique tasks** across Waves 0-10 — see `gap_analysis.md` and `MASTER-IMPLEMENTATION-PLAN.md` Appendix G. §8.5 below reflects the reconciled counts.
+
 > **VERSION-014 — TASK-PRE-01 HONEST RE-BASELINE 2026-05-03**
 >
 > Re-ran lint, type-check, tests, build, and `npm audit` on `feat/asset-system-regen` @ `2877317`. The static metrics in §1–§5 below have been updated with actual results. **Five gates regressed since VERSION-013** — none of them caught by the test pass count alone:
@@ -259,15 +261,18 @@ Re-baseline confirmed: web app no longer passes the basic gates. Five of nine ga
 
 ---
 
-## 8.5. Task Completion Status (Re-baselined 2026-05-03, VERSION-013)
+## 8.5. Task Completion Status (Re-baselined 2026-05-03, VERSION-013; counts reconciled 2026-06-26, VERSION-014.1)
 
-> The 9-domain audit invalidated the prior "125 DONE / 100%" claim. All 125 originals are NEEDS_VERIFICATION pending TASK-PRE-01; some explicitly REOPENED. Wave 7 adds 59 remediation tasks.
+> The 9-domain audit invalidated the prior "125 DONE / 100%" claim. All 125 originals are NEEDS_VERIFICATION pending TASK-PRE-01; some explicitly REOPENED. Waves 7-10 add 105 new tasks. Each task is counted once in its home wave (see `MASTER-IMPLEMENTATION-PLAN.md` Appendix G).
 
 | Wave | Status | Count |
 |------|--------|------:|
 | 0-6 (originals) | NEEDS_VERIFICATION (some REOPENED) | 125 |
-| 7 (Security & Correctness Remediation) | NOT_STARTED | 59 |
-| **Total** | **mixed** | **184** |
+| 7 (Security & Correctness Remediation) | NOT_STARTED | 60 |
+| 8 (AI Provider Resilience) | NOT_STARTED | 12 |
+| 9 (Mobile Hardening & Launch) | NOT_STARTED | 13 |
+| 10 (Visual Polish & Launch) | NOT_STARTED | 20 |
+| **Total (unique)** | **mixed** | **230** |
 
 ### Batch Completion Log
 

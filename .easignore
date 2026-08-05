@@ -1,0 +1,19 @@
+node_modules/
+**/node_modules/
+.git/
+.next/
+.worktrees/
+assets/
+docs/
+coverage/
+coverage-inv/
+coverage-inv-json/
+Rocket Money web Sep 2025/
+Credit Karma ios Feb 2025/
+mobile-app/ios/Pods/
+mobile-app/ios/build/
+mobile-app/android/build/
+mobile-app/android/.gradle/
+*.zip
+*.png
+*.log

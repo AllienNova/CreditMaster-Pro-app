@@ -1,6 +1,6 @@
 # Gap Analysis — Audit-Driven Findings Register
 
-> **VERSION-013** — Generated 2026-05-03
+> **VERSION-014** — Generated 2026-05-03; Theme 10 added 2026-05-24; counts reconciled 2026-06-26.
 > Source: 9-domain comprehensive code review (security + architecture + code quality), 27 reviewer agents.
 > **Re-baseline**: invalidates the prior "125/125 DONE / 100%" status reported in VERSION-010 through VERSION-012.
 
@@ -14,12 +14,12 @@
 | Methodology | 9 domains × 3 reviewer specialties (Security / Architecture / Code Quality) = 27 parallel reviews |
 | Domains covered | Auth + middleware, Payments + Subscriptions, Commerce, Financial services, Investments (non-trading), Notifications, Admin, AI + Compliance, Mobile app |
 | Domains previously reviewed (this session) | Credit repair, Trading (already remediated where possible — see commit `d64e8d5`) |
-| Findings opened | **33 CRITICAL**, **38 HIGH**, ~21 MEDIUM, ~21 LOW (71 enumerated in §2; banner count corrected from "~50 HIGH" 2026-05-03 post-QA) |
+| Findings opened | **35 CRITICAL**, **39 HIGH**, **2 MEDIUM**, **2 LOW** = **78 enumerated** (FND-001..078 in §2). Themes 1–9 = original 71 (33 C + 38 H); Theme 10 added 2026-05-24 = 7 (2 C + 1 H + 2 M + 2 L). Plus ~33 additional MEDIUM + ~21 LOW tracked in reviewer transcripts, not separately enumerated. |
 | User exposure today | **None** (no live users yet — Fynvita branded as financial-education company in pre-launch) |
 | Disclosure obligations | Not currently triggered (no user data exposure to disclose). Re-evaluate before public launch. |
 | Ship decision | **BLOCKED** — Wave 7 must complete before launch |
 
-**Critical interpretation:** Test pass rate of 99.86% (13,585 / 13,604) did **not** catch any of the 33 criticals. Pass rate is not a substitute for negative-auth tests, money-precision tests, or mock-data lint rules. Detection-gap remediation is part of Wave 7.
+**Critical interpretation:** Test pass rate of 99.86% (13,585 / 13,604) did **not** catch any of the 35 criticals. Pass rate is not a substitute for negative-auth tests, money-precision tests, or mock-data lint rules. Detection-gap remediation is part of Wave 7.
 
 ---
 
@@ -134,14 +134,14 @@ Severity scale: **C** = Critical (exploitable today / financial-loss / regulator
 
 | ID | Sev | File:Line | Finding | Linked Task |
 |----|-----|-----------|---------|-------------|
-| FND-064 | C | `mobile-app/src/store/authStore.ts:45-52` | `__DEV__` auth bypass sets `isAuthenticated: true` with hardcoded `seedUser` — one bad EAS build flag from shipping fully-authenticated mock user | TASK-MOB-06 |
-| FND-065 | C | mobile npm audit | `handlebars` JS injection CVEs (transitive); 15 HIGH dep findings (`node-forge`, `lodash`, `tar`, `undici`) | TASK-MOB-03 |
-| FND-066 | C | `mobile-app/src/store/syncStore.ts:231` | Offline sync writes to deprecated `financialStore`; UI reads from new modular stores → diverged state after reconnect | TASK-MOB-04 |
-| FND-067 | C | `mobile-app/src/store/index.ts:220` | `useFinancialStore` aliased deprecated; 5 screens still depend on it; 20 stores exist (vs documented 8) | TASK-MOB-04 |
+| FND-064 | C | `mobile-app/src/store/authStore.ts:45-52` | `__DEV__` auth bypass sets `isAuthenticated: true` with hardcoded `seedUser` — one bad EAS build flag from shipping fully-authenticated mock user | TASK-MOB-W7-06 |
+| FND-065 | C | mobile npm audit | `handlebars` JS injection CVEs (transitive); 15 HIGH dep findings (`node-forge`, `lodash`, `tar`, `undici`) | TASK-MOB-W7-03 |
+| FND-066 | C | `mobile-app/src/store/syncStore.ts:231` | Offline sync writes to deprecated `financialStore`; UI reads from new modular stores → diverged state after reconnect | TASK-MOB-W7-04 |
+| FND-067 | C | `mobile-app/src/store/index.ts:220` | `useFinancialStore` aliased deprecated; 5 screens still depend on it; 20 stores exist (vs documented 8) | TASK-MOB-W7-04 |
 | FND-068 | C | `mobile-app/app/dispute/[id].tsx:29-47` | Production route uses `setTimeout` with mock data instead of the real `useDisputeStore`; duplicate `dispute/` and `disputes/` route segments register both | TASK-MOK-05 |
-| FND-069 | H | `mobile-app/src/services/biometrics/biometricService.ts:144,166,169` | Biometric flag in unencrypted `AsyncStorage` → rooted device bypass | TASK-MOB-01 |
-| FND-070 | H | 13 call sites of `Linking.openURL(url)` | URLs from API responses with no scheme allowlist → `javascript:` URI injection | TASK-MOB-02 |
-| FND-071 | H | `mobile-app/src/store/creditBalanceStore.ts:82,101,130` | Bare `fetch()` calls with no `Authorization` header (RN has no cookie jar) | TASK-MOB-07 |
+| FND-069 | H | `mobile-app/src/services/biometrics/biometricService.ts:144,166,169` | Biometric flag in unencrypted `AsyncStorage` → rooted device bypass | TASK-MOB-W7-01 |
+| FND-070 | H | 13 call sites of `Linking.openURL(url)` | URLs from API responses with no scheme allowlist → `javascript:` URI injection | TASK-MOB-W7-02 |
+| FND-071 | H | `mobile-app/src/store/creditBalanceStore.ts:82,101,130` | Bare `fetch()` calls with no `Authorization` header (RN has no cookie jar). **Subset of FND-073** (the full mobile bare-fetch sweep); both close under the same task | TASK-MOB-W7-07 |
 
 ---
 
@@ -158,9 +158,24 @@ Severity scale: **C** = Critical (exploitable today / financial-loss / regulator
 | 7. Admin | 5 | 2 | 7 |
 | 8. AI + Compliance | 3 | 5 | 8 |
 | 9. Mobile | 5 | 3 | 8 |
-| **TOTAL** | **33** | **38** | **71 documented** |
+| 10. Verification additions | 2 | 1 | 7 |
+| **TOTAL** | **35** | **39** | **78 enumerated** |
 
-(Additional ~33 MEDIUM and ~21 LOW findings tracked in source review transcripts but not enumerated here for brevity. Reference reviewer outputs in `/private/tmp/claude-502/.../tasks/*.output` for full lists.)
+Theme 10's "Total open" of 7 includes 2 MEDIUM (FND-072, FND-076) and 2 LOW (FND-077, FND-078) on top of its 2 Critical + 1 High. Themes 1–9 contain only Critical/High findings (their "Total open" = C + H). Grand total of enumerated findings: **35 C + 39 H + 2 M + 2 L = 78**.
+
+### Theme 10 — Verification Additions (Lead Architect, 2026-05-24)
+
+| ID | Sev | Finding | Linked Task |
+|----|-----|---------|-------------|
+| FND-072 | M | PCTT integration tests fail on weekends (time-dependent `market_calendar` rejection) | TASK-TRD-W7-01 |
+| FND-073 | C | 25+ mobile files use bare `fetch()` without `Authorization` header → all API calls unauthenticated on React Native. **Superset of FND-071** (includes `creditBalanceStore.ts`); escalated to Critical because the scope is domain-wide, not a single store | TASK-MOB-W7-07 |
+| FND-074 | C | `/api/ai/chat` accepts arbitrary client-supplied `model` string with no allowlist → cost burn + data exfiltration risk | TASK-CMP-04, TASK-AI-PROV-06 |
+| FND-075 | H | Mobile dark mode incomplete: `VitalityScoreWidget` and other components hardcode light colors; `useTheme()` not wired everywhere | TASK-MOB-W7-08, TASK-LAUNCH-UI-05 |
+| FND-076 | M | Dashboard entirely powered by inline mock data (`mockVitalityData`, `mockSpendingData`, etc.) — no real API integration | TASK-LAUNCH-UI-01 |
+| FND-077 | L | No Storybook or component documentation for 228+ components | TASK-LAUNCH-UI-03 |
+| FND-078 | L | Landing page (`src/app/page.tsx`) is 2,156-line monolith — unmaintainable | TASK-LAUNCH-UI-02 |
+
+(Additional ~33 MEDIUM and ~21 LOW findings tracked in source review transcripts but not enumerated here for brevity. Full reviewer outputs retained offline; not committed to the repo.)
 
 ---
 
@@ -199,4 +214,4 @@ Severity scale: **C** = Critical (exploitable today / financial-loss / regulator
 - **Reusable infrastructure already in tree**: `src/lib/auth/api-guard.ts` (`withAuth`/`withPermission`/`withRole` exports) — fix for FND-001/006 is wiring, not building.
 - **Known-good rate limiter**: `src/lib/security/redis-rate-limiting.ts` is the only serverless-safe one. Delete the other three under TASK-AUTH-06.
 - **Wave 7 task cards**: see `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7.
-- **Per-domain reviewer outputs** (full transcripts, do NOT read from main session — large): `/private/tmp/claude-502/.../tasks/*.output`.
+- **Per-domain reviewer outputs**: full transcripts retained offline (large); not committed to the repo.

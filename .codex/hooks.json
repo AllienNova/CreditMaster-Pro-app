@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/kimalhonourdjam/Documents/Projects/Github Projects/Fynvita/.codex/hooks/check-gstack.sh'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/kimalhonourdjam/Documents/Projects/Github Projects/Fynvita/.codex/hooks/post-edit-lint.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -39,19 +39,13 @@
     },
     "production": {
       "distribution": "store",
+      "credentialsSource": "remote",
       "ios": {
-        "resourceClass": "m-medium",
-        "autoIncrement": true
+        "resourceClass": "m-medium"
       },
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease",
-        "autoIncrement": true
-      },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.fynvita.com",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
+        "gradleCommand": ":app:bundleRelease"
       },
       "channel": "production"
     }
@@ -59,9 +53,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "developer@fynvita.com",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "YOUR_APPLE_TEAM_ID"
+        "ascApiKeyId": "U4J2VF2325",
+        "ascApiKeyIssuerId": "d81a8fb1-8ffb-43fb-ac15-3592413cd23f",
+        "ascApiKeyPath": "./credentials/asc_api_key.p8"
       },
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",

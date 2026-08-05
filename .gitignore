@@ -76,3 +76,12 @@ assets/raw/
 
 # git worktrees
 .worktrees/
+
+# Smoke-test / debug screenshots at repo root (transient artifacts — keep in CI, never in git).
+# Full-page captures can also embed PII/session tokens; do not commit. See gap_analysis.md.
+/smoke-*.png
+/image.png
+
+# Ephemeral session-recovery state (regenerated each session by the pre-compact hook; not versioned)
+/context-recovery.md
+.env*

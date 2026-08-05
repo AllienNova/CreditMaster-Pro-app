@@ -63,13 +63,16 @@ Each card contains:
 
 ### Task Status Summary (Re-baselined 2026-05-03, VERSION-013)
 
-> The prior "125/125 DONE / 100%" status (VERSION-010 through VERSION-012) was invalidated by the 9-domain audit. All 125 tasks are now NEEDS_VERIFICATION pending TASK-PRE-01 re-run; some are explicitly REOPENED based on audit findings (see `docs/ssot/traceability_matrix.md` § 0). Wave 7 adds 59 new remediation tasks.
+> The prior "125/125 DONE / 100%" status (VERSION-010 through VERSION-012) was invalidated by the 9-domain audit. All 125 tasks are now NEEDS_VERIFICATION pending TASK-PRE-01 re-run; some are explicitly REOPENED based on audit findings (see `docs/ssot/traceability_matrix.md` § 0). Wave 7 adds 60 new remediation tasks.
 
 | Wave | Status | Count | Notes |
 |------|--------|------:|-------|
 | 0-6 (originals) | NEEDS_VERIFICATION | 125 | Re-verified per task during Wave 7; some explicitly REOPENED |
-| 7 (Security & Correctness) | NOT_STARTED | 59 | See Wave 7 section below |
-| **Total** | **mixed** | **184** | Wave 7 must close before any Wave 8+ feature work |
+| 7 (Security & Correctness) | NOT_STARTED | 60 | See Wave 7 section below |
+| 8 (AI Provider Resilience) | NOT_STARTED | 12 | See Appendix B |
+| 9 (Mobile Hardening & Launch) | NOT_STARTED | 13 | Net-new (`TASK-MOB-W7-08` + 12 `TASK-MOB-LAUNCH`); Appendix C re-lists W7-01..07 for context — those belong to Wave 7's 60 |
+| 10 (Visual Polish & Launch) | NOT_STARTED | 20 | See Appendix D (UI ×8, SEO ×2, PERF ×3, DEVOPS ×4, LEGAL ×3) |
+| **Total** | **mixed** | **230** | Unique tasks (each counted once); ship target 2026-08-16. See Appendix G counting note. |
 
 | Wave | DONE | IN_PROGRESS | NOT_STARTED | Total |
 |------|------|-------------|-------------|-------|
@@ -80,6 +83,10 @@ Each card contains:
 | 4 | 24 | 0 | 0 | 24 |
 | 5 | 10 | 0 | 0 | 10 |
 | 6 | 13 | 0 | 0 | 13 |
+| 7 | 0 | 0 | 60 | 60 |
+| 8 | 0 | 0 | 12 | 12 |
+| 9 | 0 | 0 | 13 | 13 |
+| 10 | 0 | 0 | 20 | 20 |
 
 ---
 
@@ -5590,7 +5597,7 @@ AFF-04 (compliance) ── independent, runs parallel
 # Wave 7 — Security & Correctness Remediation (VERSION-013)
 
 > **Opened 2026-05-03** in response to a comprehensive 9-domain code review (27 reviewer agents).
-> **Source of finding IDs**: `docs/ssot/gap_analysis.md` (FND-001 through FND-071).
+> **Source of finding IDs**: `docs/ssot/gap_analysis.md` (FND-001 through FND-078).
 > **Reference fix template**: commit `d64e8d5` (atomic Postgres RPC + UNIQUE constraint + REVOKE/GRANT).
 > **Scope**: ~60 tasks, estimated 4 weeks, parallel SEC / BE / MOB / DEVOPS streams.
 > **Branch policy** (per user direction): keep `feat/asset-system-regen` as base; do NOT abandon. Branch hygiene tracked under TASK-PRE-06.
@@ -5601,7 +5608,7 @@ AFF-04 (compliance) ── independent, runs parallel
 
 | Phase | Window | Stream | Task count |
 |-------|--------|--------|-----------:|
-| 0 — Prereqs | Week 0 (2-3 days) | ARCH/DEVOPS | 6 |
+| 0 — Prereqs | Week 0 (2-3 days) | ARCH/DEVOPS | 7 |
 | 1 — Auth/RBAC | Weeks 1-2 | SEC + BE | 12 |
 | 2 — Webhooks + tier | Weeks 2-3 | BE | 7 |
 | 3 — Money / Commerce | Week 3 | BE | 7 |
@@ -5609,9 +5616,10 @@ AFF-04 (compliance) ── independent, runs parallel
 | 5 — Compliance + AI hygiene | Week 4 | BE + SEC | 5 |
 | 6 — Mobile hardening | Week 4 | MOB | 7 |
 | 7 — IDOR sweep (parallelizable) | Weeks 2-4 | SEC + BE | 5 |
-| **TOTAL** | **4 weeks** | mixed | **59** |
+| **TOTAL** | **4 weeks** | mixed | **60** |
 
-> **Task count revised 2026-05-03 post-QA**: was "~55"; now **59** after adding TASK-PRE-07, TASK-AUTH-04-staging, TASK-INV-W7-01, TASK-INV-W7-02. Mobile IDs renamed `TASK-MOB-W7-01..07` to avoid collision with Wave 4 `TASK-MOB-01..07`.
+> **Task count revised 2026-05-03 post-QA**: was "~55"; raised to **59** after adding TASK-PRE-07, TASK-AUTH-04-staging, TASK-INV-W7-01, TASK-INV-W7-02. Mobile IDs renamed `TASK-MOB-W7-01..07` to avoid collision with Wave 4 `TASK-MOB-01..07`.
+> **Revised again 2026-06-26**: raised to **60** by adding **TASK-TRD-W7-01** (Phase 0 — make PCTT integration tests time-independent, closes FND-072, previously an orphaned reference). See Appendix A.7.
 
 ---
 
@@ -5829,3 +5837,699 @@ AFF-04 (compliance) ── independent, runs parallel
 | **Wave 7 overall** | **NOT_STARTED** | **0%** (commit `d64e8d5` is template, not part of Wave 7 task closure) |
 
 **Note on prior wave status**: All 125 tasks from Waves 0-6 marked DONE in VERSION-010 are now flagged NEEDS_VERIFICATION pending re-audit. Specific reopened tasks: TASK-NTF-03 (notifications domain entirely unauth'd), TASK-ADM-03 (3 admin endpoints unauth'd, `Math.random()` analytics). See `docs/ssot/gap_analysis.md` § 4 for full false-positive log.
+
+
+---
+
+# APPENDIX A — Verification Results (2026-05-24)
+
+> **Lead Architect Deep-Dive Verification** — Run by project lead after taking ownership.
+> All gates re-executed at HEAD of `feat/asset-system-regen` (SHA `a6331ed` at time of the run).
+
+## A.1 Quality Gate Results
+
+| Gate | Command | Result | Status |
+|------|---------|--------|--------|
+| TypeScript | `npx tsc --noEmit` | 0 errors | ✅ PASS |
+| Tests | `npm test` | 14,932 passed, 35 failed, 19 skipped | ⚠️ DEGRADED |
+| Lint | `npm run lint` | 0 blocking errors, 841 warnings | ⚠️ WARN |
+| Security (deps) | `npm audit --audit-level=high` | 6 high, 14 moderate, 2 low | 🚨 FAIL |
+| Build | `npm run build` | Not executed (presumed from CI) | ⏳ PENDING |
+
+### Test Failure Analysis (35 failures)
+
+| Suite | Failures | Root Cause | Fix Strategy |
+|-------|----------|------------|--------------|
+| `pctt-mode-integration.test.ts` | 3 | Weekend market calendar rejection (May 24, 2026 is Saturday) | Mock `Date` or market calendar in tests |
+| *(remaining 32)* | 32 | Unidentified — need per-suite inspection | Run with `--verbose` |
+
+**Key insight**: The 3 PCTT failures are **time-dependent tests** that fail on weekends. This is a test-quality issue, not a code bug. However, it means the test suite is not reliably green on all days.
+
+### Lint Warning Analysis (841 warnings)
+
+| Category | Count | Action |
+|----------|-------|--------|
+| `@typescript-eslint/no-explicit-any` | ~290 | Migrate to `unknown` + type guards |
+| `@typescript-eslint/no-unused-vars` | ~200 | Clean up imports |
+| `react/display-name` | ~15 | Add `displayName` to forwardRef components |
+| Other | ~336 | Misc |
+
+### Security Audit (npm audit)
+
+| Severity | Count | Packages |
+|----------|-------|----------|
+| High | 6 | `systeminformation`, `ws`, `uuid` (via `svix`→`resend`) |
+| Moderate | 14 | `uuid`, `ws`, various transitive deps |
+| Low | 2 | Minor |
+
+**Note**: `uuid` vulnerability is transitive through `resend`→`svix`. `next-auth` override would fix but is breaking.
+
+---
+
+## A.2 API Route Auth Audit (294 routes)
+
+| Metric | Count | Severity |
+|--------|-------|----------|
+| Total `route.ts` files | 294 | — |
+| Using `withAuth` guard | 3 (1.0%) | 🚨 CRITICAL |
+| Using `supabaseAdmin` / service role | 30 | 🚨 HIGH |
+| **NO auth at all** | 39 | 🚨 CRITICAL |
+| Accept `userId` from body/query | 152 | 🚨 HIGH |
+| NO auth + accept `userId` | 11 | 🚨 CRITICAL |
+
+### Worst Offenders (NO auth + sensitive data)
+
+| Route | Issue |
+|-------|-------|
+| `/api/notifications/*` (5 routes) | Full CRUD without auth; push send to any user |
+| `/api/admin/audit` (POST) | Anyone can poison audit trail |
+| `/api/admin/subscriptions` (DELETE) | Anyone can cancel any subscription |
+| `/api/admin/disputes` (PATCH) | Mass-assignment without auth |
+| `/api/credit-monitoring/*` | Credit scores exposed by `userId` param |
+| `/api/documents/upload` | Upload to any user's S3 prefix |
+| `/api/student-loans` | Loan data exposed by `userId` param |
+
+**Verdict**: Auth coverage is the single highest-risk area. Only 1% of routes use the standardized guard.
+
+---
+
+## A.3 AI Provider Layer Audit
+
+| Finding | Status | Risk |
+|---------|--------|------|
+| Core AI (chat, disputes, coach) uses **only AIML API** | 🚨 Single point of failure | HIGH |
+| `/api/ai/chat` accepts **arbitrary model strings** | 🚨 Cost burn, data exfiltration | CRITICAL |
+| Trading has multi-provider fallback (isolated) | ✅ Good pattern | LOW |
+| **No OpenRouter integration** | Gap | MEDIUM |
+| **No direct OpenAI/Anthropic fallback** for core | Gap | HIGH |
+| ModelRouter returns IDs but doesn't execute fallback | 🚨 Dead code | MEDIUM |
+| 14 callers bypass ModelRouter (direct AIMLService) | 🚨 Architecture drift | HIGH |
+
+---
+
+## A.4 Mobile App Audit
+
+| Finding | Count | Severity |
+|---------|-------|----------|
+| `__DEV__` auth bypass in `authStore.ts` | 1 | 🚨 CRITICAL |
+| Dependency CVEs (mobile) | 39 (1 critical, 17 high) | 🚨 CRITICAL |
+| Bare `fetch()` without `Authorization` | 25+ files | 🚨 CRITICAL |
+| Deprecated `financialStore` still imported | 9 files | HIGH |
+| Zustand stores (actual vs documented 8) | 20 vs 8 | MEDIUM |
+| `Linking.openURL` without URL validation | 10 files | HIGH |
+| Biometric flag in unencrypted `AsyncStorage` | 1 | HIGH |
+| Mobile test coverage | 0% | 🚨 CRITICAL |
+
+---
+
+## A.5 Design System Audit
+
+| Area | Score | Status |
+|------|-------|--------|
+| Landing page | 82/100 | ✅ Polished but 2,156 lines (too large) |
+| Dashboard | 72/100 | ⚠️ Layout complete, all data mocked |
+| UI primitives | 80/100 | ✅ Good, no Storybook |
+| Design tokens | 68/100 | ⚠️ Fragmented (web vs mobile) |
+| Tailwind config | 88/100 | ✅ Excellent |
+| Global CSS / theming | 92/100 | ✅ Excellent |
+| Mobile UI | 74/100 | ⚠️ Spotty dark mode, hardcoded colors |
+| Dark mode (web) | 95/100 | ✅ Excellent |
+| Dark mode (mobile) | 60/100 | 🚨 Incomplete |
+| **Overall** | **74/100** | ⚠️ Good foundation, needs polish |
+
+---
+
+## A.6 Database Schema Audit
+
+| Finding | Severity |
+|---------|----------|
+| Table redefinition across migrations (`disputes`, `credit_reports`) | 🔴 HIGH |
+| Inconsistent FK patterns (`auth.users` vs `profiles`) | 🟡 MEDIUM |
+| Mix of `uuid_generate_v4()` and `gen_random_uuid()` | 🟢 LOW |
+| No partitioning for append-only tables | 🟡 MEDIUM |
+| JSONB without GIN indexes (most tables) | 🟡 MEDIUM |
+| `trading_signals` + `trading_signals_v2` both exist | 🟢 LOW |
+| RLS generally well-configured | ✅ GOOD |
+| 386 indexes, good coverage | ✅ GOOD |
+
+---
+
+## A.7 Re-baseline Decision
+
+Based on this verification, the **prior "0% complete" for Wave 7 is accurate** — no remediation work has begun since the 2026-05-03 audit. However, the following new findings are added to the register:
+
+| New ID | Finding | Severity | Linked Task (canonical) |
+|--------|---------|----------|-------------------------|
+| FND-072 | PCTT integration tests fail on weekends (time-dependent) | MEDIUM | TASK-TRD-W7-01 (Wave 7 Phase 0 — defined below) |
+| FND-073 | 25+ mobile files use bare `fetch()` without Authorization | CRITICAL | TASK-MOB-W7-07 |
+| FND-074 | `/api/ai/chat` accepts arbitrary model strings | CRITICAL | TASK-CMP-04 |
+| FND-075 | Mobile dark mode incomplete (hardcoded colors in widgets) | HIGH | TASK-MOB-W7-08 |
+| FND-076 | Dashboard entirely mocked (no API integration) | MEDIUM | TASK-LAUNCH-UI-01 (Wave 10, Appendix D) |
+| FND-077 | No Storybook or component documentation | LOW | TASK-LAUNCH-UI-03 (Wave 10, Appendix D) |
+| FND-078 | Landing page is 2,156-line monolith | LOW | TASK-LAUNCH-UI-02 (Wave 10, Appendix D) |
+
+> **ID reconciliation (2026-06-26):** Earlier drafts of this table linked FND-076/077/078 to `TASK-MOK-07` / `TASK-UI-W7-01` / `TASK-UI-W7-02`, which were never authored as task cards. The canonical cards are `TASK-LAUNCH-UI-01/03/02` in Appendix D (Wave 10), which already declare these `Closes` mappings. The orphaned IDs are retired.
+
+**TASK-TRD-W7-01 — Make PCTT integration tests time-independent** (Wave 7 Phase 0, size S, owner BE+QA, closes FND-072)
+- Inject a clock/`market_calendar` provider into the PCTT integration suite instead of reading the real wall clock, so weekend/holiday runs don't fail on `market_calendar` rejection.
+- Acceptance: the PCTT integration suite passes deterministically on any day of week (CI runs a Saturday-pinned clock fixture and a weekday fixture; both green).
+- This addition revises Wave 7 from 59 → **60** tasks (see § Wave 7 count note).
+
+---
+
+# APPENDIX B — Wave 8: AI Provider Resilience & Expansion (NEW)
+
+> **Opened 2026-05-24** — Project Lead Directive.
+> **Depends on**: Wave 7 Exit Criteria (especially TASK-CMP-04 for model allowlist).
+> **Goal**: Eliminate single-provider dependency on AIML API; add OpenRouter and direct provider fallbacks; enforce model allowlists; add cost controls.
+
+## B.1 Why This Wave Exists
+
+The current AI layer has a **single point of failure**: if AIML API is down or degraded, all AI features (chat, dispute generation, credit analysis, financial coaching, tax OCR) fail. The trading module already has a sophisticated `ProviderFallbackManager` with circuit breakers — but it is **not reusable** by the core platform.
+
+Additionally, the `/api/ai/chat` endpoint accepts **arbitrary model strings** from the client, enabling:
+- Uncontrolled cost burn (frontier models at $10+/1M tokens)
+- Potential data exfiltration via prompt injection to unvetted models
+- No mapping between model cost and credit deduction
+
+## B.2 Wave 8 Task Registry
+
+| ID | Title | Size | Owner | Depends on | Closes |
+|----|-------|------|-------|------------|--------|
+| **TASK-AI-PROV-01** | Extract reusable `AIProviderManager` from trading `ProviderFallbackManager` | L | ARCH | Wave 7 exit | — |
+| **TASK-AI-PROV-02** | Add OpenRouter as tier-1 provider with model catalog sync | M | BE | AI-PROV-01 | — |
+| **TASK-AI-PROV-03** | Add direct OpenAI provider fallback (SDK + raw fetch) | M | BE | AI-PROV-01 | — |
+| **TASK-AI-PROV-04** | Add direct Anthropic provider fallback (SDK + raw fetch) | M | BE | AI-PROV-01 | — |
+| **TASK-AI-PROV-05** | Add direct Google/Gemini provider fallback | S | BE | AI-PROV-01 | — |
+| **TASK-AI-PROV-06** | Model allowlist enforcement: `ModelRouter` becomes gatekeeper; client cannot override | M | SEC + BE | CMP-04 (W7) | FND-074 |
+| **TASK-AI-PROV-07** | Cost-tier mapping: each model has credit cost; chat deducts based on actual model | M | BE | AI-PROV-06 | — |
+| **TASK-AI-PROV-08** | Provider health dashboard (latency, error rate, cost per provider) | M | FE + BE | AI-PROV-02..05 | — |
+| **TASK-AI-PROV-09** | Migrate 14 direct `AIMLService` callers to `ModelRouter` + `AIProviderManager` | L | BE | AI-PROV-01 | FND-061 |
+| **TASK-AI-PROV-10** | Streaming fallback: interrupt detection + provider switch mid-stream | L | BE | AI-PROV-01 | — |
+| **TASK-AI-PROV-11** | PCTT trading AI migrated to shared `AIProviderManager` (remove isolated fallback) | M | BE | AI-PROV-01 | — |
+| **TASK-AI-PROV-12** | Load-test provider failover (simulate AIML API down → verify <2s failover) | M | DEVOPS | AI-PROV-02..05 | — |
+
+### TASK-AI-PROV-01: Reusable AIProviderManager
+
+**Objective**: Extract the circuit breaker, health check, timeout, and fallback logic from `src/lib/trading/ai/provider-fallback.ts` into a generic `AIProviderManager` that works for any AI call (chat, disputes, OCR, coaching, trading).
+
+**Architecture**:
+```
+AIProviderManager
+├── ProviderRegistry (OpenRouter, OpenAI, Anthropic, Google, AIML)
+├── CircuitBreaker per provider (3 failures → open 60s)
+├── HealthChecker (latency, error rate, token cost)
+├── FallbackOrchestrator (ordered retry with timeout)
+└── CostTracker (per-request billing for credit deduction)
+```
+
+**Acceptance Criteria**:
+- [ ] `AIProviderManager` is provider-agnostic (no trading-specific types)
+- [ ] Circuit breaker config: 3 failures, 60s reset, 15s timeout default
+- [ ] All existing trading tests pass without regression
+- [ ] New unit tests: 100% coverage on fallback logic
+
+**Key Files**:
+- `src/lib/ai/providers/AIProviderManager.ts` (new)
+- `src/lib/ai/providers/ProviderRegistry.ts` (new)
+- `src/lib/ai/providers/types.ts` (new)
+- `src/lib/trading/ai/provider-fallback.ts` (refactored to use shared manager)
+
+**Verification**:
+```bash
+npm test -- ai-provider-manager --coverage  # >= 90% coverage
+npm test -- trading/ai  # all pass, no regression
+```
+
+### TASK-AI-PROV-02: OpenRouter Integration
+
+**Objective**: Add OpenRouter as a first-class provider. OpenRouter offers 200+ models with unified API, key benefits: fallback across multiple upstreams, lower latency, cost optimization.
+
+**Implementation**:
+- New provider: `OpenRouterProvider` implements `AIProvider` interface
+- Base URL: `https://openrouter.ai/api/v1`
+- Required headers: `HTTP-Referer`, `X-Title` (OpenRouter policy)
+- Model catalog sync: fetch available models on boot, cache for 1h
+- Error handling: OpenRouter returns `429` with `retry-after`; respect it
+
+**Env vars**:
+```env
+# placeholder — set the real value in .env (never commit it)
+OPENROUTER_API_KEY=sk-or-xxxxxxxxxxxxxxxxxxxxxxxx
+OPENROUTER_HTTP_REFERER=https://fynvita.com
+OPENROUTER_APP_NAME=Fynvita
+```
+
+**Acceptance Criteria**:
+- [ ] OpenRouter provider registered in `ProviderRegistry`
+- [ ] Model catalog sync works (cache + refresh)
+- [ ] Fallback to OpenRouter when AIML API returns 500/429/503
+- [ ] Cost per token tracked and reported
+
+### TASK-AI-PROV-06: Model Allowlist Enforcement
+
+**Objective**: Close FND-074. The client must never be able to specify an arbitrary model. All model selection goes through `ModelRouter` which validates against an allowlist.
+
+**Implementation**:
+```typescript
+// In /api/ai/chat/route.ts
+const allowedModel = ModelRouter.resolveModel({
+  task: TaskType.CHAT,
+  userTier: user.subscription_tier,
+  requestedModel: body.model, // optional hint, not directive
+});
+// If body.model is not in allowlist, ignore it and use router selection
+```
+
+**Acceptance Criteria**:
+- [ ] `ModelRouter.resolveModel()` returns only allowlisted models
+- [ ] Client-supplied `model` string is treated as hint, not directive
+- [ ] Unknown model strings log warning and use default
+- [ ] Admin can update allowlist via feature flag (no deploy required)
+- [ ] Test: passing `model: "openai/gpt-5-pro-hacker"` → uses default, returns 200
+
+---
+
+## B.3 Wave 8 Exit Criteria
+
+1. `AIProviderManager` has ≥3 providers registered (AIML + OpenRouter + direct OpenAI)
+2. All AI chat/calls go through `ModelRouter` → `AIProviderManager`; zero direct SDK calls outside provider layer
+3. Model allowlist blocks arbitrary client strings (tested with 10 adversarial inputs)
+4. Failover latency <2s when primary provider returns 500/503/429
+5. Cost tracking accurate to 3 decimal places per request
+6. Provider health dashboard accessible at `/admin/ai-providers`
+7. `npm test -- ai-provider` reports ≥100 new tests passing
+
+---
+
+# APPENDIX C — Wave 9: Mobile Hardening & App Store Readiness (EXPANDED)
+
+> **Opened 2026-05-24** — Project Lead Directive.
+> **Depends on**: Wave 7 Phase 6 (TASK-MOB-W7-01..07).
+> **Goal**: Mobile app is secure, tested, and ready for App Store / Play Store submission.
+
+## C.1 Expanded Task Registry (Wave 7 Mobile + New Launch Tasks)
+
+> **Counting:** Wave 9's net-new tasks are **`TASK-MOB-W7-08` + `TASK-MOB-LAUNCH-01..12` = 13**. The `TASK-MOB-W7-01..07` rows below are **re-listed for context only** — they belong to **Wave 7 Phase 6 (part of the 60)** and are NOT re-counted in the 230 total. Rows that count toward Wave 9 are marked **(W9 net-new)**.
+
+| ID | Title | Size | Owner | Depends on | Closes |
+|----|-------|------|-------|------------|--------|
+| TASK-MOB-W7-01 _(ref — Wave 7)_ | `expo-secure-store` migration for biometric flag, push token, auth keys | M | MOB | none | FND-069 |
+| TASK-MOB-W7-02 _(ref — Wave 7)_ | `Linking.openURL` scheme allowlist wrapper (https only) | S | MOB | none | FND-070 |
+| TASK-MOB-W7-03 _(ref — Wave 7)_ | `npm audit fix` in `mobile-app/` (handlebars/node-forge/lodash) | S | MOB | none | FND-065 |
+| TASK-MOB-W7-04 _(ref — Wave 7)_ | Delete deprecated `financialStore`; migrate 5 callers | S | MOB | none | FND-066, FND-067 |
+| TASK-MOB-W7-05 _(ref — Wave 7)_ | Normalize AsyncStorage key prefixes to `@fynvita/<domain>/<key>` | S | MOB | MOB-W7-01 | — |
+| TASK-MOB-W7-06 _(ref — Wave 7)_ | Remove `__DEV__` auth bypass; separate `DevAuthProvider` excluded from prod bundle | S | MOB | none | FND-064 |
+| TASK-MOB-W7-07 _(ref — Wave 7)_ | Replace bare `fetch()` with `api.get/post()` from `client.ts` (auto-attaches Bearer) | M | MOB | AUTH-03 (W7) | FND-071, FND-073 |
+| **TASK-MOB-W7-08 (W9 net-new)** | Mobile dark mode completion: audit all components for hardcoded colors | M | MOB | none | FND-075 |
+| **TASK-MOB-LAUNCH-01** | Mobile test suite: Jest coverage ≥80% (currently 0%) | XL | MOB + QA | MOB-W7-07 | — |
+| **TASK-MOB-LAUNCH-02** | E2E mobile tests with Detox (critical flows: auth, dashboard, payments) | L | MOB + QA | MOB-LAUNCH-01 | — |
+| **TASK-MOB-LAUNCH-03** | App Store assets: screenshots, app icon, description, privacy policy URL | M | MOB | none | — |
+| **TASK-MOB-LAUNCH-04** | Play Store assets: feature graphic, screenshots, store listing | M | MOB | none | — |
+| **TASK-MOB-LAUNCH-05** | Push notification provisioning: APNS certs + FCM setup | M | DEVOPS | MOB-W7-01 | — |
+| **TASK-MOB-LAUNCH-06** | App Store Connect + Google Play Console account setup | S | DEVOPS | none | — |
+| **TASK-MOB-LAUNCH-07** | Beta distribution: TestFlight (iOS) + Internal Testing (Android) | M | DEVOPS | MOB-LAUNCH-03..04 | — |
+| **TASK-MOB-LAUNCH-08** | Mobile analytics: PostHog or Mixpanel integration | M | MOB | none | — |
+| **TASK-MOB-LAUNCH-09** | Crash reporting: Sentry mobile SDK integration | M | MOB | none | — |
+| **TASK-MOB-LAUNCH-10** | Deep linking / universal links configuration | M | MOB | none | — |
+| **TASK-MOB-LAUNCH-11** | Rate limiting on mobile API client (respect 429s, exponential backoff) | S | MOB | MOB-W7-07 | — |
+| **TASK-MOB-LAUNCH-12** | Mobile offline mode: queue actions, sync on reconnect | L | MOB | MOB-W7-04 | — |
+
+### TASK-MOB-W7-07: Replace Bare fetch() with Authenticated Client
+
+**Objective**: Close FND-071 and FND-073. React Native has no automatic cookie jar. Every API call must explicitly attach the Bearer token.
+
+**Implementation**:
+```typescript
+// src/services/api/client.ts (already exists, needs adoption)
+const api = {
+  get: (url: string, opts?: RequestInit) => fetchWithAuth(url, { ...opts, method: 'GET' }),
+  post: (url: string, body: unknown, opts?: RequestInit) => fetchWithAuth(url, { ...opts, method: 'POST', body: JSON.stringify(body) }),
+};
+
+async function fetchWithAuth(url: string, init: RequestInit) {
+  const token = await SecureStore.getItemAsync('access_token');
+  return fetch(url, {
+    ...init,
+    headers: {
+      ...init.headers,
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+}
+```
+
+**Files to migrate** (25+ identified):
+- `src/store/creditBalanceStore.ts`
+- `app/financial-intelligence/chat.tsx`
+- `app/financial-intelligence/smart-budget.tsx`
+- `app/investments/crypto-analysis.tsx`
+- `app/investments/signals.tsx`
+- `src/hooks/useOrders.ts`
+- `src/hooks/usePositions.ts`
+- `src/hooks/useISE.ts`
+- ... (full list in verification report)
+
+**Acceptance Criteria**:
+- [ ] Zero bare `fetch()` calls to `/api/*` endpoints (except `api/client.ts` itself)
+- [ ] All API calls include `Authorization: Bearer <token>`
+- [ ] Token refresh handled (401 → refresh → retry once)
+- [ ] ESLint rule `no-bare-fetch` blocks new violations
+
+---
+
+## C.2 Wave 9 Exit Criteria
+
+1. Mobile `npm audit --audit-level=high` exits 0
+2. Jest coverage ≥80% (`npm test -- --coverage` in `mobile-app/`)
+3. Detox E2E tests pass for: signup → login → dashboard → subscription → logout
+4. No `__DEV__` or `seedUser` in production bundle (`npx expo export --dev=false` + grep)
+5. App Store screenshots + description complete
+6. TestFlight build uploaded and installable
+7. Crash reporting (Sentry) receives test events from staging
+8. Deep links work: `https://fynvita.com/dashboard` → opens app
+
+---
+
+# APPENDIX D — Wave 10: Visual Polish, Marketing Site & Launch (NEW)
+
+> **Opened 2026-05-24** — Project Lead Directive.
+> **Depends on**: Waves 7, 8, 9 exit criteria.
+> **Goal**: Ship a visually beautiful, comprehensive, secure product.
+
+## D.1 Task Registry
+
+| ID | Title | Size | Owner | Depends on | Closes |
+|----|-------|------|-------|------------|--------|
+| **TASK-LAUNCH-UI-01** | Replace dashboard mock data with real API integration | L | FE | AUTH-03 (W7), MOK-01..05 | FND-076 |
+| **TASK-LAUNCH-UI-02** | Split 2,156-line landing page into section components | M | FE | none | FND-078 |
+| **TASK-LAUNCH-UI-03** | Add Storybook for UI primitives (Button, Modal, Skeleton, Toast) | M | FE | none | FND-077 |
+| **TASK-LAUNCH-UI-04** | Unify design tokens: single `design-tokens.ts` consumed by web + mobile | L | FE + MOB | none | — |
+| **TASK-LAUNCH-UI-05** | Mobile dark mode: complete audit + fix hardcoded colors | M | MOB | MOB-W7-08 | FND-075 |
+| **TASK-LAUNCH-UI-06** | Marketing site pages: /about, /features, /pricing polish | M | FE | none | — |
+| **TASK-LAUNCH-UI-07** | Add micro-interactions: haptic feedback on mobile, subtle animations on web | S | FE + MOB | none | — |
+| **TASK-LAUNCH-UI-08** | Accessibility audit: axe-core scan on all routes; fix violations | M | FE | none | — |
+| **TASK-LAUNCH-SEO-01** | Meta tags, Open Graph, structured data (JSON-LD) on all pages | M | FE | none | — |
+| **TASK-LAUNCH-SEO-02** | Sitemap.xml + robots.txt generation at build time | S | FE | none | — |
+| **TASK-LAUNCH-PERF-01** | Lighthouse score ≥90 on all critical pages | L | FE | none | — |
+| **TASK-LAUNCH-PERF-02** | Bundle analysis: code-split AI components, charts, PDF libs | M | FE | none | — |
+| **TASK-LAUNCH-PERF-03** | Database query optimization: add missing indexes, N+1 fixes | M | BE | IDR-01 (W7) | FND-040 |
+| **TASK-LAUNCH-DEVOPS-01** | Production environment: Vercel project configured with all env vars | M | DEVOPS | Wave 7 exit | — |
+| **TASK-LAUNCH-DEVOPS-02** | Staging ↔ production promotion workflow | S | DEVOPS | none | — |
+| **TASK-LAUNCH-DEVOPS-03** | Monitoring: Datadog or Vercel Analytics + error alerting | M | DEVOPS | none | — |
+| **TASK-LAUNCH-DEVOPS-04** | Backup strategy: automated Supabase backups + S3 versioning | S | DEVOPS | none | — |
+| **TASK-LAUNCH-LEGAL-01** | Terms of Service, Privacy Policy, CCPA notice pages | M | LEGAL | CMP-03 (W7) | — |
+| **TASK-LAUNCH-LEGAL-02** | FCRA compliance disclosures on credit repair flows | M | LEGAL | CRD-03..07 | — |
+| **TASK-LAUNCH-LEGAL-03** | GDPR cookie consent banner + preference center | M | FE | CMP-01 (W7) | — |
+
+---
+
+## D.2 Visual Beauty Checklist
+
+### Web App
+- [ ] Consistent spacing (4px base grid) across all pages
+- [ ] Typography scale respected (no ad-hoc font sizes)
+- [ ] Color tokens used (no hex codes outside globals.css / tailwind config)
+- [ ] Loading states: skeletons on all data-dependent components
+- [ ] Empty states: illustrated, not just "No data"
+- [ ] Error states: friendly messages, retry buttons
+- [ ] Smooth page transitions (Framer Motion `AnimatePresence`)
+- [ ] Dark mode: every page tested, no flash on load
+- [ ] Mobile responsive: all pages usable at 320px width
+- [ ] Reduced motion: `prefers-reduced-motion` respected
+
+### Mobile App
+- [ ] Native-feeling navigation (bottom tabs, stack transitions)
+- [ ] Pull-to-refresh on all list screens
+- [ ] Haptic feedback on primary actions
+- [ ] Biometric auth prompt on app launch (if enabled)
+- [ ] Consistent spacing with web (shared tokens)
+- [ ] Dark mode: every screen tested
+- [ ] Offline indicators when connection lost
+- [ ] Skeleton loading on all API-dependent screens
+
+### Marketing Site
+- [ ] Hero section: compelling value prop + CTA above fold
+- [ ] Social proof: testimonials, trust badges, user count
+- [ ] Feature grid: 3-6 core features with icons + descriptions
+- [ ] Pricing page: clear tier comparison, FAQ
+- [ ] About page: team, mission, press mentions
+- [ ] Blog / resources section (can be minimal v1)
+
+---
+
+# APPENDIX E — AI Provider Expansion Technical Spec
+
+## E.1 Provider Architecture (Post-Wave 8)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      CLIENT (Browser / Mobile)              │
+│                         ↓                                   │
+│              Model hint (optional, not directive)           │
+└──────────────────────────┬──────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    API ROUTE (/api/ai/chat)                  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Auth (withAuth) → Input Validation (Zod)            │  │
+│  │  → ModelRouter.resolveModel({ task, tier, hint })    │  │
+│  │  → Returns: { provider, modelId, costTier }          │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                         ↓                                   │
+│              AIProviderManager.execute(request)             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  1. Try primary provider (circuit breaker closed?)   │  │
+│  │  2. If fail → try fallback #1 (OpenRouter)           │  │
+│  │  3. If fail → try fallback #2 (direct OpenAI)        │  │
+│  │  4. If fail → try fallback #3 (direct Anthropic)     │  │
+│  │  5. If all fail → return 503 + retry-after           │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                         ↓                                   │
+│              CostTracker.record(provider, tokens)           │
+│  └──────────────────────────────────────────────────────┘  │
+└──────────────────────────┬──────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│  PROVIDER LAYER                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │ AIML API    │  │ OpenRouter  │  │ Direct      │         │
+│  │ (primary)   │  │ (fallback 1)│  │ OpenAI      │         │
+│  │ 300+ models │  │ 200+ models │  │ (fallback 2)│         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+│  ┌─────────────┐  ┌─────────────┐                          │
+│  │ Direct      │  │ Direct      │                          │
+│  │ Anthropic   │  │ Google      │                          │
+│  │ (fallback 3)│  │ (fallback 4)│                          │
+│  └─────────────┘  └─────────────┘                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## E.2 Provider Configuration
+
+```typescript
+// src/lib/ai/providers/config.ts — illustrative shape (not literal source)
+export const PROVIDER_CONFIG = {
+  aiml: {
+    baseUrl: process.env.AIML_API_URL || "https://api.aimlapi.com/v1",
+    apiKey: process.env.AIML_API_KEY!,
+    priority: 1,
+    timeoutMs: 15000,
+    models: ["openai/gpt-4o", "anthropic/claude-3.5-sonnet"], // …plus others, synced at runtime
+  },
+  openrouter: {
+    baseUrl: "https://openrouter.ai/api/v1",
+    apiKey: process.env.OPENROUTER_API_KEY!,
+    httpReferer: process.env.OPENROUTER_HTTP_REFERER!,
+    appName: process.env.OPENROUTER_APP_NAME!,
+    priority: 2,
+    timeoutMs: 15000,
+    models: [], // synced at runtime
+  },
+  openai: {
+    baseUrl: "https://api.openai.com/v1",
+    apiKey: process.env.OPENAI_API_KEY!,
+    priority: 3,
+    timeoutMs: 15000,
+    models: ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
+  },
+  anthropic: {
+    baseUrl: "https://api.anthropic.com/v1",
+    apiKey: process.env.ANTHROPIC_API_KEY!,
+    priority: 4,
+    timeoutMs: 20000,
+    models: ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"],
+  },
+  google: {
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+    apiKey: process.env.GOOGLE_AI_API_KEY!,
+    priority: 5,
+    timeoutMs: 15000,
+    models: ["gemini-1.5-pro", "gemini-1.5-flash"],
+  },
+} as const;
+```
+
+## E.3 Cost Tier Mapping
+
+| Model | Provider | Input $/1M | Output $/1M | Credit Cost |
+|-------|----------|-----------|------------|-------------|
+| gpt-4o | OpenAI | $2.50 | $10.00 | 1.0× |
+| gpt-4o-mini | OpenAI | $0.15 | $0.60 | 0.1× |
+| claude-3.5-sonnet | Anthropic | $3.00 | $15.00 | 1.2× |
+| claude-3-haiku | Anthropic | $0.25 | $1.25 | 0.15× |
+| gemini-1.5-pro | Google | $3.50 | $10.50 | 1.1× |
+| gemini-1.5-flash | Google | $0.35 | $1.05 | 0.12× |
+
+**Credit formula**: `credits = Math.ceil((inputTokens * inputRate + outputTokens * outputRate) / baseRate)`
+
+Base rate = $2.50 per 1M input tokens (gpt-4o baseline).
+
+## E.4 Fallback Decision Tree
+
+```
+1. Client sends chat request with optional model hint
+2. ModelRouter.resolveModel(task=CHAT, tier=Pro, hint="claude")
+   → Returns: { provider: "aiml", model: "anthropic/claude-3.5-sonnet", costTier: 1.2 }
+3. AIProviderManager.execute()
+   a. Check AIML circuit breaker → CLOSED? Try AIML.
+      → Success? Record cost, return response.
+      → Fail (500/429/503/timeout)? Open breaker, goto b.
+   b. Check OpenRouter circuit breaker → CLOSED? Try OpenRouter.
+      → Success? Record cost, return response.
+      → Fail? Open breaker, goto c.
+   c. Check direct OpenAI circuit breaker → CLOSED? Try OpenAI with equivalent model.
+      → Success? Record cost, return response.
+      → Fail? Open breaker, goto d.
+   d. Check direct Anthropic circuit breaker → CLOSED? Try Anthropic.
+      → Success? Record cost, return response.
+      → Fail? Return 503 Service Unavailable + Retry-After: 30
+4. If all providers fail for >60s, auto-alert on-call via PagerDuty/Slack
+```
+
+## E.5 Security Requirements
+
+- [ ] Provider API keys stored in environment variables only
+- [ ] Keys never logged (redacted in logger)
+- [ ] No client-side provider key exposure
+- [ ] Rate limiting per user per provider (prevent cost burn)
+- [ ] Max token limits per request (configurable by tier)
+- [ ] PII redaction before sending to ANY provider (TASK-CMP-05)
+
+---
+
+# APPENDIX F — Launch Readiness Checklist
+
+## F.1 Pre-Launch Security Gates (MUST PASS)
+
+| # | Gate | Verification | Owner |
+|---|------|-------------|-------|
+| 1 | All 33 CRITICAL findings closed | `gap_analysis.md` linked task IDs | SEC |
+| 2 | All 38 HIGH findings closed | `gap_analysis.md` linked task IDs | SEC |
+| 3 | Auth coverage ≥95% of routes | `scripts/verify-auth-coverage.ts` exits 0 | SEC |
+| 4 | IDOR audit script exits 0 | `npm run audit:idor` | SEC |
+| 5 | Money precision tests pass | `npm run test:money` | BE |
+| 6 | Webhook idempotency tests pass | `npm run test:webhook-idempotency` | BE |
+| 7 | Mock-data lint passes | `npm run audit:mocks` | DEVOPS |
+| 8 | Mobile bundle audit passes | `npm run audit:bundle` | MOB |
+| 9 | PII redaction tests pass | `npm run test:compliance` | SEC |
+| 10 | `npm audit --audit-level=high` exits 0 (web + mobile) | CI | DEVOPS |
+
+## F.2 Pre-Launch Functional Gates (MUST PASS)
+
+| # | Gate | Verification | Owner |
+|---|------|-------------|-------|
+| 11 | TypeScript 0 errors | `npx tsc --noEmit` | ARCH |
+| 12 | All Jest tests pass | `npm test` | QA |
+| 13 | Coverage ≥80% web, ≥80% mobile | `npm test -- --coverage` | QA |
+| 14 | Build succeeds | `npm run build` | DEVOPS |
+| 15 | Cypress E2E passes | `npx cypress run` | QA |
+| 16 | Playwright E2E passes | `npx playwright test` | QA |
+| 17 | Stripe checkout end-to-end | Manual test on staging | BE |
+| 18 | Plaid Link flow end-to-end | Manual test on staging | BE |
+| 19 | AI chat responds with all providers | Manual failover test | BE |
+| 20 | Push notifications deliver (web + mobile) | Manual test | MOB |
+
+## F.3 Pre-Launch Visual Gates (MUST PASS)
+
+| # | Gate | Verification | Owner |
+|---|------|-------------|-------|
+| 21 | Lighthouse ≥90 on /, /dashboard, /pricing | PageSpeed Insights | FE |
+| 22 | Dark mode complete on web | Visual inspection | FE |
+| 23 | Dark mode complete on mobile | Visual inspection | MOB |
+| 24 | Mobile responsive on all pages | Browser devtools | FE |
+| 25 | Accessibility: 0 axe violations | `npm run test:a11y` | FE |
+| 26 | No mock data in production dashboard | API integration verified | FE |
+| 27 | Marketing site pages polished | Design review | FE |
+| 28 | App Store screenshots ready | Asset review | MOB |
+
+## F.4 Pre-Launch Operational Gates (MUST PASS)
+
+| # | Gate | Verification | Owner |
+|---|------|-------------|-------|
+| 29 | Production env vars set in Vercel | Dashboard check | DEVOPS |
+| 30 | Stripe webhooks configured for production | Stripe dashboard | BE |
+| 31 | Supabase RLS policies verified | `supabase db lint` | BE |
+| 32 | Database migrations run on production | `supabase migration up` | DEVOPS |
+| 33 | S3 bucket CORS + policy correct | AWS console | DEVOPS |
+| 34 | Resend domain verified | Resend dashboard | DEVOPS |
+| 35 | Error monitoring active (Sentry/Datadog) | Test event received | DEVOPS |
+| 36 | Backup strategy tested | Restore from backup | DEVOPS |
+| 37 | Rollback playbook documented | `docs/runbook/rollback.md` | DEVOPS |
+| 38 | On-call rotation defined | PagerDuty/Slack configured | DEVOPS |
+
+## F.5 Soft Launch Plan (Recommended)
+
+**Phase 1: Internal Beta (Week 1)**
+- 10-20 internal users + friends & family
+- All features enabled, monitor error rates
+- Daily standup to triage issues
+
+**Phase 2: Waitlist Beta (Weeks 2-3)**
+- 100-500 waitlist users
+- Free tier only, monitor conversion funnel
+- Collect NPS feedback
+
+**Phase 3: Public Launch (Week 4)**
+- Open signup
+- PR + social media push
+- Monitor traffic spikes, scale if needed
+
+## F.6 Post-Launch Monitoring (First 30 Days)
+
+| Metric | Target | Alert Threshold |
+|--------|--------|----------------|
+| Error rate | <0.1% | >0.5% |
+| API p95 latency | <500ms | >1s |
+| Stripe checkout success | >95% | <90% |
+| AI chat availability | >99.5% | <99% |
+| Mobile crash-free rate | >99% | <98% |
+| Daily active users (DAU) | Growth | Flat for 3 days |
+| Customer support tickets | <5/day | >20/day |
+
+---
+
+# APPENDIX G — Updated Master Task Count
+
+| Wave | Focus | Net-new tasks | Status |
+|------|-------|--------------:|--------|
+| 0-6 (Original) | Foundation → External Integrations | 125 | NEEDS_VERIFICATION |
+| 7 | Security & Correctness Remediation | 60 | NOT_STARTED |
+| 8 | AI Provider Resilience & Expansion | 12 | NOT_STARTED |
+| 9 | Mobile Hardening & App Store Readiness | 13 | NOT_STARTED |
+| 10 | Visual Polish, Marketing & Launch | 20 | NOT_STARTED |
+| **TOTAL (unique)** | | **230** | |
+
+> **Counting note (reconciled 2026-06-26):** Each task is counted once, in its home wave.
+> - **Wave 7 = 60** (was 59; +`TASK-TRD-W7-01`, the Phase 0 task that closes the previously-orphaned FND-072 — see Appendix A.7).
+> - **Wave 9 = 13 net-new** (`TASK-MOB-W7-08` + `TASK-MOB-LAUNCH-01..12`). Appendix C also re-lists `TASK-MOB-W7-01..07` for context, but those 7 belong to **Wave 7's 60** and are not re-counted here.
+> - **Wave 10 = 20** authored task cards (Appendix D.1: UI ×8, SEO ×2, PERF ×3, DEVOPS ×4, LEGAL ×3); the prior "22" had no two backing cards.
+> - Previous "238" double-counted the 7 shared mobile tasks and over-stated Wave 10 by 2.
+
+**Ship Target**: **2026-08-16** — 12 weeks from Wave 7 work-start 2026-05-24 (4 weeks W7 + 2 weeks W8 + 3 weeks W9 + 3 weeks W10)
+
+---
+
+*End of updated MASTER-IMPLEMENTATION-PLAN.md*
+*Last updated: 2026-05-24 by Project Lead*
