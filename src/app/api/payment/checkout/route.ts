@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { subscriptionService } from "@/lib/subscriptions/subscription-service";
 import { stripeService, SUBSCRIPTION_PLANS } from "@/lib/payment/stripe-service";
@@ -8,7 +8,7 @@ import type { Database } from "@/lib/supabase/types";
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 // Helper to get typed table reference
-const profiles = () => getSupabase().from("profiles");
+const profiles = () => getServiceRoleClient().from("profiles");
 
 export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {

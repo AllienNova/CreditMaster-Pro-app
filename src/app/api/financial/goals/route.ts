@@ -10,9 +10,9 @@ import { z } from "zod";
 import { withPermission } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
 import { goalTracker } from "@/lib/financial/goal-tracker";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import type { GoalType } from "@/lib/financial/types/ai-coach.types";
 
 // Zod validation schemas

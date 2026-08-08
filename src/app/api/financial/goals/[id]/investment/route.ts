@@ -9,10 +9,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { goalInvestmentService } from "@/lib/goals/services";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 
 interface RouteParams {
   params: Promise<{

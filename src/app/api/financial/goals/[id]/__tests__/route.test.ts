@@ -6,7 +6,7 @@
  * - PATCH endpoint (update goal with Zod validation, ownership verification, progress tracking)
  * - DELETE endpoint (soft delete with ownership verification)
  * - JWT + RBAC auth
- * - Module-level getSupabase() mock with chainable query builder
+ * - Module-level getServiceRoleClient() mock with chainable query builder
  * - Dynamic [id] route params via Promise
  * - Zod updateGoalSchema validation
  * - Supabase ownership verification (eq id + eq user_id + single)
@@ -17,7 +17,7 @@
 import { NextRequest } from "next/server";
 
 // Module-level supabase mock - must be set up BEFORE route import
-// because `const supabase = getSupabase()` runs at module load time
+// because `const supabase = getServiceRoleClient()` runs at module load time
 const mockSingleResult = jest.fn();
 const mockQueryChain = {
   from: jest.fn().mockReturnThis(),
@@ -27,8 +27,8 @@ const mockQueryChain = {
   single: jest.fn(),
 };
 
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: jest.fn(() => mockQueryChain),
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: jest.fn(() => mockQueryChain),
 }));
 
 jest.mock("@/lib/auth/jwt-validation");

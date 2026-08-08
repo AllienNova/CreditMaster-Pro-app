@@ -5,7 +5,7 @@
  * - GET endpoint (list goals with filters and progress metrics)
  * - POST endpoint (create goal with Zod validation)
  * - JWT + RBAC auth
- * - Module-level getSupabase() mock with chainable query builder
+ * - Module-level getServiceRoleClient() mock with chainable query builder
  * - Zod createGoalSchema validation
  * - Filter parameters (status, type, priority)
  * - Error handling
@@ -14,7 +14,7 @@
 import { NextRequest } from "next/server";
 
 // Module-level supabase mock - must be set up BEFORE route import
-// because `const supabase = getSupabase()` runs at module load time
+// because `const supabase = getServiceRoleClient()` runs at module load time
 //
 // The route builds the query chain as:
 //   let query = supabase.from().select().eq("user_id").order()
@@ -36,8 +36,8 @@ const mockQueryChain: Record<string, jest.Mock> & { then?: unknown } = {
   }),
 };
 
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: jest.fn(() => mockQueryChain),
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: jest.fn(() => mockQueryChain),
 }));
 
 jest.mock("@/lib/auth/jwt-validation");

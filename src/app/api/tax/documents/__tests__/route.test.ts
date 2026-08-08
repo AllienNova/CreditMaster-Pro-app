@@ -17,8 +17,8 @@ jest.mock("@/lib/auth/jwt-validation", () => ({
 jest.mock("@/lib/auth/resolve-role", () => ({
   resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: () => ({
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: () => ({
     from: () => ({
       select: () => ({
         eq: () => ({

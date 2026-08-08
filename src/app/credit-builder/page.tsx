@@ -7,7 +7,7 @@
  */
 
 import Link from "next/link";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { redirect } from "next/navigation";
 import AICreditRoadmap from "@/components/credit-builder/AICreditRoadmap";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -22,7 +22,7 @@ export const metadata = {
 };
 
 export default async function CreditBuilderDashboard() {
-  const supabase = getSupabase();
+  const supabase = getServiceRoleClient();
   const {
     data: { user },
     error,

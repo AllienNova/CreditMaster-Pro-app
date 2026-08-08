@@ -71,8 +71,8 @@ const mockSupabase = {
   }),
 };
 
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: jest.fn(() => mockSupabase),
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: jest.fn(() => mockSupabase),
 }));
 
 import { GET, PATCH, DELETE } from "../route";

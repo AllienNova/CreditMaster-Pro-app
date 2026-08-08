@@ -64,9 +64,9 @@ import { withPermission } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
 import { healthScoreCalculatorV2 } from "@/lib/financial/health-score-calculator-v2";
 import { financialAggregationService } from "@/lib/financial/financial-aggregation-service";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 
 /**
  * GET /api/financial/health-score

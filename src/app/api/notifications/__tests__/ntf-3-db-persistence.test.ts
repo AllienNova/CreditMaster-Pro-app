@@ -36,8 +36,8 @@ function createChain(): any {
 
 let lastChain: any;
 
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: jest.fn(),
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: jest.fn(),
 }));
 
 jest.mock("resend", () => ({
@@ -62,11 +62,11 @@ jest.mock("@/lib/auth/api-guard", () => ({
 
 import { notificationServiceDB } from "@/lib/notifications/notification-service-db";
 import type { NotificationType } from "@/lib/notifications/notification-service-db";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { GET, POST, PATCH, DELETE } from "@/app/api/notifications/route";
 import { NextRequest } from "next/server";
 
-const mockGetSupabase = getSupabase as jest.Mock;
+const mockGetSupabase = getServiceRoleClient as jest.Mock;
 
 function freshSupabase() {
   mockGetSupabase.mockImplementation(() => ({
@@ -140,7 +140,7 @@ describe("TASK-NTF-03: DB persistence (cold-start test)", () => {
   });
 
   it("getUserNotifications queries Supabase — not an in-memory Map", async () => {
-    // If this uses the Map, getSupabase would never be called.
+    // If this uses the Map, getServiceRoleClient would never be called.
     // After NTF-3, it must call Supabase.
     mockTerminalResult = { data: [sampleRow], error: null };
 

@@ -7,11 +7,11 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { withAuth } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import { generateMockCreditReport } from "@/lib/credit-bureau/mock-credit-report-generator";
 import type { Bureau } from "@/types/credit-bureau";
 

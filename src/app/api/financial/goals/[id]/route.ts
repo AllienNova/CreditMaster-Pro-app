@@ -11,9 +11,9 @@ import { z } from "zod";
 import { withPermission } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
 import { goalTracker } from "@/lib/financial/goal-tracker";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 
 // Zod validation schema for PATCH
 const updateGoalSchema = z.object({

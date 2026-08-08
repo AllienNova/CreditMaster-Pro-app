@@ -9,7 +9,7 @@ const mockDeleteUser = jest.fn();
 const mockLoggerError = jest.fn();
 
 jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: () => ({
+  createClient: () => ({
     auth: { signUp: mockSignUp },
     from: mockFrom,
   }),

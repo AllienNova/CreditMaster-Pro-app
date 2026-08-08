@@ -37,8 +37,8 @@ const mockSupabase = {
   rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
 };
 
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: () => mockSupabase,
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: () => mockSupabase,
 }));
 
 jest.mock("@/lib/auth/jwt-validation");

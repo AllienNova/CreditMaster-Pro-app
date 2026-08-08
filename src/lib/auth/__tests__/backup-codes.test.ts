@@ -6,7 +6,7 @@ const mockRpc = jest.fn();
 const mockFrom = jest.fn();
 
 jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: () => ({
+  createClient: () => ({
     rpc: mockRpc,
     from: mockFrom,
   }),
