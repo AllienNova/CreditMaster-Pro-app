@@ -152,7 +152,14 @@ function applyMigration(sql, schema) {
   }
 }
 
-function main() {
+/**
+ * Replay every migration in filename order and return `table -> Set(column)`.
+ * Exported so list-user-scoped-tables.js can reuse this parse instead of
+ * maintaining a second one that drifts (its own accumulate-only copy never
+ * honoured DROP TABLE, so a table dropped in 20260517000002 lived on in the
+ * IDOR gate's input for months).
+ */
+function buildSchema() {
   const schema = new Map();
   const files = readdirSync(MIGRATIONS)
     .filter((f) => f.endsWith(".sql"))
@@ -160,6 +167,11 @@ function main() {
   for (const f of files) {
     applyMigration(readFileSync(join(MIGRATIONS, f), "utf8"), schema);
   }
+  return { schema, migrationCount: files.length };
+}
+
+function main() {
+  const { schema, migrationCount: files } = buildSchema();
 
   const lines = [...schema.entries()]
     .filter(([, cols]) => cols.size > 0)
@@ -171,11 +183,13 @@ function main() {
   if (dest) {
     writeFileSync(dest, out);
     console.error(
-      `${lines.length} tables from ${files.length} migrations -> ${dest}`,
+      `${lines.length} tables from ${files} migrations -> ${dest}`,
     );
   } else {
     process.stdout.write(out);
   }
 }
 
-main();
+if (require.main === module) main();
+
+module.exports = { buildSchema: () => buildSchema().schema };

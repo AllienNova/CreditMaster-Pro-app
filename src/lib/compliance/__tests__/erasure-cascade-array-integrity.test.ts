@@ -27,6 +27,9 @@
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { buildSchema } = require("../../../../scripts/schema-from-migrations");
+
 const MIGRATIONS_DIR = join(process.cwd(), "supabase", "migrations");
 
 /** Longest real table name in this schema is well under this. */
@@ -184,6 +187,46 @@ describe("delete_user_data_cascade v_tables integrity", () => {
       expect(registered).toBe(false);
     },
   );
+
+  /**
+   * COVERAGE, not just structure.
+   *
+   * The assertions above prove that what IS registered is well-formed and that
+   * what IS excluded stays excluded. Neither notices the case that actually
+   * loses a GDPR request: a migration adds a new table carrying `user_id`, and
+   * nobody adds it to the cascade. Nothing fails, the erasure "completes", and
+   * that user's rows survive.
+   *
+   * So this derives the set of user-scoped tables from the migrations
+   * themselves and demands every one be either registered or deliberately
+   * excluded with a reason. A new table forces a decision instead of
+   * defaulting to "not erased".
+   */
+  it("every user-scoped table is either registered or deliberately excluded", () => {
+    const schema = buildSchema();
+    const userScoped = [...schema.entries()]
+      .filter(([, cols]) => cols.has("user_id"))
+      .map(([table]) => table);
+
+    // `profiles` is deleted explicitly at the end of the function, not via the
+    // loop, because every other table's FK depends on it.
+    const handledElsewhere = new Set<string>([
+      "profiles",
+      ...DELIBERATE_EXCLUSIONS,
+    ]);
+
+    const registered = new Set(
+      entryLines
+        .map((l) => l.match(/^'([a-z0-9_]+)'/)?.[1])
+        .filter((t): t is string => Boolean(t)),
+    );
+
+    const unaccounted = userScoped
+      .filter((t) => !registered.has(t) && !handledElsewhere.has(t))
+      .sort();
+
+    expect(unaccounted).toEqual([]);
+  });
 });
 
 /** Drop a trailing `-- comment` so the comma check sees the real line ending. */
