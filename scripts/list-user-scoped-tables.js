@@ -26,15 +26,54 @@
  *   node scripts/list-user-scoped-tables.js /tmp/uid.txt
  */
 
-const { writeFileSync } = require("fs");
+const { readFileSync, readdirSync, writeFileSync } = require("fs");
+const { join } = require("path");
 const { buildSchema } = require("./schema-from-migrations");
+
+const MIGRATIONS = join(process.cwd(), "supabase", "migrations");
+
+/**
+ * Views that expose user_id.
+ *
+ * The IDOR audit cares about anything a service-role query can read, and a
+ * view leaks exactly like the table under it: `select * from
+ * latest_credit_scores` with no owner filter returns every user's scores.
+ * Reconciling the derived list against a live database on 2026-08-01 showed
+ * exactly 8 names present live and absent here — account_summary,
+ * latest_credit_scores, portfolio_summary and five siblings — every one a
+ * VIEW. Nothing queries them today, so the gap was latent rather than live,
+ * but a view added to a query later would have been skipped in silence.
+ *
+ * Only the NAME matters here, not the column list: schema-from-migrations.js
+ * deliberately does not model views, because deriving a view's columns means
+ * resolving its SELECT, and a half-resolved column list would make the
+ * phantom-column audit report false positives on every view.
+ */
+function userScopedViews() {
+  const views = new Set();
+  const re =
+    /create\s+(?:or\s+replace\s+)?view\s+(?:if\s+not\s+exists\s+)?(?:public\.)?"?([a-zA-Z0-9_]+)"?\s+as\s+([\s\S]*?);/gi;
+
+  for (const f of readdirSync(MIGRATIONS).filter((f) => f.endsWith(".sql"))) {
+    const sql = readFileSync(join(MIGRATIONS, f), "utf8");
+    for (const m of sql.matchAll(re)) {
+      if (/\buser_id\b/i.test(m[2])) views.add(m[1].toLowerCase());
+      else views.delete(m[1].toLowerCase()); // redefined without user_id
+    }
+  }
+  return views;
+}
 
 function main() {
   const schema = buildSchema();
-  const tables = [...schema.entries()]
-    .filter(([, cols]) => cols.has("user_id"))
-    .map(([table]) => table)
-    .sort();
+  const tables = [
+    ...new Set([
+      ...[...schema.entries()]
+        .filter(([, cols]) => cols.has("user_id"))
+        .map(([table]) => table),
+      ...userScopedViews(),
+    ]),
+  ].sort();
 
   const out = tables.join("\n") + "\n";
   const dest = process.argv[2];

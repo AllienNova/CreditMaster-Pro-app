@@ -209,6 +209,36 @@ describe("delete_user_data_cascade v_tables integrity", () => {
    * excluded with a reason. A new table forces a decision instead of
    * defaulting to "not erased".
    */
+  /**
+   * The mirror of the coverage test below: entries that name a table which
+   * does not exist.
+   *
+   * These do not break erasure — the function guards each DELETE with
+   * to_regclass() and skips a missing relation — but they make the cascade
+   * overstate its own reach. A reader counting 148 entries would conclude 148
+   * tables are erased. Verified against a live database on 2026-08-01: four
+   * entries have no table and no code that queries them.
+   */
+  const VESTIGIAL_ENTRIES = [
+    "ai_interactions", // Art.15 export was repointed off it; table never built
+    "goals", // superseded by financial_goals
+    "savings_accounts", // superseded by the savings_* cluster
+    "spending_categories", // never built
+  ] as const;
+
+  it("every cascade entry names a table that exists, or is a known vestigial", () => {
+    const schema = buildSchema();
+    const registered = entryLines
+      .map((l) => l.match(/^'([a-z0-9_]+)'/)?.[1])
+      .filter((t): t is string => Boolean(t));
+
+    const phantom = registered
+      .filter((t) => !schema.has(t) && !VESTIGIAL_ENTRIES.includes(t as never))
+      .sort();
+
+    expect(phantom).toEqual([]);
+  });
+
   it("every user-scoped table is either registered or deliberately excluded", () => {
     const schema = buildSchema();
     const userScoped = [...schema.entries()]

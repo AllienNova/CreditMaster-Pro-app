@@ -46,7 +46,14 @@
 --
 -- DRIFT TOLERANCE per LAUNCH_CHECKLIST Gate C: every statement is guarded.
 
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+-- pgcrypto is already installed by 20250204000000, and on Supabase it lands in
+-- the `extensions` schema rather than `public`. Both accessors below pin
+-- search_path (SECURITY DEFINER must, or the caller could redirect a function
+-- call), so every pgcrypto call is schema-qualified. Widening search_path to
+-- include `extensions` would work too but is the weaker habit for a definer
+-- function. Verified live: `select extnamespace::regnamespace from pg_extension
+-- where extname='pgcrypto'` -> extensions.
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA extensions;
 
 -- ---------------------------------------------------------------------------
 -- 1. plaid_items -> bank_connections
@@ -96,18 +103,44 @@ ALTER TABLE public.bank_connections
   -- in step 4 once nothing reads it.
   ADD COLUMN IF NOT EXISTS access_token_encrypted BYTEA;
 
--- Move the primary key from item_id to the surrogate. Guarded so this is a
--- no-op on a database created fresh from the CREATE TABLE above (where id is
--- already the PK) as well as on one renamed from plaid_items.
+-- Move the primary key from item_id to the surrogate.
+--
+-- `financial_accounts.item_id` carries an FK onto plaid_items(item_id)
+-- (20260731000006:129), and Postgres will not drop a primary key that an FK
+-- depends on:
+--   cannot drop constraint plaid_items_pkey on table bank_connections because
+--   other objects depend on it (SQLSTATE 2BP01)
+--
+-- So the dependent FK goes first. It is not recreated against (provider,
+-- item_id): a single-column FK cannot reference a composite key, and the
+-- account->connection relationship is now expressed by connection_id, added in
+-- step 5. item_id stays on financial_accounts as the provider's own reference,
+-- no longer as a foreign key.
+--
+-- Every step is guarded so this is also a no-op on a database created fresh
+-- from the CREATE TABLE above, where id is already the primary key.
 DO $$
 DECLARE
-  v_pk TEXT;
+  v_pk  TEXT;
+  v_fk  RECORD;
 BEGIN
   SELECT conname INTO v_pk
   FROM pg_constraint
   WHERE conrelid = 'public.bank_connections'::regclass AND contype = 'p';
 
   IF v_pk IS NOT NULL AND v_pk <> 'bank_connections_pkey' THEN
+    -- Drop every FK pointing at the key we are about to remove. Enumerated
+    -- rather than named so a second dependent added later cannot silently
+    -- break this migration.
+    FOR v_fk IN
+      SELECT c.conname, c.conrelid::regclass AS tbl
+      FROM pg_constraint c
+      WHERE c.contype = 'f'
+        AND c.confrelid = 'public.bank_connections'::regclass
+    LOOP
+      EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', v_fk.tbl, v_fk.conname);
+    END LOOP;
+
     EXECUTE format('ALTER TABLE public.bank_connections DROP CONSTRAINT %I', v_pk);
     v_pk := NULL;
   END IF;
@@ -183,7 +216,7 @@ BEGIN
 
   UPDATE public.bank_connections
   SET access_token_encrypted =
-        pgp_sym_encrypt(
+        extensions.pgp_sym_encrypt(
           -- Bind the ciphertext to the row it belongs to. Lifting this
           -- ciphertext onto another row yields a mismatched prefix on decrypt
           -- rather than a usable token for the wrong bank.
@@ -213,7 +246,7 @@ BEGIN
   END IF;
 
   SELECT provider,
-         pgp_sym_decrypt(access_token_encrypted, p_key)
+         extensions.pgp_sym_decrypt(access_token_encrypted, p_key)
     INTO v_provider, v_plain
   FROM public.bank_connections
   WHERE id = p_connection_id;
