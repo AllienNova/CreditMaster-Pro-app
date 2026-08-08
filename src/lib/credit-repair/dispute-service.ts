@@ -5,9 +5,9 @@
  * Uses AI to generate personalized dispute letters
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import { getAIOrchestrator } from "@/lib/ai-orchestrator";
 import type {
   DisputeItem,

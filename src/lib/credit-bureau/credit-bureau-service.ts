@@ -7,7 +7,7 @@
  * runtime key rotation.
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { ExperianClient } from "./experian-client";
 import { EquifaxClient } from "./equifax-client";
 import { TransUnionClient } from "./transunion-client";
@@ -912,7 +912,7 @@ export class CreditBureauService {
     score: number,
     reportId: string,
   ): Promise<void> {
-    const { error } = await getSupabase()
+    const { error } = await getServiceRoleClient()
       .from("credit_score_history")
       .insert({
         user_id: userId,
@@ -934,7 +934,7 @@ export class CreditBureauService {
   static async getScoreHistory(
     query: ScoreHistoryQuery,
   ): Promise<CreditScoreHistoryEntry[]> {
-    let dbQuery = getSupabase()
+    let dbQuery = getServiceRoleClient()
       .from("credit_score_history")
       .select("*")
       .eq("user_id", query.user_id)
@@ -972,7 +972,7 @@ export class CreditBureauService {
   static async getBureauConnectionStatuses(
     userId: string,
   ): Promise<BureauConnectionStatus[]> {
-    const { data, error } = await getSupabase()
+    const { data, error } = await getServiceRoleClient()
       .from("bureau_connections")
       .select("*")
       .eq("user_id", userId);
@@ -1020,7 +1020,7 @@ export class CreditBureauService {
     const now = new Date().toISOString();
     const environment = readBureauApiEnvironment();
 
-    const { error } = await getSupabase()
+    const { error } = await getServiceRoleClient()
       .from("bureau_connections")
       .upsert(
         {
@@ -1053,7 +1053,7 @@ export class CreditBureauService {
     userId: string,
     bureau: Bureau,
   ): Promise<void> {
-    const { error } = await getSupabase()
+    const { error } = await getServiceRoleClient()
       .from("bureau_connections")
       .update({ connected: false, updated_at: new Date().toISOString() })
       .eq("user_id", userId)
@@ -1077,7 +1077,7 @@ export class CreditBureauService {
   ): Promise<void> {
     const now = new Date().toISOString();
 
-    const { error } = await getSupabase()
+    const { error } = await getServiceRoleClient()
       .from("bureau_connections")
       .update({
         last_pull_date: now,
@@ -1204,7 +1204,7 @@ export class CreditBureauService {
    * Get user PII from database
    */
   private static async getUserPII(userId: string): Promise<UserPII> {
-    const { data: profile, error } = await getSupabase()
+    const { data: profile, error } = await getServiceRoleClient()
       .from("profiles")
       .select("*")
       .eq("id", userId)
@@ -1234,7 +1234,7 @@ export class CreditBureauService {
    * Save credit report to database
    */
   private static async saveCreditReport(report: CreditReport): Promise<void> {
-    const { error } = await getSupabase().from("credit_reports").insert(report);
+    const { error } = await getServiceRoleClient().from("credit_reports").insert(report);
 
     if (error) {
       // CreditBureauService error: Error saving credit report
@@ -1248,7 +1248,7 @@ export class CreditBureauService {
   private static async saveDisputeRecord(
     dispute: BureauDisputeRecord,
   ): Promise<void> {
-    const { error } = await getSupabase()
+    const { error } = await getServiceRoleClient()
       .from("bureau_disputes")
       .insert(dispute);
 

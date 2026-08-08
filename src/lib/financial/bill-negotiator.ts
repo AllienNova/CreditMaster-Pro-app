@@ -8,7 +8,7 @@
  * Phase 2.4: Bill Negotiation Assistant
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { getModelRouter, TaskType } from "@/lib/model-router";
 import type {
   NegotiableBill,
@@ -272,7 +272,7 @@ export class BillNegotiator {
     billId: string,
     outcome: NegotiationOutcomeData,
   ): Promise<void> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
 
     // Store outcome in database
     const { error } = await (
@@ -312,7 +312,7 @@ export class BillNegotiator {
   public async getBillNegotiationHistory(
     userId: string,
   ): Promise<NegotiationHistory[]> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
 
     const { data: outcomes, error } = await supabase
       .from("bill_negotiation_outcomes")
@@ -416,7 +416,7 @@ export class BillNegotiator {
   private async fetchRecurringTransactions(
     userId: string,
   ): Promise<Transaction[]> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
 
     const { data, error } = await supabase
       .from("transactions")

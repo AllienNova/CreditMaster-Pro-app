@@ -8,9 +8,9 @@
 
 // Mock Supabase — singleton to ensure source and test share the same object
 // (matches budget-service.test.ts's established pattern for this repo).
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
+  return { getServiceRoleClient: () => _client };
 });
 
 import {
@@ -188,7 +188,7 @@ describe("FinancialContextEngine", () => {
         order: jest.fn().mockReturnThis(),
         limit: jest.fn().mockResolvedValue({ data: [row], error: null }),
       };
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue(chain);
 
       const alerts = await getAlerts("user-123");
@@ -214,7 +214,7 @@ describe("FinancialContextEngine", () => {
         order: jest.fn().mockReturnThis(),
         limit: jest.fn().mockResolvedValue({ data: [], error: null }),
       };
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue(chain);
 
       const alerts = await getAlerts("user-123");
@@ -234,7 +234,7 @@ describe("FinancialContextEngine", () => {
           error: { message: "permission denied for table financial_alerts" },
         }),
       };
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue(chain);
 
       const alerts = await getAlerts("user-123");

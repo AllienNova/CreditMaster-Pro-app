@@ -13,9 +13,9 @@
  * - AI-generated insights and recommendations
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import { getModelRouter, TaskType } from "@/lib/model-router";
 import type {
   SpendingPatternAnalysis,

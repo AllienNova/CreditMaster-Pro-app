@@ -96,7 +96,7 @@ function makeChain(table: "investment_portfolios" | "investment_holdings") {
 // tests can assert that no `.update()` was dispatched for user A's holdings.
 // ============================================================================
 
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   // Re-declared inside factory (hoisting rule — cannot close over outer consts).
   const _PORTFOLIO_ID = "portfolio-A";
   const _USER_A = "user-a-id";
@@ -195,7 +195,7 @@ jest.mock("@/lib/supabase/client", () => {
       buildChain(table),
   });
 
-  return { getSupabase: _getSupabase, _tracker };
+  return { getServiceRoleClient: _getSupabase, _tracker };
 });
 
 jest.mock("@/lib/investments/services/PortfolioService", () => ({
@@ -307,14 +307,14 @@ describe("idor — PortfolioServiceFacade user-scoping (FND-030)", () => {
   describe("updateHoldingPrices", () => {
     beforeEach(() => {
       // Reset the holdings-update call counter before each write-path test.
-      const mod = jest.requireMock("@/lib/supabase/client") as {
+      const mod = jest.requireMock("@/lib/supabase/service-role") as {
         _tracker: { holdingsUpdateCallCount: number };
       };
       mod._tracker.holdingsUpdateCallCount = 0;
     });
 
     it("idor: user B cannot update prices on user A's holdings — getHoldings returns [] so no update is dispatched", async () => {
-      const mod = jest.requireMock("@/lib/supabase/client") as {
+      const mod = jest.requireMock("@/lib/supabase/service-role") as {
         _tracker: { holdingsUpdateCallCount: number };
       };
 
@@ -327,7 +327,7 @@ describe("idor — PortfolioServiceFacade user-scoping (FND-030)", () => {
     });
 
     it("user A updating prices on their own holdings — update is dispatched once per holding", async () => {
-      const mod = jest.requireMock("@/lib/supabase/client") as {
+      const mod = jest.requireMock("@/lib/supabase/service-role") as {
         _tracker: { holdingsUpdateCallCount: number };
       };
 

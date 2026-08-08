@@ -88,8 +88,8 @@ const mockSupabaseClient = {
 };
 
 // Mock Supabase
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: () => mockSupabaseClient,
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: () => mockSupabaseClient,
 }));
 
 // Mock AIML Service

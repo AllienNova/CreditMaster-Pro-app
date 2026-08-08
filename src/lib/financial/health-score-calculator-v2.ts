@@ -17,9 +17,9 @@
  * - 0-59: Critical (F)
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import {
   AggregatedFinancialContext,
   RiskLevel,

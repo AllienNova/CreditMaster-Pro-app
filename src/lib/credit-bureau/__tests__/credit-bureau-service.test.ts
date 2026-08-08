@@ -12,7 +12,7 @@
 // ---------------------------------------------------------------------------
 
 // Chainable Supabase mock — define inside factory to avoid TDZ with jest.mock hoisting
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   // Default resolution for non-.single() query chains (thenable)
   let defaultResolution: { data: unknown; error: unknown } = { data: [], error: null };
 
@@ -64,11 +64,11 @@ jest.mock("@/lib/supabase/client", () => {
     error: null,
   });
 
-  return { getSupabase: () => mock };
+  return { getServiceRoleClient: () => mock };
 });
 
-import { getSupabase } from "@/lib/supabase/client";
-const mockSupabase = getSupabase() as any;
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+const mockSupabase = getServiceRoleClient() as any;
 
 // Mock the individual bureau clients
 jest.mock("@/lib/credit-bureau/experian-client", () => {

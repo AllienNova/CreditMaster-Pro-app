@@ -82,7 +82,7 @@ import { Debt, DebtOverview } from "./types/debt-payoff.types";
  * filter would be a cross-user IDOR, not merely an RLS-policy no-op.
  *
  * Lazily constructed (not a module-scope `createClient` call), matching
- * getSupabase()'s own documented rationale and plaid-service.ts's identical
+ * getServiceRoleClient()'s own documented rationale and plaid-service.ts's identical
  * pattern: `next build`'s page-data-collection phase imports every route
  * module with no runtime env, and an eager `createClient()` would abort the
  * build with "supabaseUrl is required".

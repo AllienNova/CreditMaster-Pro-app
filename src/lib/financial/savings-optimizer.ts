@@ -9,44 +9,25 @@
  * Phase 2.2: Smart Banking Suite
  */
 
-import { getSupabase } from "@/lib/supabase/client";
-import {
-  createClient as createSupabaseClient,
-  SupabaseClient,
-} from "@supabase/supabase-js";
 import { logger } from "@/lib/monitoring/logger";
-
-const supabase = getSupabase();
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
 /**
- * Service-role client for getExistingGoals()'s `financial_goals` read only
- * — see that method's doc comment for why getSupabase() can't satisfy its
- * RLS policy. Untyped (not the shared `supabaseAdmin` from
- * @/lib/supabase/server): financial_goals' new savings-automation columns
- * (category, start_date, ...) aren't in the generated `Database` type, so
- * the typed client's `<Database>` generic infers `never` and rejects the
- * call at compile time — same root cause and fix as plaid-service.ts's
- * getServiceRoleClient(). Scoped to this one call site rather than
- * swapping the file's ~140 other queries, which belong to other tables /
- * other triage clusters outside this fix's scope.
+ * Everything in this file reads through the service role.
+ *
+ * The anon-keyed getSupabase() singleton carries no session, so auth.uid() is
+ * NULL and every RLS policy of the form (auth.uid() = user_id) matched nothing
+ * — PostgREST returned zero rows with no error, which is indistinguishable
+ * from a user who genuinely has no data.
+ *
+ * The local lazy client and hand-rolled Proxy that used to live here are gone;
+ * the shared helper is itself Proxy-backed, so `supabase` is safe to bind at
+ * module scope. The local version guarded a `let`, and a module-scope caller
+ * above it threw "Cannot access '_savingsGoalsServiceRoleClient' before
+ * initialization".
  */
-let _savingsGoalsServiceRoleClient: SupabaseClient | null = null;
-function getServiceRoleClient(): SupabaseClient {
-  if (!_savingsGoalsServiceRoleClient) {
-    _savingsGoalsServiceRoleClient = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-  }
-  return _savingsGoalsServiceRoleClient;
-}
-const supabaseAdmin = new Proxy({} as SupabaseClient, {
-  get(_target, prop, receiver) {
-    const client = getServiceRoleClient();
-    const value = Reflect.get(client, prop, receiver);
-    return typeof value === "function" ? value.bind(client) : value;
-  },
-});
+const supabase = getServiceRoleClient();
+const supabaseAdmin = supabase;
 import { getModelRouter, TaskType } from "@/lib/model-router";
 import type {
   SavingsAnalysis,
@@ -1357,7 +1338,7 @@ Provide brief, actionable insights (1-2 sentences each).`;
    * `savings_goals` has never existed on the live schema — the real table
    * is `financial_goals` (verified 2026-07-31; see savings-automation-
    * service.ts, the reachable writer of this same table, for the full
-   * rename rationale). Uses `supabaseAdmin`: `getSupabase()` (this class's
+   * rename rationale). Uses `supabaseAdmin`: `getServiceRoleClient()` (this class's
    * file-level client) carries no forwarded JWT, so `auth.uid()` is NULL
    * and `financial_goals`' `auth.uid() = user_id` RLS policies would filter
    * out every row — the service already scopes explicitly via

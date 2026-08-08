@@ -7,13 +7,13 @@
 import { SpendingAnalyzer, getSpendingAnalyzer } from "../spending-analyzer";
 
 // Mock dependencies — define inside factory to avoid TDZ with jest.mock hoisting
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
+  return { getServiceRoleClient: () => _client };
 });
 
-import { getSupabase } from "@/lib/supabase/client";
-const supabase = getSupabase() as any;
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+const supabase = getServiceRoleClient() as any;
 
 const mockRouter = {
   complete: jest.fn().mockResolvedValue({ choices: [{ message: { content: "[]" } }] }),

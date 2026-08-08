@@ -12,9 +12,9 @@
 // Mocks
 // ---------------------------------------------------------------------------
 
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
+  return { getServiceRoleClient: () => _client };
 });
 
 jest.mock("@/lib/ai-orchestrator", () => ({
@@ -24,7 +24,7 @@ jest.mock("@/lib/ai-orchestrator", () => ({
 }));
 
 function sb() {
-  return require("@/lib/supabase/client").getSupabase();
+  return require("@/lib/supabase/service-role").getServiceRoleClient();
 }
 
 function orchestrator() {

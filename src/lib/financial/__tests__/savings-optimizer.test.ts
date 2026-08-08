@@ -8,13 +8,13 @@ import { SavingsOptimizer, getSavingsOptimizer } from "../savings-optimizer";
 import { logger } from "@/lib/monitoring/logger";
 
 // Mock dependencies — define inside factory to avoid TDZ with jest.mock hoisting
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
+  return { getServiceRoleClient: () => _client };
 });
 
-import { getSupabase } from "@/lib/supabase/client";
-const supabase = getSupabase() as any;
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+const supabase = getServiceRoleClient() as any;
 
 jest.mock("@/lib/aiml-service", () => ({
   getAIMLService: jest.fn(() => ({

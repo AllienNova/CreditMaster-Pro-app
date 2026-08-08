@@ -15,7 +15,7 @@ import {
 } from "@supabase/supabase-js";
 
 /**
- * `getSupabase()` (anon key, no forwarded JWT) cannot satisfy this table's
+ * `getServiceRoleClient()` (anon key, no forwarded JWT) cannot satisfy this table's
  * `auth.uid() = user_id` RLS policies — auth.uid() evaluates to NULL for
  * that client, and the underlying `anon`/`authenticated` Postgres roles hold
  * no base SELECT/INSERT/UPDATE/DELETE grant on `financial_goals` or the

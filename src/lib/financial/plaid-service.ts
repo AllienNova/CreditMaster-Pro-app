@@ -5,45 +5,25 @@
  */
 
 import { CountryCode, Products } from "plaid";
-import {
-  createClient as createSupabaseClient,
-  SupabaseClient,
-} from "@supabase/supabase-js";
 import { getPlaidClient } from "@/lib/financial/plaid-client";
-import { getSupabase } from "@/lib/supabase/client";
-
-const supabase = getSupabase();
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
 /**
  * Service-role client for plaid_items/financial_accounts.
  *
- * Neither table is in the generated `Database` type (src/lib/supabase/
- * types.ts covers ~27 of the 40+ real tables), so the shared, typed
- * `supabaseAdmin` (@/lib/supabase/admin) rejects `.from("plaid_items")` at
- * compile time with no way to fix it here short of editing types.ts
- * (explicitly out of scope for this change) or an `any` cast (forbidden).
- * Untyped, matching getSupabase()'s own documented rationale above and the
- * ManualAccountService constructor pattern (manual-account-service.ts) —
- * NOT the anon-keyed getSupabase(), because plaid_items/financial_accounts
- * are service-role-only (see 20260731000006_plaid_items_accounts.sql): the
- * access token is a live bank credential, and the anon-keyed singleton
- * carries no session, so it can never satisfy that RLS design anyway.
+ * Both tables are service-role-only (see
+ * 20260731000006_plaid_items_accounts.sql): the access token is a live bank
+ * credential. The anon-keyed getSupabase() singleton carries no session, so
+ * auth.uid() is NULL and it could never satisfy that RLS design anyway — it
+ * returned zero rows with no error.
  *
- * Lazily constructed (not a module-scope `createClient` call) for the same
- * reason getSupabase() is a Proxy: `next build`'s page-data-collection phase
- * imports every route module with no runtime env, and an eager
- * `createClient()` would abort the build with "supabaseUrl is required".
+ * This file previously hand-rolled its own lazy service-role client. That
+ * duplicate is gone: the shared helper is Proxy-backed, so it is safe to call
+ * at module scope, whereas the local version guarded a `let` and threw
+ * "Cannot access '_supabaseServiceRole' before initialization" the moment a
+ * module-scope caller was introduced above it.
  */
-let _supabaseServiceRole: SupabaseClient | null = null;
-function getServiceRoleClient(): SupabaseClient {
-  if (!_supabaseServiceRole) {
-    _supabaseServiceRole = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-  }
-  return _supabaseServiceRole;
-}
+const supabase = getServiceRoleClient();
 
 // Types
 export interface PlaidLinkToken {

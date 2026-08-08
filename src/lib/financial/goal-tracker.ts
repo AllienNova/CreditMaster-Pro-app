@@ -13,7 +13,7 @@
  * - Performance scoring and recommendations
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { financialContextEngine } from "./financial-context-engine";
 import { goalPlanner } from "./goal-planner";
 import {
@@ -107,7 +107,7 @@ class GoalTracker {
    * Delete a goal
    */
   async deleteGoal(userId: string, goalId: string): Promise<boolean> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
     const { error } = await supabase
       .from("financial_goals")
       .delete()

@@ -143,8 +143,8 @@ class PortfolioServiceFacade {
     portfolioId: string,
     userId: string,
   ): Promise<Portfolio | null> {
-    const { getSupabase } = await import("@/lib/supabase/client");
-    const supabase = getSupabase();
+    const { getServiceRoleClient } = await import("@/lib/supabase/service-role");
+    const supabase = getServiceRoleClient();
 
     const { data: portfolioData, error: portfolioError } = await supabase
       .from("investment_portfolios")
@@ -173,8 +173,8 @@ class PortfolioServiceFacade {
     portfolioId: string,
     userId: string,
   ): Promise<PortfolioHolding[]> {
-    const { getSupabase } = await import("@/lib/supabase/client");
-    const supabase = getSupabase();
+    const { getServiceRoleClient } = await import("@/lib/supabase/service-role");
+    const supabase = getServiceRoleClient();
 
     const { data, error } = await supabase
       .from("investment_holdings")
@@ -254,8 +254,8 @@ class PortfolioServiceFacade {
     userId: string,
     updates: Partial<CreatePortfolioInput>,
   ): Promise<Portfolio> {
-    const { getSupabase } = await import("@/lib/supabase/client");
-    const supabase = getSupabase();
+    const { getServiceRoleClient } = await import("@/lib/supabase/service-role");
+    const supabase = getServiceRoleClient();
 
     const updateData: Record<string, unknown> = {};
     if (updates.name !== undefined) updateData["name"] = updates.name;
@@ -282,8 +282,8 @@ class PortfolioServiceFacade {
    * Delete a portfolio scoped to the requesting user.
    */
   async deletePortfolio(portfolioId: string, userId: string): Promise<boolean> {
-    const { getSupabase } = await import("@/lib/supabase/client");
-    const supabase = getSupabase();
+    const { getServiceRoleClient } = await import("@/lib/supabase/service-role");
+    const supabase = getServiceRoleClient();
 
     // investment_holdings cascade-deletes via FK in the migration, but do it
     // explicitly here for safety.
@@ -314,8 +314,8 @@ class PortfolioServiceFacade {
     userId: string,
     prices: Record<string, number>,
   ): Promise<void> {
-    const { getSupabase } = await import("@/lib/supabase/client");
-    const supabase = getSupabase();
+    const { getServiceRoleClient } = await import("@/lib/supabase/service-role");
+    const supabase = getServiceRoleClient();
     const holdings = await this.getHoldings(portfolioId, userId);
 
     for (const holding of holdings) {

@@ -4,9 +4,9 @@
  * Core business logic for financial management features
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import { plaidService, PlaidAccount, PlaidTransaction } from "./plaid-service";
 
 // Types
