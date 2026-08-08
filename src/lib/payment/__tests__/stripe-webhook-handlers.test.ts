@@ -121,7 +121,7 @@ function makeInvoice(overrides: Partial<Stripe.Invoice> = {}): Stripe.Invoice {
 function wireSupabaseTables(mockSelect: jest.Mock): jest.Mock {
   const mockUpsert = jest.fn().mockResolvedValue({ error: null });
   mockSupabaseFrom.mockImplementation((table: string) =>
-    table === "payments" ? { upsert: mockUpsert } : { select: mockSelect },
+    table === "subscription_invoices" ? { upsert: mockUpsert } : { select: mockSelect },
   );
   return mockUpsert;
 }
@@ -433,7 +433,7 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
     ) {
       const mockUpsert = jest.fn().mockResolvedValue(upsertResult);
       mockSupabaseFrom.mockImplementation((table: string) => {
-        if (table === "payments") return { upsert: mockUpsert };
+        if (table === "subscription_invoices") return { upsert: mockUpsert };
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -467,7 +467,7 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
         data: { object: makeInvoice() },
       } as unknown as Stripe.Event);
 
-      expect(mockSupabaseFrom).toHaveBeenCalledWith("payments");
+      expect(mockSupabaseFrom).toHaveBeenCalledWith("subscription_invoices");
       expect(mockUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
           stripe_invoice_id: "in_test_123",
@@ -525,7 +525,7 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
         return { error: null };
       });
       mockSupabaseFrom.mockImplementation((table: string) => {
-        if (table === "payments") return { upsert: mockUpsert };
+        if (table === "subscription_invoices") return { upsert: mockUpsert };
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -556,7 +556,7 @@ describe("wbh-phase2: stripe-service webhook handlers", () => {
       // unattributed rather than dropping it.
       const mockUpsert = jest.fn().mockResolvedValue({ error: null });
       mockSupabaseFrom.mockImplementation((table: string) => {
-        if (table === "payments") return { upsert: mockUpsert };
+        if (table === "subscription_invoices") return { upsert: mockUpsert };
         return { select: jest.fn() };
       });
 

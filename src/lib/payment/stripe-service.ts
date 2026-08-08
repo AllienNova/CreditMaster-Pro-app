@@ -19,7 +19,9 @@ let _stripe: Stripe | null = null;
 function getStripe(): Stripe {
   if (!_stripe) {
     if (!process.env.STRIPE_SECRET_KEY) {
-      throw new Error("STRIPE_SECRET_KEY is not configured. Payment services unavailable.");
+      throw new Error(
+        "STRIPE_SECRET_KEY is not configured. Payment services unavailable.",
+      );
     }
     _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: "2025-09-30.clover",
@@ -679,9 +681,8 @@ class StripePaymentService {
 
         if (subRecord) {
           resolvedUserId = subRecord.user_id ?? null;
-          const { resetCreditsForTier } = await import(
-            "../credits/credit-reset"
-          );
+          const { resetCreditsForTier } =
+            await import("../credits/credit-reset");
 
           // Determine tier from price ID
           const plan = SUBSCRIPTION_PLANS.find(
@@ -714,22 +715,29 @@ class StripePaymentService {
       //
       // Idempotent on stripe_invoice_id: this handler rethrows so Stripe
       // retries, and a retry must not book the same invoice as revenue twice.
-      const { error: ledgerError } = await db.from("payments").upsert(
-        {
-          user_id: resolvedUserId,
-          stripe_invoice_id: invoice.id,
-          stripe_event_id: eventId,
-          stripe_customer_id: customerId,
-          stripe_subscription_id: resolvedSubId,
-          amount_cents: invoice.amount_paid,
-          currency: invoice.currency,
-          status: "paid",
-          paid_at: new Date(
-            (invoice.status_transitions?.paid_at ?? Math.floor(Date.now() / 1000)) * 1000,
-          ).toISOString(),
-        },
-        { onConflict: "stripe_invoice_id", ignoreDuplicates: true },
-      );
+      //
+      // Table renamed from `payments` in 20260801000000 (ADR-0011). `payments`
+      // now means a provider-agnostic payment attempt owned by payment-router;
+      // this ledger holds settled Stripe INVOICES, which is a different entity.
+      const { error: ledgerError } = await db
+        .from("subscription_invoices")
+        .upsert(
+          {
+            user_id: resolvedUserId,
+            stripe_invoice_id: invoice.id,
+            stripe_event_id: eventId,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: resolvedSubId,
+            amount_cents: invoice.amount_paid,
+            currency: invoice.currency,
+            status: "paid",
+            paid_at: new Date(
+              (invoice.status_transitions?.paid_at ??
+                Math.floor(Date.now() / 1000)) * 1000,
+            ).toISOString(),
+          },
+          { onConflict: "stripe_invoice_id", ignoreDuplicates: true },
+        );
 
       if (ledgerError) {
         // Stripe took the customer's money. Failing to record it is a lost
@@ -757,7 +765,12 @@ class StripePaymentService {
       logger.error(
         "Failed to process invoice.paid event",
         error instanceof Error ? error : new Error(String(error)),
-        { eventId, invoiceId: invoice.id, customerId, eventType: "invoice.paid" },
+        {
+          eventId,
+          invoiceId: invoice.id,
+          customerId,
+          eventType: "invoice.paid",
+        },
       );
       throw error;
     }
@@ -777,10 +790,13 @@ class StripePaymentService {
 
     if (!customerId) {
       const { logger } = await import("../monitoring/logger");
-      logger.warn("invoice.payment_failed: no customerId on invoice, skipping", {
-        invoiceId: invoice.id,
-        eventId,
-      });
+      logger.warn(
+        "invoice.payment_failed: no customerId on invoice, skipping",
+        {
+          invoiceId: invoice.id,
+          eventId,
+        },
+      );
       return;
     }
 
@@ -811,7 +827,12 @@ class StripePaymentService {
       logger.error(
         "Failed to process invoice.payment_failed event",
         error instanceof Error ? error : new Error(String(error)),
-        { eventId, invoiceId: invoice.id, customerId, eventType: "invoice.payment_failed" },
+        {
+          eventId,
+          invoiceId: invoice.id,
+          customerId,
+          eventType: "invoice.payment_failed",
+        },
       );
       throw error;
     }
@@ -925,21 +946,17 @@ class StripePaymentService {
     // The logger call is unguarded: a transient logging outage propagates and Stripe
     // retries. The failed payment itself is permanent and must NOT throw (retry storm).
     const { logger } = await import("../monitoring/logger");
-    logger.error(
-      "Payment intent failed",
-      new Error("Payment intent failed"),
-      {
-        eventId,
-        paymentIntentId: paymentIntent.id,
-        amount: paymentIntent.amount,
-        currency: paymentIntent.currency,
-        customerId:
-          typeof paymentIntent.customer === "string"
-            ? paymentIntent.customer
-            : paymentIntent.customer?.id,
-        lastPaymentError: paymentIntent.last_payment_error?.message,
-      },
-    );
+    logger.error("Payment intent failed", new Error("Payment intent failed"), {
+      eventId,
+      paymentIntentId: paymentIntent.id,
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency,
+      customerId:
+        typeof paymentIntent.customer === "string"
+          ? paymentIntent.customer
+          : paymentIntent.customer?.id,
+      lastPaymentError: paymentIntent.last_payment_error?.message,
+    });
   }
 
   /**
@@ -962,12 +979,12 @@ class StripePaymentService {
     const customerId =
       typeof session.customer === "string"
         ? session.customer
-        : session.customer?.id ?? null;
+        : (session.customer?.id ?? null);
 
     const subscriptionId =
       typeof session.subscription === "string"
         ? session.subscription
-        : session.subscription?.id ?? null;
+        : (session.subscription?.id ?? null);
 
     logger.info("checkout.session.completed", {
       eventId,

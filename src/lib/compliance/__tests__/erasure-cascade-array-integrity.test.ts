@@ -41,7 +41,14 @@ const MAX_PLAUSIBLE_TABLE_NAME_LENGTH = 32;
  * Asserted here so a future "helpful" addition has to argue with a test.
  */
 const DELIBERATE_EXCLUSIONS = [
-  "payments", // revenue ledger; user_id is ON DELETE SET NULL by design
+  // Renamed from `payments` in 20260801000000 (ADR-0011).
+  "subscription_invoices", // revenue ledger; user_id is ON DELETE SET NULL by design
+  // The NEW `payments` (20260801000010) — provider-agnostic payment attempts
+  // owned by payment-router. Excluded for the same reason as the ledger above
+  // and as affiliate_conversions: a record of money that moved must survive
+  // the person, pseudonymised by the SET NULL FK (GDPR Art. 17(3)(b)/(e)).
+  // Deleting it would destroy chargeback defence and tax records.
+  "payments",
   "audit_logs", // security/compliance trail
   "tax_audit_log", // statutory tax retention
   "analytics_events", // ON DELETE SET NULL; anonymised aggregate history is retained

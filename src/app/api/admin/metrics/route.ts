@@ -50,7 +50,10 @@ export const GET = withRole(
           // on revenue. Found by scripts/audit-phantom-columns.js.
           .select("id, status, amount", { count: "exact" }),
         supabase
-          .from("payments")
+          // Renamed from `payments` in 20260801000000 (ADR-0011): `payments`
+          // now belongs to payment-router and holds provider-agnostic payment
+          // attempts. Subscription revenue lives here, in settled invoices.
+          .from("subscription_invoices")
           .select("amount_cents, paid_at")
           .gte("paid_at", startDate.toISOString()),
       ]);
@@ -63,7 +66,7 @@ export const GET = withRole(
     // not look identical to an operator.
     if (revenueResult.error) {
       throw new Error(
-        `Failed to load revenue from payments ledger: ${revenueResult.error.message}`,
+        `Failed to load revenue from subscription_invoices ledger: ${revenueResult.error.message}`,
       );
     }
 

@@ -97,7 +97,7 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
       { id: "s2", plan: "basic", status: "active", amount: 29 },
       { id: "s3", plan: "premium", status: "canceled", amount: 79 },
     ];
-    // The payments ledger stores INTEGER MINOR UNITS in amount_cents, and the
+    // The subscription_invoices ledger stores INTEGER MINOR UNITS in amount_cents, and the
     // period column is paid_at. This fixture previously used `amount` and
     // `created_at` — neither of which exists on the table
     // (20260731000020_payments_revenue_ledger.sql). 7900 + 2900 cents = $108,
@@ -138,7 +138,7 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
             return { select: selectForDisputes };
           case "subscriptions":
             return { select: selectForSubscriptions };
-          case "payments":
+          case "subscription_invoices":
             return { select: selectForPayments };
           default:
             return { select: jest.fn().mockResolvedValue({ data: [], count: 0 }) };
@@ -244,7 +244,7 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
       // anything else. A broken query and a genuinely empty period must not be
       // indistinguishable to an operator.
       mockFrom.mockImplementation((table: string) => {
-        if (table === "payments") {
+        if (table === "subscription_invoices") {
           return {
             select: jest.fn().mockReturnValue({
               gte: jest.fn().mockResolvedValue({
@@ -317,7 +317,7 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
       // For profiles/disputes/subscriptions that don't chain .gte
       const directSelectMock = jest.fn().mockResolvedValue(resolvedValue);
       mockFrom.mockImplementation((table: string) => {
-        if (table === "payments") {
+        if (table === "subscription_invoices") {
           return { select: selectMock };
         }
         return { select: directSelectMock };
@@ -402,7 +402,7 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
     it("should handle zero disputes correctly (disputeSuccessRate is 0)", async () => {
       const emptyResult = { data: [], count: 0 };
       mockFrom.mockImplementation((table: string) => {
-        if (table === "payments") {
+        if (table === "subscription_invoices") {
           return {
             select: jest.fn().mockReturnValue({
               gte: jest.fn().mockResolvedValue(emptyResult),
@@ -423,7 +423,7 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
     it("should handle null data arrays gracefully", async () => {
       const nullDataResult = { data: null, count: 0 };
       mockFrom.mockImplementation((table: string) => {
-        if (table === "payments") {
+        if (table === "subscription_invoices") {
           return {
             select: jest.fn().mockReturnValue({
               gte: jest.fn().mockResolvedValue(nullDataResult),

@@ -5,36 +5,35 @@
  * based on region, currency, and payment type.
  *
  * ─────────────────────────────────────────────────────────────────────────
- *  TABLE-NAME COLLISION — THIS FILE'S DB LAYER CANNOT WORK AS WRITTEN
+ *  NOT YET WIRED — DO NOT ROUTE LIVE MONEY THROUGH THIS CLASS
  *
- *  Every query below targets `payments`, but the migrated `payments` table
- *  (20260731000020_payments_revenue_ledger.sql) is a Stripe INVOICE ledger:
- *      amount_cents, currency, status, paid_at, stripe_customer_id,
- *      stripe_event_id, stripe_invoice_id, stripe_subscription_id, user_id
+ *  The table-name collision is resolved (ADR-0011): `payments` is now the
+ *  provider-agnostic attempts table this router owns
+ *  (20260801000010_payments_provider_agnostic.sql), and the Stripe invoice
+ *  ledger it used to collide with became `subscription_invoices`.
  *
- *  This router writes a different entity entirely — a multi-provider payment
- *  attempt — and names columns that table does not have:
- *      provider, provider_payment_id, amount, type, method, metadata,
- *      updated_at
+ *  What remains before anything may route through here:
+ *    - NO IDEMPOTENCY on pay-in. The only idempotency keys in
+ *      src/lib/commerce are the two in payout-service. A retried webhook or a
+ *      re-driven attempt can charge twice. TASK-PAY-04.
+ *    - No TrueLayer webhook route (TASK-PAY-05), no reconciliation against
+ *      the provider (TASK-PAY-06).
+ *    - No provider sandbox integration test has ever exercised this code.
+ *      Mocked-SDK unit tests are explicitly NOT sufficient evidence here:
+ *      that standard is what let FND-024 (dollars sent as cents, paying 1% of
+ *      the intended amount) and B1 (a $50 payout netting $0) reach main with
+ *      a green suite. TASK-PAY-07.
+ *    - Operator preconditions unmet: TrueLayer + Stripe licence
+ *      confirmations, seven TRUELAYER_* secrets incl. the JWS signing key.
+ *      LAUNCH_CHECKLIST Gate D.
  *
- *  Two distinct concepts share one name. Nothing routes to this class yet
- *  (its only importer is the barrel in ./index.ts), so the mismatch has never
- *  fired in production; the moment it is wired, createPaymentRecord throws.
- *
- *  Resolving it means giving this router its own table — `provider_payments`
- *  or similar, matching the shape above — and repointing these five queries.
- *  That is an owner decision (new table + migration) and is deliberately NOT
- *  taken here rather than guessed at. scripts/audit-phantom-columns.js reports
- *  all 11 sites until it is.
- *
- *  What HAS been fixed: three of those queries previously awaited without
- *  checking `error`, so a settled or failed payment would silently fail to
- *  persist. They now throw.
+ *  Its only importer today is the barrel in ./index.ts.
  * ─────────────────────────────────────────────────────────────────────────
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { cents, type Cents } from "@/lib/money";
 import {
   TrueLayerPaymentsConnector,
   createTrueLayerPaymentsConnector,
@@ -65,7 +64,10 @@ const supabase = new Proxy({} as SupabaseClient, {
 let _stripe: Stripe | null = null;
 const stripe = new Proxy({} as Stripe, {
   get(_t, prop, recv) {
-    if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-09-30.clover" });
+    if (!_stripe)
+      _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: "2025-09-30.clover",
+      });
     const v = Reflect.get(_stripe, prop, recv);
     return typeof v === "function" ? v.bind(_stripe) : v;
   },
@@ -85,7 +87,13 @@ export type PaymentMethodType =
   | "open_banking";
 
 export interface UnifiedPaymentRequest {
-  amount: number; // In minor units (cents)
+  /**
+   * Integer minor units. `Cents` rather than `number` so the unit cannot be
+   * lost at a call site: FND-024 sent dollars where Stripe expected cents and
+   * paid 1% of the intended amount, and B1 netted a $50 payout to $0. A
+   * comment saying "in minor units" did not prevent either.
+   */
+  amount: Cents;
   currency: string;
   type: PaymentType;
   method?: PaymentMethodType;
@@ -113,7 +121,8 @@ export interface UnifiedPayment {
   provider: PaymentProvider;
   providerPaymentId: string;
   status: "pending" | "processing" | "succeeded" | "failed" | "canceled";
-  amount: number;
+  /** Integer minor units — see UnifiedPaymentRequest.amount. */
+  amount: Cents;
   currency: string;
   type: PaymentType;
   method: PaymentMethodType;
@@ -693,7 +702,8 @@ export class PaymentRouter {
       .insert({
         user_id: request.userId,
         provider,
-        amount: request.amount,
+        // Column is amount_cents; request.amount is already Cents.
+        amount_cents: request.amount,
         currency: request.currency,
         type: request.type,
         method: request.method || "card",
@@ -786,7 +796,11 @@ export class PaymentRouter {
       provider: row.provider as PaymentProvider,
       providerPaymentId: row.provider_payment_id as string,
       status: row.status as UnifiedPayment["status"],
-      amount: row.amount as number,
+      // Column is amount_cents. This read said `row.amount`, which no table
+      // has ever had — a phantom column the audit script structurally cannot
+      // see, because it reads a row field after a select("*") rather than
+      // naming a column. The Cents brand caught it.
+      amount: cents(row.amount_cents as number),
       currency: row.currency as string,
       type: row.type as PaymentType,
       method: row.method as PaymentMethodType,
