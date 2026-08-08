@@ -86,8 +86,8 @@ async function loadSvc(opts: {
 
   jest.isolateModules(() => {
     // Mock Supabase client
-    jest.doMock("@/lib/supabase/client", () => ({
-      getSupabase: jest.fn().mockReturnValue({ from: jest.fn().mockReturnValue(opts.supabaseChain) }),
+    jest.doMock("@/lib/supabase/service-role", () => ({
+      getServiceRoleClient: jest.fn().mockReturnValue({ from: jest.fn().mockReturnValue(opts.supabaseChain) }),
     }));
 
     // Mock tier-mapping

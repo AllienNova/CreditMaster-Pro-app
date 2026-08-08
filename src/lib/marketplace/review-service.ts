@@ -4,7 +4,7 @@
  * Review operations: getReviews, createReview, markHelpful
  */
 
-import { getSupabase } from "../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Database } from "../supabase/types";
 
 type ReviewRow = Database["public"]["Tables"]["marketplace_reviews"]["Row"];
@@ -64,7 +64,7 @@ export interface CreateReviewInput {
   content: string;
 }
 
-const reviews = () => getSupabase().from("marketplace_reviews");
+const reviews = () => getServiceRoleClient().from("marketplace_reviews");
 
 class ReviewService {
   async getReviewsForProduct(productId: string): Promise<Review[]> {

@@ -5,12 +5,12 @@
  * user. User B presenting User A's dispute id must not read or mutate
  * User A's data.
  *
- * DisputeServiceDB uses getSupabase() (service-role bypass not confirmed,
+ * DisputeServiceDB uses getServiceRoleClient() (service-role bypass not confirmed,
  * but RLS alone is not sufficient defence — we enforce explicit user_id
  * scoping on every resource-keyed query).
  */
 
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   const USER_A_MOCK = "user-a-id";
   const DISPUTE_ID_MOCK = "dispute-a-id";
 
@@ -89,7 +89,7 @@ jest.mock("@/lib/supabase/client", () => {
     };
   }
 
-  return { getSupabase: mockGetSupabase };
+  return { getServiceRoleClient: mockGetSupabase };
 });
 
 import { disputeServiceDB } from "../dispute-service-db";

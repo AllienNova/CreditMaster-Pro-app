@@ -71,8 +71,8 @@ mockSupabaseChain.single = jest.fn(() => {
   return Promise.resolve(queryResult).then(resolve, reject);
 };
 
-jest.mock("../../supabase/client", () => ({
-  getSupabase: jest.fn(() => ({
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: jest.fn(() => ({
     from: jest.fn(() => mockSupabaseChain),
   })),
 }));
@@ -81,9 +81,9 @@ jest.mock("../../supabase/client", () => ({
 
 import { documentServiceDB } from "../document-service-db";
 import type { DocumentType } from "../document-service-db";
-import { getSupabase } from "../../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const mockedGetSupabase = getSupabase as jest.MockedFunction<typeof getSupabase>;
+const mockedGetSupabase = getServiceRoleClient as jest.MockedFunction<typeof getServiceRoleClient>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -130,7 +130,7 @@ beforeEach(() => {
     return Promise.resolve(queryResult);
   });
 
-  // Re-establish getSupabase (jest.clearAllMocks would wipe it)
+  // Re-establish getServiceRoleClient (jest.clearAllMocks would wipe it)
   mockedGetSupabase.mockReturnValue({
     from: jest.fn(() => mockSupabaseChain),
   } as any);

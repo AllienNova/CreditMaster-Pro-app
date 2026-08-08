@@ -10,7 +10,7 @@
  * return empty payment methods, free plan, empty invoices.
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { stripeService, SUBSCRIPTION_PLANS } from "@/lib/payment/stripe-service";
 
 export interface BillingPaymentMethod {
@@ -56,7 +56,7 @@ const FREE_SUBSCRIPTION: BillingSubscriptionInfo = {
  * Returns null when the user has no Stripe presence.
  */
 async function resolveStripeCustomerId(userId: string): Promise<string | null> {
-  const db = getSupabase();
+  const db = getServiceRoleClient();
 
   const { data: profile } = await db
     .from("profiles")
@@ -78,7 +78,7 @@ async function resolveStripeCustomerId(userId: string): Promise<string | null> {
 async function resolveActiveSubscriptionRow(
   userId: string,
 ): Promise<{ stripe_price_id: string; status: string; current_period_start: string | null; current_period_end: string | null; cancel_at_period_end: boolean } | null> {
-  const db = getSupabase();
+  const db = getServiceRoleClient();
 
   const { data, error } = await db
     .from("subscriptions")

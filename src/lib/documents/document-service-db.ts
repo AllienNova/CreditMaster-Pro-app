@@ -15,7 +15,7 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getSupabase } from "../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Database } from "../supabase/types";
 
 // Type helpers for Supabase operations
@@ -26,8 +26,8 @@ type ShareLinkRow = Database["public"]["Tables"]["document_share_links"]["Row"];
 type ShareLinkInsert = Database["public"]["Tables"]["document_share_links"]["Insert"];
 
 // Helper to get typed table references
-const documents = () => getSupabase().from("documents");
-const shareLinks = () => getSupabase().from("document_share_links");
+const documents = () => getServiceRoleClient().from("documents");
+const shareLinks = () => getServiceRoleClient().from("document_share_links");
 
 // Initialize S3 client
 const s3Client = new S3Client({

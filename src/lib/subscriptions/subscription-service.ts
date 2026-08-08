@@ -9,7 +9,7 @@
  * - Update user profile subscription tier
  */
 
-import { getSupabase } from "../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Database } from "../supabase/types";
 import { stripeService } from "../payment/stripe-service";
 import {
@@ -28,8 +28,8 @@ type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 // Helper to get typed table references
-const subscriptions = () => getSupabase().from("subscriptions");
-const profiles = () => getSupabase().from("profiles");
+const subscriptions = () => getServiceRoleClient().from("subscriptions");
+const profiles = () => getServiceRoleClient().from("profiles");
 
 export type SubscriptionStatus =
   | "active"
@@ -79,7 +79,7 @@ class SubscriptionService {
 
     if (!customerId) {
       // Get user email from auth
-      const { data: authUser } = await getSupabase().auth.getUser();
+      const { data: authUser } = await getServiceRoleClient().auth.getUser();
       if (!authUser.user) {
         throw new Error("User not authenticated");
       }

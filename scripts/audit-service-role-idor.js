@@ -92,6 +92,38 @@ function operationOf(chain) {
   return "select";
 }
 
+/**
+ * Deliberately cross-user queries, opted out AT THE CALL SITE:
+ *
+ *   // idor-audit: cross-user — admin revenue report, gated by withRole("admin")
+ *
+ * Some queries are correctly unscoped — aggregate admin reporting, maintenance
+ * sweeps over every user's soft-deleted rows. Those must not be forced to
+ * carry a user_id filter, but they also must not be waved through silently.
+ *
+ * The marker is per-site and must state a reason, so the decision is visible
+ * in review right next to the query rather than buried in a config threshold.
+ * A blanket file/table exclusion list would hide the NEXT unscoped query added
+ * to the same file; this cannot.
+ */
+const CROSS_USER_MARKER = /\/\/\s*idor-audit:\s*cross-user\s*[—-]\s*\S/;
+
+/** Line-start offsets of every cross-user marker in the file. */
+function markedLines(text) {
+  const lines = text.split("\n");
+  const marked = new Set();
+  lines.forEach((l, i) => {
+    if (CROSS_USER_MARKER.test(l)) marked.add(i + 1);
+  });
+  return marked;
+}
+
+/** True when a marker sits on, or within 3 lines above, the query. */
+function isMarked(marked, line) {
+  for (let i = line; i >= line - 3; i--) if (marked.has(i)) return true;
+  return false;
+}
+
 /** Blank out line and block comments so a documented .from() is not scanned. */
 function stripComments(text) {
   return text
@@ -129,9 +161,57 @@ function chainExtent(text, at) {
   return text.length;
 }
 
-function audit(text, rel, userScoped, findings) {
+/**
+ * Table-handle aliases: `const disputes = () => getServiceRoleClient().from("disputes")`.
+ *
+ * Several services declare one of these per table and then filter at the call
+ * site — `disputes().select().eq("user_id", u)`. Auditing only `.from(` would
+ * report the DECLARATION as an unfiltered query (it has no filters, by design)
+ * while never seeing the real call sites at all, since those contain no
+ * `.from(`. That is not merely a false positive: it is a false negative
+ * covering every query in the file. Resolving the alias turns `disputes()`
+ * into an anchor equivalent to `.from("disputes")`.
+ */
+function aliasPattern(text) {
+  const aliases = new Map();
+  const re =
+    /(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*\(\s*\)\s*=>\s*[\w.()]*\.from\(\s*["'`]([a-z0-9_]+)["'`]\s*\)/g;
+  for (const m of text.matchAll(re)) aliases.set(m[1], m[2]);
+  return aliases;
+}
+
+function audit(text, rel, userScoped, findings, marked) {
+  const aliases = aliasPattern(text);
+
+  for (const [name, table] of aliases) {
+    if (!userScoped.has(table)) continue;
+    // `name(` but not the declaration itself (which is `name =`).
+    const callRe = new RegExp(`\\b${name}\\(\\s*\\)`, "g");
+    for (const call of text.matchAll(callRe)) {
+      const at = call.index;
+      if (/=\s*$/.test(text.slice(Math.max(0, at - 40), at))) continue; // declaration
+      const chain = text.slice(at, chainExtent(text, at));
+      if (OWNER_FILTER.test(chain)) continue;
+      const aliasLine = text.slice(0, at).split("\n").length;
+      if (isMarked(marked, aliasLine)) continue;
+      const fk = chain.match(FK_FILTER);
+      const pk = PK_FILTER.test(chain);
+      findings.push({
+        file: rel,
+        line: text.slice(0, at).split("\n").length,
+        table,
+        op: operationOf(chain),
+        kind: fk ? "fk" : pk ? "pk" : "none",
+        via: fk ? fk[2] : pk ? "id" : null,
+      });
+    }
+  }
+
   for (const match of text.matchAll(FROM_PATTERN)) {
     const table = match[1];
+    // The alias declaration itself carries no filters by design; its call
+    // sites were just audited above.
+    if ([...aliases.values()].includes(table) && /=>\s*[\w.()]*\.from\($/.test(text.slice(Math.max(0, match.index - 60), match.index + 6))) continue;
     if (!userScoped.has(table)) continue; // no user_id column — nothing to scope
 
     const at = match.index;
@@ -141,6 +221,7 @@ function audit(text, rel, userScoped, findings) {
     // scoping there, not merely a single-row lookup.
     if (OWNER_FILTER.test(chain)) continue;
     if (table === "profiles" && PK_FILTER.test(chain)) continue;
+    if (isMarked(marked, text.slice(0, at).split("\n").length)) continue;
 
     const fk = chain.match(FK_FILTER);
     const pk = PK_FILTER.test(chain);
@@ -173,7 +254,7 @@ function main() {
     if (!raw.includes("getServiceRoleClient")) continue; // not converted yet
     const rel = relative(ROOT, file);
     converted.push(rel);
-    audit(stripComments(raw), rel, userScoped, findings);
+    audit(stripComments(raw), rel, userScoped, findings, markedLines(raw));
   }
 
   console.log(`user-scoped tables           : ${userScoped.size}`);

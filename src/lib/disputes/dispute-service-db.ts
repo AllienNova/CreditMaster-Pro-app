@@ -14,7 +14,7 @@
  * caller can act on another user's dispute (IDOR defence, TASK-CRD-3).
  */
 
-import { getSupabase } from "../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Database } from "../supabase/types";
 
 // Type helpers for Supabase operations
@@ -23,7 +23,7 @@ type DisputeInsert = Database["public"]["Tables"]["disputes"]["Insert"];
 type DisputeUpdate = Database["public"]["Tables"]["disputes"]["Update"];
 
 // Helper to get typed table reference
-const disputes = () => getSupabase().from("disputes");
+const disputes = () => getServiceRoleClient().from("disputes");
 
 export type DisputeStatus =
   | "draft"

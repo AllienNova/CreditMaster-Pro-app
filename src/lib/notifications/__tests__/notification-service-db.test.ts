@@ -14,7 +14,7 @@ jest.mock("resend", () => ({
 }));
 
 // Tracks the terminal response for each Supabase chain.
-// Each call to getSupabase().from() produces a fresh thenable chain.
+// Each call to getServiceRoleClient().from() produces a fresh thenable chain.
 // When any point in the chain is awaited, it resolves with `mockTerminalResult`.
 let mockTerminalResult: any;
 
@@ -43,8 +43,8 @@ function createChain(): any {
 // Captures the chain created for each from() call so tests can assert on it.
 let lastChain: any;
 
-jest.mock("../../supabase/client", () => ({
-  getSupabase: jest.fn(),
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: jest.fn(),
 }));
 
 // --- Import under test (after mocks) ---
@@ -54,9 +54,9 @@ import {
   type Notification,
   type NotificationType,
 } from "../notification-service-db";
-import { getSupabase } from "../../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const mockGetSupabase = getSupabase as jest.Mock;
+const mockGetSupabase = getServiceRoleClient as jest.Mock;
 
 // --- Helpers ---
 
@@ -86,7 +86,7 @@ describe("NotificationServiceDB", () => {
   beforeEach(() => {
     mockSend.mockClear();
     mockTerminalResult = undefined;
-    // Re-establish getSupabase mock (clearAllMocks would wipe it)
+    // Re-establish getServiceRoleClient mock (clearAllMocks would wipe it)
     mockGetSupabase.mockImplementation(() => ({
       from: jest.fn(() => {
         lastChain = createChain();

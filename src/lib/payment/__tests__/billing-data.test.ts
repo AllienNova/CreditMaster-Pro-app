@@ -72,8 +72,8 @@ function buildDbMock(
   };
 }
 
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: () => dbRegistry.current,
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: () => dbRegistry.current,
 }));
 
 import { getBillingData } from "../billing-data";

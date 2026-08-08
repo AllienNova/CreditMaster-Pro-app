@@ -7,7 +7,7 @@
  */
 
 import { Resend } from "resend";
-import { getSupabase } from "../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Database } from "../supabase/types";
 
 // Type helpers for Supabase operations
@@ -18,7 +18,7 @@ type NotificationUpdate =
   Database["public"]["Tables"]["notifications"]["Update"];
 
 // Helper to get typed table reference
-const notifications = () => getSupabase().from("notifications");
+const notifications = () => getServiceRoleClient().from("notifications");
 
 const resend = new Resend(process.env.RESEND_API_KEY || "dummy_key_for_build");
 

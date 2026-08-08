@@ -7,7 +7,7 @@
 
 // Use global jest instead of @jest/globals to avoid type issues with mocked functions
 import { FinancialChatEngine } from "../financial-chat-engine";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import {
   ChatContext,
   ChatIntent,
@@ -29,8 +29,8 @@ const mockSupabase = {
   rpc: jest.fn(),
 };
 
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: jest.fn(() => mockSupabase),
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: jest.fn(() => mockSupabase),
 }));
 
 // Mock ModelRouter - must be defined before the mock
@@ -123,7 +123,7 @@ describe("FinancialChatEngine", () => {
 
   beforeEach(() => {
     // resetMocks:true wipes jest.fn(() => ...) implementations — re-apply.
-    (getSupabase as jest.Mock).mockReturnValue(mockSupabase);
+    (getServiceRoleClient as jest.Mock).mockReturnValue(mockSupabase);
     // Don't use jest.clearAllMocks() as it clears mock implementations
     // Clear individual mocks instead
     (mockSupabase.from as jest.Mock).mockClear();

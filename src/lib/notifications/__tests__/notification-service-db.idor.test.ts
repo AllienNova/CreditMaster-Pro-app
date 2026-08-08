@@ -19,16 +19,16 @@ jest.mock("resend", () => ({
   })),
 }));
 
-jest.mock("../../supabase/client", () => ({
-  getSupabase: jest.fn(),
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: jest.fn(),
 }));
 
 // --- Import under test (after mocks) ---
 
 import { notificationServiceDB } from "../notification-service-db";
-import { getSupabase } from "../../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const mockGetSupabase = getSupabase as jest.Mock;
+const mockGetSupabase = getServiceRoleClient as jest.Mock;
 
 // --- Chain factory ---
 // Produces a chainable Supabase-style query builder.

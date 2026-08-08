@@ -4,7 +4,7 @@
  * Tradeline operations: getTradelines, getTradelineDetails, filterTradelines
  */
 
-import { getSupabase } from "../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Database } from "../supabase/types";
 
 type TradelineRow = Database["public"]["Tables"]["tradelines"]["Row"];
@@ -32,7 +32,7 @@ export interface TradelineFilters {
   available?: boolean;
 }
 
-const tradelines = () => getSupabase().from("tradelines");
+const tradelines = () => getServiceRoleClient().from("tradelines");
 
 class TradelineService {
   async getTradelines(filters?: TradelineFilters): Promise<Tradeline[]> {

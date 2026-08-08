@@ -21,7 +21,7 @@ import { fromDollars } from "@/lib/money";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- unparameterized admin client; table types are asserted at call sites
 let _supabase: ReturnType<typeof createClient<any>> | null = null;
 
-function getSupabase(): ReturnType<typeof createClient<any>> {
+function getServiceRoleClient(): ReturnType<typeof createClient<any>> {
   if (!_supabase) {
     _supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -126,7 +126,7 @@ class RevenueTracker {
         ? fromDollars(fullEvent.commissionAmount)
         : null;
 
-    const { error: insertError } = await getSupabase()
+    const { error: insertError } = await getServiceRoleClient()
       .from("revenue_events")
       .insert({
         event_id: fullEvent.eventId,
@@ -262,7 +262,10 @@ class RevenueTracker {
    * Delete all tracked events from the DB.
    */
   async clear(): Promise<void> {
-    await getSupabase().from("revenue_events").delete().not("id", "is", null);
+    // idor-audit: cross-user — wipes the whole revenue ledger by design; no
+    // production caller (maintenance/test only), and revenue_events is an
+    // aggregate business ledger, not per-user data.
+    await getServiceRoleClient().from("revenue_events").delete().not("id", "is", null);
   }
 
   // ---------------------------------------------------------------------------
@@ -277,7 +280,10 @@ class RevenueTracker {
     productId?: string,
   ): Promise<RevenueEventRow[]> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase PostgrestFilterBuilder type changes on each chained method; typed at the `as RevenueEventRow[]` boundary
-    let query: any = getSupabase().from("revenue_events").select("*");
+    // idor-audit: cross-user — affiliate revenue reporting aggregates across
+    // all users. Only reachable via /api/admin/affiliate/revenue, which is
+    // withRole("admin"). Scoping this by user_id would make the report wrong.
+    let query: any = getServiceRoleClient().from("revenue_events").select("*");
 
     if (period) {
       query = query
