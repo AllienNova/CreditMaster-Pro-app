@@ -16,15 +16,15 @@
 // Mocks
 // ---------------------------------------------------------------------------
 
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
+  return { getServiceRoleClient: () => _client };
 });
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
 function sb(): { from: jest.Mock } {
-  return getSupabase() as unknown as { from: jest.Mock };
+  return getServiceRoleClient() as unknown as { from: jest.Mock };
 }
 
 function chainMock(result: { data: unknown; error: unknown; count?: number }) {

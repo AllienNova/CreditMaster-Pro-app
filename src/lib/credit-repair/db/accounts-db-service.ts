@@ -17,9 +17,9 @@
  *   as `null`, never a fabricated value
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 
 // ============================================================================
 // TYPES

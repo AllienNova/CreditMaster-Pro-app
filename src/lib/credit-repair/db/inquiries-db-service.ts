@@ -20,9 +20,9 @@
  * - Full error handling
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import type { Bureau } from "./types";
 
 // ============================================================================

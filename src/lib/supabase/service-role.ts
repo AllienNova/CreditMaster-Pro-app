@@ -34,16 +34,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 let cached: SupabaseClient | null = null;
+let proxy: SupabaseClient | null = null;
 
-/**
- * Lazily construct the service-role client.
- *
- * Lazy rather than module-level so importing a service in a test or a build
- * step does not require the service-role key to be present — the previous
- * module-level `createClient` call threw "supabaseUrl is required" at import
- * time in exactly those contexts.
- */
-export function getServiceRoleClient(): SupabaseClient {
+function getRealClient(): SupabaseClient {
   if (cached) return cached;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -61,7 +54,35 @@ export function getServiceRoleClient(): SupabaseClient {
   return cached;
 }
 
+/**
+ * The service-role client.
+ *
+ * Returns a Proxy, NOT the real client — the real one is constructed on first
+ * property access. This mirrors `getSupabase()` in ./client and exists for the
+ * same reason: dozens of modules do `const supabase = getServiceRoleClient()`
+ * at MODULE SCOPE, and `next build`'s page-data-collection phase imports every
+ * route module with no runtime env. Constructing eagerly would abort the build
+ * with "supabaseUrl is required".
+ *
+ * It also keeps the anon->service-role migration a two-line import swap per
+ * file rather than a rewrite of every call site, which is where that migration
+ * previously went wrong.
+ */
+export function getServiceRoleClient(): SupabaseClient {
+  if (!proxy) {
+    proxy = new Proxy({} as SupabaseClient, {
+      get(_target, prop, receiver) {
+        const client = getRealClient();
+        const value = Reflect.get(client, prop, receiver);
+        return typeof value === "function" ? value.bind(client) : value;
+      },
+    });
+  }
+  return proxy;
+}
+
 /** Test-only: drop the cached client so env changes take effect. */
 export function resetServiceRoleClientForTests(): void {
   cached = null;
+  proxy = null;
 }

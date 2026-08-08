@@ -13,9 +13,9 @@
  * - Row Level Security (RLS) enforcement
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import type {
   CreditRepairScore,
   CreditRepairAction,
