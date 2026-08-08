@@ -74,10 +74,18 @@ async function pollForAutonomousUsers(): Promise<void> {
   try {
     const supabase = getSupabaseAdmin();
 
+    // The column is `operating_mode` ('watch' | 'guided' | 'autonomous', see
+    // 20260226_trading_modes_compliance.sql:17); `current_mode` has never
+    // existed. Naming it errored the whole query, so this poll found zero
+    // autonomous users on every tick and NO scheduler was ever started — the
+    // autonomous loop was completely inert, and the only symptom was a log
+    // line. `config` does not exist either: AutonomousConfig is scheduler
+    // tuning (cron expressions, scan limits) and is deliberately optional, so
+    // the scheduler falls back to its own defaults.
     const { data: accounts, error } = await supabase
       .from("trading_accounts")
-      .select("user_id, current_mode, config")
-      .eq("current_mode", "autonomous")
+      .select("user_id, operating_mode")
+      .eq("operating_mode", "autonomous")
       .eq("is_active", true);
 
     if (error) {
@@ -91,10 +99,11 @@ async function pollForAutonomousUsers(): Promise<void> {
     for (const account of accounts || []) {
       if (!schedulers.has(account.user_id)) {
         console.log(`[poll] Starting scheduler for user ${account.user_id}`);
-        const scheduler = createAutonomousScheduler(
-          account.user_id,
-          account.config || {},
-        );
+        // No per-user scheduler config is persisted anywhere; createAutonomous
+        // Scheduler's `config` param is optional and defaults are applied
+        // internally. Passing `account.config` read a column that does not
+        // exist and always evaluated to `{}` regardless.
+        const scheduler = createAutonomousScheduler(account.user_id);
         const result = await scheduler.start();
 
         if (result.success) {

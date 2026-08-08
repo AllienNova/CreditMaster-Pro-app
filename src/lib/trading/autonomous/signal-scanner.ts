@@ -20,22 +20,24 @@ import type { ScanResult, ScanCycleResult } from "./autonomous-types";
 // ============================================================================
 
 /**
- * Load the user's autonomous trading watchlist from the DB.
- * Falls back to a default set of liquid, large-cap symbols.
+ * The symbols the autonomous scanner sweeps each cycle.
+ *
+ * PER-USER WATCHLISTS ARE NOT BUILT. This used to select
+ * `trading_accounts.watchlist`, a column that exists in no migration and no
+ * other query in the repo — there is no table, no writer, and no UI for it.
+ * The select therefore always errored into the `DEFAULT_WATCHLIST` fallback,
+ * so the function has only ever returned the default while reading like a
+ * per-user lookup.
+ *
+ * The dead query is removed rather than replaced with a new column: adding a
+ * column nothing writes would be the same defect pointing the other way. When
+ * per-user watchlists are actually built, this is where they load.
+ *
+ * `userId` is retained so callers and the eventual real implementation do not
+ * have to change.
  */
-export async function loadWatchlist(userId: string): Promise<string[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabaseAdmin as any)
-    .from("trading_accounts")
-    .select("watchlist")
-    .eq("user_id", userId)
-    .single();
-
-  if (error || !data?.watchlist || !Array.isArray(data.watchlist)) {
-    return DEFAULT_WATCHLIST;
-  }
-
-  return data.watchlist as string[];
+export async function loadWatchlist(_userId: string): Promise<string[]> {
+  return DEFAULT_WATCHLIST;
 }
 
 const DEFAULT_WATCHLIST = [

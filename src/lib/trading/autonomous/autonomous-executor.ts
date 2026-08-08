@@ -164,10 +164,19 @@ export async function checkPortfolioHealth(
     const lossVelocity = await calculateLossVelocity(userId);
 
     if (lossVelocity > 0.03) {
+      // A non-finite velocity means the guard could not be evaluated at all —
+      // calculateLossVelocity returns Infinity when the account has no usable
+      // equity. Say that, rather than reporting "Infinity%/hr" as if it were a
+      // measurement, because the operator's response differs: one is a losing
+      // session, the other is a broken risk record.
+      const message = Number.isFinite(lossVelocity)
+        ? `Loss velocity ${(lossVelocity * 100).toFixed(1)}%/hr exceeds 3%/hr threshold`
+        : "Loss velocity could not be evaluated: no usable account equity in user_risk_settings. Failing closed.";
+
       alerts.push({
         severity: "critical",
         type: "loss_velocity",
-        message: `Loss velocity ${(lossVelocity * 100).toFixed(1)}%/hr exceeds 3%/hr threshold`,
+        message,
         value: lossVelocity,
         threshold: 0.03,
       });
@@ -307,16 +316,38 @@ async function calculateLossVelocity(userId: string): Promise<number> {
       0,
     );
 
-    // Get account size for percentage calculation
+    // Account equity is the denominator for the loss-velocity circuit breaker.
+    //
+    // This read `trading_accounts.account_size`, a column that does not exist
+    // on that table and never has. The select therefore returned no usable row
+    // and `?? 100_000` took over, so loss velocity was ALWAYS measured against
+    // a hardcoded $100k account. On a $10k account a 5%-of-equity loss
+    // registered as 0.5% and the breaker never tripped — the guard was
+    // reporting on an account nobody owns.
+    //
+    // `user_risk_settings.equity` is the real figure: that table is the risk
+    // surface (equity, peak_equity, kill_switch) and is what the rest of the
+    // risk layer reads.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: account } = await (supabaseAdmin as any)
-      .from("trading_accounts")
-      .select("account_size")
+    const { data: risk, error: riskError } = await (supabaseAdmin as any)
+      .from("user_risk_settings")
+      .select("equity")
       .eq("user_id", userId)
       .single();
 
-    const accountSize = account?.account_size ?? 100_000;
-    return totalLoss / accountSize;
+    const accountEquity = Number(risk?.equity);
+    if (riskError || !Number.isFinite(accountEquity) || accountEquity <= 0) {
+      // Refuse to invent a denominator. Returning 0 would read as "no losses"
+      // and quietly disarm the breaker; a non-finite ratio makes the caller's
+      // threshold comparison fail closed instead.
+      console.error("calculateLossVelocity: no usable equity for user", {
+        userId,
+        error: riskError?.message,
+      });
+      return Number.POSITIVE_INFINITY;
+    }
+
+    return totalLoss / accountEquity;
   } catch {
     return 0;
   }

@@ -28,58 +28,37 @@ describe("signal-scanner", () => {
   // ========================================================================
   // loadWatchlist
   // ========================================================================
+  // These three cases asserted a per-user watchlist loaded from
+  // `trading_accounts.watchlist`. That column exists in no migration, no other
+  // query, and no UI — the fixture mocked a column the database could never
+  // return, so the suite passed against fiction while the real call always
+  // errored into DEFAULT_WATCHLIST. The requirement did not change; it was
+  // never built. These now pin the honest contract: loadWatchlist returns the
+  // default set, and will be the seam where real per-user watchlists land.
   describe("loadWatchlist", () => {
-    it("returns user watchlist from DB when available", async () => {
-      const mockFrom = jest.fn().mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: { watchlist: ["AAPL", "TSLA", "GOOG"] },
-              error: null,
-            }),
-          }),
-        }),
-      });
-      (supabaseAdmin as unknown as { from: jest.Mock }).from = mockFrom;
-
+    it("returns the default watchlist — per-user watchlists are not built", async () => {
       const result = await loadWatchlist("user_1");
-      expect(result).toEqual(["AAPL", "TSLA", "GOOG"]);
-    });
 
-    it("returns default watchlist on DB error", async () => {
-      const mockFrom = jest.fn().mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: null,
-              error: { message: "not found" },
-            }),
-          }),
-        }),
-      });
-      (supabaseAdmin as unknown as { from: jest.Mock }).from = mockFrom;
-
-      const result = await loadWatchlist("user_1");
       expect(result).toContain("AAPL");
       expect(result).toContain("NVDA");
       expect(result.length).toBe(10);
     });
 
-    it("returns default watchlist when watchlist is null", async () => {
-      const mockFrom = jest.fn().mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: { watchlist: null },
-              error: null,
-            }),
-          }),
-        }),
-      });
+    it("does not query the database for a watchlist", async () => {
+      const mockFrom = jest.fn();
       (supabaseAdmin as unknown as { from: jest.Mock }).from = mockFrom;
 
-      const result = await loadWatchlist("user_1");
-      expect(result.length).toBe(10);
+      await loadWatchlist("user_1");
+
+      // Guards the fix: the old implementation selected a nonexistent column
+      // and leaned on the error path to produce this same result.
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it("returns the same set for every user", async () => {
+      expect(await loadWatchlist("user_1")).toEqual(
+        await loadWatchlist("user_2"),
+      );
     });
   });
 

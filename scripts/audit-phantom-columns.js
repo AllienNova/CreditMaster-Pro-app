@@ -75,13 +75,34 @@ function walk(dir, acc = []) {
   return acc;
 }
 
+/**
+ * PostgREST aggregate/meta selectors, which are not columns and must not be
+ * looked up as such. `.select("count")` is the idiomatic row-count query and
+ * appeared four times as a "phantom column" on four different real tables —
+ * noise that teaches the reader to skim the report, which is how a genuine
+ * hit gets missed.
+ */
+const AGGREGATE_SELECTORS = new Set([
+  "count",
+  "sum",
+  "avg",
+  "min",
+  "max",
+]);
+
 /** Columns named by a .select("...") argument, minus embeds and aliases. */
 function columnsFromSelect(arg) {
   return arg
     .replace(/[a-z_]+!\w*\([^)]*\)/gi, "") // strip embedded resource selects
     .split(",")
     .map((c) => c.trim().split(":").pop().trim()) // alias:col -> col
-    .filter((c) => c && c !== "*" && /^[a-z_][a-z0-9_]*$/.test(c));
+    .filter(
+      (c) =>
+        c &&
+        c !== "*" &&
+        !AGGREGATE_SELECTORS.has(c) &&
+        /^[a-z_][a-z0-9_]*$/.test(c),
+    );
 }
 
 /** Top-level keys of an object literal, skipping spreads and computed keys. */

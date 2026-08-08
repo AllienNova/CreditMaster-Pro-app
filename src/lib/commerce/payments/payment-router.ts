@@ -3,6 +3,34 @@
  *
  * Unified payment routing that selects the best payment provider
  * based on region, currency, and payment type.
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ *  TABLE-NAME COLLISION — THIS FILE'S DB LAYER CANNOT WORK AS WRITTEN
+ *
+ *  Every query below targets `payments`, but the migrated `payments` table
+ *  (20260731000020_payments_revenue_ledger.sql) is a Stripe INVOICE ledger:
+ *      amount_cents, currency, status, paid_at, stripe_customer_id,
+ *      stripe_event_id, stripe_invoice_id, stripe_subscription_id, user_id
+ *
+ *  This router writes a different entity entirely — a multi-provider payment
+ *  attempt — and names columns that table does not have:
+ *      provider, provider_payment_id, amount, type, method, metadata,
+ *      updated_at
+ *
+ *  Two distinct concepts share one name. Nothing routes to this class yet
+ *  (its only importer is the barrel in ./index.ts), so the mismatch has never
+ *  fired in production; the moment it is wired, createPaymentRecord throws.
+ *
+ *  Resolving it means giving this router its own table — `provider_payments`
+ *  or similar, matching the shape above — and repointing these five queries.
+ *  That is an owner decision (new table + migration) and is deliberately NOT
+ *  taken here rather than guessed at. scripts/audit-phantom-columns.js reports
+ *  all 11 sites until it is.
+ *
+ *  What HAS been fixed: three of those queries previously awaited without
+ *  checking `error`, so a settled or failed payment would silently fail to
+ *  persist. They now throw.
+ * ─────────────────────────────────────────────────────────────────────────
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -549,11 +577,19 @@ export class PaymentRouter {
     provider: PaymentProvider,
     providerPaymentId: string,
   ): Promise<void> {
-    await supabase
+    const { error } = await supabase
       .from("payments")
       .update({ status: "succeeded", updated_at: new Date().toISOString() })
       .eq("provider", provider)
       .eq("provider_payment_id", providerPaymentId);
+
+    // Money state. A swallowed failure here leaves a settled payment recorded
+    // as pending forever, with nothing anywhere saying so.
+    if (error) {
+      throw new Error(
+        `Failed to mark payment succeeded (${provider}/${providerPaymentId}): ${error.message}`,
+      );
+    }
   }
 
   private async handlePaymentFailure(
@@ -561,7 +597,7 @@ export class PaymentRouter {
     providerPaymentId: string,
     error?: string,
   ): Promise<void> {
-    await supabase
+    const { error: updateError } = await supabase
       .from("payments")
       .update({
         status: "failed",
@@ -570,6 +606,14 @@ export class PaymentRouter {
       })
       .eq("provider", provider)
       .eq("provider_payment_id", providerPaymentId);
+
+    // A payment that failed at the provider but still reads as pending here is
+    // the worst of both: no retry, no refund path, no record of why.
+    if (updateError) {
+      throw new Error(
+        `Failed to mark payment failed (${provider}/${providerPaymentId}): ${updateError.message}`,
+      );
+    }
   }
 
   // ===========================================================================
@@ -672,7 +716,7 @@ export class PaymentRouter {
     id: string,
     payment: Partial<UnifiedPayment>,
   ): Promise<void> {
-    await supabase
+    const { error } = await supabase
       .from("payments")
       .update({
         provider_payment_id: payment.providerPaymentId,
@@ -681,6 +725,12 @@ export class PaymentRouter {
         metadata: payment.metadata,
       })
       .eq("id", id);
+
+    if (error) {
+      throw new Error(
+        `Failed to update payment record ${id}: ${error.message}`,
+      );
+    }
   }
 
   private mapStripeStatus(status: string): UnifiedPayment["status"] {
