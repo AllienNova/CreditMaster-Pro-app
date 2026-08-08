@@ -27,8 +27,11 @@
  *   pk   — scoped by `.eq("id", ...)`, so it can only ever return ONE row.
  * `fk` and `pk` are frequently correct: the id was resolved from an
  * owner-scoped query upstream. They are frequently NOT: the id came straight
- * off a request path. This script cannot tell the two apart, so it reports them
- * for a human to confirm rather than guessing.
+ * off a request path. This script cannot tell the two apart, so it makes the
+ * human say which — `pk` fails the run until the call site carries a
+ * `// idor-audit: pk-owner-checked — <reason>` marker. `fk` is still reported
+ * rather than blocking, since a webhook that knows only an item_id has no
+ * user_id to filter on.
  *
  * HONEST LIMITS. Regex over source text, same family as
  * audit-phantom-columns.js: a chain split unusually, a filter applied via a
@@ -108,19 +111,41 @@ function operationOf(chain) {
  */
 const CROSS_USER_MARKER = /\/\/\s*idor-audit:\s*cross-user\s*[—-]\s*\S/;
 
+/**
+ * A single-row `.eq("id", x)` lookup whose id was already owner-checked:
+ *
+ *   // idor-audit: pk-owner-checked — budgetId came from shared_budget_members
+ *   //   filtered to this caller
+ *
+ * PK-scoped queries USED to be reported-but-not-blocking, on the reasoning
+ * that returning one row is not mass disclosure. That reasoning was wrong, and
+ * provably so: GoalPlanner.simulateGoal took a goalId straight off the request
+ * path and looked it up by id alone. It was a real IDOR — any authenticated
+ * user could read any other user's goal — and this audit passed it clean.
+ * The bug was caught by reading the code, which is exactly what the audit
+ * exists to stop relying on.
+ *
+ * So a bare `.eq("id", ...)` now blocks like any other unscoped query. It is
+ * cleared either by adding the user_id filter or by stating, at the call site,
+ * where the id was owner-resolved.
+ */
+const PK_CHECKED_MARKER = /\/\/\s*idor-audit:\s*pk-owner-checked\s*[—-]\s*\S/;
+
 /** Line-start offsets of every cross-user marker in the file. */
 function markedLines(text) {
   const lines = text.split("\n");
-  const marked = new Set();
+  const crossUser = new Set();
+  const pkChecked = new Set();
   lines.forEach((l, i) => {
-    if (CROSS_USER_MARKER.test(l)) marked.add(i + 1);
+    if (CROSS_USER_MARKER.test(l)) crossUser.add(i + 1);
+    if (PK_CHECKED_MARKER.test(l)) pkChecked.add(i + 1);
   });
-  return marked;
+  return { crossUser, pkChecked };
 }
 
 /** True when a marker sits on, or within 3 lines above, the query. */
-function isMarked(marked, line) {
-  for (let i = line; i >= line - 3; i--) if (marked.has(i)) return true;
+function isMarked(set, line) {
+  for (let i = line; i >= line - 4; i--) if (set.has(i)) return true;
   return false;
 }
 
@@ -193,7 +218,7 @@ function audit(text, rel, userScoped, findings, marked) {
       const chain = text.slice(at, chainExtent(text, at));
       if (OWNER_FILTER.test(chain)) continue;
       const aliasLine = text.slice(0, at).split("\n").length;
-      if (isMarked(marked, aliasLine)) continue;
+      if (isMarked(marked.crossUser, aliasLine)) continue;
       const fk = chain.match(FK_FILTER);
       const pk = PK_FILTER.test(chain);
       findings.push({
@@ -221,7 +246,7 @@ function audit(text, rel, userScoped, findings, marked) {
     // scoping there, not merely a single-row lookup.
     if (OWNER_FILTER.test(chain)) continue;
     if (table === "profiles" && PK_FILTER.test(chain)) continue;
-    if (isMarked(marked, text.slice(0, at).split("\n").length)) continue;
+    if (isMarked(marked.crossUser, text.slice(0, at).split("\n").length)) continue;
 
     const fk = chain.match(FK_FILTER);
     const pk = PK_FILTER.test(chain);
@@ -232,6 +257,7 @@ function audit(text, rel, userScoped, findings, marked) {
       op: operationOf(chain),
       kind: fk ? "fk" : pk ? "pk" : "none",
       via: fk ? fk[2] : pk ? "id" : null,
+      cleared: isMarked(marked.pkChecked, text.slice(0, at).split("\n").length),
     });
   }
 }
@@ -275,18 +301,36 @@ function main() {
   for (const f of fkScoped) {
     console.log(`  ${f.op.padEnd(6)} ${f.table.padEnd(28)} via ${String(f.via).padEnd(16)} ${f.file}:${f.line}`);
   }
-  if (pkScoped.length)
-    console.log("\nPK-SCOPED (confirm the id was resolved from an owner-scoped query):");
-  for (const f of pkScoped) {
-    console.log(`  ${f.op.padEnd(6)} ${f.table.padEnd(28)} via id           ${f.file}:${f.line}`);
+  const pkOpen = pkScoped.filter((f) => !f.cleared);
+  const pkCleared = pkScoped.filter((f) => f.cleared);
+  if (pkOpen.length)
+    console.log("\nPK-SCOPED, NOT CLEARED (fix or justify — these fail the run):");
+  for (const f of pkOpen) {
+    console.log(`  ${f.op.padEnd(6)} ${f.table.padEnd(28)} via id  ${f.file}:${f.line}`);
   }
+  if (pkCleared.length)
+    console.log(`\nPK-SCOPED, cleared by an explicit marker: ${pkCleared.length}`);
 
   // An insert legitimately supplies user_id in its payload rather than as a
   // filter, so inserts are reported but do not fail the run. Reads, updates and
   // deletes that could touch another user's rows do.
-  const blocking = unscoped.filter((f) => f.op !== "insert");
+  // An insert legitimately supplies user_id in its payload rather than as a
+  // filter, so inserts are reported but do not fail the run.
+  //
+  // PK-scoped reads DO fail unless individually cleared. They were once
+  // treated as safe-because-single-row; GoalPlanner.simulateGoal disproved
+  // that, and this audit passed it clean at the time.
+  const blocking = [
+    ...unscoped.filter((f) => f.op !== "insert"),
+    ...pkScoped.filter((f) => !f.cleared),
+  ];
   if (blocking.length > 0) {
-    console.log(`\n${blocking.length} non-insert queries lack an owner filter.`);
+    console.log(
+      `\n${blocking.length} queries are neither owner-scoped nor cleared.` +
+        `\nAdd .eq("user_id", ...), or justify at the call site with` +
+        `\n  // idor-audit: pk-owner-checked — <where the id was owner-resolved>` +
+        `\n  // idor-audit: cross-user — <why this must span users>`,
+    );
   }
   process.exitCode = blocking.length > 0 ? 1 : 0;
 }

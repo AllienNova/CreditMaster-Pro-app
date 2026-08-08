@@ -56,9 +56,7 @@ function makeScoreRow(overrides: Record<string, any> = {}) {
     bureau: "bureau" in overrides ? overrides.bureau : "experian",
     score: "score" in overrides ? overrides.score : 720,
     score_date:
-      "score_date" in overrides
-        ? overrides.score_date
-        : "2026-01-15T00:00:00Z",
+      "score_date" in overrides ? overrides.score_date : "2026-01-15T00:00:00Z",
     factors:
       "factors" in overrides
         ? overrides.factors
@@ -70,9 +68,7 @@ function makeScoreRow(overrides: Record<string, any> = {}) {
             },
           ],
     created_at:
-      "created_at" in overrides
-        ? overrides.created_at
-        : "2026-01-15T00:00:00Z",
+      "created_at" in overrides ? overrides.created_at : "2026-01-15T00:00:00Z",
   };
 }
 
@@ -87,9 +83,7 @@ function makeAlertRow(overrides: Record<string, any> = {}) {
     severity: "severity" in overrides ? overrides.severity : "medium",
     read: "read" in overrides ? overrides.read : false,
     created_at:
-      "created_at" in overrides
-        ? overrides.created_at
-        : "2026-02-01T00:00:00Z",
+      "created_at" in overrides ? overrides.created_at : "2026-02-01T00:00:00Z",
     data: "data" in overrides ? overrides.data : null,
   };
 }
@@ -243,8 +237,7 @@ describe("CreditMonitoringService", () => {
         error: null,
       });
 
-      const result =
-        await creditMonitoringService.getCurrentScores("user-xyz");
+      const result = await creditMonitoringService.getCurrentScores("user-xyz");
 
       const eq = result.equifax!;
       expect(eq.id).toBe("id-abc");
@@ -475,9 +468,7 @@ describe("CreditMonitoringService", () => {
       expect(result!.score).toBe(725);
 
       // Verify createAlert was called (insert called for alert)
-      const fromCalls = mockSupabase.from.mock.calls.map(
-        (c: any[]) => c[0],
-      );
+      const fromCalls = mockSupabase.from.mock.calls.map((c: any[]) => c[0]);
       expect(fromCalls).toContain("credit_alerts");
     });
 
@@ -528,9 +519,7 @@ describe("CreditMonitoringService", () => {
       );
 
       expect(result).not.toBeNull();
-      const fromCalls = mockSupabase.from.mock.calls.map(
-        (c: any[]) => c[0],
-      );
+      const fromCalls = mockSupabase.from.mock.calls.map((c: any[]) => c[0]);
       expect(fromCalls).toContain("credit_alerts");
     });
 
@@ -569,9 +558,7 @@ describe("CreditMonitoringService", () => {
       );
 
       expect(result).not.toBeNull();
-      const fromCalls = mockSupabase.from.mock.calls.map(
-        (c: any[]) => c[0],
-      );
+      const fromCalls = mockSupabase.from.mock.calls.map((c: any[]) => c[0]);
       expect(fromCalls).not.toContain("credit_alerts");
     });
 
@@ -604,9 +591,7 @@ describe("CreditMonitoringService", () => {
       );
 
       expect(result).not.toBeNull();
-      const fromCalls = mockSupabase.from.mock.calls.map(
-        (c: any[]) => c[0],
-      );
+      const fromCalls = mockSupabase.from.mock.calls.map((c: any[]) => c[0]);
       expect(fromCalls).not.toContain("credit_monitoring_settings");
       expect(fromCalls).not.toContain("credit_alerts");
     });
@@ -870,7 +855,10 @@ describe("CreditMonitoringService", () => {
     it("should throw (not silently return defaults) on a real query failure — collapsing a genuine error into 'first visit' defaults would mask the failure as a normal empty state", async () => {
       mockSupabase.single.mockResolvedValueOnce({
         data: null,
-        error: { code: "42501", message: "permission denied for table credit_monitoring_settings" },
+        error: {
+          code: "42501",
+          message: "permission denied for table credit_monitoring_settings",
+        },
       });
 
       await expect(
@@ -1281,15 +1269,12 @@ describe("CreditMonitoringService", () => {
           error: null,
         });
 
-        const result = await creditMonitoringService.createAlert(
-          TEST_USER_ID,
-          {
-            type,
-            title: `Alert: ${type}`,
-            message: `Alert of type ${type}`,
-            severity: "medium",
-          },
-        );
+        const result = await creditMonitoringService.createAlert(TEST_USER_ID, {
+          type,
+          title: `Alert: ${type}`,
+          message: `Alert of type ${type}`,
+          severity: "medium",
+        });
 
         expect(result).not.toBeNull();
         expect(result!.type).toBe(type);
@@ -1303,28 +1288,37 @@ describe("CreditMonitoringService", () => {
 
   describe("markAlertAsRead", () => {
     it("should update the alert and return true on success", async () => {
-      // Chain: from().update({read: true}).eq("id", alertId)
-      // eq is the terminal
+      // Chain: from().update({read:true}).eq("id",alertId).eq("user_id",userId)
+      // The SECOND eq is the terminal now that the query is owner-scoped, so
+      // the first must keep returning the chain.
+      mockSupabase.eq.mockReturnValueOnce(mockSupabase);
       mockSupabase.eq.mockResolvedValueOnce({
         error: null,
       });
 
-      const result =
-        await creditMonitoringService.markAlertAsRead(TEST_ALERT_ID);
+      const result = await creditMonitoringService.markAlertAsRead(
+        TEST_ALERT_ID,
+        TEST_USER_ID,
+      );
 
       expect(result).toBe(true);
       expect(mockSupabase.from).toHaveBeenCalledWith("credit_alerts");
       expect(mockSupabase.update).toHaveBeenCalledWith({ read: true });
       expect(mockSupabase.eq).toHaveBeenCalledWith("id", TEST_ALERT_ID);
+      // The owner filter is what stops one user marking another's alert read.
+      expect(mockSupabase.eq).toHaveBeenCalledWith("user_id", TEST_USER_ID);
     });
 
     it("should return false on update error", async () => {
+      mockSupabase.eq.mockReturnValueOnce(mockSupabase);
       mockSupabase.eq.mockResolvedValueOnce({
         error: { message: "Update failed" },
       });
 
-      const result =
-        await creditMonitoringService.markAlertAsRead(TEST_ALERT_ID);
+      const result = await creditMonitoringService.markAlertAsRead(
+        TEST_ALERT_ID,
+        TEST_USER_ID,
+      );
 
       expect(result).toBe(false);
     });
@@ -1485,9 +1479,7 @@ describe("CreditMonitoringService", () => {
 
     it("should calculate score change correctly across bureaus", async () => {
       const now = new Date();
-      const twentyDaysAgo = new Date(
-        now.getTime() - 20 * 24 * 60 * 60 * 1000,
-      );
+      const twentyDaysAgo = new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000);
       const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
 
       const historyData = [

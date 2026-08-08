@@ -61,7 +61,7 @@ export const PATCH = withPermission(
     if (markAllAsRead) {
       success = await creditMonitoringService.markAllAlertsAsRead(userId);
     } else if (alertId) {
-      success = await creditMonitoringService.markAlertAsRead(alertId);
+      success = await creditMonitoringService.markAlertAsRead(alertId, userId);
     } else {
       return NextResponse.json(
         { error: "Either alertId or markAllAsRead must be provided" },

@@ -106,83 +106,87 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
 
 export const DELETE = withAuth(
   async (request: NextRequest, user: AuthedUser) => {
-  try {
-    // Get document ID from query params
-    const searchParams = request.nextUrl.searchParams;
-    const documentId = searchParams.get("id");
+    try {
+      // Get document ID from query params
+      const searchParams = request.nextUrl.searchParams;
+      const documentId = searchParams.get("id");
 
-    if (!documentId) {
+      if (!documentId) {
+        return NextResponse.json(
+          { error: "Bad request", message: "Document ID is required." },
+          { status: 400 },
+        );
+      }
+
+      // Verify document belongs to user and delete
+      const { data: document, error: fetchError } = await supabase
+        // idor-audit: pk-owner-checked — selects user_id precisely so
+        // the explicit document.user_id !== user.id check below can 403.
+        .from("tax_documents")
+        .select("id, user_id, storage_path")
+        .eq("id", documentId)
+        .single();
+
+      if (fetchError || !document) {
+        return NextResponse.json(
+          { error: "Not found", message: "Document not found." },
+          { status: 404 },
+        );
+      }
+
+      if (document.user_id !== user.id) {
+        return NextResponse.json(
+          {
+            error: "Forbidden",
+            message: "You do not have permission to delete this document.",
+          },
+          { status: 403 },
+        );
+      }
+
+      // Delete from storage if path exists
+      if (document.storage_path) {
+        await supabase.storage
+          .from("tax-documents")
+          .remove([document.storage_path]);
+      }
+
+      // Delete from database
+      const { error: deleteError } = await supabase
+        // idor-audit: pk-owner-checked — unreachable unless the
+        // document.user_id !== user.id guard above already returned 403.
+        .from("tax_documents")
+        .delete()
+        .eq("id", documentId);
+
+      if (deleteError) {
+        // TaxDocumentsAPI error: Delete error
+        return NextResponse.json(
+          { error: "Database error", message: "Failed to delete document." },
+          { status: 500 },
+        );
+      }
+
+      // Log deletion
+      await supabase.from("tax_audit_log").insert({
+        user_id: user.id,
+        action_type: "document_deleted",
+        entity_type: "tax_document",
+        entity_id: documentId,
+        created_at: new Date().toISOString(),
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "Document deleted successfully.",
+      });
+    } catch (_error) {
+      // TaxDocumentsAPI error: Document delete error
+      void _error;
       return NextResponse.json(
-        { error: "Bad request", message: "Document ID is required." },
-        { status: 400 },
-      );
-    }
-
-    // Verify document belongs to user and delete
-    const { data: document, error: fetchError } = await supabase
-      .from("tax_documents")
-      .select("id, user_id, storage_path")
-      .eq("id", documentId)
-      .single();
-
-    if (fetchError || !document) {
-      return NextResponse.json(
-        { error: "Not found", message: "Document not found." },
-        { status: 404 },
-      );
-    }
-
-    if (document.user_id !== user.id) {
-      return NextResponse.json(
-        {
-          error: "Forbidden",
-          message: "You do not have permission to delete this document.",
-        },
-        { status: 403 },
-      );
-    }
-
-    // Delete from storage if path exists
-    if (document.storage_path) {
-      await supabase.storage
-        .from("tax-documents")
-        .remove([document.storage_path]);
-    }
-
-    // Delete from database
-    const { error: deleteError } = await supabase
-      .from("tax_documents")
-      .delete()
-      .eq("id", documentId);
-
-    if (deleteError) {
-      // TaxDocumentsAPI error: Delete error
-      return NextResponse.json(
-        { error: "Database error", message: "Failed to delete document." },
+        { error: "Server error", message: "Unable to delete document." },
         { status: 500 },
       );
     }
-
-    // Log deletion
-    await supabase.from("tax_audit_log").insert({
-      user_id: user.id,
-      action_type: "document_deleted",
-      entity_type: "tax_document",
-      entity_id: documentId,
-      created_at: new Date().toISOString(),
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Document deleted successfully.",
-    });
-  } catch (_error) {
-    // TaxDocumentsAPI error: Document delete error
-    void _error;
-    return NextResponse.json(
-      { error: "Server error", message: "Unable to delete document." },
-      { status: 500 },
-    );
-  }
-},
+  },
 );

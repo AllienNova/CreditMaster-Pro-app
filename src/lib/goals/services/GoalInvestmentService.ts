@@ -266,16 +266,22 @@ export class GoalInvestmentService {
    */
   async updateGoalProgress(
     goalId: string,
+    userId: string,
     currentAmount: number,
   ): Promise<boolean> {
     try {
+      // The user_id filter is load-bearing: this runs on the service role,
+      // which bypasses RLS. Without it this writes an arbitrary amount onto
+      // any user's goal. Scoped now rather than annotated because nothing
+      // calls it yet, so adding the parameter costs nothing.
       const { error } = await supabase
         .from("financial_goals")
         .update({
           current_amount: currentAmount,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", goalId);
+        .eq("id", goalId)
+        .eq("user_id", userId);
 
       return !error;
     } catch {

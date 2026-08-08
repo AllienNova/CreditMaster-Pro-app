@@ -153,6 +153,9 @@ class ReviewService {
   }
 
   async markHelpful(reviewId: string): Promise<boolean> {
+    // idor-audit: cross-user — marking a review helpful is a public action on
+    // someone else's review; marketplace_reviews.user_id is the AUTHOR, not
+    // the actor, so scoping by it would break the feature.
     const { data: current, error: fetchError } = await reviews()
       .select("helpful_count")
       .eq("id", reviewId)

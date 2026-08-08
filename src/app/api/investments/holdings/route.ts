@@ -125,6 +125,8 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
       const newAvgCost = newTotalCost / newTotalShares;
 
       const { data, error } = await supabase
+        // idor-audit: pk-owner-checked — existing.id came from the
+        // select above, which filters .eq("user_id", userId).
         .from("investment_holdings")
         .update({
           quantity: newTotalShares,

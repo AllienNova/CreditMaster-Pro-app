@@ -435,12 +435,17 @@ class CreditMonitoringService {
   /**
    * Mark alert as read
    */
-  async markAlertAsRead(alertId: string): Promise<boolean> {
+  async markAlertAsRead(alertId: string, userId: string): Promise<boolean> {
     try {
+      // The user_id filter is load-bearing: this runs on the service role,
+      // which bypasses RLS, and alertId arrives straight off the request body.
+      // Without it any authenticated caller could mark another user's credit
+      // alert as read. markAllAlertsAsRead below already scopes this way.
       const { error } = await supabase
         .from("credit_alerts")
         .update({ read: true })
-        .eq("id", alertId);
+        .eq("id", alertId)
+        .eq("user_id", userId);
 
       if (error) throw error;
       return true;

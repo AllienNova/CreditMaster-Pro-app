@@ -256,7 +256,9 @@ function mapRowToBudget(row: BudgetRow): Budget {
   return {
     id: row.id,
     userId: row.user_id,
-    name: CATEGORY_DISPLAY_NAMES[row.category as BudgetCategoryValue] || row.category,
+    name:
+      CATEGORY_DISPLAY_NAMES[row.category as BudgetCategoryValue] ||
+      row.category,
     category: row.category as BudgetCategoryValue,
     budgetedAmount: budgetedAmount,
     spentAmount: spentAmount,
@@ -1232,6 +1234,8 @@ export class BudgetService {
 
       // Fetch the budget data — use the owner's userId so the query works
       const { data: budgetData, error: budgetError } = await supabase()
+        // idor-audit: pk-owner-checked — budgetIds come from shared_budget_members
+        // filtered .eq("member_user_id", userId).
         .from("budgets")
         .select("*")
         .eq("id", budgetId)
@@ -1402,6 +1406,8 @@ export class BudgetService {
 
     for (const entry of uniqueBudgetEntries) {
       const { data: budgetData } = await supabase()
+        // idor-audit: pk-owner-checked — entries come from shared_budget_members
+        // filtered to this user (member_user_id) or owned by them (owner_user_id).
         .from("budgets")
         .select("*")
         .eq("id", entry.budget_id)
@@ -1553,6 +1559,8 @@ export class BudgetService {
   ): Promise<SharedBudget> {
     // Fetch the base budget
     const { data: budgetData, error: budgetError } = await supabase()
+      // idor-audit: pk-owner-checked — reached only via shareBudget(), which
+      // calls getBudgetById(budgetId, ownerUserId) and throws unless owned.
       .from("budgets")
       .select("*")
       .eq("id", budgetId)
@@ -1716,6 +1724,9 @@ export class BudgetService {
 
     // Check if user is the budget owner
     const { data: budgetData } = await supabase()
+      // idor-audit: pk-owner-checked — selects user_id precisely to compare it
+      // against the caller — this query IS the ownership check, and returns a
+      // boolean, never row data.
       .from("budgets")
       .select("user_id")
       .eq("id", budgetId)
@@ -1774,6 +1785,8 @@ export class BudgetService {
     const sharedBudgets: SharedBudget[] = [];
     for (const row of pendingRows as SharedBudgetMemberRow[]) {
       const { data: budgetData } = await supabase()
+        // idor-audit: pk-owner-checked — pendingRows come from shared_budget_members
+        // filtered .eq("member_user_id", userId).
         .from("budgets")
         .select("*")
         .eq("id", row.budget_id)

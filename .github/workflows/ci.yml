@@ -153,6 +153,17 @@ jobs:
       - name: test:auth-negative - 401/403 coverage across wrapped routes
         run: npm run test:auth-negative
 
+      # BLOCKING: the service-role client BYPASSES RLS, so on every table these
+      # services touch the .eq("user_id", ...) filter is load-bearing, not
+      # defensive - dropping it returns every user's rows with no error
+      # (FND-030). Fails on any unscoped non-insert query. A deliberately
+      # cross-user query opts out at the call site with
+      # `// idor-audit: cross-user - <reason>`, which is visible in review.
+      # Derives its table list from supabase/migrations, so it needs no
+      # database and runs here without a Postgres service container.
+      - name: audit:idor - service-role queries must be owner-scoped
+        run: npm run audit:idor
+
   build:
     name: Build
     runs-on: ubuntu-latest

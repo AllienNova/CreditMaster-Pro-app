@@ -318,12 +318,20 @@ class DisputeService {
   /**
    * Track dispute status
    */
-  async trackDispute(disputeId: string): Promise<DisputeItem | null> {
+  async trackDispute(
+    disputeId: string,
+    userId: string,
+  ): Promise<DisputeItem | null> {
     try {
+      // The user_id filter is load-bearing: this runs on the service role,
+      // which bypasses RLS. Scoped now rather than annotated because nothing
+      // calls this yet — the moment something does, it would have been an
+      // IDOR returning any user's full dispute row.
       const { data, error } = await supabase
         .from("disputes")
         .select("*")
         .eq("id", disputeId)
+        .eq("user_id", userId)
         .single();
 
       if (error) throw error;

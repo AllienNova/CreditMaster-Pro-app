@@ -31,6 +31,7 @@
     "test:idor": "jest -t idor",
     "audit:auth": "tsx scripts/verify-auth-coverage.ts",
     "audit:tier-map": "tsx scripts/audit-tier-map.ts",
+    "audit:idor": "node scripts/list-user-scoped-tables.js /tmp/user-scoped-tables.txt && node scripts/audit-service-role-idor.js /tmp/user-scoped-tables.txt",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

@@ -36,10 +36,7 @@ import {
   RESPONSE_GENERATION_SYSTEM_PROMPT,
   ACTION_EXECUTION_PROMPT,
 } from "./prompts/financial-chat-prompts";
-import {
-  sanitizeUserInput,
-  sanitizeContextValue,
-} from "@/lib/aiml/sanitizer";
+import { sanitizeUserInput, sanitizeContextValue } from "@/lib/aiml/sanitizer";
 import { debtService } from "@/lib/financial/debt-service";
 
 /**
@@ -49,7 +46,9 @@ import { debtService } from "@/lib/financial/debt-service";
  * investment advice, and portfolio management
  */
 export class FinancialChatEngine {
-  private get supabase() { return getServiceRoleClient(); }
+  private get supabase() {
+    return getServiceRoleClient();
+  }
 
   /**
    * Create a new chat session
@@ -60,6 +59,9 @@ export class FinancialChatEngine {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (this.supabase as any)
+      // idor-audit: pk-owner-checked — every route entry into this engine
+      // (/api/chat/financial and /sessions/[id]) selects the session and
+      // returns 403 unless session.user_id === user.id before calling in.
       .from("chat_sessions")
       .insert({
         id: sessionId,
@@ -207,14 +209,19 @@ export class FinancialChatEngine {
     context: ChatContext,
   ): Promise<ChatIntent> {
     const sanitizedMessage = sanitizeUserInput(message);
-    const sanitizedContext = sanitizeContextValue(JSON.stringify(context, null, 2));
+    const sanitizedContext = sanitizeContextValue(
+      JSON.stringify(context, null, 2),
+    );
 
     try {
       const response = await getModelRouter().complete(
         TaskType.FINANCIAL_ADVICE,
         [
           { role: "system", content: INTENT_DETECTION_SYSTEM_PROMPT },
-          { role: "user", content: `User message:\n${sanitizedMessage}\n\nContext:\n${sanitizedContext}` },
+          {
+            role: "user",
+            content: `User message:\n${sanitizedMessage}\n\nContext:\n${sanitizedContext}`,
+          },
         ],
         {
           max_tokens: 500,
@@ -244,15 +251,22 @@ export class FinancialChatEngine {
     intent: ChatIntent,
     context: ChatContext,
   ): Promise<string> {
-    const sanitizedIntent = sanitizeContextValue(JSON.stringify(intent, null, 2));
-    const sanitizedContext = sanitizeContextValue(JSON.stringify(context, null, 2));
+    const sanitizedIntent = sanitizeContextValue(
+      JSON.stringify(intent, null, 2),
+    );
+    const sanitizedContext = sanitizeContextValue(
+      JSON.stringify(context, null, 2),
+    );
 
     try {
       const response = await getModelRouter().complete(
         TaskType.FINANCIAL_ADVICE,
         [
           { role: "system", content: RESPONSE_GENERATION_SYSTEM_PROMPT },
-          { role: "user", content: `Intent:\n${sanitizedIntent}\n\nContext:\n${sanitizedContext}` },
+          {
+            role: "user",
+            content: `Intent:\n${sanitizedIntent}\n\nContext:\n${sanitizedContext}`,
+          },
         ],
         {
           max_tokens: 1000,
@@ -336,6 +350,9 @@ export class FinancialChatEngine {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (this.supabase as any)
+      // idor-audit: pk-owner-checked — every route entry into this engine
+      // (/api/chat/financial and /sessions/[id]) selects the session and
+      // returns 403 unless session.user_id === user.id before calling in.
       .from("chat_sessions")
       .select("*")
       .eq("user_id", userId)
@@ -375,6 +392,9 @@ export class FinancialChatEngine {
   ): Promise<ChatSession> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (this.supabase as any)
+      // idor-audit: pk-owner-checked — every route entry into this engine
+      // (/api/chat/financial and /sessions/[id]) selects the session and
+      // returns 403 unless session.user_id === user.id before calling in.
       .from("chat_sessions")
       .update({
         ...updates,
@@ -398,6 +418,9 @@ export class FinancialChatEngine {
     // Get session to find user ID for cache invalidation
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: session } = await (this.supabase as any)
+      // idor-audit: pk-owner-checked — every route entry into this engine
+      // (/api/chat/financial and /sessions/[id]) selects the session and
+      // returns 403 unless session.user_id === user.id before calling in.
       .from("chat_sessions")
       .select("user_id")
       .eq("id", sessionId)
@@ -405,6 +428,9 @@ export class FinancialChatEngine {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (this.supabase as any)
+      // idor-audit: pk-owner-checked — every route entry into this engine
+      // (/api/chat/financial and /sessions/[id]) selects the session and
+      // returns 403 unless session.user_id === user.id before calling in.
       .from("chat_sessions")
       .update({ archived: true })
       .eq("id", sessionId);
@@ -431,6 +457,9 @@ export class FinancialChatEngine {
     // Get session to find user ID
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: session, error: sessionError } = await (this.supabase as any)
+      // idor-audit: pk-owner-checked — every route entry into this engine
+      // (/api/chat/financial and /sessions/[id]) selects the session and
+      // returns 403 unless session.user_id === user.id before calling in.
       .from("chat_sessions")
       .select("user_id")
       .eq("id", sessionId)
@@ -514,6 +543,9 @@ export class FinancialChatEngine {
   private async updateSessionTimestamp(sessionId: string): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (this.supabase as any)
+      // idor-audit: pk-owner-checked — every route entry into this engine
+      // (/api/chat/financial and /sessions/[id]) selects the session and
+      // returns 403 unless session.user_id === user.id before calling in.
       .from("chat_sessions")
       .update({
         updated_at: new Date().toISOString(),
@@ -1163,8 +1195,10 @@ export class FinancialChatEngine {
         0,
       );
       const avgApr =
-        accounts.reduce((sum: number, acc) => sum + (acc.interestRate || 0), 0) /
-        accounts.length;
+        accounts.reduce(
+          (sum: number, acc) => sum + (acc.interestRate || 0),
+          0,
+        ) / accounts.length;
 
       // Recommend avalanche for high APR, snowball for motivation
       const strategy = avgApr > 15 ? "avalanche" : "snowball";
