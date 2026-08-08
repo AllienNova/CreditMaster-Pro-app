@@ -7,6 +7,7 @@
 
 // Must be hoisted before imports
 const mockFrom = jest.fn();
+const mockRpc = jest.fn();
 
 // Mutable plaid client object — tests can replace properties before calling syncAccounts
 const mockPlaidClient: Record<string, jest.Mock> = {};
@@ -25,6 +26,7 @@ jest.mock("@/lib/supabase/client", () => ({
 jest.mock("@supabase/supabase-js", () => ({
   createClient: () => ({
     from: mockFrom,
+    rpc: mockRpc,
   }),
 }));
 
@@ -126,10 +128,10 @@ describe("idor — PlaidService IDOR guards", () => {
   // We test the private getAccessToken indirectly by observing the DB query it emits.
   describe("getAccessToken (via syncAccounts IDOR boundary)", () => {
     it("idor: throws 'not found' when userId does not own the item", async () => {
-      // plaid_items query returns null for user B + item X
+      // bank_connections query returns null for user B + item X
       const chain = makeChain(null, { message: "not found" });
       mockFrom.mockImplementation((table: string) => {
-        if (table === "plaid_items") {
+        if (table === "bank_connections") {
           return chain;
         }
         // financial_accounts fallback (not reached in error path)
@@ -137,12 +139,12 @@ describe("idor — PlaidService IDOR guards", () => {
       });
 
       // syncAccounts calls getAccessToken(itemId) internally.
-      // With user B the plaid_items lookup should fail.
+      // With user B the bank_connections lookup should fail.
       await expect(
         plaidService.syncAccounts(ITEM_X_ID, USER_B_ID),
       ).rejects.toThrow();
 
-      // Verify the plaid_items query carried a user_id eq filter
+      // Verify the bank_connections query carried a user_id eq filter
       const eqCalls: [string, string][] = chain.eq.mock.calls as [string, string][];
       const hasUserIdFilter = eqCalls.some(
         ([col, val]) => col === "user_id" && val === USER_B_ID,
@@ -151,12 +153,13 @@ describe("idor — PlaidService IDOR guards", () => {
     });
 
     it("idor: succeeds when userId matches item owner", async () => {
-      const itemChain = makeChain([
-        { access_token: "secret-access-token" },
-      ]);
+      // The credential is encrypted at rest and has no readable column: the
+      // lookup now resolves the connection id, then decrypts via RPC.
+      const itemChain = makeChain([{ id: "conn-x" }]);
+      mockRpc.mockResolvedValue({ data: "secret-access-token", error: null });
       // Return user A's item for user A
       mockFrom.mockImplementation((table: string) => {
-        if (table === "plaid_items") {
+        if (table === "bank_connections") {
           return itemChain;
         }
         return makeChain([]);
@@ -172,7 +175,7 @@ describe("idor — PlaidService IDOR guards", () => {
         plaidService.syncAccounts(ITEM_X_ID, USER_A_ID),
       ).resolves.toEqual([]);
 
-      // Verify user_id filter was applied on plaid_items
+      // Verify user_id filter was applied on bank_connections
       const eqCalls: [string, string][] = itemChain.eq.mock.calls as [string, string][];
       const hasUserIdFilter = eqCalls.some(
         ([col, val]) => col === "user_id" && val === USER_A_ID,
@@ -184,7 +187,8 @@ describe("idor — PlaidService IDOR guards", () => {
   // FIN-4 / FND-038: getAccessTokenForUser — public wrapper delegates to private getAccessToken
   describe("getAccessTokenForUser", () => {
     it("returns the access token for the owning user", async () => {
-      const chain = makeChain([{ access_token: "tok-for-user-a" }]);
+      const chain = makeChain([{ id: "conn-a" }]);
+      mockRpc.mockResolvedValue({ data: "tok-for-user-a", error: null });
       mockFrom.mockReturnValue(chain);
 
       const token = await plaidService.getAccessTokenForUser(ITEM_X_ID, USER_A_ID);

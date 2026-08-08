@@ -629,7 +629,7 @@ describe("PlaidWebhookService", () => {
   // Built-in: Item Error Handler
   // =========================================================================
   describe("handleItemError (built-in)", () => {
-    it("should update plaid_items with error info", async () => {
+    it("should update bank_connections with error info", async () => {
       const chain = buildChain({ data: null, error: null });
       supabaseClient().from.mockReturnValue(chain);
 
@@ -649,7 +649,7 @@ describe("PlaidWebhookService", () => {
         }),
       );
 
-      expect(supabaseClient().from).toHaveBeenCalledWith("plaid_items");
+      expect(supabaseClient().from).toHaveBeenCalledWith("bank_connections");
       expect(chain.update).toHaveBeenCalledWith(
         expect.objectContaining({
           error_type: "ITEM_ERROR",
@@ -721,7 +721,7 @@ describe("PlaidWebhookService", () => {
   // Built-in: Pending Expiration Handler
   // =========================================================================
   describe("handlePendingExpiration (built-in)", () => {
-    it("should update plaid_items with consent expiration time", async () => {
+    it("should update bank_connections with consent expiration time", async () => {
       const chain = buildChain({ data: null, error: null });
       supabaseClient().from.mockReturnValue(chain);
 
@@ -737,7 +737,7 @@ describe("PlaidWebhookService", () => {
         }),
       );
 
-      expect(supabaseClient().from).toHaveBeenCalledWith("plaid_items");
+      expect(supabaseClient().from).toHaveBeenCalledWith("bank_connections");
       expect(chain.update).toHaveBeenCalledWith(
         expect.objectContaining({
           consent_expiration_time: "2026-04-01T00:00:00Z",

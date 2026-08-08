@@ -25,6 +25,25 @@ import { getServiceRoleClient } from "@/lib/supabase/service-role";
  */
 const supabase = getServiceRoleClient();
 
+/**
+ * The key that encrypts bank credentials at rest (20260801000020).
+ *
+ * Read per call rather than cached at module scope so a missing key surfaces
+ * as a loud failure at the point of use, not as an import-time crash during
+ * `next build`'s page-data collection. Length is checked here as well as in
+ * the SQL function: a short key would look like encryption while being
+ * trivially breakable.
+ */
+function requireTokenEncryptionKey(): string {
+  const key = process.env.BANK_TOKEN_ENCRYPTION_KEY;
+  if (!key || key.length < 32) {
+    throw new Error(
+      "BANK_TOKEN_ENCRYPTION_KEY must be set and at least 32 characters",
+    );
+  }
+  return key;
+}
+
 // Types
 export interface PlaidLinkToken {
   linkToken: string;
@@ -175,21 +194,50 @@ class PlaidService {
     itemId: string,
     accessToken: string,
   ): Promise<void> {
-    // plaid_items is service-role-only (RLS has zero policies for
-    // anon/authenticated — see 20260731000006_plaid_items_accounts.sql):
-    // the access token is a live bank credential, so this write must use
-    // getServiceRoleClient(), not the anon-keyed getSupabase() singleton
-    // used elsewhere in this file for the (non-credential) transactions
-    // table.
-    const { error } = await getServiceRoleClient().from("plaid_items").insert({
-      user_id: userId,
-      item_id: itemId,
-      access_token: accessToken,
-      created_at: new Date().toISOString(),
-    });
+    // bank_connections is service-role-only (RLS enabled with ZERO policies
+    // for anon/authenticated — see 20260801000020): the access token is a live
+    // bank credential, so this must use getServiceRoleClient(), never the
+    // anon-keyed singleton.
+    //
+    // The token is NOT written as a column. It is inserted as a row first,
+    // then encrypted in place by set_bank_connection_token() — the plaintext
+    // column no longer exists (20260801000020 step 4).
+    const client = getServiceRoleClient();
 
-    if (error) {
-      throw new Error("Failed to store access token");
+    const { data, error } = await client
+      .from("bank_connections")
+      .insert({
+        user_id: userId,
+        provider: "plaid",
+        item_id: itemId,
+        created_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (error || !data) {
+      throw new Error("Failed to store bank connection");
+    }
+
+    const { error: tokenError } = await client.rpc(
+      "set_bank_connection_token",
+      {
+        p_connection_id: data.id,
+        p_token: accessToken,
+        p_key: requireTokenEncryptionKey(),
+      },
+    );
+
+    if (tokenError) {
+      // The connection row exists but holds no usable credential. Leaving it
+      // would look like a linked bank that silently never syncs, so remove it
+      // and surface the failure.
+      // idor-audit: pk-owner-checked — data.id is the row this call just
+      // inserted with user_id = userId, three statements above.
+      await client.from("bank_connections").delete().eq("id", data.id);
+      throw new Error(
+        `Failed to encrypt bank credential: ${tokenError.message}`,
+      );
     }
   }
 
@@ -206,10 +254,16 @@ class PlaidService {
    * Get access token for item — scoped to userId to prevent IDOR (FND-037)
    */
   private async getAccessToken(itemId: string, userId: string): Promise<string> {
-    // getServiceRoleClient() — see storeAccessToken above; same service-role-only table.
-    const { data, error } = await getServiceRoleClient()
-      .from("plaid_items")
-      .select("access_token")
+    // The credential is encrypted at rest and has no readable column. Resolve
+    // the connection first — still scoped by user_id, which remains
+    // load-bearing because the service role bypasses RLS (FND-037) — then
+    // decrypt through the accessor.
+    const client = getServiceRoleClient();
+
+    const { data, error } = await client
+      .from("bank_connections")
+      .select("id")
+      .eq("provider", "plaid")
       .eq("item_id", itemId)
       .eq("user_id", userId)
       .single();
@@ -218,7 +272,18 @@ class PlaidService {
       throw new Error("Access token not found");
     }
 
-    return data.access_token;
+    const { data: token, error: tokenError } = await client.rpc(
+      "get_bank_connection_token",
+      { p_connection_id: data.id, p_key: requireTokenEncryptionKey() },
+    );
+
+    if (tokenError || !token) {
+      throw new Error(
+        `Failed to decrypt bank credential: ${tokenError?.message ?? "empty"}`,
+      );
+    }
+
+    return token as string;
   }
 
   /**

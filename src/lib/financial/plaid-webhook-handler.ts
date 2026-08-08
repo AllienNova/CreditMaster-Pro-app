@@ -388,13 +388,18 @@ class PlaidWebhookService {
     );
 
     const { error } = await getServiceRoleClient()
-      .from("plaid_items")
+      .from("bank_connections")
       .update({
         error_type: errorInfo?.error_type ?? null,
         error_code: errorInfo?.error_code ?? null,
         error_message: errorInfo?.error_message ?? null,
         updated_at: new Date().toISOString(),
       })
+      // item_id is unique only WITHIN a provider (UNIQUE (provider, item_id)
+      // in 20260801000020), so every lookup must name the provider too —
+      // otherwise a TrueLayer connection sharing an id string could be
+      // updated by a Plaid webhook.
+      .eq("provider", "plaid")
       .eq("item_id", event.item_id);
 
     if (error) {
@@ -417,11 +422,16 @@ class PlaidWebhookService {
     );
 
     const { error } = await getServiceRoleClient()
-      .from("plaid_items")
+      .from("bank_connections")
       .update({
         consent_expiration_time: event.consent_expiration_time ?? null,
         updated_at: new Date().toISOString(),
       })
+      // item_id is unique only WITHIN a provider (UNIQUE (provider, item_id)
+      // in 20260801000020), so every lookup must name the provider too —
+      // otherwise a TrueLayer connection sharing an id string could be
+      // updated by a Plaid webhook.
+      .eq("provider", "plaid")
       .eq("item_id", event.item_id);
 
     if (error) {
@@ -440,8 +450,9 @@ class PlaidWebhookService {
    */
   private async getUserIdForItem(itemId: string): Promise<string | null> {
     const { data, error } = await getServiceRoleClient()
-      .from("plaid_items")
+      .from("bank_connections")
       .select("user_id")
+      .eq("provider", "plaid")
       .eq("item_id", itemId)
       .single();
 

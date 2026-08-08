@@ -36,13 +36,14 @@ process.env.NEXT_PUBLIC_APP_URL = "https://app.fynvita.test";
 // which client the production code actually calls.
 // ---------------------------------------------------------------------------
 const mockFrom = jest.fn();
+const mockRpc = jest.fn();
 
 jest.mock("@/lib/supabase/client", () => ({
   getSupabase: () => ({ from: mockFrom }),
 }));
 
 jest.mock("@supabase/supabase-js", () => ({
-  createClient: () => ({ from: mockFrom }),
+  createClient: () => ({ from: mockFrom, rpc: mockRpc }),
 }));
 
 /** Helper: get the mock supabase client (shared spy, either import path) */
@@ -110,6 +111,15 @@ import { plaidService } from "../plaid-service";
 describe("PlaidService", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // storeAccessToken now inserts a bank_connections row, reads back its id,
+    // then encrypts the credential through set_bank_connection_token(). Tests
+    // that do not care about persistence still traverse that path, so give
+    // both steps a benign default; individual tests override as needed.
+    supabaseClient().from.mockReturnValue(
+      buildChain({ data: { id: "conn-default" }, error: null }),
+    );
+    mockRpc.mockResolvedValue({ data: null, error: null });
   });
 
   // =========================================================================
@@ -232,7 +242,9 @@ describe("PlaidService", () => {
           item_id: "item-abc",
         },
       });
-      const chain = buildChain({ data: null, error: null });
+      // storeAccessToken reads back the inserted row's id before encrypting
+      // the credential, so the chain must resolve to one.
+      const chain = buildChain({ data: { id: "conn-abc" }, error: null });
       supabaseClient().from.mockReturnValue(chain);
 
       await plaidService.exchangePublicToken("public-token-123", "user-123");
@@ -250,7 +262,7 @@ describe("PlaidService", () => {
           item_id: "item-abc",
         },
       });
-      const chain = buildChain({ data: null, error: null });
+      const chain = buildChain({ data: { id: "conn-abc" }, error: null });
       supabaseClient().from.mockReturnValue(chain);
 
       const itemId = await plaidService.exchangePublicToken(
@@ -261,24 +273,38 @@ describe("PlaidService", () => {
       expect(itemId).toBe("item-abc");
     });
 
-    it("should store access token in plaid_items table", async () => {
+    it("should store the connection then encrypt the token via RPC", async () => {
       mockItemPublicTokenExchange.mockResolvedValue({
         data: {
           access_token: "access-sandbox-stored",
           item_id: "item-stored",
         },
       });
-      const chain = buildChain({ data: null, error: null });
+      const chain = buildChain({ data: { id: "conn-stored" }, error: null });
       supabaseClient().from.mockReturnValue(chain);
+      mockRpc.mockResolvedValue({ data: null, error: null });
 
       await plaidService.exchangePublicToken("public-token-123", "user-123");
 
-      expect(supabaseClient().from).toHaveBeenCalledWith("plaid_items");
+      expect(supabaseClient().from).toHaveBeenCalledWith("bank_connections");
+
+      // The credential must NOT appear as a column: the plaintext column was
+      // dropped in 20260801000020 and the token is written only through
+      // set_bank_connection_token().
       expect(chain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: "user-123",
+          provider: "plaid",
           item_id: "item-stored",
-          access_token: "access-sandbox-stored",
+        }),
+      );
+      expect(chain.insert.mock.calls[0][0]).not.toHaveProperty("access_token");
+
+      expect(mockRpc).toHaveBeenCalledWith(
+        "set_bank_connection_token",
+        expect.objectContaining({
+          p_connection_id: "conn-stored",
+          p_token: "access-sandbox-stored",
         }),
       );
     });
@@ -308,7 +334,9 @@ describe("PlaidService", () => {
 
       await expect(
         plaidService.exchangePublicToken("public-token-123", "user-123"),
-      ).rejects.toThrow("Failed to store access token");
+        // Message changed with the schema: the insert now creates a
+        // bank_connections row, and the credential is encrypted separately.
+      ).rejects.toThrow("Failed to store bank connection");
     });
   });
 
@@ -453,14 +481,14 @@ describe("PlaidService", () => {
     };
 
     it("should fetch access token then call accountsGet", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -475,14 +503,14 @@ describe("PlaidService", () => {
     });
 
     it("should return mapped PlaidAccount objects", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -503,14 +531,14 @@ describe("PlaidService", () => {
     });
 
     it("should use account.name when official_name is null", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -522,14 +550,14 @@ describe("PlaidService", () => {
     });
 
     it("should upsert each account to financial_accounts", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -547,17 +575,17 @@ describe("PlaidService", () => {
     // empty comment (no-op) — a failed write reported success to
     // syncAccounts()'s caller while persisting nothing. Must now surface.
     it("throws when storing an account fails instead of silently swallowing the error", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({
         data: null,
         error: { message: "duplicate key value violates unique constraint" },
       });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -581,10 +609,10 @@ describe("PlaidService", () => {
     });
 
     it("should throw when SDK accountsGet rejects", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       supabaseClient().from.mockReturnValue(tokenChain);
 
       mockAccountsGet.mockRejectedValue(new Error("ITEM_LOGIN_REQUIRED"));
@@ -595,10 +623,10 @@ describe("PlaidService", () => {
     });
 
     it("should handle empty accounts array from Plaid", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       supabaseClient().from.mockReturnValue(tokenChain);
 
       mockAccountsGet.mockResolvedValue({
@@ -614,14 +642,14 @@ describe("PlaidService", () => {
     });
 
     it("should handle missing mask and fallback to empty string", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -652,14 +680,14 @@ describe("PlaidService", () => {
     });
 
     it("should default currency to USD when iso_currency_code is null", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -690,14 +718,14 @@ describe("PlaidService", () => {
     });
 
     it("should handle missing subtype and fallback to empty string", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -728,14 +756,14 @@ describe("PlaidService", () => {
     });
 
     it("should handle null current balance as 0", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -973,14 +1001,14 @@ describe("PlaidService", () => {
     };
 
     it("should fetch access token then call transactionsGet", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -996,14 +1024,12 @@ describe("PlaidService", () => {
     });
 
     it("should send date range in params", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-xyz" },
-        error: null,
-      });
+      const tokenChain = buildChain({ data: { id: "conn-xyz" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-xyz", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -1018,14 +1044,14 @@ describe("PlaidService", () => {
     });
 
     it("should default to 30 days when days not specified", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -1043,14 +1069,14 @@ describe("PlaidService", () => {
     });
 
     it("should return mapped PlaidTransaction objects", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -1079,14 +1105,14 @@ describe("PlaidService", () => {
     });
 
     it("should map location fields from SDK response", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -1111,14 +1137,14 @@ describe("PlaidService", () => {
     });
 
     it("should handle null category from Plaid as empty array", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -1150,14 +1176,14 @@ describe("PlaidService", () => {
     });
 
     it("should handle null merchant_name from SDK", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -1189,14 +1215,14 @@ describe("PlaidService", () => {
     });
 
     it("should upsert each transaction to transactions table", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       const storeChain = buildChain({ data: null, error: null });
 
       supabaseClient().from.mockImplementation((table: string) => {
-        if (table === "plaid_items") return tokenChain;
+        if (table === "bank_connections") return tokenChain;
         return storeChain;
       });
 
@@ -1223,10 +1249,10 @@ describe("PlaidService", () => {
     });
 
     it("should throw when SDK transactionsGet rejects", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       supabaseClient().from.mockReturnValue(tokenChain);
 
       mockTransactionsGet.mockRejectedValue(
@@ -1239,10 +1265,10 @@ describe("PlaidService", () => {
     });
 
     it("should handle empty transactions array from Plaid", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       supabaseClient().from.mockReturnValue(tokenChain);
 
       mockTransactionsGet.mockResolvedValue({
@@ -1258,10 +1284,10 @@ describe("PlaidService", () => {
     });
 
     it("should handle Plaid rate limit error", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       supabaseClient().from.mockReturnValue(tokenChain);
 
       const rateLimitError = new Error("RATE_LIMIT_EXCEEDED");
@@ -1432,10 +1458,10 @@ describe("PlaidService", () => {
     });
 
     it("should propagate ITEM_LOGIN_REQUIRED error", async () => {
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       supabaseClient().from.mockReturnValue(tokenChain);
 
       const plaidError = new Error("ITEM_LOGIN_REQUIRED");
@@ -1469,10 +1495,10 @@ describe("PlaidService", () => {
       (timeoutError as any).code = "ECONNABORTED";
       mockTransactionsGet.mockRejectedValue(timeoutError);
 
-      const tokenChain = buildChain({
-        data: { access_token: "access-token-abc" },
-        error: null,
-      });
+      // The credential has no readable column now: the lookup resolves the
+      // connection id and the token is decrypted through the RPC.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
       supabaseClient().from.mockReturnValue(tokenChain);
 
       await expect(
