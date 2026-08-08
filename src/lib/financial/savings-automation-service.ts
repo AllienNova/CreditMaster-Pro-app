@@ -262,7 +262,7 @@ class SavingsAutomationService {
 
     // Fetch contributions for each goal
     for (const goal of goals) {
-      goal.contributions = await this.getContributions(goal.id);
+      goal.contributions = await this.getContributions(goal.id, userId);
     }
 
     return goals;
@@ -284,7 +284,7 @@ class SavingsAutomationService {
     }
 
     const goal = this.mapGoalFromDb(data);
-    goal.contributions = await this.getContributions(goalId);
+    goal.contributions = await this.getContributions(goalId, userId);
     return goal;
   }
 
@@ -373,7 +373,7 @@ class SavingsAutomationService {
     }
 
     const goal = this.mapGoalFromDb(data);
-    goal.contributions = await this.getContributions(goalId);
+    goal.contributions = await this.getContributions(goalId, userId);
     return goal;
   }
 
@@ -443,14 +443,37 @@ class SavingsAutomationService {
   /**
    * Get contributions for a goal
    */
-  async getContributions(goalId: string): Promise<SavingsContribution[]> {
+  /**
+   * Contributions for one goal.
+   *
+   * `userId` is required, not optional. This runs on the service role, which
+   * bypasses RLS, so scoping by `goal_id` alone was safe only because all
+   * three internal callers happened to resolve the goal through a
+   * `.eq("user_id", ...)` query first. That is safe by convention, and the
+   * method is public — the next caller to pass a goalId straight off a request
+   * path would have made it an IDOR with no code change here at all.
+   */
+  async getContributions(
+    goalId: string,
+    userId: string,
+  ): Promise<SavingsContribution[]> {
     const { data, error } = await supabaseAdmin
       .from("savings_contributions")
       .select("*")
       .eq("goal_id", goalId)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
     if (error) {
+      // An empty list here is indistinguishable from "this goal has no
+      // contributions", which is how a broken query reads as a legitimate
+      // answer. Log it so the failure is observable, then degrade — the goal
+      // itself still renders.
+      console.error("getContributions failed", {
+        goalId,
+        userId,
+        error: error.message,
+      });
       return [];
     }
 

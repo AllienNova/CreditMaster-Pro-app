@@ -511,17 +511,29 @@ describe("SavingsAutomationService", () => {
   describe("getContributions", () => {
     it("should return mapped contributions", async () => {
       const rows = [makeContributionRow(), makeContributionRow({ id: "contrib-2", amount: 75 })];
-      mockFrom({ data: rows, error: null });
+      const chain = mockFrom({ data: rows, error: null });
 
-      const result = await savingsAutomationService.getContributions("goal-1");
+      const result = await savingsAutomationService.getContributions(
+        "goal-1",
+        "user-1",
+      );
       expect(result).toHaveLength(2);
       expect(result[0].id).toBe("contrib-1");
       expect(result[1].amount).toBe(75);
+
+      // Scoping by goal_id alone was safe only because every caller happened
+      // to owner-check the goal first. The service role bypasses RLS, so the
+      // owner filter is what actually prevents a cross-user read here.
+      expect(chain.eq).toHaveBeenCalledWith("goal_id", "goal-1");
+      expect(chain.eq).toHaveBeenCalledWith("user_id", "user-1");
     });
 
     it("should return empty array on error", async () => {
       mockFrom({ data: null, error: { message: "err" } });
-      const result = await savingsAutomationService.getContributions("goal-1");
+      const result = await savingsAutomationService.getContributions(
+        "goal-1",
+        "user-1",
+      );
       expect(result).toEqual([]);
     });
   });
