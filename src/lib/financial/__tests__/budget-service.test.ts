@@ -31,9 +31,9 @@ import {
 } from "../types/budget.types";
 
 // Mock Supabase — singleton to ensure source and test share the same object
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
+  return { getServiceRoleClient: () => _client };
 });
 
 /**
@@ -87,7 +87,7 @@ describe("BudgetService", () => {
           }),
         }),
       });
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({ insert: insertMock });
 
       await budgetService.createBudget(input);
@@ -114,7 +114,7 @@ describe("BudgetService", () => {
         start_date: "2026-07-01",
         end_date: "2026-07-31",
       });
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -147,7 +147,7 @@ describe("BudgetService", () => {
           .fn()
           .mockResolvedValue({ data: [makeBudgetRow()], error: null }),
       };
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({ select: jest.fn().mockReturnValue(chain) });
 
       await budgetService.getBudgetsByUser("user-123", { activeOnly: true });
@@ -157,7 +157,7 @@ describe("BudgetService", () => {
     });
 
     it("getBudgetById returns null when Postgres reports no matching row (PGRST116)", async () => {
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -183,7 +183,7 @@ describe("BudgetService", () => {
     });
 
     it("getBudgetById throws (does not silently return null) on a real database error", async () => {
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -207,7 +207,7 @@ describe("BudgetService", () => {
 
     it("synthesizes name from category since budgets has no name column", async () => {
       const row = makeBudgetRow({ category: "entertainment" });
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -227,7 +227,7 @@ describe("BudgetService", () => {
 
     it("falls back to the raw category string for a legacy/unrecognized category with no display name", async () => {
       const row = makeBudgetRow({ category: "legacy_uncategorized" });
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -247,7 +247,7 @@ describe("BudgetService", () => {
 
     it("treats a zero/missing amount as 0 rather than crashing on percentUsed", async () => {
       const row = makeBudgetRow({ amount: 0, spent: 0 });
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -279,7 +279,7 @@ describe("BudgetService", () => {
           }),
         }),
       });
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({ update: updateMock });
 
       await budgetService.updateBudget("budget-123", "user-123", {
@@ -305,7 +305,7 @@ describe("BudgetService", () => {
           }),
         }),
       });
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({ update: updateMock });
 
       await budgetService.updateBudget("budget-123", "user-123", {
@@ -328,7 +328,7 @@ describe("BudgetService", () => {
           }),
         }),
       });
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({ update: updateMock });
 
       await budgetService.updateBudget("budget-123", "user-123", {
@@ -354,7 +354,7 @@ describe("BudgetService", () => {
           }),
         }),
       });
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({ update: updateMock });
 
       await budgetService.updateBudget("budget-123", "user-123", {
@@ -388,7 +388,7 @@ describe("BudgetService", () => {
         }),
       });
 
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockImplementation(() => ({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -430,7 +430,7 @@ describe("BudgetService", () => {
         }),
       });
 
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockImplementation(() => ({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -475,7 +475,7 @@ describe("BudgetService", () => {
           spent: 0,
         });
 
-        const supabase = require("@/lib/supabase/client").getSupabase();
+        const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
         supabase.from.mockReturnValue({
           insert: jest.fn().mockReturnValue({
             select: jest.fn().mockReturnValue({
@@ -510,7 +510,7 @@ describe("BudgetService", () => {
           period: "monthly",
         };
 
-        const supabase = require("@/lib/supabase/client").getSupabase();
+        const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
         supabase.from.mockReturnValue({
           insert: jest.fn().mockReturnValue({
             select: jest.fn().mockReturnValue({
@@ -545,7 +545,7 @@ describe("BudgetService", () => {
           spent: 0,
         });
 
-        const supabase = require("@/lib/supabase/client").getSupabase();
+        const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
         supabase.from.mockReturnValue({
           insert: jest.fn().mockReturnValue({
             select: jest.fn().mockReturnValue({
@@ -569,7 +569,7 @@ describe("BudgetService", () => {
           spent: 200,
         });
 
-        const supabase = require("@/lib/supabase/client").getSupabase();
+        const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
         supabase.from.mockReturnValue({
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -595,7 +595,7 @@ describe("BudgetService", () => {
       });
 
       it("should return null for non-existent budget", async () => {
-        const supabase = require("@/lib/supabase/client").getSupabase();
+        const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
         supabase.from.mockReturnValue({
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -624,7 +624,7 @@ describe("BudgetService", () => {
           spent: 200,
         });
 
-        const supabase = require("@/lib/supabase/client").getSupabase();
+        const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
         supabase.from.mockReturnValue({
           update: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -654,7 +654,7 @@ describe("BudgetService", () => {
 
     describe("deleteBudget", () => {
       it("should delete budget successfully", async () => {
-        const supabase = require("@/lib/supabase/client").getSupabase();
+        const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
         supabase.from.mockReturnValue({
           delete: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -743,7 +743,7 @@ describe("BudgetService", () => {
         }),
       ];
 
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -777,7 +777,7 @@ describe("BudgetService", () => {
         }),
       ];
 
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -808,7 +808,7 @@ describe("BudgetService", () => {
         }),
       ];
 
-      const supabase = require("@/lib/supabase/client").getSupabase();
+      const supabase = require("@/lib/supabase/service-role").getServiceRoleClient();
       supabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({

@@ -103,8 +103,8 @@ function makeChain(options: {
 // We use a module-level variable to allow per-test chain swapping.
 let mockChain: ReturnType<typeof makeChain>;
 
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: () => ({
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: () => ({
     from: jest.fn().mockImplementation(() => mockChain),
   }),
 }));

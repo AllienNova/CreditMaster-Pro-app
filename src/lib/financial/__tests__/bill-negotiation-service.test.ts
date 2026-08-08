@@ -20,13 +20,13 @@ import type {
 // Mocks — must be declared before any import that triggers module load
 // ---------------------------------------------------------------------------
 
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
+  return { getServiceRoleClient: () => _client };
 });
 
 function supabase() {
-  return require("@/lib/supabase/client").getSupabase();
+  return require("@/lib/supabase/service-role").getServiceRoleClient();
 }
 
 // Chain mock — every method returns the same object so any Supabase chain works

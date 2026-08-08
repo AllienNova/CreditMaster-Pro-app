@@ -51,6 +51,19 @@ jest.mock("@/lib/supabase/client", () => {
   return { getSupabase: () => _client };
 });
 
+// budget-service and debt-service now read through the service-role client
+// (src/lib/supabase/service-role.ts) while the categorizer and forecaster in
+// this same pipeline still use the anon client. This test drives every service
+// through the single `supabase` handle below, so both modules resolve to the
+// SAME double — forking them into two would silently split which service each
+// per-test `from` override reaches. That conflation is deliberate and safe
+// here: this file verifies data flow across the pipeline, not RLS semantics.
+// The anon-vs-service-role distinction is covered by the per-service unit
+// tests and by scripts/audit-service-role-idor.js.
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: () => require("@/lib/supabase/client").getSupabase(),
+}));
+
 jest.mock("@/lib/supabase/server", () => {
   const resolved = { data: null, error: null };
   const chain: Record<string, unknown> = {};
