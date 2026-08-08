@@ -8,6 +8,7 @@
  * Part of AFF-02 / TASK-MNY-05.
  */
 
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 import { fromDollars } from "@/lib/money";
@@ -19,17 +20,6 @@ import { fromDollars } from "@/lib/money";
 // Lazy singleton: constructed on first use so module import during next build's
 // "collect page data" phase doesn't throw when env vars are absent.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- unparameterized admin client; table types are asserted at call sites
-let _supabase: ReturnType<typeof createClient<any>> | null = null;
-
-function getServiceRoleClient(): ReturnType<typeof createClient<any>> {
-  if (!_supabase) {
-    _supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-  }
-  return _supabase;
-}
 
 // =============================================================================
 // Types

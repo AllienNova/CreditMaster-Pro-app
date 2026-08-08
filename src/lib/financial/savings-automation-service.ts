@@ -9,6 +9,7 @@
  * - Goal-based automation
  */
 
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import {
   createClient as createSupabaseClient,
   SupabaseClient,
@@ -39,23 +40,7 @@ import {
  * imports every route module with no runtime env) doesn't abort on an
  * eager `createClient()` call.
  */
-let _supabaseAdmin: SupabaseClient | null = null;
-function getServiceRoleClient(): SupabaseClient {
-  if (!_supabaseAdmin) {
-    _supabaseAdmin = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-  }
-  return _supabaseAdmin;
-}
-const supabaseAdmin = new Proxy({} as SupabaseClient, {
-  get(_target, prop, receiver) {
-    const client = getServiceRoleClient();
-    const value = Reflect.get(client, prop, receiver);
-    return typeof value === "function" ? value.bind(client) : value;
-  },
-});
+const supabaseAdmin = getServiceRoleClient();
 
 import {
   SavingsRule,

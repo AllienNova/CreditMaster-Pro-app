@@ -14,6 +14,7 @@
  * - LIABILITIES: DEFAULT_UPDATE
  */
 
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import * as jose from "jose";
 import {
   createClient as createSupabaseClient,
@@ -44,16 +45,6 @@ import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 // createClient() call) because next build's page-data-collection phase
 // imports every route module with no runtime env — an eager call would
 // abort the build with "supabaseUrl is required".
-let _supabaseServiceRole: SupabaseClient | null = null;
-function getServiceRoleClient(): SupabaseClient {
-  if (!_supabaseServiceRole) {
-    _supabaseServiceRole = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-  }
-  return _supabaseServiceRole;
-}
 
 // ---------------------------------------------------------------------------
 // Types

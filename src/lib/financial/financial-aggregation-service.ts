@@ -5,6 +5,7 @@
  * into a single comprehensive profile. Implements caching with 15-minute TTL.
  */
 
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import {
   createClient as createSupabaseClient,
   SupabaseClient,
@@ -87,16 +88,6 @@ import { Debt, DebtOverview } from "./types/debt-payoff.types";
  * module with no runtime env, and an eager `createClient()` would abort the
  * build with "supabaseUrl is required".
  */
-let _supabaseServiceRole: SupabaseClient | null = null;
-function getServiceRoleClient(): SupabaseClient {
-  if (!_supabaseServiceRole) {
-    _supabaseServiceRole = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-  }
-  return _supabaseServiceRole;
-}
 
 // This mirrors the row shape verified live against `public.credit_scores`
 // (`\d+ credit_scores`) — id, user_id, bureau, score, score_date, created_at.
