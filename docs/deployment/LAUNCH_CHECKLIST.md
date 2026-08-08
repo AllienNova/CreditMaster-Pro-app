@@ -41,10 +41,21 @@ regression slips back in.
 ### Gate C — Other operator-gated M1 blockers (detail in `docs/qa/qa-report.md`)
 
 - [ ] **Live/staging schema audit** — payout/affiliate tables + the 5 GDPR-erasure tables are absent from `supabase/migrations/` (schema drift; unverifiable from files)
-- [ ] **FND-026 dual payout-rail decision** — merge or explicitly kill one of the two payout codepaths *before* either is wired to a trigger
+- [x] **FND-026 dual payout-rail decision** — **merged, verified in code 2026-08-01.** `commission-calculator.ts:1-11` declares payout execution lives *exclusively* in `payout-service.ts`; the file has no `affiliate_payouts` writes and no payment-provider calls (its only writes are `commission_earned` and a commission rule). `payout-service` carries Stripe idempotency keys derived from the payout row id (`payout-service.ts:309,392`). The register still cites `commission-calculator.ts:370-428`, line numbers that no longer contain what the finding describes. **Still needs SEC sign-off**, but the engineering condition is met and nothing is wired to a trigger.
 - [ ] **`main` branch protection** — require PR + review + CODEOWNERS enforcement
 - [ ] **`npm audit`** — 32 vulns (1 critical); run `npm audit fix` + assess the critical before public launch
 - [ ] **Closed-beta cohort** — invite the limited real-user cohort only after Gates A + B pass
+
+### Gate D — Multi-provider payments preconditions (NEW 2026-08-01, see ADR-0011)
+
+The TrueLayer surface (EU/UK pay-in, partner pay-out, bank aggregation) is M1 scope.
+Engineering cannot clear any of these; each blocks TASK-PAY-07/08.
+
+- [ ] **TrueLayer licence confirmation** — written confirmation that Fynvita operates as an agent/distributor under TrueLayer's PIS authorisation. Their contractual conditions become build requirements (SCA handling, consent capture, retention).
+- [ ] **Stripe Connect confirmation** — written confirmation covering partner payouts under Stripe's licence.
+- [ ] **Seven `TRUELAYER_*` secrets into Doppler** — incl. `TRUELAYER_PRIVATE_KEY` + `TRUELAYER_SIGNING_KEY_ID` (JWS request signing) and `TRUELAYER_WEBHOOK_SECRET`; plus sandbox accounts for both providers.
+- [ ] **`.env.example` entries** — currently zero for TrueLayer.
+- [ ] **Sandbox integration evidence** — `npm run test:payments-sandbox` green (real round-trip + webhook per rail) and reconciliation reporting 0 drift. Mocked-SDK unit tests are explicitly NOT sufficient: that standard is what let FND-024 (dollars sent as cents → 1% payout) and B1 ($50 payout netting $0) reach `main` with a green suite.
 
 > Passing every box in the generic checklist below does NOT satisfy this gate. Gates A–C are the
 > M1 launch preconditions; the sections that follow are the standard production checklist.

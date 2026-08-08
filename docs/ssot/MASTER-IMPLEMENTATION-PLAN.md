@@ -5802,6 +5802,39 @@ AFF-04 (compliance) ── independent, runs parallel
 
 ---
 
+## Phase 8 — Multi-Provider Payments Surface (TrueLayer + Stripe), M1 scope
+
+> Added 2026-08-01. See **ADR-0011**. Until then this surface — `payment-router`,
+> `payouts/payout-service`, `connectors/banking` — appeared in this plan **zero
+> times** despite being built: ~2,000 lines across three subsystems, no routes,
+> no credentials, no table for the router. The audit that opened it found
+> `payments` is a table-name collision (a Stripe *invoice* ledger vs a
+> multi-provider payment *attempt*), which accounts for all 11 remaining
+> `audit:phantom-columns` hits.
+
+| ID | Title | Size | Owner | Depends on | Closes |
+|----|-------|------|-------|------------|--------|
+| TASK-PAY-01 | Rename `payments` → `subscription_invoices` (its true meaning); repoint `stripe-service.ts:717` write + `admin/metrics/route.ts:53` read; migration tolerates live-schema drift per Gate C | S | BE | — | (collision) |
+| TASK-PAY-02 | Provider-agnostic `payments` table for the router (`provider`, `provider_payment_id`, `amount_cents`, `type`, `method`, `status`, `metadata`); RLS + service_role grants; UNIQUE `(provider, provider_payment_id)`; register in erasure cascade | M | BE | PAY-01 | 11 phantom-column hits |
+| TASK-PAY-03 | Router money types → `Cents` branded type; `amount: number` at `payment-router.ts:116` is unit-less today | S | BE | PAY-02, MNY-06 | (preventive) |
+| TASK-BNK-01 | Generalise `plaid_items` → `bank_connections` (`provider` discriminator, per-provider credential, `consent_expires_at`); add `provider` + `connection_id` to `financial_accounts`; repoint `plaid-service` + `plaid-webhook-handler` | L | BE + ARCH | — | (aggregation storage) |
+| TASK-BNK-02 | pgcrypto encryption at rest for `bank_connections.access_token`, key in Doppler; preserves existing RLS-zero-policy + service_role-only posture | M | SEC + BE | BNK-01 | (defence in depth) |
+| TASK-PAY-04 | Router pay-in idempotency keys + webhook-driven state. **Pay-in has none today** — the only `idempotencyKey` usages in `src/lib/commerce` are the two in `payout-service` | M | BE | PAY-02 | (double-charge risk) |
+| TASK-PAY-05 | TrueLayer webhook route (`TRUELAYER_WEBHOOK_SECRET` signature verification) | M | BE | PAY-04 | — |
+| TASK-PAY-06 | Reconciliation job: ledger vs provider; a mismatch alerts rather than silently diverging | M | BE | PAY-05 | — |
+| TASK-PAY-07 | Provider **sandbox** integration tests in CI with recorded fixtures — TrueLayer PIS payment + webhook, Stripe Connect transfer + webhook | L | BE + QA | PAY-06, **operator creds** | (definition of done) |
+| TASK-PAY-08 | Wire routes + triggers for all three flows | L | BE | PAY-07, **operator licences** | — |
+
+**Operator-gated preconditions (engineering cannot clear these):**
+
+1. Written confirmation from **TrueLayer** (Fynvita as agent under their PIS authorisation) and **Stripe** (Connect for partner payouts). Their contractual conditions become build requirements.
+2. Seven `TRUELAYER_*` secrets into Doppler — incl. `TRUELAYER_PRIVATE_KEY` + `TRUELAYER_SIGNING_KEY_ID` (JWS signing) — plus sandbox accounts.
+3. `.env.example` entries — currently none.
+
+**Phase 8 gate**: `audit:phantom-columns` reports 0 hits; `audit:idor` 0 open; erasure coverage guard green with `payments` + `bank_connections` registered; `npm run test:payments-sandbox` green against both provider sandboxes; reconciliation reports 0 drift over a sandbox run. **TASK-PAY-07 and -08 do not start until all three operator preconditions are met.** Mocked-SDK unit tests are explicitly NOT sufficient evidence here — that standard is what let FND-024 (dollars-as-cents, 1% payout) and B1 ($50 payout netting $0) through a green suite.
+
+---
+
 ## Wave 7 Exit Criteria (gate to allow Wave 8+ feature work)
 
 1. **All 33 CRITICAL findings have linked closed task IDs.** Explicit list (not a range), reconciled against `gap_analysis.md` § 2 severity column on 2026-05-16 (TASK-PRE-01): FND-001/002/003/004/005/006 (Phase 1 + AUTH-03 sub-batches); FND-014/015/016/017 (Phase 2); FND-024/025/026 (Phase 3); FND-030 (Phase 7); FND-031/032 (Phase 3 INV-W7); FND-041/042/043/044 (AUTH-03b); FND-049/050/051 (AUTH-03a); FND-052/053 (Phase 4); FND-056/057/058 (Phase 5); FND-064 (Phase 6 MOB-W7-06); FND-065/066/067 (Phase 6 MOB-W7-03/04); FND-068 (Phase 4 MOK-05). Total = 33.
