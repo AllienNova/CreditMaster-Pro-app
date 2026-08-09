@@ -76,3 +76,8 @@ assets/raw/
 
 # git worktrees
 .worktrees/
+
+# Local artifacts — already excluded from deploys via .vercelignore/.easignore,
+# but were never gitignored, so they sat untracked in every status output.
+/image.png
+/smoke-*.png
