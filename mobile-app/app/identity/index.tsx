@@ -1,30 +1,29 @@
 /**
  * Fynvita Identity Protection Dashboard
- * Comprehensive identity monitoring and protection
+ * Wired to real identity protection API + credit monitoring store
  */
 
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-
-interface Alert {
-  id: string;
-  type: "critical" | "warning" | "info";
-  title: string;
-  description: string;
-  date: string;
-  resolved: boolean;
-}
+import { useCreditStore } from "../../src/store/creditStore";
+import { identityProtectionApi } from "../../src/services/api/user";
+import type {
+  IdentityProtectionStatus,
+  IdentityAlert,
+} from "../../src/services/api/types";
 
 interface ScanResult {
   category: string;
@@ -33,111 +32,194 @@ interface ScanResult {
   lastScan: string;
 }
 
-const MOCK_ALERTS: Alert[] = [
-  {
-    id: "1",
-    type: "warning",
-    title: "Email Found on Dark Web",
-    description: "Your email was found in a data breach from 2023",
-    date: "2024-01-10",
-    resolved: false,
-  },
-  {
-    id: "2",
-    type: "info",
-    title: "New Account Opened",
-    description: "A new credit card was opened in your name",
-    date: "2024-01-08",
-    resolved: true,
-  },
-];
-
-const SCAN_RESULTS: ScanResult[] = [
-  {
-    category: "Email Addresses",
-    status: "exposed",
-    count: 1,
-    lastScan: "2024-01-15",
-  },
-  {
-    category: "Phone Numbers",
-    status: "safe",
-    count: 0,
-    lastScan: "2024-01-15",
-  },
-  { category: "SSN", status: "safe", count: 0, lastScan: "2024-01-15" },
-  {
-    category: "Passwords",
-    status: "exposed",
-    count: 2,
-    lastScan: "2024-01-15",
-  },
-  {
-    category: "Bank Accounts",
-    status: "safe",
-    count: 0,
-    lastScan: "2024-01-15",
-  },
-  {
-    category: "Credit Cards",
-    status: "monitoring",
-    count: 0,
-    lastScan: "2024-01-15",
-  },
-];
-
 const FEATURES = [
   {
     icon: "globe",
     title: "Dark Web Monitoring",
     subtitle: "Scan for exposed data",
     route: "/identity/dark-web",
-    badge: "2 found",
   },
   {
     icon: "finger-print",
     title: "SSN Monitoring",
     subtitle: "Track SSN usage",
     route: "/identity/ssn-monitoring",
-    badge: null,
   },
   {
     icon: "card",
     title: "Credit Monitoring",
     subtitle: "New account alerts",
     route: "/monitoring",
-    badge: null,
   },
   {
     icon: "snow",
     title: "Credit Freeze",
     subtitle: "Manage bureau freezes",
     route: "/credit-builder/freeze",
-    badge: "2/3",
   },
   {
     icon: "shield-checkmark",
     title: "Identity Insurance",
     subtitle: "$1M coverage",
     route: "/identity/insurance",
-    badge: "Active",
   },
   {
     icon: "document-text",
     title: "Recovery Plan",
     subtitle: "If identity is stolen",
     route: "/identity/recovery",
-    badge: null,
   },
 ];
 
+function buildScanResults(
+  status: IdentityProtectionStatus | null,
+  identityAlerts: IdentityAlert[],
+): ScanResult[] {
+  const lastScan = status?.lastScan
+    ? new Date(status.lastScan).toLocaleDateString()
+    : "Never";
+  const breachAlerts = identityAlerts.filter((a) => !a.resolved);
+  const emailBreaches = breachAlerts.filter(
+    (a) => a.exposedData?.includes("email") || a.type === "breach",
+  ).length;
+  const passwordBreaches = breachAlerts.filter((a) =>
+    a.exposedData?.includes("password"),
+  ).length;
+
+  return [
+    {
+      category: "Email Addresses",
+      status: emailBreaches > 0 ? "exposed" : "safe",
+      count: emailBreaches,
+      lastScan,
+    },
+    {
+      category: "Phone Numbers",
+      status: "safe",
+      count: 0,
+      lastScan,
+    },
+    { category: "SSN", status: "safe", count: 0, lastScan },
+    {
+      category: "Passwords",
+      status: passwordBreaches > 0 ? "exposed" : "safe",
+      count: passwordBreaches,
+      lastScan,
+    },
+    {
+      category: "Bank Accounts",
+      status: "safe",
+      count: 0,
+      lastScan,
+    },
+    {
+      category: "Credit Cards",
+      status: status?.isActive ? "monitoring" : "safe",
+      count: 0,
+      lastScan,
+    },
+  ];
+}
+
+function buildFeatureBadges(
+  identityAlerts: IdentityAlert[],
+  monitoringActive: boolean,
+): Record<string, string | null> {
+  const unresolvedBreaches = identityAlerts.filter((a) => !a.resolved).length;
+  return {
+    "Dark Web Monitoring":
+      unresolvedBreaches > 0 ? `${unresolvedBreaches} found` : null,
+    "Credit Monitoring": null,
+    "SSN Monitoring": null,
+    "Credit Freeze": null,
+    "Identity Insurance": monitoringActive ? "Active" : null,
+    "Recovery Plan": null,
+  };
+}
+
 export default function IdentityScreen() {
-  const unresolvedAlerts = MOCK_ALERTS.filter((a) => !a.resolved).length;
-  const exposedItems = SCAN_RESULTS.filter(
-    (s) => s.status === "exposed",
-  ).reduce((sum, s) => sum + s.count, 0);
+  const {
+    alerts: creditAlerts,
+    monitoringStatus,
+    fetchAlerts,
+    fetchMonitoringStatus,
+  } = useCreditStore();
+
+  const [identityStatus, setIdentityStatus] =
+    useState<IdentityProtectionStatus | null>(null);
+  const [identityAlerts, setIdentityAlerts] = useState<IdentityAlert[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setError(null);
+    try {
+      const [statusRes, alertsRes] = await Promise.all([
+        identityProtectionApi.getStatus(),
+        identityProtectionApi.getAlerts(),
+        fetchAlerts(),
+        fetchMonitoringStatus(),
+      ]);
+
+      if (statusRes.success && statusRes.data) {
+        setIdentityStatus(statusRes.data);
+      }
+      if (alertsRes.success && alertsRes.data) {
+        setIdentityAlerts(alertsRes.data.alerts);
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load identity data",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchAlerts, fetchMonitoringStatus]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  const handleRunScan = async () => {
+    setIsScanning(true);
+    try {
+      await identityProtectionApi.requestScan();
+      await loadData();
+    } catch {
+      // scan request failed silently; data will refresh on next pull
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Merge identity alerts with security-type credit alerts for the dashboard
+  const securityCreditAlerts = creditAlerts.filter(
+    (a) => a.alertType === "fraud_alert" || a.severity === "critical",
+  );
+
+  const allActiveAlerts = [
+    ...identityAlerts.filter((a) => !a.resolved),
+    ...securityCreditAlerts.filter((a) => !a.acknowledged),
+  ];
+
+  const scanResults = buildScanResults(identityStatus, identityAlerts);
+  const exposedItems = scanResults
+    .filter((s) => s.status === "exposed")
+    .reduce((sum, s) => sum + s.count, 0);
   const protectionScore =
     exposedItems === 0 ? 100 : Math.max(0, 100 - exposedItems * 15);
+  const featureBadges = buildFeatureBadges(
+    identityAlerts,
+    monitoringStatus?.isActive ?? false,
+  );
 
   const getStatusColor = (score: number) => {
     if (score >= 80) return "#22C55E";
@@ -145,11 +227,11 @@ export default function IdentityScreen() {
     return "#EF4444";
   };
 
-  const getAlertIcon = (type: string) => {
-    switch (type) {
+  const getAlertIcon = (severity: string) => {
+    switch (severity) {
       case "critical":
         return { name: "alert-circle", color: "#EF4444" };
-      case "warning":
+      case "high":
         return { name: "warning", color: "#F59E0B" };
       default:
         return { name: "information-circle", color: "#3B82F6" };
@@ -167,11 +249,51 @@ export default function IdentityScreen() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Loading identity data...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && !identityStatus && identityAlerts.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.loadingContainer}>
+          <Ionicons
+            name="alert-circle-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadData}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const lastScanFormatted = identityStatus?.lastScan
+    ? `Last scan: ${new Date(identityStatus.lastScan).toLocaleDateString()} at ${new Date(identityStatus.lastScan).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+    : "No scan yet";
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
+          />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -219,7 +341,7 @@ export default function IdentityScreen() {
                     : "At Risk"}
               </Text>
               <Text style={styles.scoreSubtitle}>
-                {exposedItems} items exposed • {unresolvedAlerts} alerts
+                {exposedItems} items exposed • {allActiveAlerts.length} alerts
               </Text>
               <View style={styles.lastScanRow}>
                 <Ionicons
@@ -227,33 +349,51 @@ export default function IdentityScreen() {
                   size={14}
                   color={theme.colors.textSecondary}
                 />
-                <Text style={styles.lastScanText}>
-                  Last scan: Today at 9:00 AM
-                </Text>
+                <Text style={styles.lastScanText}>{lastScanFormatted}</Text>
               </View>
             </View>
           </View>
-          <TouchableOpacity style={styles.scanButton}>
-            <Ionicons name="refresh" size={18} color="#fff" />
-            <Text style={styles.scanButtonText}>Run Full Scan</Text>
+          <TouchableOpacity
+            style={styles.scanButton}
+            onPress={handleRunScan}
+            disabled={isScanning}
+          >
+            {isScanning ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <Ionicons name="refresh" size={18} color="#fff" />
+                <Text style={styles.scanButtonText}>Run Full Scan</Text>
+              </>
+            )}
           </TouchableOpacity>
         </Card>
 
         {/* Active Alerts */}
-        {unresolvedAlerts > 0 && (
+        {allActiveAlerts.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Active Alerts</Text>
-              <TouchableOpacity onPress={() => router.push("/identity/alerts" as Href)}>
+              <TouchableOpacity
+                onPress={() => router.push("/monitoring/alerts" as Href)}
+              >
                 <Text style={styles.seeAllText}>See All</Text>
               </TouchableOpacity>
             </View>
-            {MOCK_ALERTS.filter((a) => !a.resolved).map((alert) => {
-              const icon = getAlertIcon(alert.type);
+            {allActiveAlerts.slice(0, 3).map((alert) => {
+              const severity =
+                "severity" in alert ? alert.severity : "medium";
+              const icon = getAlertIcon(severity);
+              const alertDate =
+                "createdAt" in alert
+                  ? new Date(alert.createdAt).toLocaleDateString()
+                  : "";
               return (
                 <TouchableOpacity
                   key={alert.id}
-                  onPress={() => router.push(`/identity/alerts/${alert.id}` as Href)}
+                  onPress={() =>
+                    router.push(`/monitoring/alerts/${alert.id}` as Href)
+                  }
                 >
                   <Card style={styles.alertCard}>
                     <View
@@ -273,7 +413,7 @@ export default function IdentityScreen() {
                       <Text style={styles.alertDescription}>
                         {alert.description}
                       </Text>
-                      <Text style={styles.alertDate}>{alert.date}</Text>
+                      <Text style={styles.alertDate}>{alertDate}</Text>
                     </View>
                     <Ionicons
                       name="chevron-forward"
@@ -290,14 +430,14 @@ export default function IdentityScreen() {
         {/* Scan Results Summary */}
         <Text style={styles.sectionTitle}>Monitoring Status</Text>
         <Card style={styles.scanResultsCard}>
-          {SCAN_RESULTS.map((result, idx) => {
+          {scanResults.map((result, idx) => {
             const icon = getScanStatusIcon(result.status);
             return (
               <View
                 key={result.category}
                 style={[
                   styles.scanResultRow,
-                  idx < SCAN_RESULTS.length - 1 && styles.scanResultBorder,
+                  idx < scanResults.length - 1 && styles.scanResultBorder,
                 ]}
               >
                 <Ionicons
@@ -321,69 +461,87 @@ export default function IdentityScreen() {
         {/* Features Grid */}
         <Text style={styles.sectionTitle}>Protection Features</Text>
         <View style={styles.featuresGrid}>
-          {FEATURES.map((feature, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.featureCard}
-              onPress={() => router.push(feature.route as never)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.featureIconContainer}>
-                <Ionicons
-                  name={feature.icon as keyof typeof Ionicons.glyphMap}
-                  size={24}
-                  color={theme.colors.primary}
-                />
-              </View>
-              <Text style={styles.featureTitle}>{feature.title}</Text>
-              <Text style={styles.featureSubtitle}>{feature.subtitle}</Text>
-              {feature.badge && (
-                <View
-                  style={[
-                    styles.featureBadge,
-                    feature.badge.includes("found") &&
-                      styles.featureBadgeWarning,
-                  ]}
-                >
-                  <Text
+          {FEATURES.map((feature, index) => {
+            const badge = featureBadges[feature.title] ?? null;
+            return (
+              <TouchableOpacity
+                key={index}
+                style={styles.featureCard}
+                onPress={() => router.push(feature.route as never)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.featureIconContainer}>
+                  <Ionicons
+                    name={feature.icon as keyof typeof Ionicons.glyphMap}
+                    size={24}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <Text style={styles.featureTitle}>{feature.title}</Text>
+                <Text style={styles.featureSubtitle}>{feature.subtitle}</Text>
+                {badge && (
+                  <View
                     style={[
-                      styles.featureBadgeText,
-                      feature.badge.includes("found") &&
-                        styles.featureBadgeTextWarning,
+                      styles.featureBadge,
+                      badge.includes("found") && styles.featureBadgeWarning,
                     ]}
                   >
-                    {feature.badge}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
+                    <Text
+                      style={[
+                        styles.featureBadgeText,
+                        badge.includes("found") &&
+                          styles.featureBadgeTextWarning,
+                      ]}
+                    >
+                      {badge}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Action Items */}
-        <Card style={styles.actionCard}>
-          <Text style={styles.actionTitle}>Recommended Actions</Text>
-          <TouchableOpacity style={styles.actionItem}>
-            <Ionicons name="key" size={20} color="#F59E0B" />
-            <Text style={styles.actionText}>
-              Change 2 compromised passwords
-            </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={18}
-              color={theme.colors.textSecondary}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionItem}>
-            <Ionicons name="snow" size={20} color="#3B82F6" />
-            <Text style={styles.actionText}>Freeze credit at TransUnion</Text>
-            <Ionicons
-              name="chevron-forward"
-              size={18}
-              color={theme.colors.textSecondary}
-            />
-          </TouchableOpacity>
-        </Card>
+        {/* Action Items — driven by real data */}
+        {(exposedItems > 0 || allActiveAlerts.length > 0) && (
+          <Card style={styles.actionCard}>
+            <Text style={styles.actionTitle}>Recommended Actions</Text>
+            {exposedItems > 0 && (
+              <TouchableOpacity
+                style={styles.actionItem}
+                onPress={() => router.push("/identity/dark-web" as Href)}
+              >
+                <Ionicons name="key" size={20} color="#F59E0B" />
+                <Text style={styles.actionText}>
+                  Review {exposedItems} exposed item
+                  {exposedItems > 1 ? "s" : ""} on the dark web
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+            )}
+            {allActiveAlerts.length > 0 && (
+              <TouchableOpacity
+                style={styles.actionItem}
+                onPress={() => router.push("/monitoring/alerts" as Href)}
+              >
+                <Ionicons name="alert-circle" size={20} color="#EF4444" />
+                <Text style={styles.actionText}>
+                  Address {allActiveAlerts.length} active alert
+                  {allActiveAlerts.length > 1 ? "s" : ""}
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+            )}
+          </Card>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -557,5 +715,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.text,
     marginLeft: 12,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.spacing.xl,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.md,
+  },
+  errorText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.md,
+    textAlign: "center",
+  },
+  retryButton: {
+    marginTop: theme.spacing.md,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#fff",
   },
 });

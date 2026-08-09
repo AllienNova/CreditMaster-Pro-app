@@ -1,0 +1,32 @@
+name = "security-trust"
+wave = 2
+model = "gemini-2.5-flash-image"
+resolution = "1024x1024"
+out_dir = "assets/raw/security-trust"
+count = 5
+preamble = true
+
+shared_prompt = """
+Fynvita Tier C minimal line-art illustration: clean single-weight strokes in Trust Blue #3B82F6 on pure white background. NO fills, NO blob characters, NO gradients, NO shadows, NO 3D. Blueprint aesthetic — professional, technical. Occasional accent in Vital Green #10B981 or Energy Gold #F59E0B (small highlight only). 1024x1024 square, centered, generous whitespace.
+"""
+negative = ["fills", "blob", "gradients", "shadows", "3D", "realistic", "characters"]
+
+[[variants]]
+id = "security-encryption"
+prompt = "A padlock outline (Trust Blue) with a keyhole. Inside the keyhole, a small Vital Green checkmark. Radiating concentric circles suggest protection layers. A small key outline to the bottom-right. Data encryption — your data is safe."
+
+[[variants]]
+id = "security-2fa"
+prompt = "A phone outline (Trust Blue) with a shield outline overlaid. The shield contains a fingerprint pattern (Trust Blue lines). A small gold asterisk to the top-right suggests verification. Two-factor authentication."
+
+[[variants]]
+id = "security-biometric"
+prompt = "A face outline (simple oval, Trust Blue) with scan lines passing across it. A checkmark (Vital Green) appears at the top. A small gold lock icon to the right. Biometric verification — secure access."
+
+[[variants]]
+id = "security-data-privacy"
+prompt = "A document outline (Trust Blue) with an eye icon overlaid, crossed out (Trust Blue X). A small emerald leaf as privacy accent. Your data stays private — no third-party access."
+
+[[variants]]
+id = "security-fraud-protection"
+prompt = "A shield outline (Trust Blue, double-line) with an umbrella outline inside. Rain lines (light grey) above the shield. A small gold star at the shield's peak. Fraud protection — we've got you covered."

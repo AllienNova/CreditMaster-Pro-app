@@ -14,6 +14,9 @@ import { NextRequest } from "next/server";
 
 // Mock dependencies BEFORE importing modules that use them
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("user"),
+}));
 jest.mock("@/lib/investments/services/MarketDataService");
 jest.mock("@/lib/investments/services/InvestmentAnalysisEngine");
 jest.mock("@/lib/investments/services/AnalysisCacheService");
@@ -138,10 +141,14 @@ describe("/api/investments/portfolio-analysis", () => {
 
   describe("GET /api/investments/portfolio-analysis", () => {
     it("should return API documentation", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: true,
+        user: { id: "user-123", email: "test@example.com" },
+      });
       const request = createMockRequest(
         "http://localhost:3000/api/investments/portfolio-analysis",
       );
-      const response = await GET();
+      const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -263,7 +270,7 @@ describe("/api/investments/portfolio-analysis", () => {
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.success).toBe(false);
+      // withAuth guard 401 body is { error: "Unauthorized" } (no success field)
       expect(data.error).toBe("Unauthorized");
     });
 
@@ -411,6 +418,34 @@ describe("/api/investments/portfolio-analysis", () => {
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
+    });
+  });
+
+  describe("negative-auth – /api/investments/portfolio-analysis", () => {
+    beforeEach(() => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+    });
+
+    it("GET returns 401 when the request is not authenticated (TASK-AUTH-03e)", async () => {
+      const res = await GET(
+        createMockRequest(
+          "http://localhost:3000/api/investments/portfolio-analysis",
+        ),
+      );
+      expect(res.status).toBe(401);
+    });
+
+    it("POST returns 401 when the request is not authenticated (TASK-AUTH-03e)", async () => {
+      const res = await POST(
+        createMockRequest(
+          "http://localhost:3000/api/investments/portfolio-analysis",
+          { method: "POST", body: { holdings: [] } },
+        ),
+      );
+      expect(res.status).toBe(401);
     });
   });
 });

@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { z } from "zod";
 import { financialCoach } from "@/lib/ai/financial-coach";
 import type { FocusArea } from "@/lib/ai/financial-coach";
@@ -30,18 +30,6 @@ const AnalyzeRequestSchema = z.object({
     .optional()
     .default("overall"),
 });
-
-// ============================================================================
-// AUTHENTICATION HELPER
-// ============================================================================
-
-async function getUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
 
 // ============================================================================
 // RATE LIMITING
@@ -74,24 +62,8 @@ function checkRateLimit(userId: string): boolean {
 // API HANDLER
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authentication
-    const user = await getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "UNAUTHORIZED",
-            message: "Authentication required",
-          },
-        },
-        { status: 401 },
-      );
-    }
-
     // Rate limiting
     if (!checkRateLimit(user.id)) {
       return NextResponse.json(
@@ -117,7 +89,7 @@ export async function POST(request: NextRequest) {
           error: {
             code: "INVALID_REQUEST",
             message: "Invalid request parameters",
-            details: validation.error.errors,
+            details: validation.error.issues,
           },
         },
         { status: 400 },
@@ -154,4 +126,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

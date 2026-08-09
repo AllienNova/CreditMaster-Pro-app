@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import {
-  requireRole,
-  createAuthResponse,
-} from "@/lib/security/auth-middleware";
+import { withRole } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 function getSupabaseClient() {
   return createClient(
@@ -12,15 +10,11 @@ function getSupabaseClient() {
   );
 }
 
-export async function GET(request: NextRequest) {
-  // SECURITY: Require admin role for platform metrics
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
-
-  const supabase = getSupabaseClient();
-  try {
+export const GET = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
+    const supabase = getSupabaseClient();
+    try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "30d";
 
@@ -50,12 +44,31 @@ export async function GET(request: NextRequest) {
           .select("id, status, created_at", { count: "exact" }),
         supabase
           .from("subscriptions")
-          .select("id, plan, status, amount", { count: "exact" }),
+          // `plan` does NOT exist on subscriptions and was never read here.
+          // Selecting it errored the entire query, so activeSubscriptions and
+          // mrr were both structurally zero — the same failure this route had
+          // on revenue. Found by scripts/audit-phantom-columns.js.
+          .select("id, status, amount", { count: "exact" }),
         supabase
-          .from("payments")
-          .select("amount, created_at")
-          .gte("created_at", startDate.toISOString()),
+          // Renamed from `payments` in 20260801000000 (ADR-0011): `payments`
+          // now belongs to payment-router and holds provider-agnostic payment
+          // attempts. Subscription revenue lives here, in settled invoices.
+          .from("subscription_invoices")
+          .select("amount_cents, paid_at")
+          .gte("paid_at", startDate.toISOString()),
       ]);
+
+    // Revenue must never be silently reported as zero. Until
+    // 20260731000020_payments_revenue_ledger.sql this route queried a table
+    // that no migration created; PostgREST RESOLVES an {error} rather than
+    // throwing, and the `|| 0` below turned that into a confident "$0 revenue"
+    // on the admin dashboard. A broken query and a genuinely empty period must
+    // not look identical to an operator.
+    if (revenueResult.error) {
+      throw new Error(
+        `Failed to load revenue from subscription_invoices ledger: ${revenueResult.error.message}`,
+      );
+    }
 
     const totalUsers = usersResult.count || 0;
     const totalDisputes = disputesResult.count || 0;
@@ -68,8 +81,12 @@ export async function GET(request: NextRequest) {
         ?.filter((s) => s.status === "active")
         .reduce((sum, s) => sum + (s.amount || 0), 0) || 0;
 
-    const revenue =
-      revenueResult.data?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+    // amount_cents is integer MINOR UNITS (see the migration's header). Sum in
+    // cents, divide once at this presentation boundary — never mix the units.
+    const revenueCents =
+      revenueResult.data?.reduce((sum, p) => sum + (p.amount_cents || 0), 0) ||
+      0;
+    const revenue = revenueCents / 100;
 
     const successfulDisputes =
       disputesResult.data?.filter((d) => d.status === "resolved").length || 0;
@@ -106,22 +123,29 @@ export async function GET(request: NextRequest) {
           startDate,
           "created_at",
         ),
+        // Normalised to dollars here so the trend series carries the same unit
+        // as the `revenue` total above. Mixing cents and dollars across two
+        // fields of one response is how the prior unit bugs happened.
         revenue: generateTrendData(
-          revenueResult.data || [],
+          (revenueResult.data || []).map((p) => ({
+            paid_at: p.paid_at,
+            amount: (p.amount_cents || 0) / 100,
+          })),
           startDate,
-          "created_at",
+          "paid_at",
           "amount",
         ),
       },
     });
-  } catch (_error) {
-    // Error silently caught
-    return NextResponse.json(
-      { error: "Failed to fetch metrics" },
-      { status: 500 },
-    );
-  }
-}
+    } catch (_error) {
+      // Error silently caught
+      return NextResponse.json(
+        { error: "Failed to fetch metrics" },
+        { status: 500 },
+      );
+    }
+  },
+);
 
 interface TrendDataItem {
   [key: string]: string | number | undefined;

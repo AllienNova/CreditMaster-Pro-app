@@ -10,9 +10,9 @@
  * - Fraud alert detection
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 
 type JsonValue =
   | string
@@ -214,20 +214,36 @@ class CreditMonitoringService {
 
       if (error) throw error;
 
-      // Create alert if score changed significantly
+      // Create alert if score changed significantly.
+      //
+      // The score row above is already saved — a failure anywhere in this
+      // block (reading settings to decide whether to alert, or creating the
+      // alert itself) is a secondary side effect and must not null out that
+      // already-successful result (same shape as the submitDispute fix: a
+      // committed primary action must not be masked by a downstream
+      // failure). getMonitoringSettings() now throws on a real fetch error
+      // (see its own doc comment) rather than always degrading to defaults,
+      // so it has to sit inside this same try/catch as createAlert — both
+      // are best-effort steps of "attempt to raise a change alert," and
+      // neither may propagate out to the outer catch below.
       if (previousScore) {
         const change = score - previousScore;
-        const settings = await this.getMonitoringSettings(userId);
+        try {
+          const settings = await this.getMonitoringSettings(userId);
 
-        if (Math.abs(change) >= settings.scoreChangeThreshold) {
-          await this.createAlert(userId, {
-            type: change > 0 ? "score_increase" : "score_decrease",
-            bureau,
-            title: `${bureau.charAt(0).toUpperCase() + bureau.slice(1)} Score ${change > 0 ? "Increased" : "Decreased"}`,
-            message: `Your ${bureau} credit score ${change > 0 ? "increased" : "decreased"} by ${Math.abs(change)} points (${previousScore} → ${score})`,
-            severity: Math.abs(change) >= 20 ? "high" : "medium",
-            data: { previousScore, newScore: score, change },
-          });
+          if (Math.abs(change) >= settings.scoreChangeThreshold) {
+            await this.createAlert(userId, {
+              type: change > 0 ? "score_increase" : "score_decrease",
+              bureau,
+              title: `${bureau.charAt(0).toUpperCase() + bureau.slice(1)} Score ${change > 0 ? "Increased" : "Decreased"}`,
+              message: `Your ${bureau} credit score ${change > 0 ? "increased" : "decreased"} by ${Math.abs(change)} points (${previousScore} → ${score})`,
+              severity: Math.abs(change) >= 20 ? "high" : "medium",
+              data: { previousScore, newScore: score, change },
+            });
+          }
+        } catch (alertError) {
+          // Credit monitoring error: fetching settings or creating the
+          // score-change alert (non-fatal)
         }
       }
 
@@ -247,18 +263,24 @@ class CreditMonitoringService {
   }
 
   /**
-   * Get monitoring settings
+   * Get monitoring settings.
+   *
+   * PGRST116 ("no rows") means this user has never saved settings yet — a
+   * legitimate first-visit state, not a failure, so it degrades to defaults.
+   * Any other error code (RLS denial, network failure, etc.) THROWS instead
+   * of silently returning the same defaults: collapsing both cases together
+   * would mask a real read failure as "this user just hasn't configured
+   * monitoring," the same false-all-clear shape as the getAlerts fix above.
    */
   async getMonitoringSettings(userId: string): Promise<MonitoringSettings> {
-    try {
-      const { data, error } = await supabase
-        .from("credit_monitoring_settings")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
+    const { data, error } = await supabase
+      .from("credit_monitoring_settings")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
 
-      if (error) {
-        // Return default settings if not found
+    if (error) {
+      if (error.code === "PGRST116") {
         return {
           userId,
           experianEnabled: true,
@@ -276,19 +298,17 @@ class CreditMonitoringService {
           scoreChangeThreshold: 10,
         };
       }
-
-      return {
-        userId: data.user_id,
-        experianEnabled: data.experian_enabled,
-        equifaxEnabled: data.equifax_enabled,
-        transunionEnabled: data.transunion_enabled,
-        alertPreferences: data.alert_preferences,
-        scoreChangeThreshold: data.score_change_threshold || 10,
-      };
-    } catch (error) {
-      // Credit monitoring error: fetching monitoring settings
-      throw error;
+      throw new Error(`Failed to fetch monitoring settings: ${error.message}`);
     }
+
+    return {
+      userId: data.user_id,
+      experianEnabled: data.experian_enabled,
+      equifaxEnabled: data.equifax_enabled,
+      transunionEnabled: data.transunion_enabled,
+      alertPreferences: data.alert_preferences,
+      scoreChangeThreshold: data.score_change_threshold || 10,
+    };
   }
 
   /**
@@ -320,7 +340,14 @@ class CreditMonitoringService {
   }
 
   /**
-   * Get all alerts for user
+   * Get all alerts for user.
+   *
+   * An empty array means "no alerts matched" — a genuine, successful result.
+   * A query failure THROWS instead of returning `[]`, so callers (and their
+   * HTTP layer) can tell "no alerts" apart from "could not load alerts"
+   * rather than the two rendering identically as an empty list, which reads
+   * as a false all-clear (every fraud/new-account/score-change alert would
+   * be silently invisible to the user on a DB error).
    */
   async getAlerts(
     userId: string,
@@ -330,39 +357,43 @@ class CreditMonitoringService {
       severity?: "low" | "medium" | "high" | "critical";
     },
   ): Promise<CreditAlert[]> {
-    try {
-      let query = supabase
-        .from("credit_alerts")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+    let query = supabase
+      .from("credit_alerts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
-      if (options?.unreadOnly) {
-        query = query.eq("read", false);
-      }
-
-      if (options?.severity) {
-        query = query.eq("severity", options.severity);
-      }
-
-      if (options?.limit) {
-        query = query.limit(options.limit);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      const rows = (data ?? []) as CreditAlertRow[];
-      return rows.map((alert) => this.mapAlertRow(alert));
-    } catch (error) {
-      // Credit monitoring error: fetching alerts
-      return [];
+    if (options?.unreadOnly) {
+      query = query.eq("read", false);
     }
+
+    if (options?.severity) {
+      query = query.eq("severity", options.severity);
+    }
+
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to fetch credit alerts: ${error.message}`);
+    }
+
+    const rows = (data ?? []) as CreditAlertRow[];
+    return rows.map((alert) => this.mapAlertRow(alert));
   }
 
   /**
-   * Create new alert
+   * Create new alert.
+   *
+   * Throws on failure instead of returning `null` — a silent `null` here is
+   * how fraud/new-account/score-change alerts get discarded with no trace.
+   * Callers that treat alert creation as a best-effort side effect of a
+   * primary action that already succeeded (e.g. `addCreditScore` after the
+   * score row is saved) must catch this locally rather than let it null out
+   * an unrelated, already-successful result — see `addCreditScore` below.
    */
   async createAlert(
     userId: string,
@@ -374,42 +405,47 @@ class CreditMonitoringService {
       severity: "low" | "medium" | "high" | "critical";
       data?: JsonRecord;
     },
-  ): Promise<CreditAlert | null> {
-    try {
-      const { data, error } = await supabase
-        .from("credit_alerts")
-        .insert({
-          user_id: userId,
-          type: alert.type,
-          bureau: alert.bureau,
-          title: alert.title,
-          message: alert.message,
-          severity: alert.severity,
-          read: false,
-          data: alert.data,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+  ): Promise<CreditAlert> {
+    const { data, error } = await supabase
+      .from("credit_alerts")
+      .insert({
+        user_id: userId,
+        type: alert.type,
+        bureau: alert.bureau,
+        title: alert.title,
+        message: alert.message,
+        severity: alert.severity,
+        read: false,
+        data: alert.data,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
-      if (error) throw error;
-
-      return data ? this.mapAlertRow(data as CreditAlertRow) : null;
-    } catch (error) {
-      // Credit monitoring error: creating alert
-      return null;
+    if (error) {
+      throw new Error(`Failed to create credit alert: ${error.message}`);
     }
+    if (!data) {
+      throw new Error("Failed to create credit alert: no data returned");
+    }
+
+    return this.mapAlertRow(data as CreditAlertRow);
   }
 
   /**
    * Mark alert as read
    */
-  async markAlertAsRead(alertId: string): Promise<boolean> {
+  async markAlertAsRead(alertId: string, userId: string): Promise<boolean> {
     try {
+      // The user_id filter is load-bearing: this runs on the service role,
+      // which bypasses RLS, and alertId arrives straight off the request body.
+      // Without it any authenticated caller could mark another user's credit
+      // alert as read. markAllAlertsAsRead below already scopes this way.
       const { error } = await supabase
         .from("credit_alerts")
         .update({ read: true })
-        .eq("id", alertId);
+        .eq("id", alertId)
+        .eq("user_id", userId);
 
       if (error) throw error;
       return true;

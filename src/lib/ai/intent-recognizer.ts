@@ -5,14 +5,12 @@
  * Uses GPT-4o-mini for fast, cost-effective intent recognition
  */
 
-import { AIMLService } from "@/lib/aiml-service";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import type { Intent, IntentType } from "./types/chat.types";
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
-
-const INTENT_MODEL = "openai/gpt-4o-mini";
 
 const INTENT_SYSTEM_PROMPT = `You are an intent classification expert for a financial advisory chatbot.
 
@@ -145,11 +143,9 @@ const INTENT_EXAMPLES = [
 // ============================================================================
 
 export class IntentRecognizer {
-  private aimlService: AIMLService;
   private cache: Map<string, Intent>;
 
   constructor() {
-    this.aimlService = new AIMLService();
     this.cache = new Map();
   }
 
@@ -175,10 +171,14 @@ export class IntentRecognizer {
 
     try {
       // Call AI model
-      const response = await this.aimlService.chat(INTENT_MODEL, messages, {
-        temperature: 0.3, // Lower temperature for more consistent classification
-        max_tokens: 300,
-      });
+      const response = await getModelRouter().complete(
+        TaskType.QUICK_RESPONSE,
+        messages,
+        {
+          temperature: 0.3, // Lower temperature for more consistent classification
+          max_tokens: 300,
+        },
+      );
 
       const content = response.choices[0]?.message?.content || "";
 

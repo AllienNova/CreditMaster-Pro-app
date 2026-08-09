@@ -178,6 +178,12 @@ export interface OrderBlotter {
 }
 
 export interface OrderFilter {
+  /**
+   * Scopes the result set to a single user's orders. Set by the API route
+   * from the authenticated caller — never from client input — to prevent
+   * cross-user order enumeration (IDOR).
+   */
+  userId?: string;
   status?: OrderStatus[];
   side?: OrderSide;
   symbol?: string;

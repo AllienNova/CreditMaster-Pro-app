@@ -209,13 +209,18 @@ export class TradingJournalService {
     emotionalStateAfter?: EmotionalState,
     lessonsLearned?: string,
   ): Promise<TradeEntry> {
-    // Get the current trade
-    const { data: trade } = await this.supabase
+    // Get the current trade. A genuine query error (not "no rows") must
+    // propagate with its real message, not collapse into "Trade not found" —
+    // the caller (route.ts) already checked existence via getTrade() before
+    // calling closeTrade(), so a failure here almost always means the query
+    // itself broke, not that the trade vanished between the two calls.
+    const { data: trade, error: fetchError } = await this.supabase
       .from("trading_journal")
       .select("*")
       .eq("id", tradeId)
       .single();
 
+    if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
     if (!trade) throw new Error("Trade not found");
 
     const entryValue = trade.entry_price * trade.entry_quantity;
@@ -259,12 +264,17 @@ export class TradingJournalService {
   }
 
   async getTrade(tradeId: string): Promise<TradeEntry | null> {
-    const { data } = await this.supabase
+    // A genuine query error (not "no rows") must propagate, not collapse
+    // into null — every caller (route.ts, [id]/route.ts, [id]/close/route.ts)
+    // treats a null return as "trade not found" (404), which would
+    // misreport a DB outage as a missing resource.
+    const { data, error } = await this.supabase
       .from("trading_journal")
       .select("*")
       .eq("id", tradeId)
       .single();
 
+    if (error && error.code !== "PGRST116") throw error;
     return data ? this.fromDbFormat(data) : null;
   }
 

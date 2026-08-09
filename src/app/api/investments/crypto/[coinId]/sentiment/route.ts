@@ -7,8 +7,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { cryptoAnalyst } from "@/lib/investments/crypto-analyst";
-import { getUser } from "@/lib/auth/session";
-import { rateLimit } from "@/lib/rate-limit";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
+import { rateLimit } from "@/lib/security/redis-rate-limiting";
 import { z } from "zod";
 
 // Rate limiter: 75 requests per hour per user
@@ -22,20 +22,8 @@ const SentimentQuerySchema = z.object({
   timeframe: z.enum(["24h", "7d", "30d"]).default("7d").optional(),
 });
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ coinId: string }> },
-) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authentication
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized. Please log in to access sentiment analysis." },
-        { status: 401 },
-      );
-    }
-
     // Rate limiting
     try {
       await limiter.check(75, user.id);
@@ -50,7 +38,9 @@ export async function GET(
     }
 
     // Get and validate parameters
-    const { coinId } = await params;
+    // Path is .../crypto/[coinId]/sentiment — coinId is the segment before "sentiment".
+    const segments = request.nextUrl.pathname.split("/");
+    const coinId = segments[segments.length - 2] ?? "";
 
     if (!coinId || typeof coinId !== "string") {
       return NextResponse.json(
@@ -68,7 +58,7 @@ export async function GET(
       return NextResponse.json(
         {
           error: "Invalid query parameters",
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 },
       );
@@ -142,7 +132,7 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+});
 
 // ============================================================================
 // HELPER FUNCTIONS

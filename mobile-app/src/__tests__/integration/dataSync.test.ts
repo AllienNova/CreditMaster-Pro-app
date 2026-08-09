@@ -6,7 +6,8 @@
 import { act } from "@testing-library/react-native";
 import { useCreditStore } from "../../store/creditStore";
 import { useDisputeStore } from "../../store/disputeStore";
-import { useFinancialStore } from "../../store/financialStore";
+import { useDashboardStore } from "../../store/dashboardStore";
+import { useAccountStore } from "../../store/accountStore";
 
 // Mock API services
 jest.mock("../../services/api", () => ({
@@ -44,7 +45,8 @@ describe("Data Sync Integration", () => {
     jest.clearAllMocks();
     useCreditStore.getState().resetStore();
     useDisputeStore.getState().resetStore();
-    useFinancialStore.getState().resetStore();
+    useDashboardStore.getState().resetStore();
+    useAccountStore.getState().resetStore();
   });
 
   describe("Initial Data Load", () => {
@@ -68,12 +70,12 @@ describe("Data Sync Integration", () => {
         await Promise.all([
           useCreditStore.getState().fetchScores(),
           useCreditStore.getState().fetchAlerts(),
-          useFinancialStore.getState().fetchDashboard(),
+          useDashboardStore.getState().fetchDashboard(),
         ]);
       });
 
       expect(useCreditStore.getState().scores).toHaveLength(1);
-      expect(useFinancialStore.getState().dashboard?.netWorth).toBe(50000);
+      expect(useDashboardStore.getState().dashboard?.netWorth).toBe(50000);
     });
   });
 
@@ -207,8 +209,8 @@ describe("Data Sync Integration", () => {
       await act(async () => {
         await Promise.all([
           useCreditStore.getState().fetchScores(),
-          useFinancialStore.getState().fetchDashboard(),
-          useFinancialStore.getState().fetchAccounts(),
+          useDashboardStore.getState().fetchDashboard(),
+          useAccountStore.getState().fetchAccounts(),
         ]);
       });
 

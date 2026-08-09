@@ -12,7 +12,7 @@
 // ---------------------------------------------------------------------------
 
 // Chainable Supabase mock — define inside factory to avoid TDZ with jest.mock hoisting
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   // Default resolution for non-.single() query chains (thenable)
   let defaultResolution: { data: unknown; error: unknown } = { data: [], error: null };
 
@@ -64,11 +64,11 @@ jest.mock("@/lib/supabase/client", () => {
     error: null,
   });
 
-  return { getSupabase: () => mock };
+  return { getServiceRoleClient: () => mock };
 });
 
-import { getSupabase } from "@/lib/supabase/client";
-const mockSupabase = getSupabase() as any;
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+const mockSupabase = getServiceRoleClient() as any;
 
 // Mock the individual bureau clients
 jest.mock("@/lib/credit-bureau/experian-client", () => {
@@ -818,7 +818,7 @@ describe("CreditBureauService", () => {
       CreditBureauService.initializeFromConfig(config);
     });
 
-    it("should submit dispute successfully to Equifax", async () => {
+    it("should submit dispute successfully to Equifax and report it persisted", async () => {
       const clientInstance = (EquifaxClient as jest.Mock).mock.results.slice(
         -1,
       )[0]?.value;
@@ -843,6 +843,9 @@ describe("CreditBureauService", () => {
 
       expect(result.success).toBe(true);
       expect(result.bureau).toBe("equifax");
+      expect(result.persisted).toBe(true);
+      expect(result.persistenceError).toBeUndefined();
+      expect(mockSupabase.from).toHaveBeenCalledWith("bureau_disputes");
     });
 
     it("should return error for unknown bureau in dispute", async () => {
@@ -854,6 +857,70 @@ describe("CreditBureauService", () => {
       });
 
       expect(result.success).toBe(false);
+      expect(result.persisted).toBe(false);
+    });
+
+    it("should report success:true and persisted:false when the bureau accepts the dispute but the local record fails to save — a failure here must NEVER read as bureau rejection, or the caller will re-file a DUPLICATE dispute", async () => {
+      const clientInstance = (ExperianClient as jest.Mock).mock.results.slice(
+        -1,
+      )[0]?.value;
+      if (clientInstance) {
+        clientInstance.submitDispute.mockResolvedValueOnce({
+          success: true,
+          bureau: "experian",
+          timestamp: new Date().toISOString(),
+          reference_id: "bureau-confirmed-ref-999",
+        });
+      }
+
+      // bureau_disputes insert fails AFTER the bureau already accepted
+      (mockSupabase.insert as jest.Mock).mockResolvedValueOnce({
+        error: { message: "relation \"bureau_disputes\" insert failed" },
+      });
+
+      const result = await CreditBureauService.submitDispute("user-1", {
+        bureau: "experian",
+        credit_item_id: "item-42",
+        dispute_reason: "not_mine",
+        dispute_method: "online",
+      });
+
+      // The bureau-side outcome must stay success:true — this is the field
+      // most likely to gate a client-side retry.
+      expect(result.success).toBe(true);
+      expect(result.persisted).toBe(false);
+      expect(result.persistenceError).toContain("bureau_disputes");
+      // The bureau's own confirmation number must survive even though the
+      // local save failed — it is the caller's only proof of filing until
+      // the record is reconciled.
+      expect(result.reference_id).toBe("bureau-confirmed-ref-999");
+    });
+
+    it("should report persisted:false with no persistenceError when the bureau itself declines the dispute (nothing to persist)", async () => {
+      const clientInstance = (TransUnionClient as jest.Mock).mock.results.slice(
+        -1,
+      )[0]?.value;
+      if (clientInstance) {
+        clientInstance.submitDispute.mockResolvedValueOnce({
+          success: false,
+          error: "Bureau rejected the dispute payload",
+          bureau: "transunion",
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const result = await CreditBureauService.submitDispute("user-1", {
+        bureau: "transunion",
+        credit_item_id: "item-7",
+        dispute_reason: "not_mine",
+        dispute_method: "online",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.persisted).toBe(false);
+      expect(result.persistenceError).toBeUndefined();
+      // Nothing was accepted by the bureau — saveDisputeRecord must not run.
+      expect(mockSupabase.insert).not.toHaveBeenCalled();
     });
   });
 

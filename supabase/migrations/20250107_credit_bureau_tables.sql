@@ -31,18 +31,22 @@ CREATE INDEX idx_credit_reports_imported_at ON credit_reports(imported_at);
 -- RLS policies for credit_reports
 ALTER TABLE credit_reports ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own credit reports" ON credit_reports;
 CREATE POLICY "Users can view their own credit reports"
   ON credit_reports FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own credit reports" ON credit_reports;
 CREATE POLICY "Users can insert their own credit reports"
   ON credit_reports FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own credit reports" ON credit_reports;
 CREATE POLICY "Users can update their own credit reports"
   ON credit_reports FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own credit reports" ON credit_reports;
 CREATE POLICY "Users can delete their own credit reports"
   ON credit_reports FOR DELETE
   USING (auth.uid() = user_id);
@@ -80,18 +84,22 @@ CREATE INDEX idx_credit_accounts_is_disputed ON credit_accounts(is_disputed);
 -- RLS policies for credit_accounts
 ALTER TABLE credit_accounts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own credit accounts" ON credit_accounts;
 CREATE POLICY "Users can view their own credit accounts"
   ON credit_accounts FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own credit accounts" ON credit_accounts;
 CREATE POLICY "Users can insert their own credit accounts"
   ON credit_accounts FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own credit accounts" ON credit_accounts;
 CREATE POLICY "Users can update their own credit accounts"
   ON credit_accounts FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own credit accounts" ON credit_accounts;
 CREATE POLICY "Users can delete their own credit accounts"
   ON credit_accounts FOR DELETE
   USING (auth.uid() = user_id);
@@ -121,18 +129,22 @@ CREATE INDEX idx_credit_inquiries_is_disputed ON credit_inquiries(is_disputed);
 -- RLS policies for credit_inquiries
 ALTER TABLE credit_inquiries ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own credit inquiries" ON credit_inquiries;
 CREATE POLICY "Users can view their own credit inquiries"
   ON credit_inquiries FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own credit inquiries" ON credit_inquiries;
 CREATE POLICY "Users can insert their own credit inquiries"
   ON credit_inquiries FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own credit inquiries" ON credit_inquiries;
 CREATE POLICY "Users can update their own credit inquiries"
   ON credit_inquiries FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own credit inquiries" ON credit_inquiries;
 CREATE POLICY "Users can delete their own credit inquiries"
   ON credit_inquiries FOR DELETE
   USING (auth.uid() = user_id);
@@ -165,18 +177,22 @@ CREATE INDEX idx_public_records_is_disputed ON public_records(is_disputed);
 -- RLS policies for public_records
 ALTER TABLE public_records ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own public records" ON public_records;
 CREATE POLICY "Users can view their own public records"
   ON public_records FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own public records" ON public_records;
 CREATE POLICY "Users can insert their own public records"
   ON public_records FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own public records" ON public_records;
 CREATE POLICY "Users can update their own public records"
   ON public_records FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own public records" ON public_records;
 CREATE POLICY "Users can delete their own public records"
   ON public_records FOR DELETE
   USING (auth.uid() = user_id);

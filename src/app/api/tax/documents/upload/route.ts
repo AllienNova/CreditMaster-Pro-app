@@ -12,6 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { createClient } from "@/lib/supabase/server";
 import { taxDocumentProcessor } from "@/lib/tax/documents";
 
@@ -23,24 +24,9 @@ const ALLOWED_TYPES = [
   "image/jpg",
 ];
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate user
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          error: "Unauthorized",
-          message: "Please sign in to upload documents.",
-        },
-        { status: 401 },
-      );
-    }
 
     // 2. Parse form data
     const formData = await request.formData();
@@ -152,7 +138,7 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 export const config = {
   api: {

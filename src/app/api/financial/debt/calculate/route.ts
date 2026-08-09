@@ -4,19 +4,18 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { debtPayoffService } from "@/lib/financial/debt-payoff-service";
 import type {
   Debt,
   PayoffStrategy,
 } from "@/lib/financial/types/debt-payoff.types";
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+
 
     const body = await request.json();
     const {
@@ -62,7 +61,7 @@ export async function POST(request: NextRequest) {
     const processedDebts: Debt[] = debts.map((d, i) => ({
       ...d,
       id: d.id || `debt-${i}`,
-      userId: validation.user!.id,
+      userId: user!.id,
       originalBalance: d.originalBalance || d.balance,
       isActive: d.isActive !== false,
       createdAt: d.createdAt || new Date().toISOString(),
@@ -137,4 +136,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

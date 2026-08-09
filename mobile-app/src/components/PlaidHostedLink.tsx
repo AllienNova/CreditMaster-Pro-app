@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../services/api/client";
+import { openExternalUrl } from "../utils/openExternalUrl";
 
 // -- Types ------------------------------------------------------------------
 
@@ -209,7 +210,7 @@ export function PlaidHostedLink({
       if (!WebViewComponent) {
         const supported = await Linking.canOpenURL(url);
         if (supported) {
-          await Linking.openURL(url);
+          await openExternalUrl(url);
         } else {
           setStatus("error");
           setErrorMessage("Unable to open Plaid link in browser");

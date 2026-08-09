@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { FadeIn, StaggerList, ScrollReveal } from "@/components/ui/animations";
 import {
   ArrowTrendingUpIcon as TrendingUp,
   ArrowTrendingDownIcon as TrendingDown,
@@ -203,7 +204,7 @@ export default function TradingDashboardPage() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {/* Portfolio Value */}
           <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
             <div className="flex items-center justify-between mb-3">
@@ -308,12 +309,12 @@ export default function TradingDashboardPage() {
               {signals.filter((s) => s.confidence > 0.8).length} high confidence
             </p>
           </div>
-        </div>
+        </StaggerList>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Positions/Orders/Signals */}
-          <div className="lg:col-span-2 space-y-6">
+          <FadeIn className="lg:col-span-2 space-y-6">
             {/* Tab Header */}
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
               <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 px-4">
@@ -341,7 +342,7 @@ export default function TradingDashboardPage() {
                   onClick={() => setShowOrderEntry(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-4 h-4" aria-hidden="true" />
                   New Order
                 </button>
               </div>
@@ -355,18 +356,20 @@ export default function TradingDashboardPage() {
                 {activeTab === "signals" && <SignalsTable signals={signals} />}
               </div>
             </div>
-          </div>
+          </FadeIn>
 
           {/* Right Column - Risk & Quick Actions */}
-          <div className="space-y-6">
+          <FadeIn direction="right" delay={0.1} className="space-y-6">
             {/* Risk Monitor */}
-            <RiskMonitor metrics={riskMetrics} />
+            <ScrollReveal>
+              <RiskMonitor metrics={riskMetrics} />
+            </ScrollReveal>
 
             {/* Quick Actions */}
             <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Quick Actions
-              </h3>
+              </h2>
               <div className="space-y-3">
                 <button
                   aria-label="Close all positions"
@@ -376,7 +379,7 @@ export default function TradingDashboardPage() {
                   <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
                     Close All Positions
                   </span>
-                  <X className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+                  <X className="w-4 h-4 text-gray-500 dark:text-slate-400" aria-hidden="true" />
                 </button>
                 <button
                   aria-label="Cancel all orders"
@@ -386,7 +389,7 @@ export default function TradingDashboardPage() {
                   <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
                     Cancel All Orders
                   </span>
-                  <X className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+                  <X className="w-4 h-4 text-gray-500 dark:text-slate-400" aria-hidden="true" />
                 </button>
                 <button
                   aria-label="Activate kill switch"
@@ -396,7 +399,7 @@ export default function TradingDashboardPage() {
                   <span className="text-sm font-medium text-red-700 dark:text-red-400">
                     Activate Kill Switch
                   </span>
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  <AlertTriangle className="w-4 h-4 text-red-500" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -434,7 +437,7 @@ export default function TradingDashboardPage() {
                 </button>
               </div>
             )}
-          </div>
+          </FadeIn>
         </div>
       </div>
 
@@ -683,9 +686,9 @@ function RiskMonitor({ metrics }: { metrics: RiskMetrics | null }) {
   if (!metrics) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Risk Monitor
-        </h3>
+        </h2>
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
           <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
@@ -705,9 +708,9 @@ function RiskMonitor({ metrics }: { metrics: RiskMetrics | null }) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
           Risk Monitor
-        </h3>
+        </h2>
         <span
           className={`px-3 py-1 rounded-full text-xs font-semibold ${riskColor[metrics.riskLevel]}`}
         >

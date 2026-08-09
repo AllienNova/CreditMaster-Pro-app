@@ -117,15 +117,21 @@ export class StudentLoanService {
   }
 
   /**
-   * Get a single student loan by ID
+   * Get a single student loan by ID.
+   * userId is required: the anon client is sessionless, so RLS does not apply;
+   * we enforce ownership with an explicit .eq("user_id", userId) filter.
    */
-  async getStudentLoan(loanId: string): Promise<StudentLoan | null> {
+  async getStudentLoan(
+    loanId: string,
+    userId: string,
+  ): Promise<StudentLoan | null> {
     const supabase = getStudentLoanSupabase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("student_loans")
       .select("*")
       .eq("id", loanId)
+      .eq("user_id", userId)
       .single();
 
     if (error) return null;
@@ -133,10 +139,12 @@ export class StudentLoanService {
   }
 
   /**
-   * Update a student loan
+   * Update a student loan.
+   * userId is required to scope the update to the owning user.
    */
   async updateStudentLoan(
     loanId: string,
+    userId: string,
     updates: Partial<StudentLoan>,
   ): Promise<StudentLoan> {
     const supabase = getStudentLoanSupabase();
@@ -145,6 +153,7 @@ export class StudentLoanService {
       .from("student_loans")
       .update(updates)
       .eq("id", loanId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -153,15 +162,17 @@ export class StudentLoanService {
   }
 
   /**
-   * Delete a student loan
+   * Delete a student loan.
+   * userId is required to scope the delete to the owning user.
    */
-  async deleteStudentLoan(loanId: string): Promise<void> {
+  async deleteStudentLoan(loanId: string, userId: string): Promise<void> {
     const supabase = getStudentLoanSupabase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("student_loans")
       .delete()
-      .eq("id", loanId);
+      .eq("id", loanId)
+      .eq("user_id", userId);
 
     if (error) throw error;
   }

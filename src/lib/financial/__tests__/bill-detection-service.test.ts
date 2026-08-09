@@ -8,13 +8,13 @@ import type {
 } from "../types/bill.types";
 
 // Mock Supabase — define inside factory to avoid TDZ with jest.mock hoisting
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
+  return { getServiceRoleClient: () => _client };
 });
 
-import { getSupabase } from "@/lib/supabase/client";
-const supabase = getSupabase() as any;
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+const supabase = getServiceRoleClient() as any;
 
 describe("BillDetectionService", () => {
   const mockUserId = "user-123";

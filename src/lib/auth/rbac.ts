@@ -7,7 +7,9 @@
 
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
-export type Role = "user" | "premium" | "admin" | "super_admin";
+import { type Role, isAtLeast, isRole } from "@/lib/auth/roles";
+
+export type { Role };
 
 // User type that works with both Supabase User and custom User
 export interface RBACUser {
@@ -299,28 +301,18 @@ const rolePermissions: Record<Role, Permission[]> = {
 };
 
 /**
- * Get user role from various user object formats
+ * Get the user's authorization role.
+ *
+ * The role MUST be the DB-resolved role on the passed object — RBAC never
+ * trusts the JWT claim, `app_metadata`, or `user_metadata` (FND-005). The
+ * caller (`withRole`/`withPermission` in api-guard) is responsible for
+ * resolving the role from `profiles` before reaching this function.
  */
 function getUserRole(user: User): Role {
   if (!user) return "user";
 
-  // Check direct role property
-  if ("role" in user && user.role) {
-    // Validate that the role is a valid Role type
-    const validRoles: Role[] = ["user", "premium", "admin", "super_admin"];
-    if (validRoles.includes(user.role as Role)) {
-      return user.role as Role;
-    }
-  }
-
-  // Check app_metadata (Supabase)
-  if ("app_metadata" in user && user.app_metadata?.role) {
-    return user.app_metadata.role as Role;
-  }
-
-  // Check user_metadata (Supabase)
-  if ("user_metadata" in user && user.user_metadata?.role) {
-    return user.user_metadata.role as Role;
+  if ("role" in user && isRole(user.role)) {
+    return user.role;
   }
 
   return "user";
@@ -376,11 +368,7 @@ class RBAC {
    * Check if user has a specific role or higher
    */
   hasRole(user: User, requiredRole: Role): boolean {
-    const roleHierarchy: Role[] = ["user", "premium", "admin", "super_admin"];
-    const userRole = getUserRole(user);
-    const userRoleIndex = roleHierarchy.indexOf(userRole);
-    const requiredRoleIndex = roleHierarchy.indexOf(requiredRole);
-    return userRoleIndex >= requiredRoleIndex;
+    return isAtLeast(getUserRole(user), requiredRole);
   }
 
   /**

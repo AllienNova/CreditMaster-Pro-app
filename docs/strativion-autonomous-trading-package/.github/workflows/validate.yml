@@ -1,0 +1,91 @@
+name: Validate Canonical Package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validator + Manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install tooling dependencies
+        run: pip install pyyaml jsonschema
+
+      - name: Run package validator
+        run: python tooling/validate/validate_package.py
+
+      - name: Check canonical/MANIFEST.json is current
+        run: python tooling/manifest/generate_manifest.py --check
+
+  manifest-diff:
+    name: Surface manifest diff on PR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install tooling dependencies
+        run: pip install pyyaml jsonschema
+
+      - name: Regenerate manifest and diff
+        run: |
+          python tooling/manifest/generate_manifest.py --write
+          git diff --exit-code canonical/MANIFEST.json || {
+            echo "::warning::canonical/MANIFEST.json regenerated differently in CI — author must regenerate locally"
+            exit 1
+          }
+
+  lint:
+    name: YAML lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install yamllint
+        run: pip install yamllint
+      - name: Lint canonical YAML
+        run: |
+          yamllint -d "{extends: default, rules: {line-length: {max: 200, level: warning}, document-start: disable, indentation: {spaces: 2, indent-sequences: consistent, check-multi-line-strings: false}, truthy: {check-keys: false}}}" canonical/
+
+  security-hygiene:
+    name: Secret & destructive-pattern hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan for embedded secrets
+        run: |
+          ! git grep -niE '(api[_-]?key|secret|password|private[_-]?key)\s*=\s*["\x27][^"\x27]{12,}' -- ':!*.md' ':!NOTICE' ':!LICENSE' || { echo "Embedded secret pattern detected"; exit 1; }
+
+      - name: Reject percent-floats in canonical _pct fields
+        run: |
+          ! git grep -nE '_pct:\s*[1-9][0-9]*\.?[0-9]*' -- 'canonical/**/*.yaml' || { echo "Percent-float in canonical file"; exit 1; }
+
+      - name: Reject autonomous flatten on untrusted state
+        run: |
+          ! git grep -niE 'flatten_if_state_untrusted|autonomous_flatten_on_untrusted' -- ':!reference/**' ':!strativion_fix_pack/**' ':!NOTICE' ':!CHANGELOG.md' ':!SECURITY.md' ':!PACKAGE-STATUS.md' ':!ENTERPRISE-QUICKSTART.md' ':!CONTRIBUTING.md' || { echo "Prohibited flatten-on-untrusted-state pattern detected in binding surface"; exit 1; }

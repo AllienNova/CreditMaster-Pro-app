@@ -1,0 +1,14 @@
+# EAS upload excludes — keep the tarball small. Regenerated in the cloud build.
+node_modules/
+.git/
+ios/Pods/
+ios/build/
+ios/DerivedData/
+android/build/
+android/.gradle/
+android/app/build/
+.expo/
+.expo-shared/
+coverage/
+*.log
+*.hprof

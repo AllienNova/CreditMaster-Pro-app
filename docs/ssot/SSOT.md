@@ -1,18 +1,33 @@
 # Fynvita — Single Source of Truth (SSOT)
 
-> **DICE v3.3 Canonical Artifact** — Generated 2026-02-25
+> **VERSION-016 — WAVE 7 REMEDIATION VERIFIED; M1 = GO WITH CONDITIONS** (2026-07-24)
+>
+> **Wave 7 (Security & Correctness Remediation) M1-scope code is complete and adversarially verified — this is NOT a "done / ship-ready / 100%" claim.** The 9-domain audit's original 33 CRITICAL + 38 HIGH findings were remediated on branch `remediation/wave-7-foundation` (187 commits). A fresh 4-reviewer adversarial re-verification *from source* (2026-07-24) confirmed **30 of 32 M1-scope CRITICALs genuinely CLOSED_REAL** (FND-001 inert, FND-026 partial) with 600+ passing tests — and found + fixed **2 previously-undisclosed live bugs**: the payout `calculateFees` dollar/cent error (a $50 payout netted $0; commit `14dd011`) and an unguarded GDPR-erasure RPC over 5 unmigrated tables (`7069485`).
+>
+> Current quality (@ tip): web + mobile `tsc` 0 errors, `npm run lint` 0 errors, `npm run build` OK, `audit:auth` 295/295, `test:auth-negative` 611, `npm test` 16,195 pass / 0 fail. All automated gates green.
+>
+> **M1 (Closed Beta) verdict: GO WITH CONDITIONS.** The code is shippable for M1, but launch is gated on **operator-only conditions that are unmet today** — chiefly **FND-001** (the `auth.deny_by_default` middleware backstop is INERT until a 24 h staging soak + prod flip; per-route guards *do* enforce today), a **live-schema audit** (payout/affiliate + 5 erasure tables absent from migrations), the **FND-026** dual-payout-rail decision, `main` branch protection, and `npm audit` (32 vulns, 1 critical). Blocking gate: `docs/deployment/LAUNCH_CHECKLIST.md`. Authoritative record: **`docs/qa/qa-report.md`**.
+>
+> Pre-launch status (no live users yet) means there is **no current GDPR Art. 33 / CCPA disclosure obligation**, but every condition must close before public launch.
+>
+> Audit detail + verification addendum: `docs/ssot/gap_analysis.md`. Roadmap: `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7.
+
+---
+
+> **DICE v3.3 Canonical Artifact** — Originally generated 2026-02-25, re-baselined 2026-05-03
 > This is the ONE authoritative reference for the Fynvita platform.
 > All other documents defer to this file. When in conflict, this file wins.
 >
 > **Companion artifacts** (all in `docs/ssot/`):
+> - `gap_analysis.md` — **NEW (VERSION-013)** — 71-finding audit register
 > - `task_extraction.md` — 80 normalized tasks with stable IDs
 > - `dependency_graph.md` — Module and task-level dependencies
-> - `build_order_blueprint.md` — 6-wave build plan with merge gates
+> - `build_order_blueprint.md` — 7-wave build plan with merge gates (Wave 7 opened 2026-05-03)
 > - `repo_inventory.md` — Complete repository inventory
 > - `MASTER-IMPLEMENTATION-PLAN.md` — Executable Task Cards (Step 5)
 > - `traceability_matrix.md` — REQ→Build target proof (Step 6)
 > - `system_blueprint.md` — UI/UX, agents, security, API/data, DevOps (Step 7)
-> - `health_metrics.md` — Quality scorecard (Step 9)
+> - `health_metrics.md` — Quality scorecard (Step 9) — **flipped to RED 2026-05-03**
 
 ---
 
@@ -1472,7 +1487,31 @@ See `docs/archive/ARCHIVE-INDEX.md` for the full list with archival status.
 
 ---
 
+## §19. Audit Findings — Wave 7 Remediation (VERSION-013)
+
+> Added 2026-05-03 in response to comprehensive 9-domain code review.
+> Full register: `docs/ssot/gap_analysis.md` (FND-001 through FND-071).
+> Roadmap: `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7.
+
+**Headline numbers**:
+- Findings opened: **33 CRITICAL** + 38 HIGH (across 9 domains)
+- Domains FAIL on audit: Auth+middleware, Payments+Subs, Commerce, Financial services, Investments, Notifications, Admin, AI+Compliance, Mobile (all 9)
+- User exposure today: **None** (no live users — Fynvita is pre-launch, branded as financial-education company)
+- Pre-launch disclosure obligations: not currently triggered; re-evaluate before public launch
+- Tests passed (13,585) but did not catch any of the 33 criticals — detection-gap remediation is part of Wave 7
+
+**Themes**:
+1. Auth/RBAC structurally broken (admin endpoints unauth'd, `user_metadata` self-promotion to admin, AIML key reused as inbound auth, middleware whitelists `/api/*`, hardcoded admin emails, enterprise-tier=admin)
+2. Webhook idempotency + tier mapping (every paid sub silently lands on `free`, `billing-profile-store` seeds fake Visa 4242, `handleInvoicePaid` swallows errors)
+3. Money correctness (Stripe payouts pass dollars to cents-only API → 1% of intended; no idempotency on commerce payouts; affiliate self-referral fraud; non-atomic referral-code increment)
+4. Mock-data-as-production (admin analytics returns `Math.random()`, debt API returns hardcoded mock debts, 5 AI-insight routes return static mocks, mobile dispute screen uses `setTimeout` mock data)
+
+**Wave 7 status**: Phase 0 (Prereqs) opens 2026-05-03. Estimated 4 weeks, ~60 tasks, parallel SEC/BE/MOB/DEVOPS streams. Exit gates: every CRITICAL has linked closed task; CI gates active for route-auth, IDOR, mock-data, money-type, npm audit; SEC sign-off on `PUBLIC_ROUTES.ts`, webhook signatures, PII redaction, IDOR audit script.
+
+---
+
 _Single Source of Truth for the Fynvita platform._
 _Original: 2026-02-16 | Last verified: 2026-02-23 | DICE v3.3 canonical: 2026-02-25_
-_Updated: 2026-03-01 — VERSION-009: Added §16.4.8-§16.4.11 (Plaid, DriveWealth, Multi-Broker, Affiliate). 13 new tasks (Wave 6). Total: 125 tasks (112 DONE + 13 planned)._
+_VERSION-009 (2026-03-01): Added §16.4.8-§16.4.11 (Plaid, DriveWealth, Multi-Broker, Affiliate). 13 new tasks (Wave 6). Total: 125 tasks (112 DONE + 13 planned)._
+_VERSION-013 (2026-05-03): **AUDIT-DRIVEN RE-BASELINE.** Invalidates "100% done" claim. Opens Wave 7 (Security & Correctness Remediation) with 33 CRITICAL + 38 HIGH findings. See `gap_analysis.md`._
 _DICE v3.3 Step 4 output — companion artifacts in `docs/ssot/`._

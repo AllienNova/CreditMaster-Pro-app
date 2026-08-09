@@ -556,7 +556,7 @@ describe("RuleBasedEngine", () => {
       expect(entries.length).toBeGreaterThanOrEqual(1);
     });
 
-    it("should evaluate crosses_below (simplified: current > compare)", async () => {
+    it("should evaluate crosses_below (simplified: current < compare when no previous bar)", async () => {
       engine.addRule(
         makeRule({
           entryConditions: makeConditionGroup("and", [
@@ -565,13 +565,13 @@ describe("RuleBasedEngine", () => {
               indicator: "rsi",
               indicatorPeriod: 14,
               operator: "crosses_below",
-              value: 20,
+              value: 30,
             }),
           ]),
         }),
       );
 
-      // rsi_14 = 25 > 20 (placeholder returns current > compare)
+      // rsi_14 = 25 < 30 — no previousIndicators so fallback: current < compare
       const signals = await engine.evaluateRules([makeMarketData()], 100_000);
       const entries = signals.filter((s) => s.type === "entry");
       expect(entries.length).toBeGreaterThanOrEqual(1);

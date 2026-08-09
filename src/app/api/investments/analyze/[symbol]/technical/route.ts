@@ -16,6 +16,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { aiStockAnalyst } from "@/lib/investments/ai-stock-analyst";
 
 // ============================================================================
@@ -50,13 +51,11 @@ function checkRateLimit(identifier: string): boolean {
  *
  * Returns technical analysis only for faster response times
  */
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ symbol: string }> },
-) {
+export const GET = withAuth(async (request: NextRequest, _user: AuthedUser) => {
   try {
-    // Get symbol from params (Next.js 15 async params)
-    const { symbol } = await context.params;
+    // Path is .../analyze/[symbol]/technical — symbol is the segment before "technical".
+    const segments = request.nextUrl.pathname.split("/");
+    const symbol = segments[segments.length - 2] ?? "";
 
     // Apply rate limiting (use IP or symbol as identifier)
     const identifier = request.headers.get("x-forwarded-for") || symbol;
@@ -109,4 +108,4 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+});

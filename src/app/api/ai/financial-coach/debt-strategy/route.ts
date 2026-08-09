@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { z } from "zod";
 import { debtStrategyOptimizer } from "@/lib/financial/debt-strategy-optimizer";
 import { financialContextEngine } from "@/lib/financial/financial-context-engine";
@@ -51,18 +51,6 @@ const DebtStrategyRequestSchema = z.object({
     .default(0),
   includeAIOptimization: z.boolean().optional().default(true),
 });
-
-// ============================================================================
-// AUTHENTICATION HELPER
-// ============================================================================
-
-async function getUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
 
 // ============================================================================
 // RATE LIMITING
@@ -147,26 +135,10 @@ function generateCacheKey(
 // API HANDLER
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   const startTime = Date.now();
 
   try {
-    // Authentication
-    const user = await getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "UNAUTHORIZED",
-            message: "Authentication required",
-          },
-        },
-        { status: 401 },
-      );
-    }
-
     // Rate limiting
     if (!checkRateLimit(user.id)) {
       return NextResponse.json(
@@ -193,7 +165,7 @@ export async function POST(request: NextRequest) {
           error: {
             code: "INVALID_REQUEST",
             message: "Invalid request parameters",
-            details: validation.error.errors,
+            details: validation.error.issues,
           },
         },
         { status: 400 },
@@ -342,4 +314,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

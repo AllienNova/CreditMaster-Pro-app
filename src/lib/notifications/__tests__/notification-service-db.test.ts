@@ -14,7 +14,7 @@ jest.mock("resend", () => ({
 }));
 
 // Tracks the terminal response for each Supabase chain.
-// Each call to getSupabase().from() produces a fresh thenable chain.
+// Each call to getServiceRoleClient().from() produces a fresh thenable chain.
 // When any point in the chain is awaited, it resolves with `mockTerminalResult`.
 let mockTerminalResult: any;
 
@@ -43,8 +43,8 @@ function createChain(): any {
 // Captures the chain created for each from() call so tests can assert on it.
 let lastChain: any;
 
-jest.mock("../../supabase/client", () => ({
-  getSupabase: jest.fn(),
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: jest.fn(),
 }));
 
 // --- Import under test (after mocks) ---
@@ -54,9 +54,9 @@ import {
   type Notification,
   type NotificationType,
 } from "../notification-service-db";
-import { getSupabase } from "../../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const mockGetSupabase = getSupabase as jest.Mock;
+const mockGetSupabase = getServiceRoleClient as jest.Mock;
 
 // --- Helpers ---
 
@@ -86,7 +86,7 @@ describe("NotificationServiceDB", () => {
   beforeEach(() => {
     mockSend.mockClear();
     mockTerminalResult = undefined;
-    // Re-establish getSupabase mock (clearAllMocks would wipe it)
+    // Re-establish getServiceRoleClient mock (clearAllMocks would wipe it)
     mockGetSupabase.mockImplementation(() => ({
       from: jest.fn(() => {
         lastChain = createChain();
@@ -250,17 +250,18 @@ describe("NotificationServiceDB", () => {
     it("updates read to true and returns true on success", async () => {
       mockTerminalResult = { error: null };
 
-      const result = await notificationServiceDB.markAsRead("notif-1");
+      const result = await notificationServiceDB.markAsRead("notif-1", "user-1");
 
       expect(lastChain.update).toHaveBeenCalledWith({ read: true });
       expect(lastChain.eq).toHaveBeenCalledWith("id", "notif-1");
+      expect(lastChain.eq).toHaveBeenCalledWith("user_id", "user-1");
       expect(result).toBe(true);
     });
 
     it("returns false when Supabase update fails", async () => {
       mockTerminalResult = { error: { message: "Update failed" } };
 
-      const result = await notificationServiceDB.markAsRead("notif-1");
+      const result = await notificationServiceDB.markAsRead("notif-1", "user-1");
 
       expect(result).toBe(false);
     });
@@ -310,10 +311,11 @@ describe("NotificationServiceDB", () => {
       mockTerminalResult = { error: null };
 
       const result =
-        await notificationServiceDB.deleteNotification("notif-1");
+        await notificationServiceDB.deleteNotification("notif-1", "user-1");
 
       expect(lastChain.delete).toHaveBeenCalled();
       expect(lastChain.eq).toHaveBeenCalledWith("id", "notif-1");
+      expect(lastChain.eq).toHaveBeenCalledWith("user_id", "user-1");
       expect(result).toBe(true);
     });
 
@@ -321,7 +323,7 @@ describe("NotificationServiceDB", () => {
       mockTerminalResult = { error: { message: "Delete failed" } };
 
       const result =
-        await notificationServiceDB.deleteNotification("notif-1");
+        await notificationServiceDB.deleteNotification("notif-1", "user-1");
 
       expect(result).toBe(false);
     });

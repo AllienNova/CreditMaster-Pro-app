@@ -3,14 +3,13 @@
  * Strategies to build credit
  */
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -83,12 +82,6 @@ const STRATEGIES: Strategy[] = [
 ];
 
 export default function BuildingScreen() {
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 600);
-  }, []);
-
   const getImpactColor = (impact: string) => {
     switch (impact) {
       case "high":
@@ -101,16 +94,6 @@ export default function BuildingScreen() {
         return theme.colors.textSecondary;
     }
   };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -133,16 +116,7 @@ export default function BuildingScreen() {
           </View>
         </View>
 
-        {/* Progress */}
-        <Card style={styles.progressCard}>
-          <Text style={styles.progressTitle}>Your Progress</Text>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: "65%" }]} />
-          </View>
-          <Text style={styles.progressText}>4 of 6 strategies in progress</Text>
-        </Card>
-
-        {/* Strategies */}
+        {/* Strategies — static educational content (no per-user progress source) */}
         <View style={styles.strategiesSection}>
           <Text style={styles.sectionTitle}>Recommended Strategies</Text>
           {STRATEGIES.map((strategy) => (
@@ -204,7 +178,6 @@ export default function BuildingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -214,29 +187,6 @@ const styles = StyleSheet.create({
   headerContent: { flex: 1, marginLeft: theme.spacing.sm },
   title: { fontSize: 24, fontWeight: "700", color: theme.colors.text },
   subtitle: { fontSize: 14, color: theme.colors.textSecondary },
-  progressCard: {
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-    padding: theme.spacing.lg,
-  },
-  progressTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: theme.colors.text,
-    marginBottom: 12,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: theme.colors.border,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: 8,
-    backgroundColor: theme.colors.success,
-    borderRadius: 4,
-  },
-  progressText: { fontSize: 12, color: theme.colors.textSecondary },
   strategiesSection: {
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.xl,

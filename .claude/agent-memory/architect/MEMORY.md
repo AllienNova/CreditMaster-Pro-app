@@ -1,0 +1,1 @@
+- [Wave 7 Remediation Roadmap](project_wave7_remediation.md) — 8-phase plan (~60 tasks) addressing 33 CRITICAL findings; reference fix template is commit d64e8d5

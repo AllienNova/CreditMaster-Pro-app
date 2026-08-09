@@ -1,0 +1,333 @@
+meta:
+  document_role: policy
+  schema_version: 2.0.0
+  file_version: 2.0.0
+  canonical_package_version: 2.2.0
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  supersedes: "policy.data-quality.yaml v1"
+  supersession_note: >
+    v2 adds per-instrument-class staleness thresholds, cross-venue disagreement numerics,
+    NBBO enforcement, bad-print filter conditions, tick-size validation, gap sigma thresholds,
+    book depth minimums, latency hop limits, feed redundancy, and corporate actions completeness.
+    v1 is retired.
+  owned_controls:
+    - D-01  # policy.data-quality.yaml#staleness.equities_max_ms
+    - D-02  # policy.data-quality.yaml#staleness.futures_max_ms
+    - D-03  # policy.data-quality.yaml#staleness.fx_max_ms
+    - D-04  # policy.data-quality.yaml#staleness.crypto_max_ms
+    - D-05  # policy.data-quality.yaml#cross_venue.max_disagreement_bps
+    - D-06  # policy.data-quality.yaml#nbbo.required
+    - D-07  # policy.data-quality.yaml#bad_print.filter_rule
+    - D-08  # policy.data-quality.yaml#tick_size.enforce
+    - D-09  # policy.data-quality.yaml#gap.max_sigma
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_schema: governance/OVERRIDE-SCHEMA.md
+
+# ---------------------------------------------------------------------------
+# D-01 through D-04  STALENESS THRESHOLDS
+# All values in integer milliseconds.
+# action_on_stale applies per instrument class when threshold exceeded.
+# Tenant may narrow (lower ms); may not widen (higher ms).  (⬇)
+# ---------------------------------------------------------------------------
+staleness:
+  equities_max_ms:
+    regular_session: 1500              # D-01; 1500 ms during regular session
+    pre_post_market: 5000              # 5000 ms during pre/post-market
+    action_on_stale: pause_symbol
+    incident_code_prefix: INC_DATA_STALE_EQUITIES
+    override_class: narrow_only        # ⬇
+
+  futures_max_ms:
+    regular_session: 2000              # D-02
+    electronic_session: 3000           # wider tolerance in overnight electronic session
+    action_on_stale: pause_symbol
+    incident_code_prefix: INC_DATA_STALE_FUTURES
+    override_class: narrow_only
+
+  fx_max_ms:
+    regular_session: 1000              # D-03
+    thin_session: 2000                 # thin-liquidity windows per policy.calendar.yaml#sessions
+    action_on_stale: pause_symbol
+    incident_code_prefix: INC_DATA_STALE_FX
+    override_class: narrow_only
+
+  crypto_max_ms:
+    regular_session: 3000              # D-04; 24/7; no pre/post distinction
+    weekend_thin_window: 5000          # policy.calendar.yaml#sessions[BINANCE].thin_liquidity_windows
+    action_on_stale: pause_symbol
+    incident_code_prefix: INC_DATA_STALE_CRYPTO
+    override_class: narrow_only
+
+  options_max_ms:
+    regular_session: 5000
+    action_on_stale: pause_symbol
+    incident_code_prefix: INC_DATA_STALE_OPTIONS
+    override_class: narrow_only
+
+  staleness_measurement:
+    reference_clock: exchange_heartbeat_or_ntp
+    ntp_max_offset_ms: 50              # local clock must be within 50 ms of NTP; else degrade
+    measurement_field: last_quote_timestamp_utc
+    method: "wall_clock_utc_minus_last_quote_timestamp_utc"
+
+# ---------------------------------------------------------------------------
+# D-05  CROSS-VENUE DISAGREEMENT  (⬇)
+# NBBO-weighted mid compared across all active feeds for the same instrument.
+# ---------------------------------------------------------------------------
+cross_venue:
+  max_disagreement_bps:
+    equities: 10                       # D-05; basis points; NBBO-weighted mid disagreement
+    fx: 5
+    futures: 8
+    crypto: 50
+    options: 25
+  action_on_exceed: pause_symbol
+  incident_code: INC_DATA_CROSS_VENUE_DISAGREE
+  measurement:
+    method: "abs(feed_A_mid_bps - feed_B_mid_bps) / reference_mid"
+    reference_mid: nbbo_weighted_mid
+    min_feeds_required: 2              # cross-venue check requires ≥ 2 active feeds
+    insufficient_feeds_action: emit_INC_DATA_FEED_INSUFFICIENT
+  override_class: narrow_only
+
+# ---------------------------------------------------------------------------
+# D-06  NBBO REQUIREMENT FOR US EQUITIES  (🔒)
+# ---------------------------------------------------------------------------
+nbbo:
+  required: true                       # D-06; 🔒 locked; no tenant override
+  applies_to: [equities]
+  fallback_if_nbbo_unavailable: pause_symbol
+  never_proceed_on_single_venue_quote: true
+  incident_on_nbbo_unavailable: INC_DATA_NBBO_UNAVAILABLE
+  nbbo_locked_crossed:
+    locked_nbbo_action: pause_symbol
+    crossed_nbbo_action: pause_symbol
+    incident: INC_DATA_NBBO_LOCKED_CROSSED
+  override_class: locked               # 🔒
+
+# ---------------------------------------------------------------------------
+# D-07  BAD-PRINT FILTER  (🔒)
+# FINRA / exchange sale-condition codes that must be dropped from tick streams.
+# Corrected and reversed trades are also dropped from real-time signals.
+# ---------------------------------------------------------------------------
+bad_print:
+  filter_rule:
+    drop_finra_sale_condition_codes:
+      - code: "B"
+        description: "Average price trade"
+      - code: "T"
+        description: "Extended hours sale"
+      - code: "U"
+        description: "Extended hours sale (reported late)"
+      - code: "Z"
+        description: "Sold (out of sequence)"
+      - code: "6"
+        description: "Sold last (out of sequence)"
+      - code: "10"
+        description: "Stopped stock (regular trade)"
+      - code: "11"
+        description: "Stopped stock (sold last)"
+      - code: "12"
+        description: "Stopped stock (sold out of sequence)"
+      - code: "13"
+        description: "Odd lot trade"
+      - code: "17"
+        description: "Prior reference price (trade through)"
+    drop_exchange_condition_codes:
+      - code: "07"
+        description: "Corrected trade (last sale correction); use corrected version, discard original"
+        handling: replace_with_corrected_if_available
+      - code: "14"
+        description: "Trade reversal; discard original and reversal"
+        handling: discard_both
+    action_on_bad_print: drop_tick
+    incident_on_bad_print_rate_exceeded:
+      threshold_pct_of_ticks: 0.05    # >5% of ticks in 1-minute window are bad → escalate
+      window: PT1M
+      incident: INC_DATA_BAD_PRINT_RATE_HIGH
+    retain_for_audit: true            # bad-print ticks stored in audit feed; never used in signals
+  override_class: locked              # 🔒
+
+# ---------------------------------------------------------------------------
+# D-08  TICK SIZE ENFORCEMENT  (🔒)
+# ---------------------------------------------------------------------------
+tick_size:
+  enforce: true                        # D-08; 🔒 locked
+  source: exchange_reference_data
+  reference_data_refresh: daily
+  reference_data_refresh_time_utc: "04:00"
+  action_on_violation: reject_order
+  incident_on_violation: INC_DATA_TICK_SIZE_VIOLATION
+  stale_reference_data_action: block_new_orders
+  stale_reference_data_threshold_hours: 36
+  price_rounding_rule: round_to_nearest_tick
+  price_rounding_direction: away_from_aggressive   # for buy: round up; for sell: round down
+  override_class: locked
+
+# ---------------------------------------------------------------------------
+# D-09  GAP DETECTION THRESHOLD  (⬇)
+# Gap measured as |price_change| / rolling_5min_realized_vol (annualized σ).
+# action: pause_and_investigate; never auto-resume without human or timer.
+# ---------------------------------------------------------------------------
+gap:
+  max_sigma:
+    equities: 6.0                      # D-09; pause if |gap| > 6σ
+    futures: 6.0
+    fx: 8.0
+    crypto: 12.0
+    options: 10.0
+  vol_window: PT5M
+  vol_method: realized_rolling_5min
+  action: pause_and_investigate
+  incident_code_prefix: INC_DATA_GAP_SIGMA
+  incident_fields:
+    - symbol
+    - observed_sigma
+    - threshold_sigma
+    - timestamp_utc
+  auto_resume_after: null              # no auto-resume; human or reconcile_and_clear required
+  resume_requires: human_acknowledgment_in_audit_log OR data_quality_check_passes
+  override_class: narrow_only          # ⬇
+
+# ---------------------------------------------------------------------------
+# BOOK DEPTH MINIMUMS
+# ---------------------------------------------------------------------------
+book_depth:
+  min_levels:
+    liquid: 5                          # minimum L2 depth levels required for liquid instruments
+    illiquid: 3                        # minimum for illiquid instruments
+  liquidity_classification_source: policy.execution.yaml#spread_filter
+  fallback_on_insufficient_depth:
+    action: widen_spread_filter
+    spread_multiplier: 2.0
+    description: "If L2 depth < min_levels, widen spread filter by 2× before allowing entry"
+  incident_on_depth_zero: INC_DATA_NO_BOOK_DEPTH
+
+# ---------------------------------------------------------------------------
+# LATENCY LIMITS
+# ---------------------------------------------------------------------------
+latency:
+  max_hop_ms:
+    exchange_to_feed_handler: 10
+    feed_handler_to_normalizer: 5
+    normalizer_to_strategy: 20
+    strategy_to_order_router: 10
+    total_exchange_to_order_submission: 100
+  measurement_method: "p99 latency sampled over 60-second rolling window"
+  on_threshold_exceeded:
+    action: degrade_to_quote_wait_mode
+    description: "Strategy switches to quote-wait mode: only limit orders at current bid/offer; no aggressive entry"
+    incident: INC_DATA_LATENCY_DEGRADED
+  quote_wait_mode:
+    definition: "Only passive limit orders at current bid (buy) or offer (sell); no marketable orders"
+    exits_when:
+      latency_p99_ms_below_threshold_for: PT2M   # 2 consecutive minutes within threshold
+
+# ---------------------------------------------------------------------------
+# FEED REDUNDANCY
+# ---------------------------------------------------------------------------
+feed_redundancy:
+  require_independent_feeds:
+    equities:
+      count: 2
+      feeds: [sip, direct_exchange]
+      description: "SIP (CTA/UTP) plus at least one direct exchange feed"
+    futures:
+      count: 2
+      feeds: [cme_globex_primary, cme_globex_secondary]
+    fx:
+      count: 2
+      feeds: [primary_ecn, secondary_ecn]
+    crypto:
+      count: 2
+      feeds: [venue_primary, venue_websocket_secondary]
+    options:
+      count: 2
+      feeds: [opra, direct_exchange]
+  mismatch_threshold_bps:
+    reference: policy.data-quality.yaml#cross_venue.max_disagreement_bps
+  action_on_mismatch: emit_INC_DATA_FEED_DISAGREE
+  incident_on_mismatch: INC_DATA_FEED_DISAGREE
+  fallback_on_single_feed:
+    description: "If only one feed available, allow operation but degrade risk limits"
+    risk_budget_multiplier: 0.5
+    incident: INC_DATA_FEED_SINGLE
+    max_duration_on_single_feed: PT30M
+    action_after_max_duration: pause_new_orders
+
+# ---------------------------------------------------------------------------
+# CORPORATE ACTIONS COMPLETENESS
+# ---------------------------------------------------------------------------
+corporate_actions_completeness:
+  daily_check:
+    time_utc: "06:00"
+    check: "verify symbology mapping covers all held positions and open orders"
+  gap_definition: "any held position or open order whose symbol has no current corporate actions mapping"
+  action_on_gap: emit_INC_DATA_CORP_ACTIONS_MISSING
+  incident_code: INC_DATA_CORP_ACTIONS_MISSING
+  incident_fields:
+    - affected_symbols
+    - position_or_order_ids
+    - check_timestamp_utc
+  data_source: "corporate_actions_api + symbology_service"
+  covered_events:
+    - stock_split
+    - reverse_split
+    - cash_dividend
+    - stock_dividend
+    - spin_off
+    - merger_cash
+    - merger_stock
+    - ticker_change
+    - delisting
+    - rights_offering
+  missing_coverage_blocks_new_orders_for_symbol: true
+  auto_resolve: false                  # human must confirm mapping before new orders allowed
+
+# ---------------------------------------------------------------------------
+# SEQUENCE GAP DETECTION
+# ---------------------------------------------------------------------------
+sequence_gaps:
+  applies_to: [equities, futures, options]
+  method: "monotonic sequence number check per symbol per feed"
+  max_tolerated_gap: 0
+  action_on_gap: request_retransmit
+  on_retransmit_failure:
+    action: pause_symbol
+    incident: INC_DATA_SEQUENCE_GAP
+  timeout_for_retransmit_ms: 500
+
+# ---------------------------------------------------------------------------
+# DUPLICATE DETECTION
+# ---------------------------------------------------------------------------
+duplicate_detection:
+  duplicate_tick:
+    method: "deduplicate on (symbol, exchange_timestamp_ns, price, size, condition_codes)"
+    window: PT1S
+    action: drop_duplicate
+  duplicate_fill:
+    method: "match on (client_order_id, exec_id)"
+    reference: policy.order-lifecycle.yaml#idempotency.key_strategy
+    action_on_duplicate_fill: drop_and_alert
+    incident: INC_DATA_DUPLICATE_FILL
+
+# ---------------------------------------------------------------------------
+# CLOCK SKEW
+# ---------------------------------------------------------------------------
+clock_skew:
+  max_offset_ms: 50
+  measurement_samples: 10             # use median of 10 consecutive NTP measurements
+  action_on_exceed:
+    action: degrade_to_quote_wait_mode
+    incident: INC_CLOCK_SKEW
+  hard_halt_offset_ms: 250            # halt new orders entirely if skew exceeds 250 ms
+  action_on_hard_halt:
+    action: pause_new_orders
+    incident: INC_CLOCK_SKEW_HARD_HALT
+  time_authority:
+    primary: ntp_pool
+    secondary: exchange_heartbeat_timestamp
+    ntp_servers:
+      - pool.ntp.org
+      - time.cloudflare.com

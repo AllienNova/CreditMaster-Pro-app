@@ -84,7 +84,7 @@ export const userProfileApi = {
     } as unknown as Blob);
 
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_API_URL || "https://cpfi.com/api"}/user/avatar`,
+      `${process.env.EXPO_PUBLIC_API_URL || "https://api.fynvita.com"}/user/avatar`,
       {
         method: "POST",
         headers: {
@@ -129,8 +129,306 @@ export const userProfileApi = {
     api.post<{ success: boolean }>("/user/onboarding/complete"),
 };
 
+// ── Billing overview (real source: GET /api/payment/billing) ──────────────────
+// The web billing route (withPermission("billing:read"), Stripe-backed) returns
+// plans + subscription + payment methods + invoices in one un-wrapped payload;
+// Date fields arrive as ISO strings over JSON. Adapt to a mobile view-model the
+// billing overview screen renders directly. No fabrication: a user with no Stripe
+// presence yields an empty payment-method list and empty invoices (free plan),
+// which the screen empty-states — it never invents a card number or an invoice.
+interface WebBillingPlan {
+  id: string;
+  name: string;
+  price: number;
+  interval: string;
+  // The web route serves the full SUBSCRIPTION_PLANS catalog, which carries a
+  // features list. The overview adapter ignores it; the subscription-detail
+  // adapter renders it. Optional at the boundary so a plan without features (or
+  // a slimmer future payload) still maps rather than failing.
+  features?: string[];
+}
+
+interface WebBillingSubscription {
+  planId: string;
+  status: string;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd: boolean;
+}
+
+interface WebBillingPaymentMethod {
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+  isDefault: boolean;
+}
+
+interface WebBillingInvoice {
+  id: string;
+  amount: number;
+  status: string;
+  created: string;
+  dueDate?: string;
+  pdfUrl?: string;
+}
+
+export interface WebBillingResponse {
+  plans: WebBillingPlan[];
+  subscription: WebBillingSubscription;
+  paymentMethods: WebBillingPaymentMethod[];
+  invoices: WebBillingInvoice[];
+}
+
+/** A real Stripe payment method, reduced to what the overview renders. */
+export interface BillingPaymentMethodView {
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+}
+
+/** A real Stripe invoice, reduced to what the overview renders. */
+export interface BillingInvoiceView {
+  id: string;
+  date: string;
+  amount: number;
+  status: string;
+}
+
+/** The mobile billing-overview view-model — every field sourced, none invented. */
+export interface BillingOverview {
+  planName: string;
+  price: number;
+  interval: string;
+  status: string;
+  nextBilling: string | null;
+  cancelAtPeriodEnd: boolean;
+  paymentMethod: BillingPaymentMethodView | null;
+  recentInvoices: BillingInvoiceView[];
+}
+
+/** Format an ISO datetime to a YYYY-MM-DD date, or null when absent/invalid. */
+function toBillingDate(value?: string): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
+}
+
+export function mapWebBilling(res: WebBillingResponse): BillingOverview {
+  const plan = res.plans.find((p) => p.id === res.subscription.planId);
+  const defaultMethod =
+    res.paymentMethods.find((pm) => pm.isDefault) ??
+    res.paymentMethods[0] ??
+    null;
+
+  return {
+    planName: plan?.name ?? "Free",
+    price: plan?.price ?? 0,
+    interval: plan?.interval ?? "month",
+    status: res.subscription.status,
+    nextBilling: toBillingDate(res.subscription.currentPeriodEnd),
+    cancelAtPeriodEnd: res.subscription.cancelAtPeriodEnd,
+    paymentMethod: defaultMethod
+      ? {
+          brand: defaultMethod.brand,
+          last4: defaultMethod.last4,
+          expMonth: defaultMethod.expMonth,
+          expYear: defaultMethod.expYear,
+        }
+      : null,
+    recentInvoices: res.invoices.slice(0, 3).map((inv) => ({
+      id: inv.id,
+      date: toBillingDate(inv.created) ?? "",
+      amount: inv.amount,
+      status: inv.status,
+    })),
+  };
+}
+
+// ── Subscription detail (real source: GET /api/payment/billing) ───────────────
+// The subscription-management screen needs the full plan catalog (with features)
+// and which plan is active — both already in the /payment/billing payload (plans =
+// SUBSCRIPTION_PLANS, subscription.planId = the active plan). This view-model
+// reduces that payload to what the screen renders and marks the active plan. It
+// replaces the screen's former hardcoded, wrong-priced plan catalog: nothing here
+// is invented — the plans, prices, features, and current marker are all sourced.
+
+/** One catalog plan, reduced to what the subscription screen renders. */
+export interface SubscriptionPlanView {
+  id: string;
+  name: string;
+  price: number;
+  interval: string;
+  features: string[];
+  isCurrent: boolean;
+}
+
+/** The mobile subscription-management view-model — every field sourced. */
+export interface SubscriptionDetail {
+  plans: SubscriptionPlanView[];
+  currentPlanId: string;
+  status: string;
+  nextBilling: string | null;
+  cancelAtPeriodEnd: boolean;
+}
+
+/** Result of a plan change (POST /api/payment/billing/plan). */
+export interface PlanUpdateResult {
+  // "updated": an existing Stripe subscription was changed in place (re-fetch to
+  // reflect it). "redirect": a new subscription needs Stripe Checkout — open
+  // checkoutUrl. The web route also returns { status: "updated" } on cancel.
+  status: "updated" | "redirect";
+  checkoutUrl?: string;
+}
+
+export function mapWebSubscription(res: WebBillingResponse): SubscriptionDetail {
+  const currentPlanId = res.subscription.planId;
+  return {
+    plans: res.plans.map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      interval: p.interval,
+      features: p.features ?? [],
+      isCurrent: p.id === currentPlanId,
+    })),
+    currentPlanId,
+    status: res.subscription.status,
+    nextBilling: toBillingDate(res.subscription.currentPeriodEnd),
+    cancelAtPeriodEnd: res.subscription.cancelAtPeriodEnd,
+  };
+}
+
+// ── Invoices (real source: GET /api/payment/billing) ──────────────────────────
+// The invoices screen shows the full billing history — every Stripe invoice for
+// the customer, not just the three the overview previews. Same /payment/billing
+// payload (invoices[] = real Stripe invoices; the web route already converts cents
+// to dollars). This view-model reduces each invoice to what the screen renders and
+// remaps Stripe's status vocabulary (paid | open | void | uncollectible | draft)
+// to the mobile paid | pending | failed set. It replaces the screen's former
+// hardcoded INV-001..007 array: ids, amounts, dates, statuses, and the optional
+// PDF link are all sourced — nothing invented. A user with no Stripe presence
+// yields an empty list (the screen empty-states), never a fabricated invoice.
+
+/** The mobile status vocabulary for an invoice. */
+export type InvoiceStatus = "paid" | "pending" | "failed";
+
+/** A real Stripe invoice, reduced to what the invoices screen renders. */
+export interface InvoiceView {
+  id: string;
+  date: string;
+  amount: number;
+  status: InvoiceStatus;
+  pdfUrl?: string;
+}
+
+// Stripe invoice status -> mobile status. The web route (billing-data.ts) already
+// filters to paid | open | void | uncollectible, but this map stays exhaustive
+// (includes draft) and is hasOwnProperty-guarded with an honest unknown -> pending
+// floor, so a future or unfiltered Stripe status never crashes or mislabels a
+// still-owed invoice as paid.
+const WEB_TO_MOBILE_INVOICE_STATUS: Record<string, InvoiceStatus> = {
+  paid: "paid",
+  open: "pending",
+  draft: "pending",
+  void: "failed",
+  uncollectible: "failed",
+};
+
+function toInvoiceStatus(status: string): InvoiceStatus {
+  return Object.prototype.hasOwnProperty.call(
+    WEB_TO_MOBILE_INVOICE_STATUS,
+    status,
+  )
+    ? WEB_TO_MOBILE_INVOICE_STATUS[status]
+    : "pending";
+}
+
+/**
+ * Adapt the web billing payload's invoices[] to the mobile InvoiceView[] the
+ * invoices screen renders, in server order and uncapped (the full history). Every
+ * field is sourced; a malformed row from the JSON boundary degrades honestly —
+ * absent/invalid amount -> 0, absent/invalid date -> "" — rather than fabricating.
+ */
+export function mapWebInvoices(res: WebBillingResponse): InvoiceView[] {
+  const invoices = Array.isArray(res.invoices) ? res.invoices : [];
+  return invoices.map((inv) => {
+    const view: InvoiceView = {
+      id: inv.id,
+      date: toBillingDate(inv.created) ?? "",
+      amount: Number.isFinite(inv.amount) ? inv.amount : 0,
+      status: toInvoiceStatus(inv.status),
+    };
+    if (inv.pdfUrl) view.pdfUrl = inv.pdfUrl;
+    return view;
+  });
+}
+
 // Subscription Endpoints
 export const subscriptionApi = {
+  /**
+   * Get the real billing overview (current plan, default payment method, and
+   * recent invoices) from the Stripe-backed web route GET /api/payment/billing.
+   * Adapted to the mobile BillingOverview view-model by mapWebBilling; unsourced
+   * fields are omitted so the screen can empty-state rather than fabricate.
+   */
+  getBillingOverview: async (): Promise<ApiResponse<BillingOverview>> => {
+    const res = await api.get<WebBillingResponse>("/payment/billing");
+    if (res.success && res.data) {
+      return { success: true, data: mapWebBilling(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Get the real subscription detail (full plan catalog + the active plan) from
+   * the Stripe-backed web route GET /api/payment/billing, adapted to the mobile
+   * SubscriptionDetail view-model by mapWebSubscription. Replaces the subscription
+   * screen's former hardcoded, wrong-priced plan catalog.
+   */
+  getSubscriptionDetail: async (): Promise<ApiResponse<SubscriptionDetail>> => {
+    const res = await api.get<WebBillingResponse>("/payment/billing");
+    if (res.success && res.data) {
+      return { success: true, data: mapWebSubscription(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Get the real billing history (all invoices) from the Stripe-backed web route
+   * GET /api/payment/billing, adapted to the mobile InvoiceView[] by mapWebInvoices.
+   * Replaces the invoices screen's former hardcoded INV-001..007 array. A user with
+   * no Stripe presence yields an empty list — never a fabricated invoice.
+   */
+  getInvoices: async (): Promise<ApiResponse<InvoiceView[]>> => {
+    const res = await api.get<WebBillingResponse>("/payment/billing");
+    if (res.success && res.data) {
+      return { success: true, data: mapWebInvoices(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Change the current plan via the real web route POST /api/payment/billing/plan.
+   * Returns { status: "updated" } when an existing subscription is changed in place
+   * (re-fetch to reflect it) or { status: "redirect", checkoutUrl } when a new
+   * subscription must go through Stripe Checkout.
+   */
+  updatePlan: (planId: string): Promise<ApiResponse<PlanUpdateResult>> =>
+    api.post<PlanUpdateResult>("/payment/billing/plan", { planId }),
+
+  /**
+   * Cancel the current subscription via POST /api/payment/billing/plan with
+   * cancelSubscription: true (server keeps access until period end, then Free).
+   */
+  cancelPlan: (): Promise<ApiResponse<PlanUpdateResult>> =>
+    api.post<PlanUpdateResult>("/payment/billing/plan", {
+      cancelSubscription: true,
+    }),
+
   /**
    * Get current subscription
    */
@@ -199,36 +497,90 @@ export const subscriptionApi = {
     }),
 };
 
+// The real web route (/api/notifications) returns notifications with `message`
+// and a broader type enum than the mobile Notification type (`body` + a smaller
+// enum). Adapt web -> mobile at the boundary so the store/screen see one shape.
+interface WebNotification {
+  id: string;
+  userId?: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
+const WEB_TO_MOBILE_NOTIFICATION_TYPE: Record<string, Notification["type"]> = {
+  dispute_update: "dispute_update",
+  dispute_overdue: "dispute_update",
+  dispute_reminder: "dispute_update",
+  draft_reminder: "dispute_update",
+  payment_success: "payment",
+  subscription_expiring: "payment",
+  score_reminder: "score_change",
+  document_uploaded: "alert",
+  tip: "recommendation",
+  welcome: "system",
+  system: "system",
+};
+
+export function mapWebNotification(n: WebNotification): Notification {
+  return {
+    id: n.id,
+    userId: n.userId ?? "",
+    type: WEB_TO_MOBILE_NOTIFICATION_TYPE[n.type] ?? "system",
+    title: n.title,
+    body: n.message,
+    read: n.read,
+    createdAt: n.createdAt,
+  };
+}
+
 // Notification Endpoints
 export const notificationApi = {
   /**
    * Get all notifications
    */
-  getAll: (params?: {
+  getAll: async (params?: {
     page?: number;
     limit?: number;
     unreadOnly?: boolean;
-  }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-    if (params?.unreadOnly) queryParams.append("unread", "true");
-    const query = queryParams.toString();
-    return api.get<PaginatedResponse<Notification>>(
-      `/notifications${query ? `?${query}` : ""}`,
-    );
+  }): Promise<
+    ApiResponse<{ notifications: Notification[]; unreadCount: number }>
+  > => {
+    // The web route honors ?limit= and returns { notifications, unreadCount } in
+    // the web notification shape; adapt each to the mobile Notification shape.
+    const query = params?.limit ? `?limit=${params.limit}` : "";
+    const res = await api.get<{
+      notifications: WebNotification[];
+      unreadCount: number;
+    }>(`/notifications${query}`);
+    if (res.success && res.data) {
+      return {
+        success: true,
+        data: {
+          notifications: res.data.notifications.map(mapWebNotification),
+          unreadCount: res.data.unreadCount,
+        },
+      };
+    }
+    return { success: false, error: res.error };
   },
 
   /**
-   * Mark notification as read
+   * Mark one notification as read. Web contract: PATCH with an action body.
    */
   markAsRead: (notificationId: string) =>
-    api.patch<Notification>(`/notifications/${notificationId}/read`),
+    api.patch<{ success: boolean }>("/notifications", {
+      notificationId,
+      action: "mark_read",
+    }),
 
   /**
-   * Mark all as read
+   * Mark all as read. Web contract: PATCH with action only.
    */
-  markAllAsRead: () => api.post<{ updated: number }>("/notifications/read-all"),
+  markAllAsRead: () =>
+    api.patch<{ count: number }>("/notifications", { action: "mark_all_read" }),
 
   /**
    * Get notification preferences
@@ -258,7 +610,9 @@ export const notificationApi = {
    * Delete notification
    */
   delete: (notificationId: string) =>
-    api.delete<{ success: boolean }>(`/notifications/${notificationId}`),
+    api.delete<{ success: boolean }>(
+      `/notifications?notificationId=${encodeURIComponent(notificationId)}`,
+    ),
 };
 
 // Recommendations Endpoints
@@ -292,6 +646,129 @@ export const recommendationApi = {
     api.post<{ success: boolean }>(
       `/user/recommendations/${recommendationId}/click`,
     ),
+};
+
+// User Analytics Endpoints
+// GET /api/user/analytics (withAuth) returns the authenticated user's credit
+// dashboard analytics. creditHistory + disputeStats are real per-user data
+// (credit_score_history, disputes), honestly empty/zeroed when a source is
+// empty. scoreFactors (standard FICO category weights, status "neutral" until a
+// pulled report drives per-factor analysis) and recommendations (general
+// best-practice tips) are the endpoint's own reference data — not per-user
+// fabrication. normalizeUserAnalytics only guarantees array/number shapes and
+// clamps status to the known union; it never invents values (missing => [] / 0
+// / "neutral"), so an empty response stays honestly empty rather than mocked.
+export type ScoreFactorStatus = "positive" | "negative" | "neutral";
+
+export interface CreditHistoryPoint {
+  date: string;
+  score: number;
+}
+
+export interface AnalyticsDisputeStats {
+  total: number;
+  resolved: number;
+  pending: number;
+  successRate: number;
+}
+
+export interface ScoreFactor {
+  factor: string;
+  impact: number;
+  status: ScoreFactorStatus;
+}
+
+export interface UserAnalytics {
+  creditHistory: CreditHistoryPoint[];
+  disputeStats: AnalyticsDisputeStats;
+  scoreFactors: ScoreFactor[];
+  recommendations: string[];
+  timeRange: string;
+}
+
+interface RawUserAnalytics {
+  creditHistory?: unknown;
+  disputeStats?: unknown;
+  scoreFactors?: unknown;
+  recommendations?: unknown;
+  timeRange?: unknown;
+}
+
+const SCORE_FACTOR_STATUSES: readonly ScoreFactorStatus[] = [
+  "positive",
+  "negative",
+  "neutral",
+];
+
+function toFiniteNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function normalizeScoreFactorStatus(value: unknown): ScoreFactorStatus {
+  return typeof value === "string" &&
+    (SCORE_FACTOR_STATUSES as readonly string[]).includes(value)
+    ? (value as ScoreFactorStatus)
+    : "neutral";
+}
+
+function asRecordArray(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value)
+    ? value.filter(
+        (item): item is Record<string, unknown> =>
+          typeof item === "object" && item !== null,
+      )
+    : [];
+}
+
+export function normalizeUserAnalytics(raw: RawUserAnalytics): UserAnalytics {
+  const creditHistory = asRecordArray(raw.creditHistory).map((point) => ({
+    date: typeof point.date === "string" ? point.date : "",
+    score: toFiniteNumber(point.score),
+  }));
+
+  const scoreFactors = asRecordArray(raw.scoreFactors).map((factor) => ({
+    factor: typeof factor.factor === "string" ? factor.factor : "",
+    impact: toFiniteNumber(factor.impact),
+    status: normalizeScoreFactorStatus(factor.status),
+  }));
+
+  const recommendations = Array.isArray(raw.recommendations)
+    ? raw.recommendations.filter((tip): tip is string => typeof tip === "string")
+    : [];
+
+  const stats =
+    typeof raw.disputeStats === "object" && raw.disputeStats !== null
+      ? (raw.disputeStats as Record<string, unknown>)
+      : {};
+
+  return {
+    creditHistory,
+    disputeStats: {
+      total: toFiniteNumber(stats.total),
+      resolved: toFiniteNumber(stats.resolved),
+      pending: toFiniteNumber(stats.pending),
+      successRate: toFiniteNumber(stats.successRate),
+    },
+    scoreFactors,
+    recommendations,
+    timeRange: typeof raw.timeRange === "string" ? raw.timeRange : "6m",
+  };
+}
+
+export const userAnalyticsApi = {
+  /**
+   * Get the authenticated user's credit-dashboard analytics.
+   * @param range "3m" | "6m" | "12m" (server default "6m")
+   */
+  getAnalytics: async (range = "6m"): Promise<ApiResponse<UserAnalytics>> => {
+    const res = await api.get<RawUserAnalytics>(
+      `/user/analytics?range=${encodeURIComponent(range)}`,
+    );
+    if (res.success && res.data) {
+      return { success: true, data: normalizeUserAnalytics(res.data) };
+    }
+    return { success: false, error: res.error };
+  },
 };
 
 // Identity Protection Endpoints
@@ -401,7 +878,7 @@ export const documentApi = {
     formData.append("type", docType);
 
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_API_URL || "https://cpfi.com/api"}/documents/upload`,
+      `${process.env.EXPO_PUBLIC_API_URL || "https://api.fynvita.com"}/documents/upload`,
       {
         method: "POST",
         headers: {

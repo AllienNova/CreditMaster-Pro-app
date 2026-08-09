@@ -11,8 +11,19 @@
 
 import { NextRequest } from "next/server";
 
+const mockValidateFromHeaders = jest.fn();
 jest.mock("@/lib/supabase/server");
 jest.mock("@/lib/financial/gig-income-service");
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 
 import { GET, POST } from "../route";
 import { createClient } from "@/lib/supabase/server";
@@ -66,6 +77,10 @@ const mockIncome = [
 describe("GET /api/financial/income/gig", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -117,20 +132,19 @@ describe("GET /api/financial/income/gig", () => {
     expect(data.error).toContain("Invalid type");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/income/gig",
+      );
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/income/gig",
-    );
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 500 on service error", async () => {
@@ -152,6 +166,10 @@ describe("GET /api/financial/income/gig", () => {
 describe("POST /api/financial/income/gig", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -304,29 +322,28 @@ describe("POST /api/financial/income/gig", () => {
     expect(data.income.type).toBe("refund");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
-    });
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/income/gig",
-      {
-        method: "POST",
-        body: {
-          platformId: "plat-1",
-          amount: 100,
-          date: "2026-02-01",
-          type: "payment",
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/income/gig",
+        {
+          method: "POST",
+          body: {
+            platformId: "plat-1",
+            amount: 100,
+            date: "2026-02-01",
+            type: "payment",
+          },
         },
-      },
-    );
-    const response = await POST(request);
-    const data = await response.json();
+      );
+      const response = await POST(request);
+      const data = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on service error", async () => {

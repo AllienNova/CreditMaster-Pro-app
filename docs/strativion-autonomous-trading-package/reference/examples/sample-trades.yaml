@@ -1,0 +1,458 @@
+# Strativion Example: Sample Trades from "The 30 Indisputable Laws of Trading"
+# 25 real trades extracted from Chapters 32-38
+
+trades:
+  # === EQUITIES (Chapter 32) ===
+  - id: 1
+    market: "Equities"
+    ticker: "NVDA"
+    direction: "long"
+    setup: "Post-Earnings Drift (Strong Surprise)"
+    date_entry: "2023-05-25"
+    date_exit: "2023-06-13"
+    entry_price: 320.00
+    stop_price: 295.00
+    target_price: 380.00
+    exit_price: 378.50
+    return_pct: 18.3
+    r_multiple: 2.3
+    hold_days: 15
+    laws_applied: [3, 1, 2, 17]
+    outcome: "win"
+    notes: "Q1 FY2024 earnings. Revenue $7.19B vs $6.52B. Q2 guide $11B vs $7.15B expected (54% upside). Actual move exceeded expected move. Post-earnings drift textbook."
+
+  - id: 2
+    market: "Equities"
+    ticker: "TSLA"
+    direction: "short"
+    setup: "Post-Earnings Breakdown"
+    date_entry: "2024-01-25"
+    date_exit: "2024-02-06"
+    entry_price: 207.50
+    stop_price: 222.00
+    target_price: 180.00
+    exit_price: 182.30
+    return_pct: 12.1
+    r_multiple: 1.7
+    hold_days: 8
+    laws_applied: [5, 1, 22, 9]
+    outcome: "win"
+    notes: "Q4 2023. Revenue miss. Auto gross margins 17.6% vs 23.8% YoY. Broke 200-day MA on volume. Information decayed slowly over 8 days."
+
+  - id: 3
+    market: "Equities"
+    ticker: "META"
+    direction: "long"
+    setup: "Post-Earnings Drift (Momentum Continuation)"
+    date_entry: "2023-10-26"
+    date_exit: "2023-11-17"
+    entry_price: 329.00
+    stop_price: 308.00
+    target_price: 375.00
+    exit_price: 371.40
+    return_pct: 12.9
+    r_multiple: 2.0
+    hold_days: 16
+    laws_applied: [1, 2, 13]
+    outcome: "win"
+    notes: "Q3 2023. EPS $4.39 vs $3.63 (21% beat). Year of Efficiency narrative confirmed. 47 analyst upgrades."
+
+  - id: 4
+    market: "Equities"
+    ticker: "JPM"
+    direction: "long"
+    setup: "Sector Rotation (Financials)"
+    date_entry: "2023-10-16"
+    date_exit: "2023-11-27"
+    entry_price: 148.50
+    stop_price: 141.00
+    target_price: 165.00
+    exit_price: 163.80
+    return_pct: 10.3
+    r_multiple: 2.0
+    hold_days: 30
+    laws_applied: [1, 8, 12]
+    outcome: "win"
+    notes: "Q3 2023. Revenue $40.69B vs $39.63B. NII $22.9B record. XLF broke 200-day MA. Yield curve steepening."
+
+  - id: 5
+    market: "Equities"
+    ticker: "XOM"
+    direction: "short"
+    setup: "Sector Rotation Out of Energy"
+    date_entry: "2023-10-20"
+    date_exit: "2023-11-14"
+    entry_price: 108.50
+    stop_price: 114.00
+    target_price: 98.00
+    exit_price: 99.20
+    return_pct: 8.6
+    r_multiple: 1.7
+    hold_days: 18
+    laws_applied: [1, 4, 5]
+    outcome: "win"
+    notes: "Energy sector outperformance ending. Crude dropped from $93.68 to $82.31. Energy fund outflows $1.2B in October."
+
+  # === INDEX FUTURES (Chapter 33) ===
+  - id: 6
+    market: "Index Futures"
+    ticker: "ES"
+    direction: "long"
+    setup: "Opening Range Breakout with VWAP"
+    date_entry: "2023-11-02"
+    entry_price: 4290.50
+    stop_price: 4278.00
+    target_price: 4314.00
+    exit_price: 4314.00
+    return_pct: null
+    r_multiple: 1.9
+    hold_days: 0
+    profit_per_contract: 1175
+    laws_applied: [1, 3]
+    outcome: "win"
+    notes: "Post-Fed momentum. ORH 4290, ORL 4274, VWAP 4278. Breakout at 09:46. Target hit 10:45."
+
+  - id: 7
+    market: "Index Futures"
+    ticker: "ES"
+    direction: "short"
+    setup: "VWAP Mean Reversion"
+    date_entry: "2024-01-16"
+    entry_price: 4800.00
+    stop_price: 4808.00
+    target_price: 4789.00
+    exit_price: 4789.00
+    profit_per_contract: 550
+    r_multiple: 1.4
+    hold_days: 0
+    laws_applied: [5, 4]
+    outcome: "win"
+    notes: "Range day. Price stretched 12 points above VWAP on declining volume. Reverted to VWAP."
+
+  - id: 8
+    market: "Index Futures"
+    ticker: "ES"
+    direction: "short"
+    setup: "Trend Day Short (FOMC Aftermath)"
+    date_entry: "2023-09-21"
+    entry_price: 4401.50
+    stop_price: 4413.00
+    exit_price: 4356.00
+    profit_per_contract: 2275
+    r_multiple: 4.0
+    hold_days: 0
+    laws_applied: [8]
+    outcome: "win"
+    notes: "Hawkish dot plot. Trend day: price never reclaimed VWAP. Trailed stop at developing VWAP until 15:30."
+
+  - id: 9
+    market: "Index Futures"
+    ticker: "ES"
+    direction: "short"
+    setup: "Failed Breakout Reversal"
+    date_entry: "2024-02-01"
+    entry_price: 4864.50
+    stop_price: 4873.00
+    target_price: 4848.00
+    exit_price: 4847.00
+    profit_per_contract: 750
+    r_multiple: 2.1
+    hold_days: 0
+    laws_applied: [22, 14]
+    outcome: "win"
+    notes: "Initial long at 4878.50 failed (loss $125). Reversed short on failed ORH breakout. Net profit $750/contract."
+
+  - id: 10
+    market: "Index Futures"
+    ticker: "ES"
+    direction: "long"
+    setup: "FOMC Reaction Trade"
+    date_entry: "2023-12-13"
+    entry_price: 4720.00
+    stop_price: 4707.00
+    exit_price: 4783.00
+    profit_per_contract: 3150
+    r_multiple: 4.8
+    hold_days: 0
+    laws_applied: [2, 3]
+    outcome: "win"
+    notes: "Dec 2023 FOMC. Dot plot showed 3 cuts in 2024. Pre-FOMC 15-point compression. Trailed at VWAP. Exited 15:55."
+
+  # === FOREX (Chapter 34) ===
+  - id: 11
+    market: "Forex"
+    ticker: "EUR/USD"
+    direction: "short"
+    setup: "DXY Strength Trade"
+    date_entry: "2023-10-03"
+    entry_price: 1.0520
+    stop_price: 1.0620
+    target_price: 1.0350
+    exit_price: 1.0390
+    return_pips: 130
+    r_multiple: 1.3
+    hold_days: 2
+    laws_applied: [1]
+    outcome: "win"
+    notes: "Higher-for-longer Fed. 10Y yield above 4.80%. DXY surging. EUR/USD below 200-day MA."
+
+  - id: 12
+    market: "Forex"
+    ticker: "USD/JPY"
+    direction: "long"
+    setup: "Carry Trade"
+    date_entry: "2023-03-08"
+    entry_price: 131.50
+    stop_price: 129.00
+    target_price: 137.00
+    exit_price: 137.00
+    return_pips: 550
+    r_multiple: 2.2
+    hold_days: 42
+    carry_income: 525
+    laws_applied: [1]
+    outcome: "win"
+    notes: "5.25% rate differential. Daily swap $12.50/lot. Total return: $5,500 price + $525 carry = $6,025."
+
+  - id: 13
+    market: "Forex"
+    ticker: "GBP/USD"
+    direction: "long"
+    setup: "Mean Reversion After BOE"
+    date_entry: "2023-11-02"
+    entry_price: 1.2120
+    stop_price: 1.2040
+    target_price: 1.2250
+    exit_price: 1.2250
+    return_pips: 130
+    r_multiple: 1.6
+    hold_days: 4
+    laws_applied: [5]
+    outcome: "win"
+    notes: "BOE hold. 130-pip overreaction. RSI 28 (oversold). Lower Bollinger Band. At prior support. Classic reversion."
+
+  - id: 14
+    market: "Forex"
+    ticker: "AUD/USD"
+    direction: "short"
+    setup: "China Weakness / Commodity Proxy"
+    date_entry: "2023-08-10"
+    entry_price: 0.6580
+    stop_price: 0.6650
+    target_price: 0.6380
+    exit_price: 0.6380
+    return_pips: 200
+    r_multiple: 2.9
+    hold_days: 21
+    laws_applied: [24, 18]
+    outcome: "win"
+    notes: "Country Garden missed bond coupon. China exports -14.5% YoY. CPI -0.3% (deflation). DXY confirmed."
+
+  - id: 15
+    market: "Forex"
+    ticker: "EUR/CHF"
+    direction: "long"
+    setup: "Central Bank Policy Shift"
+    date_entry: "2023-12-14"
+    entry_price: 0.9450
+    stop_price: 0.9380
+    target_price: 0.9600
+    exit_price: 0.9600
+    return_pips: 150
+    r_multiple: 2.1
+    hold_days: 28
+    laws_applied: [8]
+    outcome: "win"
+    notes: "SNB surprised with rate cut from 1.75% to 1.50%. Regime change signal. Range breakout catalyst."
+
+  # === OPTIONS (Chapter 35) ===
+  - id: 16
+    market: "Options"
+    ticker: "SPY"
+    direction: "neutral"
+    setup: "Iron Condor (Normal VIX Regime)"
+    date_entry: "2023-11-06"
+    date_exit: "2023-11-17"
+    structure: "Sell $425P/Buy $420P + Sell $445C/Buy $450C"
+    credit: 1.25
+    max_risk: 3.75
+    exit_value: 0.00
+    return_on_risk_pct: 33.3
+    hold_days: 11
+    vix_at_entry: 15.2
+    laws_applied: [5, 16]
+    outcome: "win"
+    notes: "SPY closed $440.61. Both spreads expired worthless. Full credit captured."
+
+  - id: 17
+    market: "Options"
+    ticker: "AMZN"
+    direction: "long_straddle"
+    setup: "Earnings Straddle"
+    date_entry: "2023-10-20"
+    date_exit: "2023-10-27"
+    structure: "Buy $127.50 Call + Buy $127.50 Put"
+    cost: 9.30
+    exit_value: 7.15
+    return_pct: -23.1
+    hold_days: 7
+    laws_applied: [3, 9]
+    outcome: "loss"
+    notes: "AMZN moved 5.5% but straddle priced in 6.8%. IV crush destroyed trade despite correct direction."
+
+  - id: 18
+    market: "Options"
+    ticker: "VIX"
+    direction: "long"
+    setup: "VIX Call Hedge (Volatility Compression)"
+    date_entry: "2024-07-15"
+    date_exit: "2024-08-05"
+    structure: "Buy VIX $18 Calls Aug 21 expiry"
+    cost: 0.85
+    exit_value: 20.57
+    return_pct: 2320
+    hold_days: 21
+    vix_at_entry: 12.46
+    vix_at_exit: 38.57
+    laws_applied: [3, 7]
+    outcome: "win"
+    notes: "VIX at bottom 10th percentile. BOJ rate hike triggered carry unwind. $850 -> $20,570 on 10 contracts."
+
+  # === CRYPTOCURRENCY (Chapter 36) ===
+  - id: 19
+    market: "Crypto"
+    ticker: "BTC"
+    direction: "long"
+    setup: "Post-Capitulation Bottom"
+    date_entry: "2022-11-22"
+    date_exit: "2023-02-16"
+    entry_price: 16800
+    stop_price: 14500
+    target_price: 25000
+    exit_price: 25000
+    return_pct: 48.8
+    r_multiple: 3.57
+    hold_days: 86
+    laws_applied: [7, 5]
+    outcome: "win"
+    notes: "FTX collapse. MVRV 0.85. Funding deeply negative. OI collapsed 45%. Classic capitulation bottom."
+
+  - id: 20
+    market: "Crypto"
+    ticker: "SOL"
+    direction: "long"
+    setup: "Narrative Rotation"
+    date_entry: "2023-10-15"
+    date_exit: "2023-12-25"
+    entry_price: 24.50
+    stop_price: 20.00
+    target_price: 60.00
+    exit_price: 60.00
+    return_pct: 144.9
+    r_multiple: 7.89
+    hold_days: 71
+    laws_applied: [1, 2]
+    outcome: "win"
+    notes: "Left for dead after FTX. Developer activity surged. TX volume new highs. Narrative shift from 'dead' to 'fastest L1'."
+
+  - id: 21
+    market: "Crypto"
+    ticker: "BTC"
+    direction: "short"
+    setup: "Liquidation Cascade"
+    date_entry: "2023-08-16"
+    date_exit: "2023-08-18"
+    entry_price: 29100
+    stop_price: 30500
+    target_price: 26000
+    exit_price: 25166
+    return_pct: 13.5
+    r_multiple: 2.21
+    hold_days: 2
+    laws_applied: [2]
+    outcome: "win"
+    notes: "OI at multi-month highs. Funding 0.04-0.06%. $1B liquidated. Target blown through by $834."
+
+  - id: 22
+    market: "Crypto"
+    ticker: "ETH/BTC"
+    direction: "long"
+    setup: "Ratio Mean Reversion"
+    date_entry: "2024-01-15"
+    date_exit: "2024-02-05"
+    entry_price: 0.052
+    stop_price: 0.048
+    target_price: 0.060
+    exit_price: 0.048
+    return_pct: -7.7
+    r_multiple: -1.0
+    hold_days: 21
+    laws_applied: [14]
+    outcome: "loss"
+    notes: "BTC spot ETF approval changed capital flow structure. BTC dominance increased. Thesis invalidated."
+
+  # === COMMODITIES (Chapter 37) ===
+  - id: 23
+    market: "Commodities"
+    ticker: "CL"
+    direction: "long"
+    setup: "OPEC Surprise Cut"
+    date_entry: "2023-04-03"
+    date_exit: "2023-05-15"
+    entry_price: 76.50
+    stop_price: 72.00
+    target_price: 85.00
+    exit_price: 85.00
+    profit_per_contract: 8500
+    r_multiple: 1.9
+    hold_days: 30
+    laws_applied: [1]
+    outcome: "win"
+    notes: "OPEC+ surprise 1.16M bbl/day cut on Apr 2. WTI +7.7% first session. Supply reduction creates persistent momentum."
+
+  - id: 24
+    market: "Commodities"
+    ticker: "GC"
+    direction: "long"
+    setup: "Banking Crisis Regime Shift"
+    date_entry: "2023-03-13"
+    date_exit: "2023-04-05"
+    entry_price: 1870
+    stop_price: 1830
+    target_price: 2050
+    exit_price: 2050
+    profit_per_contract: 18000
+    r_multiple: 4.5
+    hold_days: 17
+    laws_applied: [8]
+    outcome: "win"
+    notes: "SVB collapsed Mar 10. Signature Bank followed. Flight to safety. Regime: financial system stress."
+
+  - id: 25
+    market: "Commodities"
+    ticker: "ZW"
+    direction: "long"
+    setup: "Geopolitical Risk (Wheat)"
+    date_entry: "2023-10-20"
+    date_exit: "2023-11-08"
+    entry_price: 5.65
+    stop_price: 5.40
+    target_price: 6.20
+    exit_price: 5.40
+    profit_per_contract: -1250
+    r_multiple: -1.0
+    hold_days: 13
+    laws_applied: [7, 21]
+    outcome: "loss"
+    notes: "Black Sea tensions. Geopolitical premium faded. Alternative supply routes remained open. Binary risk materialized against."
+
+summary:
+  total_trades: 25
+  wins: 21
+  losses: 4
+  win_rate: 0.84
+  avg_r_multiple_wins: 2.63
+  avg_r_multiple_losses: -1.0
+  expectancy_per_r: 1.81
+  markets_covered: ["Equities", "Index Futures", "Forex", "Options", "Crypto", "Commodities"]
+  source: "Chapters 32-38 of The 30 Indisputable Laws of Trading"

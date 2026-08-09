@@ -1,0 +1,2 @@
+- [Payout dual-codepath + missing migrations](project_payout-dual-codepath-and-missing-migrations.md) — Fynvita payout system has two unwired parallel implementations and no migrations for 10 payout/affiliate tables (as of 2026-07-23, verify still true)
+- [Verify units end-to-end, not just at the boundary](feedback_verify-units-end-to-end.md) — money-precision fixes can be correct at the sink but broken at the calculation source; trace the full chain

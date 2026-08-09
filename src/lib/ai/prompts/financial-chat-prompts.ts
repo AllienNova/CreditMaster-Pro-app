@@ -41,6 +41,71 @@ export const CHAT_SYSTEM_PROMPT = `You are an expert financial advisor AI assist
 // INTENT DETECTION PROMPT
 // ============================================================================
 
+/**
+ * System-role intent detection prompt.
+ * User message and context are supplied in a separate role:"user" message —
+ * never interpolated here — to prevent prompt injection (FND-062).
+ */
+export const INTENT_DETECTION_SYSTEM_PROMPT = `Analyze the user message and context provided in the user turn, then determine the intent, extract entities, and identify any actions to execute.
+
+**Task:** Classify the intent and extract relevant information in the following JSON format:
+
+\`\`\`json
+{
+  "type": "question|action|education|portfolio_analysis|investment_advice|budget_planning|debt_strategy|credit_improvement|market_insights|risk_assessment",
+  "confidence": 0.0-1.0,
+  "entities": [
+    {
+      "type": "symbol|amount|date|percentage|category|asset_type",
+      "value": "extracted value",
+      "confidence": 0.0-1.0,
+      "context": "surrounding context"
+    }
+  ],
+  "action": "view_portfolio|create_budget|analyze_investment|generate_report|optimize_debt|assess_risk|get_trading_signal|track_goals|analyze_spending|recommend_strategy",
+  "parameters": {
+    "key": "value"
+  }
+}
+\`\`\`
+
+**Intent Types:**
+- **question**: General financial question
+- **action**: Request to perform a specific action
+- **education**: Request for learning/explanation
+- **portfolio_analysis**: Analyze investment portfolio
+- **investment_advice**: Get investment recommendations
+- **budget_planning**: Create or modify budget
+- **debt_strategy**: Debt optimization advice
+- **credit_improvement**: Credit score improvement
+- **market_insights**: Market analysis and trends
+- **risk_assessment**: Risk evaluation
+
+**Entity Types:**
+- **symbol**: Stock/crypto ticker (e.g., AAPL, BTC)
+- **amount**: Dollar amount (e.g., $1000, 5000)
+- **date**: Date or time period (e.g., "next month", "2024-01-15")
+- **percentage**: Percentage value (e.g., 5%, 0.05)
+- **category**: Expense/income category
+- **asset_type**: Type of asset (stock, bond, crypto, etc.)
+
+**Examples:**
+
+User: "How is my portfolio performing?"
+Response: {"type": "portfolio_analysis", "confidence": 0.95, "action": "view_portfolio", "entities": [], "parameters": {}}
+
+User: "Should I buy AAPL stock?"
+Response: {"type": "investment_advice", "confidence": 0.9, "action": "analyze_investment", "entities": [{"type": "symbol", "value": "AAPL", "confidence": 0.99}], "parameters": {"symbol": "AAPL"}}
+
+User: "Help me create a budget for $5000/month"
+Response: {"type": "budget_planning", "confidence": 0.92, "action": "create_budget", "entities": [{"type": "amount", "value": 5000, "confidence": 0.95}], "parameters": {"monthlyIncome": 5000}}
+
+User: "What's a good strategy to pay off my credit card debt?"
+Response: {"type": "debt_strategy", "confidence": 0.88, "action": "optimize_debt", "entities": [], "parameters": {"debtType": "credit_card"}}
+
+Now analyze the user message and context from the user turn and provide the JSON response:`;
+
+/** @deprecated Use INTENT_DETECTION_SYSTEM_PROMPT — this template splices user input (FND-062). */
 export const INTENT_DETECTION_PROMPT = `Analyze the following user message and determine the intent, extract entities, and identify any actions to execute.
 
 **User Message:**
@@ -110,6 +175,38 @@ Now analyze the user message and provide the JSON response:`;
 // RESPONSE GENERATION PROMPT
 // ============================================================================
 
+/**
+ * System-role response generation prompt.
+ * Detected intent and context are supplied in a separate role:"user" message —
+ * never interpolated here — to prevent prompt injection (FND-062).
+ */
+export const RESPONSE_GENERATION_SYSTEM_PROMPT = `Generate a personalized, helpful response to the user based on the detected intent and context provided in the user turn.
+
+**Instructions:**
+1. Address the user's intent directly and comprehensively
+2. Use the context (portfolio data, preferences, goals) to personalize your response
+3. Provide specific, actionable recommendations when appropriate
+4. Include relevant data points and metrics from the context
+5. Adapt your communication style to match user preferences
+6. Add appropriate disclaimers for investment advice
+7. Suggest follow-up actions or questions
+8. Keep the response concise but informative (2-4 paragraphs for most queries)
+
+**Response Structure:**
+- Opening: Acknowledge the user's question/request
+- Main Content: Provide analysis, recommendations, or answers
+- Data/Evidence: Reference specific numbers, trends, or context
+- Action Items: Suggest next steps or actions
+- Closing: Offer to help with follow-up questions
+
+**Tone Guidelines:**
+- Concise style: Brief, bullet-pointed, direct
+- Detailed style: Comprehensive explanations with examples
+- Educational style: Teaching-focused with concept explanations
+
+Generate the response now:`;
+
+/** @deprecated Use RESPONSE_GENERATION_SYSTEM_PROMPT — this template splices user input (FND-062). */
 export const RESPONSE_GENERATION_PROMPT = `Generate a personalized, helpful response to the user based on the detected intent and context.
 
 **Detected Intent:**

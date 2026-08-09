@@ -1,9 +1,23 @@
 /**
  * Fynvita Bills & Payments Screen
- * Upcoming bills calendar, reminders, auto-pay status
+ *
+ * Real-data wiring (PARITY-P2): renders the user's real recurring bills from
+ * GET /api/financial/bills (withPermission "financial:read") via billsApi.getBills,
+ * adapted web -> mobile by mapWebBill (BillItem: merchant / amount / dueDate /
+ * category / isAutoPay). Fetch on mount with honest inline loading / error+retry /
+ * empty states and pull-to-refresh.
+ *
+ * The former hardcoded MOCK_BILLS array and its silent catch-fallback were removed:
+ * on a failed fetch the screen shows an honest error + retry, never fabricated bills.
+ * A per-bill "paid" status and the hardcoded calendar dots ([8,10,12,15,20]) were
+ * also removed. Whether a bill is PAID is payment history (BillPayment.isLate in
+ * src/lib/financial/types/bill.types.ts), which no HTTP route exposes — it has no
+ * honest source, so it is omitted rather than invented. The only per-bill status
+ * shown is derived from the real nextDueDate (upcoming / due_soon / overdue), and the
+ * calendar dots are derived from real due dates.
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -18,194 +32,165 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-import { billsApi } from "../../src/services/api";
+import { billsApi } from "../../src/services/api/financial";
+import type { BillItem } from "../../src/services/api/financial";
 
-interface Bill {
+// Status derived from the real nextDueDate. There is intentionally no "paid":
+// payment history is not exposed over HTTP, so it has no honest source.
+type DerivedStatus = "upcoming" | "due_soon" | "overdue";
+
+// Ionicons keyed by the real BillCategory enum (snake_case) from
+// src/lib/financial/types/bill.types.ts. An unknown/empty category falls back to a
+// neutral receipt icon — this maps a real value to a glyph, it never invents data.
+const CATEGORY_ICONS: Record<string, string> = {
+  utilities: "flash",
+  rent: "home",
+  mortgage: "home",
+  insurance: "shield",
+  subscription: "card",
+  loan: "cash",
+  credit_card: "card",
+  phone: "phone-portrait",
+  internet: "wifi",
+  streaming: "tv",
+  other: "receipt",
+};
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+interface DisplayBill {
   id: string;
-  name: string;
+  merchant: string;
   amount: number;
-  dueDate: string;
-  daysUntil: number;
+  dueLabel: string;
+  dueDate: Date | null;
   category: string;
   autoPay: boolean;
-  status: "upcoming" | "due_soon" | "overdue" | "paid";
+  status: DerivedStatus;
   icon: string;
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  Housing: "home",
-  "Credit Card": "card",
-  Utilities: "flash",
-  Insurance: "shield",
-  Subscriptions: "tv",
-  Health: "fitness",
-  Internet: "wifi",
-  Phone: "phone-portrait",
-  Other: "receipt",
-};
+// dueDate arrives as an ISO string (or "" when the record has no due date).
+// Returns null for a missing/unparseable value rather than an Invalid Date.
+function parseDueDate(iso: string): Date | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
-const MOCK_BILLS: Bill[] = [
-  {
-    id: "1",
-    name: "Rent",
-    amount: 1850,
-    dueDate: "Dec 1",
-    daysUntil: -5,
-    category: "Housing",
-    autoPay: false,
-    status: "paid",
-    icon: "home",
-  },
-  {
-    id: "2",
-    name: "Chase Sapphire",
-    amount: 2340,
-    dueDate: "Dec 15",
-    daysUntil: 9,
-    category: "Credit Card",
-    autoPay: true,
-    status: "upcoming",
-    icon: "card",
-  },
-  {
-    id: "3",
-    name: "Electric Bill",
-    amount: 145,
-    dueDate: "Dec 10",
-    daysUntil: 4,
-    category: "Utilities",
-    autoPay: false,
-    status: "due_soon",
-    icon: "flash",
-  },
-  {
-    id: "4",
-    name: "Internet",
-    amount: 79,
-    dueDate: "Dec 12",
-    daysUntil: 6,
-    category: "Utilities",
-    autoPay: true,
-    status: "upcoming",
-    icon: "wifi",
-  },
-  {
-    id: "5",
-    name: "Car Insurance",
-    amount: 185,
-    dueDate: "Dec 20",
-    daysUntil: 14,
-    category: "Insurance",
-    autoPay: true,
-    status: "upcoming",
-    icon: "car",
-  },
-  {
-    id: "6",
-    name: "Netflix",
-    amount: 15.99,
-    dueDate: "Dec 8",
-    daysUntil: 2,
-    category: "Subscriptions",
-    autoPay: true,
-    status: "due_soon",
-    icon: "tv",
-  },
-  {
-    id: "7",
-    name: "Gym Membership",
-    amount: 49,
-    dueDate: "Dec 1",
-    daysUntil: -5,
-    category: "Health",
-    autoPay: true,
-    status: "paid",
-    icon: "fitness",
-  },
-];
+function daysUntilDue(due: Date | null, now: number): number | null {
+  if (!due) return null;
+  return Math.ceil((due.getTime() - now) / MS_PER_DAY);
+}
 
-const CALENDAR_DAYS = Array.from({ length: 14 }, (_, i) => {
-  const date = new Date();
-  date.setDate(date.getDate() + i);
+function statusFor(daysUntil: number | null): DerivedStatus {
+  if (daysUntil === null) return "upcoming";
+  if (daysUntil < 0) return "overdue";
+  if (daysUntil <= 3) return "due_soon";
+  return "upcoming";
+}
+
+function formatDueLabel(due: Date | null): string {
+  if (!due) return "No due date";
+  return due.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// category is a snake_case enum (credit_card, ...); show it with spaces. This only
+// reformats the real value — it never invents one.
+function formatCategory(category: string): string {
+  return category.replace(/_/g, " ");
+}
+
+function toDisplayBill(b: BillItem, now: number): DisplayBill {
+  const dueDate = parseDueDate(b.dueDate);
   return {
-    day: date.getDate(),
-    weekday: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()],
-    hasBill: [8, 10, 12, 15, 20].includes(date.getDate()),
+    id: b.id,
+    merchant: b.merchant,
+    amount: b.amount,
+    dueLabel: formatDueLabel(dueDate),
+    dueDate,
+    category: b.category,
+    autoPay: b.isAutoPay,
+    status: statusFor(daysUntilDue(dueDate, now)),
+    icon: CATEGORY_ICONS[b.category] ?? "receipt",
   };
-});
+}
 
 export default function BillsScreen() {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [bills, setBills] = useState<Bill[]>([]);
-  const filters = ["all", "upcoming", "due_soon", "paid"];
+  const [error, setError] = useState<string | null>(null);
+  const [bills, setBills] = useState<BillItem[]>([]);
+  const filters = ["all", "upcoming", "due_soon", "overdue"];
 
-  const loadBills = useCallback(async () => {
-    try {
-      const response = await billsApi.getUpcoming();
-      if (response.data?.bills) {
-        const transformedBills = response.data.bills.map((b) => {
-          const dueDate = new Date(b.dueDate);
-          const today = new Date();
-          const daysUntil = Math.ceil(
-            (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-          );
-          let status: Bill["status"] = "upcoming";
-          if (daysUntil < 0) status = "paid";
-          else if (daysUntil <= 3) status = "due_soon";
-          else if (daysUntil < 0) status = "overdue";
-
-          return {
-            id: b.id,
-            name: b.name,
-            amount: b.amount,
-            dueDate: dueDate.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-            }),
-            daysUntil,
-            category: b.category,
-            autoPay: b.autopay,
-            status,
-            icon: CATEGORY_ICONS[b.category] || "receipt",
-          };
-        });
-        setBills(transformedBills);
-      } else {
-        setBills(MOCK_BILLS);
-      }
-    } catch (err) {
-      // Fallback to mock data silently in production
-      setBills(MOCK_BILLS);
-    } finally {
-      setLoading(false);
+  const fetchBills = useCallback(async () => {
+    const res = await billsApi.getBills();
+    if (res.success && res.data) {
+      setBills(res.data.bills);
+      setError(null);
+    } else {
+      setError(res.error?.message ?? "Unable to load bills.");
     }
   }, []);
 
+  const load = useCallback(async () => {
+    setLoading(true);
+    await fetchBills();
+    setLoading(false);
+  }, [fetchBills]);
+
   useEffect(() => {
-    loadBills();
-  }, [loadBills]);
+    load();
+  }, [load]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadBills();
+    await fetchBills();
     setRefreshing(false);
   };
 
+  // Derived once per fetch (bills change). `now` is captured at compute time so the
+  // status buckets are stable within a render pass.
+  const displayBills = useMemo<DisplayBill[]>(() => {
+    const now = Date.now();
+    return bills.map((b) => toDisplayBill(b, now));
+  }, [bills]);
+
+  // Calendar dots come from the real due dates that fall inside the 14-day window,
+  // not a hardcoded set of days.
+  const calendarDays = useMemo(() => {
+    const dueKeys = new Set(
+      displayBills
+        .map((b) => b.dueDate)
+        .filter((d): d is Date => d !== null)
+        .map((d) => d.toDateString()),
+    );
+    return Array.from({ length: 14 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() + i);
+      return {
+        day: date.getDate(),
+        weekday: WEEKDAYS[date.getDay()],
+        hasBill: dueKeys.has(date.toDateString()),
+      };
+    });
+  }, [displayBills]);
+
   const filteredBills =
     selectedFilter === "all"
-      ? bills
-      : bills.filter((b) => b.status === selectedFilter);
-  const totalDue = bills
-    .filter((b) => b.status !== "paid")
-    .reduce((sum, b) => sum + b.amount, 0);
-  const dueSoon = bills.filter((b) => b.status === "due_soon").length;
+      ? displayBills
+      : displayBills.filter((b) => b.status === selectedFilter);
 
-  const getStatusColor = (status: string) => {
+  // Summary — all computed from real bills. No "paid" state exists, so every active
+  // recurring bill counts toward Total Due.
+  const totalDue = displayBills.reduce((sum, b) => sum + b.amount, 0);
+  const dueSoon = displayBills.filter((b) => b.status === "due_soon").length;
+  const autoPayCount = displayBills.filter((b) => b.autoPay).length;
+
+  const getStatusColor = (status: DerivedStatus) => {
     switch (status) {
-      case "paid":
-        return "#22C55E";
       case "due_soon":
         return "#F59E0B";
       case "overdue":
@@ -215,10 +200,8 @@ export default function BillsScreen() {
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (status: DerivedStatus) => {
     switch (status) {
-      case "paid":
-        return "Paid";
       case "due_soon":
         return "Due Soon";
       case "overdue":
@@ -228,12 +211,30 @@ export default function BillsScreen() {
     }
   };
 
-  if (loading) {
+  if (loading && bills.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered} testID="financial-bills-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading bills...</Text>
+          <Text style={styles.stateText}>Loading bills...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && bills.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="financial-bills-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={load}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -261,7 +262,9 @@ export default function BillsScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Bills & Payments</Text>
-          <TouchableOpacity onPress={() => router.push("/financial/add-bill" as Href)}>
+          <TouchableOpacity
+            onPress={() => router.push("/financial/add-bill" as Href)}
+          >
             <Ionicons
               name="add-circle-outline"
               size={24}
@@ -289,7 +292,7 @@ export default function BillsScreen() {
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
               <Text style={[styles.summaryValue, { color: "#22C55E" }]}>
-                {bills.filter((b) => b.autoPay).length}
+                {autoPayCount}
               </Text>
               <Text style={styles.summaryLabel}>Auto-Pay</Text>
             </View>
@@ -303,7 +306,7 @@ export default function BillsScreen() {
           showsHorizontalScrollIndicator={false}
           style={styles.calendarScroll}
         >
-          {CALENDAR_DAYS.map((day, idx) => (
+          {calendarDays.map((day, idx) => (
             <View
               key={idx}
               style={[styles.calendarDay, idx === 0 && styles.calendarDayToday]}
@@ -338,6 +341,7 @@ export default function BillsScreen() {
           {filters.map((filter) => (
             <TouchableOpacity
               key={filter}
+              testID={`bills-filter-${filter}`}
               style={[
                 styles.filterChip,
                 selectedFilter === filter && styles.filterChipActive,
@@ -360,71 +364,84 @@ export default function BillsScreen() {
 
         {/* Bills List */}
         <Text style={styles.sectionTitle}>{filteredBills.length} Bills</Text>
-        {filteredBills.map((bill) => (
-          <Card key={bill.id} style={styles.billCard}>
-            <View style={styles.billRow}>
-              <View
-                style={[
-                  styles.billIcon,
-                  {
-                    backgroundColor:
-                      bill.status === "paid"
-                        ? "#DCFCE7"
-                        : bill.status === "due_soon"
-                          ? "#FEF3C7"
-                          : "#F3F4F6",
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={bill.icon as keyof typeof Ionicons.glyphMap}
-                  size={20}
-                  color={
-                    bill.status === "paid"
-                      ? "#22C55E"
-                      : bill.status === "due_soon"
-                        ? "#F59E0B"
-                        : theme.colors.textSecondary
-                  }
-                />
-              </View>
-              <View style={styles.billInfo}>
-                <View style={styles.billNameRow}>
-                  <Text style={styles.billName}>{bill.name}</Text>
-                  {bill.autoPay && (
-                    <View style={styles.autoPayBadge}>
-                      <Ionicons name="sync" size={10} color="#3B82F6" />
-                      <Text style={styles.autoPayText}>Auto</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.billMeta}>
-                  {bill.category} • {bill.dueDate}
-                </Text>
-              </View>
-              <View style={styles.billAmountContainer}>
-                <Text style={styles.billAmount}>
-                  ${bill.amount.toLocaleString()}
-                </Text>
+        {filteredBills.length === 0 ? (
+          <View style={styles.emptyCard} testID="financial-bills-empty">
+            <Ionicons
+              name="receipt-outline"
+              size={40}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.emptyTitle}>No bills to show</Text>
+            <Text style={styles.emptyText}>
+              Bills you add or that Fynvita detects from your linked accounts will
+              show here with their amounts and due dates.
+            </Text>
+          </View>
+        ) : (
+          filteredBills.map((bill) => (
+            <Card key={bill.id} style={styles.billCard}>
+              <View style={styles.billRow}>
                 <View
                   style={[
-                    styles.statusBadge,
-                    { backgroundColor: `${getStatusColor(bill.status)}15` },
+                    styles.billIcon,
+                    {
+                      backgroundColor:
+                        bill.status === "due_soon"
+                          ? "#FEF3C7"
+                          : bill.status === "overdue"
+                            ? "#FEE2E2"
+                            : "#F3F4F6",
+                    },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.statusText,
-                      { color: getStatusColor(bill.status) },
-                    ]}
-                  >
-                    {getStatusLabel(bill.status)}
+                  <Ionicons
+                    name={bill.icon as keyof typeof Ionicons.glyphMap}
+                    size={20}
+                    color={getStatusColor(bill.status)}
+                  />
+                </View>
+                <View style={styles.billInfo}>
+                  <View style={styles.billNameRow}>
+                    <Text style={styles.billName}>
+                      {bill.merchant || "Unnamed bill"}
+                    </Text>
+                    {bill.autoPay && (
+                      <View style={styles.autoPayBadge}>
+                        <Ionicons name="sync" size={10} color="#3B82F6" />
+                        <Text style={styles.autoPayText}>Auto</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.billMeta}>
+                    {bill.category
+                      ? `${formatCategory(bill.category)} • ${bill.dueLabel}`
+                      : bill.dueLabel}
                   </Text>
                 </View>
+                <View style={styles.billAmountContainer}>
+                  <Text style={styles.billAmount}>
+                    ${bill.amount.toLocaleString()}
+                  </Text>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: `${getStatusColor(bill.status)}15` },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusText,
+                        { color: getStatusColor(bill.status) },
+                      ]}
+                    >
+                      {getStatusLabel(bill.status)}
+                    </Text>
+                  </View>
+                </View>
               </View>
-            </View>
-          </Card>
-        ))}
+            </Card>
+          ))
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -435,6 +452,25 @@ export default function BillsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
+  },
+  stateText: {
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -445,11 +481,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
   summaryCard: { marginBottom: theme.spacing.lg },
   summaryRow: { flexDirection: "row", alignItems: "center" },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: {
-    marginTop: theme.spacing.md,
-    color: theme.colors.textSecondary,
-  },
   summaryItem: { flex: 1, alignItems: "center" },
   summaryDivider: {
     width: 1,
@@ -537,7 +568,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 2,
   },
-  billMeta: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
+  billMeta: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+    textTransform: "capitalize",
+  },
   billAmountContainer: { alignItems: "flex-end" },
   billAmount: { fontSize: 16, fontWeight: "600", color: theme.colors.text },
   statusBadge: {
@@ -547,4 +583,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   statusText: { fontSize: 10, fontWeight: "600" },
+  emptyCard: { alignItems: "center", padding: theme.spacing.xl },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
+  },
 });

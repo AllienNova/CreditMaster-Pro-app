@@ -1,24 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { financialService } from "@/lib/financial/financial-service";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Extract userId from validated token
-    const userId = validation.user.id;
 
     const dashboard = await financialService.getFinancialDashboard(userId);
 
@@ -33,4 +23,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

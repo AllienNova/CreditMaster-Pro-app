@@ -1,28 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface ChannelPreferences {
+  dispute_update: boolean;
+  score_change: boolean;
+  payment_reminder: boolean;
+  document_processed: boolean;
+  recommendation: boolean;
+  system: boolean;
+  promotion: boolean;
+}
+
+interface QuietHours {
+  enabled: boolean;
+  start: string;
+  end: string;
+}
 
 interface NotificationPreferences {
   userId: string;
   pushEnabled: boolean;
   emailEnabled: boolean;
   smsEnabled: boolean;
-  channels: {
-    dispute_update: boolean;
-    score_change: boolean;
-    payment_reminder: boolean;
-    document_processed: boolean;
-    recommendation: boolean;
-    system: boolean;
-    promotion: boolean;
-  };
-  quietHours: {
-    enabled: boolean;
-    start: string;
-    end: string;
-  };
+  channels: ChannelPreferences;
+  quietHours: QuietHours;
 }
 
-// Mock storage for preferences
-const preferencesStore: Record<string, NotificationPreferences> = {};
+// ---------------------------------------------------------------------------
+// Defaults (returned when no row exists in the DB)
+// ---------------------------------------------------------------------------
 
 const defaultPreferences: Omit<NotificationPreferences, "userId"> = {
   pushEnabled: true,
@@ -44,86 +56,159 @@ const defaultPreferences: Omit<NotificationPreferences, "userId"> = {
   },
 };
 
-export async function GET(request: NextRequest) {
-  const userId = request.headers.get("x-user-id") || "demo-user";
+// ---------------------------------------------------------------------------
+// Supabase client (service-role — bypasses RLS for server-side reads/writes)
+// ---------------------------------------------------------------------------
 
-  const preferences = preferencesStore[userId] || {
-    userId,
-    ...defaultPreferences,
+function getSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error("Supabase configuration missing");
+  }
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+// ---------------------------------------------------------------------------
+// Row → domain type mapper
+// ---------------------------------------------------------------------------
+
+function rowToPreferences(
+  row: {
+    user_id: string;
+    push_enabled: boolean;
+    email_enabled: boolean;
+    sms_enabled: boolean;
+    channels: ChannelPreferences;
+    quiet_hours: QuietHours;
+  },
+): NotificationPreferences {
+  return {
+    userId: row.user_id,
+    pushEnabled: row.push_enabled,
+    emailEnabled: row.email_enabled,
+    smsEnabled: row.sms_enabled,
+    channels: row.channels,
+    quietHours: row.quiet_hours,
   };
-
-  return NextResponse.json({ preferences });
 }
 
-export async function PUT(request: NextRequest) {
+// ---------------------------------------------------------------------------
+// GET — read preferences from notification_preferences; fall back to defaults
+// ---------------------------------------------------------------------------
+
+export const GET = withAuth(async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const userId = request.headers.get("x-user-id") || "demo-user";
-    const body = await request.json();
+    const supabase = getSupabaseAdmin();
 
-    const currentPreferences = preferencesStore[userId] || {
-      userId,
-      ...defaultPreferences,
-    };
+    const { data, error } = await supabase
+      .from("notification_preferences")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-    const updatedPreferences: NotificationPreferences = {
-      ...currentPreferences,
-      ...body,
-      userId, // Ensure userId cannot be changed
-      channels: {
-        ...currentPreferences.channels,
-        ...(body.channels || {}),
-      },
-      quietHours: {
-        ...currentPreferences.quietHours,
-        ...(body.quietHours || {}),
-      },
-    };
+    if (error) {
+      throw error;
+    }
 
-    preferencesStore[userId] = updatedPreferences;
+    const preferences: NotificationPreferences = data
+      ? rowToPreferences(data as Parameters<typeof rowToPreferences>[0])
+      : { userId: user.id, ...defaultPreferences };
 
-    return NextResponse.json({
-      success: true,
-      preferences: updatedPreferences,
-    });
-  } catch (_error) {
-    // NotificationPreferencesAPI error: Error updating notification preferences
-    void _error;
+    return NextResponse.json({ preferences });
+  } catch (error) {
+    console.error("GET /api/notifications/preferences failed:", error);
     return NextResponse.json(
-      { error: "Failed to update preferences" },
+      { error: "Failed to get preferences" },
       { status: 500 },
     );
   }
-}
+});
 
-export async function POST(request: NextRequest) {
-  try {
-    const userId = request.headers.get("x-user-id") || "demo-user";
-    const body = await request.json();
-    const { action, subscription } = body;
+// ---------------------------------------------------------------------------
+// PUT — upsert preferences into notification_preferences
+// ---------------------------------------------------------------------------
 
-    if (action === "subscribe" && subscription) {
-      // NotificationPreferencesAPI: Push subscription registered for user
-      return NextResponse.json({
-        success: true,
-        message: "Subscribed to push notifications",
-      });
+export const PUT = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
+    try {
+      const body = await request.json();
+
+      // Validate the two JSONB fields at the boundary — a non-object value
+      // would throw on spread and surface as a misleading 500.
+      const isPlainObject = (v: unknown): boolean =>
+        typeof v === "object" && v !== null && !Array.isArray(v);
+      if (body.channels !== undefined && !isPlainObject(body.channels)) {
+        return NextResponse.json(
+          { error: "Invalid channels: expected an object" },
+          { status: 400 },
+        );
+      }
+      if (body.quietHours !== undefined && !isPlainObject(body.quietHours)) {
+        return NextResponse.json(
+          { error: "Invalid quietHours: expected an object" },
+          { status: 400 },
+        );
+      }
+
+      const supabase = getSupabaseAdmin();
+
+      // Read current row (or fall back to defaults) to support deep-merge.
+      const { data: existing } = await supabase
+        .from("notification_preferences")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const current: NotificationPreferences = existing
+        ? rowToPreferences(existing as Parameters<typeof rowToPreferences>[0])
+        : { userId: user.id, ...defaultPreferences };
+
+      // Merge — userId is always the authenticated user, never caller-supplied.
+      const merged: NotificationPreferences = {
+        ...current,
+        ...body,
+        userId: user.id,
+        channels: {
+          ...current.channels,
+          ...(body.channels ?? {}),
+        },
+        quietHours: {
+          ...current.quietHours,
+          ...(body.quietHours ?? {}),
+        },
+      };
+
+      const { error } = await supabase
+        .from("notification_preferences")
+        .upsert(
+          {
+            user_id: user.id,
+            push_enabled: merged.pushEnabled,
+            email_enabled: merged.emailEnabled,
+            sms_enabled: merged.smsEnabled,
+            channels: merged.channels,
+            quiet_hours: merged.quietHours,
+          },
+          { onConflict: "user_id" },
+        );
+
+      if (error) {
+        throw error;
+      }
+
+      return NextResponse.json({ success: true, preferences: merged });
+    } catch (error) {
+      console.error("PUT /api/notifications/preferences failed:", error);
+      return NextResponse.json(
+        { error: "Failed to update preferences" },
+        { status: 500 },
+      );
     }
+  },
+);
 
-    if (action === "unsubscribe") {
-      // NotificationPreferencesAPI: Push subscription removed for user
-      return NextResponse.json({
-        success: true,
-        message: "Unsubscribed from push notifications",
-      });
-    }
-
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (_error) {
-    // NotificationPreferencesAPI error: Error processing notification action
-    void _error;
-    return NextResponse.json(
-      { error: "Failed to process request" },
-      { status: 500 },
-    );
-  }
-}
+// NOTE: The POST handler (action: subscribe/unsubscribe) was a no-op stub that
+// returned {success:true} without any DB write. Real push subscribe/unsubscribe
+// is implemented in /api/notifications/push/subscribe (persists to the
+// push_subscriptions table). The stub is deleted to avoid a lying endpoint.

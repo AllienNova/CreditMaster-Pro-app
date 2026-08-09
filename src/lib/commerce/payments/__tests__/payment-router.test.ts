@@ -100,10 +100,9 @@ jest.mock("../../../connectors/payments", () => ({
 // Import under test — AFTER all jest.mock() calls
 // =============================================================================
 
-import {
-  PaymentRouter,
-  UnifiedPaymentRequest,
-} from "../payment-router";
+import Stripe from "stripe";
+import { cents } from "@/lib/money";
+import { PaymentRouter, UnifiedPaymentRequest } from "../payment-router";
 
 // =============================================================================
 // Helpers
@@ -113,7 +112,7 @@ function makeRequest(
   overrides: Partial<UnifiedPaymentRequest> = {},
 ): UnifiedPaymentRequest {
   return {
-    amount: 5000,
+    amount: cents(5000),
     currency: "USD",
     type: "one_time",
     region: "US",
@@ -130,6 +129,12 @@ let router: PaymentRouter;
 
 beforeEach(() => {
   jest.clearAllMocks();
+
+  // resetMocks:true wipes the Stripe constructor impl — re-apply so the lazy
+  // Stripe Proxy in payment-router returns mockStripe on first access.
+  (Stripe as unknown as jest.MockedClass<typeof Stripe>).mockImplementation(
+    () => mockStripe as unknown as Stripe,
+  );
 
   // Reset chainable builder — exclude 'then' to avoid infinite thenable loop
   Object.keys(mockBuilder).forEach((key) => {
@@ -188,9 +193,7 @@ describe("PaymentRouter", () => {
     });
 
     it("should select Stripe for card payments", () => {
-      const selection = router.selectProvider(
-        makeRequest({ method: "card" }),
-      );
+      const selection = router.selectProvider(makeRequest({ method: "card" }));
       expect(selection.provider).toBe("stripe");
       expect(selection.reason).toContain("Card payment");
     });
@@ -237,7 +240,11 @@ describe("PaymentRouter", () => {
 
     it("should calculate correct TrueLayer fee estimates", () => {
       const selection = router.selectProvider(
-        makeRequest({ region: "GB", method: "open_banking", amount: 10000 }),
+        makeRequest({
+          region: "GB",
+          method: "open_banking",
+          amount: cents(10000),
+        }),
       );
       expect(selection.fees.fixed).toBe(20);
       expect(selection.fees.percentage).toBe(0.2);
@@ -246,7 +253,7 @@ describe("PaymentRouter", () => {
 
     it("should calculate correct Stripe card fee estimates", () => {
       const selection = router.selectProvider(
-        makeRequest({ method: "card", amount: 10000 }),
+        makeRequest({ method: "card", amount: cents(10000) }),
       );
       expect(selection.fees.fixed).toBe(30);
       expect(selection.fees.percentage).toBe(2.9);
@@ -255,7 +262,7 @@ describe("PaymentRouter", () => {
 
     it("should calculate correct ACH fee estimates (no fixed fee)", () => {
       const selection = router.selectProvider(
-        makeRequest({ region: "US", method: "ach", amount: 10000 }),
+        makeRequest({ region: "US", method: "ach", amount: cents(10000) }),
       );
       expect(selection.fees.fixed).toBe(0);
       expect(selection.fees.estimatedTotal).toBe((10000 * 0.8) / 100);
@@ -269,9 +276,7 @@ describe("PaymentRouter", () => {
     });
 
     it("should return estimated time for Stripe card", () => {
-      const selection = router.selectProvider(
-        makeRequest({ method: "card" }),
-      );
+      const selection = router.selectProvider(makeRequest({ method: "card" }));
       expect(selection.estimatedTime).toBe("Instant");
     });
 
@@ -313,7 +318,9 @@ describe("PaymentRouter", () => {
         client_secret: "secret_123",
       } as any);
 
-      const result = await router.processPayment(makeRequest({ method: "card" }));
+      const result = await router.processPayment(
+        makeRequest({ method: "card" }),
+      );
 
       expect(result.provider).toBe("stripe");
       expect(result.providerPaymentId).toBe("pi_abc");
@@ -389,9 +396,9 @@ describe("PaymentRouter", () => {
         error: { message: "DB insert failed" },
       });
 
-      await expect(
-        router.processPayment(makeRequest()),
-      ).rejects.toThrow("Failed to create payment record");
+      await expect(router.processPayment(makeRequest())).rejects.toThrow(
+        "Failed to create payment record",
+      );
     });
 
     it("should pass correct metadata to Stripe PaymentIntent", async () => {
@@ -437,7 +444,7 @@ describe("PaymentRouter", () => {
       } as any);
 
       await router.processPayment(
-        makeRequest({ amount: 9900, currency: "EUR", method: "card" }),
+        makeRequest({ amount: cents(9900), currency: "EUR", method: "card" }),
       );
 
       expect(mockStripe.paymentIntents.create).toHaveBeenCalledWith(
@@ -492,7 +499,9 @@ describe("PaymentRouter", () => {
         client_secret: null,
       } as any);
 
-      const result = await router.processPayment(makeRequest({ method: "card" }));
+      const result = await router.processPayment(
+        makeRequest({ method: "card" }),
+      );
       expect(result.status).toBe("succeeded");
     });
 
@@ -503,7 +512,9 @@ describe("PaymentRouter", () => {
         client_secret: null,
       } as any);
 
-      const result = await router.processPayment(makeRequest({ method: "card" }));
+      const result = await router.processPayment(
+        makeRequest({ method: "card" }),
+      );
       expect(result.status).toBe("processing");
     });
 
@@ -514,7 +525,9 @@ describe("PaymentRouter", () => {
         client_secret: null,
       } as any);
 
-      const result = await router.processPayment(makeRequest({ method: "card" }));
+      const result = await router.processPayment(
+        makeRequest({ method: "card" }),
+      );
       expect(result.status).toBe("canceled");
     });
 
@@ -525,7 +538,9 @@ describe("PaymentRouter", () => {
         client_secret: "cs_3ds",
       } as any);
 
-      const result = await router.processPayment(makeRequest({ method: "card" }));
+      const result = await router.processPayment(
+        makeRequest({ method: "card" }),
+      );
       expect(result.status).toBe("pending");
     });
   });
@@ -653,7 +668,7 @@ describe("PaymentRouter", () => {
           region: "GB",
           method: "open_banking",
           currency: "GBP",
-          amount: 7500,
+          amount: cents(7500),
         }),
       );
 
@@ -786,7 +801,7 @@ describe("PaymentRouter", () => {
           provider: "stripe",
           provider_payment_id: "pi_100",
           status: "succeeded",
-          amount: 5000,
+          amount_cents: cents(5000),
           currency: "USD",
           type: "one_time",
           method: "card",
@@ -821,7 +836,7 @@ describe("PaymentRouter", () => {
           provider: "stripe",
           provider_payment_id: "pi_pending",
           status: "pending",
-          amount: 5000,
+          amount_cents: cents(5000),
           currency: "USD",
           type: "one_time",
           method: "card",
@@ -838,7 +853,9 @@ describe("PaymentRouter", () => {
 
       const result = await router.getPaymentStatus("pay-pending");
 
-      expect(mockStripe.paymentIntents.retrieve).toHaveBeenCalledWith("pi_pending");
+      expect(mockStripe.paymentIntents.retrieve).toHaveBeenCalledWith(
+        "pi_pending",
+      );
       expect(result!.status).toBe("succeeded");
     });
 
@@ -849,7 +866,7 @@ describe("PaymentRouter", () => {
           provider: "truelayer",
           provider_payment_id: "tl-proc-001",
           status: "processing",
-          amount: 3000,
+          amount_cents: 3000,
           currency: "GBP",
           type: "one_time",
           method: "open_banking",
@@ -866,7 +883,9 @@ describe("PaymentRouter", () => {
 
       const result = await router.getPaymentStatus("pay-tl-proc");
 
-      expect(mockTrueLayerConnector.getPayment).toHaveBeenCalledWith("tl-proc-001");
+      expect(mockTrueLayerConnector.getPayment).toHaveBeenCalledWith(
+        "tl-proc-001",
+      );
       expect(result!.status).toBe("succeeded");
     });
 
@@ -877,7 +896,7 @@ describe("PaymentRouter", () => {
           provider: "stripe",
           provider_payment_id: "pi_done",
           status: "succeeded",
-          amount: 5000,
+          amount_cents: cents(5000),
           currency: "USD",
           type: "one_time",
           method: "card",
@@ -907,7 +926,7 @@ describe("PaymentRouter", () => {
           provider: "stripe",
           provider_payment_id: "pi_refundable",
           status: "succeeded",
-          amount: 5000,
+          amount_cents: cents(5000),
           currency: "USD",
           type: "one_time",
           method: "card",
@@ -920,7 +939,7 @@ describe("PaymentRouter", () => {
       mockStripe.refunds.create.mockResolvedValue({
         id: "re_abc",
         status: "succeeded",
-        amount: 5000,
+        amount: cents(5000),
       } as any);
 
       const result = await router.createRefund("pay-ref-1");
@@ -928,7 +947,7 @@ describe("PaymentRouter", () => {
       expect(mockStripe.refunds.create).toHaveBeenCalledWith(
         expect.objectContaining({
           payment_intent: "pi_refundable",
-          amount: 5000,
+          amount: cents(5000),
         }),
       );
       expect(result.id).toBe("re_abc");
@@ -943,7 +962,7 @@ describe("PaymentRouter", () => {
           provider: "stripe",
           provider_payment_id: "pi_partial",
           status: "succeeded",
-          amount: 10000,
+          amount_cents: 10000,
           currency: "USD",
           type: "one_time",
           method: "card",
@@ -959,7 +978,11 @@ describe("PaymentRouter", () => {
         amount: 3000,
       } as any);
 
-      const result = await router.createRefund("pay-ref-2", 3000, "requested_by_customer");
+      const result = await router.createRefund(
+        "pay-ref-2",
+        3000,
+        "requested_by_customer",
+      );
 
       expect(mockStripe.refunds.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -978,7 +1001,7 @@ describe("PaymentRouter", () => {
           provider: "truelayer",
           provider_payment_id: "tl-refundable",
           status: "succeeded",
-          amount: 7000,
+          amount_cents: 7000,
           currency: "GBP",
           type: "one_time",
           method: "open_banking",
@@ -1012,7 +1035,7 @@ describe("PaymentRouter", () => {
           provider: "truelayer",
           provider_payment_id: "tl-refund-pending",
           status: "succeeded",
-          amount: 4000,
+          amount_cents: 4000,
           currency: "EUR",
           type: "one_time",
           method: "open_banking",
@@ -1135,7 +1158,10 @@ describe("PaymentRouter", () => {
         data: {},
       });
 
-      await router.handleTrueLayerWebhook('{"type":"payment_executed"}', "sig-abc");
+      await router.handleTrueLayerWebhook(
+        '{"type":"payment_executed"}',
+        "sig-abc",
+      );
 
       expect(mockBuilder.update).toHaveBeenCalledWith(
         expect.objectContaining({ status: "succeeded" }),
@@ -1156,7 +1182,10 @@ describe("PaymentRouter", () => {
         data: {},
       });
 
-      await router.handleTrueLayerWebhook('{"type":"payment_settled"}', "sig-xyz");
+      await router.handleTrueLayerWebhook(
+        '{"type":"payment_settled"}',
+        "sig-xyz",
+      );
 
       expect(mockBuilder.update).toHaveBeenCalledWith(
         expect.objectContaining({ status: "succeeded" }),
@@ -1172,7 +1201,10 @@ describe("PaymentRouter", () => {
         data: {},
       });
 
-      await router.handleTrueLayerWebhook('{"type":"payment_failed"}', "sig-fail");
+      await router.handleTrueLayerWebhook(
+        '{"type":"payment_failed"}',
+        "sig-fail",
+      );
 
       expect(mockBuilder.update).toHaveBeenCalledWith(
         expect.objectContaining({ status: "failed" }),
@@ -1227,7 +1259,10 @@ describe("PaymentRouter", () => {
         if (callCount === 2) {
           // getOrCreateStripeCustomer -> profiles lookup
           return Promise.resolve({
-            data: { stripe_customer_id: "cus-existing", full_name: "Test User" },
+            data: {
+              stripe_customer_id: "cus-existing",
+              full_name: "Test User",
+            },
             error: null,
           });
         }
@@ -1323,7 +1358,11 @@ describe("PaymentRouter", () => {
 
       await expect(
         router.processPayment(
-          makeRequest({ region: "GB", method: "open_banking", currency: "GBP" }),
+          makeRequest({
+            region: "GB",
+            method: "open_banking",
+            currency: "GBP",
+          }),
         ),
       ).rejects.toThrow("TrueLayer API error");
     });
@@ -1335,7 +1374,7 @@ describe("PaymentRouter", () => {
           provider: "stripe",
           provider_payment_id: "pi_refund_err",
           status: "succeeded",
-          amount: 5000,
+          amount_cents: cents(5000),
           currency: "USD",
           type: "one_time",
           method: "card",
@@ -1349,9 +1388,9 @@ describe("PaymentRouter", () => {
         new Error("Charge has already been refunded"),
       );
 
-      await expect(
-        router.createRefund("pay-refund-err"),
-      ).rejects.toThrow("Charge has already been refunded");
+      await expect(router.createRefund("pay-refund-err")).rejects.toThrow(
+        "Charge has already been refunded",
+      );
     });
   });
 });

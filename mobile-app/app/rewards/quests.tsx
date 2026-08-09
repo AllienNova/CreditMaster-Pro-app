@@ -59,16 +59,31 @@ export default function QuestsScreen() {
     }
   };
 
+  // Map API questType to the daily/weekly/challenge types QuestCard expects
+  const mapQuestType = (
+    questType: string,
+  ): "daily" | "weekly" | "challenge" => {
+    switch (questType) {
+      case "savings":
+      case "budget":
+      case "credit":
+        return "weekly";
+      case "education":
+        return "challenge";
+      case "transaction":
+      case "engagement":
+      default:
+        return "daily";
+    }
+  };
+
   // Transform API quests to the format QuestCard expects
   const transformedQuests = quests.map((q) => ({
     id: q.questId,
     title: q.quest.name,
     description: q.quest.description,
     xpReward: q.quest.xpReward,
-    type: (q.quest.questType === "engagement" ? "daily" : "daily") as
-      | "daily"
-      | "weekly"
-      | "challenge",
+    type: mapQuestType(q.quest.questType),
     progress: q.progressValue,
     target: 100, // API returns percent
     completed: q.isCompleted,

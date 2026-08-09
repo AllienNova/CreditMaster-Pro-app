@@ -1,40 +1,59 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { subscriptionService } from "@/lib/subscriptions/subscription-service";
-import { stripeService } from "@/lib/payment/stripe-service";
+import { stripeService, SUBSCRIPTION_PLANS } from "@/lib/payment/stripe-service";
 import type { Database } from "@/lib/supabase/types";
 
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 // Helper to get typed table reference
-const profiles = () => getSupabase().from("profiles");
+const profiles = () => getServiceRoleClient().from("profiles");
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Get authenticated user
-    const supabase = createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Parse request body — only trust priceId; URLs and trialDays are server-controlled
+    const body = await request.json() as Record<string, unknown>;
+    const { priceId } = body;
 
-    if (authError || !user) {
+    // Fix 2: assert priceId is a string before any string-specific operations.
+    // body is Record<string, unknown> so priceId is unknown — a client could
+    // send a number, object, or array; reject those explicitly.
+    if (typeof priceId !== "string" || !priceId) {
       return NextResponse.json(
-        { error: "Unauthorized - Please sign in to continue" },
-        { status: 401 },
-      );
-    }
-
-    // Parse request body
-    const body = await request.json();
-    const { priceId, successUrl, cancelUrl, trialDays } = body;
-
-    if (!priceId) {
-      return NextResponse.json(
-        { error: "Missing required field: priceId" },
+        { error: "Invalid priceId: not a recognised subscription plan" },
         { status: 400 },
       );
     }
+
+    // FND-019: Validate priceId against the server-side plan registry.
+    // Reject unknown price IDs — do not forward arbitrary strings to Stripe.
+    const knownPlan = SUBSCRIPTION_PLANS.some((p) => p.priceId === priceId);
+    if (!knownPlan) {
+      return NextResponse.json(
+        { error: "Invalid priceId: not a recognised subscription plan" },
+        { status: 400 },
+      );
+    }
+
+    // FND-020: Build success/cancel URLs on the server.
+    // Client-supplied successUrl/cancelUrl are intentionally NOT read from the
+    // request body. String-concatenating client values opens an open-redirect
+    // via payloads like "//evil.com" or "@evil.com". The server owns these paths.
+    //
+    // Fix 1: NEXT_PUBLIC_APP_URL is authoritative — no fallback to
+    // request.nextUrl.origin, which can be influenced by a spoofed Host or
+    // X-Forwarded-Host header on reverse-proxied deployments.
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) {
+      console.error("Checkout misconfiguration: NEXT_PUBLIC_APP_URL is not set");
+      return NextResponse.json(
+        { error: "Failed to create checkout session" },
+        { status: 500 },
+      );
+    }
+    const successUrl = `${appUrl}/payment/success`;
+    const cancelUrl = `${appUrl}/pricing`;
 
     // Get or create user profile
     const profile = await subscriptionService.getUserProfile(user.id);
@@ -45,7 +64,7 @@ export async function POST(request: NextRequest) {
     if (!stripeCustomerId) {
       // Create Stripe customer
       const customer = await stripeService.createCustomer(
-        user.email!,
+        user.email,
         profile?.fullName || undefined,
         { userId: user.id },
       );
@@ -60,26 +79,25 @@ export async function POST(request: NextRequest) {
       await query.update(updateData).eq("id", user.id);
     }
 
-    // Create Stripe Checkout session
+    // FND-021: Pass no trialDays — SubscriptionPlan has no trial field and the
+    // client must not be able to manufacture a free trial period by injecting
+    // a trialDays value. Always pass undefined.
     const session = await stripeService.createCheckoutSession(
       priceId,
       stripeCustomerId,
-      successUrl || `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`,
-      cancelUrl || `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
-      trialDays,
+      successUrl,
+      cancelUrl,
+      undefined,
     );
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (error) {
+    // Log the real error server-side; return a generic message to the client
+    // so internal stack traces, host names, or connection details are not leaked.
     console.error("Checkout error:", error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to create checkout session",
-      },
+      { error: "Failed to create checkout session" },
       { status: 500 },
     );
   }
-}
+});

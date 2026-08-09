@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import PortfolioOverview from "@/components/investments/PortfolioOverview";
+import { FadeIn, ScrollReveal } from "@/components/ui/animations";
 
 export const metadata: Metadata = {
   title: "Investment Portfolio | Fynvita",
@@ -41,18 +42,22 @@ export default function InvestmentsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Investment Portfolio
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-slate-400">
-            Track your investment portfolio, analyze stocks, and monitor
-            performance
-          </p>
-        </div>
-        <Suspense fallback={<PortfolioLoadingSkeleton />}>
-          <PortfolioOverview />
-        </Suspense>
+        <FadeIn direction="up">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Investment Portfolio
+            </h1>
+            <p className="mt-2 text-gray-600 dark:text-slate-400">
+              Track your investment portfolio, analyze stocks, and monitor
+              performance
+            </p>
+          </div>
+        </FadeIn>
+        <ScrollReveal>
+          <Suspense fallback={<PortfolioLoadingSkeleton />}>
+            <PortfolioOverview />
+          </Suspense>
+        </ScrollReveal>
       </div>
     </div>
   );

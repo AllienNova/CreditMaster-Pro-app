@@ -48,6 +48,8 @@ export interface PricingTier {
   badge?: string;
   /** Call to action text */
   cta: string;
+  /** Monthly credit allowance for the credit system */
+  creditsPerMonth: number;
   /** Feature limits */
   limits: {
     disputes: number | "unlimited";
@@ -92,6 +94,7 @@ export const pricingTiers: PricingTier[] = [
     description: "Get started with basic financial tracking",
     cta: "Get Started Free",
     popular: false,
+    creditsPerMonth: 500,
     limits: {
       disputes: 0,
       linkedAccounts: 2,
@@ -133,6 +136,7 @@ export const pricingTiers: PricingTier[] = [
     description: "Complete credit health & financial wellness",
     cta: "Start 14-Day Free Trial",
     popular: false,
+    creditsPerMonth: 5000,
     limits: {
       disputes: 10,
       linkedAccounts: 10,
@@ -176,6 +180,7 @@ export const pricingTiers: PricingTier[] = [
     cta: "Start 14-Day Free Trial",
     popular: true,
     badge: "Most Popular",
+    creditsPerMonth: 15000,
     limits: {
       disputes: "unlimited",
       linkedAccounts: "unlimited",
@@ -215,6 +220,7 @@ export const pricingTiers: PricingTier[] = [
     description: "Perfect for couples managing finances together",
     cta: "Start 14-Day Free Trial",
     popular: false,
+    creditsPerMonth: 25000,
     limits: {
       disputes: "unlimited",
       linkedAccounts: "unlimited",
@@ -247,6 +253,7 @@ export const pricingTiers: PricingTier[] = [
     description: "Complete financial management for families",
     cta: "Start 14-Day Free Trial",
     popular: false,
+    creditsPerMonth: 35000,
     limits: {
       disputes: "unlimited",
       linkedAccounts: "unlimited",
@@ -284,6 +291,7 @@ export const pricingTiers: PricingTier[] = [
     cta: "Start 14-Day Free Trial",
     popular: false,
     badge: "Best Value",
+    creditsPerMonth: 50000,
     limits: {
       disputes: "unlimited",
       linkedAccounts: "unlimited",

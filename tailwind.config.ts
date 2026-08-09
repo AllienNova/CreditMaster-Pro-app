@@ -177,6 +177,8 @@ const config: Config = {
         "slide-down": "slideDown 0.3s cubic-bezier(0, 0, 0.2, 1)",
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "scale-in": "scaleIn 0.25s cubic-bezier(0, 0, 0.2, 1)",
+        float: "float 6s ease-in-out infinite",
+        "float-slow": "floatSlow 8s ease-in-out infinite",
       },
       keyframes: {
         fadeIn: {
@@ -194,6 +196,14 @@ const config: Config = {
         scaleIn: {
           "0%": { transform: "scale(0.95)", opacity: "0" },
           "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-12px)" },
+        },
+        floatSlow: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-8px)" },
         },
       },
     },

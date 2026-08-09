@@ -1,9 +1,21 @@
 /**
  * Fynvita Credit Monitoring Dashboard Screen
- * Real-time credit monitoring with alerts
+ * Real-time credit monitoring with alerts.
+ *
+ * Real-data wiring (PARITY): renders the authenticated user's real bureau
+ * scores, monitoring alerts, and score-history trend from useCreditStore
+ * (fetchScores / fetchAlerts / fetchScoreHistory on mount, honest inline
+ * loading / error+retry / empty states, pull-to-refresh). The former
+ * MOCK_SCORES / MOCK_ALERTS / SCORE_HISTORY arrays and the fake setTimeout load
+ * were removed; store types are flattened for rendering via
+ * monitoringDashboardAdapter (nothing fabricated). The previously hardcoded
+ * "Key Factors" block (Payment History / Utilization 32% / Credit Age 7yr /
+ * Credit Mix) had no faithful per-user source — the /credit/factors endpoint
+ * returns no utilization %, age, or mix values — so it is shown as an honest
+ * "Score factors unavailable" state rather than invented numbers.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,6 +23,7 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,134 +31,84 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { LineChart } from "../../src/components/charts";
+import { useCreditStore } from "../../src/store/creditStore";
+import {
+  mapBureauScore,
+  mapMonitoringAlert,
+  mapScoreHistoryToTrend,
+  type MonitoringAlertView,
+} from "../../src/services/api/monitoringDashboardAdapter";
+import type { AlertType } from "../../src/services/api/types";
 
-interface Alert {
-  id: string;
-  type: "score_change" | "new_account" | "inquiry" | "payment" | "utilization";
-  title: string;
-  description: string;
-  severity: "info" | "warning" | "critical";
-  date: string;
-  read: boolean;
+// Real alert severities (low | medium | high | critical) -> semantic colors.
+const SEVERITY_COLOR: Record<MonitoringAlertView["severity"], string> = {
+  low: theme.colors.primary,
+  medium: theme.colors.warning,
+  high: theme.colors.error,
+  critical: theme.colors.error,
+};
+
+// Every real AlertType maps to an icon (no default fabrication).
+const TYPE_ICON: Record<AlertType, keyof typeof Ionicons.glyphMap> = {
+  score_change: "trending-up",
+  new_account: "add-circle",
+  inquiry: "search",
+  address_change: "home",
+  fraud_alert: "warning",
+  derogatory: "alert-circle",
+};
+
+// createdAt arrives as an ISO string; render a compact locale date (empty for a
+// missing/invalid timestamp rather than "Invalid Date").
+function formatDate(iso?: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString();
 }
-
-interface BureauScore {
-  bureau: string;
-  score: number;
-  change: number;
-  lastUpdated: string;
-}
-
-const MOCK_SCORES: BureauScore[] = [
-  { bureau: "Experian", score: 678, change: 12, lastUpdated: "2024-12-01" },
-  { bureau: "Equifax", score: 665, change: 8, lastUpdated: "2024-11-28" },
-  { bureau: "TransUnion", score: 672, change: 15, lastUpdated: "2024-11-30" },
-];
-
-const MOCK_ALERTS: Alert[] = [
-  {
-    id: "1",
-    type: "score_change",
-    title: "Credit Score Increased",
-    description: "Your Experian score increased by 12 points",
-    severity: "info",
-    date: "2024-12-01",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "inquiry",
-    title: "New Hard Inquiry",
-    description: "A hard inquiry was added by ABC Lender",
-    severity: "warning",
-    date: "2024-11-28",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "utilization",
-    title: "High Utilization Alert",
-    description: "Your credit utilization is above 30%",
-    severity: "critical",
-    date: "2024-11-25",
-    read: true,
-  },
-  {
-    id: "4",
-    type: "payment",
-    title: "Payment Due Soon",
-    description: "Chase card payment due in 3 days",
-    severity: "warning",
-    date: "2024-11-20",
-    read: true,
-  },
-];
-
-const SCORE_HISTORY = [
-  { value: 645, label: "Jul" },
-  { value: 652, label: "Aug" },
-  { value: 658, label: "Sep" },
-  { value: 665, label: "Oct" },
-  { value: 672, label: "Nov" },
-  { value: 678, label: "Dec" },
-];
 
 export default function MonitoringScreen() {
-  const [scores, setScores] = useState<BureauScore[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    scores,
+    alerts,
+    scoreHistory,
+    isLoadingScores,
+    isLoadingAlerts,
+    scoreError,
+    alertError,
+    fetchScores,
+    fetchAlerts,
+    fetchScoreHistory,
+  } = useCreditStore();
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const load = useCallback(() => {
+    fetchScores();
+    fetchAlerts();
+    fetchScoreHistory();
+  }, [fetchScores, fetchAlerts, fetchScoreHistory]);
 
-  const loadData = async () => {
-    setLoading(true);
-    setTimeout(() => {
-      setScores(MOCK_SCORES);
-      setAlerts(MOCK_ALERTS);
-      setLoading(false);
-    }, 500);
-  };
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadData();
+    await Promise.all([fetchScores(), fetchAlerts(), fetchScoreHistory()]);
     setRefreshing(false);
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "info":
-        return theme.colors.primary;
-      case "warning":
-        return theme.colors.warning;
-      case "critical":
-        return theme.colors.error;
-      default:
-        return theme.colors.textSecondary;
-    }
-  };
+  const bureauScores = scores.map(mapBureauScore);
+  const alertViews = alerts.map(mapMonitoringAlert);
+  const trend = mapScoreHistoryToTrend(scoreHistory);
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "score_change":
-        return "trending-up";
-      case "new_account":
-        return "add-circle";
-      case "inquiry":
-        return "search";
-      case "payment":
-        return "card";
-      case "utilization":
-        return "pie-chart";
-      default:
-        return "alert-circle";
-    }
-  };
+  const isLoading = isLoadingScores || isLoadingAlerts;
+  const error = scoreError ?? alertError;
+  const hasData = bureauScores.length > 0 || alertViews.length > 0;
+  const showLoading = isLoading && !hasData;
+  const showError = !!error && !hasData;
+  const showEmpty = !showLoading && !showError && !hasData;
 
-  const unreadCount = alerts.filter((a) => !a.read).length;
+  const unreadCount = alertViews.filter((a) => !a.read).length;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -171,203 +134,227 @@ export default function MonitoringScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Bureau Scores */}
-        <View style={styles.scoresSection}>
-          {scores.map((bureau) => (
-            <Card key={bureau.bureau} style={styles.scoreCard}>
-              <View style={styles.scoreHeader}>
-                <Text style={styles.bureauName}>{bureau.bureau}</Text>
-                <View
-                  style={[
-                    styles.changeBadge,
-                    {
-                      backgroundColor:
-                        (bureau.change >= 0
-                          ? theme.colors.success
-                          : theme.colors.error) + "20",
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={bureau.change >= 0 ? "arrow-up" : "arrow-down"}
-                    size={12}
-                    color={
-                      bureau.change >= 0
-                        ? theme.colors.success
-                        : theme.colors.error
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.changeText,
-                      {
-                        color:
-                          bureau.change >= 0
-                            ? theme.colors.success
-                            : theme.colors.error,
-                      },
-                    ]}
-                  >
-                    {Math.abs(bureau.change)}
-                  </Text>
-                </View>
-              </View>
-              <Text style={styles.scoreValue}>{bureau.score}</Text>
-              <Text style={styles.lastUpdated}>
-                Updated: {new Date(bureau.lastUpdated).toLocaleDateString()}
-              </Text>
-            </Card>
-          ))}
-        </View>
-
-        {/* Score History Chart */}
-        <Card style={styles.chartCard}>
-          <Text style={styles.sectionTitle}>Score Trend (6 Months)</Text>
-          <LineChart
-            data={SCORE_HISTORY}
-            height={180}
-            color={theme.colors.success}
-            showDots
-            showLabels
-            showGrid
-          />
-        </Card>
-
-        {/* Credit Factors */}
-        <Card style={styles.factorsCard}>
-          <Text style={styles.sectionTitle}>Key Factors</Text>
-          <View style={styles.factorsList}>
-            <View style={styles.factorItem}>
-              <View
-                style={[
-                  styles.factorIcon,
-                  { backgroundColor: theme.colors.success + "20" },
-                ]}
-              >
-                <Ionicons
-                  name="checkmark-circle"
-                  size={20}
-                  color={theme.colors.success}
-                />
-              </View>
-              <View style={styles.factorInfo}>
-                <Text style={styles.factorLabel}>Payment History</Text>
-                <Text style={styles.factorValue}>Excellent</Text>
-              </View>
-            </View>
-            <View style={styles.factorItem}>
-              <View
-                style={[
-                  styles.factorIcon,
-                  { backgroundColor: theme.colors.warning + "20" },
-                ]}
-              >
-                <Ionicons
-                  name="alert-circle"
-                  size={20}
-                  color={theme.colors.warning}
-                />
-              </View>
-              <View style={styles.factorInfo}>
-                <Text style={styles.factorLabel}>Credit Utilization</Text>
-                <Text style={styles.factorValue}>32%</Text>
-              </View>
-            </View>
-            <View style={styles.factorItem}>
-              <View
-                style={[
-                  styles.factorIcon,
-                  { backgroundColor: theme.colors.success + "20" },
-                ]}
-              >
-                <Ionicons name="time" size={20} color={theme.colors.success} />
-              </View>
-              <View style={styles.factorInfo}>
-                <Text style={styles.factorLabel}>Credit Age</Text>
-                <Text style={styles.factorValue}>7 years</Text>
-              </View>
-            </View>
-            <View style={styles.factorItem}>
-              <View
-                style={[
-                  styles.factorIcon,
-                  { backgroundColor: theme.colors.primary + "20" },
-                ]}
-              >
-                <Ionicons
-                  name="layers"
-                  size={20}
-                  color={theme.colors.primary}
-                />
-              </View>
-              <View style={styles.factorInfo}>
-                <Text style={styles.factorLabel}>Credit Mix</Text>
-                <Text style={styles.factorValue}>Good</Text>
-              </View>
-            </View>
+        {/* Honest inline states — no mock fallback, nothing fabricated */}
+        {showLoading && (
+          <View
+            style={styles.stateContainer}
+            testID="dashboard-monitoring-loading"
+          >
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.stateText}>Loading credit monitoring...</Text>
           </View>
-        </Card>
+        )}
 
-        {/* Alerts */}
-        <Card style={styles.alertsCard}>
-          <View style={styles.alertsHeader}>
-            <Text style={styles.sectionTitle}>Recent Alerts</Text>
-            {unreadCount > 0 && (
-              <View style={styles.unreadBadge}>
-                <Text style={styles.unreadText}>{unreadCount} new</Text>
-              </View>
-            )}
+        {showError && (
+          <View
+            style={styles.stateContainer}
+            testID="dashboard-monitoring-error"
+          >
+            <Ionicons
+              name="cloud-offline-outline"
+              size={48}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.stateText}>{error}</Text>
+            <TouchableOpacity style={styles.emptyButton} onPress={load}>
+              <Text style={styles.emptyButtonText}>Try Again</Text>
+            </TouchableOpacity>
           </View>
-          {alerts.map((alert) => (
-            <View
-              key={alert.id}
-              style={[styles.alertItem, !alert.read && styles.alertUnread]}
-            >
-              <View
-                style={[
-                  styles.alertIconContainer,
-                  { backgroundColor: getSeverityColor(alert.severity) + "20" },
-                ]}
-              >
-                <Ionicons
-                  name={
-                    getTypeIcon(alert.type) as keyof typeof Ionicons.glyphMap
-                  }
-                  size={18}
-                  color={getSeverityColor(alert.severity)}
-                />
-              </View>
-              <View style={styles.alertContent}>
-                <View style={styles.alertHeader}>
-                  <Text style={styles.alertTitle}>{alert.title}</Text>
-                  <View
-                    style={[
-                      styles.severityBadge,
-                      {
-                        backgroundColor:
-                          getSeverityColor(alert.severity) + "20",
-                      },
-                    ]}
-                  >
-                    <Text
+        )}
+
+        {!showLoading && !showError && showEmpty && (
+          <View
+            style={styles.stateContainer}
+            testID="dashboard-monitoring-empty"
+          >
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={48}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.stateText}>
+              No monitoring data yet. Bureau scores and alerts will appear here
+              once your credit is connected.
+            </Text>
+          </View>
+        )}
+
+        {!showLoading && !showError && !showEmpty && (
+          <>
+            {/* Bureau Scores */}
+            <View style={styles.scoresSection}>
+              {bureauScores.map((bureau) => (
+                <Card key={bureau.id} style={styles.scoreCard}>
+                  <View style={styles.scoreHeader}>
+                    <Text style={styles.bureauName}>{bureau.bureau}</Text>
+                    <View
                       style={[
-                        styles.severityText,
-                        { color: getSeverityColor(alert.severity) },
+                        styles.changeBadge,
+                        {
+                          backgroundColor:
+                            (bureau.change >= 0
+                              ? theme.colors.success
+                              : theme.colors.error) + "20",
+                        },
                       ]}
                     >
-                      {alert.severity}
-                    </Text>
+                      <Ionicons
+                        name={bureau.change >= 0 ? "arrow-up" : "arrow-down"}
+                        size={12}
+                        color={
+                          bureau.change >= 0
+                            ? theme.colors.success
+                            : theme.colors.error
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.changeText,
+                          {
+                            color:
+                              bureau.change >= 0
+                                ? theme.colors.success
+                                : theme.colors.error,
+                          },
+                        ]}
+                      >
+                        {Math.abs(bureau.change)}
+                      </Text>
+                    </View>
                   </View>
+                  <Text style={styles.scoreValue}>{bureau.score}</Text>
+                  <Text style={styles.lastUpdated}>
+                    Updated: {formatDate(bureau.lastUpdated)}
+                  </Text>
+                </Card>
+              ))}
+            </View>
+
+            {/* Score History Chart */}
+            <Card style={styles.chartCard}>
+              <Text style={styles.sectionTitle}>Score Trend</Text>
+              {trend.length > 0 ? (
+                <LineChart
+                  data={trend}
+                  height={180}
+                  color={theme.colors.success}
+                  showDots
+                  showLabels
+                  showGrid
+                />
+              ) : (
+                <View
+                  style={styles.chartEmpty}
+                  testID="dashboard-monitoring-history-empty"
+                >
+                  <Ionicons
+                    name="stats-chart-outline"
+                    size={36}
+                    color={theme.colors.textSecondary}
+                  />
+                  <Text style={styles.chartEmptyText}>
+                    No score history yet. Your score trend will appear here once
+                    scores are recorded.
+                  </Text>
                 </View>
-                <Text style={styles.alertDescription}>{alert.description}</Text>
-                <Text style={styles.alertDate}>
-                  {new Date(alert.date).toLocaleDateString()}
+              )}
+            </Card>
+
+            {/* Credit Factors — honest empty state.
+                The /credit/factors endpoint returns no utilization %, credit
+                age, or credit-mix values, so the previously hardcoded numbers
+                are not rendered; nothing is fabricated. */}
+            <Card style={styles.factorsCard}>
+              <Text style={styles.sectionTitle}>Key Factors</Text>
+              <View
+                style={styles.factorsEmpty}
+                testID="dashboard-monitoring-factors-unavailable"
+              >
+                <Ionicons
+                  name="information-circle-outline"
+                  size={28}
+                  color={theme.colors.textSecondary}
+                />
+                <Text style={styles.factorsEmptyText}>
+                  Score factors unavailable. Detailed credit factor data is not
+                  available yet.
                 </Text>
               </View>
-              {!alert.read && <View style={styles.unreadDot} />}
-            </View>
-          ))}
-        </Card>
+            </Card>
+
+            {/* Alerts */}
+            <Card style={styles.alertsCard}>
+              <View style={styles.alertsHeader}>
+                <Text style={styles.sectionTitle}>Recent Alerts</Text>
+                {unreadCount > 0 && (
+                  <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadText}>{unreadCount} new</Text>
+                  </View>
+                )}
+              </View>
+              {alertViews.length === 0 ? (
+                <View
+                  style={styles.alertsEmpty}
+                  testID="dashboard-monitoring-alerts-empty"
+                >
+                  <Text style={styles.alertsEmptyText}>
+                    No alerts right now.
+                  </Text>
+                </View>
+              ) : (
+                alertViews.map((alert) => (
+                  <View
+                    key={alert.id}
+                    style={[styles.alertItem, !alert.read && styles.alertUnread]}
+                  >
+                    <View
+                      style={[
+                        styles.alertIconContainer,
+                        { backgroundColor: SEVERITY_COLOR[alert.severity] + "20" },
+                      ]}
+                    >
+                      <Ionicons
+                        name={TYPE_ICON[alert.type]}
+                        size={18}
+                        color={SEVERITY_COLOR[alert.severity]}
+                      />
+                    </View>
+                    <View style={styles.alertContent}>
+                      <View style={styles.alertHeader}>
+                        <Text style={styles.alertTitle}>{alert.title}</Text>
+                        <View
+                          style={[
+                            styles.severityBadge,
+                            {
+                              backgroundColor:
+                                SEVERITY_COLOR[alert.severity] + "20",
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.severityText,
+                              { color: SEVERITY_COLOR[alert.severity] },
+                            ]}
+                          >
+                            {alert.severity}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.alertDescription}>
+                        {alert.description}
+                      </Text>
+                      <Text style={styles.alertDate}>
+                        {formatDate(alert.date)}
+                      </Text>
+                    </View>
+                    {!alert.read && <View style={styles.unreadDot} />}
+                  </View>
+                ))
+              )}
+            </Card>
+          </>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -439,26 +426,28 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
+  chartEmpty: { alignItems: "center", paddingVertical: theme.spacing.lg },
+  chartEmptyText: {
+    marginTop: theme.spacing.sm,
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 18,
+  },
 
   factorsCard: { marginBottom: theme.spacing.md },
-  factorsList: { gap: 12 },
-  factorItem: { flexDirection: "row", alignItems: "center" },
-  factorIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  factorInfo: {
-    flex: 1,
+  factorsEmpty: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: 10,
+    paddingVertical: theme.spacing.sm,
   },
-  factorLabel: { fontSize: 14, color: theme.colors.text },
-  factorValue: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
+  factorsEmptyText: {
+    flex: 1,
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    lineHeight: 18,
+  },
 
   alertsCard: { marginBottom: theme.spacing.md },
   alertsHeader: {
@@ -474,6 +463,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   unreadText: { color: "#fff", fontSize: 11, fontWeight: "600" },
+  alertsEmpty: { paddingVertical: theme.spacing.md, alignItems: "center" },
+  alertsEmptyText: { fontSize: 13, color: theme.colors.textSecondary },
 
   alertItem: {
     flexDirection: "row",
@@ -534,4 +525,17 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     marginTop: 4,
   },
+  stateContainer: { alignItems: "center", padding: 40, gap: 12 },
+  stateText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  emptyButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  emptyButtonText: { color: "#fff", fontWeight: "600" },
 });

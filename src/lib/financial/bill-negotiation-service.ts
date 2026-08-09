@@ -5,9 +5,10 @@
  * through intelligent negotiation scripts, market comparisons, and tracking.
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+// Lazy: the service-role key is not required at import time.
+const supabase = () => getServiceRoleClient();
 import type { Bill, BillCategory } from "./types/bill.types";
 import type {
   BillNegotiation,
@@ -264,7 +265,7 @@ class BillNegotiationService {
         attemptHistory: [],
       };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("bill_negotiations")
       .insert(this.mapNegotiationToDb(negotiation))
       .select()
@@ -281,7 +282,7 @@ class BillNegotiationService {
     negotiationId: string,
     userId: string,
   ): Promise<BillNegotiation | null> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("bill_negotiations")
       .select("*")
       .eq("id", negotiationId)
@@ -296,7 +297,7 @@ class BillNegotiationService {
     userId: string,
     status?: NegotiationStatus,
   ): Promise<BillNegotiation[]> {
-    let query = supabase
+    let query = supabase()
       .from("bill_negotiations")
       .select("*")
       .eq("user_id", userId)
@@ -331,7 +332,7 @@ class BillNegotiationService {
       updateData.completed_at = new Date().toISOString();
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("bill_negotiations")
       .update(updateData)
       .eq("id", negotiationId)
@@ -371,7 +372,7 @@ class BillNegotiationService {
           ? "awaiting_response"
           : "in_progress";
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("bill_negotiations")
       .update({
         attempt_history: JSON.stringify(updatedHistory),
@@ -433,7 +434,7 @@ class BillNegotiationService {
     userId: string,
   ): Promise<NegotiationOpportunity[]> {
     // Get user's bills
-    const { data: bills, error } = await supabase
+    const { data: bills, error } = await supabase()
       .from("bills")
       .select("*")
       .eq("user_id", userId)

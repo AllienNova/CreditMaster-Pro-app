@@ -1,0 +1,238 @@
+# 8. Risk Management (what makes it “hard to lose money” — realistically)
+
+### Important truth (research-grade statement)
+
+**No risk management system can guarantee a win rate floor** (e.g., 85–90%) across real markets due to regime shifts, gaps, slippage, and stochasticity. Risk management controls the *loss distribution* and drawdown risk, not outcomes.
+
+## 8.1 Risk geometry filter (missing formal definition in v1)
+
+Define:
+
+* dGeom = abs(entry − safetyAtEntry) / ATR_entry
+
+Trade only if:
+
+* dGeom <= dSafety_max
+
+This prevents trades with structurally huge stop distances.
+
+## 8.2 Position sizing (fixed fraction)
+
+Size so that max loss = riskPct * equity:
+
+* size = (equity * riskPct) / abs(entry − stop)
+
+Use Q-grade to modulate risk:
+
+* A-grade: 1.0%
+* B-grade: 0.5%
+* skip below threshold
+
+## 8.3 Hybrid trailing stop system (best practical version)
+
+Stops must be monotonic (never loosen).
+
+### Phase 1: structural stop
+
+* initial stop at Safety line ± buffer
+
+### Phase 2: proof + break-even lock
+
+* at 0.8R: stop to BE + small buffer
+
+### Phase 3: partial profit
+
+* take 50–70% at 1R (raises realized win rate)
+
+### Phase 4: structure trailing
+
+* trail remainder behind confirmed pivots:
+
+  * long: last pivot low − buffer
+  * short: last pivot high + buffer
+
+### Phase 5: time stop
+
+* exit if trade stagnates (e.g., fails to reach +0.5R within X bars)
+
+## 8.4 Portfolio circuit breakers
+
+* daily loss cap
+* max losing streak
+* one-break-one-trade rule integrated into the FSM
+
+---
+
+# 9. TradingView / Pine Script Implementation (research-grade guidance)
+
+## 9.1 Most important correction vs v1
+
+Your v1 mentions HTF requests with lookahead_on. That is dangerous.
+
+### Research-grade rule:
+
+* Use lookahead_off by default.
+* If HTF bias is needed, use only closed HTF values (previous HTF bar) explicitly.
+
+## 9.2 Complexity constraints (must be documented)
+
+Pivot-pair search scales as O(K^2 * N/step).
+To stay stable in Pine:
+
+* cap K (e.g., 8–12 pivots)
+* evaluate violations using downsampling step (evalStep)
+* recompute only on new pivots or every X bars
+
+## 9.3 Module output contract (embedding design)
+
+Expose per bar:
+
+* L, U, QL, QU
+* Regime label
+* break/retest/failure flags
+* Action/Safety frozen lines when active
+* dGeom, distance-to-lines
+* trailing stop candidates
+
+---
+
+# 10. Validation Protocol (the missing “research-grade” section)
+
+A research-grade paper must define how claims are tested.
+
+## 10.1 Avoiding overfitting
+
+* walk-forward optimization
+* rolling window parameter tuning
+* out-of-sample periods across different regimes
+
+## 10.2 Execution realism
+
+Backtests must include:
+
+* commission/spread/slippage model
+* gap handling (stop may slip)
+* intrabar ambiguity (bar-close vs stop execution)
+
+## 10.3 Robustness checks
+
+* parameter sensitivity heatmaps
+* cross-asset replication
+* stability of Q thresholds and regime thresholds
+
+## 10.4 Reporting metrics
+
+Report:
+
+* expectancy (avg R)
+* profit factor
+* max drawdown
+* tail loss metrics (CVaR)
+* MAE/MFE distributions
+* calibration (if Q is interpreted probabilistically)
+
+---
+
+# 11. Limitations and Future Work
+
+Limitations:
+
+* pivot delay creates latency
+* violent news moves can invalidate structure
+* Pine sampling can miss small violations between sampled bars
+* regime classifier can mislabel in volatility shifts
+
+Future:
+
+* candidate line selection via convex hull constraints (offline research)
+* probabilistic calibration of Q
+* multi-horizon stack gating (macro structure filters micro signals)
+* integrate order flow/volume features in markets where volume is meaningful
+
+---
+
+# Appendix A — Pine v6 Core Snippets (corrected, practical, non-repainting aware)
+
+### 1) Efficiency Ratio
+
+```pine
+f_er(_s, _n) =>
+    net = math.abs(_s - _s[_n])
+    sum = ta.sum(math.abs(_s - _s[1]), _n)
+    sum > 0 ? net / sum : 0.0
+```
+
+### 2) Confirmed pivots (non-repainting)
+
+```pine
+pl = ta.pivotlow(low, 2, 2)
+ph = ta.pivothigh(high, 2, 2)
+```
+
+### 3) Frozen Action/Safety projection (core to non-repainting retests)
+
+```pine
+// stored at break
+var int breakBar = na
+var float action0 = na, actionM = na
+var float safety0 = na, safetyM = na
+
+actionLine = na
+safetyLine = na
+if not na(breakBar)
+    k = bar_index - breakBar
+    actionLine := action0 + actionM * k
+    safetyLine := safety0 + safetyM * k
+```
+
+### 4) Hybrid trailing stop (structure + volatility + monotonic)
+
+```pine
+pL = ta.pivotlow(low, 2, 2)
+pH = ta.pivothigh(high, 2, 2)
+buf = 0.2 * ta.atr(14)
+
+var float trailStop = na
+
+if strategy.position_size > 0
+    // pivot trail
+    structStop = not na(pL) ? pL - buf : na
+    // monotonic tighten
+    trailStop := na(trailStop) ? structStop : math.max(trailStop, structStop)
+
+if strategy.position_size < 0
+    structStop = not na(pH) ? pH + buf : na
+    trailStop := na(trailStop) ? structStop : math.min(trailStop, structStop)
+```
+
+### 5) Risk geometry definition (dGeom)
+
+```pine
+dGeom = atr > 0 ? math.abs(entryPrice - safetyAtEntry) / atr : na
+```
+
+---
+
+## What I still need from you (only if you want the “best defaults”)
+
+To tune this into a **practical trading strategy** (without curve-fit), the best next step is:
+
+1. what market(s)? (BTC / ES / NQ / XAU / EURUSD etc.)
+2. what primary timeframe? (15m / 1H / 4H / Daily)
+
+Then I’ll provide a stable parameter prior set:
+
+* pivot size
+* N window
+* ER thresholds
+* buffers βp/βc/γ/δ
+* risk geometry max
+* trailing buffers and time stop ranges
+
+---
+
+# If you want the file export
+
+Say: **“Export as file”** and I’ll output the full v2.0 paper as a clean Markdown file you can download (formatted without LaTeX escapes so it writes correctly).
+
+Want it also as a **PDF-style layout** (IEEE-ish)? I can format it that way too.

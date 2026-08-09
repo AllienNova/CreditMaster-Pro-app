@@ -1,0 +1,446 @@
+# Strativion Example: Historical Regime Transitions
+# 12 major regime changes with detection signals and trading implications
+# Source: Chapters 8 (Market Regimes), 32-38 (Market Playbooks)
+
+regime_transitions:
+  - id: 1
+    name: "COVID Crash: Risk-On to Crisis"
+    date_start: "2020-02-19"
+    date_end: "2020-03-23"
+    duration_days: 33
+    regime_before: "trending_bullish"
+    regime_after: "crisis"
+
+    detection_signals:
+      - signal: "VIX"
+        before: 14.4
+        after: 82.69
+        date_peak: "2020-03-16"
+      - signal: "SPY drawdown"
+        value: "-33.9% in 33 days"
+      - signal: "Credit spreads (HY OAS)"
+        before: "350 bps"
+        after: "1087 bps"
+      - signal: "TLT-SPY correlation"
+        before: -0.45
+        after: 0.60
+        note: "Briefly positive during liquidity crisis (gold also sold)"
+
+    what_worked:
+      - "Long TLT (once Fed restored liquidity, Mar 23)"
+      - "Long VIX calls purchased before Feb 20"
+      - "Cash preservation (sitting out)"
+      - "Post-crash buying of quality names at capitulation lows"
+    what_failed:
+      - "Buy-the-dip strategies (no bottom for 33 days)"
+      - "60/40 portfolios (bonds initially sold off too in liquidity panic)"
+      - "Short volatility strategies (VIX went from 14 to 82)"
+      - "Leveraged long positions"
+
+    laws_active: [2, 7, 24, 29]
+    spx_decline: "-33.9%"
+    recovery_date: "2020-08-18"
+
+  - id: 2
+    name: "Post-COVID Recovery: Crisis to Trending Bull"
+    date_start: "2020-03-23"
+    date_end: "2020-06-08"
+    duration_days: 77
+    regime_before: "crisis"
+    regime_after: "trending_bullish"
+
+    detection_signals:
+      - signal: "Fed announces unlimited QE"
+        date: "2020-03-23"
+      - signal: "VIX"
+        before: 82.69
+        after: 25.0
+        note: "VIX halved in 4 weeks"
+      - signal: "Credit spreads"
+        before: "1087 bps"
+        after: "550 bps"
+      - signal: "NASDAQ makes new all-time high"
+        date: "2020-06-08"
+
+    what_worked:
+      - "Aggressive buying of tech stocks (AAPL, AMZN, MSFT)"
+      - "Long QQQ/NQ futures"
+      - "Selling elevated premium (VIX still above 25 for months)"
+    what_failed:
+      - "Staying in cash too long"
+      - "Shorting the 'obvious' bear market"
+      - "Waiting for 'retest of lows' that never came"
+
+    laws_active: [1, 2, 8]
+    spx_gain_from_low: "+44.5% in 77 days"
+
+  - id: 3
+    name: "Fed Tightening: Low-Vol Bull to Rate-Shock Bear"
+    date_start: "2022-01-03"
+    date_end: "2022-10-13"
+    duration_days: 283
+    regime_before: "trending_bullish"
+    regime_after: "volatile_bearish"
+
+    detection_signals:
+      - signal: "Yield curve inversion"
+        date: "2022-03-31"
+        value: "2Y-10Y spread goes negative"
+      - signal: "VIX"
+        before: 16.6
+        after: 33.6
+      - signal: "10Y yield"
+        before: "1.63%"
+        after: "4.25%"
+      - signal: "TLT-SPY correlation flips positive"
+        date: "2022-02"
+        before: -0.40
+        after: 0.50
+        note: "Inflation regime: bonds and stocks fall together"
+      - signal: "Fed funds rate"
+        before: "0.25%"
+        after: "3.25% (by Oct 2022)"
+
+    what_worked:
+      - "Short long-duration bonds (TLT -36.4% in 10 months)"
+      - "Long energy sector (XLE +64.6% in 2022)"
+      - "Defensive sectors (XLU, XLP held flat)"
+      - "Short growth/tech (QQQ -33%)"
+      - "Short crypto (BTC -65%)"
+    what_failed:
+      - "60/40 portfolio (-16%)"
+      - "Long growth stocks"
+      - "Long bonds as hedge"
+      - "Buy the dip mentality (every dip was followed by lower lows for 10 months)"
+
+    laws_active: [1, 8, 24]
+    spx_decline: "-25.4%"
+
+  - id: 4
+    name: "Terra/Luna Collapse: Crypto Bull to Crypto Contagion"
+    date_start: "2022-05-07"
+    date_end: "2022-06-18"
+    duration_days: 42
+    regime_before: "crypto_recovery"
+    regime_after: "crypto_crisis"
+
+    detection_signals:
+      - signal: "UST peg breaks"
+        date: "2022-05-08"
+        value: "UST drops to $0.91"
+      - signal: "Luna price"
+        before: 80.00
+        after: 0.00001
+      - signal: "BTC price"
+        before: 36000
+        after: 17600
+      - signal: "Crypto lending platforms freeze withdrawals"
+        events: ["Celsius Jun 12", "Voyager Jun 22", "BlockFi Jul"]
+      - signal: "Aggregate funding rates"
+        value: "Deeply negative across all exchanges"
+
+    what_worked:
+      - "Cash / no crypto exposure"
+      - "Short BTC/ETH"
+      - "Buying BTC at $16K-$18K in November (for patient traders)"
+    what_failed:
+      - "Holding altcoins (many dropped 80-95%)"
+      - "Crypto lending platforms (Celsius, Voyager, BlockFi all went bankrupt)"
+      - "Algorithmic stablecoins"
+      - "Any leveraged long position"
+
+    laws_active: [2, 7, 24, 29, 30]
+    btc_decline: "-51% (from $36K to $17.6K)"
+    ecosystem_damage: "$40B+ Terra/Luna + $8.7B FTX (later) + lending platform losses"
+
+  - id: 5
+    name: "Sector Rotation: Energy to Tech (Late 2022 to 2023)"
+    date_start: "2022-10-01"
+    date_end: "2023-06-30"
+    duration_days: 273
+    regime_before: "energy_leadership"
+    regime_after: "tech_leadership"
+
+    detection_signals:
+      - signal: "ISM Manufacturing"
+        before: "50.2 (Oct 2022)"
+        after: "46.3 (Jun 2023)"
+        note: "Below 50 = contraction. Signal to rotate from cyclicals to growth."
+      - signal: "XLE relative strength vs SPY"
+        note: "Peaked Oct 2022, declined through 2023"
+      - signal: "AI narrative (ChatGPT launch)"
+        date: "2022-11-30"
+      - signal: "NVDA earnings blowout"
+        date: "2023-05-24"
+        detail: "Q2 guide $11B vs $7.15B expected"
+
+    what_worked:
+      - "Long technology (XLK +56.4% in 2023)"
+      - "Long consumer discretionary (XLY +42.4%)"
+      - "Specifically: NVDA +239%, META +194%, AMZN +81%"
+    what_failed:
+      - "Staying overweight energy (XLE -1.3% in 2023)"
+      - "Defensive positioning (XLU -7.1%)"
+      - "Short tech (the 'it's overvalued' thesis)"
+
+    laws_active: [1, 8, 12]
+    rotation_magnitude: "120 percentage points outperformance switching energy to tech"
+
+  - id: 6
+    name: "SVB Banking Crisis: Normal to Financial Stress"
+    date_start: "2023-03-08"
+    date_end: "2023-03-20"
+    duration_days: 12
+    regime_before: "normal"
+    regime_after: "financial_stress"
+
+    detection_signals:
+      - signal: "SVB discloses $1.8B bond loss"
+        date: "2023-03-08"
+      - signal: "SVB stock -60% in one day"
+        date: "2023-03-09"
+      - signal: "FDIC seizes SVB"
+        date: "2023-03-10"
+      - signal: "Credit spreads (HY OAS)"
+        before: "420 bps"
+        after: "530 bps"
+      - signal: "KBW Bank Index"
+        decline: "-25% in one week"
+      - signal: "Gold"
+        move: "$1,868 to $2,050 (+9.7%)"
+
+    what_worked:
+      - "Long gold (GC +9.7% in 3 weeks)"
+      - "Short HYG (credit stress trade)"
+      - "Long TLT (flight to safety)"
+      - "Short regional bank ETF (KRE)"
+    what_failed:
+      - "Long bank stocks"
+      - "Ignoring the regime change"
+      - "Assuming 'contained' when contagion signals were firing"
+
+    laws_active: [8, 24]
+    resolution: "FDIC emergency deposit guarantee Mar 12. Fed Bank Term Funding Program. Crisis contained within 2 weeks."
+
+  - id: 7
+    name: "Fed Pivot Signal: Higher-for-Longer to Rate Cut Expectations"
+    date_start: "2023-10-19"
+    date_end: "2023-12-28"
+    duration_days: 70
+    regime_before: "tightening"
+    regime_after: "easing_expectations"
+
+    detection_signals:
+      - signal: "10Y yield peaks"
+        date: "2023-10-19"
+        value: "4.99%"
+      - signal: "CPI cooling"
+        date: "2023-11-14"
+        value: "3.2% vs 3.3% expected"
+      - signal: "FOMC dot plot shows 3 cuts in 2024"
+        date: "2023-12-13"
+      - signal: "MOVE Index (bond vol)"
+        value: "141 (elevated) then declining"
+
+    what_worked:
+      - "Long TLT (+22.2% in 10 weeks)"
+      - "TLT call options (+320%)"
+      - "Long SPY (rally into year-end)"
+      - "Long growth stocks"
+    what_failed:
+      - "Short bonds"
+      - "Defensive positioning"
+      - "Waiting for 'confirmation' (the move was fast)"
+
+    laws_active: [1, 3, 8]
+    tlt_gain: "+22.2%"
+    ten_year_yield_decline: "111 bps (4.99% to 3.88%)"
+
+  - id: 8
+    name: "Hot CPI Reversal: Rate Cut Euphoria to Higher-for-Longer Redux"
+    date_start: "2024-01-01"
+    date_end: "2024-04-25"
+    duration_days: 116
+    regime_before: "easing_expectations"
+    regime_after: "tightening_expectations"
+
+    detection_signals:
+      - signal: "Jan CPI hotter than expected"
+        date: "2024-02-13"
+        value: "3.1% vs 2.9% expected"
+      - signal: "Feb CPI accelerates"
+        date: "2024-03-12"
+        value: "Core 3.8%, services inflation sticky"
+      - signal: "Rate cut expectations repriced"
+        before: "7 cuts priced in"
+        after: "2 cuts priced in"
+      - signal: "10Y yield"
+        before: "3.88%"
+        after: "4.70%"
+
+    what_worked:
+      - "Short TLT (-13.5% in 4 months)"
+      - "Short duration bonds"
+      - "Long dollar (DXY)"
+    what_failed:
+      - "Long bonds"
+      - "Rate-sensitive growth stocks"
+      - "Expecting the rate cut party to continue"
+
+    laws_active: [2, 9]
+    tlt_decline: "-13.5%"
+
+  - id: 9
+    name: "BOJ Rate Hike: Carry Trade Unwind"
+    date_start: "2024-07-31"
+    date_end: "2024-08-16"
+    duration_days: 16
+    regime_before: "carry_trade_dominant"
+    regime_after: "global_deleveraging"
+
+    detection_signals:
+      - signal: "BOJ raises rates 0.0% to 0.25%"
+        date: "2024-07-31"
+      - signal: "USD/JPY"
+        before: 153.89
+        after: 141.68
+        decline: "-8% (1200 pips in 3 weeks)"
+      - signal: "Nikkei 225"
+        date: "2024-08-05"
+        decline: "-12.4% (largest since 1987 crash)"
+      - signal: "VIX"
+        before: 16
+        after: 38.57
+        date: "2024-08-05"
+
+    what_worked:
+      - "Short USD/JPY"
+      - "Long VIX calls (purchased in July when VIX at 12.46)"
+      - "Cash / reduced exposure"
+      - "Long yen"
+    what_failed:
+      - "Carry trades (USD/JPY long, all funded-by-yen positions)"
+      - "Japanese equity longs"
+      - "Any position that was indirectly funded by cheap yen borrowing"
+      - "Selling premium (VIX doubled)"
+
+    laws_active: [2, 7, 24]
+    contagion_path: "BOJ hike -> Yen strengthens -> Carry unwind -> Liquidation of funded positions -> Global equity sell-off"
+
+  - id: 10
+    name: "Bitcoin Halving Cycle: Compression to Expansion (2020)"
+    date_start: "2020-05-11"
+    date_end: "2021-11-10"
+    duration_days: 548
+    regime_before: "compression"
+    regime_after: "post_halving_expansion"
+
+    detection_signals:
+      - signal: "Bitcoin halving"
+        date: "2020-05-11"
+        reward_change: "12.5 BTC -> 6.25 BTC per block"
+      - signal: "BTC price range (compression phase)"
+        range: "$8,500-$12,000 for 5 months"
+      - signal: "Breakout above $12,000"
+        date: "2020-10"
+      - signal: "Funding rates turn positive"
+        date: "2020-11"
+      - signal: "Exchange outflows accelerate"
+        note: "Holders moving to cold storage"
+
+    what_worked:
+      - "Long BTC during compression ($8,500-$12,000)"
+      - "Hold through expansion (BTC $12K to $69K)"
+      - "Long ETH (outperformed BTC during expansion)"
+    what_failed:
+      - "Shorting BTC during the expansion"
+      - "Selling too early (taking profits at $20K when cycle peak was $69K)"
+      - "Buying altcoins at the top (Nov 2021)"
+
+    laws_active: [3, 1, 2, 14]
+    btc_gain: "+705% ($8,572 to $69,000)"
+    compression_duration_months: 5
+    expansion_duration_months: 13
+
+  - id: 11
+    name: "OPEC Surprise Cut: Range-Bound to Trending Oil"
+    date_start: "2023-04-02"
+    date_end: "2023-09-28"
+    duration_days: 179
+    regime_before: "range_bound"
+    regime_after: "supply_driven_trend"
+
+    detection_signals:
+      - signal: "OPEC+ surprise cut announcement"
+        date: "2023-04-02"
+        detail: "1.16M bbl/day cut. Unexpected."
+      - signal: "WTI gap up 7.7%"
+        date: "2023-04-03"
+      - signal: "Futures curve shifts to backwardation"
+        note: "Signal of tightening physical supply"
+      - signal: "Saudi voluntary additional cuts"
+        date: "2023-06"
+
+    what_worked:
+      - "Long crude oil (CL)"
+      - "Long energy stocks (XLE)"
+      - "Calendar spreads (long front, short back in backwardation)"
+    what_failed:
+      - "Shorting oil on 'demand destruction' thesis (too early)"
+      - "Ignoring the backwardation signal"
+
+    laws_active: [1, 8]
+    wti_move: "$67 to $93.68 (+40%)"
+    resolution: "Chinese demand weakness eventually overwhelmed supply cuts in Oct 2023"
+
+  - id: 12
+    name: "Yield Curve Inversion: Expansion to Pre-Recession Warning"
+    date_start: "2022-03-31"
+    date_end: "2024-09-01"
+    duration_days: 885
+    regime_before: "expansion"
+    regime_after: "late_cycle_inverted"
+
+    detection_signals:
+      - signal: "2Y-10Y spread turns negative"
+        date: "2022-03-31"
+      - signal: "Maximum inversion"
+        date: "2023-07-03"
+        value: "-1.08% (deepest since 1981)"
+      - signal: "Inversion duration"
+        value: "2+ years (longest in modern history)"
+      - signal: "Steepening begins"
+        date: "2024-07"
+        note: "Phase 3 of the 4-phase yield curve system"
+
+    what_worked:
+      - "Phase 1: Reducing equity exposure gradually"
+      - "Phase 2: Building bond watchlist"
+      - "Phase 3: Long TLT on steepening signal"
+      - "Monitoring the 4-phase system from Chapter 38"
+    what_failed:
+      - "Buying long bonds too early (TLT fell 36% after inversion started)"
+      - "Ignoring the inversion ('this time is different')"
+      - "Panic selling equities immediately (stocks rallied 14.5% after 2006 inversion)"
+
+    laws_active: [8, 1]
+    track_record: "6/6 inversions preceded recessions since 1970. Zero false positives."
+    average_lead_time: "14.8 months"
+
+summary:
+  total_transitions: 12
+  key_detection_tools:
+    - "VIX level and rate of change"
+    - "Yield curve shape (2Y-10Y spread)"
+    - "Credit spreads (HY OAS)"
+    - "SPY-TLT correlation (60-day rolling)"
+    - "Crypto: Funding rates, open interest, MVRV"
+    - "Commodities: Futures curve shape (contango vs backwardation)"
+    - "Sector relative strength"
+
+  universal_lessons:
+    - "Regime changes are identifiable. They announce themselves through multiple signals."
+    - "The wrong strategy in the wrong regime produces systematically negative returns."
+    - "Most traders lose money not from bad analysis but from applying the right strategy in the wrong regime."
+    - "Speed of recognition matters: the traders who adapted within days captured the biggest moves."
+    - "Every regime transition creates both destruction and opportunity."

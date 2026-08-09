@@ -5,8 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import {
   creditScoreSimulator,
   type CreditProfile,
@@ -70,21 +70,11 @@ function isValidAction(action: unknown): action is SimulationAction {
  *
  * Returns simulation results based on stored profile data (mocked for now)
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "credit:read",
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    if (
-      !rbac.hasPermission(
-        validation.user as Parameters<typeof rbac.hasPermission>[0],
-        "credit:read",
-      )
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const { searchParams } = request.nextUrl;
     const simulationType = searchParams.get("type") || "optimal_path";
@@ -193,7 +183,8 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 // ============================================================================
 // POST - Run custom simulation
@@ -215,21 +206,11 @@ export async function GET(request: NextRequest) {
  *   "income": number (for "student_loan")
  * }
  */
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "credit:read",
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    if (
-      !rbac.hasPermission(
-        validation.user as Parameters<typeof rbac.hasPermission>[0],
-        "credit:read",
-      )
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const body = await request.json();
     const { profile, simulationType = "actions" } = body as {
@@ -448,4 +429,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

@@ -1,32 +1,33 @@
 /**
  * Debt Strategy API Route Tests
  *
- * Tests for POST /api/ai/financial-coach/debt-strategy endpoint
- *
- * Note: These are basic smoke tests focusing on authentication and validation.
- * Full integration tests with actual service calls should be run separately.
+ * Tests for POST /api/ai/financial-coach/debt-strategy endpoint.
+ * Route wrapped in withAuth (TASK-AUTH-03f); auth resolves via
+ * jwtValidation.validateFromHeaders + resolveRoleFromDb.
  */
 
 import { NextRequest } from "next/server";
 
-// Mock transitive dependencies that require env vars at import time
+const mockValidateFromHeaders = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
+}));
 jest.mock("@/lib/supabase/client", () => ({
   getSupabase: jest.fn(() => ({})),
 }));
-
-const mockGetUser = jest.fn();
-
-jest.mock("@/lib/supabase/server", () => ({
-  createClient: jest.fn(),
-  supabaseAdmin: {},
-}));
-
 jest.mock("@/lib/financial/financial-context-engine", () => ({
   financialContextEngine: {
     getFinancialContext: jest.fn(),
   },
 }));
-
 jest.mock("@/lib/financial/debt-strategy-optimizer", () => ({
   debtStrategyOptimizer: {
     compareStrategies: jest.fn(),
@@ -35,83 +36,63 @@ jest.mock("@/lib/financial/debt-strategy-optimizer", () => ({
   },
 }));
 
-// Import AFTER mocks are set up
 import { POST } from "../route";
-import { createClient } from "@/lib/supabase/server";
 
-describe("POST /api/ai/financial-coach/debt-strategy - Basic Tests", () => {
-  const mockUser = {
-    id: "user-123",
-    email: "test@example.com",
-  };
+const mockDebts = [
+  {
+    id: "debt-1",
+    name: "Credit Card",
+    balance: 5000,
+    interestRate: 18.5,
+    minimumPayment: 150,
+  },
+  {
+    id: "debt-2",
+    name: "Personal Loan",
+    balance: 10000,
+    interestRate: 12.0,
+    minimumPayment: 300,
+  },
+];
 
-  const mockDebts = [
-    {
-      id: "debt-1",
-      name: "Credit Card",
-      balance: 5000,
-      interestRate: 18.5,
-      minimumPayment: 150,
-    },
-    {
-      id: "debt-2",
-      name: "Personal Loan",
-      balance: 10000,
-      interestRate: 12.0,
-      minimumPayment: 300,
-    },
-  ];
+function createMockRequest(body: unknown): NextRequest {
+  const url = "http://localhost:3000/api/ai/financial-coach/debt-strategy";
+  return {
+    url,
+    method: "POST",
+    json: jest.fn().mockResolvedValue(body),
+    headers: new Headers(),
+    nextUrl: new URL(url),
+  } as unknown as NextRequest;
+}
 
+describe("POST /api/ai/financial-coach/debt-strategy", () => {
   beforeEach(() => {
-    // Re-setup createClient mock (resetMocks: true clears it between tests)
-    (createClient as jest.Mock).mockResolvedValue({
-      auth: {
-        getUser: mockGetUser,
-      },
+    jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
     });
-
-    // Default: authenticated user
-    mockGetUser.mockResolvedValue({
-      data: { user: mockUser },
-      error: null,
-    });
+    mockResolveRoleFromDb.mockResolvedValue("user");
   });
 
-  describe("Authentication", () => {
-    it("should return 401 if user is not authenticated", async () => {
-      mockGetUser.mockResolvedValue({
-        data: { user: null },
-        error: { message: "Not authenticated" },
-      });
+  describe("negative-auth", () => {
+    it("returns 401 when the request is not authenticated", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-      const request = new NextRequest(
-        "http://localhost:3000/api/ai/financial-coach/debt-strategy",
-        {
-          method: "POST",
-          body: JSON.stringify({ debts: mockDebts, extraPayment: 200 }),
-        },
+      const response = await POST(
+        createMockRequest({ debts: mockDebts, extraPayment: 200 }),
       );
 
-      const response = await POST(request);
-      const data = await response.json();
-
       expect(response.status).toBe(401);
-      expect(data.success).toBe(false);
-      expect(data.error.code).toBe("UNAUTHORIZED");
     });
   });
 
   describe("Request Validation", () => {
     it("should return 400 if debts array is empty", async () => {
-      const request = new NextRequest(
-        "http://localhost:3000/api/ai/financial-coach/debt-strategy",
-        {
-          method: "POST",
-          body: JSON.stringify({ debts: [], extraPayment: 200 }),
-        },
+      const response = await POST(
+        createMockRequest({ debts: [], extraPayment: 200 }),
       );
-
-      const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -122,15 +103,9 @@ describe("POST /api/ai/financial-coach/debt-strategy - Basic Tests", () => {
     it("should return 400 if debt has negative balance", async () => {
       const invalidDebts = [{ ...mockDebts[0], balance: -1000 }];
 
-      const request = new NextRequest(
-        "http://localhost:3000/api/ai/financial-coach/debt-strategy",
-        {
-          method: "POST",
-          body: JSON.stringify({ debts: invalidDebts, extraPayment: 200 }),
-        },
+      const response = await POST(
+        createMockRequest({ debts: invalidDebts, extraPayment: 200 }),
       );
-
-      const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -140,15 +115,9 @@ describe("POST /api/ai/financial-coach/debt-strategy - Basic Tests", () => {
     it("should return 400 if interest rate exceeds 100%", async () => {
       const invalidDebts = [{ ...mockDebts[0], interestRate: 150 }];
 
-      const request = new NextRequest(
-        "http://localhost:3000/api/ai/financial-coach/debt-strategy",
-        {
-          method: "POST",
-          body: JSON.stringify({ debts: invalidDebts, extraPayment: 200 }),
-        },
+      const response = await POST(
+        createMockRequest({ debts: invalidDebts, extraPayment: 200 }),
       );
-
-      const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(400);

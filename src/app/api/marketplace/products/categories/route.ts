@@ -6,18 +6,27 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { marketplaceService } from "@/lib/marketplace";
+import {
+  enforcePublicCatalogRateLimit,
+  methodNotAllowed,
+} from "@/lib/api/public-route-guard";
 
 export async function GET(request: NextRequest) {
+  const rateLimit = await enforcePublicCatalogRateLimit(request);
+  if (!rateLimit.allowed) return rateLimit.response;
+
   try {
     const categories = await marketplaceService.getCategories();
 
-    return NextResponse.json({
-      success: true,
-      data: categories,
-      meta: {
-        count: categories.length,
-      },
-    });
+    return rateLimit.withHeaders(
+      NextResponse.json({
+        success: true,
+        data: categories,
+        meta: {
+          count: categories.length,
+        },
+      }),
+    );
   } catch (error) {
     console.error("Error fetching categories:", error);
     return NextResponse.json(
@@ -30,3 +39,8 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const POST = methodNotAllowed;
+export const PUT = methodNotAllowed;
+export const PATCH = methodNotAllowed;
+export const DELETE = methodNotAllowed;

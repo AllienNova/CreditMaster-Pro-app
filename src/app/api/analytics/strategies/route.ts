@@ -1,20 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
 import { AnalyticsEngine } from "@/lib/analytics";
 
 /**
  * GET /api/analytics/strategies
  * Get strategy effectiveness analytics
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const strategyId = searchParams.get("strategy_id") || undefined;
 
@@ -29,4 +22,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

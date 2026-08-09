@@ -26,8 +26,8 @@ const mockSupabaseClient = {
   single: jest.fn().mockResolvedValue({ data: null, error: null }),
 };
 
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: () => mockSupabaseClient,
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: () => mockSupabaseClient,
 }));
 
 jest.mock("@/lib/supabase/server", () => ({

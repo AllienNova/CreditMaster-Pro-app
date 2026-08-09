@@ -13,7 +13,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { creditRepairService } from "@/lib/credit-repair";
 import { db } from "@/lib/credit-repair/db";
 import { auditLogger } from "@/lib/security/audit-logging";
@@ -30,16 +31,9 @@ const toFactorRecord = (
  * GET /api/credit-repair/score
  * Get credit repair score from database or calculate new one
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
     // 2. Try to get score from database first
     let score = await db.creditRepair.getCreditRepairScore(user.id);
 
@@ -93,22 +87,15 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/credit-repair/score
  * Calculate and save new credit repair score
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
     // 2. Calculate new score
     const calculatedScore = await creditRepairService.getCreditRepairScore(
       user.id,
@@ -157,4 +144,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

@@ -165,13 +165,25 @@ async function sendFollowupEmail(
     html: body,
   });
 
-  // Log the follow-up
-  await supabase.from("email_logs").insert({
+  // Log the follow-up. The email is already sent at this point, so a
+  // logging failure must not fail the follow-up itself — but it must not be
+  // silently discarded either, or the audit trail can go missing with no
+  // way to tell.
+  const { error: logError } = await supabase.from("email_logs").insert({
     user_id: user.id,
     dispute_id: dispute.id,
     email_type: `dispute_followup_${followupType}`,
     sent_at: new Date().toISOString(),
   });
+
+  if (logError) {
+    console.error("Failed to record email_logs entry for dispute followup", {
+      userId: user.id,
+      disputeId: dispute.id,
+      followupType,
+      error: logError.message,
+    });
+  }
 }
 
 /**
@@ -179,10 +191,20 @@ async function sendFollowupEmail(
  */
 async function updateLastFollowup(disputeId: string): Promise<void> {
   const supabase = getSupabaseClient();
-  await supabase
+  const { error } = await supabase
     .from("disputes")
     .update({ last_followup_at: new Date().toISOString() })
     .eq("id", disputeId);
+
+  // Fire-and-forget here meant the follow-up timestamp was never recorded and
+  // the cron could not tell an already-followed-up dispute from a fresh one —
+  // so the same user could be emailed about the same dispute repeatedly.
+  if (error) {
+    console.error("Failed to record dispute follow-up timestamp", {
+      disputeId,
+      error,
+    });
+  }
 }
 
 function getEmailSubject(type: string): string {

@@ -72,6 +72,30 @@ export default function InvestmentLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="research"
+        options={{
+          title: "Stock Research",
+        }}
+      />
+      <Stack.Screen
+        name="rebalance"
+        options={{
+          title: "Rebalance",
+        }}
+      />
+      <Stack.Screen
+        name="performance"
+        options={{
+          title: "Performance",
+        }}
+      />
+      <Stack.Screen
+        name="dividends"
+        options={{
+          title: "Dividends",
+        }}
+      />
     </Stack>
   );
 }

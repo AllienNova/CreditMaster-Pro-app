@@ -10,23 +10,16 @@ import {
   Transaction,
 } from "@/lib/financial/income-tracking-service";
 import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * POST /api/financial/income/detect
  * Detect income patterns from provided transactions
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
 
     if (!body.transactions || !Array.isArray(body.transactions)) {
@@ -73,24 +66,18 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * GET /api/financial/income/detect
  * Detect income from user's connected accounts
  * (Uses stored transactions from Plaid or manual entries)
  */
-export async function GET() {
+export const GET = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     // Fetch recent transactions from database
     const { data: transactionsData, error: txError } = await supabase
@@ -159,4 +146,5 @@ export async function GET() {
       { status: 500 },
     );
   }
-}
+},
+);

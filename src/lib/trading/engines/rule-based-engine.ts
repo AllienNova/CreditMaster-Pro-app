@@ -207,6 +207,8 @@ export interface MarketData {
   vwap?: number;
   timestamp: Date;
   indicators?: Record<string, number>;
+  /** Indicator values from the immediately preceding bar, keyed identically to `indicators`. */
+  previousIndicators?: Record<string, number>;
 }
 
 // ============================================================================
@@ -413,12 +415,28 @@ export class RuleBasedEngine {
       compareValue = condition.referenceValue;
     }
 
+    // Resolve the previous bar's value for crossover operators
+    let previousValue: number | undefined;
+    if (
+      condition.operator === "crosses_above" ||
+      condition.operator === "crosses_below"
+    ) {
+      if (condition.type === "indicator" && condition.indicator) {
+        const prevKey = `${condition.indicator}_${condition.indicatorPeriod || 14}`;
+        previousValue = data.previousIndicators?.[prevKey];
+      } else if (condition.type === "price") {
+        // Price crossovers: previousValue not tracked in MarketData; skip.
+        previousValue = undefined;
+      }
+    }
+
     // Evaluate operator
     return this.evaluateOperator(
       currentValue,
       condition.operator,
       compareValue,
       condition.value2,
+      previousValue,
     );
   }
 
@@ -427,6 +445,7 @@ export class RuleBasedEngine {
     operator: ConditionOperator,
     compare: number,
     compare2?: number,
+    previous?: number,
   ): boolean {
     switch (operator) {
       case "gt":
@@ -446,9 +465,12 @@ export class RuleBasedEngine {
       case "outside":
         return current < compare || current > (compare2 || compare);
       case "crosses_above":
+        // Requires previous bar value; falls back to simple > when unavailable.
+        if (previous === undefined) return current > compare;
+        return previous <= compare && current > compare;
       case "crosses_below":
-        // These require historical data - simplified for now
-        return current > compare; // Placeholder
+        if (previous === undefined) return current < compare;
+        return previous >= compare && current < compare;
       default:
         return false;
     }

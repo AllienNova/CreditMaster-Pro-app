@@ -1,0 +1,14 @@
+---
+name: msw-real-network-fetch-in-jest
+description: How to make a genuine (non-mocked) network call succeed from inside a Fynvita web jest test, e.g. a real-local-Supabase integration test
+metadata:
+  type: project
+---
+
+`src/setupTests.ts` sets `global.fetch = jest.fn(fetch as any)` (wrapping `node-fetch`) and imports the global MSW server (`src/__tests__/mocks/server.ts`, `msw@1.3.3`). A test file that needs a REAL network round-trip (not a mocked one) — e.g. an integration test against the local Supabase instance at `127.0.0.1:54321/54322` — fails even after the established `server.close()`/`server.listen()` opt-out (already used by `moneylion-client.test.ts`): the fetch call resolves to `undefined` instead of a Response, and `@supabase/postgrest-js`'s `PostgrestBuilder.ts:131` then throws `Cannot read properties of undefined (reading 'status')`. Before `server.close()` is added, the symptom is a different but equally uninformative MSW-interceptor `TypeError: Cannot read properties of undefined (reading 'then')`. Switching the file to `@jest-environment node` (docblock) does not fix it either — `setupTests.ts`'s `global.fetch` override runs unconditionally regardless of test environment.
+
+**Why:** something in the MSW-interceptor-patched-fetch chain doesn't cleanly hand off to a real network call even with the MSW server closed; the exact internal cause wasn't root-caused, only worked around.
+
+**How to apply:** in the test file, reassign `global.fetch` to a fresh `node-fetch` import — `import nodeFetch from "node-fetch"; global.fetch = nodeFetch as unknown as typeof fetch;` — as a top-level statement, positioned BEFORE importing `@supabase/supabase-js` or any module (like a service singleton) that lazily constructs a Supabase client. Combine with the existing `server.close()`/`afterAll(() => server.listen({onUnhandledRequest: "warn"}))` opt-out. Once both are in place, real PostgREST responses (including genuine Postgres/PostgREST error payloads like `{code, message, hint}`) come through correctly. Confirmed working end-to-end in `src/lib/commerce/affiliate/__tests__/commission-calculator.integration.test.ts` (2026-07-31) — this surfaced a REAL `42501 permission denied` grant bug (see [[project_supabase-service-role-needs-explicit-grant]]) that a mocked test could never have caught.
+
+Also useful for this class of test: a plain `net.connect()` TCP reachability probe for detecting whether local Supabase is up (avoid shelling out to a subprocess for this — the repo's PreToolUse security hook flags new subprocess-spawning code on principle, even for a static, no-user-input command). Guard each `it` body with an early `if (!dbAvailable) return;` rather than a synchronous `describe.skip`, since the reachability check is inherently async and Jest's `describe`/`it` registration happens synchronously before any `beforeAll` runs.

@@ -1,0 +1,201 @@
+{
+  "canonical_hash": "sha256:82d2e1d034ed3924a2bbf4c2f5dc11baf3b6b8dbb7aa99399781d8f80ed24f73",
+  "canonical_package_version": "2.5.0-rc1",
+  "files": [
+    {
+      "path": "canonical/laws/law.automation-map.yaml",
+      "sha256": "ab5e3d7e787752d56161aa5c34ddb827216f317596ed8c137f0889f5ed70fea0"
+    },
+    {
+      "path": "canonical/laws/law.catalog.yaml",
+      "sha256": "c7883c1e2af4f4082bf58a3d4170b0fbc5145258228ea0b3f23594b390c9800e"
+    },
+    {
+      "path": "canonical/policy/policy.calendar.yaml",
+      "sha256": "54c373d6689295bec2cfcd43d3a270a93cc1a0f3c9788aabe8655bbee524fffa"
+    },
+    {
+      "path": "canonical/policy/policy.compliance.yaml",
+      "sha256": "a66f4b943a8a8ee08ffbab742acdbd69e3a4aa137f5a05af4c28673dda6a2217"
+    },
+    {
+      "path": "canonical/policy/policy.correlations.yaml",
+      "sha256": "25306ecd23f84c61828dab896cea3ec58cb5050bded8729fc8088975436502b4"
+    },
+    {
+      "path": "canonical/policy/policy.data-quality.yaml",
+      "sha256": "d09f0e69c1e97d419fc331fc54e0c2843cb0607bb30344400e43490e768f70a4"
+    },
+    {
+      "path": "canonical/policy/policy.dr.yaml",
+      "sha256": "307c63c1ffa727d31be197ea7ef0d62da82f4313fe9a68d01f73536a9384e229"
+    },
+    {
+      "path": "canonical/policy/policy.execution-errors.yaml",
+      "sha256": "a66576adc34dfdc9ad64316352ae26f5224b4b29b18154ba3409907af11e1b69"
+    },
+    {
+      "path": "canonical/policy/policy.execution-quality.yaml",
+      "sha256": "4a734de0ec0273131d75919377d41dec3a231de7a2333301744e4dd5b196159a"
+    },
+    {
+      "path": "canonical/policy/policy.execution.yaml",
+      "sha256": "ed5aafef6f07dbe8726557faaac70ef94b64c3591483e93e4910e4ebf864e432"
+    },
+    {
+      "path": "canonical/policy/policy.governance.yaml",
+      "sha256": "7c6f021affab5a9212cd956548c0e4825eb643d456b385e4da0349ff51b44972"
+    },
+    {
+      "path": "canonical/policy/policy.incidents.yaml",
+      "sha256": "30b850de3557f365c740c3b20f0876f335a7b4e5d4f3718c36623118dcb89266"
+    },
+    {
+      "path": "canonical/policy/policy.instruments.yaml",
+      "sha256": "4b429708ab8ca3d00d99cabc6ccfc16726427bdaa6e06a49affe28dbc0365540"
+    },
+    {
+      "path": "canonical/policy/policy.invariants.yaml",
+      "sha256": "84c99fbbba12e657934ad13d8cc521d190875886b52ed9388a84f080eff3296c"
+    },
+    {
+      "path": "canonical/policy/policy.modes.yaml",
+      "sha256": "9e18c21141a3dd5d7d963d5b011c3c5873f3ff2b7425c6b2db349c14d326bda5"
+    },
+    {
+      "path": "canonical/policy/policy.order-lifecycle.yaml",
+      "sha256": "04086448e08007a25cacb84f38d8eae23e4767645eeda86bae495dd86345bf83"
+    },
+    {
+      "path": "canonical/policy/policy.portfolio.yaml",
+      "sha256": "3600487407a9cfcd34988fc41735226c44366db259ae8837bc161eded2ac05e4"
+    },
+    {
+      "path": "canonical/policy/policy.promotion.yaml",
+      "sha256": "d8b6bfc0de40d16572b281dfb7efc28c03ae0333901bf1c99d9c4e5509751c90"
+    },
+    {
+      "path": "canonical/policy/policy.regimes.yaml",
+      "sha256": "060ff7b0c29d80c4c96e4608325d58fee36a717e6c5bba9a0931113f9a1ec899"
+    },
+    {
+      "path": "canonical/policy/policy.runtime.yaml",
+      "sha256": "2d36c8de3b3170a6c85e3b1554b94a94755ffd9e6d27b96edf88cdd8d2bc1ce1"
+    },
+    {
+      "path": "canonical/policy/policy.sizing.yaml",
+      "sha256": "ac6b790ddf4d364c01ef5184d369e170aca5e83c931b42f14b33760edc490385"
+    },
+    {
+      "path": "canonical/policy/policy.tenancy.yaml",
+      "sha256": "1ff750d46655752c5781fa31ceddcce39b57b4541ee8c824cc2a1fe318c2841e"
+    },
+    {
+      "path": "canonical/workflows/workflow.checklists.yaml",
+      "sha256": "9c72063e0973f959d55e5da570652d827f4f8f7259c76a492e2aa2d2e4fdf0c0"
+    },
+    {
+      "path": "canonical/workflows/workflow.confluence.yaml",
+      "sha256": "871e5ffadc3bd68ea387b516b33aa21f61fafbdba41e081e9a5a85c0ce88454a"
+    },
+    {
+      "path": "canonical/workflows/workflow.correlation.yaml",
+      "sha256": "9be2771e3f2bdc65cb9201416722c7d114ab44c4eb3f22e8f5cbc1b465d8594c"
+    },
+    {
+      "path": "canonical/workflows/workflow.crisis.yaml",
+      "sha256": "b0f586c2b7710391c57b2dbab72d301dab55459b4ec309fde151befd8d8f905e"
+    },
+    {
+      "path": "canonical/workflows/workflow.incidents.yaml",
+      "sha256": "3b80ab225bc43a0b871706da10d01bc83b63a466524e4cb826f64bb2844e98f1"
+    },
+    {
+      "path": "canonical/workflows/workflow.lifecycle.yaml",
+      "sha256": "a551c3b7d4ccc44ec096f82708184b17ded873cec5651ff5d108429f97414978"
+    },
+    {
+      "path": "canonical/workflows/workflow.order-lifecycle.yaml",
+      "sha256": "13b3c9527225eda352dbef629ae7533b556888f29f24860b985f24dda5d27d4e"
+    }
+  ],
+  "schemas": [
+    {
+      "id": "https://strativion.io/schemas/audit-entry.v1.schema.json",
+      "path": "canonical/schemas/audit-entry.v1.schema.json",
+      "sha256": "4511c1a82fecf668e7fd8d73e6d63539b91febdf5b9f833afff4645a9098f452"
+    },
+    {
+      "id": "https://strativion.io/schemas/law.automation-map.v1.schema.json",
+      "path": "canonical/schemas/law.automation-map.schema.json",
+      "sha256": "bdd637f1d40e70995ef01cbbc1e6252ec2f587832ea47732bd50b535f8d599e1"
+    },
+    {
+      "id": "https://strativion.io/schemas/policy.calendar.v1.schema.json",
+      "path": "canonical/schemas/policy.calendar.v1.schema.json",
+      "sha256": "c1cd1133352265e2e659dc685021288e7ff5bc1d2ec3e541af6dba2684eaeeab"
+    },
+    {
+      "id": "https://strativion.io/schemas/policy.compliance.v1.schema.json",
+      "path": "canonical/schemas/policy.compliance.v1.schema.json",
+      "sha256": "ed1f7eba240e9f50757c8519a1fab6c4ce195850a81e4c602e847d789ced28bc"
+    },
+    {
+      "id": "https://strativion.io/schemas/policy.data-quality.v2.schema.json",
+      "path": "canonical/schemas/policy.data-quality.v2.schema.json",
+      "sha256": "973f50aa39ff4808790dbbead09d4891b7565126188882ac947f7400784e0f1f"
+    },
+    {
+      "id": "https://strativion.io/schemas/policy.dr.v1.schema.json",
+      "path": "canonical/schemas/policy.dr.v1.schema.json",
+      "sha256": "9cef3dcb412359865ab9295bf0a35152b4a51f92859701ae1db91f769d00b5e5"
+    },
+    {
+      "id": "https://strativion.io/schemas/policy.execution-errors.v1.schema.json",
+      "path": "canonical/schemas/policy.execution-errors.v1.schema.json",
+      "sha256": "4dff9490b982932303ea5d4a63354c1eb8c760b54e18f5d1092b7e9e1832d5a9"
+    },
+    {
+      "id": "https://strativion.io/schemas/policy.execution.v1.schema.json",
+      "path": "canonical/schemas/policy.execution.v1.schema.json",
+      "sha256": "544121b6245af6e5e61b86cb5f24f1739381fbd1f3cbf080ef8c2ded1450f8f8"
+    },
+    {
+      "id": "https://strativion.io/schemas/policy.incidents.v1.schema.json",
+      "path": "canonical/schemas/policy.incidents.v1.schema.json",
+      "sha256": "d0f369dd1937359bc4789da5ebe617538c6e3c6b075712f06946c840d1eff3f7"
+    },
+    {
+      "id": "https://strativion.io/schemas/policy.order-lifecycle.v1.schema.json",
+      "path": "canonical/schemas/policy.order-lifecycle.v1.schema.json",
+      "sha256": "30d2f00e070196b2faa1c4d9d23d24793c77bfb428e77475ec947cfccb8db603"
+    },
+    {
+      "id": "https://strativion.io/schemas/policy.promotion.v1.schema.json",
+      "path": "canonical/schemas/policy.promotion.v1.schema.json",
+      "sha256": "fbdc4c3ed5ad45ca3f7db4c1c92eec879f5b7c6b8b563c41d2347259d3fa8fb9"
+    },
+    {
+      "id": "https://strativion.io/schemas/policy.runtime.v2.schema.json",
+      "path": "canonical/schemas/policy.runtime.v2.schema.json",
+      "sha256": "fe1e522ffb5fc816a50b7db8c8bfcac4d29e2e4e790a88393d81d0e74cd60db1"
+    },
+    {
+      "id": "https://strativion.io/schemas/policy.sizing.v1.schema.json",
+      "path": "canonical/schemas/policy.sizing.v1.schema.json",
+      "sha256": "8d01319397cf4fd55d4549ffe61445bea1442a5ddd2a04a46abf6a343638a8b5"
+    },
+    {
+      "id": "https://strativion.io/schemas/policy.tenancy.v1.schema.json",
+      "path": "canonical/schemas/policy.tenancy.v1.schema.json",
+      "sha256": "eb44ab444c58328826ff2bca8faaec5db10c66f5043348282002dedeb392a052"
+    },
+    {
+      "id": "https://strativion.io/schemas/tenant-override.v1.schema.json",
+      "path": "canonical/schemas/tenant-override.v1.schema.json",
+      "sha256": "91bf845a9af571f0d57179ceec29b3d15e1462cad3eec3ba08019452ed0d04ef"
+    }
+  ],
+  "timezone_convention": "IANA_America_New_York",
+  "unit_convention": "decimal_fraction"
+}

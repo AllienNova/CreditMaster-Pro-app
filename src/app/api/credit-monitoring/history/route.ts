@@ -3,21 +3,25 @@ import {
   creditMonitoringService,
   Bureau,
 } from "@/lib/credit-monitoring/credit-monitoring-service";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * GET /api/credit-monitoring/history
  * Get credit score history for a specific bureau
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    // userId is the authenticated user — never trust a client-supplied id (IDOR).
+    const userId = user.id;
     const bureau = searchParams.get("bureau") as Bureau;
     const days = parseInt(searchParams.get("days") || "365");
 
-    if (!userId || !bureau) {
+    if (!bureau) {
       return NextResponse.json(
-        { error: "User ID and bureau are required" },
+        { error: "Bureau is required" },
         { status: 400 },
       );
     }
@@ -39,4 +43,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);

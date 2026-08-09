@@ -78,12 +78,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { retirementAccountOptimizer } from "@/lib/tax/services/RetirementAccountOptimizer";
 import {
   FilingStatus,
   OptimizationGoal,
   BusinessType,
-  TaxAccountType,
 } from "@/lib/tax/types/tax-profile.types";
 import type { TaxProfile } from "@/lib/tax/types/tax-profile.types";
 
@@ -166,25 +167,9 @@ function validatePostBody(body: Record<string, unknown>): {
 // GET HANDLER
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate user
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized",
-          message: "Please sign in to access retirement optimization.",
-        },
-        { status: 401 },
-      );
-    }
 
     // 2. Rate limiting
     if (!checkRateLimit(user.id)) {
@@ -231,6 +216,7 @@ export async function GET(request: NextRequest) {
         taxYear,
         analyzedAt: new Date().toISOString(),
         profileSource: "stored",
+        accountLevelDataAvailable: ACCOUNT_LEVEL_DATA_AVAILABLE,
       },
     });
   } catch (error) {
@@ -247,31 +233,15 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 // ============================================================================
 // POST HANDLER
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate user
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized",
-          message: "Please sign in to access retirement optimization.",
-        },
-        { status: 401 },
-      );
-    }
 
     // 2. Rate limiting
     if (!checkRateLimit(user.id)) {
@@ -336,6 +306,7 @@ export async function POST(request: NextRequest) {
         catchUpEligible: result.catchUpEligible,
         totalCatchUpCapacity: result.totalCatchUpCapacity,
         retirementReadinessScore: result.retirementReadiness?.readinessScore ?? null,
+        accountLevelDataAvailable: ACCOUNT_LEVEL_DATA_AVAILABLE,
       },
     });
   } catch (error) {
@@ -352,11 +323,22 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 // ============================================================================
 // HELPERS
 // ============================================================================
+
+// No account-level linkage table (institution, balance, employer match,
+// vesting, Plaid link) exists in the schema — the `tax_accounts` table this
+// route used to query was never migrated, so that query always failed and
+// was silently swallowed to `[]`. There is no substitute table either:
+// `tax_profiles` holds YTD 401k/IRA/HSA contribution totals directly, but no
+// per-account detail. `TaxProfile.accounts` is therefore `[]` for every
+// profile until that data model is built. This constant surfaces that
+// structural gap explicitly in API responses instead of letting it look like
+// a user-specific "no accounts" state.
+const ACCOUNT_LEVEL_DATA_AVAILABLE = false;
 
 async function fetchTaxProfile(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -374,19 +356,10 @@ async function fetchTaxProfile(
     return null;
   }
 
-  // Fetch associated accounts
-  const { data: accounts } = await supabase
-    .from("tax_accounts")
-    .select("*")
-    .eq("user_id", userId);
-
-  return mapDatabaseToProfile(data, accounts || []);
+  return mapDatabaseToProfile(data);
 }
 
-function mapDatabaseToProfile(
-  dbProfile: Record<string, unknown>,
-  dbAccounts: Record<string, unknown>[],
-): TaxProfile {
+function mapDatabaseToProfile(dbProfile: Record<string, unknown>): TaxProfile {
   return {
     id: dbProfile.id as string,
     userId: dbProfile.user_id as string,
@@ -434,23 +407,9 @@ function mapDatabaseToProfile(
       (dbProfile.health_insurance_type as TaxProfile["healthInsuranceType"]) ||
       "employer",
 
-    accounts: dbAccounts.map((acc) => ({
-      id: acc.id as string,
-      userId: acc.user_id as string,
-      accountType: acc.account_type as TaxAccountType,
-      institutionName: acc.institution_name as string,
-      accountName: acc.account_name as string,
-      currentBalance: Number(acc.current_balance) || 0,
-      ytdContribution: Number(acc.ytd_contribution) || 0,
-      contributionLimit: Number(acc.contribution_limit) || 0,
-      employerMatch: Number(acc.employer_match) || 0,
-      employerMatchPercent: Number(acc.employer_match_percent),
-      vestingPercent: Number(acc.vesting_percent) || 100,
-      isLinked: (acc.is_linked as boolean) ?? false,
-      plaidAccountId: acc.plaid_account_id as string,
-      createdAt: new Date(acc.created_at as string),
-      updatedAt: new Date(acc.updated_at as string),
-    })),
+    // See ACCOUNT_LEVEL_DATA_AVAILABLE above — no account-level data source
+    // exists, so this is always empty rather than fabricated.
+    accounts: [],
 
     ytd401kContribution: Number(dbProfile.ytd_401k_contribution) || 0,
     ytdIraContribution: Number(dbProfile.ytd_ira_contribution) || 0,

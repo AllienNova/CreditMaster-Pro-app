@@ -5,6 +5,9 @@
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/auth/rbac");
 jest.mock("@/lib/financial/financial-context-engine");
 
@@ -45,6 +48,7 @@ const mockSummary = {
 describe("GET /api/financial/context/summary", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -55,25 +59,27 @@ describe("GET /api/financial/context/summary", () => {
     ).mockResolvedValue(mockSummary);
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/context/summary",
+      );
+      const response = await GET(request);
+      expect(response.status).toBe(401);
     });
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/context/summary",
-    );
-    const response = await GET(request);
-    expect(response.status).toBe(401);
-  });
 
-  it("should return 403 for user without financial:read permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/context/summary",
-    );
-    const response = await GET(request);
-    expect(response.status).toBe(403);
+    it("should return 403 for user without financial:read permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/context/summary",
+      );
+      const response = await GET(request);
+      expect(response.status).toBe(403);
+    });
   });
 
   it("should return financial summary successfully", async () => {

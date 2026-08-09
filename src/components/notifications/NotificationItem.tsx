@@ -21,24 +21,23 @@ export default function NotificationItem({
 
   const getNotificationIcon = (type: NotificationType): string => {
     switch (type) {
-      case "dispute_created":
-      case "dispute_updated":
-      case "dispute_resolved":
+      case "dispute_update":
+      case "dispute_overdue":
+      case "dispute_reminder":
+      case "draft_reminder":
         return "";
-      case "credit_score_changed":
+      case "score_reminder":
         return "";
-      case "payment_successful":
+      case "payment_success":
         return "";
-      case "payment_failed":
-        return "";
-      case "subscription_renewed":
-      case "subscription_canceled":
+      case "subscription_expiring":
         return "";
       case "document_uploaded":
         return "";
       case "welcome":
         return "";
-      case "password_reset":
+      case "tip":
+      case "system":
         return "";
       default:
         return "";
@@ -47,25 +46,25 @@ export default function NotificationItem({
 
   const getNotificationColor = (type: NotificationType): string => {
     switch (type) {
-      case "dispute_created":
-      case "dispute_updated":
+      case "dispute_update":
+      case "dispute_reminder":
+      case "draft_reminder":
         return "bg-blue-50 text-blue-700 border-blue-200";
-      case "dispute_resolved":
-        return "bg-green-50 text-green-700 border-green-200";
-      case "credit_score_changed":
-        return "bg-blue-50 text-blue-700 border-blue-200";
-      case "payment_successful":
-      case "subscription_renewed":
-        return "bg-green-50 text-green-700 border-green-200";
-      case "payment_failed":
-      case "subscription_canceled":
+      case "dispute_overdue":
         return "bg-red-50 text-red-700 border-red-200";
+      case "score_reminder":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "payment_success":
+        return "bg-green-50 text-green-700 border-green-200";
+      case "subscription_expiring":
+        return "bg-yellow-50 text-yellow-700 border-yellow-200";
       case "document_uploaded":
         return "bg-orange-50 text-orange-700 border-orange-200";
       case "welcome":
         return "bg-blue-50 text-blue-700 border-blue-200";
-      case "password_reset":
-        return "bg-yellow-50 text-yellow-700 border-yellow-200";
+      case "tip":
+      case "system":
+        return "bg-gray-50 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-700";
       default:
         return "bg-gray-50 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-700";
     }

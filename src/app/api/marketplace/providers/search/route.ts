@@ -6,8 +6,15 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { providerService } from "@/lib/marketplace";
+import {
+  enforcePublicCatalogRateLimit,
+  methodNotAllowed,
+} from "@/lib/api/public-route-guard";
 
 export async function GET(request: NextRequest) {
+  const rateLimit = await enforcePublicCatalogRateLimit(request);
+  if (!rateLimit.allowed) return rateLimit.response;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("q") || searchParams.get("query");
@@ -24,14 +31,16 @@ export async function GET(request: NextRequest) {
 
     const providers = await providerService.searchProviders(query.trim());
 
-    return NextResponse.json({
-      success: true,
-      data: providers,
-      meta: {
-        count: providers.length,
-        query: query.trim(),
-      },
-    });
+    return rateLimit.withHeaders(
+      NextResponse.json({
+        success: true,
+        data: providers,
+        meta: {
+          count: providers.length,
+          query: query.trim(),
+        },
+      }),
+    );
   } catch (error) {
     console.error("Error searching providers:", error);
     return NextResponse.json(
@@ -44,3 +53,8 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const POST = methodNotAllowed;
+export const PUT = methodNotAllowed;
+export const PATCH = methodNotAllowed;
+export const DELETE = methodNotAllowed;

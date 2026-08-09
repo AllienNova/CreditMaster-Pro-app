@@ -7,29 +7,27 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import { generateMockCreditReport } from "@/lib/credit-bureau/mock-credit-report-generator";
 import type { Bureau } from "@/types/credit-bureau";
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
     // 1. Parse request body
     const body = await request.json();
     const {
-      userId,
       bureau = "experian",
       creditScore,
       includeNegativeItems = false,
     } = body;
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "userId is required" },
-        { status: 400 },
-      );
-    }
+    // userId is the authenticated user — never trust a client-supplied id (IDOR).
+    const userId = user.id;
 
     // TestImport: Testing credit report import
 
@@ -198,20 +196,15 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
 
 // GET endpoint to retrieve test reports
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "userId is required" },
-        { status: 400 },
-      );
-    }
+    // userId is the authenticated user — never trust a client-supplied id (IDOR).
+    const userId = user.id;
 
     // Get all credit reports for user
     const { data: reports, error: reportsError } = await supabase
@@ -277,4 +270,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);

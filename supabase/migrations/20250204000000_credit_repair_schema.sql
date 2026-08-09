@@ -111,6 +111,45 @@ CREATE TABLE IF NOT EXISTS credit_reports (
 );
 
 -- Create indexes for credit_reports
+-- ---------------------------------------------------------------------------
+-- Twin-schema reconciliation (M0 / ADR-0001).
+--
+-- `20250107_credit_bureau_tables.sql` also declares `CREATE TABLE IF NOT EXISTS
+-- credit_reports`, with a DIFFERENT shape (credit_score / raw_data /
+-- parsed_data). It sorts first, so the CREATE above is skipped and the columns
+-- this file's indexes and the application code rely on (score, report_data,
+-- accounts, inquiries, collections, public_records) never exist. Provisioning
+-- then died here: `ERROR: column "score" does not exist` on the index below —
+-- the whole migration chain aborted, so the database could not be built from
+-- this repo at all.
+--
+-- These ALTERs converge the table to the union of both shapes. They are
+-- additive and idempotent: no-ops when this file's CREATE did run, and the
+-- healing path when 20250107's did. Nothing is dropped or retyped, so an
+-- already-provisioned database is safe.
+-- ---------------------------------------------------------------------------
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS report_data JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS score INTEGER;
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS accounts JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS inquiries JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS collections JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS public_records JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE credit_reports ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+-- Range check for `score` mirrors the CREATE above. Added separately because
+-- ADD COLUMN IF NOT EXISTS cannot carry a named constraint idempotently.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'credit_reports_score_range'
+  ) THEN
+    ALTER TABLE credit_reports
+      ADD CONSTRAINT credit_reports_score_range
+      CHECK (score IS NULL OR (score >= 300 AND score <= 850));
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_credit_reports_user_id ON credit_reports(user_id);
 CREATE INDEX IF NOT EXISTS idx_credit_reports_bureau ON credit_reports(bureau);
 CREATE INDEX IF NOT EXISTS idx_credit_reports_report_date ON credit_reports(report_date DESC);
@@ -160,6 +199,52 @@ CREATE TABLE IF NOT EXISTS disputes (
 );
 
 -- Create indexes for disputes
+-- ---------------------------------------------------------------------------
+-- Twin-schema reconciliation (M0 / ADR-0001) — same pattern as credit_reports.
+--
+-- `001_initial_schema.sql` also declares `CREATE TABLE IF NOT EXISTS disputes`
+-- with a narrower shape (no strategy / creditor_name / account_number /
+-- balance / inaccuracy_type / response_received_at / notes / updated_at). It
+-- sorts first, so the CREATE above is skipped and provisioning died on the
+-- `strategy` index below. Additive + idempotent: no-op when this file's CREATE
+-- ran, healing path when 001's did. Nothing dropped or retyped.
+--
+-- NOTE: the two shapes also disagree on CHECK constraints (001 omits the
+-- 'escalated' status and the 'pending' outcome). Widening an existing CHECK is
+-- NOT additive, so it is deliberately NOT done here — tracked as an M0
+-- follow-up rather than silently altering validation on a populated table.
+-- ---------------------------------------------------------------------------
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS creditor_name TEXT;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS account_number TEXT;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS balance DECIMAL(12, 2);
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS inaccuracy_type TEXT;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS strategy TEXT;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS response_received_at TIMESTAMPTZ;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'disputes_strategy_allowed'
+  ) THEN
+    ALTER TABLE disputes
+      ADD CONSTRAINT disputes_strategy_allowed
+      CHECK (strategy IS NULL OR strategy IN (
+        'basic_dispute',
+        'debt_validation',
+        'method_of_verification',
+        'procedural_violation',
+        'statute_of_limitations',
+        'identity_theft',
+        'mixed_file',
+        'creditor_direct',
+        'goodwill',
+        'pay_for_delete'
+      ));
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_disputes_user_id ON disputes(user_id);
 CREATE INDEX IF NOT EXISTS idx_disputes_status ON disputes(status);
 CREATE INDEX IF NOT EXISTS idx_disputes_bureau ON disputes(bureau);
@@ -279,133 +364,170 @@ ALTER TABLE negotiations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE credit_cards ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for credit_repair_scores
+DROP POLICY IF EXISTS "Users can view their own credit repair scores" ON credit_repair_scores;
 CREATE POLICY "Users can view their own credit repair scores"
   ON credit_repair_scores FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own credit repair scores" ON credit_repair_scores;
 CREATE POLICY "Users can insert their own credit repair scores"
   ON credit_repair_scores FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own credit repair scores" ON credit_repair_scores;
 CREATE POLICY "Users can update their own credit repair scores"
   ON credit_repair_scores FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own credit repair scores" ON credit_repair_scores;
 CREATE POLICY "Users can delete their own credit repair scores"
   ON credit_repair_scores FOR DELETE
   USING (auth.uid() = user_id);
 
 -- RLS Policies for credit_repair_actions
+DROP POLICY IF EXISTS "Users can view their own credit repair actions" ON credit_repair_actions;
 CREATE POLICY "Users can view their own credit repair actions"
   ON credit_repair_actions FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own credit repair actions" ON credit_repair_actions;
 CREATE POLICY "Users can insert their own credit repair actions"
   ON credit_repair_actions FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own credit repair actions" ON credit_repair_actions;
 CREATE POLICY "Users can update their own credit repair actions"
   ON credit_repair_actions FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own credit repair actions" ON credit_repair_actions;
 CREATE POLICY "Users can delete their own credit repair actions"
   ON credit_repair_actions FOR DELETE
   USING (auth.uid() = user_id);
 
 -- RLS Policies for credit_repair_progress
+DROP POLICY IF EXISTS "Users can view their own credit repair progress" ON credit_repair_progress;
 CREATE POLICY "Users can view their own credit repair progress"
   ON credit_repair_progress FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own credit repair progress" ON credit_repair_progress;
 CREATE POLICY "Users can insert their own credit repair progress"
   ON credit_repair_progress FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own credit repair progress" ON credit_repair_progress;
 CREATE POLICY "Users can delete their own credit repair progress"
   ON credit_repair_progress FOR DELETE
   USING (auth.uid() = user_id);
 
 -- RLS Policies for credit_reports
+--
+-- M0 fix: `20250107_credit_bureau_tables.sql` declares these same four policy
+-- names on this same table, and Postgres has no `CREATE POLICY IF NOT EXISTS`,
+-- so provisioning aborted with `policy ... already exists`. DROP-then-CREATE is
+-- the idempotent idiom; the definitions below are identical in effect
+-- (`auth.uid() = user_id`), so re-creating them changes no access decision.
+DROP POLICY IF EXISTS "Users can view their own credit reports" ON credit_reports;
 CREATE POLICY "Users can view their own credit reports"
   ON credit_reports FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own credit reports" ON credit_reports;
 CREATE POLICY "Users can insert their own credit reports"
   ON credit_reports FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own credit reports" ON credit_reports;
 CREATE POLICY "Users can update their own credit reports"
   ON credit_reports FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own credit reports" ON credit_reports;
 CREATE POLICY "Users can delete their own credit reports"
   ON credit_reports FOR DELETE
   USING (auth.uid() = user_id);
 
 -- RLS Policies for disputes
+DROP POLICY IF EXISTS "Users can view their own disputes" ON disputes;
 CREATE POLICY "Users can view their own disputes"
   ON disputes FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own disputes" ON disputes;
 CREATE POLICY "Users can insert their own disputes"
   ON disputes FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own disputes" ON disputes;
 CREATE POLICY "Users can update their own disputes"
   ON disputes FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own disputes" ON disputes;
 CREATE POLICY "Users can delete their own disputes"
   ON disputes FOR DELETE
   USING (auth.uid() = user_id);
 
 -- RLS Policies for goodwill_letters
+DROP POLICY IF EXISTS "Users can view their own goodwill letters" ON goodwill_letters;
 CREATE POLICY "Users can view their own goodwill letters"
   ON goodwill_letters FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own goodwill letters" ON goodwill_letters;
 CREATE POLICY "Users can insert their own goodwill letters"
   ON goodwill_letters FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own goodwill letters" ON goodwill_letters;
 CREATE POLICY "Users can update their own goodwill letters"
   ON goodwill_letters FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own goodwill letters" ON goodwill_letters;
 CREATE POLICY "Users can delete their own goodwill letters"
   ON goodwill_letters FOR DELETE
   USING (auth.uid() = user_id);
 
 -- RLS Policies for negotiations
+DROP POLICY IF EXISTS "Users can view their own negotiations" ON negotiations;
 CREATE POLICY "Users can view their own negotiations"
   ON negotiations FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own negotiations" ON negotiations;
 CREATE POLICY "Users can insert their own negotiations"
   ON negotiations FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own negotiations" ON negotiations;
 CREATE POLICY "Users can update their own negotiations"
   ON negotiations FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own negotiations" ON negotiations;
 CREATE POLICY "Users can delete their own negotiations"
   ON negotiations FOR DELETE
   USING (auth.uid() = user_id);
 
 -- RLS Policies for credit_cards
+DROP POLICY IF EXISTS "Users can view their own credit cards" ON credit_cards;
 CREATE POLICY "Users can view their own credit cards"
   ON credit_cards FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own credit cards" ON credit_cards;
 CREATE POLICY "Users can insert their own credit cards"
   ON credit_cards FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own credit cards" ON credit_cards;
 CREATE POLICY "Users can update their own credit cards"
   ON credit_cards FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own credit cards" ON credit_cards;
 CREATE POLICY "Users can delete their own credit cards"
   ON credit_cards FOR DELETE
   USING (auth.uid() = user_id);
@@ -425,37 +547,37 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create triggers for all tables with updated_at
-CREATE TRIGGER update_credit_repair_scores_updated_at
+CREATE OR REPLACE TRIGGER update_credit_repair_scores_updated_at
   BEFORE UPDATE ON credit_repair_scores
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_credit_repair_actions_updated_at
+CREATE OR REPLACE TRIGGER update_credit_repair_actions_updated_at
   BEFORE UPDATE ON credit_repair_actions
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_credit_reports_updated_at
+CREATE OR REPLACE TRIGGER update_credit_reports_updated_at
   BEFORE UPDATE ON credit_reports
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_disputes_updated_at
+CREATE OR REPLACE TRIGGER update_disputes_updated_at
   BEFORE UPDATE ON disputes
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_goodwill_letters_updated_at
+CREATE OR REPLACE TRIGGER update_goodwill_letters_updated_at
   BEFORE UPDATE ON goodwill_letters
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_negotiations_updated_at
+CREATE OR REPLACE TRIGGER update_negotiations_updated_at
   BEFORE UPDATE ON negotiations
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_credit_cards_updated_at
+CREATE OR REPLACE TRIGGER update_credit_cards_updated_at
   BEFORE UPDATE ON credit_cards
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();

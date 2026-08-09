@@ -1,9 +1,9 @@
 /**
  * Fynvita Dark Web Monitoring Screen
- * Scan for exposed credentials and data breaches
+ * Wired to real identity protection API for breach data
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,12 +11,18 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { identityProtectionApi } from "../../src/services/api/user";
+import type {
+  IdentityProtectionStatus,
+  IdentityAlert,
+} from "../../src/services/api/types";
 
 interface Breach {
   id: string;
@@ -35,72 +41,102 @@ interface MonitoredItem {
   breachCount: number;
 }
 
-const MOCK_BREACHES: Breach[] = [
-  {
-    id: "1",
-    source: "LinkedIn",
-    date: "2023-06-15",
-    dataTypes: ["Email", "Password", "Name"],
-    severity: "high",
-    resolved: false,
-  },
-  {
-    id: "2",
-    source: "Adobe",
-    date: "2022-11-20",
-    dataTypes: ["Email", "Password"],
-    severity: "medium",
-    resolved: true,
-  },
-  {
-    id: "3",
-    source: "Dropbox",
-    date: "2021-08-10",
-    dataTypes: ["Email"],
-    severity: "low",
-    resolved: true,
-  },
-];
+function alertsToBreaches(alerts: IdentityAlert[]): Breach[] {
+  return alerts.map((alert) => ({
+    id: alert.id,
+    source: alert.title.replace(/\s*breach.*$/i, "").trim() || alert.title,
+    date: new Date(alert.createdAt).toISOString().split("T")[0],
+    dataTypes: alert.exposedData ?? [],
+    severity: alert.severity,
+    resolved: alert.resolved,
+  }));
+}
 
-const MONITORED_ITEMS: MonitoredItem[] = [
-  {
-    id: "1",
-    type: "email",
-    value: "john.doe@email.com",
-    status: "exposed",
-    breachCount: 2,
-  },
-  {
-    id: "2",
-    type: "email",
-    value: "johndoe@work.com",
-    status: "safe",
-    breachCount: 0,
-  },
-  {
-    id: "3",
-    type: "phone",
-    value: "(555) 123-4567",
-    status: "safe",
-    breachCount: 0,
-  },
-  {
-    id: "4",
-    type: "ssn",
-    value: "***-**-1234",
-    status: "safe",
-    breachCount: 0,
-  },
-];
+function buildMonitoredItems(
+  status: IdentityProtectionStatus | null,
+  alerts: IdentityAlert[],
+): MonitoredItem[] {
+  const unresolvedAlerts = alerts.filter((a) => !a.resolved);
+  const emailBreaches = unresolvedAlerts.filter(
+    (a) => a.exposedData?.includes("email") || a.type === "breach",
+  ).length;
+
+  const items: MonitoredItem[] = [
+    {
+      id: "monitored-email",
+      type: "email",
+      value: status?.isActive ? "Primary email" : "Not monitored",
+      status: emailBreaches > 0 ? "exposed" : "safe",
+      breachCount: emailBreaches,
+    },
+    {
+      id: "monitored-phone",
+      type: "phone",
+      value: status?.isActive ? "Phone number" : "Not monitored",
+      status: "safe",
+      breachCount: 0,
+    },
+    {
+      id: "monitored-ssn",
+      type: "ssn",
+      value: status?.isActive ? "SSN (protected)" : "Not monitored",
+      status: "safe",
+      breachCount: 0,
+    },
+  ];
+
+  return items;
+}
 
 export default function DarkWebScreen() {
   const [isScanning, setIsScanning] = useState(false);
   const [selectedTab, setSelectedTab] = useState<"breaches" | "monitored">(
     "breaches",
   );
+  const [identityStatus, setIdentityStatus] =
+    useState<IdentityProtectionStatus | null>(null);
+  const [identityAlerts, setIdentityAlerts] = useState<IdentityAlert[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const unresolvedBreaches = MOCK_BREACHES.filter((b) => !b.resolved).length;
-  const exposedItems = MONITORED_ITEMS.filter(
+  const loadData = useCallback(async () => {
+    setError(null);
+    try {
+      const [statusRes, alertsRes] = await Promise.all([
+        identityProtectionApi.getStatus(),
+        identityProtectionApi.getAlerts(),
+      ]);
+
+      if (statusRes.success && statusRes.data) {
+        setIdentityStatus(statusRes.data);
+      }
+      if (alertsRes.success && alertsRes.data) {
+        setIdentityAlerts(alertsRes.data.alerts);
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load dark web data",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  const breaches = alertsToBreaches(identityAlerts);
+  const monitoredItems = buildMonitoredItems(identityStatus, identityAlerts);
+  const unresolvedBreaches = breaches.filter((b) => !b.resolved).length;
+  const exposedItems = monitoredItems.filter(
     (i) => i.status === "exposed",
   ).length;
 
@@ -130,16 +166,73 @@ export default function DarkWebScreen() {
     }
   };
 
-  const runScan = () => {
+  const runScan = async () => {
     setIsScanning(true);
-    setTimeout(() => setIsScanning(false), 3000);
+    try {
+      await identityProtectionApi.requestScan();
+      await loadData();
+    } catch {
+      // scan request failed; UI will show existing data
+    } finally {
+      setIsScanning(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Scanning dark web data...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && identityAlerts.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Dark Web Monitoring</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Ionicons
+            name="alert-circle-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadData}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const lastScanDisplay = identityStatus?.lastScan
+    ? `Last scan: ${new Date(identityStatus.lastScan).toLocaleDateString()}`
+    : "No scan yet";
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
+          />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -175,8 +268,8 @@ export default function DarkWebScreen() {
               : "No Active Breaches"}
           </Text>
           <Text style={styles.statusSubtitle}>
-            {exposedItems} item{exposedItems !== 1 ? "s" : ""} exposed • Last
-            scan: Today
+            {exposedItems} item{exposedItems !== 1 ? "s" : ""} exposed •{" "}
+            {lastScanDisplay}
           </Text>
           <TouchableOpacity
             style={styles.scanButton}
@@ -206,7 +299,7 @@ export default function DarkWebScreen() {
                 selectedTab === "breaches" && styles.tabTextActive,
               ]}
             >
-              Breaches ({MOCK_BREACHES.length})
+              Breaches ({breaches.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -222,7 +315,7 @@ export default function DarkWebScreen() {
                 selectedTab === "monitored" && styles.tabTextActive,
               ]}
             >
-              Monitored ({MONITORED_ITEMS.length})
+              Monitored ({monitoredItems.length})
             </Text>
           </TouchableOpacity>
         </View>
@@ -230,7 +323,16 @@ export default function DarkWebScreen() {
         {/* Breaches Tab */}
         {selectedTab === "breaches" && (
           <>
-            {MOCK_BREACHES.map((breach) => (
+            {breaches.length === 0 && (
+              <Card style={styles.emptyCard}>
+                <Ionicons name="shield-checkmark" size={48} color="#22C55E" />
+                <Text style={styles.emptyTitle}>No Breaches Found</Text>
+                <Text style={styles.emptyText}>
+                  Your monitored data has not been found in any known breaches.
+                </Text>
+              </Card>
+            )}
+            {breaches.map((breach) => (
               <TouchableOpacity
                 key={breach.id}
                 onPress={() => router.push(`/identity/breach/${breach.id}` as Href)}
@@ -291,7 +393,20 @@ export default function DarkWebScreen() {
         {/* Monitored Tab */}
         {selectedTab === "monitored" && (
           <>
-            {MONITORED_ITEMS.map((item) => (
+            {monitoredItems.length === 0 && (
+              <Card style={styles.emptyCard}>
+                <Ionicons
+                  name="eye-off-outline"
+                  size={48}
+                  color={theme.colors.textSecondary}
+                />
+                <Text style={styles.emptyTitle}>Nothing Monitored</Text>
+                <Text style={styles.emptyText}>
+                  Enable dark web monitoring to track your personal data.
+                </Text>
+              </Card>
+            )}
+            {monitoredItems.map((item) => (
               <Card key={item.id} style={styles.monitoredCard}>
                 <View style={styles.monitoredRow}>
                   <View
@@ -479,5 +594,52 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: theme.colors.primary,
     marginLeft: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.spacing.xl,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.md,
+  },
+  errorText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.md,
+    textAlign: "center",
+  },
+  retryButton: {
+    marginTop: theme.spacing.md,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  emptyCard: {
+    alignItems: "center",
+    paddingVertical: theme.spacing.xl,
+    marginTop: theme.spacing.md,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
+    paddingHorizontal: theme.spacing.lg,
   },
 });

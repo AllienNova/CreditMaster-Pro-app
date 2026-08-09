@@ -87,6 +87,19 @@ export default function TradingLayout() {
           presentation: "modal",
         }}
       />
+      <Stack.Screen
+        name="backtest"
+        options={{
+          title: "Backtest Results",
+        }}
+      />
+      <Stack.Screen
+        name="strategies"
+        options={{
+          title: "Strategies",
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

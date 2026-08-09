@@ -1,0 +1,28 @@
+name = "upgrade-states"
+wave = 2
+model = "gemini-2.5-flash-image"
+resolution = "1024x1024"
+out_dir = "assets/raw/upgrade-states"
+count = 4
+preamble = true
+
+shared_prompt = """
+Fynvita Tier B scene illustration: rounded blob characters in detailed environments, flat vector, NO gradients/shadows/3D/photorealism. Palette: Vital Green #10B981, Trust Blue #3B82F6, Deep Navy #1E40AF, Emerald #059669, Energy Gold #F59E0B, cream #F3F4F6 bg. Blob chars have dot eyes + tiny smile. UPGRADE/PREMIUM context — mood is aspirational, exciting, showing value. 1024x1024, centered.
+"""
+negative = ["gradients", "shadows", "3D", "photography", "realistic", "dark"]
+
+[[variants]]
+id = "upgrade-locked-feature"
+prompt = "A green blob stands before a beautiful golden gate (Energy Gold). Through the gate, a glowing garden of premium tools (charts, shields, stars) is visible. The blob peers through the bars with excitement, not frustration. A small gold key floats nearby. Unlock premium features."
+
+[[variants]]
+id = "upgrade-prompt"
+prompt = "A green blob sits in a small boat on a calm Trust Blue lake. In the distance, a golden island with tall emerald trees beckons. A path of gold stepping stones leads to the island. Upgrade to reach more. Aspirational journey."
+
+[[variants]]
+id = "upgrade-premium-teaser"
+prompt = "A split composition: left side is a simple cream room with basic furniture. Right side (behind a shimmering gold curtain) reveals a rich environment with charts, trophies, and emerald plants. A green blob pulls the curtain open with wonder. Premium awaits."
+
+[[variants]]
+id = "upgrade-subscription-ended"
+prompt = "A green blob sits on a bench in a garden. The garden's flowers (emerald, gold) are gently closing for the night. A soft cream moon rises. The blob looks peaceful but wistful. Your subscription has ended — come back anytime. Gentle, not guilt-tripping."

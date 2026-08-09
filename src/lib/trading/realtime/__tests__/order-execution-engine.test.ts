@@ -1298,7 +1298,18 @@ describe("OrderExecutionEngine", () => {
       });
 
       mockSubmitOrder.mockImplementation(
-        async (_orderId: string, client: { submitOrder: Function }) => {
+        async (
+          _orderId: string,
+          client: {
+            submitOrder: (order: {
+              symbol: string;
+              side: string;
+              qty: number;
+              type: string;
+              time_in_force: string;
+            }) => Promise<unknown>;
+          },
+        ) => {
           await client.submitOrder({
             symbol: "AAPL",
             side: "buy",
@@ -1343,7 +1354,18 @@ describe("OrderExecutionEngine", () => {
       });
 
       mockSubmitOrder.mockImplementation(
-        async (_orderId: string, client: { submitOrder: Function }) => {
+        async (
+          _orderId: string,
+          client: {
+            submitOrder: (order: {
+              symbol: string;
+              side: string;
+              qty: number;
+              type: string;
+              time_in_force: string;
+            }) => Promise<unknown>;
+          },
+        ) => {
           try {
             await client.submitOrder({
               symbol: "AAPL",

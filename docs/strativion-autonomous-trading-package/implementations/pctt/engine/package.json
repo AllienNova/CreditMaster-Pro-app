@@ -1,0 +1,18 @@
+{
+  "name": "@strativion/pctt-engine",
+  "version": "1.0.0",
+  "description": "Pivot-Constrained Trendline Trading Engine - TypeScript implementation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "lint": "eslint src/"
+  },
+  "author": "Kimal Honour Djam",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vitest": "^3.0.0"
+  }
+}

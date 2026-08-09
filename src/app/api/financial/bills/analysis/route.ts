@@ -12,6 +12,8 @@ import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
 } from "@/lib/api/financial-api-middleware";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -44,11 +46,11 @@ const analysisQuerySchema = z.object({
 // GET /api/financial/bills/analysis
 // ============================================================================
 
-export async function GET(request: NextRequest) {
-  const startTime = Date.now();
-
+export const GET = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    // Apply middleware (auth, RBAC, rate limiting, etc.)
+    // Apply middleware (rate limiting, CORS, logging). Auth is already
+    // enforced by withAuth; the middleware re-validates as defence in depth.
     const middlewareResult = await applyFinancialAPIMiddleware(request, {
       requireAuth: true,
       rateLimit: true,
@@ -174,7 +176,7 @@ export async function GET(request: NextRequest) {
         {
           success: false,
           error: "Validation error",
-          details: error.errors,
+          details: error.issues,
         },
         { status: 400 },
       );
@@ -189,4 +191,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

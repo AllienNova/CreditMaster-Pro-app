@@ -7,26 +7,18 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { billNegotiationService } from "@/lib/financial/bill-negotiation-service";
 import type {
   NegotiationUpdateInput,
   NegotiationAttemptInput,
 } from "@/lib/financial/types/bill-negotiation.types";
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { id } = await params;
-    const userId = validation.user.id;
+    const id = request.nextUrl.pathname.split("/").pop() as string;
+    const userId = user.id;
 
     const negotiation = await billNegotiationService.getNegotiation(id, userId);
     if (!negotiation) {
@@ -45,17 +37,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export const PATCH = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { id } = await params;
-    const userId = validation.user.id;
+    const id = request.nextUrl.pathname.split("/").pop() as string;
+    const userId = user.id;
     const body = await request.json();
 
     const input: NegotiationUpdateInput = {};
@@ -81,17 +69,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { id } = await params;
-    const userId = validation.user.id;
+    const id = request.nextUrl.pathname.split("/").pop() as string;
+    const userId = user.id;
     const body = await request.json();
 
     // Validate required fields for attempt
@@ -126,4 +109,4 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       { status: 500 },
     );
   }
-}
+});

@@ -13,29 +13,6 @@ export { TransUnionClient } from "./transunion-client";
 export { MockCreditBureauAdapter } from "./mock-credit-bureau-adapter";
 export type { MockAdapterOptions } from "./mock-credit-bureau-adapter";
 
-// Credit Error Detector — identity theft assessment, severity scoring, error persistence
-export { CreditErrorDetector, creditErrorDetector } from "./credit-error-detector";
-export type {
-  IdentityTheftRiskLevel,
-  IdentityTheftIndicator,
-  IdentityTheftIndicatorType,
-  IdentityTheftAssessment,
-  DetectedErrorRecord,
-  ErrorTrendAnalysis,
-} from "./credit-error-detector";
-
-// Inquiry Removal Service — lifecycle management, letter generation, outcome tracking
-export { InquiryRemovalService, inquiryRemovalService } from "./inquiry-removal-service";
-export type {
-  InquiryRemovalStatus,
-  RemovalReason,
-  InquiryForRemoval,
-  InquiryRemovalLetter,
-  InquiryRemovalRecord,
-  InquiryAnalysisSummary,
-  BulkRemovalResult,
-} from "./inquiry-removal-service";
-
 export type {
   BureauCredentials,
   BureauApiEnvironment,

@@ -12,10 +12,10 @@ import {
   AssetType,
   TransactionType,
 } from "../../types/portfolio-db.types";
-import { getSupabase } from "../../../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
 // Mock Supabase client
-jest.mock("../../../supabase/client");
+jest.mock("@/lib/supabase/service-role");
 
 const mockSupabase = {
   from: jest.fn(),
@@ -28,7 +28,7 @@ describe("PortfolioService", () => {
   const holdingId = "550e8400-e29b-41d4-a716-446655440001";
 
   beforeEach(() => {
-    (getSupabase as jest.Mock).mockReturnValue(mockSupabase);
+    (getServiceRoleClient as jest.Mock).mockReturnValue(mockSupabase);
     service = new PortfolioService(userId);
     jest.clearAllMocks();
   });

@@ -7,24 +7,20 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { budgetService } from "@/lib/financial/budget-service";
 
 /**
  * GET /api/financial/budgets/rollover
  * Get rollover summary for the authenticated user
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: "Invalid or missing authentication" },
-        { status: 401 },
-      );
-    }
 
-    const summary = await budgetService.getRolloverSummary(validation.user.id);
+
+    const summary = await budgetService.getRolloverSummary(user.id);
 
     return NextResponse.json({
       success: true,
@@ -41,24 +37,20 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * POST /api/financial/budgets/rollover
  * Process rollovers for all budgets that need it
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: "Invalid or missing authentication" },
-        { status: 401 },
-      );
-    }
+
 
     const result = await budgetService.processRolloversForUser(
-      validation.user.id,
+      user.id,
     );
 
     return NextResponse.json({
@@ -83,22 +75,18 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * PATCH /api/financial/budgets/rollover
  * Adjust rollover amount for a specific budget
  * Body: { budgetId: string, rolloverAmount: number }
  */
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: "Invalid or missing authentication" },
-        { status: 401 },
-      );
-    }
+
 
     const body = await request.json();
     const { budgetId, rolloverAmount } = body;
@@ -122,7 +110,7 @@ export async function PATCH(request: NextRequest) {
 
     const budget = await budgetService.adjustRolloverAmount(
       budgetId,
-      validation.user.id,
+      user.id,
       rolloverAmount,
     );
 
@@ -139,4 +127,5 @@ export async function PATCH(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

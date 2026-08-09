@@ -7,12 +7,38 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 
 const CSRF_COOKIE_NAME = "__csrf_token";
 const CSRF_HEADER_NAME = "x-csrf-token";
-const CSRF_SECRET =
-  process.env.CSRF_SECRET || "default-csrf-secret-change-in-production";
 const TOKEN_EXPIRY = 60 * 60 * 1000; // 1 hour
+
+const DEV_CSRF_SECRET = "default-csrf-secret-change-in-production";
+
+/**
+ * Resolve the CSRF signing secret.
+ *
+ * FND-008: a missing `CSRF_SECRET` previously fell back silently to a public
+ * default value, making every CSRF token forgeable in production. In
+ * production a missing secret is now a hard failure; in non-production a
+ * warning is emitted and the dev default is used so local work is unblocked.
+ */
+function getCSRFSecret(): string {
+  const secret = process.env.CSRF_SECRET;
+  if (secret) return secret;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "CSRF_SECRET environment variable is required in production",
+    );
+  }
+
+  console.warn(
+    "CSRF_SECRET is not set — using an insecure development default. " +
+      "Set CSRF_SECRET before deploying to production.",
+  );
+  return DEV_CSRF_SECRET;
+}
 
 interface CSRFToken {
   token: string;
@@ -28,7 +54,7 @@ export function generateCSRFToken(): string {
   const data = `${timestamp}:${randomBytes}`;
 
   const signature = crypto
-    .createHmac("sha256", CSRF_SECRET)
+    .createHmac("sha256", getCSRFSecret())
     .update(data)
     .digest("hex");
 
@@ -51,7 +77,7 @@ export function verifyCSRFToken(token: string): boolean {
 
     // Verify signature
     const expectedSignature = crypto
-      .createHmac("sha256", CSRF_SECRET)
+      .createHmac("sha256", getCSRFSecret())
       .update(`${timestamp}:${randomBytes}`)
       .digest("hex");
 
@@ -108,8 +134,8 @@ export async function validateCSRFRequest(
   const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
   if (!cookieToken) return false;
 
-  // Tokens must match and be valid
-  if (headerToken !== cookieToken) return false;
+  // Tokens must match and be valid (constant-time to avoid leaking the token)
+  if (!timingSafeEqual(headerToken, cookieToken)) return false;
 
   return verifyCSRFToken(headerToken);
 }

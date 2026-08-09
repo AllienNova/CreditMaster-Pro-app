@@ -9,31 +9,17 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { CreditBureauService } from "@/lib/credit-bureau/credit-bureau-service";
 import type { Bureau } from "@/lib/credit-bureau/types";
 
 const VALID_BUREAUS = new Set<string>(["experian", "equifax", "transunion"]);
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "credit:read",
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate user
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
-    // 2. Check permission
-    if (!rbac.hasPermission(user, "credit:read")) {
-      return NextResponse.json(
-        { error: "Forbidden - Insufficient permissions" },
-        { status: 403 },
-      );
-    }
-
     // 3. Get connection statuses
     const statuses =
       await CreditBureauService.getBureauConnectionStatuses(user.id);
@@ -54,26 +40,18 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
 
-export async function POST(request: NextRequest) {
+// Note: the CSV row flags an inline `credit:write` check for POST, but
+// `credit:write` is not granted to any role in rbac.ts — that check would
+// 403 every caller (dead endpoint). Following the CSV `proposed_guard`
+// (`withPermission(credit:read)`) restores intended behaviour. See AUTH-03c
+// report (CSV-vs-code discrepancy).
+export const POST = withPermission(
+  "credit:read",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate user
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
-    // 2. Check permission
-    if (!rbac.hasPermission(user, "credit:write")) {
-      return NextResponse.json(
-        { error: "Forbidden - Insufficient permissions" },
-        { status: 403 },
-      );
-    }
-
     // 3. Parse request body
     const body = await request.json();
     const { bureau, action } = body as {
@@ -126,4 +104,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);

@@ -11,6 +11,28 @@
  * - Data breach notification
  */
 
+import { Resend } from "resend";
+import { supabaseAdmin } from "@/lib/supabase/server";
+
+// Structural type for the subset of the Supabase client this module uses.
+// Defined locally so services can be constructed with a test double.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type FromBuilder = any;
+export interface DbClient {
+  from: (table: string) => FromBuilder;
+  rpc: (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ error: { message: string } | null }>;
+  auth: {
+    admin: {
+      deleteUser: (
+        id: string,
+      ) => Promise<{ error: { message: string } | null }>;
+    };
+  };
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -42,6 +64,46 @@ export interface AIInteractionRecord {
   timestamp: Date;
   prompt?: string;
   response?: string;
+  /**
+   * Present for coaching sessions, whose subject line is personal data in its
+   * own right and has no other field to live in. Optional so the two
+   * message-shaped sources are unaffected.
+   */
+  topic?: string;
+}
+
+/**
+ * Normalise one chat-message row into an export record.
+ *
+ * A message row carries a single `content` plus a `role`, not a prompt/response
+ * pair. Placing the user's own words in `prompt` and everything else in
+ * `response` keeps the exported record faithful to who authored what.
+ */
+function toInteraction(row: {
+  id: string;
+  source: string;
+  role?: string;
+  content?: string;
+  at: string;
+}): AIInteractionRecord {
+  const isUser = row.role === "user";
+  return {
+    id: row.id,
+    type: `${row.source}:${row.role ?? "unknown"}`,
+    timestamp: new Date(row.at),
+    prompt: isUser ? row.content : undefined,
+    response: isUser ? undefined : row.content,
+  };
+}
+
+/**
+ * Render a jsonb column for export. Returns undefined for null/absent so the
+ * field is omitted rather than exported as the string "null".
+ */
+function serialiseJsonField(value: unknown): string | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value === "string") return value;
+  return JSON.stringify(value);
 }
 
 export interface LogRecord {
@@ -77,8 +139,9 @@ export interface DataDeletionRequest {
   userId: string;
   requestDate: Date;
   reason?: string;
-  status: "pending" | "processing" | "completed" | "rejected";
+  status: "pending" | "processing" | "completed" | "failed" | "rejected";
   completionDate?: Date;
+  error?: string;
 }
 
 export interface DataBreachNotification {
@@ -94,7 +157,13 @@ export interface DataBreachNotification {
 /**
  * GDPR Compliance Service
  */
-class GDPRComplianceService {
+export class GDPRComplianceService {
+  private db: DbClient;
+
+  constructor(db?: DbClient) {
+    this.db = db ?? (supabaseAdmin as unknown as DbClient);
+  }
+
   /**
    * Right to Access (GDPR Art. 15)
    * User can request all their personal data
@@ -103,7 +172,6 @@ class GDPRComplianceService {
     userId: string,
     format: "json" | "csv" | "xml" = "json",
   ): Promise<UserDataExport> {
-    // In production, fetch from database
     const userData: UserDataExport = {
       userId,
       exportDate: new Date(),
@@ -128,14 +196,43 @@ class GDPRComplianceService {
     userId: string,
     corrections: Record<string, string | number | boolean>,
   ): Promise<boolean> {
-    // In production, update database
-    // Data rectification in progress
+    const allowedProfileFields = ["name", "phone", "address"];
+    const profileUpdates: Record<string, string | number | boolean> = {};
+
+    for (const [key, value] of Object.entries(corrections)) {
+      if (allowedProfileFields.includes(key)) {
+        profileUpdates[key] = value;
+      }
+    }
+
+    if (Object.keys(profileUpdates).length > 0) {
+      const { error } = await this.db
+        .from("profiles")
+        .update({ ...profileUpdates, updated_at: new Date().toISOString() })
+        .eq("id", userId);
+
+      if (error) {
+        throw new Error(`Data rectification failed: ${error.message}`);
+      }
+    }
+
+    await this.db.from("audit_logs").insert({
+      user_id: userId,
+      action: "gdpr_rectification",
+      details: { fields_corrected: Object.keys(profileUpdates) },
+      created_at: new Date().toISOString(),
+    });
+
     return true;
   }
 
   /**
    * Right to Erasure (GDPR Art. 17)
-   * User can request deletion of their data
+   *
+   * Delegates the cascade to the `delete_user_data_cascade` Postgres RPC so
+   * the 28-table wipe + audit-log anonymization run atomically inside a
+   * single transaction. The Supabase Auth user is deleted afterwards from
+   * server code (the auth API cannot be invoked from PL/pgSQL).
    */
   async deleteUserData(
     userId: string,
@@ -145,18 +242,30 @@ class GDPRComplianceService {
       userId,
       requestDate: new Date(),
       reason,
-      status: "pending",
+      status: "processing",
     };
 
-    // In production:
-    // 1. Create deletion request
-    // 2. Verify user identity
-    // 3. Check legal obligations (e.g., financial records retention)
-    // 4. Schedule deletion job
-    // 5. Anonymize or delete data
-    // 6. Notify user of completion
+    const { error: rpcError } = await this.db.rpc(
+      "delete_user_data_cascade",
+      { p_user_id: userId, p_reason: reason ?? null },
+    );
 
-    // Data deletion request created
+    if (rpcError) {
+      request.status = "failed";
+      request.error = `Cascade delete failed: ${rpcError.message}`;
+      return request;
+    }
+
+    const { error: authError } = await this.db.auth.admin.deleteUser(userId);
+
+    if (authError) {
+      request.status = "failed";
+      request.error = `Auth user delete failed: ${authError.message}`;
+      return request;
+    }
+
+    request.status = "completed";
+    request.completionDate = new Date();
     return request;
   }
 
@@ -189,8 +298,25 @@ class GDPRComplianceService {
     userId: string,
     restrictions: string[],
   ): Promise<boolean> {
-    // In production, update user preferences
-    // Processing restriction applied
+    const { error } = await this.db
+      .from("profiles")
+      .update({
+        processing_restrictions: restrictions,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+
+    if (error) {
+      throw new Error(`Processing restriction failed: ${error.message}`);
+    }
+
+    await this.db.from("audit_logs").insert({
+      user_id: userId,
+      action: "gdpr_restrict_processing",
+      details: { restrictions },
+      created_at: new Date().toISOString(),
+    });
+
     return true;
   }
 
@@ -201,102 +327,463 @@ class GDPRComplianceService {
     userId: string,
     processingType: string,
   ): Promise<boolean> {
-    // In production, update user preferences
-    // User objection recorded
+    const { error } = await this.db.from("consent_records").insert({
+      user_id: userId,
+      consent_type: processingType,
+      granted: false,
+      timestamp: new Date().toISOString(),
+    });
+
+    if (error) {
+      throw new Error(`Processing objection failed: ${error.message}`);
+    }
+
+    await this.db.from("audit_logs").insert({
+      user_id: userId,
+      action: "gdpr_object_processing",
+      details: { processing_type: processingType },
+      created_at: new Date().toISOString(),
+    });
+
     return true;
   }
 
   /**
    * Data Breach Notification (GDPR Art. 33-34)
-   * Must notify within 72 hours
+   * Must notify within 72 hours.
+   *
+   * Each affected user is attempted independently — a failure for one user does
+   * not abort the remaining users. A summary `{ sent, failed }` is returned so
+   * callers can reflect partial failures in their response.
    */
   async notifyDataBreach(
     breach: Omit<DataBreachNotification, "notifiedDate">,
-  ): Promise<void> {
+  ): Promise<{ sent: number; failed: number }> {
     const notification: DataBreachNotification = {
       ...breach,
       notifiedDate: new Date(),
     };
 
-    // In production:
-    // 1. Notify supervisory authority within 72 hours
-    // 2. Notify affected users if high risk
-    // 3. Document the breach
-    // 4. Implement mitigation steps
+    let sent = 0;
+    let failed = 0;
+    const errors: string[] = [];
 
-    // Data breach notification created
-
-    // Send emails to affected users
     for (const userId of breach.affectedUsers) {
-      await this.sendBreachNotification(userId, notification);
+      try {
+        await this.sendBreachNotification(userId, notification);
+        sent++;
+      } catch (err) {
+        failed++;
+        errors.push(
+          `${userId}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     }
+
+    if (failed > 0) {
+      throw new Error(
+        `Breach notification partially failed: ${failed} of ${sent + failed} users not notified. Errors: ${errors.join("; ")}`,
+      );
+    }
+
+    return { sent, failed };
   }
 
   // Helper methods
 
   private async getUserProfile(userId: string): Promise<UserProfile | null> {
-    // In production, fetch from database
+    const { data, error } = await this.db
+      .from("profiles")
+      // `name` does not exist on profiles; the real column is `full_name`.
+      // Selecting a nonexistent column makes PostgREST error the WHOLE query,
+      // so this threw on every export — see this file's companion fix.
+      .select("id, email, full_name, phone, address, created_at, updated_at")
+      .eq("id", userId)
+      .single();
+
+    // PGRST116 ("no rows") is a legitimate "no profile" result. Any other
+    // error (permission denied, connection failure, malformed query) is a
+    // real failure and must propagate — silently reporting "no profile" for
+    // a GDPR Art. 15 export would misstate what data exists. Established
+    // idiom: see budget-service.ts getBudgetById.
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      throw new Error(`Failed to load profile for export: ${error.message}`);
+    }
+    if (!data) return null;
+
     return {
-      id: userId,
-      email: "[User Email]",
-      name: "[User Name]",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      id: data.id,
+      email: data.email,
+      name: data.full_name,
+      phone: data.phone,
+      address: data.address,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
     };
   }
 
   private async getUserCreditReports(
-    _userId: string,
+    userId: string,
   ): Promise<CreditReportRecord[]> {
-    // In production, fetch from database
-    return [];
+    const { data, error } = await this.db
+      .from("credit_reports")
+      // `items` does not exist. The report's itemised content lives in
+      // `accounts`, `inquiries`, `collections` and `public_records` — all four
+      // are personal data and Art. 15 requires all of them, so the export
+      // widens rather than picking one.
+      .select(
+        "id, bureau, report_date, score, accounts, inquiries, collections, public_records",
+      )
+      .eq("user_id", userId);
+
+    // A list query has no "not found" error code — an empty result set is a
+    // valid `{ data: [], error: null }`. Any non-null error is a real DB
+    // failure that must not be silently reported as "no credit reports."
+    if (error) {
+      throw new Error(
+        `Failed to load credit reports for export: ${error.message}`,
+      );
+    }
+
+    return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+      id: r.id as string,
+      bureau: r.bureau as string,
+      reportDate: new Date(r.report_date as string),
+      score: r.score as number | undefined,
+      // Flattened from the four real itemised columns. Omitting any of them
+      // would narrow the Art. 15 response.
+      items: [
+        ...((r.accounts as unknown[]) ?? []),
+        ...((r.inquiries as unknown[]) ?? []),
+        ...((r.collections as unknown[]) ?? []),
+        ...((r.public_records as unknown[]) ?? []),
+      ],
+    }));
   }
 
-  private async getUserDisputes(_userId: string): Promise<DisputeRecord[]> {
-    // In production, fetch from database
-    return [];
+  private async getUserDisputes(userId: string): Promise<DisputeRecord[]> {
+    const { data, error } = await this.db
+      .from("disputes")
+      // `description` does not exist; the real column is `item_description`.
+      .select("id, status, created_at, item_description")
+      .eq("user_id", userId);
+
+    if (error) {
+      throw new Error(`Failed to load disputes for export: ${error.message}`);
+    }
+
+    return ((data ?? []) as Array<Record<string, unknown>>).map((d) => ({
+      id: d.id as string,
+      status: d.status as string,
+      createdAt: new Date(d.created_at as string),
+      description: d.item_description as string | undefined,
+    }));
   }
 
+  /**
+   * Art. 15 export of the user's AI interactions.
+   *
+   * This previously queried a single table, `ai_interactions`, which exists in
+   * NO migration. Combined with the honest-failure fix, that meant EVERY data
+   * export threw — the right of access was completely unexercisable. Before
+   * that fix it was worse: the error was swallowed and the export reported
+   * success with an empty AI section, which is an affirmative misstatement to
+   * the data subject.
+   *
+   * There is no single AI table. The user's AI data is spread across three
+   * real tables, and a right-of-access response that returned only one of them
+   * would be incomplete:
+   *
+   *   chat_messages           — general assistant. Has NO user_id column; it
+   *                             is reachable only through
+   *                             chat_sessions.user_id via session_id. A naive
+   *                             .eq("user_id", ...) here fails at runtime.
+   *   financial_chat_messages — financial assistant. Carries user_id directly.
+   *   ai_coaching_sessions    — coaching. Carries user_id directly.
+   *
+   * Every query throws on error rather than degrading to []: silently dropping
+   * a category from someone's own data export is the failure mode this whole
+   * method exists to avoid.
+   */
   private async getUserAIInteractions(
-    _userId: string,
+    userId: string,
   ): Promise<AIInteractionRecord[]> {
-    // In production, fetch from database
-    return [];
+    const records: AIInteractionRecord[] = [];
+
+    // ── chat_messages, reached via the user's sessions ──────────────────────
+    const { data: sessionRows, error: sessionError } = await this.db
+      .from("chat_sessions")
+      .select("id")
+      .eq("user_id", userId);
+
+    if (sessionError) {
+      throw new Error(
+        `Failed to load chat sessions for export: ${sessionError.message}`,
+      );
+    }
+
+    const sessionIds = ((sessionRows ?? []) as Array<{ id: string }>).map(
+      (s) => s.id,
+    );
+
+    // Skip the follow-up entirely when there are no sessions — an empty IN ()
+    // list is not a meaningful query.
+    if (sessionIds.length > 0) {
+      const { data: messageRows, error: messageError } = await this.db
+        .from("chat_messages")
+        .select("id, role, content, timestamp")
+        .in("session_id", sessionIds);
+
+      if (messageError) {
+        throw new Error(
+          `Failed to load chat messages for export: ${messageError.message}`,
+        );
+      }
+
+      records.push(
+        ...((messageRows ?? []) as Array<Record<string, unknown>>).map((m) =>
+          toInteraction({
+            id: m.id as string,
+            source: "chat",
+            role: m.role as string | undefined,
+            content: m.content as string | undefined,
+            at: m.timestamp as string,
+          }),
+        ),
+      );
+    }
+
+    // ── financial_chat_messages ────────────────────────────────────────────
+    const { data: finRows, error: finError } = await this.db
+      .from("financial_chat_messages")
+      .select("id, role, content, created_at")
+      .eq("user_id", userId);
+
+    if (finError) {
+      throw new Error(
+        `Failed to load financial chat messages for export: ${finError.message}`,
+      );
+    }
+
+    records.push(
+      ...((finRows ?? []) as Array<Record<string, unknown>>).map((m) =>
+        toInteraction({
+          id: m.id as string,
+          source: "financial_chat",
+          role: m.role as string | undefined,
+          content: m.content as string | undefined,
+          at: m.created_at as string,
+        }),
+      ),
+    );
+
+    // ── ai_coaching_sessions ───────────────────────────────────────────────
+    const { data: coachRows, error: coachError } = await this.db
+      .from("ai_coaching_sessions")
+      .select("id, session_type, topic, content, user_response, created_at")
+      .eq("user_id", userId);
+
+    if (coachError) {
+      throw new Error(
+        `Failed to load AI coaching sessions for export: ${coachError.message}`,
+      );
+    }
+
+    records.push(
+      ...((coachRows ?? []) as Array<Record<string, unknown>>).map((c) => ({
+        id: c.id as string,
+        type: `coaching:${(c.session_type as string) ?? "unknown"}`,
+        timestamp: new Date(c.created_at as string),
+        topic: (c.topic as string | undefined) ?? undefined,
+        // user_response is the data subject's own input, content is the
+        // model's output. Both are personal data and both must be exported.
+        prompt: serialiseJsonField(c.user_response),
+        response: serialiseJsonField(c.content),
+      })),
+    );
+
+    // Chronological so the export reads as one coherent history rather than
+    // three concatenated blocks.
+    return records.sort(
+      (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
+    );
   }
 
-  private async getUserLogs(_userId: string): Promise<LogRecord[]> {
-    // In production, fetch from database
-    return [];
+  private async getUserLogs(userId: string): Promise<LogRecord[]> {
+    const { data, error } = await this.db
+      .from("audit_logs")
+      .select("id, action, created_at, details")
+      .eq("user_id", userId);
+
+    if (error) {
+      throw new Error(`Failed to load audit logs for export: ${error.message}`);
+    }
+
+    return ((data ?? []) as Array<Record<string, unknown>>).map((l) => ({
+      id: l.id as string,
+      action: l.action as string,
+      timestamp: new Date(l.created_at as string),
+      details: l.details as Record<string, unknown>,
+    }));
   }
 
-  private convertToCSV(data: UserDataExport["data"]): string {
-    // Simple CSV conversion
-    return JSON.stringify(data);
+  /**
+   * Stub — CSV export for GDPR Art. 20 portability is not implemented yet.
+   * Throws so callers cannot silently receive JSON when asking for CSV.
+   */
+  private convertToCSV(_data: UserDataExport["data"]): string {
+    throw new Error(
+      "GDPR Art. 20 CSV export is not yet implemented. Use format='json' until a compliant CSV serialiser is added.",
+    );
   }
 
-  private convertToXML(data: UserDataExport["data"]): string {
-    // Simple XML conversion
-    return `<?xml version="1.0"?><data>${JSON.stringify(data)}</data>`;
+  /**
+   * Stub — XML export for GDPR Art. 20 portability is not implemented yet.
+   * Throws so callers cannot silently receive JSON when asking for XML.
+   */
+  private convertToXML(_data: UserDataExport["data"]): string {
+    throw new Error(
+      "GDPR Art. 20 XML export is not yet implemented. Use format='json' until a compliant XML serialiser is added.",
+    );
+  }
+
+  /**
+   * Send a GDPR Art. 33 breach notification email to one user and record the
+   * outcome in `breach_notifications`.
+   *
+   * Failure path: if Resend throws, a status:failed row is written and the
+   * error is re-thrown so `notifyDataBreach` can surface it — no silent swallow.
+   */
+  private static escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   }
 
   private async sendBreachNotification(
     userId: string,
     notification: DataBreachNotification,
   ): Promise<void> {
-    // In production, send email
-    // Breach notification being sent
+    // Guard misconfiguration with a clear message before constructing the client.
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY is not configured");
+    }
+
+    // Fetch email from profiles — avoid logging PII in the error path.
+    const { data: profile } = await this.db
+      .from("profiles")
+      // `full_name`, not `name` — selecting a nonexistent column errors the
+      // whole query, which would have silently cost this user their breach
+      // notification (the result is destructured without checking `error`).
+      .select("email, full_name")
+      .eq("id", userId)
+      .single();
+
+    const toEmail = (profile as { email?: string } | null)?.email;
+    if (!toEmail) {
+      // No profile email — record as failed and return without crashing the loop.
+      await this.db.from("breach_notifications").insert({
+        breach_id: notification.breachId,
+        user_id: userId,
+        notified_at: new Date().toISOString(),
+        channel: "email",
+        status: "failed",
+        error: "No email address found for user",
+      });
+      return;
+    }
+
+    const e = GDPRComplianceService.escapeHtml;
+    const userName = e(
+      (profile as { name?: string } | null)?.name ?? "Valued Customer",
+    );
+    const dataList = notification.dataTypes.map(e).join(", ");
+    const steps = notification.mitigationSteps
+      .map((s) => `<li>${e(s)}</li>`)
+      .join("");
+    const html = `
+      <h2>Important Security Notice — Data Breach Notification</h2>
+      <p>Dear ${userName},</p>
+      <p>
+        We are writing to inform you that Fynvita has detected a data security
+        incident (reference: <strong>${e(notification.breachId)}</strong>) that may
+        have affected your account.
+      </p>
+      <p><strong>Severity:</strong> ${e(notification.severity)}</p>
+      <p><strong>Discovered:</strong> ${notification.discoveredDate.toISOString()}</p>
+      <p><strong>Data types involved:</strong> ${dataList}</p>
+      <h3>What you should do</h3>
+      <ul>${steps}</ul>
+      <p>
+        If you have questions, please contact our support team at
+        support@fynvita.com.
+      </p>
+      <p>We apologise for any inconvenience caused.</p>
+      <p>The Fynvita Security Team</p>
+    `;
+
+    // Construct Resend lazily (at call time, not module scope) so that importing
+    // this module never throws when RESEND_API_KEY is not set.
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const fromEmail =
+      process.env.FROM_EMAIL || "Fynvita Security <noreply@fynvita.com>";
+
+    try {
+      const { error } = await resend.emails.send({
+        from: fromEmail,
+        to: toEmail,
+        subject: `[Action Required] Fynvita Security Incident — ${notification.breachId}`,
+        html,
+      });
+      if (error) {
+        throw new Error(String((error as { message?: unknown }).message ?? error));
+      }
+    } catch (err) {
+      const sendError = err instanceof Error ? err.message : String(err);
+      // Write the failed record before re-throwing
+      await this.db.from("breach_notifications").insert({
+        breach_id: notification.breachId,
+        user_id: userId,
+        notified_at: new Date().toISOString(),
+        channel: "email",
+        status: "failed",
+        error: sendError,
+      });
+      throw err;
+    }
+
+    // Happy path — record the successful send
+    await this.db.from("breach_notifications").insert({
+      breach_id: notification.breachId,
+      user_id: userId,
+      notified_at: new Date().toISOString(),
+      channel: "email",
+      status: "sent",
+      error: null,
+    });
   }
 }
 
 /**
  * CCPA Compliance Service
  */
-class CCPAComplianceService {
+export class CCPAComplianceService {
+  private db: DbClient;
+  private gdpr: GDPRComplianceService;
+
+  constructor(db?: DbClient, gdpr?: GDPRComplianceService) {
+    this.db = db ?? (supabaseAdmin as unknown as DbClient);
+    this.gdpr = gdpr ?? new GDPRComplianceService(this.db);
+  }
+
   /**
    * Right to Know (CCPA §1798.100)
    * User can request information about data collection
    */
-  async provideDataCollectionInfo(userId: string): Promise<{
+  async provideDataCollectionInfo(_userId: string): Promise<{
     categoriesCollected: string[];
     purposesOfCollection: string[];
     categoriesOfSources: string[];
@@ -333,14 +820,10 @@ class CCPAComplianceService {
 
   /**
    * Right to Delete (CCPA §1798.105)
+   * Delegates to the GDPR erasure implementation which handles full cascade.
    */
   async deleteConsumerData(userId: string): Promise<DataDeletionRequest> {
-    // Similar to GDPR right to erasure
-    return {
-      userId,
-      requestDate: new Date(),
-      status: "pending",
-    };
+    return this.gdpr.deleteUserData(userId, "CCPA §1798.105 deletion request");
   }
 
   /**
@@ -348,8 +831,24 @@ class CCPAComplianceService {
    * User can opt-out of sale of personal information
    */
   async optOutOfSale(userId: string): Promise<boolean> {
-    // In production, update user preferences
-    // User opt-out recorded
+    const { error } = await this.db.from("consent_records").insert({
+      user_id: userId,
+      consent_type: "data_sharing",
+      granted: false,
+      timestamp: new Date().toISOString(),
+    });
+
+    if (error) {
+      throw new Error(`Opt-out failed: ${error.message}`);
+    }
+
+    await this.db.from("audit_logs").insert({
+      user_id: userId,
+      action: "ccpa_opt_out_sale",
+      details: { opted_out: true },
+      created_at: new Date().toISOString(),
+    });
+
     return true;
   }
 
@@ -357,8 +856,7 @@ class CCPAComplianceService {
    * Right to Non-Discrimination (CCPA §1798.125)
    * Cannot discriminate against users who exercise their rights
    */
-  async ensureNonDiscrimination(userId: string): Promise<boolean> {
-    // In production, verify no discriminatory practices
+  async ensureNonDiscrimination(_userId: string): Promise<boolean> {
     return true;
   }
 
@@ -372,42 +870,78 @@ class CCPAComplianceService {
 
 /**
  * Consent Management Service
+ *
+ * Persists consent as an append-only history in `consent_records`.
+ * GDPR Art. 7 requires demonstrable consent over time — every consent event
+ * is a new INSERT, never an UPDATE or upsert. "Current consent" for a given
+ * (user, type) is the latest row ordered by `timestamp DESC`.
  */
-class ConsentManagementService {
-  private consents: Map<string, ConsentRecord[]> = new Map();
+export class ConsentManagementService {
+  private db: DbClient;
 
-  /**
-   * Record user consent
-   */
-  recordConsent(consent: ConsentRecord): void {
-    const userConsents = this.consents.get(consent.userId) || [];
-    userConsents.push(consent);
-    this.consents.set(consent.userId, userConsents);
+  constructor(db?: DbClient) {
+    this.db = db ?? (supabaseAdmin as unknown as DbClient);
   }
 
   /**
-   * Check if user has given consent
+   * Record user consent — appends a new row; never overwrites history.
    */
-  hasConsent(
-    userId: string,
-    consentType: ConsentRecord["consentType"],
-  ): boolean {
-    const userConsents = this.consents.get(userId) || [];
-    const latestConsent = userConsents
-      .filter((c) => c.consentType === consentType)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+  async recordConsent(consent: ConsentRecord): Promise<void> {
+    const { error } = await this.db.from("consent_records").insert({
+      user_id: consent.userId,
+      consent_type: consent.consentType,
+      granted: consent.granted,
+      timestamp: consent.timestamp.toISOString(),
+      ip_address: consent.ipAddress ?? null,
+      user_agent: consent.userAgent ?? null,
+    });
 
-    return latestConsent?.granted || false;
+    if (error) {
+      throw new Error(`Failed to record consent: ${error.message}`);
+    }
   }
 
   /**
-   * Withdraw consent
+   * Check if user currently has consent for a given type.
+   * Returns the `granted` value of the most recent row by `timestamp`.
+   *
+   * Uses `.maybeSingle()` rather than `.single()` so that "no rows" resolves
+   * to `{ data: null, error: null }` (→ false) instead of triggering PGRST116.
+   * A genuine DB error (non-zero `error` with data still null) is surfaced as a
+   * thrown exception rather than silently becoming `false`.
+   *
+   * Tie-break: two rows with identical `timestamp` have DB-defined ordering;
+   * in practice this should not occur because consent events are timestamped at
+   * call time and the UI prevents rapid double-submission.
    */
-  withdrawConsent(
+  async hasConsent(
     userId: string,
     consentType: ConsentRecord["consentType"],
-  ): void {
-    this.recordConsent({
+  ): Promise<boolean> {
+    const { data, error } = await this.db
+      .from("consent_records")
+      .select("granted")
+      .eq("user_id", userId)
+      .eq("consent_type", consentType)
+      .order("timestamp", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to read consent: ${error.message}`);
+    }
+    if (!data) return false;
+    return (data as { granted: boolean }).granted;
+  }
+
+  /**
+   * Withdraw consent by appending a granted=false event.
+   */
+  async withdrawConsent(
+    userId: string,
+    consentType: ConsentRecord["consentType"],
+  ): Promise<void> {
+    await this.recordConsent({
       userId,
       consentType,
       granted: false,
@@ -416,17 +950,39 @@ class ConsentManagementService {
   }
 
   /**
-   * Get all consents for user
+   * Get all consent events for user, ordered by timestamp descending.
    */
-  getUserConsents(userId: string): ConsentRecord[] {
-    return this.consents.get(userId) || [];
+  async getUserConsents(userId: string): Promise<ConsentRecord[]> {
+    const { data, error } = await this.db
+      .from("consent_records")
+      .select("user_id, consent_type, granted, timestamp, ip_address, user_agent")
+      .eq("user_id", userId)
+      .order("timestamp", { ascending: false });
+
+    // A list query's "no rows" case is `{ data: [], error: null }` — a real,
+    // non-null error must propagate rather than being reported as "no
+    // consent history," which both the Art. 15 export and the consent route
+    // treat as ground truth.
+    if (error) {
+      throw new Error(`Failed to read consent history: ${error.message}`);
+    }
+    if (!data) return [];
+
+    return (data as Array<Record<string, unknown>>).map((row) => ({
+      userId: row.user_id as string,
+      consentType: row.consent_type as ConsentRecord["consentType"],
+      granted: row.granted as boolean,
+      timestamp: new Date(row.timestamp as string),
+      ipAddress: (row.ip_address as string | null) ?? undefined,
+      userAgent: (row.user_agent as string | null) ?? undefined,
+    }));
   }
 
   /**
-   * Export consent history
+   * Export full consent history as a JSON string.
    */
-  exportConsentHistory(userId: string): string {
-    const consents = this.getUserConsents(userId);
+  async exportConsentHistory(userId: string): Promise<string> {
+    const consents = await this.getUserConsents(userId);
     return JSON.stringify(consents, null, 2);
   }
 }

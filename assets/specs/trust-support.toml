@@ -1,0 +1,45 @@
+name = "trust-support"
+wave = 7
+model = "gemini-2.5-flash-image"
+resolution = "1024x1024"
+out_dir = "assets/raw/trust-support"
+count = 8
+preamble = true
+
+shared_prompt = """
+Fynvita Tier C minimal line-art: clean single-weight strokes in Trust Blue #3B82F6 on pure white background. NO fills, NO blob characters, NO gradients, NO shadows, NO 3D. Blueprint aesthetic — professional, technical, serious-but-approachable. Occasional accent in Vital Green #10B981 or Energy Gold #F59E0B (small highlight only). 1024x1024 square, centered, generous whitespace.
+"""
+
+negative = ["fills", "blob", "gradients", "shadows", "3D", "realistic", "characters"]
+
+[[variants]]
+id = "trust-data-privacy"
+prompt = "A document outline (Trust Blue) with an eye icon overlaid and crossed out with a Trust Blue X. An emerald leaf accent sits at the bottom corner. Data stays private — no third-party access."
+
+[[variants]]
+id = "trust-compliance"
+prompt = "A certificate/diploma outline (Trust Blue) with a ribbon seal at the bottom in Energy Gold accent. A checkmark in Vital Green appears in the center of the document body. Compliance certified."
+
+[[variants]]
+id = "trust-audit"
+prompt = "A magnifying glass outline (Trust Blue) centered over a checklist outline. Each checklist item has a small Vital Green checkmark beside it. A gold star sits at the top of the list. Audit complete — everything verified."
+
+[[variants]]
+id = "help-empty-search"
+prompt = "A magnifying glass outline (Trust Blue strokes) aimed at an empty dotted circle — suggesting no results. A small question mark in Trust Blue floats upper right. NO text, NO labels, NO words anywhere in the image. Pure line-art only."
+
+[[variants]]
+id = "help-troubleshooting"
+prompt = "A gear outline (Trust Blue) with a wrench outline crossing diagonally through its center. A small lightbulb outline in Energy Gold floats above. Troubleshooting — finding a solution."
+
+[[variants]]
+id = "help-setup-tutorial"
+prompt = "Three numbered circles (1, 2, 3) in Trust Blue connected by dotted lines from left to right. Inside each circle is a simple icon outline: a person silhouette, a document, and a checkmark. Setup guide — step by step."
+
+[[variants]]
+id = "status-maintenance"
+prompt = "A clock outline (Trust Blue) with a wrench outline inside the clock face. Radiating short lines around the clock suggest activity. Gold tick marks at the hour positions. System maintenance in progress."
+
+[[variants]]
+id = "status-incident"
+prompt = "Large centered composition: a bold warning triangle outline (Trust Blue, thick strokes) filling most of the frame. Inside the triangle, a large exclamation mark in Energy Gold. A shield outline in Vital Green sits to the lower right of the triangle. Fill the canvas — no large empty white areas. Incident notification."

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withRole, type AuthedUser } from "@/lib/auth/api-guard";
 import { PerformanceMonitor } from "@/lib/performance/performance-monitor";
 import { cache } from "@/lib/cache/cache-service";
 
@@ -8,20 +7,10 @@ import { cache } from "@/lib/cache/cache-service";
  * GET /api/performance
  * Get performance metrics (admin only)
  */
-export async function GET(request: NextRequest) {
+export const GET = withRole(
+  "admin",
+  async (_request: NextRequest, _user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check admin permissions
-    if (!rbac.hasPermission(validation.user, "admin:analytics")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     // Get performance report
     const report = PerformanceMonitor.getReport();
     const memoryUsage = PerformanceMonitor.getMemoryUsage();
@@ -44,26 +33,17 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * DELETE /api/performance
  * Clear performance metrics (admin only)
  */
-export async function DELETE(request: NextRequest) {
+export const DELETE = withRole(
+  "admin",
+  async (_request: NextRequest, _user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check admin permissions
-    if (!rbac.hasPermission(validation.user, "admin:analytics")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     // Clear metrics
     PerformanceMonitor.clearMetrics();
 
@@ -75,4 +55,5 @@ export async function DELETE(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

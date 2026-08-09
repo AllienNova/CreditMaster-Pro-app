@@ -31,81 +31,6 @@ type NudgeType =
   | "coaching"
   | "social_proof";
 
-interface NudgeHistoryItem {
-  id: string;
-  nudgeType: NudgeType;
-  title: string;
-  message: string;
-  response: "accepted" | "dismissed" | "snoozed" | "ignored";
-  respondedAt: Date;
-  actionTaken?: string;
-}
-
-interface NudgeStats {
-  totalReceived: number;
-  acceptedCount: number;
-  dismissedCount: number;
-  snoozedCount: number;
-  acceptanceRate: number;
-  impactScore: number;
-  monthlySavings: number;
-}
-
-const MOCK_HISTORY: NudgeHistoryItem[] = [
-  {
-    id: "1",
-    nudgeType: "insight",
-    title: "Subscription review completed",
-    message: "You reviewed your subscriptions and canceled 2 unused services.",
-    response: "accepted",
-    respondedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    actionTaken: "Canceled Netflix and Hulu",
-  },
-  {
-    id: "2",
-    nudgeType: "celebration",
-    title: "Savings goal reached!",
-    message: "You hit your $500 monthly savings target.",
-    response: "accepted",
-    respondedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: "3",
-    nudgeType: "warning",
-    title: "Budget alert acknowledged",
-    message: "Dining budget was over by $45.",
-    response: "dismissed",
-    respondedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: "4",
-    nudgeType: "coaching",
-    title: "Budgeting session completed",
-    message: "Completed the 50/30/20 budgeting session.",
-    response: "accepted",
-    respondedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    actionTaken: "Adjusted budget categories",
-  },
-  {
-    id: "5",
-    nudgeType: "reminder",
-    title: "Bill payment reminder",
-    message: "Electric bill was due in 3 days.",
-    response: "snoozed",
-    respondedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-  },
-];
-
-const MOCK_STATS: NudgeStats = {
-  totalReceived: 47,
-  acceptedCount: 32,
-  dismissedCount: 10,
-  snoozedCount: 5,
-  acceptanceRate: 68,
-  impactScore: 8.2,
-  monthlySavings: 145,
-};
-
 const typeConfig: Record<
   NudgeType,
   { icon: keyof typeof Ionicons.glyphMap; color: string; label: string }
@@ -121,11 +46,8 @@ const typeConfig: Record<
 };
 
 export default function NudgesScreen() {
-  const { nudges, activeNudge, respondToNudge, fetchNudges, isLoading } =
-    useNudges();
+  const { nudges, respondToNudge, fetchNudges, isLoading, error } = useNudges();
   const [refreshing, setRefreshing] = useState(false);
-  const [history] = useState<NudgeHistoryItem[]>(MOCK_HISTORY);
-  const [stats] = useState<NudgeStats>(MOCK_STATS);
   const [activeTab, setActiveTab] = useState<"active" | "history" | "settings">(
     "active",
   );
@@ -136,34 +58,10 @@ export default function NudgesScreen() {
     setRefreshing(false);
   }, [fetchNudges]);
 
-  const formatTimeAgo = (date: Date) => {
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-    if (seconds < 60) return "Just now";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  };
-
-  const getResponseBadge = (response: string) => {
-    switch (response) {
-      case "accepted":
-        return { bg: "#D1FAE5", text: "#059669", label: "Accepted" };
-      case "dismissed":
-        return { bg: "#FEE2E2", text: "#DC2626", label: "Dismissed" };
-      case "snoozed":
-        return { bg: "#FEF3C7", text: "#D97706", label: "Snoozed" };
-      default:
-        return { bg: "#F3F4F6", text: "#6B7280", label: "Ignored" };
-    }
-  };
-
   if (isLoading && !refreshing) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.loadingContainer} testID="insights-nudges-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading recommendations...</Text>
         </View>
@@ -202,41 +100,6 @@ export default function NudgesScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Stats Overview */}
-        <Card style={styles.statsCard}>
-          <View style={styles.statsHeader}>
-            <Text style={styles.statsTitle}>Your Nudge Impact</Text>
-            <View style={styles.impactBadge}>
-              <Ionicons name="sparkles" size={14} color="#F59E0B" />
-              <Text style={styles.impactText}>{stats.impactScore}/10</Text>
-            </View>
-          </View>
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{stats.totalReceived}</Text>
-              <Text style={styles.statLabel}>Received</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: "#22C55E" }]}>
-                {stats.acceptedCount}
-              </Text>
-              <Text style={styles.statLabel}>Accepted</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: "#3B82F6" }]}>
-                {stats.acceptanceRate}%
-              </Text>
-              <Text style={styles.statLabel}>Rate</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: "#8B5CF6" }]}>
-                ${stats.monthlySavings}
-              </Text>
-              <Text style={styles.statLabel}>Saved/mo</Text>
-            </View>
-          </View>
-        </Card>
-
         {/* Tabs */}
         <View style={styles.tabsContainer}>
           {(["active", "history", "settings"] as const).map((tab) => (
@@ -263,8 +126,26 @@ export default function NudgesScreen() {
         {/* Active Nudges */}
         {activeTab === "active" && (
           <View>
-            {nudges.length === 0 ? (
-              <View style={styles.emptyState}>
+            {error ? (
+              <View style={styles.emptyState} testID="insights-nudges-error">
+                <Ionicons
+                  name="cloud-offline-outline"
+                  size={64}
+                  color={theme.colors.textSecondary}
+                />
+                <Text style={styles.emptyTitle}>
+                  Couldn&apos;t load recommendations
+                </Text>
+                <Text style={styles.emptySubtitle}>{error}</Text>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={fetchNudges}
+                >
+                  <Text style={styles.retryButtonText}>Try Again</Text>
+                </TouchableOpacity>
+              </View>
+            ) : nudges.length === 0 ? (
+              <View style={styles.emptyState} testID="insights-nudges-empty">
                 <Ionicons name="checkmark-circle" size={64} color="#22C55E" />
                 <Text style={styles.emptyTitle}>All Caught Up!</Text>
                 <Text style={styles.emptySubtitle}>
@@ -357,65 +238,22 @@ export default function NudgesScreen() {
           </View>
         )}
 
-        {/* History */}
+        {/* History — no nudge-history endpoint exists yet (only GET/POST
+            /api/ai/nudges), so this is an honest empty state, never mock data. */}
         {activeTab === "history" && (
-          <View>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
-            {history.map((item) => {
-              const config = typeConfig[item.nudgeType];
-              const badge = getResponseBadge(item.response);
-              return (
-                <Card key={item.id} style={styles.historyCard}>
-                  <View style={styles.historyHeader}>
-                    <View
-                      style={[
-                        styles.historyIcon,
-                        { backgroundColor: `${config.color}15` },
-                      ]}
-                    >
-                      <Ionicons
-                        name={config.icon}
-                        size={18}
-                        color={config.color}
-                      />
-                    </View>
-                    <View style={styles.historyContent}>
-                      <View style={styles.historyTitleRow}>
-                        <Text style={styles.historyTitle}>{item.title}</Text>
-                        <View
-                          style={[
-                            styles.responseBadge,
-                            { backgroundColor: badge.bg },
-                          ]}
-                        >
-                          <Text
-                            style={[styles.responseText, { color: badge.text }]}
-                          >
-                            {badge.label}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text style={styles.historyMessage}>{item.message}</Text>
-                      {item.actionTaken && (
-                        <View style={styles.actionTakenRow}>
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={14}
-                            color="#22C55E"
-                          />
-                          <Text style={styles.actionTakenText}>
-                            {item.actionTaken}
-                          </Text>
-                        </View>
-                      )}
-                      <Text style={styles.historyTime}>
-                        {formatTimeAgo(item.respondedAt)}
-                      </Text>
-                    </View>
-                  </View>
-                </Card>
-              );
-            })}
+          <View
+            style={styles.emptyState}
+            testID="insights-nudges-history-empty"
+          >
+            <Ionicons
+              name="time-outline"
+              size={64}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.emptyTitle}>No nudge history yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Recommendations you respond to will appear here.
+            </Text>
           </View>
         )}
 
@@ -559,32 +397,6 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4 },
   title: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
-  statsCard: { marginBottom: theme.spacing.lg, padding: theme.spacing.md },
-  statsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: theme.spacing.md,
-  },
-  statsTitle: { fontSize: 16, fontWeight: "600", color: theme.colors.text },
-  impactBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FEF3C7",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  impactText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#D97706",
-    marginLeft: 4,
-  },
-  statsGrid: { flexDirection: "row" },
-  statItem: { flex: 1, alignItems: "center" },
-  statValue: { fontSize: 22, fontWeight: "700", color: theme.colors.text },
-  statLabel: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
   tabsContainer: {
     flexDirection: "row",
     backgroundColor: theme.colors.surface,
@@ -620,6 +432,14 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
     paddingHorizontal: 20,
   },
+  retryButton: {
+    marginTop: theme.spacing.lg,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 8,
+  },
+  retryButtonText: { fontSize: 14, fontWeight: "600", color: "#fff" },
   nudgeCard: { marginBottom: theme.spacing.md, padding: theme.spacing.md },
   nudgeHeader: { flexDirection: "row" },
   nudgeIcon: {
@@ -683,48 +503,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
-  historyCard: { marginBottom: theme.spacing.sm, padding: theme.spacing.md },
-  historyHeader: { flexDirection: "row" },
-  historyIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  historyContent: { flex: 1 },
-  historyTitleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  historyTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: theme.colors.text,
-    flex: 1,
-  },
-  responseBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  responseText: { fontSize: 10, fontWeight: "600" },
-  historyMessage: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    marginBottom: 6,
-  },
-  actionTakenRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  actionTakenText: {
-    fontSize: 12,
-    color: "#22C55E",
-    marginLeft: 4,
-    fontWeight: "500",
-  },
-  historyTime: { fontSize: 11, color: theme.colors.textSecondary },
   settingsCard: { marginBottom: theme.spacing.lg, padding: theme.spacing.sm },
   settingRow: {
     flexDirection: "row",

@@ -1,0 +1,21 @@
+name = "tier-c-pilot"
+wave = 2
+model = "gemini-2.5-flash-image"
+resolution = "1024x1024"
+out_dir = "assets/raw/tier-c-pilot"
+count = 2
+preamble = true
+
+shared_prompt = """
+Fynvita minimal line-art illustration: clean single-weight strokes in Trust Blue #3B82F6 on pure white background. NO fills, NO blob characters, NO gradients, NO shadows, NO 3D. Blueprint/wireframe aesthetic — professional, technical, serious-but-approachable. Consistent stroke weight. Occasional accent in Vital Green #10B981 or Energy Gold #F59E0B (small highlight only). 1024x1024 square, centered, generous whitespace.
+"""
+
+negative = ["fills", "blob", "gradients", "shadows", "3D", "realistic", "thick strokes"]
+
+[[variants]]
+id = "lineart-shield"
+prompt = "A clean shield outline (Trust Blue stroke) with a checkmark inside (Vital Green accent). Small radiating lines suggest protection. A keyhole detail at the bottom. Security/trust context — used for 2FA, encryption, data privacy pages. Minimal, confident."
+
+[[variants]]
+id = "lineart-help"
+prompt = "A large question mark (Trust Blue stroke) inside a speech bubble outline. Small book icon to the left, magnifying glass to the right. Help center context — finding answers. Clean, organized, technical."

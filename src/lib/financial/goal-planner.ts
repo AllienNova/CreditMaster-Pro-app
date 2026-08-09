@@ -9,8 +9,8 @@
  * - AI-powered recommendations
  */
 
-import { getSupabase } from "@/lib/supabase/client";
-import { AIMLService } from "@/lib/aiml-service";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import { financialContextEngine } from "./financial-context-engine";
 import { FinancialContext } from "./types/financial-context.types";
 import {
@@ -28,8 +28,6 @@ import {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-
-const AI_MODEL = "anthropic/claude-4.5-sonnet";
 
 const DEFAULT_MILESTONES = [
   {
@@ -75,19 +73,6 @@ const GOAL_TEMPLATES: Record<
 // ============================================================================
 
 class GoalPlanner {
-  private aimlService: AIMLService | null = null;
-
-  private getAIService(): AIMLService | null {
-    if (!this.aimlService && process.env.AIML_API_KEY) {
-      try {
-        this.aimlService = new AIMLService();
-      } catch {
-        // GoalPlanner warning: Failed to initialize AIML service for goal planning
-      }
-    }
-    return this.aimlService;
-  }
-
   /**
    * Create a new financial goal plan
    */
@@ -168,7 +153,7 @@ class GoalPlanner {
    * Get all goals for a user
    */
   async getUserGoals(userId: string): Promise<FinancialGoalPlan[]> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
     const { data, error } = await supabase
       .from("financial_goals")
       .select("*")
@@ -191,7 +176,7 @@ class GoalPlanner {
     goalId: string,
     newAmount: number,
   ): Promise<FinancialGoalPlan | null> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
 
     // Fetch current goal
     const { data: goal, error: fetchError } = await supabase
@@ -250,14 +235,19 @@ class GoalPlanner {
    * Simulate different goal scenarios
    */
   async simulateGoal(request: SimulateGoalRequest): Promise<GoalSimulation> {
-    const { goalId, scenarios: scenarioParams } = request;
+    const { goalId, userId, scenarios: scenarioParams } = request;
 
-    // Get the goal
-    const supabase = getSupabase();
+    // Get the goal. The `user_id` filter is load-bearing, not defensive: this
+    // runs on the service-role client, which bypasses RLS, so without it any
+    // authenticated caller could simulate — and thereby read the target and
+    // current amounts of — any other user's goal by its id. Matches the
+    // scoping every other method on this class already uses.
+    const supabase = getServiceRoleClient();
     const { data: goalData } = await supabase
       .from("financial_goals")
       .select("*")
       .eq("id", goalId)
+      .eq("user_id", userId)
       .single();
 
     if (!goalData) {
@@ -456,16 +446,11 @@ class GoalPlanner {
     months: number,
     context: FinancialContext,
   ): Promise<string[]> {
-    const aiService = this.getAIService();
-    if (!aiService) {
-      return this.getDefaultRecommendations(goalType);
-    }
-
     try {
       const prompt = `Generate 3 specific, actionable tips for achieving a ${goalType} goal of $${targetAmount} in ${months} months. User has: income $${context.transactions.totalIncome}/month, savings $${context.accounts.totalSavings}. Be concise.`;
 
-      const response = await aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [
           {
             role: "system",
@@ -547,7 +532,7 @@ class GoalPlanner {
   }
 
   private async saveGoalToDatabase(goal: FinancialGoalPlan): Promise<void> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("financial_goals").insert({
       id: goal.id,

@@ -4,7 +4,11 @@
 
 import { NextRequest } from "next/server";
 
+const mockResolveRoleFromDb = jest.fn();
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
+}));
 jest.mock("@/lib/auth/rbac");
 
 import { GET } from "../route";
@@ -26,6 +30,8 @@ function createMockRequest(url: string) {
 describe("GET /api/financial/disputes/ai-strategy", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockResolveRoleFromDb.mockResolvedValue("premium");
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -33,21 +39,23 @@ describe("GET /api/financial/disputes/ai-strategy", () => {
     (rbac.hasPermission as jest.Mock).mockReturnValue(true);
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const request = createMockRequest("http://localhost:3000/api/financial/disputes/ai-strategy");
+      const response = await GET(request);
+      expect(response.status).toBe(401);
     });
-    const request = createMockRequest("http://localhost:3000/api/financial/disputes/ai-strategy");
-    const response = await GET(request);
-    expect(response.status).toBe(401);
-  });
 
-  it("should return 403 for user without disputes:read permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-    const request = createMockRequest("http://localhost:3000/api/financial/disputes/ai-strategy");
-    const response = await GET(request);
-    expect(response.status).toBe(403);
+    it("should return 403 for user without disputes:read permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      const request = createMockRequest("http://localhost:3000/api/financial/disputes/ai-strategy");
+      const response = await GET(request);
+      expect(response.status).toBe(403);
+    });
   });
 
   it("should return dispute strategy data successfully", async () => {
@@ -72,15 +80,12 @@ describe("GET /api/financial/disputes/ai-strategy", () => {
   });
 
   it("should return fallback data on error", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockRejectedValue(
-      new Error("Unexpected error"),
-    );
+    mockResolveRoleFromDb.mockRejectedValue(
+        new Error("Role resolution failed"),
+      );
     const request = createMockRequest("http://localhost:3000/api/financial/disputes/ai-strategy");
     const response = await GET(request);
-    const data = await response.json();
-    // This route returns fallback data on error
-    expect(data.success).toBe(true);
-    expect(data._meta.fallback).toBe(true);
-    expect(data.data.opportunities).toEqual([]);
+    // TASK-AUTH-03c: withAuth guard fails closed with 503 when role resolution fails.
+    expect(response.status).toBe(503);
   });
 });

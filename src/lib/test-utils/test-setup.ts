@@ -149,10 +149,6 @@ export async function cleanupTestData(userId: string): Promise<void> {
   }
 
   // Delete in reverse order of dependencies
-  await supabaseAdmin
-    .from("credit_card_utilization_history")
-    .delete()
-    .eq("user_id", userId);
   await supabaseAdmin.from("credit_cards").delete().eq("user_id", userId);
   await supabaseAdmin.from("goodwill_letters").delete().eq("user_id", userId);
   await supabaseAdmin.from("negotiations").delete().eq("user_id", userId);

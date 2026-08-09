@@ -1,0 +1,632 @@
+meta:
+  document_role: policy
+  canonical_owner: policy.dr.yaml
+  schema_version: 1.0.0
+  file_version: 1.0.0
+  canonical_package_version: 2.2.0
+  controls_owned: [DR-01, DR-02, DR-03, DR-04, DR-05, DR-06]
+  index_ref: governance/CANONICAL-FIELD-INDEX.md#section-9
+  override_rights: "🔒 All DR controls are locked. No tenant override permitted. Kill-switch
+    authority fields are additionally ⛔ (dual-control required even for platform operator)."
+  unit_convention: "All percentages are decimal fractions (0.01 = 1%). No percent-floats.
+    Per governance/VERSIONING.md §8."
+
+# ---------------------------------------------------------------------------
+# DESIGN RATIONALE — AMBIGUOUS STATE SAFE DEFAULT (P0-10)
+# ---------------------------------------------------------------------------
+# PRINCIPAL-REVIEW.md#P0-10 identifies flatten_if_state_untrusted as the
+# single most dangerous autonomous action in the prior crisis workflow.
+#
+# CORE PRINCIPLE: Under ambiguous state, the system does NOT know what it
+# owns. An autonomous flatten during data degradation or partial connectivity
+# loss may:
+#   (a) Issue duplicate close orders for positions already closed at the broker
+#   (b) Fail to close real positions whose state record is missing
+#   (c) Interact with a broker that has advanced its own state, producing
+#       unintended net-short or net-long residuals
+#   (d) Execute at the worst moment of a partial outage when spreads are widest
+#       and liquidity is thinnest
+#
+# SAFE DEFAULT: FREEZE_AND_ALERT
+#   - Pause all new order entry
+#   - Cancel all known working orders (idempotent, using client-order-id)
+#   - Preserve existing positions unchanged
+#   - Page humans immediately via policy.incidents.yaml#sinks
+#   - Await operator reconciliation and attestation before resuming
+#
+# Flattening is ONLY authorized under LEVEL_4 kill-switch (see below),
+# which requires explicit dual-control AT TIME OF USE plus a named incident
+# justification. No automated process may trigger LEVEL_4.
+# ---------------------------------------------------------------------------
+
+# ===========================================================================
+# DR-01  RTO (Recovery Time Objective) PER COMPONENT
+# canonical owner: policy.dr.yaml#rto_minutes
+# Target elapsed time from failure detection to full service restoration.
+# Override rights: 🔒 locked
+# ===========================================================================
+
+rto_minutes:
+  signal_engine:
+    value: 5
+    description: Strategy signal generation engine; acceptable to pause signal emission during recovery
+    recovery_path: restart_from_checkpoint
+  risk_engine:
+    value: 2
+    description: Pre-trade risk validation engine; NO orders may transit without it — highest priority recovery
+    recovery_path: hot_standby_promotion
+    standby_required: true
+  execution_engine:
+    value: 3
+    description: Order routing and FIX session manager
+    recovery_path: hot_standby_promotion_or_backup_venue_failover
+    standby_required: true
+  market_data_feed:
+    value: 1
+    description: Primary market data distribution layer; backup feed must activate within this window
+    recovery_path: backup_feed_activation
+    backup_feed_required: true
+  audit_log:
+    value: 0
+    description: >
+      Audit log must be always-available. RTO=0 means the audit log is
+      never permitted to be unavailable during trading hours. If the audit log
+      is unreachable, trading MUST cease immediately (see degraded_defaults.audit_log_down).
+      This is not a recovery target; it is a prohibition on trading without audit.
+    recovery_path: always_on_multi_region_replicated
+    trading_without_audit_log: forbidden
+  canonical_loader:
+    value: 5
+    description: Service responsible for loading and validating canonical policy YAMLs
+    recovery_path: restart_from_last_known_good_hash
+    running_processes_on_failure: continue_on_last_known_good
+    new_boots_on_failure: refused
+  ops_console:
+    value: 10
+    description: Operator dashboard and manual override interface
+    recovery_path: failover_to_backup_console_or_cli
+    trading_blocked_if_down: false
+    # Ops console outage does not block trading, but operators lose visibility;
+    # escalation paging continues via policy.incidents.yaml#sinks.pagerduty
+
+# ===========================================================================
+# DR-02  RPO (Recovery Point Objective) PER COMPONENT
+# canonical owner: policy.dr.yaml#rpo_minutes
+# Maximum acceptable data loss window from last durable write.
+# Override rights: 🔒 locked
+# ===========================================================================
+
+rpo_minutes:
+  market_data:
+    value: 0
+    note: Market data is replayable from exchange/vendor replay APIs; RPO=0 is achievable via replay on recovery
+    replay_source: exchange_and_vendor_replay_apis
+  orders:
+    value: 0
+    note: Every order must be durably written before submission; RPO=0 is a hard requirement, not aspirational
+    durability_mechanism: write_ahead_log_with_broker_ack_confirmation
+  audit:
+    value: 0
+    note: Audit log is append-only and must be durably committed before the corresponding action completes
+    durability_mechanism: synchronous_multi_region_write
+  positions:
+    value: 1
+    note: Position state is derived from order/fill records; up to 1 minute of position snapshot lag is acceptable if fill records are durable
+    rebuild_from: durable_fill_records
+  risk_state:
+    value: 1
+    note: Risk state (heat, cluster exposure, P&L) can be reconstructed from durable fill and position records within 1 minute
+    rebuild_from: durable_positions_and_fills
+
+# ===========================================================================
+# DR-03  DEGRADED DEFAULTS
+# canonical owner: policy.dr.yaml#degraded_defaults
+# Defines the safe state each component failure induces.
+# Override rights: 🔒 locked
+# ===========================================================================
+
+degraded_defaults:
+
+  risk_engine_down:
+    action: FREEZE_AND_ALERT
+    new_orders: forbidden
+    # No order may be admitted without pre-trade risk validation; this is absolute.
+    cancel_working_orders: true
+    flatten_positions: false
+    preserve_existing_positions: true
+    incident_emitted: INC_HALT_UNKNOWN
+    rationale: >
+      Risk engine is a mandatory gate; no order may pass without it. Freezing
+      preserves capital until the engine recovers or a standby is promoted.
+      Flattening without risk validation would itself be an unvalidated risk action.
+
+  execution_engine_down:
+    action: FREEZE_AND_ALERT
+    new_orders: forbidden
+    cancel_working_orders: conditional
+    cancel_working_orders_condition: >
+      Cancel working orders only if backup_venues[instrument_class].secondary is available
+      AND backup_venue_circuit_criteria not tripped. If backup venue unavailable, preserve
+      existing positions and alert; do not attempt to route cancels through a down engine.
+    flatten_positions: false
+    backup_venue_failover:
+      enabled: true
+      criteria: "primary_venue_circuit_breaker_open_for_gt: PT60S"
+      action_if_backup_available: route_working_order_cancels_via_backup_venue
+      action_if_backup_unavailable: FREEZE_AND_ALERT
+    incident_emitted: INC_BROKER_CIRCUIT_OPEN
+
+  market_data_down:
+    per_feed_action: PAUSE_SYMBOL
+    # Individual feed failure pauses the symbols on that feed only.
+    aggregate_threshold_pct: 0.30
+    # If > 30% of active feeds are simultaneously down:
+    aggregate_action: PAUSE_PLATFORM
+    incident_emitted_per_feed: INC_FEED_OUTAGE
+    incident_emitted_aggregate: INC_HALT_UNKNOWN
+    rationale: >
+      A small number of feed failures is manageable per-symbol. When a majority
+      of feeds fail simultaneously, the cause is likely systemic (network partition,
+      exchange-wide issue, data vendor outage) and platform-wide pause is safer
+      than attempting to trade with incomplete market picture.
+
+  canonical_loader_down:
+    boot_action: refuse_boot
+    # A process that cannot load and hash-verify its policy files must not start.
+    running_process_action: continue_on_last_known_good_hash
+    # Already-running processes continue with the last successfully loaded and verified set.
+    hash_verification: required
+    # Running processes must continue to verify their loaded hash matches their startup manifest.
+    config_change_action: freeze_until_loader_recovers
+    incident_emitted: INC_CANONICAL_LOAD_FAIL
+    rationale: >
+      Operating on unverified policy state is worse than operating on a known-good
+      prior state. Refusing new boots prevents unknown-policy processes from starting.
+
+  audit_log_down:
+    action: PAUSE_PLATFORM
+    new_orders: forbidden
+    working_orders: preserve_but_no_new_routing
+    severity: CRITICAL
+    incident_emitted: INC_HALT_UNKNOWN
+    pagerduty_page: immediate
+    rationale: >
+      The audit log is the legal and operational record of every action the
+      system takes. No order may be emitted without a corresponding durable
+      audit record (governance/VERSIONING.md#2.3). Trading without audit
+      record is a compliance and legal violation. PAUSE_PLATFORM is mandatory.
+
+# ===========================================================================
+# DR-04  KILL-SWITCH AUTHORITY
+# canonical owner: policy.dr.yaml#kill_switch.authority
+# Override rights: ⛔ dual-control required even for platform operator
+# ===========================================================================
+
+kill_switch:
+  authority:
+    model: dual_control
+    minimum_approvers: 2
+    approver_pool_ref: secrets://ops/approved_kill_switch_operators
+    key_storage: HSM_or_KMS
+    # Keys must reside in Hardware Security Module or platform KMS;
+    # no plaintext keys in config files, environment variables, or source control
+    single_person_trigger: prohibited
+    # No individual may trigger a kill-switch unilaterally at any level.
+    # Emergency single-operator escalation path: contact on_call_secondary via
+    # policy.incidents.yaml#escalation.rosters.executive_escalation
+    audit_requirement: >
+      Every kill-switch trigger event must be recorded in the audit log with:
+      operator_ids (both approvers), timestamp, level, named_incident_reference,
+      and rationale. Untraceable kill-switch events are treated as INC_CONFIG_TAMPER.
+
+# ---------------------------------------------------------------------------
+# KILL-SWITCH LEVELS
+# Levels are cumulative: each level includes all actions of the level below.
+# ---------------------------------------------------------------------------
+
+  levels:
+
+    LEVEL_1_PAUSE_NEW:
+      description: Stop new order entry platform-wide. Working orders remain active. Positions unchanged.
+      new_orders: forbidden
+      cancel_working_orders: false
+      cancel_open_positions: false
+      signal_generation: continues
+      dual_control_required: true
+      reversible_by: dual_control
+      audit_required: true
+      use_case: Precautionary pause during elevated uncertainty; allows open orders to complete naturally
+
+    LEVEL_2_CANCEL_WORKING:
+      description: LEVEL_1 plus cancel all working orders using idempotent client-order-id tracking.
+      includes: LEVEL_1_PAUSE_NEW
+      new_orders: forbidden
+      cancel_working_orders: true
+      cancel_method: idempotent_by_client_order_id
+      cancel_open_positions: false
+      signal_generation: continues
+      dual_control_required: true
+      reversible_by: dual_control
+      audit_required: true
+      use_case: Stop all pending exposure accumulation while preserving existing positions
+
+    LEVEL_3_FREEZE:
+      description: LEVEL_2 plus stop all signal generation. System is fully frozen; no trading activity of any kind.
+      includes: LEVEL_2_CANCEL_WORKING
+      new_orders: forbidden
+      cancel_working_orders: true
+      signal_generation: suspended
+      cancel_open_positions: false
+      dual_control_required: true
+      reversible_by: dual_control
+      audit_required: true
+      use_case: Full operational freeze pending investigation; preserves current position book exactly
+
+    LEVEL_4_FLATTEN:
+      description: >
+        LEVEL_3 plus actively close all open positions.
+        REQUIRES EXPLICIT DUAL-CONTROL AT TIME OF USE (not at platform setup time).
+        REQUIRES a named incident reference justifying the flatten.
+        NEVER triggered automatically. NEVER triggered by state_untrusted alone.
+        See flatten_to_cash.triggers for the exhaustive list of permitted triggers.
+        See PRINCIPAL-REVIEW.md#P0-10 for why flatten-on-ambiguous-state is prohibited.
+      includes: LEVEL_3_FREEZE
+      new_orders: forbidden
+      cancel_working_orders: true
+      signal_generation: suspended
+      cancel_open_positions: true
+      flatten_procedure_ref: policy.dr.yaml#flatten_to_cash.procedure
+      dual_control_required_at_time_of_use: true
+      named_incident_required: true
+      automated_trigger: prohibited
+      reversible_by: operator_action_only
+      audit_required: true
+      use_case: Operator-directed position liquidation under explicit, justified conditions only
+
+# ===========================================================================
+# DR-06  AMBIGUOUS STATE SAFE DEFAULT
+# canonical owner: policy.dr.yaml#ambiguous_state.action
+# Override rights: 🔒 locked
+# ===========================================================================
+
+ambiguous_state:
+  action: FREEZE_AND_ALERT
+  # FREEZE_AND_ALERT is the mandatory default whenever system state cannot be verified.
+  # This field is 🔒 locked; no tenant, operator, or automated process may change this default.
+  #
+  # WHY NOT FLATTEN: See PRINCIPAL-REVIEW.md#P0-10.
+  # Flattening under data degradation or partial connectivity loss compounds loss:
+  #   1. You do not know what positions you hold — flatten may close ghosts and miss real positions.
+  #   2. Market conditions that cause state ambiguity (outages, halts, connectivity failures)
+  #      are precisely the conditions where liquidity is worst and spreads are widest.
+  #   3. A flatten order into thin markets during a partial outage is a guaranteed adverse fill.
+  #   4. Preserving positions and paging humans costs, at most, the opportunity to close at a
+  #      slightly worse price; autonomous flattening into bad liquidity can cost multiples more.
+  #
+  definition_of_ambiguous_state:
+    - INC_STATE_UNTRUSTED is active
+    - Position records disagree with broker records by any amount
+    - Two or more working orders have no broker acknowledgement after policy.execution-errors.yaml#broker_circuit_breaker timeout
+    - Risk engine is unreachable and cached state is older than rto_minutes.risk_engine
+    - canonical_hash mismatch detected mid-session
+  actions_on_ambiguous_state:
+    - Halt all new order submission immediately
+    - Cancel all working orders using idempotent client-order-id (not a modify — a cancel)
+    - Preserve all existing positions; no position-modifying action
+    - Emit INC_STATE_UNTRUSTED via policy.incidents.yaml#codes.INC_STATE_UNTRUSTED
+    - Page on-call via policy.incidents.yaml#escalation.rosters.on_call_primary
+    - Initiate broker-side reconciliation on a separate connection
+    - Await operator attestation before any position-modifying action resumes
+
+# ===========================================================================
+# DR-05  FLATTEN-TO-CASH PROCEDURE
+# canonical owner: policy.dr.yaml#flatten_to_cash.procedure
+# Override rights: 🔒 locked
+# ===========================================================================
+
+flatten_to_cash:
+
+  # --------------------------------------------------------------------------
+  # TRIGGERS — Exhaustive and closed list. No other trigger is valid.
+  # If a condition does not appear here, it is NOT a valid flatten trigger.
+  # --------------------------------------------------------------------------
+  triggers:
+    - id: FT-01
+      condition: operator_LEVEL_4
+      description: LEVEL_4 kill-switch invoked by two approved operators with named incident reference
+      automated: false
+      dual_control_required: true
+    - id: FT-02
+      condition: daily_loss_double_breach
+      description: Daily P&L loss has exceeded 2× policy.runtime.yaml#risk.kill_switch.daily_loss_pct
+      threshold_ref: policy.runtime.yaml#risk.kill_switch.daily_loss_pct
+      multiplier: 2.0
+      automated: false
+      # Even at 2x breach, flatten requires operator confirmation; it does NOT auto-trigger.
+      dual_control_required: true
+    - id: FT-03
+      condition: drawdown_one_point_five_x_breach
+      description: Peak-to-trough drawdown has exceeded 1.5× policy.runtime.yaml#risk.kill_switch.drawdown_pct
+      threshold_ref: policy.runtime.yaml#risk.kill_switch.drawdown_pct
+      multiplier: 1.5
+      automated: false
+      dual_control_required: true
+    - id: FT-04
+      condition: compliance_regulator_order
+      description: Regulator, court, or exchange-issued halt or forced-close order received in writing
+      automated: false
+      legal_documentation_required: true
+      dual_control_required: true
+
+  explicitly_excluded_triggers:
+    - state_untrusted
+    # NEVER trigger flatten on state_untrusted. See PRINCIPAL-REVIEW.md#P0-10 and ambiguous_state.
+    - single_feed_outage
+    # A single feed outage pauses affected symbols (INC_FEED_OUTAGE → PAUSE_SYMBOL); it never justifies flatten.
+    - broker_circuit_open
+    # Broker circuit open triggers FREEZE_AND_ALERT; positions are preserved until connectivity is restored.
+    - market_data_stale
+    - clock_skew
+    - risk_engine_degraded
+    # Each of these triggers FREEZE_AND_ALERT or PAUSE_STRATEGY per degraded_defaults, not flatten.
+
+  procedure:
+    preconditions:
+      - step: 1
+        action: verify_venue_connectivity
+        description: Confirm primary or backup venue is reachable and order routing is functional
+        fail_action: abort_flatten_and_escalate
+      - step: 2
+        action: verify_data_sanity
+        description: Confirm that at least one independent price feed per instrument class is live and within staleness threshold
+        fail_action: abort_flatten_and_escalate
+        data_quality_ref: policy.data-quality.yaml#staleness
+      - step: 3
+        action: confirm_dual_control
+        description: Obtain second operator authorization with named incident_id and written rationale
+        fail_action: abort_flatten
+    execution:
+      - step: 4
+        action: sort_positions_by_notional_descending
+        description: Order position list largest-to-smallest by absolute notional value in USD
+      - step: 5
+        action: submit_ioc_limit_orders
+        description: >
+          For each position in size-descending order, submit an IOC limit order at:
+          - Long positions: bid minus 10bps (sell at touch - 10bps)
+          - Short positions: ask plus 10bps (buy at touch + 10bps)
+          Use policy.execution.yaml#default_tif = IOC.
+          Do NOT use market orders. Do NOT use aggressive marketable limits.
+        order_type: IOC_LIMIT
+        limit_offset_bps: 10
+        order_sizing: full_position_quantity
+      - step: 6
+        action: log_each_action_to_audit
+        description: Every order submission, fill, and partial fill is logged to audit log with incident_id reference before the next order is submitted
+        audit_ref: governance/VERSIONING.md#2.3
+      - step: 7
+        action: handle_unfilled_residuals
+        description: >
+          Any position not fully closed after step 5 IOC:
+          (a) Wait PT60S for market to stabilize
+          (b) Reassess liquidity and spread
+          (c) Retry at touch +/- 15bps IOC
+          (d) If still unfilled after 3 retries, ESCALATE to operator — do not widen further autonomously
+        max_retries: 3
+        retry_interval: PT60S
+        residual_escalation_action: page_operator_and_halt_further_attempts
+    postconditions:
+      - step: 8
+        action: confirm_zero_position
+        description: Verify with broker API that all positions are zero; any nonzero position triggers INC_RECON_BREAK
+      - step: 9
+        action: generate_flatten_report
+        description: Structured report with pre-flatten positions, execution prices, slippage vs. touch, total time elapsed, incident_id
+        report_sink: policy.incidents.yaml#sinks.audit_log
+
+# ===========================================================================
+# BACKUP VENUES
+# Per-instrument-class primary and secondary venue mapping.
+# Failover is automatic (criteria below). Failback requires human review.
+# ===========================================================================
+
+backup_venues:
+  equities:
+    primary: NYSE
+    secondary: NASDAQ
+    tertiary: IEX
+    failover_criteria: primary_circuit_breaker_open_for_gt_PT60S
+    failback_criteria: primary_healthy_for_PT5M
+    failover_automated: true
+    failback_automated: false
+    failback_requires_human_review: true
+  options:
+    primary: CBOE
+    secondary: PHLX
+    failover_criteria: primary_circuit_breaker_open_for_gt_PT60S
+    failback_criteria: primary_healthy_for_PT5M
+    failover_automated: true
+    failback_automated: false
+    failback_requires_human_review: true
+  futures:
+    primary: CME
+    secondary: ICE_US
+    failover_criteria: primary_circuit_breaker_open_for_gt_PT60S
+    failback_criteria: primary_healthy_for_PT5M
+    failover_automated: true
+    failback_automated: false
+    failback_requires_human_review: true
+  fx:
+    primary: EBS
+    secondary: REUTERS_DEALING
+    failover_criteria: primary_circuit_breaker_open_for_gt_PT60S
+    failback_criteria: primary_healthy_for_PT5M
+    failover_automated: true
+    failback_automated: false
+    failback_requires_human_review: true
+  crypto:
+    primary: COINBASE_PRIME
+    secondary: KRAKEN_PRO
+    failover_criteria: primary_circuit_breaker_open_for_gt_PT60S
+    failback_criteria: primary_healthy_for_PT5M
+    failover_automated: true
+    failback_automated: false
+    failback_requires_human_review: true
+
+backup_venue_policy:
+  failover_requires_data_sanity_check: true
+  # Before routing to backup venue, verify data quality gates pass for backup venue feed
+  data_quality_ref: policy.data-quality.yaml#cross_venue.max_disagreement_bps
+  failover_incident: INC_BROKER_CIRCUIT_OPEN
+  failback_incident: SIG_LIQUIDITY_DEGRADATION
+  # Failback is a supervisory signal (alert+suggest), not an automated action
+
+# ===========================================================================
+# CHAOS TESTING
+# ===========================================================================
+
+chaos_testing:
+  schedule:
+    frequency: quarterly
+    coordination_required_with: [compliance, risk_management, broker_operations]
+    advance_notice_days: 10
+    execution_window: non_trading_hours_only
+    timezone: America/New_York
+  drills:
+    - id: DRILL-DR-01
+      name: Risk Engine Hard Failover
+      description: Kill primary risk engine process; verify hot standby promotes within rto_minutes.risk_engine
+      required_evidence:
+        - Timestamp of primary failure and standby promotion logged in audit
+        - No order admitted during gap (gap must be <= rto_minutes.risk_engine minutes)
+        - Standby state matches primary state at checkpoint
+      pass_criteria:
+        - Promotion completed within PT2M
+        - Zero orders admitted without risk validation during transition
+        - Audit record unbroken throughout
+    - id: DRILL-DR-02
+      name: Market Data Feed Cascade Failure
+      description: Simulate failure of > 30% of active feeds simultaneously; verify PAUSE_PLATFORM triggers
+      required_evidence:
+        - INC_FEED_OUTAGE emitted per failed feed
+        - PAUSE_PLATFORM triggered when aggregate threshold crossed
+        - No orders submitted to any venue during pause
+      pass_criteria:
+        - Platform pause triggered within PT1M of threshold crossing
+        - PagerDuty alert delivered within PT5M
+        - Resumption requires operator acknowledgement
+    - id: DRILL-DR-03
+      name: Canonical Policy Hash Mismatch
+      description: Modify one byte in a loaded canonical file post-boot; verify INC_DEPLOY_HASH_MISMATCH emits and platform pauses
+      required_evidence:
+        - Hash mismatch detected within continuous monitoring interval
+        - INC_DEPLOY_HASH_MISMATCH emitted
+        - PAUSE_PLATFORM triggered
+        - No orders admitted after detection
+      pass_criteria:
+        - Detection within PT60S of modification
+        - Platform pause confirmed before next order cycle
+    - id: DRILL-DR-04
+      name: Audit Log Unavailability
+      description: Block audit log writes; verify PAUSE_PLATFORM triggers immediately
+      required_evidence:
+        - First failed audit write triggers PAUSE_PLATFORM
+        - No orders admitted after pause
+        - PagerDuty SEV1 page delivered
+      pass_criteria:
+        - PAUSE_PLATFORM within PT30S of first audit write failure
+        - Zero orders without audit record
+    - id: DRILL-DR-05
+      name: Full DR Site Failover
+      description: Simulate primary site unavailability; verify secondary site activates within composite RTO
+      required_evidence:
+        - Secondary site activation timestamp
+        - All component RTOs verified independently
+        - Broker connectivity restored at secondary site
+        - Canonical hash verified on secondary site boot
+      pass_criteria:
+        - Worst-case component RTO (ops_console, 10 minutes) met
+        - Audit log continuity: no gap in records
+        - Position state matches last RPO checkpoint
+    - id: DRILL-DR-06
+      name: Kill-Switch LEVEL_2 Dual-Control
+      description: Verify LEVEL_2 kill-switch requires two distinct authorized operators and cannot be triggered by one
+      required_evidence:
+        - Single-operator attempt rejected with audit record
+        - Two-operator attempt succeeds and all working orders cancelled
+        - Audit record includes both operator IDs and named incident reference
+      pass_criteria:
+        - Single-operator attempt always rejected
+        - Two-operator invocation completes working order cancellation within PT5M
+        - Audit log complete and immutable
+
+# ===========================================================================
+# POSTMORTEM REQUIREMENTS
+# ===========================================================================
+
+postmortem:
+  requirement: >
+    Any incident of severity SEV1 requires a blameless postmortem completed
+    and published within 5 business days of incident resolution.
+  format: structured
+  required_sections:
+    - timeline: Chronological event log with timestamps from audit log
+    - contributing_factors: What conditions made this possible (not who made mistakes)
+    - detection_gap: How long between first symptom and first alert; target vs. actual
+    - impact: Tenants affected, capital at risk, orders impacted, downtime duration
+    - action_items: Concrete, assigned, date-tracked items with owner and due date
+    - control_coverage_gap: Which canonical policy control, if any, was absent or insufficient
+  action_item_tracking:
+    tracking_system: ops-issue-tracker
+    escalation_if_not_closed_by_due_date: page_ops_lead
+  exemptions: none
+  blameless_posture: true
+  # Postmortems identify systemic and process causes; individual fault-finding is prohibited
+  postmortem_review_audience: [ops_team, risk_team, compliance_officer, tenant_reps_if_affected]
+  aggregate_review_frequency: quarterly
+  # Quarterly review of all postmortems to identify cross-cutting patterns
+
+# ===========================================================================
+# DATA BACKUP
+# ===========================================================================
+
+data_backup:
+  audit_log:
+    frequency: continuous
+    # Audit log is append-only and synchronously replicated; RPO = 0
+    replication: synchronous
+    geographic_regions: 2
+    retention_ref: policy.tenancy.yaml#data_retention
+    restore_test_frequency: monthly
+  positions:
+    frequency: PT1H
+    # Hourly snapshots; RPO = 1 minute because fill records are durable and positions are derived
+    replication: asynchronous_with_at_most_PT1M_lag
+    geographic_regions: 2
+    restore_test_frequency: monthly
+  risk_state:
+    frequency: PT1H
+    replication: asynchronous_with_at_most_PT1M_lag
+    geographic_regions: 2
+    restore_test_frequency: monthly
+  canonical_policy:
+    frequency: daily
+    # Policy files are versioned and hash-bound; daily backup supplements the artifact registry
+    replication: synchronous
+    geographic_regions: 2
+    restore_test_frequency: monthly
+    backup_includes: [yaml_files, manifest_json, schema_files]
+  geographic_replication:
+    minimum_regions: 2
+    region_selection: geographically_distinct_availability_zones
+    # Regions must be in distinct physical data centers; same-city multi-AZ is not sufficient
+    active_active: true
+    failover_tested_by: DRILL-DR-05
+  restore_testing:
+    frequency: monthly
+    scope: all_backup_types
+    pass_criteria:
+      - Restored data matches hash of source
+      - Restore completes within component RTO
+      - Restored system passes hash verification on boot
+    failure_action: INC_CANONICAL_LOAD_FAIL

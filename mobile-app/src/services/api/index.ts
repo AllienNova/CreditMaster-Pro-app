@@ -30,14 +30,19 @@ export {
   financialGoalsApi,
   debtApi,
   billsApi,
+  mapWebDashboard,
   type PlaidLinkToken,
   type PlaidExchangeResult,
+  type FinancialDashboardData,
+  type DashboardCategorySpending,
+  type DashboardMonthlyTrend,
 } from "./financial";
 export {
   userProfileApi,
   subscriptionApi,
   notificationApi,
   recommendationApi,
+  userAnalyticsApi,
   identityProtectionApi,
   documentApi,
   settingsApi,
@@ -103,6 +108,23 @@ export {
   type TaxBracket,
   type TaxBracketVisualization,
 } from "./tax";
+export {
+  marketplaceApi,
+  type MarketplaceProduct,
+  type MarketplaceProvider,
+  type MarketplaceTradeline,
+} from "./marketplace";
+export {
+  adminAnalyticsApi,
+  ANALYTICS_RANGES,
+  type AnalyticsRange,
+  type AdminAnalytics,
+  type UserGrowthPoint,
+  type RevenuePoint,
+  type DisputeStatusCount,
+  type SubscriptionTierCount,
+  type FeatureUsage,
+} from "./admin";
 
 // Type exports
 export * from "./types";
@@ -124,6 +146,7 @@ import {
   taxTipsApi,
   taxComparisonApi,
 } from "./tax";
+import { marketplaceApi } from "./marketplace";
 
 /**
  * Unified API object for easy access to all services
@@ -160,6 +183,9 @@ export const cpfiApi = {
     tips: taxTipsApi,
     comparison: taxComparisonApi,
   },
+
+  // Marketplace services
+  marketplace: marketplaceApi,
 };
 
 export default cpfiApi;

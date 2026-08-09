@@ -1,49 +1,41 @@
 /**
  * Smart Budget Mobile Screen - Enhanced
- * AI-powered budget creation and optimization with Phase 2.1 integration
+ *
+ * Real-data wiring: the monthly budget overview (totals, percent used, days
+ * remaining, and over-budget alerts) is fetched from the real web route
+ * GET /api/financial/budgets/summary via budgetApi.getBudgetSummary, adapted
+ * web -> mobile by mapBudgetSummary.
+ *
+ * The former hardcoded BudgetAnalysis — invented $5,000 budgeted / $3,200 spent /
+ * 64% used / 12 days left, shown to every user behind a fake setTimeout — and its
+ * empty categories/alerts were removed. A user with no budgets now sees an honest
+ * empty state instead of a fabricated overview, and a fetch failure shows an inline
+ * error with retry rather than silently rendering invented figures.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-
-interface BudgetCategory {
-  category: string;
-  budgeted: number;
-  spent: number;
-  remaining: number;
-  percentUsed: number;
-}
-
-interface BudgetAnalysis {
-  totalBudgeted: number;
-  totalSpent: number;
-  totalRemaining: number;
-  percentUsed: number;
-  daysRemaining: number;
-  categories: BudgetCategory[];
-  alerts: Array<{
-    category: string;
-    severity: "high" | "medium" | "low";
-    message: string;
-  }>;
-}
+import { budgetApi } from "../../src/services/api/financial";
+import type { BudgetOverviewData } from "../../src/services/api/financial";
 
 /**
  * Budget Overview Component
- * Monthly budget summary with progress bars
+ * Monthly budget summary with progress bars. Renders the sourced BudgetOverviewData
+ * view-model directly — every field comes from GET /api/financial/budgets/summary.
  */
 interface BudgetOverviewProps {
-  analysis: BudgetAnalysis;
+  analysis: BudgetOverviewData;
 }
 
 const BudgetOverview: React.FC<BudgetOverviewProps> = ({ analysis }) => {
@@ -160,43 +152,101 @@ const styles = StyleSheet.create({
   alertText: { fontSize: 13, color: theme.colors.text },
   container: { flex: 1, backgroundColor: theme.colors.background },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  stateBlock: { alignItems: "center", paddingVertical: 48, paddingHorizontal: 24 },
+  stateText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 12,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
 });
 
 export default function SmartBudgetEnhancedScreen() {
   const [loading, setLoading] = useState(true);
-  const [analysis, setAnalysis] = useState<BudgetAnalysis | null>(null);
+  const [analysis, setAnalysis] = useState<BudgetOverviewData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setAnalysis({
-        totalBudgeted: 5000,
-        totalSpent: 3200,
-        totalRemaining: 1800,
-        percentUsed: 64,
-        daysRemaining: 12,
-        categories: [],
-        alerts: [],
-      });
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+  const loadBudget = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const res = await budgetApi.getBudgetSummary();
+    if (res.success && res.data) {
+      setAnalysis(res.data);
+    } else {
+      setError(res.error?.message ?? "Unable to load budget data right now.");
+    }
+    setLoading(false);
   }, []);
 
-  if (loading || !analysis) {
+  useEffect(() => {
+    loadBudget();
+  }, [loadBudget]);
+
+  if (loading && !analysis) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
+        <View
+          style={styles.loadingContainer}
+          testID="smart-budget-enhanced-loading"
+        >
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={{ marginTop: 12, color: theme.colors.textSecondary }}>Loading budget data...</Text>
+          <Text style={{ marginTop: 12, color: theme.colors.textSecondary }}>
+            Loading budget data...
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  if (error && !analysis) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.stateBlock} testID="smart-budget-enhanced-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadBudget}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // A user with no active budget yields all-zero totals; empty-state rather than
+  // render a $0 "overview" that reads like a real (but empty) budget.
+  const hasBudget =
+    !!analysis && (analysis.totalBudgeted > 0 || analysis.totalSpent > 0);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
-        <BudgetOverview analysis={analysis} />
+        {hasBudget && analysis ? (
+          <BudgetOverview analysis={analysis} />
+        ) : (
+          <View style={styles.stateBlock} testID="smart-budget-enhanced-empty">
+            <Ionicons
+              name="wallet-outline"
+              size={48}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.stateText}>
+              No budget set up yet. Create a budget to see your monthly overview
+              here.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

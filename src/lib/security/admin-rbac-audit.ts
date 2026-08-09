@@ -8,11 +8,13 @@
  * and provides verification utilities for security audits.
  */
 
+import { type Role, roleRank, isAtLeast } from "@/lib/auth/roles";
+
 /** Supported HTTP methods for admin routes */
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-/** Minimum required role for accessing a route */
-export type RequiredRole = "user" | "premium" | "enterprise" | "admin";
+/** Minimum required role for accessing a route. Alias of the canonical {@link Role}. */
+export type RequiredRole = Role;
 
 /** RBAC requirement for a single admin endpoint */
 export interface AdminRouteRBAC {
@@ -153,19 +155,11 @@ export const ADMIN_ROUTES_MATRIX: AdminRouteRBAC[] = [
   },
 ];
 
-/** Role hierarchy — higher index = more privileges */
-const ROLE_HIERARCHY: RequiredRole[] = [
-  "user",
-  "premium",
-  "enterprise",
-  "admin",
-];
-
 /**
- * Get the privilege level for a role (0-based index in hierarchy).
+ * Get the privilege level for a role (0-based rank in the canonical hierarchy).
  */
 export function getRoleLevel(role: RequiredRole): number {
-  return ROLE_HIERARCHY.indexOf(role);
+  return roleRank(role);
 }
 
 /**
@@ -175,7 +169,7 @@ export function meetsRoleRequirement(
   userRole: RequiredRole,
   requiredRole: RequiredRole,
 ): boolean {
-  return getRoleLevel(userRole) >= getRoleLevel(requiredRole);
+  return isAtLeast(userRole, requiredRole);
 }
 
 /**

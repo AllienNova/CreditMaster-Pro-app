@@ -218,7 +218,8 @@ export default function ZeroBasedBudgetScreen() {
         {/* Category Allocations */}
         <Text style={styles.sectionTitle}>Category Allocations</Text>
         {categories.map((cat) => {
-          const percent = ((cat.allocated / MONTHLY_INCOME) * 100).toFixed(1);
+          const percentValue = (cat.allocated / MONTHLY_INCOME) * 100;
+          const percent = percentValue.toFixed(1);
           return (
             <TouchableOpacity key={cat.id} activeOpacity={0.7}>
               <Card style={styles.categoryCard}>
@@ -242,7 +243,7 @@ export default function ZeroBasedBudgetScreen() {
                         style={[
                           styles.categoryBarFill,
                           {
-                            width: `${percent}%`,
+                            width: `${percentValue}%`,
                             backgroundColor: cat.color,
                           },
                         ]}

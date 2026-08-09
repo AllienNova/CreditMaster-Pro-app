@@ -32,3 +32,5 @@ export { EmptyState } from "./EmptyState";
 export type { default as EmptyStateProps } from "./EmptyState";
 export { PullToRefresh } from "./PullToRefresh";
 export { default as Header } from "./Header";
+export { Button } from "./Button";
+export type { ButtonProps, ButtonVariant, ButtonSize } from "./Button";

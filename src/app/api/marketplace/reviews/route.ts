@@ -6,40 +6,10 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { reviewService, type CreateReviewInput } from "@/lib/marketplace";
-import { createClient } from "@supabase/supabase-js";
 
-// Helper to get user from auth header
-async function getAuthenticatedUser(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return null;
-  }
-
-  const token = authHeader.substring(7);
-
-  try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser(token);
-
-    if (error || !user) {
-      return null;
-    }
-
-    return user;
-  } catch {
-    return null;
-  }
-}
-
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
     const searchParams = request.nextUrl.searchParams;
 
@@ -98,22 +68,10 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authenticate user
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Authentication required",
-        },
-        { status: 401 },
-      );
-    }
-
     const body = await request.json();
 
     // Validate input
@@ -187,4 +145,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

@@ -1,0 +1,401 @@
+# =============================================================================
+# Seasonal Patterns (REFERENCE ONLY, NON-BINDING)
+#
+# Source: Ch.31 (Weekly and Monthly Rhythm), Ch.25 (Before the Bell)
+# Data Period: S&P 500, 1950-2023 (unless otherwise noted)
+#
+# STATUS: reference
+# AUTHORITY: NONE. This file is historical market commentary plus statistics.
+#            It is not canonical policy. Consumers MUST NOT read this file as
+#            a source of runtime thresholds, sizing rules, hedging decisions,
+#            or any machine-enforceable behavior.
+#
+# IF YOU NEED ENFORCEABLE CALENDAR / EVENT RULES:
+#   - canonical/policy/policy.execution.yaml#tier_1_events
+#   - canonical/policy/policy.execution.yaml#us_equity.session_phases
+#   - canonical/policy/policy.instruments.yaml
+#
+# Imperative phrasing in this file ("Reduce size...", "Do not trade...")
+# reflects the textbook voice of the source material and has NO binding
+# effect on autonomous systems.
+# =============================================================================
+
+meta:
+  document_role: "reference_non_binding"
+  status: "reference"
+  source: "textbook_ch25_ch31"
+  binding: false
+  notes:
+    - "Do not consume as machine policy."
+    - "Legacy prose from the source manuscript."
+    - "For enforceable calendar behavior, use canonical/policy/policy.execution.yaml."
+
+
+# ---------------------------------------------------------------------------
+# Day-of-Week Performance (Ch.31, 2000-2023)
+# ---------------------------------------------------------------------------
+day_of_week:
+  monday:
+    avg_return: -0.0001                    # -0.01%
+    relative_volume: 0.85                  # 85% of weekly average (lowest)
+    key_events: "Weekend gap analysis"
+    best_strategy: "Plan the week. High-conviction setups only."
+    notes: "Monday effect (Gibbons & Hess, 1981). Weekend information decompresses into price."
+
+  tuesday:
+    avg_return: 0.0008                     # +0.08% (best day)
+    relative_volume: 1.05                  # ~105% of average (20% increase from Monday)
+    key_events: "Economic data, institutional execution begins"
+    best_strategy: "Trend following. Put on primary positions for the week."
+    notes: "Often sets the weekly tone. Reversal of Monday's direction is significant."
+
+  wednesday:
+    avg_return: 0.0004                     # +0.04%
+    relative_volume: 1.00                  # Normal (high on FOMC days)
+    key_events: "FOMC announcement at 2:00 PM ET (8x per year)"
+    best_strategy: "Normal on non-FOMC. Reduce size by 50% before FOMC at 2:00 PM."
+    fomc_notes:
+      pre_fomc_drift: "+0.49% average in 24 hours surrounding FOMC (Lucca & Moench, 2015)"
+      action: "Reduce position size by 50% before 2:00 PM ET on FOMC days."
+
+  thursday:
+    avg_return: 0.0006                     # +0.06% (second-best day)
+    relative_volume: 1.10                  # Near weekly high
+    key_events: "Weekly jobless claims at 8:30 AM ET"
+    best_strategy: "Conviction trades. Thursday trends tend to carry into Friday."
+    notes: "Confirmation day for weekly trends."
+
+  friday:
+    avg_return: -0.0002                    # -0.02%
+    relative_volume: 1.10                  # High (OpEx volume)
+    key_events: "Options expiration. Position squaring."
+    best_strategy: "Take profits by noon. No new positions after 2:00 PM."
+    notes: "Friday afternoon fade (2:00-4:00 PM). Weekend risk reduction."
+
+# ---------------------------------------------------------------------------
+# Monthly Rebalancing Effects (Ch.31, 2000-2023)
+# ---------------------------------------------------------------------------
+monthly_flow_calendar:
+  end_of_month:
+    trading_days: "Last 3 trading days"
+    flow_type: "Rebalancing, window dressing"
+    last_day_avg_return: 0.0010            # +0.10%
+    last_day_positive_pct: 62              # Positive 62% of the time
+    direction_bias: "Depends on month's winners. Slight bullish overall."
+    volume: "High"
+    notes: "Pension fund rebalancing + mutual fund window dressing."
+
+  beginning_of_month:
+    trading_days: "First 5 trading days"
+    flow_type: "401(k) contributions, pension inflows, systematic investment plans"
+    first_day_avg_return: 0.0015           # +0.15%
+    first_day_positive_pct: 65             # Positive 65% of the time
+    share_of_monthly_return: 0.67          # First 5 days = 67% of monthly return
+    direction_bias: "Bullish"
+    volume: "Above average"
+    notes: "Turn-of-month effect (Ariel, 1987). 401(k) inflows cluster here."
+
+  mid_month_lull:
+    trading_days: "Days 10 through 15"
+    flow_type: "No major systematic flows"
+    direction_bias: "Neutral"
+    volume: "Below average (lowest of month)"
+    notes: "Dead zone. Best time for vacation or system review."
+
+  opex_week:
+    trading_days: "Days 16 to 18 (third week)"
+    flow_type: "Gamma hedging, options expiration"
+    direction_bias: "Pinning at major strikes Thu-Fri, then release"
+    volume: "High (Friday 130% of normal)"
+
+  post_opex:
+    trading_days: "Days 19 to 22"
+    flow_type: "Post-expiration repositioning"
+    direction_bias: "Often trending"
+    volume: "Normal"
+
+# ---------------------------------------------------------------------------
+# Options Expiration (OpEx) Week Dynamics (Ch.31)
+# ---------------------------------------------------------------------------
+opex:
+  monthly:
+    date: "Third Friday of each month"
+    patterns:
+      avg_weekly_range: 0.028              # 2.8% (vs 2.3% non-OpEx)
+      non_opex_avg_range: 0.023            # 2.3%
+      mon_to_wed: "Trending (institutional positioning)"
+      thu_to_fri: "Pinning/compression (gamma hedging)"
+      friday_volume_pct: 130               # 130% of normal
+
+    trading_rules:
+      monday_to_wednesday: "Trade normally. Trend-following works well."
+      thursday: "Watch for gamma flips at high open interest strikes."
+      friday: "Expect pinning until 2:00 PM. Post-3:00 PM 'gamma unclench' can produce sharp moves."
+
+  quadruple_witching:
+    dates: "Third Friday of March, June, September, December"
+    description: "Stock options, index options, index futures, single-stock futures expire simultaneously."
+    avg_weekly_range: 0.032                # 3.2% average range
+    volume_vs_normal: "150-200%"
+    action: "Trade with half normal position size. Respect volume. Expect the unexpected."
+
+  zero_dte:
+    description: "0DTE SPX options now > 40% of total SPX options volume (2023, up from ~5% in 2016)."
+    impact: "Intraday gamma pinning at high open interest strikes every day, not just OpEx."
+    data_sources: ["SpotGamma", "Squeezemetrics"]
+    notes: "Options mechanics are now a daily concern, not just weekly/monthly."
+
+# ---------------------------------------------------------------------------
+# Quarterly Earnings Season (Ch.31)
+# ---------------------------------------------------------------------------
+earnings_season:
+  schedule:
+    q4_earnings: "Mid-January through mid-February"
+    q1_earnings: "Mid-April through mid-May"
+    q2_earnings: "Mid-July through mid-August"
+    q3_earnings: "Mid-October through mid-November"
+
+  reporting_order:
+    week_1: "Major banks (JPM, GS, BAC)"
+    week_2_3: "Technology giants (AAPL, MSFT, AMZN, GOOGL, META)"
+    week_3_5: "Rest of S&P 500"
+
+  key_patterns:
+    iv_crush:
+      description: "Implied volatility rises 2-3 weeks before earnings, collapses the day after."
+      action: "Sell premium after earnings, not before. IV crush is mechanical."
+
+    post_earnings_drift:
+      description: "Stocks that beat estimates continue outperforming 30-60 days. Misses continue underperforming."
+      source: "Bernard & Thomas, 1989"
+      action: "Buy the gap-and-go after strong earnings. Drift lasts 30-60 days."
+
+    vix_behavior:
+      description: "VIX tends to decline during earnings season. Idiosyncratic stock moves cancel out at index level."
+      action: "Consider selling SPX strangles during peak earnings season."
+
+    sector_rotation:
+      description: "First major reporter in each sector telegraphs sector-wide results."
+      action: "Use first reporter (e.g., MSFT for cloud) to position in later reporters (e.g., AMZN)."
+
+  trading_rules:
+    - "Do not hold individual stock positions through earnings without a defined earnings strategy."
+    - "Index positions are relatively safer (individual moves offset each other)."
+    - "Use earnings drift for 30-60 day post-earnings trades."
+    - "Sell premium after earnings, not before."
+
+# ---------------------------------------------------------------------------
+# Monthly Seasonal Returns (Ch.31, S&P 500, 1950-2023)
+# ---------------------------------------------------------------------------
+monthly_seasonals:
+  january:
+    avg_return: 0.010                      # +1.0%
+    positive_pct: 62
+    notable_pattern: "January Barometer"
+    barometer: "Positive January -> full year positive 88% of time. Negative -> only 58%."
+    source: "Yale Hirsch, Stock Trader's Almanac, 1972"
+
+  february:
+    avg_return: -0.001                     # -0.1%
+    positive_pct: 53
+    notable_pattern: "Weak. Tax refund season."
+
+  march:
+    avg_return: 0.010                      # +1.0%
+    positive_pct: 65
+    notable_pattern: "Quarter-end window dressing. Quadruple witching."
+
+  april:
+    avg_return: 0.014                      # +1.4% (best month)
+    positive_pct: 70
+    notable_pattern: "Tax deadline buying after April 15. Q1 earnings begin."
+
+  may:
+    avg_return: 0.002                      # +0.2%
+    positive_pct: 58
+    notable_pattern: "Sell in May starts. Begin reducing equity exposure."
+
+  june:
+    avg_return: 0.001                      # +0.1%
+    positive_pct: 53
+    notable_pattern: "Quiet summer begins. Quadruple witching."
+
+  july:
+    avg_return: 0.009                      # +0.9%
+    positive_pct: 60
+    notable_pattern: "Strong start to summer."
+
+  august:
+    avg_return: -0.001                     # -0.1%
+    positive_pct: 55
+    notable_pattern: "Low volume, vulnerable to sharp selloffs."
+
+  september:
+    avg_return: -0.007                     # -0.7% (worst month)
+    positive_pct: 45
+    notable_pattern: "September Effect. Mutual fund fiscal year-end selling."
+    action: "Maximum caution. Tightest stops. Smallest positions. Protect yearly gains."
+    recent_examples:
+      - "Sep 2022: S&P dropped 9.3%"
+      - "Sep 2023: S&P dropped 4.9%"
+
+  october:
+    avg_return: 0.006                      # +0.6%
+    positive_pct: 60
+    notable_pattern: "Crash reputation undeserved. Often marks annual lows."
+    notes: "When October sells off, it sells off hard (1929, 1987, 2008). Best buying opportunities in extreme fear."
+
+  november:
+    avg_return: 0.014                      # +1.4% (tied best)
+    positive_pct: 68
+    notable_pattern: "Best six-month period starts. Increase equity exposure."
+
+  december:
+    avg_return: 0.013                      # +1.3%
+    positive_pct: 73
+    notable_pattern: "Santa Claus Rally. Tax-loss harvesting early, momentum late."
+
+# ---------------------------------------------------------------------------
+# Major Seasonal Effects (Ch.31)
+# ---------------------------------------------------------------------------
+seasonal_effects:
+  sell_in_may:
+    description: "May-October underperforms November-April"
+    may_to_october_annualized: 0.018       # 1.8% annualized
+    november_to_april_annualized: 0.071    # 7.1% annualized
+    difference: 0.053                      # ~5.3 percentage points
+    consistency: 0.70                      # Holds ~70% of individual years
+    source: "Bouman & Jacobsen, American Economic Review, 2002"
+    countries_tested: 37
+    countries_confirmed: 36                # 36 of 37 countries
+    failure_years:
+      - year: 2020
+        may_oct_return: "+19%"
+        reason: "COVID recovery"
+      - year: 2009
+        may_oct_return: "+20%"
+        reason: "Financial crisis recovery"
+    notes: "Breaks during sharp V-shaped recoveries from extreme dislocations."
+    action: "Reduce equity exposure 20-30% in May. Add portfolio hedges. Shift to defensive sectors."
+
+  santa_claus_rally:
+    window: "Last 5 trading days of December + first 2 trading days of January"
+    duration_days: 7
+    avg_return: 0.013                      # +1.3%
+    positive_pct: 78                       # Positive 78% of the time
+    source: "Yale Hirsch, Stock Trader's Almanac"
+    warning: "If Santa Claus should fail to call, bears may come to Broad and Wall."
+    failure_implication: "When rally fails to materialize, following year below average 60% of time."
+    drivers: "Low volume, tax-loss selling completion, institutional positioning for new year."
+
+  january_barometer:
+    description: "January's direction predicts the full year's direction"
+    positive_january_year_positive: 0.88   # 88% of the time
+    negative_january_year_positive: 0.58   # Only 58% of the time
+    source: "Yale Hirsch, Stock Trader's Almanac, 1972"
+    notes: "Predicts direction, not magnitude."
+
+  september_effect:
+    description: "September is historically the worst month for equities"
+    avg_return: -0.007                     # -0.7%
+    negative_pct: 55                       # 55% of Septembers are negative (65% in some measures)
+    theories:
+      - "Mutual fund fiscal year-end (Sep 30) triggers tax-loss selling"
+      - "Institutional repositioning after summer vacations"
+      - "Psychological reset after Labor Day"
+    action: "Maximum caution. Tightest stops. Smallest positions."
+
+  pre_election_year:
+    description: "Year before U.S. presidential election is historically strong"
+    avg_return: 0.168                      # +16.8% annual
+    positive_pct: 94                       # Positive 94% of the time
+    only_negative_since_1939: "2015 (-0.7%)"
+    theory: "Incumbent administrations stimulate economy before election year."
+    example: "2023 (pre-election year): S&P 500 gained 24.2%"
+
+  january_effect:
+    description: "Small caps outperform large caps in January"
+    original_finding: "Small-cap +3.5% vs large-cap +0.5% in January"
+    source: "Rozeff & Kinney, 1976"
+    current_status: "Diminished. Statistically insignificant since 2000. Edge arbitraged away."
+
+  turn_of_month:
+    description: "Last trading day of old month through first 3 days of new month is strongest 4-day window"
+    share_of_monthly_return: 0.67          # First 5 days = 67% of monthly return (since 1926)
+    source: "Robert Ariel, Journal of Financial Economics, 1987"
+    drivers: "401(k) contributions, payroll investments, pension fund inflows."
+
+# ---------------------------------------------------------------------------
+# FOMC Meeting Schedule Effects (Ch.25, Ch.31)
+# ---------------------------------------------------------------------------
+fomc:
+  meetings_per_year: 8
+  announcement_time: "14:00 ET"
+  press_conference: "14:30 ET"
+
+  pre_fomc_drift:
+    description: "S&P 500 averages +0.49% in the 24 hours surrounding FOMC decisions"
+    source: "Lucca & Moench, Journal of Finance, 2015"
+    data_period: "1994-2011"
+    current_status: "Effect has moderated since publication but FOMC days remain statistically distinct."
+    notes: "Roughly half of entire market annual return concentrated in 8 trading days."
+
+  trading_rules:
+    - "Reduce position size by 50% before 2:00 PM ET"
+    - "Statement drops at 2:00 PM. Press conference at 2:30 PM."
+    - "Market often reverses direction between statement and press conference."
+    - "Do not trade the 2:00-2:30 PM window."
+
+# ---------------------------------------------------------------------------
+# Annual Trading Calendar Template (Ch.31)
+# ---------------------------------------------------------------------------
+annual_calendar:
+  january:
+    action: "Review prior year. Set annual goals. Reduce sizes during Q4 earnings."
+    seasonal_bias: "Watch January Barometer."
+
+  february_march:
+    action: "Q4 earnings wind down mid-Feb. Quarter-end rebalancing last week of March."
+    seasonal_bias: "Strong seasonal period (Nov-Apr) still in effect."
+
+  april:
+    action: "Best month historically. Tax deadline April 15 creates brief selling then relief buying."
+    seasonal_bias: "Bullish. Q1 earnings begin mid-month."
+
+  may:
+    action: "Reduce equity exposure gradually. Add portfolio hedges (VIX calls, SPY put spreads for Sep)."
+    seasonal_bias: "Inflection point. Tilt defensive."
+
+  june_august:
+    action: "Low-conviction zone. Volume drops. Reduce position sizes 25-50%."
+    seasonal_bias: "Weak. Best vacation window."
+
+  september:
+    action: "Danger zone. Highest risk month. Maximum caution. Protect year's profits."
+    seasonal_bias: "Bearish. Smallest positions. Tightest stops."
+
+  october:
+    action: "Volatile but often marks annual lows. Be ready to buy extreme fear."
+    seasonal_bias: "Mixed. Best annual entry points sometimes occur here."
+
+  november:
+    action: "Starting gun for best six-month period. Increase equity exposure."
+    seasonal_bias: "Bullish. Seasonal tailwinds begin."
+
+  december:
+    action: "Early Dec: tax-loss harvesting (buy beaten-down names). Late Dec: Santa Claus Rally."
+    seasonal_bias: "Bullish. Two distinct phases."
+
+# ---------------------------------------------------------------------------
+# Defensive Sector Rotation (Seasonal, Ch.31)
+# ---------------------------------------------------------------------------
+sector_seasonals:
+  summer_outperformers:
+    months: "May through October"
+    sectors: ["Utilities", "Healthcare", "Consumer Staples"]
+    notes: "Defensive sectors tend to outperform during weak seasonal window."
+
+  strong_period_outperformers:
+    months: "November through April"
+    sectors: ["Technology", "Consumer Discretionary", "Financials", "Industrials"]
+    notes: "Cyclical sectors tend to outperform during strong seasonal window."

@@ -6,9 +6,9 @@
  * and provides the foundation for AI-powered insights and recommendations.
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import { plaidService } from "./plaid-service";
 import { CreditBureauService } from "@/lib/credit-bureau";
 import {
@@ -249,6 +249,7 @@ export class FinancialContextEngine {
           account.accountId,
           thirtyDaysAgo,
           new Date(),
+          userId,
         );
         allTransactions.push(
           ...txns.map((t) => ({
@@ -855,7 +856,7 @@ export class FinancialContextEngine {
    * Get financial alerts for a user
    */
   private async getFinancialAlerts(userId: string): Promise<FinancialAlert[]> {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("financial_alerts")
       .select("*")
       .eq("user_id", userId)
@@ -863,6 +864,17 @@ export class FinancialContextEngine {
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .order("severity", { ascending: false })
       .limit(20);
+
+    if (error) {
+      // A query failure must not be indistinguishable from "no alerts" —
+      // log it so a broken read is diagnosable, but don't reject the wider
+      // Promise.all in getFinancialContext() over one sub-fetch.
+      console.error("getFinancialAlerts failed", {
+        userId,
+        error: error.message,
+      });
+      return [];
+    }
 
     return (data || []).map((a) => ({
       id: a.id,

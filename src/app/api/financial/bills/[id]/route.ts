@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { billDetectionService } from "@/lib/financial/bill-detection-service";
 import type { BillUpdateInput } from "@/lib/financial/types/bill.types";
 
@@ -8,24 +8,12 @@ import type { BillUpdateInput } from "@/lib/financial/types/bill.types";
  * GET /api/financial/bills/[id]
  * Get a single bill by ID
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const GET = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT and get user
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const userId = validation.user.id;
-    const { id } = await params;
+    const userId = user.id;
+    const id = request.nextUrl.pathname.split("/").pop() as string;
 
     // Get bill
     const bill = await billDetectionService.getBillById(id, userId);
@@ -43,30 +31,19 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * PATCH /api/financial/bills/[id]
  * Update a bill
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const PATCH = withPermission(
+  "financial:write",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT and get user
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:write")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const userId = validation.user.id;
-    const { id } = await params;
+    const userId = user.id;
+    const id = request.nextUrl.pathname.split("/").pop() as string;
 
     // Parse request body
     const body = await request.json();
@@ -111,30 +88,19 @@ export async function PATCH(
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * DELETE /api/financial/bills/[id]
  * Delete a bill
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const DELETE = withPermission(
+  "financial:write",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT and get user
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:write")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const userId = validation.user.id;
-    const { id } = await params;
+    const userId = user.id;
+    const id = request.nextUrl.pathname.split("/").pop() as string;
 
     // Delete bill
     await billDetectionService.deleteBill(id, userId);
@@ -148,4 +114,5 @@ export async function DELETE(
       { status: 500 },
     );
   }
-}
+},
+);

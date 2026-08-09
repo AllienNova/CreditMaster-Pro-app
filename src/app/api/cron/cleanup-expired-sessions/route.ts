@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 
 function getSupabase(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -15,7 +16,7 @@ function getSupabase(): SupabaseClient {
 function verifyCronSecret(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
   if (!authHeader) return false;
-  return authHeader === `Bearer ${process.env.CRON_SECRET}`;
+  return timingSafeEqual(authHeader, `Bearer ${process.env.CRON_SECRET}`);
 }
 
 export async function GET(request: Request) {

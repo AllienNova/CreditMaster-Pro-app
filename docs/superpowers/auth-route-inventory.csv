@@ -1,0 +1,296 @@
+path,methods,current_authn,current_authz,proposed_guard,sub_batch,notes
+src/app/api/addons/cancel/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/addons/list/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/addons/subscribe/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/admin/affiliate/revenue/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withRole(admin),a,admin endpoint - promote to withRole(admin)
+src/app/api/admin/analytics/route.ts,GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
+src/app/api/admin/audit/route.ts,GET;POST,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
+src/app/api/admin/auth/route.ts,GET,requireRole,reads profiles.role from DB (safe),withRole(admin),a,DB-sourced role check - safe pattern; rewrap withRole(admin)
+src/app/api/admin/compliance/breach/route.ts,POST,withRole(admin),admin role via withRole,withRole(admin),a,CMP-02 breach-notify trigger; born withRole(admin) - added to inventory post-hoc
+src/app/api/admin/disputes/route.ts,GET;PATCH,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
+src/app/api/admin/logs/route.ts,GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
+src/app/api/admin/metrics/route.ts,GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
+src/app/api/admin/settings/route.ts,GET;POST,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
+src/app/api/admin/stats/route.ts,GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
+src/app/api/admin/subscriptions/route.ts,DELETE;GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
+src/app/api/admin/users/route.ts,GET;PATCH,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
+src/app/api/affiliate/offers/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),f,promote inline permission check to withPermission
+src/app/api/affiliate/webhooks/route.ts,POST,webhook-signature,none,PUBLIC,f,webhook - signature verification stays as the auth
+src/app/api/ai/chat/message/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/chat/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/chat/sessions/[id]/route.ts,DELETE;GET;PUT,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/chat/sessions/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/consensus/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/create-workflow/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""ai:create_workflow"")",withPermission(ai:create_workflow),f,promote inline permission check to withPermission
+src/app/api/ai/financial-coach/advice/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/financial-coach/analyze/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/financial-coach/budget/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/financial-coach/dashboard/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/financial-coach/debt-strategy/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/financial-coach/debt/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/financial-coach/goals/[goalId]/route.ts,GET;PATCH,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/financial-coach/goals/[goalId]/simulate/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/financial-coach/goals/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/financial-coach/plan/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/financial-coach/recommendations/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/insights/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/nudges/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/ai/orchestrate/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""ai:orchestrate_strategies"")",withPermission(ai:orchestrate_strategies),f,promote inline permission check to withPermission
+src/app/api/ai/predict-outcomes/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""ai:predict_outcomes"")",withPermission(ai:predict_outcomes),f,promote inline permission check to withPermission
+src/app/api/ai/recommend-strategy/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""ai:strategy_recommendation"")",withPermission(ai:strategy_recommendation),f,promote inline permission check to withPermission
+src/app/api/ai/spending-analysis/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/analytics/events/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - accepts event.userId from body; wrap in withAuth
+src/app/api/analytics/reports/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withRole(admin),f,admin analytics - promote to withRole(admin)
+src/app/api/analytics/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withAuth,f,"mixed route - 6 per-user sub-types scoped to user.id; `system` sub-type has an inline `rbac.hasPermission('admin:analytics')` check on the DB-resolved role."
+src/app/api/analytics/strategies/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
+src/app/api/analytics/timeseries/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withRole(admin),f,admin analytics - promote to withRole(admin)
+src/app/api/auth/webauthn/authenticate/route.ts,POST,none,none,PUBLIC,f,pre-auth webauthn challenge - genuinely public
+src/app/api/auth/webauthn/authenticate/verify/route.ts,POST,none,none,PUBLIC,f,pre-auth webauthn verify - genuinely public
+src/app/api/auth/webauthn/credentials/route.ts,DELETE;GET;PATCH,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/auth/webauthn/register/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/auth/webauthn/register/verify/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/automation/jobs/route.ts,DELETE;GET;POST,validateFromHeaders,"rbac.hasPermission(""automation:jobs:create"");rbac.hasPermission(""automation:jobs:delete"")",withPermission(automation:jobs:create),f,multiple inline perms - promote to withPermission; DELETE needs automation:jobs:delete
+src/app/api/automation/workflows/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""automation:workflows:create"")",withPermission(automation:workflows:create),f,promote inline permission check to withPermission
+src/app/api/chat/financial/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/chat/financial/sessions/[id]/messages/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/chat/financial/sessions/[id]/route.ts,DELETE;GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/chat/financial/sessions/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/credit-builder/loans/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/credit-builder/progress/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/credit-builder/recommendations/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/credit-builder/score/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/credit-builder/secured-cards/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/credit-bureau/analyze/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""credit:analyze"")",withPermission(credit:analyze),c,promote inline permission check to withPermission
+src/app/api/credit-bureau/connect/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""credit:read"");rbac.hasPermission(""credit:write"")",withPermission(credit:read),c,multiple inline perms - GET credit:read POST credit:write
+src/app/api/credit-bureau/dispute/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""disputes:create"")",withPermission(disputes:create),c,promote inline permission check to withPermission
+src/app/api/credit-bureau/report/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""credit:read"")",withPermission(credit:read),c,promote inline permission check to withPermission
+src/app/api/credit-bureau/score-history/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""credit:read"")",withPermission(credit:read),c,promote inline permission check to withPermission
+src/app/api/credit-bureau/test-import/route.ts,GET;POST,none,none,withAuth,c,unauthenticated test-import accepting userId from body - SECURITY: test route should be removed or gated
+src/app/api/credit-monitoring/alerts/route.ts,GET;PATCH,validateFromHeaders,"rbac.hasPermission(""credit:alerts"")",withPermission(credit:alerts),c,promote inline permission check to withPermission
+src/app/api/credit-monitoring/history/route.ts,GET,none,none,withAuth,c,unauthenticated - wrap in withAuth
+src/app/api/credit-monitoring/route.ts,GET;POST,none,none,withAuth,c,unauthenticated - accepts userId from query/body (IDOR) - wrap in withAuth
+src/app/api/credit-monitoring/scores/route.ts,GET,none,none,withAuth,c,unauthenticated - wrap in withAuth
+src/app/api/credit-monitoring/settings/route.ts,GET;PUT,validateFromHeaders,"rbac.hasPermission(""credit:read"");rbac.hasPermission(""credit:update_settings"")",withPermission(credit:read),c,multiple inline perms - GET credit:read PUT credit:update_settings
+src/app/api/credit-repair/cards/[id]/route.ts,DELETE;GET;PUT,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/cards/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/disputes/[id]/route.ts,DELETE;GET;PUT,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/disputes/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/goodwill/[id]/route.ts,DELETE;GET;PUT,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/goodwill/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/impact/route.ts,POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/negotiate/[id]/route.ts,DELETE;GET;PUT,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/negotiate/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/quick-wins/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/reports/[id]/route.ts,DELETE;GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/reports/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/score/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-report/analyze/route.ts,GET;POST,none,none,withAuth,c,unauthenticated - wrap in withAuth
+src/app/api/credit/analyze/route.ts,GET;POST,none,none,withAuth,c,unauthenticated - wrap in withAuth
+src/app/api/credit/factors/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credits/balance/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/credits/history/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/credits/purchase/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/cron/check-dispute-status/route.ts,GET,cron-secret,none,PUBLIC,f,cron job - CRON_SECRET header check stays as the auth
+src/app/api/cron/cleanup-expired-sessions/route.ts,GET,cron-secret,none,PUBLIC,f,cron job - CRON_SECRET header check stays as the auth
+src/app/api/cron/dispute-followups/route.ts,GET,cron-secret,none,PUBLIC,f,cron job - CRON_SECRET header check stays as the auth
+src/app/api/cron/send-reminders/route.ts,GET,cron-secret,none,PUBLIC,f,cron job - CRON_SECRET header check stays as the auth
+src/app/api/csrf/route.ts,GET,none,none,PUBLIC,f,CSRF token issuer - must be reachable pre-auth; genuinely public
+src/app/api/disputes/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,inline user.id ownership check,withAuth,f,inline JWT validation + ownership - wrap in withAuth; keep ownership check
+src/app/api/disputes/[id]/send/route.ts,PATCH,validateFromHeaders,inline user.id ownership check,withAuth,f,inline JWT validation + ownership - wrap in withAuth; keep ownership check
+src/app/api/disputes/generate-student-loan/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""disputes:create"")",withPermission(disputes:create),f,promote inline permission check to withPermission
+src/app/api/disputes/generate/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/disputes/reasons/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation; static reference data - wrap in withAuth
+src/app/api/disputes/route.ts,DELETE;GET;PATCH;POST,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
+src/app/api/disputes/stats/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
+src/app/api/disputes/strategies/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
+src/app/api/disputes/templates/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - static templates but POST mutates; wrap in withAuth
+src/app/api/documents/route.ts,DELETE;GET;PATCH,getUser,inline user.id ownership check,withAuth,c,bare session read + ownership - wrap in withAuth; keep ownership check
+src/app/api/documents/share/route.ts,DELETE;GET;POST,validateFromHeaders,"rbac.hasPermission(""documents:share""); inline ownership check",withPermission(documents:share),c,promote inline permission check; keep ownership check
+src/app/api/documents/upload/route.ts,GET;POST,none,none,withAuth,c,unauthenticated - accepts userId from formData (IDOR) - wrap in withAuth
+src/app/api/email/unsubscribe/route.ts,GET;POST,none,token in query,PUBLIC,f,unsubscribe via signed token in email link - token is the auth; genuinely public
+src/app/api/federal-programs/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - wrap in withAuth
+src/app/api/federal/check-eligibility/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""federal_programs:check_eligibility"")",withPermission(federal_programs:check_eligibility),f,promote inline permission check to withPermission
+src/app/api/federal/submit-application/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""federal_programs:submit_application"")",withPermission(federal_programs:submit_application),f,promote inline permission check to withPermission
+src/app/api/federal/track-application/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""federal_programs:track_application"")",withPermission(federal_programs:track_application),f,promote inline permission check to withPermission
+src/app/api/financial/accounts/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/aggregated/route.ts,DELETE;GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/ai-insights/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/bills/[id]/negotiate/route.ts,POST,none,none,withAuth,c,unauthenticated - wrap in withAuth
+src/app/api/financial/bills/[id]/outcome/route.ts,POST,none,none,withAuth,c,unauthenticated - wrap in withAuth
+src/app/api/financial/bills/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,"rbac.hasPermission(""financial:read"");rbac.hasPermission(""financial:write"")",withPermission(financial:read),c,multiple inline perms - GET financial:read mutations financial:write
+src/app/api/financial/bills/analysis/route.ts,GET,none,none,withAuth,c,unauthenticated - wrap in withAuth
+src/app/api/financial/bills/detect/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/bills/negotiate/[id]/route.ts,GET;PATCH;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/bills/negotiate/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/bills/optimizations/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/bills/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""financial:read"");rbac.hasPermission(""financial:write"")",withPermission(financial:read),c,multiple inline perms - GET financial:read POST financial:write
+src/app/api/financial/bills/summary/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/budgets/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,"rbac.hasPermission(""financial:read"");rbac.hasPermission(""financial:create_budgets"")",withPermission(financial:read),c,multiple inline perms - GET financial:read mutations financial:create_budgets
+src/app/api/financial/budgets/adjust/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/budgets/alerts/route.ts,GET;PATCH,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/budgets/analyze/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/budgets/generate/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""financial:create_budgets"")",withPermission(financial:create_budgets),c,promote inline permission check to withPermission
+src/app/api/financial/budgets/predict/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/budgets/recommendations/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/budgets/rollover/route.ts,GET;PATCH;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/budgets/route.ts,GET;POST,withPermission,"withPermission(""financial:read""/""financial:create_budgets"")",withPermission(financial:read),c,already wrapped with withPermission - no change (AUTH-01 reference impl)
+src/app/api/financial/budgets/summary/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/context/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""financial:read"");rbac.hasPermission(""financial:write"")",withPermission(financial:read),c,multiple inline perms - GET financial:read POST financial:write
+src/app/api/financial/context/summary/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/credit-builder/ai-roadmap/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/credit-repair/ai-strategy/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/credit/ai-insights/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/credit/simulator/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""credit:read"")",withPermission(credit:read),c,promote inline permission check to withPermission
+src/app/api/financial/dashboard/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/debt/calculate/route.ts,POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/debt/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/disputes/ai-strategy/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/export/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/goals/[id]/investment/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:create_goals"")",withPermission(financial:create_goals),c,promote inline permission check to withPermission
+src/app/api/financial/goals/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,"rbac.hasPermission(""financial:create_goals""); inline ownership check",withPermission(financial:create_goals),c,promote inline permission check; keep ownership check
+src/app/api/financial/goals/optimizations/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/goals/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""financial:create_goals"")",withPermission(financial:create_goals),c,promote inline permission check to withPermission
+src/app/api/financial/health-score/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""financial:read"");rbac.hasPermission(""financial:write"")",withPermission(financial:read),c,multiple inline perms - GET financial:read POST financial:write
+src/app/api/financial/health-score/v2/route.ts,GET;POST,validateFromHeaders,inline ownership check,withAuth,c,inline JWT validation + ownership - wrap in withAuth; keep ownership check
+src/app/api/financial/income/detect/route.ts,GET;POST,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/financial/income/gig/route.ts,GET;POST,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/financial/income/route.ts,DELETE;GET;POST;PUT,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/financial/insights/route.ts,GET;PATCH;POST,validateFromHeaders,"rbac.hasPermission(""financial:read"");rbac.hasPermission(""financial:write"")",withPermission(financial:read),c,multiple inline perms - GET financial:read mutations financial:write
+src/app/api/financial/investments/ai-insights/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/monitoring/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/openapi/route.ts,GET,none,none,PUBLIC,c,OpenAPI spec document - public cache; genuinely public
+src/app/api/financial/plaid/enrich/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/plaid/exchange-token/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""financial:link_accounts"")",withPermission(financial:link_accounts),c,promote inline permission check to withPermission
+src/app/api/financial/plaid/hosted-link/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""financial:link_accounts""); inline JWT-claim role check validation.user.role !== admin/super_admin (lines ~30/48)",withPermission(financial:link_accounts),c,CRITICAL - inline JWT-claim role check: forged/stale admin token bypasses userId-ownership guard. Role must come from profiles.role (DB) not JWT. Promote perm to withPermission; replace inline role compare with DB-sourced check
+src/app/api/financial/plaid/income/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""financial:read"");rbac.hasPermission(""financial:write"")",withPermission(financial:read),c,multiple inline perms - GET financial:read POST financial:write; note webhook-signature keyword is incidental string match not real webhook auth
+src/app/api/financial/plaid/investments/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/plaid/liabilities/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/plaid/link-token/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""financial:link_accounts"")",withPermission(financial:link_accounts),c,promote inline permission check to withPermission
+src/app/api/financial/plaid/webhooks/route.ts,POST,webhook-signature,none,PUBLIC,c,Plaid webhook - signature verification stays as the auth
+src/app/api/financial/savings/analyze/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/savings/goal-recommendations/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/savings/goals/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/savings/recommendations/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/savings/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/savings/rules/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/savings/subscriptions/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/spending/ai-insights/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/spending/analysis/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/spending/analyze/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/spending/anomalies/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/spending/cashflow/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/spending/forecast/route.ts,GET;POST,none,none,withAuth,c,unauthenticated - wrap in withAuth
+src/app/api/financial/spending/insights/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/spending/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/spending/summary/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/spending/trends/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/subscriptions/cancellation-info/route.ts,GET,none,none,withAuth,c,unauthenticated - wrap in withAuth
+src/app/api/financial/tax/retirement/route.ts,GET;POST,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/financial/transactions/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/gamification/achievements/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/gamification/badges/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/gamification/challenges/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/gamification/events/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/gamification/leaderboard/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/gamification/progress/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/gamification/quests/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/health/route.ts,GET,none,none,PUBLIC,f,health check - genuinely public
+src/app/api/investments/alerts/route.ts,DELETE;GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/allocation-analysis/route.ts,GET;POST,none,none,withAuth,e,unauthenticated - wrap in withAuth
+src/app/api/investments/analytics/correlation/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/analytics/diversification/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/analytics/performance/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/analytics/rebalance/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/analytics/risk/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/analyze/[symbol]/fundamental/route.ts,GET,none,none,withAuth,e,unauthenticated - wrap in withAuth
+src/app/api/investments/analyze/[symbol]/recommendation/route.ts,GET,none,none,withAuth,e,unauthenticated - wrap in withAuth
+src/app/api/investments/analyze/[symbol]/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/analyze/[symbol]/sentiment/route.ts,GET,none,none,withAuth,e,unauthenticated - wrap in withAuth
+src/app/api/investments/analyze/[symbol]/technical/route.ts,GET,none,none,withAuth,e,unauthenticated - wrap in withAuth
+src/app/api/investments/comprehensive-analysis/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/crypto/[coinId]/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/crypto/[coinId]/sentiment/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/crypto/trending/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/dividends/route.ts,GET,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/holdings/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,inline user.id ownership check,withAuth,e,inline JWT validation + ownership - wrap in withAuth; keep ownership check
+src/app/api/investments/holdings/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/patterns/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/portfolio-analysis/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/portfolio/analyze/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/portfolio/route.ts,GET,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth; portfolio-service omits user_id filter (FND-030 IDOR) - verify ownership in AUTH-03
+src/app/api/investments/recommendations/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/signals/[id]/route.ts,GET;PATCH,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/signals/active/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/signals/performance/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/signals/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/marketplace/products/[id]/route.ts,GET,none,none,PUBLIC,f,public product catalog - read-only browse; genuinely public
+src/app/api/marketplace/products/categories/route.ts,GET,none,none,PUBLIC,f,public product categories - read-only; genuinely public
+src/app/api/marketplace/products/route.ts,GET;POST,none,none,withAuth,f,GET browse is public but POST mutates - wrap in withAuth; SEC: split or restrict POST
+src/app/api/marketplace/products/search/route.ts,GET,none,none,PUBLIC,f,public product search - read-only; genuinely public
+src/app/api/marketplace/providers/[id]/route.ts,GET,none,none,PUBLIC,f,public provider directory - read-only; genuinely public
+src/app/api/marketplace/providers/route.ts,GET,none,none,PUBLIC,f,public provider directory - read-only; genuinely public
+src/app/api/marketplace/providers/search/route.ts,GET,none,none,PUBLIC,f,public provider search - read-only; genuinely public
+src/app/api/marketplace/reviews/[id]/helpful/route.ts,POST,none,none,withAuth,f,unauthenticated mutation (helpful vote) - wrap in withAuth
+src/app/api/marketplace/reviews/[id]/route.ts,POST,none,none,withAuth,f,unauthenticated mutation - wrap in withAuth
+src/app/api/marketplace/reviews/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/marketplace/tradelines/[id]/route.ts,GET,none,none,PUBLIC,f,public tradeline listing - read-only; genuinely public
+src/app/api/marketplace/tradelines/route.ts,GET,none,none,PUBLIC,f,public tradeline listing - read-only; genuinely public
+src/app/api/ml/predict-success/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""ml:predict"")",withPermission(ml:predict),f,promote inline permission check to withPermission
+src/app/api/ml/predict-timeline/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""ml:predict"")",withPermission(ml:predict),f,promote inline permission check to withPermission
+src/app/api/monitoring/errors/route.ts,POST,none,none,PUBLIC,f,client error/Sentry DSN ingestion - must accept pre-auth errors; genuinely public
+src/app/api/monitoring/events/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
+src/app/api/monitoring/health/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withRole(admin),f,admin-only monitoring health - promote to withRole(admin)
+src/app/api/monitoring/history/route.ts,DELETE;GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
+src/app/api/notifications/preferences/route.ts,GET;POST;PUT,none,x-user-id header (untrusted),withAuth,b,unauthenticated - trusts x-user-id header (IDOR FND-041..044) - wrap in withAuth
+src/app/api/notifications/push/schedule/route.ts,DELETE;GET;POST,none,userId from body (untrusted),withAuth,b,unauthenticated - accepts userId from body (IDOR FND-041..044) - wrap in withAuth
+src/app/api/notifications/push/send/route.ts,POST,none,userId/userIds from body (untrusted),withAuth,b,unauthenticated - accepts userId/userIds from body (IDOR FND-041..044) - wrap in withAuth; SEC: send-to-others may need admin
+src/app/api/notifications/push/subscribe/route.ts,DELETE;GET;POST,none,userId from body (untrusted),withAuth,b,unauthenticated - accepts userId from body (IDOR FND-041..044) - wrap in withAuth
+src/app/api/notifications/push/vapid-key/route.ts,GET,none,none,PUBLIC,b,returns VAPID public key - needed pre-subscribe; genuinely public
+src/app/api/notifications/route.ts,DELETE;GET;PATCH;POST,none,userId from query (untrusted),withAuth,b,unauthenticated - accepts userId from query (IDOR FND-041..044) - wrap in withAuth
+src/app/api/onboarding/progress/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/payment/billing/plan/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""billing:update"")",withPermission(billing:update),f,promote inline permission check to withPermission
+src/app/api/payment/billing/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""billing:read"")",withPermission(billing:read),f,promote inline permission check to withPermission
+src/app/api/payment/checkout/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth; critical-path payment route
+src/app/api/payment/webhook/route.ts,POST,webhook-signature,none,PUBLIC,f,Stripe webhook - signature verification stays as the auth (hookify guard enforced)
+src/app/api/performance/route.ts,DELETE;GET,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withRole(admin),f,admin-only performance metrics - promote to withRole(admin)
+src/app/api/profile/route.ts,GET;PATCH,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/servicers/analyze/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""servicers:analyze"")",withPermission(servicers:analyze),f,promote inline permission check to withPermission
+src/app/api/servicers/detect-errors/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""servicers:detect_errors"")",withPermission(servicers:detect_errors),f,promote inline permission check to withPermission
+src/app/api/settings/route.ts,GET;PATCH,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/strategies/recommend/route.ts,GET;POST,none,none,withAuth,d,unauthenticated - wrap in withAuth
+src/app/api/student-loans/analyze/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""student_loans:analyze"")",withPermission(student_loans:analyze),f,promote inline permission check to withPermission
+src/app/api/student-loans/route.ts,GET,none,none,withAuth,f,unauthenticated - accepts userId from query (IDOR) - wrap in withAuth
+src/app/api/student-loans/strategy/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - wrap in withAuth
+src/app/api/tax/analyze/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/tax/documents/route.ts,DELETE;GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/tax/documents/upload/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/test-db/route.ts,GET,getUser,none,withAuth,f,diagnostic DB-test route - SECURITY: should be removed before launch; gate with withRole(admin) at minimum
+src/app/api/trading/agents/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/backtest/route.ts,GET;POST,withAuth,none,withAuth,e,already wrapped with withAuth - no change
+src/app/api/trading/compliance/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/ise/rankings/route.ts,POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/trading/ise/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/trading/journal/[id]/close/route.ts,POST,getUser,inline user.id ownership check,withAuth,e,bare session read + ownership - wrap in withAuth; keep ownership check
+src/app/api/trading/journal/[id]/route.ts,DELETE;GET;PUT,getUser,inline user.id ownership check,withAuth,e,bare session read + ownership - wrap in withAuth; keep ownership check
+src/app/api/trading/journal/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/journal/stats/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/modes/circuit-breakers/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/modes/downgrade/route.ts,POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/modes/graduate/route.ts,POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/modes/permissions/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/modes/progress/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/modes/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/orders/route.ts,DELETE;GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/paper/orders/route.ts,DELETE;GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/paper/performance/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/paper/positions/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/paper/reset/route.ts,POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/paper/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/positions/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/risk/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/signals/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/strategies/[id]/route.ts,DELETE;GET;PUT,withAuth,inline user.id ownership check,withAuth,e,already wrapped with withAuth - no change; ownership check retained
+src/app/api/trading/strategies/route.ts,GET;POST,withAuth,none,withAuth,e,already wrapped with withAuth - no change
+src/app/api/user/analytics/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/voice/synthesize/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - wrap in withAuth
+src/app/api/ws/market-data/route.ts,GET;POST,none,none,withAuth,e,unauthenticated WS upgrade endpoint - wrap in withAuth; SEC: verify auth on socket upgrade

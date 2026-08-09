@@ -54,18 +54,21 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_role ON chat_messages(role);
 ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can view their own sessions
+DROP POLICY IF EXISTS "Users can view their own chat sessions" ON chat_sessions;
 CREATE POLICY "Users can view their own chat sessions"
   ON chat_sessions
   FOR SELECT
   USING (auth.uid() = user_id);
 
 -- Policy: Users can create their own sessions
+DROP POLICY IF EXISTS "Users can create their own chat sessions" ON chat_sessions;
 CREATE POLICY "Users can create their own chat sessions"
   ON chat_sessions
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Policy: Users can update their own sessions
+DROP POLICY IF EXISTS "Users can update their own chat sessions" ON chat_sessions;
 CREATE POLICY "Users can update their own chat sessions"
   ON chat_sessions
   FOR UPDATE
@@ -73,6 +76,7 @@ CREATE POLICY "Users can update their own chat sessions"
   WITH CHECK (auth.uid() = user_id);
 
 -- Policy: Users can delete their own sessions (archive)
+DROP POLICY IF EXISTS "Users can delete their own chat sessions" ON chat_sessions;
 CREATE POLICY "Users can delete their own chat sessions"
   ON chat_sessions
   FOR DELETE
@@ -82,6 +86,7 @@ CREATE POLICY "Users can delete their own chat sessions"
 ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can view messages from their own sessions
+DROP POLICY IF EXISTS "Users can view messages from their own sessions" ON chat_messages;
 CREATE POLICY "Users can view messages from their own sessions"
   ON chat_messages
   FOR SELECT
@@ -94,6 +99,7 @@ CREATE POLICY "Users can view messages from their own sessions"
   );
 
 -- Policy: Users can create messages in their own sessions
+DROP POLICY IF EXISTS "Users can create messages in their own sessions" ON chat_messages;
 CREATE POLICY "Users can create messages in their own sessions"
   ON chat_messages
   FOR INSERT
@@ -106,6 +112,7 @@ CREATE POLICY "Users can create messages in their own sessions"
   );
 
 -- Policy: Users can update messages in their own sessions
+DROP POLICY IF EXISTS "Users can update messages in their own sessions" ON chat_messages;
 CREATE POLICY "Users can update messages in their own sessions"
   ON chat_messages
   FOR UPDATE
@@ -125,6 +132,7 @@ CREATE POLICY "Users can update messages in their own sessions"
   );
 
 -- Policy: Users can delete messages from their own sessions
+DROP POLICY IF EXISTS "Users can delete messages from their own sessions" ON chat_messages;
 CREATE POLICY "Users can delete messages from their own sessions"
   ON chat_messages
   FOR DELETE

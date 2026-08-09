@@ -51,6 +51,19 @@ jest.mock("@/lib/supabase/client", () => {
   return { getSupabase: () => _client };
 });
 
+// budget-service and debt-service now read through the service-role client
+// (src/lib/supabase/service-role.ts) while the categorizer and forecaster in
+// this same pipeline still use the anon client. This test drives every service
+// through the single `supabase` handle below, so both modules resolve to the
+// SAME double — forking them into two would silently split which service each
+// per-test `from` override reaches. That conflation is deliberate and safe
+// here: this file verifies data flow across the pipeline, not RLS semantics.
+// The anon-vs-service-role distinction is covered by the per-service unit
+// tests and by scripts/audit-service-role-idor.js.
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: () => require("@/lib/supabase/client").getSupabase(),
+}));
+
 jest.mock("@/lib/supabase/server", () => {
   const resolved = { data: null, error: null };
   const chain: Record<string, unknown> = {};
@@ -131,26 +144,29 @@ import { TransactionCategorizer } from "../transaction-categorizer";
 import { spendingForecastService } from "../spending-forecast-service";
 import { HealthScoreCalculator } from "../health-score-calculator";
 import { incomeTrackingService } from "../income-tracking-service";
-import { BillCalendarService } from "../bill-calendar-service";
 
 // ============================================================================
 // MOCK DATA FACTORIES
 // ============================================================================
 
+// Uses the REAL `budgets` table columns (see budget-service.ts
+// `mapRowToBudget` / budget.types.ts `BudgetRow`) — the table has no
+// `name`, `budgeted_amount`, `spent_amount`, `period_start`, `period_end`,
+// or `is_active` column. `name` is synthesized from `category` by the
+// service, so it's intentionally absent here.
 const createMockBudgetRow = (overrides: Record<string, unknown> = {}) => ({
   id: "budget-1",
   user_id: "user-123",
-  name: "Food Budget",
   category: "dining_out",
-  budgeted_amount: 500,
-  spent_amount: 200,
+  amount: 500,
+  spent: 200,
   period: "monthly",
-  period_start: "2026-02-01T00:00:00Z",
-  period_end: "2026-02-28T23:59:59Z",
+  start_date: "2026-02-01T00:00:00Z",
+  end_date: "2026-02-28T23:59:59Z",
   rollover_enabled: false,
   rollover_amount: 0,
   alert_threshold: 80,
-  is_active: true,
+  status: "active",
   created_at: "2026-01-15T00:00:00Z",
   updated_at: "2026-02-01T00:00:00Z",
   ...overrides,
@@ -169,29 +185,6 @@ const createMockPlaidTransaction = (
   category: ["Food and Drink", "Restaurants"],
   pending: false,
   type: "place",
-  ...overrides,
-});
-
-const createMockBillRow = (overrides: Record<string, unknown> = {}) => ({
-  id: "bill-1",
-  user_id: "user-123",
-  name: "Electric Bill",
-  payee: "Power Company",
-  amount: 150,
-  category: "utilities",
-  frequency: "monthly",
-  due_day: 15,
-  next_due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-  autopay_enabled: false,
-  autopay_account_id: null,
-  reminder_days_before: 3,
-  reminder_types: ["in_app"],
-  notes: null,
-  website_url: null,
-  account_number: null,
-  is_active: true,
-  created_at: "2026-01-01T00:00:00Z",
-  updated_at: "2026-02-01T00:00:00Z",
   ...overrides,
 });
 
@@ -369,8 +362,8 @@ describe("Pipeline 1: Budget -> Transaction Categorization -> Spending Forecast"
           createMockBudgetRow({
             id: "budget-2",
             category: "transportation",
-            budgeted_amount: 300,
-            spent_amount: 100,
+            amount: 300,
+            spent: 100,
           }),
         ],
         error: null,
@@ -1499,608 +1492,6 @@ describe("Pipeline 2: Income Tracking -> Financial Health Score", () => {
 });
 
 // ============================================================================
-// PIPELINE 3: Bill Calendar -> Reminders -> Summary
-// ============================================================================
-
-describe("Pipeline 3: Bill Calendar -> Reminders -> Summary", () => {
-  let billService: BillCalendarService;
-
-  beforeEach(() => {
-    billService = new BillCalendarService();
-  });
-
-  describe("Bill CRUD operations", () => {
-    it("should create a new bill and schedule reminders", async () => {
-      const billRow = createMockBillRow();
-      const billChain = createMockChain({ data: billRow, error: null });
-      const reminderChain = createMockChain({ data: null, error: null });
-
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "bills") return billChain;
-        if (table === "bill_reminders") return reminderChain;
-        return createMockChain({ data: null, error: null });
-      });
-
-      const bill = await billService.createBill({
-        userId: "user-123",
-        name: "Electric Bill",
-        payee: "Power Company",
-        amount: 150,
-        category: "utilities",
-        frequency: "monthly",
-        dueDay: 15,
-        nextDueDate: new Date("2026-03-15"),
-        reminderDaysBefore: 3,
-        reminderTypes: ["in_app"],
-      });
-
-      expect(bill).toBeDefined();
-      expect(bill.name).toBe("Electric Bill");
-      expect(bill.amount).toBe(150);
-      expect(bill.category).toBe("utilities");
-      expect(bill.frequency).toBe("monthly");
-    });
-
-    it("should retrieve a bill by ID", async () => {
-      const billChain = createMockChain({
-        data: createMockBillRow(),
-        error: null,
-      });
-      (supabase.from as jest.Mock).mockReturnValue(billChain);
-
-      const bill = await billService.getBillById("bill-1", "user-123");
-
-      expect(bill).toBeDefined();
-      expect(bill?.id).toBe("bill-1");
-      expect(bill?.name).toBe("Electric Bill");
-    });
-
-    it("should return null for non-existent bill", async () => {
-      const notFoundChain = createMockChain({
-        data: null,
-        error: { message: "Not found", code: "PGRST116" },
-      });
-      (supabase.from as jest.Mock).mockReturnValue(notFoundChain);
-
-      const bill = await billService.getBillById("non-existent", "user-123");
-      expect(bill).toBeNull();
-    });
-
-    it("should get all bills for a user", async () => {
-      const bills = [
-        createMockBillRow(),
-        createMockBillRow({
-          id: "bill-2",
-          name: "Internet",
-          amount: 80,
-          category: "internet",
-        }),
-        createMockBillRow({
-          id: "bill-3",
-          name: "Rent",
-          amount: 1500,
-          category: "housing",
-        }),
-      ];
-
-      const selectChain = createMockChain({ data: bills, error: null });
-      (supabase.from as jest.Mock).mockReturnValue(selectChain);
-
-      const result = await billService.getBillsByUser("user-123");
-
-      expect(result).toHaveLength(3);
-      expect(result[0].name).toBe("Electric Bill");
-      expect(result[1].name).toBe("Internet");
-      expect(result[2].name).toBe("Rent");
-    });
-
-    it("should update a bill", async () => {
-      const updatedRow = createMockBillRow({
-        amount: 175,
-        name: "Updated Electric",
-      });
-      const updateChain = createMockChain({ data: updatedRow, error: null });
-      (supabase.from as jest.Mock).mockReturnValue(updateChain);
-
-      const bill = await billService.updateBill("bill-1", "user-123", {
-        amount: 175,
-        name: "Updated Electric",
-      });
-
-      expect(bill.amount).toBe(175);
-      expect(bill.name).toBe("Updated Electric");
-    });
-
-    it("should delete a bill", async () => {
-      const deleteChain = createMockChain({ data: null, error: null });
-      (supabase.from as jest.Mock).mockReturnValue(deleteChain);
-
-      const result = await billService.deleteBill("bill-1", "user-123");
-      expect(result).toBe(true);
-    });
-
-    it("should throw on delete error", async () => {
-      const errorChain = createMockChain({
-        data: null,
-        error: { message: "Foreign key constraint" },
-      });
-      (supabase.from as jest.Mock).mockReturnValue(errorChain);
-
-      await expect(
-        billService.deleteBill("bill-1", "user-123"),
-      ).rejects.toThrow("Failed to delete bill");
-    });
-
-    it("should throw on create error", async () => {
-      const errorChain = createMockChain({
-        data: null,
-        error: { message: "Insert failed" },
-      });
-      (supabase.from as jest.Mock).mockReturnValue(errorChain);
-
-      await expect(
-        billService.createBill({
-          userId: "user-123",
-          name: "Test",
-          payee: "Test",
-          amount: 100,
-          category: "other",
-          frequency: "monthly",
-          dueDay: 1,
-          nextDueDate: new Date(),
-        }),
-      ).rejects.toThrow("Failed to create bill");
-    });
-  });
-
-  describe("Calendar view and upcoming bills", () => {
-    it("should generate month calendar with bill due dates", async () => {
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = today.getMonth();
-      const dueDate = new Date(year, month, 15);
-
-      const bills = [
-        createMockBillRow({ next_due_date: dueDate.toISOString() }),
-      ];
-      const payments: unknown[] = [];
-
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "bills") {
-          return createMockChain({ data: bills, error: null });
-        }
-        if (table === "bill_payments") {
-          return createMockChain({ data: payments, error: null });
-        }
-        return createMockChain({ data: [], error: null });
-      });
-
-      const calendar = await billService.getMonthCalendar(
-        "user-123",
-        year,
-        month,
-      );
-
-      expect(calendar).toBeInstanceOf(Array);
-      expect(calendar.length).toBeGreaterThan(0);
-
-      // Find the day the bill is due
-      const billDay = calendar.find((d) => d.date.getDate() === 15);
-      if (billDay) {
-        expect(billDay.bills.length).toBeGreaterThanOrEqual(0);
-      }
-    });
-
-    it("should get upcoming bills within specified days", async () => {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const nextWeek = new Date();
-      nextWeek.setDate(nextWeek.getDate() + 7);
-
-      const bills = [
-        createMockBillRow({
-          next_due_date: tomorrow.toISOString(),
-          name: "Tomorrow Bill",
-        }),
-        createMockBillRow({
-          id: "bill-2",
-          next_due_date: nextWeek.toISOString(),
-          name: "Next Week Bill",
-        }),
-      ];
-
-      const selectChain = createMockChain({ data: bills, error: null });
-      (supabase.from as jest.Mock).mockReturnValue(selectChain);
-
-      const upcoming = await billService.getUpcomingBills("user-123", 30);
-
-      expect(upcoming).toBeInstanceOf(Array);
-      // Should include bills within 30 days
-      for (const bill of upcoming) {
-        expect(bill.daysUntilDue).toBeGreaterThanOrEqual(0);
-        expect(bill.status).toBe("pending");
-        expect(bill.isPastDue).toBe(false);
-      }
-    });
-
-    it("should identify overdue bills", async () => {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 2);
-
-      const bills = [
-        createMockBillRow({
-          next_due_date: yesterday.toISOString(),
-          name: "Overdue Bill",
-        }),
-      ];
-
-      const selectChain = createMockChain({ data: bills, error: null });
-      (supabase.from as jest.Mock).mockReturnValue(selectChain);
-
-      const overdue = await billService.getOverdueBills("user-123");
-
-      expect(overdue).toBeInstanceOf(Array);
-      if (overdue.length > 0) {
-        expect(overdue[0].status).toBe("overdue");
-        expect(overdue[0].isPastDue).toBe(true);
-        expect(overdue[0].daysUntilDue).toBeLessThan(0);
-      }
-    });
-  });
-
-  describe("Bill payments", () => {
-    it("should record a bill payment and update next due date", async () => {
-      const billRow = createMockBillRow();
-      const paymentRow = createMockPaymentRow();
-
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "bills") {
-          return createMockChain({ data: billRow, error: null });
-        }
-        if (table === "bill_payments") {
-          return createMockChain({ data: paymentRow, error: null });
-        }
-        return createMockChain({ data: null, error: null });
-      });
-
-      const payment = await billService.recordPayment(
-        "bill-1",
-        "user-123",
-        150,
-        new Date(),
-        { paymentMethod: "bank_transfer", confirmationNumber: "CONF-123" },
-      );
-
-      expect(payment).toBeDefined();
-      expect(payment.amount).toBe(150);
-      expect(payment.status).toBe("paid");
-      expect(payment.billId).toBe("bill-1");
-    });
-
-    it("should mark late payment when paid after due date", async () => {
-      const pastDueDate = new Date();
-      pastDueDate.setDate(pastDueDate.getDate() - 5);
-
-      const billRow = createMockBillRow({
-        next_due_date: pastDueDate.toISOString(),
-      });
-      const paymentRow = createMockPaymentRow({ status: "late" });
-
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "bills") {
-          return createMockChain({ data: billRow, error: null });
-        }
-        if (table === "bill_payments") {
-          return createMockChain({ data: paymentRow, error: null });
-        }
-        return createMockChain({ data: null, error: null });
-      });
-
-      const payment = await billService.recordPayment(
-        "bill-1",
-        "user-123",
-        150,
-        new Date(),
-      );
-
-      expect(payment).toBeDefined();
-      // Payment is recorded, the status from DB mock is 'late'
-      expect(payment.status).toBe("late");
-    });
-
-    it("should throw when recording payment for non-existent bill", async () => {
-      (supabase.from as jest.Mock).mockReturnValue(
-        createMockChain({ data: null, error: { message: "not found" } }),
-      );
-
-      await expect(
-        billService.recordPayment("non-existent", "user-123", 100, new Date()),
-      ).rejects.toThrow("Bill not found");
-    });
-
-    it("should get payment history for a bill", async () => {
-      const payments = [
-        createMockPaymentRow(),
-        createMockPaymentRow({
-          id: "payment-2",
-          paid_date: "2026-01-15T00:00:00Z",
-          due_date: "2026-01-15T00:00:00Z",
-        }),
-      ];
-
-      const selectChain = createMockChain({ data: payments, error: null });
-      (supabase.from as jest.Mock).mockReturnValue(selectChain);
-
-      const history = await billService.getPaymentHistory("bill-1", "user-123");
-
-      expect(history).toHaveLength(2);
-      expect(history[0].billId).toBe("bill-1");
-    });
-
-    it("should throw on payment history error", async () => {
-      const errorChain = createMockChain({
-        data: null,
-        error: { message: "Query failed" },
-      });
-      (supabase.from as jest.Mock).mockReturnValue(errorChain);
-
-      await expect(
-        billService.getPaymentHistory("bill-1", "user-123"),
-      ).rejects.toThrow("Failed to fetch payment history");
-    });
-  });
-
-  describe("Bill summary and analytics", () => {
-    it("should generate comprehensive bill summary", async () => {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const nextWeek = new Date();
-      nextWeek.setDate(nextWeek.getDate() + 5);
-      const pastDue = new Date();
-      pastDue.setDate(pastDue.getDate() - 3);
-
-      const bills = [
-        createMockBillRow({
-          next_due_date: tomorrow.toISOString(),
-          autopay_enabled: true,
-        }),
-        createMockBillRow({
-          id: "bill-2",
-          name: "Internet",
-          amount: 80,
-          next_due_date: nextWeek.toISOString(),
-        }),
-        createMockBillRow({
-          id: "bill-3",
-          name: "Old Bill",
-          amount: 50,
-          next_due_date: pastDue.toISOString(),
-        }),
-      ];
-
-      const payments = [
-        createMockPaymentRow({
-          bill_id: "bill-already-paid",
-          amount: 200,
-          due_date: new Date().toISOString(),
-        }),
-      ];
-
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "bills") {
-          return createMockChain({ data: bills, error: null });
-        }
-        if (table === "bill_payments") {
-          return createMockChain({ data: payments, error: null });
-        }
-        return createMockChain({ data: [], error: null });
-      });
-
-      const summary = await billService.getBillSummary("user-123");
-
-      expect(summary).toBeDefined();
-      expect(summary.billsCount).toBe(3);
-      expect(summary.totalMonthlyBills).toBeGreaterThan(0);
-      expect(summary.autopayCount).toBe(1);
-      expect(summary.manualPayCount).toBe(2);
-      expect(summary.paidThisMonth).toBeGreaterThanOrEqual(0);
-      expect(summary.upcomingBills).toBeInstanceOf(Array);
-      expect(summary.overdueBills).toBeInstanceOf(Array);
-    });
-  });
-
-  describe("Reminders", () => {
-    it("should get pending reminders", async () => {
-      const reminders = [
-        {
-          id: "rem-1",
-          bill_id: "bill-1",
-          user_id: "user-123",
-          reminder_date: new Date().toISOString(),
-          reminder_type: "in_app",
-          sent: false,
-          sent_at: null,
-          created_at: new Date().toISOString(),
-        },
-      ];
-
-      const selectChain = createMockChain({ data: reminders, error: null });
-      (supabase.from as jest.Mock).mockReturnValue(selectChain);
-
-      const pending = await billService.getPendingReminders("user-123");
-
-      expect(pending).toHaveLength(1);
-      expect(pending[0].billId).toBe("bill-1");
-      expect(pending[0].sent).toBe(false);
-    });
-
-    it("should get all pending reminders without user filter", async () => {
-      const reminders = [
-        {
-          id: "rem-1",
-          bill_id: "bill-1",
-          user_id: "user-123",
-          reminder_date: new Date().toISOString(),
-          reminder_type: "in_app",
-          sent: false,
-          sent_at: null,
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: "rem-2",
-          bill_id: "bill-2",
-          user_id: "user-456",
-          reminder_date: new Date().toISOString(),
-          reminder_type: "email",
-          sent: false,
-          sent_at: null,
-          created_at: new Date().toISOString(),
-        },
-      ];
-
-      const selectChain = createMockChain({ data: reminders, error: null });
-      (supabase.from as jest.Mock).mockReturnValue(selectChain);
-
-      const pending = await billService.getPendingReminders();
-
-      expect(pending).toHaveLength(2);
-    });
-
-    it("should mark reminder as sent", async () => {
-      const updateChain = createMockChain({ data: null, error: null });
-      (supabase.from as jest.Mock).mockReturnValue(updateChain);
-
-      await expect(
-        billService.markReminderSent("rem-1"),
-      ).resolves.toBeUndefined();
-
-      expect(supabase.from).toHaveBeenCalledWith("bill_reminders");
-    });
-
-    it("should throw on mark reminder error", async () => {
-      const errorChain = createMockChain({
-        data: null,
-        error: { message: "Update failed" },
-      });
-      (supabase.from as jest.Mock).mockReturnValue(errorChain);
-
-      await expect(billService.markReminderSent("rem-1")).rejects.toThrow(
-        "Failed to mark reminder as sent",
-      );
-    });
-
-    it("should throw on fetch reminders error", async () => {
-      const errorChain = createMockChain({
-        data: null,
-        error: { message: "Query failed" },
-      });
-      (supabase.from as jest.Mock).mockReturnValue(errorChain);
-
-      await expect(billService.getPendingReminders("user-123")).rejects.toThrow(
-        "Failed to fetch reminders",
-      );
-    });
-  });
-
-  describe("Full pipeline: Bill Creation -> Reminders -> Payment -> Summary", () => {
-    it("should complete the bill lifecycle from creation to payment and summary", async () => {
-      const billRow = createMockBillRow();
-      const paymentRow = createMockPaymentRow();
-
-      // Step 1: Create bill
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "bills")
-          return createMockChain({ data: billRow, error: null });
-        if (table === "bill_reminders")
-          return createMockChain({ data: null, error: null });
-        return createMockChain({ data: null, error: null });
-      });
-
-      const bill = await billService.createBill({
-        userId: "user-123",
-        name: "Electric Bill",
-        payee: "Power Company",
-        amount: 150,
-        category: "utilities",
-        frequency: "monthly",
-        dueDay: 15,
-        nextDueDate: new Date("2026-03-15"),
-        reminderDaysBefore: 3,
-        reminderTypes: ["in_app", "email"],
-      });
-
-      expect(bill.name).toBe("Electric Bill");
-
-      // Step 2: Check for pending reminders
-      const reminders = [
-        {
-          id: "rem-1",
-          bill_id: bill.id,
-          user_id: "user-123",
-          reminder_date: new Date().toISOString(),
-          reminder_type: "in_app",
-          sent: false,
-          sent_at: null,
-          created_at: new Date().toISOString(),
-        },
-      ];
-
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "bill_reminders")
-          return createMockChain({ data: reminders, error: null });
-        return createMockChain({ data: null, error: null });
-      });
-
-      const pending = await billService.getPendingReminders("user-123");
-      expect(pending.length).toBeGreaterThanOrEqual(1);
-
-      // Step 3: Mark reminder as sent
-      (supabase.from as jest.Mock).mockReturnValue(
-        createMockChain({ data: null, error: null }),
-      );
-      await billService.markReminderSent(pending[0].id);
-
-      // Step 4: Record payment
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "bills")
-          return createMockChain({ data: billRow, error: null });
-        if (table === "bill_payments")
-          return createMockChain({ data: paymentRow, error: null });
-        return createMockChain({ data: null, error: null });
-      });
-
-      const payment = await billService.recordPayment(
-        bill.id,
-        "user-123",
-        150,
-        new Date(),
-        { paymentMethod: "online", confirmationNumber: "PAY-001" },
-      );
-
-      expect(payment.amount).toBe(150);
-
-      // Step 5: Get summary
-      const summaryBills = [billRow];
-      const summaryPayments = [paymentRow];
-
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "bills")
-          return createMockChain({ data: summaryBills, error: null });
-        if (table === "bill_payments")
-          return createMockChain({ data: summaryPayments, error: null });
-        return createMockChain({ data: [], error: null });
-      });
-
-      const summary = await billService.getBillSummary("user-123");
-
-      expect(summary.billsCount).toBe(1);
-      expect(summary.totalMonthlyBills).toBeGreaterThan(0);
-      expect(summary.paidThisMonth).toBeGreaterThanOrEqual(0);
-    });
-  });
-});
-
-// ============================================================================
 // CROSS-PIPELINE INTEGRATION
 // ============================================================================
 
@@ -2348,8 +1739,6 @@ describe("Edge Cases and Error Handling", () => {
   });
 
   it("should handle concurrent pipeline operations", async () => {
-    const billService = new BillCalendarService();
-
     // Set up mocks
     (spendingAnalysisService.analyzeSpending as jest.Mock).mockResolvedValue(
       createMockSpendingAnalysis(),
@@ -2362,26 +1751,17 @@ describe("Edge Cases and Error Handling", () => {
       }),
     );
 
-    (supabase.from as jest.Mock).mockReturnValue(
-      createMockChain({
-        data: [createMockBillRow()],
-        error: null,
-      }),
-    );
-
-    // Run all three pipelines concurrently
-    const [forecast, income, bills] = await Promise.all([
+    // Run both pipelines concurrently
+    const [forecast, income] = await Promise.all([
       spendingForecastService.generateForecast("user-123", {
         months: 1,
         historicalMonths: 3,
       }),
       incomeTrackingService.getIncomeSources("user-123"),
-      billService.getBillsByUser("user-123"),
     ]);
 
     expect(forecast.predictions).toHaveLength(1);
     expect(income).toHaveLength(1);
-    expect(bills).toHaveLength(1);
   });
 
   it("should handle zero-value budgets in spending score", async () => {

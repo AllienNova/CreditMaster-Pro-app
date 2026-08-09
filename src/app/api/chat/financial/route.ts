@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { createClient } from "@/lib/supabase/server";
 import { FinancialChatEngine } from "@/lib/ai/financial-chat-engine";
 import { SendMessageRequest } from "@/lib/ai/types/financial-chat.types";
@@ -52,22 +53,8 @@ function checkRateLimit(userId: string): {
  * POST /api/chat/financial
  * Send a message and get AI response
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authenticate user
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: "Authentication required" },
-        { status: 401 },
-      );
-    }
-
     // Check rate limit
     const rateLimit = checkRateLimit(user.id);
     if (!rateLimit.allowed) {
@@ -123,7 +110,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify session belongs to user
+    // Verify session belongs to user (ownership check preserved)
+    const supabase = await createClient();
     const { data: session, error: sessionError } = await supabase
       .from("chat_sessions")
       .select("user_id")
@@ -189,4 +177,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

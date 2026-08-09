@@ -14,11 +14,10 @@
  * @see Phase 2.1: Smart Budget Engine
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
-import { AIMLService } from "@/lib/aiml-service";
-import { ModelRouter, TaskType } from "@/lib/model-router";
+const supabase = getServiceRoleClient();
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import {
   SmartBudget,
   SmartBudgetCategory,
@@ -35,12 +34,6 @@ import {
   CategoryType,
   BUDGET_CATEGORIES,
 } from "./types/budget.types";
-
-// AI Model Configuration
-const AI_MODEL =
-  process.env.AIML_DEFAULT_CHAT_MODEL || "anthropic/claude-4.5-sonnet";
-const AI_REASONING_MODEL =
-  process.env.AIML_REASONING_MODEL || "deepseek/deepseek-r1";
 
 // Cache configuration
 const AI_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
@@ -91,21 +84,6 @@ const DEFAULT_ALLOCATION = {
  * Smart Budget Engine Class
  */
 export class SmartBudgetEngine {
-  private aiService: AIMLService | null = null;
-  private modelRouter: ModelRouter;
-
-  constructor() {
-    this.modelRouter = new ModelRouter();
-
-    // Initialize AI service if API key is available
-    try {
-      if (process.env.AIML_API_KEY) {
-        this.aiService = new AIMLService();
-      }
-    } catch (_error) {
-      // SmartBudgetEngine: AI service not available, using fallback logic
-    }
-  }
 
   /**
    * Generate AI-powered budget based on user preferences and spending history
@@ -134,7 +112,7 @@ export class SmartBudgetEngine {
     let aiGenerated = false;
     let confidence = 75; // Default confidence
 
-    if (this.aiService && transactions.length >= 10) {
+    if (transactions.length >= 10) {
       try {
         const aiRecommendations = await this.getAIRecommendations(
           preferences,
@@ -335,7 +313,7 @@ export class SmartBudgetEngine {
     }
 
     // 3. Get AI-powered recommendations if available
-    if (this.aiService && recommendations.length > 0) {
+    if (recommendations.length > 0) {
       try {
         const aiRecommendations = await this.getAIAdjustmentRecommendations(
           userId,
@@ -721,9 +699,6 @@ export class SmartBudgetEngine {
     spendingPatterns: Record<string, any>,
     categories: SmartBudgetCategory[],
   ): Promise<{ confidence: number; recommendations: any[] }> {
-    if (!this.aiService) {
-      throw new Error("AI service not available");
-    }
 
     // Check cache
     const cacheKey = `budget-ai-${JSON.stringify({ preferences, spendingPatterns })}`;
@@ -740,8 +715,8 @@ export class SmartBudgetEngine {
     );
 
     try {
-      const response = await this.aiService.chat(
-        AI_REASONING_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.REASONING,
         [
           {
             role: "system",
@@ -1071,7 +1046,6 @@ Provide recommendations in JSON format:
     analysis: BudgetAnalysis,
     existingRecommendations: BudgetRecommendation[],
   ): Promise<BudgetRecommendation[]> {
-    if (!this.aiService) return [];
 
     try {
       const prompt = `
@@ -1105,8 +1079,8 @@ Provide 2-3 high-impact recommendations in JSON format:
 }
 `.trim();
 
-      const response = await this.aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [
           {
             role: "system",

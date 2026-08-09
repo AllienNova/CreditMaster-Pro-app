@@ -61,14 +61,15 @@ Each card contains:
 | 6 | External Integrations & Monetization | 0 | 13 | 13 |
 | **Total** | | **80** | **45** | **125** |
 
-### Task Status Summary (Verified 2026-03-01, VERSION-010)
+### Task Status Summary (Re-baselined 2026-05-03, VERSION-013)
 
-| Status | Count | % |
-|--------|-------|---|
-| **DONE** | 125 | 100% |
-| **IN_PROGRESS** | 0 | 0.0% |
-| **NOT_STARTED** | 0 | 0.0% |
-| **Total** | 125 | 100% |
+> The prior "125/125 DONE / 100%" status (VERSION-010 through VERSION-012) was invalidated by the 9-domain audit. All 125 tasks are now NEEDS_VERIFICATION pending TASK-PRE-01 re-run; some are explicitly REOPENED based on audit findings (see `docs/ssot/traceability_matrix.md` § 0). Wave 7 adds 59 new remediation tasks.
+
+| Wave | Status | Count | Notes |
+|------|--------|------:|-------|
+| 0-6 (originals) | NEEDS_VERIFICATION | 125 | Re-verified per task during Wave 7; some explicitly REOPENED |
+| 7 (Security & Correctness) | NOT_STARTED | 59 | See Wave 7 section below |
+| **Total** | **mixed** | **184** | Wave 7 must close before any Wave 8+ feature work |
 
 | Wave | DONE | IN_PROGRESS | NOT_STARTED | Total |
 |------|------|-------------|-------------|-------|
@@ -5583,3 +5584,282 @@ AFF-04 (compliance) ── independent, runs parallel
 
 *Generated: 2026-02-28 | Source: PLAN-EXTRACTION-LEDGER.md (278 actionable EXT items), SSOT.md Section 16 (80 original tasks), dependency_graph.md, build_order_blueprint.md*
 *This document is the single executable reference for all Fynvita implementation work. Do not create separate planning documents.*
+
+---
+
+# Wave 7 — Security & Correctness Remediation (VERSION-013)
+
+> **Opened 2026-05-03** in response to a comprehensive 9-domain code review (27 reviewer agents).
+> **Source of finding IDs**: `docs/ssot/gap_analysis.md` (FND-001 through FND-071).
+> **Reference fix template**: commit `d64e8d5` (atomic Postgres RPC + UNIQUE constraint + REVOKE/GRANT).
+> **Scope**: ~60 tasks, estimated 4 weeks, parallel SEC / BE / MOB / DEVOPS streams.
+> **Branch policy** (per user direction): keep `feat/asset-system-regen` as base; do NOT abandon. Branch hygiene tracked under TASK-PRE-06.
+> **Owner-types**: SEC=security, BE=backend, FE=frontend, MOB=mobile, DEVOPS=devops, ARCH=architect, QA=test-writer.
+> **No new feature work** (Waves 8+) starts until this wave's exit gates pass.
+
+## Wave 7 Summary
+
+| Phase | Window | Stream | Task count |
+|-------|--------|--------|-----------:|
+| 0 — Prereqs | Week 0 (2-3 days) | ARCH/DEVOPS | 6 |
+| 1 — Auth/RBAC | Weeks 1-2 | SEC + BE | 12 |
+| 2 — Webhooks + tier | Weeks 2-3 | BE | 7 |
+| 3 — Money / Commerce | Week 3 | BE | 7 |
+| 4 — Mock-data sweep | Weeks 3-4 | BE + MOB | 6 |
+| 5 — Compliance + AI hygiene | Week 4 | BE + SEC | 5 |
+| 6 — Mobile hardening | Week 4 | MOB | 7 |
+| 7 — IDOR sweep (parallelizable) | Weeks 2-4 | SEC + BE | 5 |
+| **TOTAL** | **4 weeks** | mixed | **59** |
+
+> **Task count revised 2026-05-03 post-QA**: was "~55"; now **59** after adding TASK-PRE-07, TASK-AUTH-04-staging, TASK-INV-W7-01, TASK-INV-W7-02. Mobile IDs renamed `TASK-MOB-W7-01..07` to avoid collision with Wave 4 `TASK-MOB-01..07`.
+
+---
+
+## Wave 7 Test-Class Requirements (regression-prevention spec)
+
+> Added 2026-05-03 in response to QA finding: the existing 13,585 Jest tests did not catch any of the 33 CRITICAL findings because the suite is structurally happy-path against mocked dependencies. Each phase below MUST land its named test class — a phase without its test class is NOT_STARTED regardless of code-change completeness. These 723 tests are the new regression floor.
+
+| Phase | Required test class | Min new tests | npm script | CI audit script |
+|-------|---------------------|--------------:|------------|-----------------|
+| 1 AUTH | negative-auth (anonymous → 401, wrong-role → 403) per route | 568 | `test:auth-negative` | `audit:auth` |
+| 2 WBH  | webhook event-id replay × 100 + tier-map exhaustion over `SUBSCRIPTION_PLANS` | 13 | `test:webhook-idempotency` | `audit:tier-map` |
+| 3 MNY  | Stripe SDK call asserts integer cents = `Math.round(input * 100)`; referral concurrency (50 calls vs `max_uses=10` → exactly 10 succeed) | 13 | `test:money` | `audit:money` |
+| 4 MOK  | DB-was-called assertion per admin/billing/analytics route (Supabase mock throws on unexpected query; no silent fallback) | 40 | `test:no-mock-fallback` | `audit:mocks` |
+| 5 CMP  | PII corpus (≥30 SSN/card/DOB strings) + prompt-injection corpus (≥15 jailbreak payloads) + cold-start consent persistence + cascade across all FK tables | 47 | `test:compliance` | `audit:cascade` |
+| 6 MOB  | production-bundle grep asserts `seedUser`/`__DEV__`-auth absent; `Linking.openURL` rejects `javascript:`/`file:`/`data:` payloads | 12 | `test:mobile-security` | `audit:bundle` |
+| 7 IDR  | cross-user 403 per service method that takes a resource ID | 30 | `test:idor` | `audit:idor` |
+| **Total new tests** | | **723** | | |
+
+**Each `audit:*` script is a CI-required check.** PRs that introduce a new API route, money math, webhook handler, or mobile auth touch without the corresponding test class fail merge. PR template adds checkboxes: "[ ] Added negative-auth test for new route. [ ] Asserted integer cents at Stripe boundary. [ ] Added replay×N idempotency test for new webhook handler. [ ] Added cross-user 403 test for new service method."
+
+---
+
+## Phase 0 — Immediate Prereqs (Week 0, 2-3 days)
+
+### TASK-PRE-01 — Honest re-baseline
+- **Size**: M | **Owner**: ARCH | **Depends on**: none
+- **Output**: `docs/ssot/health_metrics.md` updated with re-run results; `SSOT.md` banner "Wave 7 in flight"; `CLAUDE.md` "Phase: All 7 waves DONE" line removed; all 125 prior tasks marked NEEDS_VERIFICATION except those with linked passing integration tests.
+- **Acceptance**: `npm test`, `npx tsc --noEmit`, `npm run build`, `npm audit` re-executed and committed; `gap_analysis.md` regenerated; CI badge wired so `health_metrics.md` becomes machine-generated.
+
+### TASK-PRE-02 — Branch + freeze policy
+- **Size**: S | **Owner**: DEVOPS | **Depends on**: none
+- **Output**: `remediation/wave-7-*` branch namespace; main protected, only `hotfix/*` + `remediation/*` allowed; PR template requires "FND-### addressed" field.
+- **Acceptance**: GitHub branch protection rules updated; CODEOWNERS gates `src/lib/auth/`, `src/lib/security/`, `src/lib/commerce/`, `src/lib/payment/`, `supabase/migrations/` to a SEC reviewer.
+
+### TASK-PRE-03 — Feature flag infrastructure
+- **Size**: M | **Owner**: BE | **Depends on**: TASK-PRE-01
+- **Output**: `src/lib/flags/` with Supabase-backed flag table + typed reader; supports kill-switch on auth, webhooks, payouts.
+- **Acceptance**: 1 unit test + 1 integration test; flag read cached <1s; admin can flip via Supabase dashboard.
+
+### TASK-PRE-04 — Communication + incident channel
+- **Size**: S | **Owner**: ARCH | **Depends on**: none
+- **Output**: `SECURITY.md` added; private channel "wave-7-remediation"; daily standup cadence; rollback playbook per phase.
+- **Acceptance**: `SECURITY.md` merged; rollback playbook reviewed by SEC owner.
+
+### TASK-PRE-05 — Lint guards (mock-data + secrets) bootstrap
+- **Size**: M | **Owner**: DEVOPS | **Depends on**: TASK-PRE-01
+- **Output**: ESLint custom rule `no-math-random-in-prod` (excludes `__tests__`, `lib/random`); ESLint built-in `no-restricted-imports` blocking `**/__mocks__/**`, `**/*.fixture.*` outside test files; CI step `rg -n 'Math\.random\(|faker\.|mockData|MOCK_' src/ --glob '!**/__tests__/**' --glob '!**/*.test.*'`.
+- **Acceptance**: rules land as warning first, escalate to error after Phase 4.
+
+### TASK-PRE-06 — Branch hygiene on `feat/asset-system-regen`
+- **Size**: M | **Owner**: DEVOPS + ARCH | **Depends on**: TASK-PRE-02
+- **Output**: 24MB `strativion-autonomous-trading-package.zip` removed from tree (committed deletion, then `git filter-repo` consultation); chunked-push procedure documented in `SECURITY.md`; branch decomposed into reviewable sub-PRs where possible.
+- **Acceptance**: `du -sh strativion-autonomous-trading-package.zip` returns "No such file"; remediation PRs pass review without reviewer-context overflow on the diff.
+- **Notes**: User chose to keep this branch as base rather than cut from main. This task ensures it's reviewable.
+
+### TASK-PRE-07 — Security-scoped re-review of 92 prior commits on `feat/asset-system-regen`
+- **Size**: M | **Owner**: SEC + ARCH | **Depends on**: TASK-PRE-02
+- **Output**: `git log feat/asset-system-regen ^main --stat --since=<branch-cut>` reviewed; every commit touching `src/lib/auth/`, `src/lib/security/`, `src/lib/payment/`, `src/lib/commerce/`, `src/middleware.ts`, `supabase/migrations/` re-read; findings filed as new FND-### in `gap_analysis.md` if any latent issues surface.
+- **Acceptance**: SEC sign-off comment on a tracking issue listing each scoped commit hash + verdict (CLEAN / FOLLOWUP / RE-FIX); zero unreviewed commits remain on the branch in those paths. The 9-domain audit covered current `src/` state, not the deltas of these 92 commits — this task closes that gap.
+- **Notes**: Added 2026-05-03 in response to QA finding (HIGH #1). Without this, an issue introduced and later masked on this branch could ship undetected even after Wave 7 closes.
+
+**Phase 0 gate**: re-baseline numbers published; freeze active; flags + lint guards live; branch hygiene addressed; 92-commit re-review signed off.
+
+---
+
+## Phase 1 — Auth/RBAC Rebuild (Weeks 1-2)
+
+| ID | Title | Size | Owner | Depends on | Closes |
+|----|-------|------|-------|------------|--------|
+| TASK-AUTH-01 | Remove `user_metadata` role read in `src/lib/auth/rbac.ts` | S | SEC | PRE-01 | FND-005 |
+| TASK-AUTH-02 | Remove admin email whitelist + enterprise=admin grant | S | SEC | AUTH-01 | FND-003, FND-004 |
+| TASK-AUTH-03 | Audit all 284 API routes → wrap in existing `withAuth` (sub-batched by domain) | L | SEC + BE | AUTH-01, AUTH-02 | FND-006, FND-041, FND-042, FND-043, FND-044, FND-049, FND-050, FND-051 (per-domain sub-batches below) |
+| TASK-AUTH-04 | Middleware `/api/*` deny-by-default with explicit `PUBLIC_ROUTES.ts` allowlist | M | SEC | AUTH-03, AUTH-04-staging | FND-001 |
+| TASK-AUTH-04-staging | Synthetic monitoring on staging covering all webhooks (Stripe, Plaid, Affiliate) + signup + login + OAuth callbacks before deny-by-default flips to prod | M | DEVOPS + SEC | AUTH-04 prep | (preventive — protects AUTH-04 rollout) |
+| TASK-AUTH-05 | Remove `AIML_API_KEY` reuse as inbound auth | S | SEC | AUTH-03 | FND-002 |
+| TASK-AUTH-06 | Consolidate to single `redis-rate-limiting.ts`; delete the other three | M | BE | PRE-03 | FND-013 |
+| TASK-AUTH-07 | Replace in-memory session `Map` with Redis-backed store (or remove) | M | BE | AUTH-06 | FND-007 |
+| TASK-AUTH-08 | `crypto.timingSafeEqual` for all secret comparisons (API keys, webhook secrets, CSRF) | S | SEC | none | FND-011 |
+| TASK-AUTH-09 | CSRF secret hard-fail on missing env in production | S | SEC | none | FND-008 |
+| TASK-AUTH-10 | Backup-code TOCTOU fix via single Postgres RPC + `FOR UPDATE` (template `d64e8d5`) | M | SEC + BE | none | FND-010 |
+| TASK-AUTH-11 | Atomic signup: profile insert in DB trigger or rollback on failure | M | BE | AUTH-03 | FND-009 |
+| TASK-AUTH-12 | Reconcile two role enumerations (`api-guard.ts` vs `rbac.ts`) — single source of role types | S | SEC | none | FND-012 |
+
+**TASK-AUTH-03 sub-batches** (parallelizable, each PR-sized so the L-task does not deadlock downstream phases):
+- **AUTH-03a — `src/app/api/admin/**`** (closes **FND-049, FND-050, FND-051**) — admin audit POST, subscriptions DELETE, disputes PATCH; ~25 routes; SEC review required
+- **AUTH-03b — `src/app/api/notifications/**`** (closes **FND-041, FND-042, FND-043, FND-044**) — GET/POST/PATCH/DELETE preferences/push subscribe + send; ~12 routes
+- **AUTH-03c — `src/app/api/financial/**`, `src/app/api/credit/**`, `src/app/api/documents/**`** — bulk wrap; ~80 routes
+- **AUTH-03d — `src/app/api/strategies/**`** (closes **FND-006**) — strategies/recommend route + siblings; ~6 routes
+- **AUTH-03e — `src/app/api/trading/**`, `src/app/api/investments/**`** — broker-touching routes; SEC review required; ~35 routes
+- **AUTH-03f — remaining `src/app/api/**`** — sweep; ~120 routes
+
+**Phase 1 gate**: AUTH-03 audit script (`scripts/verify-auth-coverage.ts`) in CI exits 0 (every route either `withAuth`-wrapped or in `PUBLIC_ROUTES.ts` with justification comment); lint rule blocks new routes lacking `withAuth`; SEC review sign-off on `PUBLIC_ROUTES.ts`; **`npm run test:auth-negative` reports ≥568 passing tests** (one anonymous + one wrong-role assertion per route); TASK-AUTH-04-staging synthetic monitoring green for 24h before AUTH-04 ships to prod.
+
+---
+
+## Phase 2 — Webhooks + Tier Mapping (Weeks 2-3)
+
+| ID | Title | Size | Owner | Depends on | Closes |
+|----|-------|------|-------|------------|--------|
+| TASK-WBH-01 | `processed_webhook_events(provider, event_id, processed_at)` UNIQUE table; helper `markWebhookProcessed()` | M | BE | PRE-01 | FND-022 |
+| TASK-WBH-02 | Fix `getTierFromPriceId` — drive from `SUBSCRIPTION_PLANS`; default = throw, not Free | S | BE | WBH-01 | FND-018 |
+| TASK-WBH-03 | Remove `billing-profile-store` mock + `createSeedProfile` Visa 4242; read via Stripe Customer | M | BE | WBH-02 | FND-016, FND-017 |
+| TASK-WBH-04 | Rethrow swallowed webhook errors; structured logging via existing project logger | M | BE | WBH-01 | FND-014, FND-015 |
+| TASK-WBH-05 | Webhook signature verification audit on all inbound webhooks; `timingSafeEqual` | S | SEC | AUTH-08, AUTH-09 | (preventive) |
+| TASK-WBH-06 | Server-authoritative `successUrl`/`cancelUrl`/`priceId`/`trialDays` in checkout route | S | BE | WBH-02 | FND-019, FND-020, FND-021 |
+| TASK-WBH-07 | Subscription tier backfill (per user direction — no live users yet, but lock down for launch) | M | BE | WBH-02 | (defensive) |
+
+**Phase 2 gate**: Stripe replay test passes (same `event.id` × 100 → exactly one side-effect); price-tier map covers 100% of env-listed price IDs (validator at boot AND `npm run audit:tier-map` exits 0 in CI); chaos test (force DB error) → Stripe gets 500 → retries; **`npm run test:webhook-idempotency` reports ≥13 passing**.
+
+---
+
+## Phase 3 — Money Correctness + Commerce (Week 3)
+
+| ID | Title | Size | Owner | Depends on | Closes |
+|----|-------|------|-------|------------|--------|
+| TASK-MNY-01 | Stripe payout cents conversion (`Math.round(amount * 100)`) at both Stripe call sites; regression test | S | BE | PRE-01 | FND-024 |
+| TASK-MNY-02 | Atomic `increment_referral_use(code, user_id)` RPC with row lock; replaces read-modify-write | M | BE | WBH-01 | FND-027 |
+| TASK-MNY-03 | Self-referral guard at service + RPC layer | S | BE | MNY-02 | FND-027 |
+| TASK-MNY-04 | `Idempotency-Key` on every Stripe transfer; collapse two parallel payout codepaths | M | BE | WBH-01 | FND-026 |
+| TASK-MNY-05 | In-memory `revenueTracker` → `revenue_events` table; service writes through | M | BE | PRE-01 | FND-025 |
+| TASK-MNY-06 | `Money` branded type (`Cents` integer-only) + ESLint rule on `*amount*\|*price*\|*payout*` field names | M | ARCH + BE | MNY-01 | (preventive) |
+| TASK-MNY-07 | Server-side commission recalculation in affiliate webhook (ignore inbound `commission`) | S | BE | WBH-01 | FND-028 |
+| TASK-INV-W7-01 | Fix div-by-zero in `calculateCalmarRatio`/`calculateInformationRatio` (guard `maxDrawdown=0`, `trackingError=0`); regression test with three boundary cases | S | BE | PRE-01 | FND-031 |
+| TASK-INV-W7-02 | Replace fabricated portfolio analytics constants (`beta=1.0`, `correlation=0.85`, `S&P=10%`) with real computed values OR explicit `null + "data unavailable"` UI state; lint rule blocks magic-constant returns from analytics services | M | BE + ARCH | PRE-05 | FND-032 |
+
+**Phase 3 gate**: Money lint rule active (`Cents` branded type enforced); revenue numbers match Stripe dashboard within $0; Stripe replay tests green; **`npm run test:money` reports ≥13 passing** (every Stripe SDK mock asserts `amount` is integer cents = `Math.round(input * 100)`; referral concurrency test: 50 parallel calls vs `max_uses=10` → exactly 10 succeed); investments boundary tests pass.
+
+---
+
+## Phase 4 — Mock-Data Sweep (Week 3-4)
+
+| ID | Title | Size | Owner | Depends on | Closes |
+|----|-------|------|-------|------------|--------|
+| TASK-MOK-01 | Admin analytics + stats + audit + logs: replace `Math.random()` and hardcoded fallbacks with real DB queries | M | BE | MNY-05 | FND-052, FND-053 |
+| TASK-MOK-02 | `billing-profile` fake-card removal (sourced from Stripe `payment_methods.retrieve`) | S | BE | WBH-03 | (sub-finding of FND-016) |
+| TASK-MOK-03 | Debt API real CRUD (`src/app/api/financial/debt/**`) | L | BE | AUTH-03 | (review-flagged mock) |
+| TASK-MOK-04 | AI-insight routes real wiring (5 routes) | M | BE | AUTH-03 | (review-flagged mock) |
+| TASK-MOK-05 | Mobile dispute screen real wiring (consume `useDisputeStore`); collapse `dispute/`+`disputes/` segments | M | MOB | AUTH-03 | FND-068 |
+| TASK-MOK-06 | Lint rule escalation (PRE-05 warnings → errors); CI blocks new violations | S | DEVOPS | MOK-01..05 | (preventive) |
+
+**Phase 4 gate**: mock-data lint rules at error level; `npm run audit:mocks` greps for `Math.random|faker\.|Visa.*4242|cus_test|MOCK_` outside test paths and returns zero matches; **`npm run test:no-mock-fallback` reports ≥40 passing** (each admin/billing/analytics route has a `*.db-required.test.ts` asserting Supabase mock was called — no silent fallback to fixtures).
+
+---
+
+## Phase 5 — Compliance + AI Hygiene (Week 4)
+
+| ID | Title | Size | Owner | Depends on | Closes |
+|----|-------|------|-------|------------|--------|
+| TASK-CMP-01 | `ConsentManagementService` DB persistence (replace in-memory Map; route to `consent_records` table) | M | BE | PRE-01 | FND-057 |
+| TASK-CMP-02 | `sendBreachNotification` wired to Resend + `breach_notifications` table; admin trigger endpoint | M | BE | AUTH-03 | FND-056 |
+| TASK-CMP-03 | `delete_user_data_cascade` RPC expanded (audit via `information_schema` for missing user-FK tables) | M | BE | CMP-01 | FND-058 |
+| TASK-CMP-04 | `ModelRouter` enforcement: 14 callers migrated; lint rule blocks direct `AIMLService` usage; client-supplied `model` removed; voice TTS auth + model whitelist | M | BE | AUTH-05 | FND-059, FND-060, FND-061 |
+| TASK-CMP-05 | `src/lib/aiml/sanitizer.ts` strips PII (SSN, account numbers, DOB) before outbound; wraps `ModelRouter`; prompt-injection guards on user-controlled fields | M | SEC | CMP-04 | FND-062, FND-063 |
+
+**Phase 5 gate**: cascade test green (create user with rows in all FK tables, run cascade, assert 0 remaining); `npm run audit:cascade` introspects `information_schema.referential_constraints` and finds zero user-FK tables missing from the cascade RPC's known list; **`npm run test:compliance` reports ≥47 passing** (PII corpus ≥30 patterns; prompt-injection corpus ≥15 jailbreak payloads asserts system-prompt unchanged; cold-start consent persistence test: write → recreate service instance → read same value); breach-notification end-to-end smoke test on staging fires real Resend email before launch.
+
+---
+
+## Phase 6 — Mobile Hardening (Week 4)
+
+| ID | Title | Size | Owner | Depends on | Closes |
+|----|-------|------|-------|------------|--------|
+| TASK-MOB-W7-01 | `expo-secure-store` migration for biometric flag, push token, and any auth-related AsyncStorage keys | M | MOB | none | FND-069 |
+| TASK-MOB-W7-02 | `Linking.openURL` scheme allowlist wrapper (https only, allowlist) | S | MOB | none | FND-070 |
+| TASK-MOB-W7-03 | `npm audit fix` in `mobile-app/` (handlebars/node-forge/lodash CVEs) | S | MOB | none | FND-065 |
+| TASK-MOB-W7-04 | Delete deprecated `financialStore`; migrate 5 callers to modular stores | S | MOB | none | FND-066, FND-067 |
+| TASK-MOB-W7-05 | Normalize AsyncStorage key prefixes to `@fynvita/<domain>/<key>`; lint rule warns on bare keys | S | MOB | MOB-W7-01 | (brand migration cleanup) |
+| TASK-MOB-W7-06 | Remove `__DEV__` auth bypass in `authStore.ts`; replace with separate `DevAuthProvider` excluded from production bundle | S | MOB | none | FND-064 |
+| TASK-MOB-W7-07 | Replace bare `fetch()` in mobile API clients with `api.get/post()` from `client.ts` (auto-attaches Bearer) | S | MOB | AUTH-03 | FND-071 |
+
+> **ID rename note**: these were originally `TASK-MOB-01..07` but collided with Wave 4 mobile tasks of the same IDs (Mobile Test Coverage Foundation, Mobile Trading Screens, Mobile Biometric Auth, Mobile Deep Linking, Mobile-Web Parity, Mobile UX Polish, App Store Submission). Renamed `TASK-MOB-W7-01..07` 2026-05-03 post-QA to disambiguate.
+
+**Phase 6 gate**: mobile `npm audit --audit-level=high` exits 0; SecureStore audit script in CI; **`npm run test:mobile-security` reports ≥12 passing** (production-bundle grep asserts `seedUser`/`__DEV__`-auth absent via `mobile-app/scripts/audit-bundle.sh` running `npx expo export --dev=false` then grepping `dist/`; Linking allowlist rejects `javascript:`/`file:`/`data:` payloads).
+
+---
+
+## Phase 7 — IDOR Sweep (parallelizable across Weeks 2-4)
+
+| ID | Title | Size | Owner | Depends on | Closes |
+|----|-------|------|-------|------------|--------|
+| TASK-IDR-01 | Audit script: every Supabase query has `.eq('user_id', ...)` or RLS proof; CI runs script; new violations block merge | M | SEC | PRE-05 | (detection) |
+| TASK-IDR-02 | `portfolio-service` IDOR fixes; analytics routes pass `user.id`; DELETE atomicity | M | BE | IDR-01 | FND-030, FND-034 |
+| TASK-IDR-03 | `plaid-service` IDOR fixes (`getTransactions`, `getAccessToken` user-scoped); Plaid token out of GET query | M | BE | IDR-01 | FND-036, FND-037, FND-038 |
+| TASK-IDR-04 | `notification-service-db` IDOR fixes (`markAsRead`, `deleteNotification` filter by user_id) | M | BE | IDR-01 | FND-046 |
+| TASK-IDR-05 | `admin/disputes` PATCH whitelist updatable fields with Zod schema | S | SEC | AUTH-03 | FND-054 |
+
+**Phase 7 gate**: IDOR audit script in CI (parses `src/lib/**` for Supabase query chains lacking `.eq('user_id', ...)` or a `// RLS-enforced: <table>` comment referencing a verified RLS policy); 0 violations; **`npm run test:idor` reports ≥30 passing** (every service method that takes a resource ID has a `*.idor.test.ts` invoking it as user A with user B's resource ID and asserting throw or empty result). Note: TASK-IDR-02..05 may begin against the manual list (FND-030, FND-034, FND-036, FND-037, FND-038, FND-046, FND-054) without waiting on IDR-01 productionization, to avoid IDR-01 slippage blocking the whole phase.
+
+---
+
+## Phase 8 — Multi-Provider Payments Surface (TrueLayer + Stripe), M1 scope
+
+> Added 2026-08-01. See **ADR-0011**. Until then this surface — `payment-router`,
+> `payouts/payout-service`, `connectors/banking` — appeared in this plan **zero
+> times** despite being built: ~2,000 lines across three subsystems, no routes,
+> no credentials, no table for the router. The audit that opened it found
+> `payments` is a table-name collision (a Stripe *invoice* ledger vs a
+> multi-provider payment *attempt*), which accounts for all 11 remaining
+> `audit:phantom-columns` hits.
+
+| ID | Title | Size | Owner | Depends on | Closes |
+|----|-------|------|-------|------------|--------|
+| TASK-PAY-01 | Rename `payments` → `subscription_invoices` (its true meaning); repoint `stripe-service.ts:717` write + `admin/metrics/route.ts:53` read; migration tolerates live-schema drift per Gate C | S | BE | — | (collision) |
+| TASK-PAY-02 | Provider-agnostic `payments` table for the router (`provider`, `provider_payment_id`, `amount_cents`, `type`, `method`, `status`, `metadata`); RLS + service_role grants; UNIQUE `(provider, provider_payment_id)`; register in erasure cascade | M | BE | PAY-01 | 11 phantom-column hits |
+| TASK-PAY-03 | Router money types → `Cents` branded type; `amount: number` at `payment-router.ts:116` is unit-less today | S | BE | PAY-02, MNY-06 | (preventive) |
+| TASK-BNK-01 | Generalise `plaid_items` → `bank_connections` (`provider` discriminator, per-provider credential, `consent_expires_at`); add `provider` + `connection_id` to `financial_accounts`; repoint `plaid-service` + `plaid-webhook-handler` | L | BE + ARCH | — | (aggregation storage) |
+| TASK-BNK-02 | pgcrypto encryption at rest for `bank_connections.access_token`, key in Doppler; preserves existing RLS-zero-policy + service_role-only posture | M | SEC + BE | BNK-01 | (defence in depth) |
+| TASK-PAY-04 | Router pay-in idempotency keys + webhook-driven state. **Pay-in has none today** — the only `idempotencyKey` usages in `src/lib/commerce` are the two in `payout-service` | M | BE | PAY-02 | (double-charge risk) |
+| TASK-PAY-05 | TrueLayer webhook route (`TRUELAYER_WEBHOOK_SECRET` signature verification) | M | BE | PAY-04 | — |
+| TASK-PAY-06 | Reconciliation job: ledger vs provider; a mismatch alerts rather than silently diverging | M | BE | PAY-05 | — |
+| TASK-PAY-07 | Provider **sandbox** integration tests in CI with recorded fixtures — TrueLayer PIS payment + webhook, Stripe Connect transfer + webhook | L | BE + QA | PAY-06, **operator creds** | (definition of done) |
+| TASK-PAY-08 | Wire routes + triggers for all three flows | L | BE | PAY-07, **operator licences** | — |
+
+**Operator-gated preconditions (engineering cannot clear these):**
+
+1. Written confirmation from **TrueLayer** (Fynvita as agent under their PIS authorisation) and **Stripe** (Connect for partner payouts). Their contractual conditions become build requirements.
+2. Seven `TRUELAYER_*` secrets into Doppler — incl. `TRUELAYER_PRIVATE_KEY` + `TRUELAYER_SIGNING_KEY_ID` (JWS signing) — plus sandbox accounts.
+3. `.env.example` entries — currently none.
+
+**Phase 8 gate**: `audit:phantom-columns` reports 0 hits; `audit:idor` 0 open; erasure coverage guard green with `payments` + `bank_connections` registered; `npm run test:payments-sandbox` green against both provider sandboxes; reconciliation reports 0 drift over a sandbox run. **TASK-PAY-07 and -08 do not start until all three operator preconditions are met.** Mocked-SDK unit tests are explicitly NOT sufficient evidence here — that standard is what let FND-024 (dollars-as-cents, 1% payout) and B1 ($50 payout netting $0) through a green suite.
+
+---
+
+## Wave 7 Exit Criteria (gate to allow Wave 8+ feature work)
+
+1. **All 33 CRITICAL findings have linked closed task IDs.** Explicit list (not a range), reconciled against `gap_analysis.md` § 2 severity column on 2026-05-16 (TASK-PRE-01): FND-001/002/003/004/005/006 (Phase 1 + AUTH-03 sub-batches); FND-014/015/016/017 (Phase 2); FND-024/025/026 (Phase 3); FND-030 (Phase 7); FND-031/032 (Phase 3 INV-W7); FND-041/042/043/044 (AUTH-03b); FND-049/050/051 (AUTH-03a); FND-052/053 (Phase 4); FND-056/057/058 (Phase 5); FND-064 (Phase 6 MOB-W7-06); FND-065/066/067 (Phase 6 MOB-W7-03/04); FND-068 (Phase 4 MOK-05). Total = 33.
+   > **TASK-PRE-01 reconciliation note (2026-05-16):** The prior list was labelled "33 CRITICAL" but enumerated 32 entries, and was malformed in two ways. (a) It wrongly included **FND-018** and **FND-027**, both of which are severity **H** (High) in the `gap_analysis.md` register, not Critical — they have been removed from this Critical list (they remain tracked as HIGH and are still closed by TASK-WBH-02 and TASK-MNY-02/03 respectively). (b) It omitted three genuine CRITICALs — **FND-065, FND-066, FND-067** (all mobile: handlebars CVE chain, deprecated `financialStore` divergence) — which have been added. Net: −2 (mis-severitied), +3 (omitted) = the explicit list now enumerates exactly 33 register-confirmed CRITICALs, matching the "33 CRITICAL" label. The label was correct; the list was wrong.
+2. CI gates active: `audit:auth`, `audit:idor`, `audit:mocks`, `audit:money`, `audit:tier-map`, `audit:cascade`, `audit:bundle`, `npm audit` (web + mobile), webhook idempotency replay test, `audit:no-seedUser-in-prod-bundle`.
+3. SEC sign-off on TASK-AUTH-03 (each of a-f sub-batches), TASK-AUTH-04 + TASK-AUTH-04-staging rollout, TASK-WBH-05, TASK-CMP-05, TASK-IDR-01, TASK-PRE-07 (92-commit re-review).
+4. Coverage re-baseline ≥80% on remediated modules (per global CLAUDE.md gate); mobile parity tracked separately under TASK-MOB-W7-01..07.
+5. `SSOT.md`, `health_metrics.md`, `gap_analysis.md` updated to reflect new state; "All waves DONE" status restored only after gate passes — never via test pass count alone.
+6. **≥723 new tests across the 7 phase-aligned test classes are green** (per "Wave 7 Test-Class Requirements" table); each `audit:*` script is a CI-required check; PR template's "FND-### addressed" field + 4 test-class checkboxes block merge.
+7. PR template additions are live: "[ ] If this PR adds a new API route, I added a `*.auth.test.ts`. [ ] If this PR touches money math, I asserted integer cents at the SDK boundary. [ ] If this PR adds a webhook handler, I added a replay×N idempotency test. [ ] If this PR adds a service method that takes a resource ID, I added a cross-user 403 test." Reviewer must reject PRs without checked boxes.
+
+---
+
+## Wave 7 Status (Live)
+
+| Phase | Status | % Complete |
+|-------|--------|-----------:|
+| 0 — Prereqs | NOT_STARTED | 0% |
+| 1 — Auth/RBAC | NOT_STARTED | 0% |
+| 2 — Webhooks + tier | NOT_STARTED | 0% |
+| 3 — Money + Commerce | NOT_STARTED | 0% |
+| 4 — Mock-data sweep | NOT_STARTED | 0% |
+| 5 — Compliance + AI | NOT_STARTED | 0% |
+| 6 — Mobile hardening | NOT_STARTED | 0% |
+| 7 — IDOR sweep | NOT_STARTED | 0% |
+| **Wave 7 overall** | **NOT_STARTED** | **0%** (commit `d64e8d5` is template, not part of Wave 7 task closure) |
+
+**Note on prior wave status**: All 125 tasks from Waves 0-6 marked DONE in VERSION-010 are now flagged NEEDS_VERIFICATION pending re-audit. Specific reopened tasks: TASK-NTF-03 (notifications domain entirely unauth'd), TASK-ADM-03 (3 admin endpoints unauth'd, `Math.random()` analytics). See `docs/ssot/gap_analysis.md` § 4 for full false-positive log.

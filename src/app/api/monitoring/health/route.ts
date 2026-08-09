@@ -1,24 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withRole, type AuthedUser } from "@/lib/auth/api-guard";
 import { RealtimeMonitoringService } from "@/lib/monitoring/real-time-monitoring";
 import { JobScheduler } from "@/lib/automation/job-scheduler";
 
 /**
  * GET /api/monitoring/health
- * Get system health metrics
+ * Get system health metrics (admin only)
  */
-export async function GET(request: NextRequest) {
+export const GET = withRole(
+  "admin",
+  async (_request: NextRequest, _user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check if user has admin permissions
-    const isAdmin = rbac.hasPermission(validation.user, "admin:analytics");
+    // Route is admin-gated by withRole("admin"); detailed metrics are
+    // always included for the authenticated admin.
+    const isAdmin = true;
 
     // Get basic health metrics
     const startTime = Date.now();
@@ -86,26 +81,17 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * POST /api/monitoring/health
  * Publish system health update (admin only)
  */
-export async function POST(request: NextRequest) {
+export const POST = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check admin permissions
-    if (!rbac.hasPermission(validation.user, "admin:analytics")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const body = await request.json();
 
     // Publish health update to all subscribers
@@ -131,4 +117,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

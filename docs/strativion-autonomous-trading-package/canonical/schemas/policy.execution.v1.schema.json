@@ -1,0 +1,305 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/policy.execution.v1.schema.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_role",
+        "schema_version",
+        "canonical_package_version"
+      ],
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "enum": [
+            "policy",
+            "workflow"
+          ]
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "file_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "canonical_package_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        }
+      }
+    },
+    "default_tif": {
+      "type": "string"
+    },
+    "allowed_tif": {
+      "type": "array"
+    },
+    "marketable_limit": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "offset_bps": {
+          "type": "integer"
+        }
+      }
+    },
+    "spread_filter": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "liquid_max_bps": {
+          "type": "integer"
+        },
+        "illiquid_max_bps": {
+          "type": "integer"
+        }
+      }
+    },
+    "slippage": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "per_trade_bps": {
+          "type": "integer"
+        }
+      }
+    },
+    "us_equity": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "regular_session": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "open": {
+              "type": "string"
+            },
+            "close": {
+              "type": "string"
+            },
+            "timezone": {
+              "type": "string"
+            }
+          }
+        },
+        "holidays_and_half_days": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "require_exchange_calendar_source": {
+              "type": "boolean"
+            },
+            "reject_if_calendar_unavailable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "autonomous_windows": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "block_new_entries_first_minutes": {
+              "type": "integer"
+            },
+            "lunch_no_trade_window": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "start": {
+                  "type": "string"
+                },
+                "end": {
+                  "type": "string"
+                },
+                "timezone": {
+                  "type": "string"
+                }
+              }
+            },
+            "block_new_entries_last_minutes": {
+              "type": "integer"
+            }
+          }
+        },
+        "session_phases": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "opening_rotation": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "start": {
+                  "type": "string"
+                },
+                "end": {
+                  "type": "string"
+                },
+                "timezone": {
+                  "type": "string"
+                },
+                "guidance": {
+                  "type": "string"
+                }
+              }
+            },
+            "primary_entry_window": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "start": {
+                  "type": "string"
+                },
+                "end": {
+                  "type": "string"
+                },
+                "timezone": {
+                  "type": "string"
+                },
+                "guidance": {
+                  "type": "string"
+                }
+              }
+            },
+            "midday_lull": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "start": {
+                  "type": "string"
+                },
+                "end": {
+                  "type": "string"
+                },
+                "timezone": {
+                  "type": "string"
+                },
+                "guidance": {
+                  "type": "string"
+                }
+              }
+            },
+            "secondary_entry_window": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "start": {
+                  "type": "string"
+                },
+                "end": {
+                  "type": "string"
+                },
+                "timezone": {
+                  "type": "string"
+                },
+                "guidance": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "tier_1_events": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "default_block_before_minutes": {
+          "type": "integer"
+        },
+        "default_block_after_minutes": {
+          "type": "integer"
+        },
+        "examples": {
+          "type": "array"
+        }
+      }
+    },
+    "order_safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "reject_during_regulatory_halt": {
+          "type": "boolean"
+        },
+        "reject_during_luld_pause": {
+          "type": "boolean"
+        },
+        "reject_during_auction_only_state_if_consumer_cannot_price_auction": {
+          "type": "boolean"
+        },
+        "reject_if_time_sync_untrusted": {
+          "type": "boolean"
+        },
+        "require_cancel_replace_idempotency": {
+          "type": "boolean"
+        }
+      }
+    },
+    "short_sale_controls": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "require_borrow_or_locate_validation": {
+          "type": "boolean"
+        },
+        "reject_if_short_sale_restriction_unknown": {
+          "type": "boolean"
+        },
+        "honor_reg_sho_ssr": {
+          "type": "boolean"
+        }
+      }
+    },
+    "overnight_controls": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "equities": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "require_explicit_overnight_permission": {
+              "type": "boolean"
+            },
+            "reject_before_known_binary_events_if_not_supervised": {
+              "type": "boolean"
+            }
+          }
+        },
+        "crypto": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "require_weekend_and_low_liquidity_review": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "fill_controls": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "reject_if_expected_slippage_gt_initial_r_multiple": {
+          "type": "number"
+        },
+        "reject_if_partial_fill_creates_invalid_residual_risk": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

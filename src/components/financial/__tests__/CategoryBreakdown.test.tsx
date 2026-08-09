@@ -10,15 +10,19 @@ import CategoryBreakdown from "../CategoryBreakdown";
 
 // Mock chart components
 jest.mock("@/components/charts/PieChart", () => {
-  return ({ data }: any) => (
+  const MockPieChart = ({ data }: any) => (
     <div data-testid="pie-chart">PieChart ({data?.length} items)</div>
   );
+  MockPieChart.displayName = "MockPieChart";
+  return MockPieChart;
 });
 
 jest.mock("@/components/charts/BarChart", () => {
-  return ({ data }: any) => (
+  const MockBarChart = ({ data }: any) => (
     <div data-testid="bar-chart">BarChart ({data?.length} items)</div>
   );
+  MockBarChart.displayName = "MockBarChart";
+  return MockBarChart;
 });
 
 const mockCategories = [

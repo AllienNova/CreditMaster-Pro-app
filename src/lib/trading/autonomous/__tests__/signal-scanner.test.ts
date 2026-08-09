@@ -28,90 +28,66 @@ describe("signal-scanner", () => {
   // ========================================================================
   // loadWatchlist
   // ========================================================================
+  // These three cases asserted a per-user watchlist loaded from
+  // `trading_accounts.watchlist`. That column exists in no migration, no other
+  // query, and no UI — the fixture mocked a column the database could never
+  // return, so the suite passed against fiction while the real call always
+  // errored into DEFAULT_WATCHLIST. The requirement did not change; it was
+  // never built. These now pin the honest contract: loadWatchlist returns the
+  // default set, and will be the seam where real per-user watchlists land.
   describe("loadWatchlist", () => {
-    it("returns user watchlist from DB when available", async () => {
-      const mockFrom = jest.fn().mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: { watchlist: ["AAPL", "TSLA", "GOOG"] },
-              error: null,
-            }),
-          }),
-        }),
-      });
-      (supabaseAdmin as unknown as { from: jest.Mock }).from = mockFrom;
-
+    it("returns the default watchlist — per-user watchlists are not built", async () => {
       const result = await loadWatchlist("user_1");
-      expect(result).toEqual(["AAPL", "TSLA", "GOOG"]);
-    });
 
-    it("returns default watchlist on DB error", async () => {
-      const mockFrom = jest.fn().mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: null,
-              error: { message: "not found" },
-            }),
-          }),
-        }),
-      });
-      (supabaseAdmin as unknown as { from: jest.Mock }).from = mockFrom;
-
-      const result = await loadWatchlist("user_1");
       expect(result).toContain("AAPL");
       expect(result).toContain("NVDA");
       expect(result.length).toBe(10);
     });
 
-    it("returns default watchlist when watchlist is null", async () => {
-      const mockFrom = jest.fn().mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: { watchlist: null },
-              error: null,
-            }),
-          }),
-        }),
-      });
+    it("does not query the database for a watchlist", async () => {
+      const mockFrom = jest.fn();
       (supabaseAdmin as unknown as { from: jest.Mock }).from = mockFrom;
 
-      const result = await loadWatchlist("user_1");
-      expect(result.length).toBe(10);
+      await loadWatchlist("user_1");
+
+      // Guards the fix: the old implementation selected a nonexistent column
+      // and leaned on the error path to produce this same result.
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it("returns the same set for every user", async () => {
+      expect(await loadWatchlist("user_1")).toEqual(
+        await loadWatchlist("user_2"),
+      );
     });
   });
 
   // ========================================================================
   // fetchCandles
   // ========================================================================
+  // These three cases previously asserted the SYNTHETIC generator's output
+  // (50 bars / 200-bar default / chronological random walk). That generator was
+  // deleted in DEFAB-1: it fed Math.random() prices into the autonomous
+  // executor's scan decisions. The requirement changed — the scanner must yield
+  // real bars or none — so these now pin the honest contract instead.
   describe("fetchCandles", () => {
-    it("returns an array of OHLCV candles", async () => {
+    it("returns no candles rather than fabricating them", async () => {
       const candles = await fetchCandles("AAPL", 50);
-      expect(candles.length).toBe(50);
-      candles.forEach((c) => {
-        expect(c).toHaveProperty("time");
-        expect(c).toHaveProperty("open");
-        expect(c).toHaveProperty("high");
-        expect(c).toHaveProperty("low");
-        expect(c).toHaveProperty("close");
-        expect(c).toHaveProperty("volume");
-        expect(c.high).toBeGreaterThanOrEqual(c.low);
-        expect(c.volume).toBeGreaterThan(0);
-      });
+      expect(candles).toEqual([]);
     });
 
-    it("defaults to 200 candles", async () => {
-      const candles = await fetchCandles("MSFT");
-      expect(candles.length).toBe(200);
+    it("fabricates nothing regardless of the requested count", async () => {
+      expect(await fetchCandles("MSFT")).toHaveLength(0);
+      expect(await fetchCandles("MSFT", 200)).toHaveLength(0);
+      expect(await fetchCandles("MSFT", 5)).toHaveLength(0);
     });
 
-    it("generates chronologically ordered candles", async () => {
-      const candles = await fetchCandles("TSLA", 100);
-      for (let i = 1; i < candles.length; i++) {
-        expect(candles[i].time).toBeGreaterThan(candles[i - 1].time);
-      }
+    it("is deterministic — never returns randomly generated prices", async () => {
+      const first = await fetchCandles("TSLA", 100);
+      const second = await fetchCandles("TSLA", 100);
+      // The deleted generator produced a different random walk on every call.
+      expect(first).toEqual(second);
+      expect(first).toEqual([]);
     });
   });
 

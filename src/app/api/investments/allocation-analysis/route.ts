@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getAssetAllocationService } from "@/lib/investments/services/AssetAllocationService";
 import { RiskTolerance } from "@/lib/investments/types/asset-allocation.types";
 import { Portfolio } from "@/lib/investments/types/investment.types";
@@ -52,7 +53,8 @@ const AllocationAnalysisRequestSchema = z.object({
     .optional(),
 });
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
     // Parse request body
     const body = await request.json();
@@ -64,7 +66,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: "Invalid request data",
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 },
       );
@@ -116,10 +118,12 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
 
 // GET endpoint to retrieve allocation models
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
     const { searchParams } = new URL(request.url);
     const riskTolerance = searchParams.get("riskTolerance");
@@ -164,4 +168,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);

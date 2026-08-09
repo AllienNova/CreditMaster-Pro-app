@@ -349,20 +349,33 @@ export interface BudgetTrend {
 // DATABASE ROW TYPES
 // ============================================================================
 
+/**
+ * Live `budgets` table shape (verified against the local Supabase Postgres
+ * instance, 2026-07-31 — see `supabase/migrations/20250207000000_financial_intelligence_schema.sql`
+ * for the authoritative DDL). This previously declared `name`,
+ * `budgeted_amount`, `spent_amount`, `period_start`, `period_end`, and
+ * `is_active`, none of which exist as columns — every read/write against
+ * this shape failed or silently produced garbage. See `mapRowToBudget` in
+ * `budget-service.ts` for the read-side mapping onto the real columns.
+ * `notes`, `subcategory`, and `alert_sent` also exist live but are unused
+ * by this service today.
+ */
 export interface BudgetRow {
   id: string;
   user_id: string;
-  name: string;
   category: string;
-  budgeted_amount: number;
-  spent_amount: number;
+  amount: number;
+  spent: number;
   period: string;
-  period_start: string;
-  period_end: string;
+  start_date: string;
+  end_date: string;
   rollover_enabled: boolean;
   rollover_amount: number;
   alert_threshold: number;
-  is_active: boolean;
+  /** DB lifecycle state: 'active' | 'completed' | 'overbudget'. Distinct
+   * from the computed `Budget.status` (on_track/warning/over_budget),
+   * which is derived from spend percentage, not this column. */
+  status: string;
   created_at: string;
   updated_at: string;
 }

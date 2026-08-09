@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useAuthStore } from "../src/store/authStore";
@@ -11,7 +11,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { colors, fontWeight, isDark } = useTheme();
-  const { initialize, isLoading } = useAuthStore();
+  const { initialize, isLoading, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     const init = async () => {
@@ -20,6 +20,26 @@ export default function RootLayout() {
     };
     init();
   }, [initialize]);
+
+  const segments = useSegments();
+  const router = useRouter();
+
+  // Auth route guard (Finding 1): redirect unauthenticated users away from
+  // protected routes so deep links cannot reach authenticated screens without
+  // a session. Public routes — the (auth) group, onboarding, the deep-link
+  // handoff handler, and the index entry (which self-redirects) — are exempt.
+  useEffect(() => {
+    if (isLoading) return;
+    const root = segments[0];
+    const isPublicRoute =
+      root === undefined ||
+      root === "(auth)" ||
+      root === "onboarding" ||
+      root === "handoff";
+    if (!isAuthenticated && !isPublicRoute) {
+      router.replace("/(auth)/login");
+    }
+  }, [isAuthenticated, isLoading, segments, router]);
 
   if (isLoading) {
     return null; // Splash screen is still visible
@@ -53,40 +73,9 @@ export default function RootLayout() {
         {/* Credit Builder Screens */}
         <Stack.Screen name="credit-builder" options={{ headerShown: false }} />
 
-        {/* Dispute Screens */}
-        <Stack.Screen
-          name="dispute/[id]"
-          options={{
-            headerShown: true,
-            title: "Dispute Details",
-            ...headerOptions,
-          }}
-        />
-        <Stack.Screen
-          name="dispute/create"
-          options={{
-            headerShown: true,
-            title: "New Dispute",
-            ...headerOptions,
-          }}
-        />
-        <Stack.Screen name="dispute/wizard" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="dispute/templates"
-          options={{ headerShown: true, title: "Templates", ...headerOptions }}
-        />
-        <Stack.Screen
-          name="dispute/strategies"
-          options={{ headerShown: true, title: "Strategies", ...headerOptions }}
-        />
-        <Stack.Screen
-          name="dispute/analytics"
-          options={{
-            headerShown: true,
-            title: "Dispute Analytics",
-            ...headerOptions,
-          }}
-        />
+        {/* Dispute Screens — nested navigator; children (`[id]`, `create`,
+            `wizard`, etc.) are owned by app/dispute/_layout.tsx */}
+        <Stack.Screen name="dispute" options={{ headerShown: false }} />
 
         {/* Document Screens */}
         <Stack.Screen
@@ -137,6 +126,9 @@ export default function RootLayout() {
         {/* Help & Support Screens */}
         <Stack.Screen name="help" options={{ headerShown: false }} />
 
+        {/* Web Handoff Screen */}
+        <Stack.Screen name="handoff" options={{ headerShown: false }} />
+
         {/* Admin Screens */}
         <Stack.Screen name="admin" options={{ headerShown: false }} />
 
@@ -145,9 +137,6 @@ export default function RootLayout() {
 
         {/* Credit Repair Screens */}
         <Stack.Screen name="credit-repair" options={{ headerShown: false }} />
-
-        {/* Disputes Hub */}
-        <Stack.Screen name="disputes" options={{ headerShown: false }} />
 
         {/* Documents Hub */}
         <Stack.Screen name="documents" options={{ headerShown: false }} />

@@ -20,22 +20,24 @@ import type { ScanResult, ScanCycleResult } from "./autonomous-types";
 // ============================================================================
 
 /**
- * Load the user's autonomous trading watchlist from the DB.
- * Falls back to a default set of liquid, large-cap symbols.
+ * The symbols the autonomous scanner sweeps each cycle.
+ *
+ * PER-USER WATCHLISTS ARE NOT BUILT. This used to select
+ * `trading_accounts.watchlist`, a column that exists in no migration and no
+ * other query in the repo — there is no table, no writer, and no UI for it.
+ * The select therefore always errored into the `DEFAULT_WATCHLIST` fallback,
+ * so the function has only ever returned the default while reading like a
+ * per-user lookup.
+ *
+ * The dead query is removed rather than replaced with a new column: adding a
+ * column nothing writes would be the same defect pointing the other way. When
+ * per-user watchlists are actually built, this is where they load.
+ *
+ * `userId` is retained so callers and the eventual real implementation do not
+ * have to change.
  */
-export async function loadWatchlist(userId: string): Promise<string[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabaseAdmin as any)
-    .from("trading_accounts")
-    .select("watchlist")
-    .eq("user_id", userId)
-    .single();
-
-  if (error || !data?.watchlist || !Array.isArray(data.watchlist)) {
-    return DEFAULT_WATCHLIST;
-  }
-
-  return data.watchlist as string[];
+export async function loadWatchlist(_userId: string): Promise<string[]> {
+  return DEFAULT_WATCHLIST;
 }
 
 const DEFAULT_WATCHLIST = [
@@ -48,52 +50,25 @@ const DEFAULT_WATCHLIST = [
 // ============================================================================
 
 /**
- * Fetch recent OHLCV candles for a symbol.
+ * Fetch recent OHLCV candles for a symbol from the real market-data provider.
  *
- * In production this would call a market data provider (Alpaca, Polygon, etc.).
- * For now generates realistic synthetic data with slight positive drift.
+ * Honesty contract (DEFAB-1 / ADR-0005): this scanner feeds the autonomous
+ * executor, so it returns REAL bars or NONE. It previously returned
+ * `generateSyntheticCandles` — a Math.random() random walk labelled "realistic
+ * synthetic data" — meaning every autonomous scan decision was computed from
+ * invented prices. That generator is DELETED, not degraded.
+ *
+ * Real wiring is ADR-0005 (Alpaca canonical) M6-1. Until it lands here, this
+ * returns an EMPTY set so `scanSymbol` skips the symbol rather than acting on
+ * fabricated data — callers guard on candle count.
  */
 export async function fetchCandles(
-  symbol: string,
-  days: number = 200,
-): Promise<OHLCV[]> {
-  // TODO: Replace with real market data provider call
-  // e.g., const bars = await alpaca.getBars(symbol, { timeframe: '1Day', limit: days });
-  return generateSyntheticCandles(symbol, days);
-}
-
-function generateSyntheticCandles(
   _symbol: string,
-  days: number,
-): OHLCV[] {
-  const candles: OHLCV[] = [];
-  let price = 100 + Math.random() * 200; // Start between 100-300
-  const baseDate = new Date();
-  baseDate.setDate(baseDate.getDate() - days);
-
-  for (let i = 0; i < days; i++) {
-    const drift = (Math.random() - 0.48) * 3; // Slight upward bias
-    const volatility = Math.random() * 4;
-    price = Math.max(20, price + drift);
-
-    const open = price + (Math.random() - 0.5) * volatility;
-    const high = Math.max(open, price) + Math.random() * volatility;
-    const low = Math.min(open, price) - Math.random() * volatility;
-
-    const date = new Date(baseDate);
-    date.setDate(date.getDate() + i);
-
-    candles.push({
-      time: date.getTime(),
-      open,
-      high,
-      low,
-      close: price,
-      volume: 500_000 + Math.random() * 2_000_000,
-    });
-  }
-
-  return candles;
+  _days: number = 200,
+): Promise<OHLCV[]> {
+  // Deliberately empty until the Alpaca provider call is wired (ADR-0005 M6-1).
+  // Returning [] makes downstream scans skip; NEVER substitute synthetic bars.
+  return [];
 }
 
 // ============================================================================
@@ -204,10 +179,16 @@ export async function runScanCycle(
     }
   }
 
-  // Persist scan cycle to DB
+  // Persist scan cycle to DB. autonomous_scan_logs does not exist in the
+  // Next.js app's Supabase project as of Wave 7 (docs/qa/triage-trading.md)
+  // — same Fly.io-only reachability question as autonomous_execution_logs
+  // above. The bare try/catch here was dead code for that failure mode:
+  // postgrest-js resolves `{ error }` instead of throwing, so a missing
+  // table never reached the catch. Now the resolved `error` is checked
+  // directly, so a failed write is finally logged.
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabaseAdmin as any)
+    const { error } = await (supabaseAdmin as any)
       .from("autonomous_scan_logs")
       .insert({
         cycle_id: cycleId,
@@ -219,9 +200,15 @@ export async function runScanCycle(
         trades_queued: tradesQueued,
         errors: errors.length > 0 ? errors : null,
       });
-  } catch {
+
+    if (error) {
+      console.error(
+        `[autonomous] Failed to persist scan cycle ${cycleId}: ${error.message}`,
+      );
+    }
+  } catch (err) {
     // Non-blocking — scan log persistence failure shouldn't halt the pipeline
-    console.error(`[autonomous] Failed to persist scan cycle ${cycleId}`);
+    console.error(`[autonomous] Failed to persist scan cycle ${cycleId}`, err);
   }
 
   return {

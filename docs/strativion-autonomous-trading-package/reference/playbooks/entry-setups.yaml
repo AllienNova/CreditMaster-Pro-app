@@ -1,0 +1,535 @@
+# ============================================================================
+# ENTRY SETUPS PLAYBOOK (REFERENCE ONLY, NON-BINDING)
+#
+# Source: The 30 Indisputable Laws of Trading by Kimal Honour Djam
+# Generated: 2026-02-22
+#
+# STATUS: reference
+# AUTHORITY: NONE. These are 10 strategy-specific setup sketches from the
+#            source textbook. They are NOT canonical policy and are NOT a
+#            source of risk, heat, or sizing thresholds.
+#
+# IMPORTANT:
+#   - Any `risk_rules.max_risk_pct` or `max_portfolio_heat_pct` values inside
+#     this file are LEGACY PROSE and are overridden by canonical policy.
+#   - Risk and heat clamps ALWAYS come from:
+#       canonical/policy/policy.runtime.yaml
+#       canonical/policy/policy.risk.yaml
+#       canonical/policy/policy.portfolio.yaml
+#   - Unit convention in this file is percent-float (e.g. 1.5 means 1.5%).
+#     The canonical layer uses decimal fractions (0.015). Never merge the two.
+#   - A consumer app that wishes to run one of these setups MUST reimplement
+#     it in its own strategy package, reading risk numbers from canonical.
+# ============================================================================
+
+meta:
+  document_role: "reference_non_binding"
+  status: "reference"
+  source: "textbook_ch59_ch60"
+  binding: false
+  unit_convention: "percent_float"
+  notes:
+    - "Do not consume as machine policy."
+    - "Per-setup risk numbers are legacy and overridden by canonical policy."
+
+setups:
+
+  # ==========================================================================
+  # DAY TRADING SETUPS (from Chapter 59)
+  # ==========================================================================
+
+  - id: setup_01
+    name: "Opening Range Breakout (ORB)"
+    category: "day_trade"
+    source: "ch59-day-trader-playbook"
+    regime: "trending"
+    description: >
+      The first 15 minutes of trading establish a contested range where buyers
+      and sellers negotiate the day's initial direction. When price breaks
+      decisively above or below this range, it signals one side has won.
+    timeframe: "9:30 to 10:30 AM EST"
+    conditions:
+      market_type: "Trend day"
+      adx_5min: "> 25"
+      vix: "Any (best with catalyst)"
+      catalyst_required: "Preferred (CPI, FOMC, major earnings)"
+      pre_conditions:
+        - "Mark high and low of first 15 minutes (9:30-9:45 AM)"
+        - "Wait for breakout candle to CLOSE beyond the range"
+        - "Confirm with VWAP direction (long = price above VWAP, short = price below)"
+    entry:
+      trigger: "Close of candle that breaks opening range, with VWAP confirmation"
+      order_type: "market"
+      timing: "After 9:45 AM, before 10:30 AM"
+    stop:
+      placement: "Opposite end of opening range"
+      description: "Long breakout: stop at opening range low. Short breakout: stop at opening range high."
+      type: "structural"
+    targets:
+      - level: "1.5x opening range width from breakout point"
+        action: "Full exit"
+    do_not_use:
+      - "Range-bound days with ADX below 20"
+      - "Low-volume holiday sessions"
+      - "Days with no scheduled catalyst"
+      - "High-volatility chop (VIX > 25 AND ADX < 20)"
+    historical_win_rate:
+      trend_days: 0.58
+      range_days: 0.42
+      overall: 0.55
+    laws_applied: [1, 3]
+    risk_rules:
+      max_risk_pct: 1.0
+      max_trades_per_day: 3
+
+  - id: setup_02
+    name: "VWAP Mean Reversion"
+    category: "day_trade"
+    source: "ch59-day-trader-playbook"
+    regime: "ranging"
+    description: >
+      Exploits the statistical tendency for price to return to its volume-weighted
+      average during range-bound sessions. Institutional traders use VWAP as a
+      benchmark, creating natural gravitational pull.
+    timeframe: "10:00 AM to 3:00 PM EST"
+    conditions:
+      market_type: "Range day"
+      adx_5min: "< 20"
+      vix: "< 18"
+      catalyst_required: "None preferred (quiet sessions best)"
+      pre_conditions:
+        - "Calculate current ATR on 5-minute chart"
+        - "Wait for price to stretch 1.5-2.0 ATR from VWAP"
+        - "Confirm overextension with session context"
+    entry:
+      trigger: "Price reaches 1.5-2.0 ATR from VWAP"
+      direction: "Counter-trend toward VWAP"
+      order_type: "limit"
+      timing: "10:00 AM to 3:00 PM (avoid first 30 min and last hour)"
+    stop:
+      placement: "0.5 ATR beyond the extreme"
+      description: "Gives trade room to breathe without exposing to runaway trend"
+      type: "atr_based"
+    targets:
+      - level: "VWAP"
+        action: "Full exit at VWAP (do not get greedy)"
+    do_not_use:
+      - "Trend days with ADX above 25"
+      - "Post-news sessions with strong directional momentum"
+      - "VIX spiking above 30"
+      - "First 30 minutes or last hour"
+    historical_win_rate:
+      range_days: 0.62
+      trend_days: 0.38
+      overall: 0.55
+    laws_applied: [5]
+    risk_rules:
+      max_risk_pct: 1.0
+      max_trades_per_day: 3
+
+  - id: setup_03
+    name: "Momentum Continuation"
+    category: "day_trade"
+    source: "ch59-day-trader-playbook"
+    regime: "trending"
+    description: >
+      Captures explosive intraday moves by entering on the first pullback after
+      a strong directional thrust. Does NOT chase the initial move. Waits for
+      confirmation of resumption.
+    timeframe: "9:30 AM to 4:00 PM EST (any time during session)"
+    conditions:
+      market_type: "Post-news momentum or strong trend day"
+      pre_conditions:
+        - "Identify strong thrust: 3+ consecutive directional candles on 5-min chart"
+        - "Thrust must be on above-average volume"
+        - "Wait for first pullback (1-3 candles retracing 30-50% of thrust)"
+        - "Volume on continuation candle must exceed pullback average volume"
+    entry:
+      trigger: "Close of continuation candle that resumes prior direction"
+      filter: "Volume on continuation candle > average pullback candle volume"
+      order_type: "market"
+    stop:
+      placement: "Below pullback low (longs) or above pullback high (shorts)"
+      type: "structural"
+    targets:
+      - level: "Measured move: initial thrust distance projected from pullback entry"
+        action: "Full exit"
+    do_not_use:
+      - "Thin, low-volume markets"
+      - "Late-day trading after 3:30 PM"
+      - "Days with multiple conflicting catalysts"
+    historical_win_rate:
+      overall: 0.55
+      with_volume_filter: 0.67
+    volume_filter_edge: "+12 percentage points"
+    laws_applied: [1, 13]
+    risk_rules:
+      max_risk_pct: 1.0
+      min_thrust_points_es: 10
+
+  # ==========================================================================
+  # TREND FOLLOWING SETUPS
+  # ==========================================================================
+
+  - id: setup_04
+    name: "Pullback to EMA"
+    category: "swing_trade"
+    source: "law-01-market-inertia, ch60-swing-trader-playbook"
+    regime: "trending"
+    description: >
+      In a strong uptrend, price surges above the 10-EMA, pulls back to it,
+      and surges again. Buying the return to equilibrium within a persistent
+      trend exploits both mean reversion and trend persistence.
+    timeframe: "Daily chart"
+    conditions:
+      trend_confirmed: true
+      pre_conditions:
+        - "Price above 50-day and 200-day SMAs"
+        - "ADX above 25"
+        - "RS rating in top 20% of all stocks"
+        - "Stock within 15% of 52-week high"
+        - "Stock pulls back to 10-day EMA"
+        - "Reversal candle prints (closes in upper half of range after touching 10-EMA)"
+    entry:
+      trigger: "Next day's open IF stock opens above reversal candle's high"
+      condition: "If opens below reversal candle high, wait for another signal"
+      order_type: "market_on_open"
+    stop:
+      placement: "Below reversal candle low or below 10-EMA, whichever is tighter"
+      max_distance_pct: 7.0
+      type: "structural"
+    targets:
+      - level: "+1R"
+        action: "Sell first third"
+        stop_adjustment: "Move stop to breakeven"
+      - level: "+2R"
+        action: "Sell second third"
+        stop_adjustment: "Move stop to +1R level"
+      - level: "10-EMA trail"
+        action: "Exit final third when stock closes below 10-EMA"
+    historical_win_rate:
+      overall: 0.58
+    laws_applied: [1, 5, 12]
+    risk_rules:
+      max_risk_pct: 1.5
+      atr_stop_multiple: 2.0
+
+  - id: setup_05
+    name: "Flag/Pennant Breakout"
+    category: "swing_trade"
+    source: "law-01-market-inertia, law-03-volatility-compression"
+    regime: "trending"
+    description: >
+      After a strong impulsive move (the flagpole), price consolidates in a
+      tight flag or pennant pattern. The breakout from this consolidation
+      resumes the prior trend with a measured move target equal to the flagpole.
+    timeframe: "Daily chart"
+    conditions:
+      pre_conditions:
+        - "Clear impulsive move (flagpole) of 10%+ on above-average volume"
+        - "Consolidation forming tight flag (parallel channel) or pennant (converging lines)"
+        - "Consolidation lasts 5-15 trading days"
+        - "Volume declining during consolidation"
+        - "Consolidation retraces < 50% of flagpole"
+    entry:
+      trigger: "Breakout above flag/pennant resistance on volume 50%+ above 20-day average"
+      order_type: "limit or market"
+    stop:
+      placement: "Below the flag/pennant low"
+      type: "structural"
+    targets:
+      - level: "Flagpole distance projected from breakout point (measured move)"
+        action: "Primary target"
+      - level: "+1R"
+        action: "Partial profit (first third)"
+    historical_win_rate:
+      overall: 0.55
+    laws_applied: [1, 3, 13]
+    risk_rules:
+      max_risk_pct: 1.5
+      max_stop_distance_pct: 8.0
+
+  - id: setup_06
+    name: "Bollinger Squeeze Breakout"
+    category: "both"
+    source: "law-03-volatility-compression"
+    regime: "pre_breakout"
+    description: >
+      Bollinger Band width contracts to a 6-month low, indicating extreme
+      volatility compression. The subsequent expansion produces a directional
+      breakout whose magnitude correlates with the compression duration.
+    timeframe: "Daily or 4-hour chart"
+    conditions:
+      pre_conditions:
+        - "Bollinger Band width at 6-month low"
+        - "ATR declining for 10+ periods"
+        - "Inside bars clustering (3+ consecutive)"
+        - "Volume below 20-day average during compression"
+    entry:
+      trigger: "First candle that closes outside the Bollinger Bands on expanding volume"
+      direction: "Direction of the breakout"
+      order_type: "market on close of breakout candle"
+    stop:
+      placement: "Opposite Bollinger Band or midpoint of the squeeze range"
+      type: "structural"
+    targets:
+      - level: "2x the squeeze range width"
+        action: "Primary target"
+      - level: "+1R"
+        action: "Partial profit (first third)"
+    do_not_use:
+      - "During earnings season for individual stocks"
+      - "When no clear directional bias from higher timeframe"
+    historical_win_rate:
+      overall: 0.52
+      with_directional_bias: 0.60
+    laws_applied: [3, 1, 8]
+    risk_rules:
+      max_risk_pct: 1.0
+      position_size_note: "Reduce size during squeeze; direction uncertain"
+
+  - id: setup_07
+    name: "Range Boundary Fade"
+    category: "day_trade"
+    source: "law-05-mean-reversion"
+    regime: "ranging"
+    description: >
+      In a confirmed range-bound market, price oscillates between support
+      and resistance. Enter counter-trend at range boundaries with stops
+      just beyond the range.
+    timeframe: "5-minute to daily chart"
+    conditions:
+      market_type: "Range-bound"
+      adx: "< 20"
+      pre_conditions:
+        - "Well-defined range with 3+ touches at both support and resistance"
+        - "ADX below 20 confirming range-bound regime"
+        - "Price approaching range boundary"
+        - "No major catalyst expected"
+    entry:
+      trigger: "Reversal candle at range boundary (long at support, short at resistance)"
+      order_type: "limit at boundary level"
+    stop:
+      placement: "0.5 ATR beyond the range boundary"
+      type: "structural"
+    targets:
+      - level: "Opposite range boundary"
+        action: "Full exit"
+      - level: "Range midpoint (VWAP)"
+        action: "Conservative partial exit"
+    do_not_use:
+      - "When ADX is rising above 20 (regime changing)"
+      - "Post-major news events"
+      - "When range has been held for > 20 periods (breakout imminent)"
+    historical_win_rate:
+      overall: 0.60
+      confirmed_range: 0.65
+    laws_applied: [5, 8, 11]
+    risk_rules:
+      max_risk_pct: 1.0
+
+  - id: setup_08
+    name: "Multi-Timeframe Alignment Entry"
+    category: "swing_trade"
+    source: "law-12-multi-timeframe-alignment"
+    regime: "trending"
+    description: >
+      Enter when weekly, daily, and 4-hour timeframes all align in the same
+      direction. This constructive interference creates the highest-probability
+      trend trades.
+    timeframe: "4-hour entry, daily/weekly confirmation"
+    conditions:
+      pre_conditions:
+        - "Weekly trend: Price above 40-week (200-day) MA, weekly MACD positive"
+        - "Daily trend: Price above 20-day and 50-day MA, ADX > 25"
+        - "4-hour trigger: Pullback to support (20 EMA or structural level)"
+        - "All three timeframes agree on direction"
+    entry:
+      trigger: "4-hour reversal candle at pullback support within aligned trend"
+      order_type: "market or limit"
+    stop:
+      placement: "Below 4-hour swing low + 1 ATR buffer"
+      type: "structural"
+    targets:
+      - level: "+1R"
+        action: "Sell first third, move stop to breakeven"
+      - level: "+2R"
+        action: "Sell second third, trail stop with 10-EMA"
+      - level: "10-EMA trail"
+        action: "Exit final third on daily close below 10-EMA"
+    historical_win_rate:
+      overall: 0.62
+      triple_aligned: 0.68
+    laws_applied: [12, 1, 6, 18]
+    risk_rules:
+      max_risk_pct: 1.5
+
+  # ==========================================================================
+  # SWING TRADING SETUPS (from Chapter 60)
+  # ==========================================================================
+
+  - id: setup_09
+    name: "Swing Gap + Trend Continuation"
+    category: "swing_trade"
+    source: "ch60-swing-trader-playbook"
+    regime: "trending"
+    description: >
+      A stock from the nightly scan gaps above a consolidation high on volume
+      at least 2x the 20-day average. Wait for the first pullback to the gap
+      level. If it holds, enter on the continuation.
+    timeframe: "Daily chart (hold 5-25 days)"
+    nightly_scan:
+      - "Price above 50-day and 200-day SMA"
+      - "Relative Strength rating in top 20% (RS > 80)"
+      - "Volume today at least 50% above 20-day average"
+      - "ADX above 25"
+      - "Price within 15% of 52-week high"
+    conditions:
+      pre_conditions:
+        - "Stock gaps above consolidation high"
+        - "Gap day volume at least 2x 20-day average"
+        - "Wait for first pullback in first 30 minutes"
+        - "Gap level must HOLD (no complete gap fill)"
+    entry:
+      trigger: "Pullback to gap support level holds; enter on bounce"
+      invalidation: "If gap fills completely (price trades below previous day high), walk away"
+      order_type: "limit at gap support"
+    stop:
+      placement: "Below gap support level"
+      max_distance_pct: 7.0
+      type: "structural"
+    targets:
+      - level: "+1R"
+        action: "Sell first third, move stop to breakeven"
+      - level: "+2R"
+        action: "Sell second third, move stop to +1R"
+      - level: "10-EMA trail"
+        action: "Exit final third on close below 10-EMA"
+    special_rules:
+      earnings_gap: >
+        If stock gaps up 10%+ on earnings while you hold it, sell half
+        immediately at open. Trail rest with 10-EMA.
+    historical_win_rate:
+      overall: 0.60
+    laws_applied: [1, 3, 9]
+    risk_rules:
+      max_risk_pct: 1.5
+      max_open_positions: 5
+      max_same_sector: 2
+      max_portfolio_heat_pct: 8.0
+
+  - id: setup_10
+    name: "Sector Rotation Entry"
+    category: "swing_trade"
+    source: "ch60-swing-trader-playbook"
+    regime: "trending"
+    description: >
+      Start with sectors, not stocks. Identify the top 2-3 GICS sectors by
+      relative performance vs. SPY, then scan only those sectors for individual
+      stock setups. Reduces scan universe by 60-80%.
+    timeframe: "Weekly sector review, daily stock entry"
+    sector_screening:
+      step_1: "Check 11 SPDR sector ETFs every Sunday night"
+      etfs:
+        - "XLK (Technology)"
+        - "XLF (Financials)"
+        - "XLE (Energy)"
+        - "XLV (Healthcare)"
+        - "XLY (Consumer Discretionary)"
+        - "XLP (Consumer Staples)"
+        - "XLI (Industrials)"
+        - "XLB (Materials)"
+        - "XLRE (Real Estate)"
+        - "XLU (Utilities)"
+        - "XLC (Communication Services)"
+      step_2: "Rank each by 1-month relative performance vs. SPY"
+      step_3: "Focus nightly scan on top 2-3 sectors only"
+    economic_cycle_map:
+      early_expansion:
+        leaders: ["XLK", "XLY"]
+        description: "Recovery from recession. Consumers start spending, companies invest."
+      mid_expansion:
+        leaders: ["XLI", "XLF"]
+        description: "Manufacturing picks up, lending increases."
+      late_expansion:
+        leaders: ["XLE", "XLB"]
+        description: "Commodity prices rise on strong demand."
+      contraction:
+        leaders: ["XLU", "XLV", "XLP"]
+        description: "Defensive sectors. People still need electricity, medication, food."
+    conditions:
+      pre_conditions:
+        - "Sector ETF in top 3 by relative performance vs. SPY"
+        - "Individual stock passes all nightly scan criteria"
+        - "Stock shows one of three entry patterns (gap, breakout, or pullback)"
+    entry:
+      trigger: "Individual stock setup within leading sector"
+      order_type: "Per individual setup rules"
+    stop:
+      placement: "Per individual setup rules"
+      type: "structural"
+    targets:
+      - level: "Per individual setup rules"
+        action: "Scale out in thirds"
+    historical_win_rate:
+      with_sector_filter: 0.65
+      without_sector_filter: 0.55
+    sector_filter_edge: "+10 percentage points"
+    laws_applied: [1, 8, 24, 19]
+    risk_rules:
+      max_risk_pct: 1.5
+      max_same_sector: 2
+      review_frequency: "Weekly (Sunday evening)"
+
+# ============================================================================
+# DAILY SETUP SELECTION MATRIX
+# ============================================================================
+
+daily_selection_matrix:
+  - condition: "Strong trend day"
+    vix: "Any"
+    adx_5min: "> 25"
+    best_setups: ["ORB", "Momentum Continuation"]
+    avoid: ["VWAP Mean Reversion"]
+
+  - condition: "Range-bound day"
+    vix: "< 18"
+    adx_5min: "< 20"
+    best_setups: ["VWAP Mean Reversion", "Range Boundary Fade"]
+    avoid: ["ORB", "Momentum Continuation"]
+
+  - condition: "High-volatility chop"
+    vix: "> 25"
+    adx_5min: "< 20"
+    best_setups: ["NONE - Sit on hands"]
+    avoid: ["All setups"]
+
+  - condition: "Post-news momentum"
+    vix: "Any"
+    adx_5min: "Any"
+    best_setups: ["Momentum Continuation", "ORB"]
+    avoid: ["Mean Reversion"]
+
+  - condition: "Pre-FOMC / Pre-CPI"
+    vix: "Any"
+    adx_5min: "Any"
+    best_setups: ["Reduced size only, or stay flat"]
+    avoid: ["Full-size trades"]
+
+# ============================================================================
+# THE 9:50 AM DECISION PROTOCOL
+# ============================================================================
+
+morning_protocol:
+  name: "9:50 AM Decision Protocol"
+  description: >
+    By 9:50 AM each morning, answer three questions. These determine your
+    playbook for the day. Write answers down. Commit. Do not change mid-session
+    unless a major news event fundamentally alters market structure.
+  questions:
+    - question: "What did VIX close yesterday, and where is it in premarket?"
+      determines: "Volatility regime"
+    - question: "Is there a Tier 1 catalyst today (FOMC, CPI, NFP, major earnings)?"
+      determines: "Catalyst presence"
+    - question: "What is the 5-minute ADX reading after the first four candles?"
+      determines: "Trending vs. ranging regime"

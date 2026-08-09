@@ -1,24 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { documentService } from "@/lib/documents/document-service";
-import type { DocumentType } from "@/lib/documents/document-service";
+import { documentServiceDB } from "@/lib/documents/document-service-db";
+import type { DocumentType } from "@/lib/documents/document-service-db";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    // userId is the authenticated user — never trust a client-supplied id (IDOR).
+    const userId = user.id;
     const documentId = searchParams.get("documentId");
     const type = searchParams.get("type") as DocumentType | null;
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Missing userId parameter" },
-        { status: 400 },
-      );
-    }
-
     if (documentId) {
-      const document = await documentService.getDocument(documentId);
-      if (!document || document.userId !== userId) {
+      // getDocument is user-scoped: returns null for wrong owner (no existence leak).
+      const document = await documentServiceDB.getDocument(documentId, userId);
+      if (!document) {
         return NextResponse.json(
           { error: "Document not found" },
           { status: 404 },
@@ -27,8 +24,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ document });
     }
 
-    const documents = documentService.getUserDocuments(userId, type ?? undefined);
-    const stats = documentService.getDocumentStats(userId);
+    const documents = await documentServiceDB.getUserDocuments(userId, type ?? undefined);
+    const stats = await documentServiceDB.getDocumentStats(userId);
 
     return NextResponse.json({ documents, stats });
   } catch (_error) {
@@ -39,9 +36,10 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
     const { searchParams } = new URL(request.url);
     const documentId = searchParams.get("documentId");
@@ -53,7 +51,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const success = await documentService.deleteDocument(documentId);
+    // deleteDocument is user-scoped: returns false for wrong owner (IDOR safe).
+    const success = await documentServiceDB.deleteDocument(documentId, user.id);
     return NextResponse.json({ success });
   } catch (_error) {
     // DocumentsRoute error: Failed to delete document
@@ -63,9 +62,10 @@ export async function DELETE(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
     const body = await request.json();
     const { documentId, action, metadata, tags } = body;
@@ -87,7 +87,8 @@ export async function PATCH(request: NextRequest) {
             { status: 400 },
           );
         }
-        document = documentService.updateDocumentMetadata(documentId, metadata);
+        // updateMetadata is user-scoped: returns null for wrong owner (IDOR safe).
+        document = await documentServiceDB.updateMetadata(documentId, user.id, metadata as Record<string, unknown>);
         break;
       case "add_tags":
         if (!tags || !Array.isArray(tags)) {
@@ -96,7 +97,8 @@ export async function PATCH(request: NextRequest) {
             { status: 400 },
           );
         }
-        document = documentService.addTags(documentId, tags);
+        // addTags is user-scoped: returns null for wrong owner (IDOR safe).
+        document = await documentServiceDB.addTags(documentId, user.id, tags as string[]);
         break;
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
@@ -118,4 +120,4 @@ export async function PATCH(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

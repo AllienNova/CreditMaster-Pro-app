@@ -1,0 +1,80 @@
+meta:
+  document_role: policy
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  purpose: "Portfolio construction, regime exposure budgets, concentration limits, and cluster method. Heat ceilings live in policy.runtime.yaml#risk.portfolio."
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_rights:
+    capital_allocation: narrow_only
+    concentration_limits: narrow_only
+    portfolio_admission: locked
+    rebalance_and_review: narrow_only
+  notes:
+    - "Heat thresholds are owned by policy.runtime.yaml#risk.portfolio; this file does not restate them."
+    - "Correlation cluster threshold is owned by policy.correlations.yaml."
+
+# ---------------------------------------------------------------------------
+# REGIME-AWARE GROSS EXPOSURE BUDGETS
+# Gross exposure / equity ceilings per regime.
+# ---------------------------------------------------------------------------
+
+capital_allocation:
+  regime_budgets:
+    trending:
+      gross_exposure_max_pct: 1.00
+      net_exposure_guidance: directional_allowed
+    ranging:
+      gross_exposure_max_pct: 0.60
+      net_exposure_guidance: reduced_directional
+    transition:
+      gross_exposure_max_pct: 0.40
+      net_exposure_guidance: light_directional
+    shock:
+      gross_exposure_max_pct: 0.25
+      net_exposure_guidance: defensive_only
+    crisis:
+      gross_exposure_max_pct: 0.10
+      net_exposure_guidance: capital_preservation
+
+# ---------------------------------------------------------------------------
+# CONCENTRATION LIMITS (non-heat)
+# ---------------------------------------------------------------------------
+
+concentration_limits:
+  max_single_position_notional_pct: 0.20
+  max_single_sector_exposure_pct: 0.30
+  max_same_sector_positions: 2
+  max_correlated_cluster_exposure_pct: 0.30
+  max_asset_class_exposure_pct: 0.60
+
+# ---------------------------------------------------------------------------
+# PORTFOLIO ADMISSION (post-trade heat / correlation re-accounting)
+# ---------------------------------------------------------------------------
+
+portfolio_admission:
+  reject_if_trade_increases_cluster_breach: true
+  reject_if_trade_pushes_regime_budget_breach: true
+  reject_if_post_trade_heat_unknown: true
+  reject_if_post_trade_beta_unknown_when_beta_control_enabled: true
+
+# ---------------------------------------------------------------------------
+# SHAPE RULES
+# ---------------------------------------------------------------------------
+
+portfolio_shape:
+  treat_correlated_positions_as_one: true
+  require_post_trade_heat_recalculation: true
+  require_post_trade_correlation_recalculation: true
+
+defensive_allocation:
+  allow_cash_as_position: true
+  allow_defensive_sleeve: true
+  crisis_alpha_target_min_pct: 0.00
+
+rebalance_and_review:
+  require_daily_cluster_review: true
+  require_weekly_exposure_review: true
+  require_drawdown_state_in_capital_allocator: true

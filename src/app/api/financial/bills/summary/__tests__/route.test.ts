@@ -9,6 +9,9 @@
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("user"),
+}));
 jest.mock("@/lib/auth/rbac");
 jest.mock("@/lib/financial/bill-detection-service");
 
@@ -86,5 +89,17 @@ describe("GET /api/financial/bills/summary", () => {
 
     expect(res.status).toBe(500);
     expect(data.error).toBe("Failed to fetch bill summary");
+  });
+});
+
+describe("negative-auth – /api/financial/bills/summary", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("GET returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+    const res = await GET(createMockRequest("http://localhost:3000/api/financial/bills/summary"));
+    expect(res.status).toBe(401);
   });
 });

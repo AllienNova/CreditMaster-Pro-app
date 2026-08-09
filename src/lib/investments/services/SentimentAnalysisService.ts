@@ -30,12 +30,15 @@ import type {
   SentimentLabel,
 } from "../types/sentiment-analysis.types";
 import type { SignalStrength } from "../types/investment.types";
+import { AlphaVantageClient } from "@/lib/integrations/alpha-vantage";
 
 // ============================================================================
 // SENTIMENT ANALYSIS SERVICE
 // ============================================================================
 
 export class SentimentAnalysisService {
+  private readonly av = new AlphaVantageClient();
+
   /**
    * Perform comprehensive sentiment analysis on a symbol
    */
@@ -145,86 +148,108 @@ export class SentimentAnalysisService {
   }
 
   /**
-   * Get news sentiment for a symbol
+   * Quantize a continuous sentiment score to the allowed SentimentScore union.
+   */
+  private quantizeSentiment(score: number): SentimentScore {
+    if (score >= 0.35) return 1;
+    if (score >= 0.1) return 0.5;
+    if (score <= -0.35) return -1;
+    if (score <= -0.1) return -0.5;
+    return 0;
+  }
+
+  /**
+   * Get news sentiment for a symbol — calls Alpha Vantage NEWS_SENTIMENT.
+   * Falls back to empty state on any error.
    */
   async getNewsSentiment(symbol: string): Promise<NewsSentiment> {
-    // In production, fetch from news API
-    // For now, return mock data structure
-    const recentNews: NewsArticle[] = [
-      {
-        id: "1",
-        title: `${symbol} Announces Strong Q4 Earnings Beat`,
-        summary:
-          "Company exceeds analyst expectations with robust revenue growth.",
-        source: "Financial Times",
-        url: "https://example.com/article1",
-        publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        symbols: [symbol],
-        sentiment: 0.5,
-        sentimentLabel: "positive",
-        relevanceScore: 0.95,
-        topics: ["earnings", "revenue"],
-        impactLevel: "high",
-      },
-      {
-        id: "2",
-        title: `${symbol} Faces Regulatory Scrutiny in EU`,
-        summary:
-          "European regulators launch investigation into business practices.",
-        source: "Reuters",
-        url: "https://example.com/article2",
-        publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-        symbols: [symbol],
-        sentiment: -0.5,
-        sentimentLabel: "negative",
-        relevanceScore: 0.88,
-        topics: ["regulation", "legal"],
-        impactLevel: "medium",
-      },
-    ];
+    try {
+      const raw = await this.av.getNewsSentimentRaw(symbol);
+      if (!raw || !Array.isArray(raw.feed) || raw.feed.length === 0) {
+        return this.getDefaultNewsSentiment(symbol);
+      }
 
-    const positiveCount = recentNews.filter((n) => n.sentiment > 0).length;
-    const negativeCount = recentNews.filter((n) => n.sentiment < 0).length;
-    const neutralCount = recentNews.filter((n) => n.sentiment === 0).length;
-    const articleCount = recentNews.length;
+      const recentNews: NewsArticle[] = raw.feed.map((item, idx) => {
+        const a = item as Record<string, unknown>;
+        const rawScore = typeof a["overall_sentiment_score"] === "number"
+          ? (a["overall_sentiment_score"] as number)
+          : parseFloat(String(a["overall_sentiment_score"] ?? "0"));
+        const sentimentScore = this.quantizeSentiment(rawScore);
+        const sentimentLabel = this.getSentimentLabel(rawScore);
 
-    const averageSentiment =
-      recentNews.reduce((sum, n) => sum + n.sentiment, 0) / articleCount;
-    const sentimentLabel = this.getSentimentLabel(averageSentiment);
+        const topicList = Array.isArray(a["topics"])
+          ? (a["topics"] as { topic: string }[]).map((t) => t.topic)
+          : [];
 
-    const topPositiveNews = recentNews
-      .filter((n) => n.sentiment > 0)
-      .slice(0, 3);
-    const topNegativeNews = recentNews
-      .filter((n) => n.sentiment < 0)
-      .slice(0, 3);
+        const relevance = parseFloat(
+          String(
+            Array.isArray(a["ticker_sentiment"])
+              ? (
+                  (a["ticker_sentiment"] as { ticker: string; relevance_score: string }[]).find(
+                    (t) => t.ticker === symbol,
+                  )?.relevance_score ?? "0.5"
+                )
+              : "0.5",
+          ),
+        );
 
-    const sentimentTrend: "improving" | "stable" | "declining" =
-      averageSentiment > 0.3
-        ? "improving"
-        : averageSentiment < -0.3
-          ? "declining"
-          : "stable";
+        const impactLevel: "low" | "medium" | "high" =
+          relevance > 0.7 ? "high" : relevance > 0.4 ? "medium" : "low";
 
-    const signal = this.sentimentToSignal(averageSentiment);
+        return {
+          id: String(idx + 1),
+          title: String(a["title"] ?? ""),
+          summary: String(a["summary"] ?? ""),
+          source: String(a["source"] ?? ""),
+          url: String(a["url"] ?? ""),
+          publishedAt: new Date(
+            String(a["time_published"] ?? Date.now()).replace(
+              /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$/,
+              "$1-$2-$3T$4:$5:$6",
+            ),
+          ),
+          symbols: [symbol],
+          sentiment: sentimentScore,
+          sentimentLabel,
+          relevanceScore: isFinite(relevance) ? relevance : 0.5,
+          topics: topicList,
+          impactLevel,
+        };
+      });
 
-    return {
-      symbol,
-      analyzedAt: new Date(),
-      articleCount,
-      averageSentiment,
-      sentimentLabel,
-      sentimentChange24h: 0.1,
-      sentimentChange7d: 0.15,
-      positiveCount,
-      negativeCount,
-      neutralCount,
-      topPositiveNews,
-      topNegativeNews,
-      recentNews,
-      sentimentTrend,
-      signal,
-    };
+      const positiveCount = recentNews.filter((n) => n.sentiment > 0).length;
+      const negativeCount = recentNews.filter((n) => n.sentiment < 0).length;
+      const neutralCount = recentNews.filter((n) => n.sentiment === 0).length;
+      const articleCount = recentNews.length;
+      const averageSentiment =
+        recentNews.reduce((sum, n) => sum + n.sentiment, 0) / articleCount;
+      const sentimentLabel = this.getSentimentLabel(averageSentiment);
+      const topPositiveNews = recentNews.filter((n) => n.sentiment > 0).slice(0, 3);
+      const topNegativeNews = recentNews.filter((n) => n.sentiment < 0).slice(0, 3);
+      const sentimentTrend: "improving" | "stable" | "declining" =
+        averageSentiment > 0.3 ? "improving" : averageSentiment < -0.3 ? "declining" : "stable";
+
+      return {
+        symbol,
+        analyzedAt: new Date(),
+        articleCount,
+        averageSentiment,
+        sentimentLabel,
+        sentimentChange24h: 0,
+        sentimentChange7d: 0,
+        positiveCount,
+        negativeCount,
+        neutralCount,
+        topPositiveNews,
+        topNegativeNews,
+        recentNews,
+        sentimentTrend,
+        signal: this.sentimentToSignal(averageSentiment),
+        source: "live" as const,
+      };
+    } catch {
+      return this.getDefaultNewsSentiment(symbol);
+    }
   }
 
   /**
@@ -289,85 +314,77 @@ export class SentimentAnalysisService {
   }
 
   /**
-   * Get analyst consensus for a symbol
+   * Get analyst consensus for a symbol — extracts from Alpha Vantage OVERVIEW.
+   * Falls back to estimated template data if the API call fails.
    */
   async getAnalystConsensus(symbol: string): Promise<AnalystConsensus> {
-    const recentChanges: AnalystRecommendation[] = [
-      {
-        id: "1",
+    try {
+      const overview = await this.av.getOverviewRaw(symbol);
+
+      const strongBuy = parseInt(overview["AnalystRatingStrongBuy"] ?? "0", 10) || 0;
+      const buy = parseInt(overview["AnalystRatingBuy"] ?? "0", 10) || 0;
+      const hold = parseInt(overview["AnalystRatingHold"] ?? "0", 10) || 0;
+      const sell = parseInt(overview["AnalystRatingSell"] ?? "0", 10) || 0;
+      const strongSell = parseInt(overview["AnalystRatingStrongSell"] ?? "0", 10) || 0;
+      const totalAnalysts = strongBuy + buy + hold + sell + strongSell;
+
+      const averagePriceTarget = parseFloat(overview["AnalystTargetPrice"] ?? "0") || 0;
+
+      // Compute consensus rating from analyst counts
+      let consensusRating: "strong_buy" | "buy" | "hold" | "sell" | "strong_sell" = "hold";
+      if (totalAnalysts > 0) {
+        const ratingScore =
+          (strongBuy * 5 + buy * 4 + hold * 3 + sell * 2 + strongSell * 1) / totalAnalysts;
+        if (ratingScore >= 4.5) consensusRating = "strong_buy";
+        else if (ratingScore >= 3.5) consensusRating = "buy";
+        else if (ratingScore >= 2.5) consensusRating = "hold";
+        else if (ratingScore >= 1.5) consensusRating = "sell";
+        else consensusRating = "strong_sell";
+      }
+
+      // Alpha Vantage OVERVIEW doesn't provide high/low/median targets
+      const highPriceTarget = averagePriceTarget * 1.1;
+      const lowPriceTarget = averagePriceTarget * 0.9;
+      const medianPriceTarget = averagePriceTarget;
+
+      const fiftyTwoWeekLow = parseFloat(overview["52WeekLow"] ?? "0") || 0;
+      const fiftyTwoWeekHigh = parseFloat(overview["52WeekHigh"] ?? "0") || 0;
+      // Use midpoint of 52w range as proxy for current price when not directly available
+      const priceProxy = fiftyTwoWeekLow > 0 && fiftyTwoWeekHigh > 0
+        ? (fiftyTwoWeekLow + fiftyTwoWeekHigh) / 2
+        : 0;
+      const upside = priceProxy > 0 && averagePriceTarget > 0
+        ? ((averagePriceTarget - priceProxy) / priceProxy) * 100
+        : 0;
+
+      const ratingTrend: "upgrading" | "stable" | "downgrading" =
+        buy + strongBuy > sell + strongSell ? "upgrading" : "stable";
+      const signal = this.analystRatingToSignal(consensusRating);
+
+      return {
         symbol,
-        firm: "Goldman Sachs",
-        analyst: "John Smith",
-        rating: "buy",
-        previousRating: "hold",
-        priceTarget: 175.0,
-        previousPriceTarget: 160.0,
-        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        summary: "Upgraded due to strong earnings and positive outlook.",
-      },
-      {
-        id: "2",
-        symbol,
-        firm: "Morgan Stanley",
-        rating: "hold",
-        priceTarget: 155.0,
-        date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      },
-    ];
-
-    const strongBuy = 5;
-    const buy = 12;
-    const hold = 8;
-    const sell = 2;
-    const strongSell = 1;
-    const totalAnalysts = strongBuy + buy + hold + sell + strongSell;
-
-    // Calculate consensus rating
-    const ratingScore =
-      (strongBuy * 5 + buy * 4 + hold * 3 + sell * 2 + strongSell * 1) /
-      totalAnalysts;
-    let consensusRating:
-      | "strong_buy"
-      | "buy"
-      | "hold"
-      | "sell"
-      | "strong_sell" = "hold";
-    if (ratingScore >= 4.5) consensusRating = "strong_buy";
-    else if (ratingScore >= 3.5) consensusRating = "buy";
-    else if (ratingScore >= 2.5) consensusRating = "hold";
-    else if (ratingScore >= 1.5) consensusRating = "sell";
-    else consensusRating = "strong_sell";
-
-    const averagePriceTarget = 165.0;
-    const highPriceTarget = 185.0;
-    const lowPriceTarget = 145.0;
-    const medianPriceTarget = 162.5;
-    const currentPrice = 152.0;
-    const upside = ((averagePriceTarget - currentPrice) / currentPrice) * 100;
-
-    const ratingTrend: "upgrading" | "stable" | "downgrading" = "upgrading";
-    const signal = this.analystRatingToSignal(consensusRating);
-
-    return {
-      symbol,
-      calculatedAt: new Date(),
-      totalAnalysts,
-      strongBuy,
-      buy,
-      hold,
-      sell,
-      strongSell,
-      consensusRating,
-      averagePriceTarget,
-      highPriceTarget,
-      lowPriceTarget,
-      medianPriceTarget,
-      currentPrice,
-      upside,
-      recentChanges,
-      ratingTrend,
-      signal,
-    };
+        calculatedAt: new Date(),
+        totalAnalysts,
+        strongBuy,
+        buy,
+        hold,
+        sell,
+        strongSell,
+        consensusRating,
+        averagePriceTarget,
+        highPriceTarget,
+        lowPriceTarget,
+        medianPriceTarget,
+        currentPrice: priceProxy,
+        upside,
+        recentChanges: [],
+        ratingTrend,
+        signal,
+        source: "live" as const,
+      };
+    } catch {
+      return this.getDefaultAnalystConsensus(symbol);
+    }
   }
 
   /**
@@ -889,6 +906,7 @@ export class SentimentAnalysisService {
       recentNews: [],
       sentimentTrend: "stable",
       signal: "neutral",
+      source: "estimated" as const,
     };
   }
 
@@ -930,6 +948,7 @@ export class SentimentAnalysisService {
       recentChanges: [],
       ratingTrend: "stable",
       signal: "neutral",
+      source: "estimated" as const,
     };
   }
 

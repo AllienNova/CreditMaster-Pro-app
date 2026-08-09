@@ -20,6 +20,10 @@
     "src/app/api/ai/**/*.ts": {
       "maxDuration": 60,
       "memory": 1024
+    },
+    "src/app/api/cron/financial-snapshots/route.ts": {
+      "maxDuration": 300,
+      "memory": 1024
     }
   },
   "crons": [
@@ -34,6 +38,10 @@
     {
       "path": "/api/cron/cleanup-expired-sessions",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/financial-snapshots",
+      "schedule": "0 4 * * *"
     }
   ],
   "headers": [

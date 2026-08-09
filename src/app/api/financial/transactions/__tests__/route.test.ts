@@ -5,6 +5,9 @@
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/auth/rbac");
 jest.mock("@/lib/financial/plaid-service");
 
@@ -45,6 +48,7 @@ const mockTransactions = [
 describe("GET /api/financial/transactions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -55,25 +59,27 @@ describe("GET /api/financial/transactions", () => {
     );
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/transactions?accountId=acc-1&startDate=2026-01-01&endDate=2026-01-31",
+      );
+      const response = await GET(request);
+      expect(response.status).toBe(401);
     });
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/transactions?accountId=acc-1&startDate=2026-01-01&endDate=2026-01-31",
-    );
-    const response = await GET(request);
-    expect(response.status).toBe(401);
-  });
 
-  it("should return 403 for user without financial:read permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/transactions?accountId=acc-1&startDate=2026-01-01&endDate=2026-01-31",
-    );
-    const response = await GET(request);
-    expect(response.status).toBe(403);
+    it("should return 403 for user without financial:read permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/transactions?accountId=acc-1&startDate=2026-01-01&endDate=2026-01-31",
+      );
+      const response = await GET(request);
+      expect(response.status).toBe(403);
+    });
   });
 
   it("should return 400 when required params are missing", async () => {
@@ -103,10 +109,12 @@ describe("GET /api/financial/transactions", () => {
     expect(response.status).toBe(200);
     expect(data.success).toBe(true);
     expect(data.data).toEqual(mockTransactions);
+    // FND-036 fix: userId must be passed as 4th arg to prevent IDOR
     expect(plaidService.getTransactions).toHaveBeenCalledWith(
       "acc-1",
       expect.any(Date),
       expect.any(Date),
+      mockUser.id,
     );
   });
 

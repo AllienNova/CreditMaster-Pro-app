@@ -16,7 +16,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { db } from "@/lib/credit-repair/db";
 import { auditLogger } from "@/lib/security/audit-logging";
 import type {
@@ -46,19 +47,9 @@ interface DisputeUpdatePayload {
  * GET /api/credit-repair/disputes/[id]
  * Get single dispute by ID
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-    const { id: disputeId } = await params;
+    const disputeId = request.nextUrl.pathname.split("/").pop() as string;
 
     // 2. Get dispute from database
     const dispute = await db.disputes.getDispute(disputeId, user.id);
@@ -89,25 +80,15 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * PUT /api/credit-repair/disputes/[id]
  * Update dispute with optimistic locking support
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const PUT = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-    const { id: disputeId } = await params;
+    const disputeId = request.nextUrl.pathname.split("/").pop() as string;
 
     // 2. Parse and validate input
     const body = await request.json();
@@ -243,25 +224,16 @@ export async function PUT(
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * DELETE /api/credit-repair/disputes/[id]
  * Delete dispute
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const DELETE = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-    const { id: disputeId } = await params;
+    const disputeId = request.nextUrl.pathname.split("/").pop() as string;
 
     // 2. Delete dispute from database
     const deleted = await db.disputes.deleteDispute(disputeId, user.id);
@@ -292,4 +264,4 @@ export async function DELETE(
       { status: 500 },
     );
   }
-}
+});

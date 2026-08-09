@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { FinancialChatEngine } from "@/lib/ai/financial-chat-engine";
 import { CreateSessionRequest } from "@/lib/ai/types/financial-chat.types";
 
@@ -14,22 +14,8 @@ import { CreateSessionRequest } from "@/lib/ai/types/financial-chat.types";
  * GET /api/chat/financial/sessions
  * List user's chat sessions
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authenticate user
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: "Authentication required" },
-        { status: 401 },
-      );
-    }
-
     // Parse query parameters
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
@@ -56,7 +42,7 @@ export async function GET(request: NextRequest) {
     // Initialize chat engine
     const chatEngine = new FinancialChatEngine();
 
-    // Get user sessions
+    // Get user sessions (scoped to the authenticated user)
     const sessions = await chatEngine.getUserSessions(user.id, limit);
 
     // Apply offset (simple pagination)
@@ -82,28 +68,14 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/chat/financial/sessions
  * Create a new chat session
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authenticate user
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: "Authentication required" },
-        { status: 401 },
-      );
-    }
-
     // Parse and validate request body
     const body: CreateSessionRequest = await request.json();
 
@@ -128,7 +100,7 @@ export async function POST(request: NextRequest) {
     // Initialize chat engine
     const chatEngine = new FinancialChatEngine();
 
-    // Create session
+    // Create session (owned by the authenticated user)
     const session = await chatEngine.createSession(user.id, body.title);
 
     return NextResponse.json(
@@ -149,4 +121,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

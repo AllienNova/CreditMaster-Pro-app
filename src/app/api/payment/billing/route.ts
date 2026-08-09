@@ -1,38 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
-import { billingProfileStore } from "@/lib/payment/billing-profile-store";
+import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
+import { getBillingData } from "@/lib/payment/billing-data";
 import { SUBSCRIPTION_PLANS } from "@/lib/payment/stripe-service";
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "billing:read",
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!rbac.hasPermission(validation.user, "billing:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const profile = await billingProfileStore.getProfile(validation.user.id);
+    const billing = await getBillingData(user.id);
     return NextResponse.json({
       plans: SUBSCRIPTION_PLANS,
-      subscription: {
-        planId: profile.currentPlanId,
-        status: profile.status,
-        currentPeriodStart: profile.currentPeriodStart,
-        currentPeriodEnd: profile.currentPeriodEnd,
-        cancelAtPeriodEnd: profile.cancelAtPeriodEnd,
-      },
-      paymentMethods: profile.paymentMethods,
-      invoices: profile.invoices,
+      subscription: billing.subscription,
+      paymentMethods: billing.paymentMethods,
+      invoices: billing.invoices,
     });
   } catch (error) {
-    console.error("Billing profile error:", error);
+    console.error("Billing data error:", error);
     return NextResponse.json(
       { error: "Failed to load billing profile" },
       { status: 500 },
     );
   }
-}
+},
+);

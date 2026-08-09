@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./ThemeToggle";
+import { BrandMark } from "@/components/brand";
 
 interface NavLink {
   href: string;
@@ -82,13 +83,8 @@ export default function Header({
         <div className="max-w-[980px] mx-auto px-6">
           <div className="flex justify-between items-center h-14">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">F</span>
-              </div>
-              <span className="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">
-                Fynvita
-              </span>
+            <Link href="/" className="flex items-center">
+              <BrandMark variant="horizontal" height={36} priority />
             </Link>
 
             {/* Desktop Navigation */}
@@ -181,15 +177,10 @@ export default function Header({
           <div className="flex items-center justify-between">
             <Link
               href="/"
-              className="flex items-center gap-2"
+              className="flex items-center"
               onClick={() => setIsMenuOpen(false)}
             >
-              <div className="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">F</span>
-              </div>
-              <span className="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">
-                Fynvita
-              </span>
+              <BrandMark variant="horizontal" height={32} />
             </Link>
             <button
               onClick={() => setIsMenuOpen(false)}

@@ -1,9 +1,16 @@
 /**
  * Fynvita Debt Negotiation Screen
- * Negotiate with creditors
+ *
+ * Real-data wiring (PARITY-P2): renders the user's real pay-for-delete
+ * negotiations from GET /api/credit-repair/negotiate (withAuth) via
+ * creditRepairApi.getNegotiations, adapted web -> mobile by mapWebNegotiation.
+ * Fetch on mount with honest inline loading / error / empty states, a retry, and
+ * pull-to-refresh. The former hardcoded DEBTS array, the local Debt interface,
+ * and the fake setTimeout load were removed; the summary is computed from the
+ * real negotiations. Nothing is fabricated.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,65 +18,61 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { creditRepairApi } from "../../src/services/api/creditRepair";
+import type {
+  NegotiationDebt,
+  NegotiationStatus,
+} from "../../src/services/api/creditRepair";
 
-interface Debt {
-  id: string;
-  creditor: string;
-  balance: number;
-  originalBalance: number;
-  status: "active" | "negotiating" | "settled";
-  lastContact: string;
+// updatedAt arrives as an ISO string; render a compact locale date.
+function formatDate(iso?: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString();
 }
 
-const DEBTS: Debt[] = [
-  {
-    id: "1",
-    creditor: "Collection Agency A",
-    balance: 2500,
-    originalBalance: 3500,
-    status: "negotiating",
-    lastContact: "2024-12-01",
-  },
-  {
-    id: "2",
-    creditor: "Medical Collections",
-    balance: 1200,
-    originalBalance: 1200,
-    status: "active",
-    lastContact: "2024-11-15",
-  },
-  {
-    id: "3",
-    creditor: "Credit Card Debt",
-    balance: 0,
-    originalBalance: 5000,
-    status: "settled",
-    lastContact: "2024-10-20",
-  },
-  {
-    id: "4",
-    creditor: "Utility Company",
-    balance: 450,
-    originalBalance: 450,
-    status: "active",
-    lastContact: "2024-11-28",
-  },
-];
-
 export default function NegotiateScreen() {
+  const [debts, setDebts] = useState<NegotiationDebt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 600);
+  const fetchDebts = useCallback(async () => {
+    const res = await creditRepairApi.getNegotiations();
+    if (res.success && res.data) {
+      setDebts(res.data.debts);
+      setError(null);
+    } else {
+      setError(res.error?.message ?? "Unable to load negotiations.");
+    }
   }, []);
 
-  const getStatusColor = (status: string) => {
+  const load = useCallback(async () => {
+    setLoading(true);
+    await fetchDebts();
+    setLoading(false);
+  }, [fetchDebts]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchDebts();
+    setRefreshing(false);
+  };
+
+  // status is a closed union (NegotiationStatus); the switch is exhaustive.
+  const getStatusColor = (status: NegotiationStatus): string => {
     switch (status) {
       case "active":
         return theme.colors.error;
@@ -77,22 +80,39 @@ export default function NegotiateScreen() {
         return theme.colors.warning;
       case "settled":
         return theme.colors.success;
-      default:
-        return theme.colors.textSecondary;
     }
   };
 
-  const totalDebt = DEBTS.reduce((sum, d) => sum + d.balance, 0);
-  const totalSaved = DEBTS.reduce(
+  const totalDebt = debts.reduce((sum, d) => sum + d.balance, 0);
+  const totalSaved = debts.reduce(
     (sum, d) => sum + (d.originalBalance - d.balance),
     0,
   );
 
-  if (loading) {
+  if (loading && debts.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered} testID="credit-repair-negotiate-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.stateText}>Loading negotiations...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && debts.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="credit-repair-negotiate-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={load}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -103,6 +123,13 @@ export default function NegotiateScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+          />
+        }
       >
         <View style={styles.header}>
           <TouchableOpacity
@@ -117,7 +144,7 @@ export default function NegotiateScreen() {
           </View>
         </View>
 
-        {/* Summary */}
+        {/* Summary — computed from real negotiations */}
         <Card style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
@@ -174,52 +201,72 @@ export default function NegotiateScreen() {
         {/* Debts List */}
         <View style={styles.debtsList}>
           <Text style={styles.sectionTitle}>Your Debts</Text>
-          {DEBTS.map((debt) => (
-            <Card key={debt.id} style={styles.debtCard}>
-              <View style={styles.debtHeader}>
-                <Text style={styles.debtCreditor}>{debt.creditor}</Text>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: `${getStatusColor(debt.status)}15` },
-                  ]}
-                >
-                  <Text
+          {debts.length === 0 ? (
+            <View
+              style={styles.emptyCard}
+              testID="credit-repair-negotiate-empty"
+            >
+              <Ionicons
+                name="chatbubbles-outline"
+                size={40}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.emptyTitle}>No debts in negotiation yet</Text>
+              <Text style={styles.emptyText}>
+                Start a pay-for-delete negotiation with a collection agency to
+                settle a debt for less than the full balance.
+              </Text>
+            </View>
+          ) : (
+            debts.map((debt) => (
+              <Card key={debt.id} style={styles.debtCard}>
+                <View style={styles.debtHeader}>
+                  <Text style={styles.debtCreditor}>{debt.creditor}</Text>
+                  <View
                     style={[
-                      styles.statusText,
-                      { color: getStatusColor(debt.status) },
+                      styles.statusBadge,
+                      { backgroundColor: `${getStatusColor(debt.status)}15` },
                     ]}
                   >
-                    {debt.status}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.statusText,
+                        { color: getStatusColor(debt.status) },
+                      ]}
+                    >
+                      {debt.status}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.debtDetails}>
-                <View style={styles.debtAmounts}>
-                  <Text style={styles.debtBalance}>
-                    ${debt.balance.toLocaleString()}
-                  </Text>
-                  {debt.balance < debt.originalBalance && (
-                    <Text style={styles.debtOriginal}>
-                      was ${debt.originalBalance.toLocaleString()}
+                <View style={styles.debtDetails}>
+                  <View style={styles.debtAmounts}>
+                    <Text style={styles.debtBalance}>
+                      ${debt.balance.toLocaleString()}
+                    </Text>
+                    {debt.balance < debt.originalBalance && (
+                      <Text style={styles.debtOriginal}>
+                        was ${debt.originalBalance.toLocaleString()}
+                      </Text>
+                    )}
+                  </View>
+                  {formatDate(debt.updatedAt) !== "" && (
+                    <Text style={styles.debtContact}>
+                      Updated {formatDate(debt.updatedAt)}
                     </Text>
                   )}
                 </View>
-                <Text style={styles.debtContact}>
-                  Last contact: {debt.lastContact}
-                </Text>
-              </View>
-              {debt.status !== "settled" && (
-                <TouchableOpacity style={styles.negotiateButton}>
-                  <Text style={styles.negotiateText}>
-                    {debt.status === "negotiating"
-                      ? "Continue Negotiation"
-                      : "Start Negotiation"}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </Card>
-          ))}
+                {debt.status !== "settled" && (
+                  <TouchableOpacity style={styles.negotiateButton}>
+                    <Text style={styles.negotiateText}>
+                      {debt.status === "negotiating"
+                        ? "Continue Negotiation"
+                        : "Start Negotiation"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </Card>
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -229,7 +276,25 @@ export default function NegotiateScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
+  },
+  stateText: {
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -311,4 +376,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   negotiateText: { fontSize: 14, fontWeight: "600", color: "#fff" },
+  emptyCard: {
+    padding: theme.spacing.xl,
+    alignItems: "center",
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
+  },
 });

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withRole, type AuthedUser } from "@/lib/auth/api-guard";
 import {
   AnalyticsEngine,
   ReportGenerator,
@@ -19,16 +18,11 @@ interface ReportSummary {
  * POST /api/analytics/reports
  * Generate analytics report
  */
-export async function POST(request: NextRequest) {
+export const POST = withRole(
+  "admin",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
     const body = await request.json();
 
     const {
@@ -39,14 +33,6 @@ export async function POST(request: NextRequest) {
       include_charts = false,
       include_raw_data = true,
     } = body;
-
-    // Check permissions for system reports
-    if (
-      report_type === "system" &&
-      !rbac.hasPermission(validation.user, "admin:analytics")
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     // Generate analytics report
     const analyticsReport = await AnalyticsEngine.generateReport(
@@ -97,21 +83,15 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * GET /api/analytics/reports
  * List available reports (future: fetch from database)
  */
-export async function GET(request: NextRequest) {
+export const GET = withRole("admin", async () => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // In production, fetch from database
     const reports: ReportSummary[] = [];
 
@@ -124,7 +104,7 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * Get content type for format

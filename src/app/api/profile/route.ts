@@ -1,28 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 
-async function getUser() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll() } },
-  );
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
-
-export async function GET() {
+export const GET = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -123,15 +105,12 @@ export async function GET() {
       { status: 500 },
     );
   }
-}
+},
+);
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const updates = await request.json();
 
     const supabase = createClient(
@@ -168,4 +147,5 @@ export async function PATCH(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

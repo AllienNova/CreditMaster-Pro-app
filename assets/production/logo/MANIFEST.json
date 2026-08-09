@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-04-16T13:18:14.500989+00:00",
+  "source_spec": "assets/specs/logo-system.toml",
+  "source_model": "gemini-3-pro-image-preview",
+  "files": [
+    {
+      "path": "fynvita-app-icon.png",
+      "dimensions": "2048x2048",
+      "bytes": 1492483,
+      "colors": [
+        "#10B981",
+        "#1E40AF",
+        "#FFFFFF"
+      ],
+      "usage": "iOS/Android app icon source (1024\u00d71024 square)"
+    },
+    {
+      "path": "fynvita-horizontal.png",
+      "dimensions": "2816x1536",
+      "bytes": 1587416,
+      "colors": [
+        "#10B981",
+        "#1E40AF",
+        "#FFFFFF"
+      ],
+      "usage": "primary web header, email signature, letterhead"
+    },
+    {
+      "path": "fynvita-mark-mono-navy.png",
+      "dimensions": "2048x2048",
+      "bytes": 869456,
+      "colors": [
+        "#10B981",
+        "#1E40AF",
+        "#FFFFFF"
+      ],
+      "usage": "print, single-color contexts, watermarks"
+    },
+    {
+      "path": "fynvita-mark.png",
+      "dimensions": "2048x2048",
+      "bytes": 810404,
+      "colors": [
+        "#10B981",
+        "#1E40AF",
+        "#FFFFFF"
+      ],
+      "usage": "standalone icon, light backgrounds, PWA icon source"
+    },
+    {
+      "path": "fynvita-reversed.png",
+      "dimensions": "2816x1536",
+      "bytes": 1774075,
+      "colors": [
+        "#10B981",
+        "#1E40AF",
+        "#FFFFFF"
+      ],
+      "usage": "dark UI, promotional banners, green backgrounds"
+    },
+    {
+      "path": "fynvita-vertical.png",
+      "dimensions": "2048x2048",
+      "bytes": 1232207,
+      "colors": [
+        "#10B981",
+        "#1E40AF",
+        "#FFFFFF"
+      ],
+      "usage": "social avatars, marketing posters, splash screens"
+    },
+    {
+      "path": "fynvita-wordmark.png",
+      "dimensions": "2048x2048",
+      "bytes": 464151,
+      "colors": [
+        "#10B981",
+        "#1E40AF",
+        "#FFFFFF"
+      ],
+      "usage": "letterhead, minimalist/text-only contexts"
+    }
+  ]
+}

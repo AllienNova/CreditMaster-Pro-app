@@ -6,9 +6,10 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/api-guard";
 import { marketplaceService, type ProductFilters } from "@/lib/marketplace";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
     const searchParams = request.nextUrl.searchParams;
 
@@ -72,9 +73,9 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async () => {
   try {
     // For now, return not implemented
     // In production, this would require admin authentication
@@ -97,4 +98,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

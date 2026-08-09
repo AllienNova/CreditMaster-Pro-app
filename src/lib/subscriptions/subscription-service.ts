@@ -9,9 +9,13 @@
  * - Update user profile subscription tier
  */
 
-import { getSupabase } from "../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Database } from "../supabase/types";
 import { stripeService } from "../payment/stripe-service";
+import {
+  tierFromPriceId,
+  type SubscriptionTier,
+} from "../payment/tier-mapping";
 import type Stripe from "stripe";
 
 // Type helpers for Supabase operations
@@ -24,15 +28,15 @@ type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 // Helper to get typed table references
-const subscriptions = () => getSupabase().from("subscriptions");
-const profiles = () => getSupabase().from("profiles");
+const subscriptions = () => getServiceRoleClient().from("subscriptions");
+const profiles = () => getServiceRoleClient().from("profiles");
 
 export type SubscriptionStatus =
   | "active"
   | "canceled"
   | "past_due"
   | "trialing";
-export type SubscriptionTier = "free" | "basic" | "premium" | "enterprise";
+export type { SubscriptionTier };
 
 export interface Subscription {
   id: string;
@@ -75,7 +79,7 @@ class SubscriptionService {
 
     if (!customerId) {
       // Get user email from auth
-      const { data: authUser } = await getSupabase().auth.getUser();
+      const { data: authUser } = await getServiceRoleClient().auth.getUser();
       if (!authUser.user) {
         throw new Error("User not authenticated");
       }
@@ -131,7 +135,7 @@ class SubscriptionService {
     }
 
     // Update profile subscription tier
-    const tier = this.getTierFromPriceId(priceId);
+    const tier = tierFromPriceId(priceId);
     await this.updateProfileSubscriptionTier(
       userId,
       tier,
@@ -366,7 +370,7 @@ class SubscriptionService {
     }
 
     // Update profile tier
-    const tier = this.getTierFromPriceId(newPriceId);
+    const tier = tierFromPriceId(newPriceId);
     await this.updateProfileSubscriptionTier(
       userId,
       tier,
@@ -426,9 +430,7 @@ class SubscriptionService {
       subscription_tier: tier,
       subscription_status: status as "active" | "canceled" | "past_due",
     };
-    const query6 = profiles();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (query6 as any).update(updateData).eq("id", userId);
+    const { error } = await profiles().update(updateData).eq("id", userId);
 
     if (error) {
       // Subscription error:('Failed to update profile subscription tier:', error);
@@ -454,20 +456,6 @@ class SubscriptionService {
       // Subscription error:('Failed to update profile subscription status:', error);
       throw new Error(`Failed to update profile: ${error.message}`);
     }
-  }
-
-  /**
-   * Get subscription tier from Stripe price ID
-   */
-  private getTierFromPriceId(priceId: string): SubscriptionTier {
-    if (priceId === process.env.STRIPE_BASIC_PRICE_ID) {
-      return "basic";
-    } else if (priceId === process.env.STRIPE_PREMIUM_PRICE_ID) {
-      return "premium";
-    } else if (priceId === process.env.STRIPE_ENTERPRISE_PRICE_ID) {
-      return "enterprise";
-    }
-    return "free";
   }
 
   /**
@@ -530,12 +518,11 @@ class SubscriptionService {
     const { error } = await subscriptions().insert(insertData as any);
 
     if (error) {
-      // Subscription error:('Failed to save subscription from webhook:', error);
-      return;
+      throw new Error(`Failed to save subscription from webhook: ${error.message}`);
     }
 
     // Update profile
-    const tier = this.getTierFromPriceId(firstItem.price.id);
+    const tier = tierFromPriceId(firstItem.price.id);
     await this.updateProfileSubscriptionTier(
       userId,
       tier,

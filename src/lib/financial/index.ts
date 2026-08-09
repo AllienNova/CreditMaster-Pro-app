@@ -4,61 +4,26 @@
  * Centralized exports for all financial services
  */
 
-// Auto-Save Rules
-export {
-  AutoSaveRulesService,
-  getAutoSaveRulesService,
-  type AutoSaveRule,
-  type RuleType,
-  type RuleStatus,
-  type RuleFrequency,
-  type TriggerType,
-  type RuleConfig,
-  type RoundUpConfig,
-  type PercentageConfig,
-  type FixedAmountConfig,
-  type GoalContributionConfig,
-  type PaycheckSplitConfig,
-  type SurplusSweepConfig,
-  type WindfallCaptureConfig,
-  type SaveTransfer,
-  type RuleSummary,
-} from "./auto-save-rules-service";
+// Manual Account Entry: deleted (Wave 7 remediation, trading/assets cluster).
+// Queried the phantom "manual_accounts" table (never migrated) and had zero
+// importers of this barrel from outside src/lib/financial itself, confirmed
+// via repo-wide grep before deletion — same orphaned-service pattern as
+// crypto-wallet-service.ts and real-estate-tracking-service.ts. See
+// docs/qa/triage-trading.md.
 
-// Spending Limit Alerts
-export {
-  SpendingLimitAlertsService,
-  getSpendingLimitAlertsService,
-  type SpendingLimit,
-  type SpendingAlert,
-  type SpendingAnalysis,
-  type LimitPeriod,
-  type AlertSeverity,
-  type AlertStatus,
-  type LimitType,
-  type LimitSummary,
-} from "./spending-limit-alerts-service";
-
-// Manual Account Entry
-export {
-  ManualAccountService,
-  getManualAccountService,
-  type ManualAccount,
-  type ManualAccountType,
-  type AccountCategory,
-  type AccountDetails,
-  type RealEstateDetails,
-  type VehicleDetails,
-  type CryptoDetails,
-  type CollectibleDetails,
-  type LoanDetails,
-  type GenericDetails,
-  type ValueHistoryEntry,
-  type NetWorthSummary,
-} from "./manual-account-service";
-
-// Bill Calendar
-export { BillCalendarService } from "./bill-calendar-service";
+// Bill Calendar: deleted (Wave 7 remediation, alerts/bills/spending cluster).
+// scheduleReminders() wrote bill_reminders rows keyed off a `bills` row shaped
+// with columns that were never migrated (name, payee, due_day,
+// autopay_enabled, autopay_account_id, reminder_days_before, reminder_types,
+// website_url, account_number, is_active) — every read/write against those
+// columns was a phantom-column bug. git log --follow showed no real feature
+// history (reformat/bulk-authorship commits only) and grep confirmed zero
+// importers outside this barrel and its own test. The only other writer of
+// `bills`, bill-detection-service.ts, uses exclusively the real columns
+// (merchant_name, category, amount, frequency, next_due_date, last_paid_date,
+// last_paid_amount, status, is_auto_pay, account_id, notes), so deleting this
+// service removes the bug along with its only source — nothing is left
+// unexplained. See docs/qa/phantom-table-inventory.md.
 
 // Budget Service
 export { BudgetService } from "./budget-service";

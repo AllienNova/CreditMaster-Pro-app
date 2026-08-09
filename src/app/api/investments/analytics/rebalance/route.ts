@@ -7,13 +7,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { PortfolioAnalytics } from "@/lib/investments/portfolio-analytics";
-import { getUser } from "@/lib/auth/session";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { RiskLevel } from "@/lib/investments/types/advanced-analytics.types";
 import { z } from "zod";
-import { rateLimit } from "@/lib/rate-limit";
-
-// Initialize portfolio analytics service
-const portfolioAnalytics = new PortfolioAnalytics();
+import { rateLimit } from "@/lib/security/redis-rate-limiting";
 
 // Rate limiter: 100 requests per hour per user
 const limiter = rateLimit({
@@ -38,14 +35,8 @@ const RebalanceQuerySchema = z.object({
  * Returns:
  * - RebalancingRecommendation object with trade suggestions, expected impact, and reasons
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authentication
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Rate limiting
     try {
       await limiter.check(100, user.id); // 100 requests per hour
@@ -73,7 +64,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Invalid request parameters",
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 },
       );
@@ -85,6 +76,7 @@ export async function GET(request: NextRequest) {
     } = validationResult.data;
 
     // Generate rebalancing recommendations
+    const portfolioAnalytics = new PortfolioAnalytics(user.id);
     const recommendations = await portfolioAnalytics.suggestRebalancing(
       validPortfolioId,
       validTargetRiskLevel,
@@ -120,4 +112,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

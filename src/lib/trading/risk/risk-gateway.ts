@@ -10,6 +10,8 @@ import {
   CorrelationMonitor,
   type RegimeChangeEvent,
 } from "@/lib/trading/correlation-monitor";
+import { computePortfolioHeat, checkHeatBudget } from "@/lib/trading/risk/portfolio-heat";
+import type { MarketRegime } from "@/lib/trading/config";
 
 // ============================================================================
 // TYPES
@@ -213,6 +215,9 @@ export class RiskGateway {
   private consecutiveLosses: number = 0;
   private correlationMonitor: CorrelationMonitor | null = null;
 
+  // Strativion: Current market regime for heat budget checks
+  private currentRegime: MarketRegime | null = null;
+
   constructor(userId: string, rules?: Partial<RiskRules>) {
     this.userId = userId;
     this.rules = { ...DEFAULT_RISK_RULES, ...rules };
@@ -221,6 +226,11 @@ export class RiskGateway {
   /** Attach a correlation monitor for spike detection (RSK-003) */
   setCorrelationMonitor(monitor: CorrelationMonitor): void {
     this.correlationMonitor = monitor;
+  }
+
+  /** Set current market regime for portfolio heat budget checks */
+  setCurrentRegime(regime: MarketRegime): void {
+    this.currentRegime = regime;
   }
 
   // ============================================================================
@@ -383,6 +393,45 @@ export class RiskGateway {
           currentValue: hhi,
           threshold: this.rules.maxHHI,
         });
+      }
+    }
+
+    // Strativion: Portfolio heat budget check
+    // Computes portfolio risk using position weights and checks against
+    // regime-aware heat ceiling. Requires covMatrix and regime to be available.
+    if (this.currentRegime && portfolio.positions.length > 0) {
+      try {
+        const weights = portfolio.positions.map(
+          (p) => (p.value / portfolio.totalValue) * portfolio.totalValue,
+        );
+        // Build a simple diagonal covariance proxy from position weights
+        // TODO: use real covariance matrix from returns data when available
+        const n = weights.length;
+        const covMatrix: number[][] = Array.from({ length: n }, (_, i) =>
+          Array.from({ length: n }, (_, j) => (i === j ? 0.04 : 0.01)),
+        );
+        const heat = computePortfolioHeat(weights, covMatrix, portfolio.totalValue);
+        const heatCheck = checkHeatBudget(heat, this.currentRegime);
+
+        if (!heatCheck.allowed) {
+          violations.push({
+            rule: "portfolio_heat_budget",
+            message: `Portfolio heat ${(heat * 100).toFixed(2)}% exceeds ${this.currentRegime} ceiling of ${(heatCheck.ceiling * 100).toFixed(2)}%`,
+            severity: "high",
+            currentValue: heat,
+            limit: heatCheck.ceiling,
+          });
+        } else if (heatCheck.utilization > 0.8) {
+          warnings.push({
+            rule: "portfolio_heat_warning",
+            message: `Portfolio heat utilization ${(heatCheck.utilization * 100).toFixed(1)}% approaching ceiling`,
+            currentValue: heat,
+            threshold: heatCheck.ceiling,
+          });
+        }
+      } catch (heatErr) {
+        // Portfolio heat calculation error — log and continue
+        console.error("[PortfolioHeat] Error in validateTrade:", heatErr);
       }
     }
 
@@ -726,6 +775,41 @@ export class RiskGateway {
           currentValue: hhi,
           threshold: this.rules.maxHHI,
         });
+      }
+    }
+
+    // Strativion: Portfolio heat budget check (Gate 2)
+    if (this.currentRegime && portfolio.positions.length > 0) {
+      try {
+        const weights = portfolio.positions.map(
+          (p) => (p.value / portfolio.totalValue) * portfolio.totalValue,
+        );
+        const n = weights.length;
+        // TODO: use real covariance matrix from returns data when available
+        const covMatrix: number[][] = Array.from({ length: n }, (_, i) =>
+          Array.from({ length: n }, (_, j) => (i === j ? 0.04 : 0.01)),
+        );
+        const heat = computePortfolioHeat(weights, covMatrix, portfolio.totalValue);
+        const heatCheck = checkHeatBudget(heat, this.currentRegime);
+
+        if (!heatCheck.allowed) {
+          violations.push({
+            rule: "portfolio_heat_budget",
+            message: `Portfolio heat ${(heat * 100).toFixed(2)}% exceeds ${this.currentRegime} ceiling of ${(heatCheck.ceiling * 100).toFixed(2)}%`,
+            severity: "high",
+            currentValue: heat,
+            limit: heatCheck.ceiling,
+          });
+        } else if (heatCheck.utilization > 0.8) {
+          warnings.push({
+            rule: "portfolio_heat_warning",
+            message: `Portfolio heat utilization ${(heatCheck.utilization * 100).toFixed(1)}% approaching ceiling`,
+            currentValue: heat,
+            threshold: heatCheck.ceiling,
+          });
+        }
+      } catch (heatErr) {
+        console.error("[PortfolioHeat] Error in riskLimits:", heatErr);
       }
     }
 

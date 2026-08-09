@@ -5,15 +5,16 @@
  */
 
 import { SavingsOptimizer, getSavingsOptimizer } from "../savings-optimizer";
+import { logger } from "@/lib/monitoring/logger";
 
 // Mock dependencies — define inside factory to avoid TDZ with jest.mock hoisting
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
+  return { getServiceRoleClient: () => _client };
 });
 
-import { getSupabase } from "@/lib/supabase/client";
-const supabase = getSupabase() as any;
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+const supabase = getServiceRoleClient() as any;
 
 jest.mock("@/lib/aiml-service", () => ({
   getAIMLService: jest.fn(() => ({
@@ -745,6 +746,120 @@ describe("SavingsOptimizer", () => {
       expect(analysis).toBeDefined();
       expect(analysis.aiInsights).toBeDefined();
       expect(Array.isArray(analysis.aiInsights)).toBe(true);
+    });
+  });
+
+  describe("hasHighInterestDebt() / debt_payoff recommendation", () => {
+    // Regression coverage: this method used to query a "debts" table that has
+    // never existed in the live schema (the real table is "debt_accounts",
+    // filtered by `is_active`, not `status`). PostgREST resolves an {error}
+    // for an unknown table/column instead of throwing, so the "Pay Off
+    // High-Interest Debt" recommendation silently never fired for any user.
+
+    // `.eq()` is the terminal call in this query (no `.single()`/`.order()`
+    // follows it), so the mock must be both chainable AND thenable to match
+    // how the real postgrest-js builder resolves.
+    const buildDebtAccountsChain = (result: {
+      data: unknown;
+      error: unknown;
+    }) => {
+      const chain: Record<string, unknown> = {};
+      chain.select = jest.fn(() => chain);
+      chain.eq = jest.fn(() => chain);
+      chain.then = (resolve: (v: unknown) => unknown) =>
+        Promise.resolve(result).then(resolve);
+      return chain;
+    };
+
+    const buildDefaultChain = () => ({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      gte: jest.fn().mockReturnThis(),
+      lte: jest.fn().mockReturnThis(),
+      gt: jest.fn().mockReturnThis(),
+      in: jest.fn().mockResolvedValue({ data: [], error: null }),
+      single: jest.fn().mockResolvedValue({
+        data: { monthly_income: 5000 },
+        error: null,
+      }),
+      order: jest.fn().mockResolvedValue({ data: [], error: null }),
+    });
+
+    let loggerErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      loggerErrorSpy = jest.spyOn(logger, "error").mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      loggerErrorSpy.mockRestore();
+    });
+
+    it("includes a debt_payoff recommendation when debt_accounts has an active row above 10% APR", async () => {
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === "debt_accounts") {
+          return buildDebtAccountsChain({
+            data: [{ interest_rate: 24.99 }, { interest_rate: 5 }],
+            error: null,
+          });
+        }
+        return buildDefaultChain();
+      });
+
+      const recommendations =
+        await optimizer.generateSavingsGoalRecommendations(mockUserId);
+
+      const debtPayoff = recommendations.filter(
+        (r) => r.type === "debt_payoff" && !r.aiGenerated,
+      );
+      expect(debtPayoff).toHaveLength(1);
+    });
+
+    it("does not recommend debt payoff when every debt_accounts row is low-interest", async () => {
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === "debt_accounts") {
+          return buildDebtAccountsChain({
+            data: [{ interest_rate: 4.5 }],
+            error: null,
+          });
+        }
+        return buildDefaultChain();
+      });
+
+      const recommendations =
+        await optimizer.generateSavingsGoalRecommendations(mockUserId);
+
+      const debtPayoff = recommendations.filter(
+        (r) => r.type === "debt_payoff" && !r.aiGenerated,
+      );
+      expect(debtPayoff).toHaveLength(0);
+    });
+
+    it("logs (does not silently swallow) a debt_accounts query error instead of reading it as 'no debt'", async () => {
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === "debt_accounts") {
+          return buildDebtAccountsChain({
+            data: null,
+            error: { message: "connection reset", code: "08006" },
+          });
+        }
+        return buildDefaultChain();
+      });
+
+      const recommendations =
+        await optimizer.generateSavingsGoalRecommendations(mockUserId);
+
+      // Fails safe: does not fabricate a debt recommendation on error either.
+      expect(
+        recommendations.some(
+          (r) => r.type === "debt_payoff" && !r.aiGenerated,
+        ),
+      ).toBe(false);
+      // But the failure must be observable, not silent.
+      expect(loggerErrorSpy).toHaveBeenCalled();
+      const [message, loggedError] = loggerErrorSpy.mock.calls[0];
+      expect(String(message)).toContain("debt_accounts");
+      expect(loggedError).toBeInstanceOf(Error);
     });
   });
 });

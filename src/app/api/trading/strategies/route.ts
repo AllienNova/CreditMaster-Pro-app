@@ -12,6 +12,38 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { validateStrategyDefinition } from "@/lib/trading/strategies/strategy-validator";
 
 // ============================================================================
+// TYPES
+// ============================================================================
+
+export interface StrategyLibraryRow {
+  id: string;
+  user_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  category: string;
+  config: Record<string, unknown>;
+  risk_params: Record<string, unknown> | null;
+  is_system: boolean;
+  is_public: boolean;
+  is_active: boolean;
+  usage_count?: number;
+  backtest_results?: Record<string, unknown> | null;
+  degradation_factor?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+type StrategyInsert = Omit<
+  StrategyLibraryRow,
+  "id" | "created_at" | "updated_at" | "usage_count" | "backtest_results" | "degradation_factor"
+>;
+
+// strategy_library is not in the generated Database types yet.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const strategyLib = () => supabaseAdmin.from("strategy_library") as any;
+
+// ============================================================================
 // GET — List strategies
 // ============================================================================
 
@@ -24,9 +56,7 @@ export const GET = withAuth(async (request: NextRequest, user: JWTUser) => {
     const limit = Math.min(parseInt(params.get("limit") || "50", 10), 100);
     const offset = parseInt(params.get("offset") || "0", 10);
 
-    let query = supabaseAdmin
-      .from("strategy_library")
-      .select("*", { count: "exact" });
+    let query = strategyLib().select("*", { count: "exact" });
 
     // Users see: their own + system + public-active
     if (systemOnly) {
@@ -51,7 +81,15 @@ export const GET = withAuth(async (request: NextRequest, user: JWTUser) => {
       .order("usage_count", { ascending: false })
       .range(offset, offset + limit - 1);
 
-    const { data, count, error } = await query;
+    const {
+      data,
+      count,
+      error,
+    }: {
+      data: StrategyLibraryRow[] | null;
+      count: number | null;
+      error: { message: string } | null;
+    } = await query;
 
     if (error) {
       console.error("[trading/strategies] GET error:", error);
@@ -162,22 +200,24 @@ export const POST = withAuth(async (request: NextRequest, user: JWTUser) => {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "")}-${Date.now().toString(36)}`;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- strategy_library not in generated types yet
-    const { data, error } = await (supabaseAdmin.from("strategy_library") as any)
-      .insert({
-        user_id: user.id,
-        name: name.trim(),
-        slug: strategySlug,
-        description: description?.trim() || null,
-        category,
-        config,
-        risk_params: riskParams || {},
-        is_system: false,
-        is_public: isPublic ?? false,
-        is_active: true,
-      })
-      .select()
-      .single();
+    const insertRow: StrategyInsert = {
+      user_id: user.id,
+      name: name.trim(),
+      slug: strategySlug,
+      description: description?.trim() || null,
+      category,
+      config,
+      risk_params: riskParams || {},
+      is_system: false,
+      is_public: isPublic ?? false,
+      is_active: true,
+    };
+
+    const {
+      data,
+      error,
+    }: { data: StrategyLibraryRow | null; error: { message: string; code: string } | null } =
+      await strategyLib().insert(insertRow).select().single();
 
     if (error) {
       if (error.code === "23505") {

@@ -578,7 +578,7 @@ export class FinancialJourneyService {
   }
 
   async getUserJourney(userId: string): Promise<FinancialJourney | null> {
-    const { data } = await this.supabase
+    const { data, error } = await this.supabase
       .from("financial_journeys")
       .select("*")
       .eq("user_id", userId)
@@ -586,16 +586,23 @@ export class FinancialJourneyService {
       .limit(1)
       .single();
 
+    if (error && error.code !== "PGRST116") throw error;
     return data ? this.fromDbFormat(data) : null;
   }
 
   async updateProgress(
+    userId: string,
     journeyId: string,
     waypointId: string,
     requirementUpdates: { type: string; currentValue: number }[],
   ): Promise<FinancialJourney> {
     const journey = await this.getJourneyById(journeyId);
     if (!journey) throw new Error("Journey not found");
+
+    // Verify the caller owns this journey
+    if (journey.userId !== userId) {
+      throw new Error("Not authorized to update this journey");
+    }
 
     const waypointIndex = journey.waypoints.findIndex(
       (w) => w.id === waypointId,
@@ -667,12 +674,13 @@ export class FinancialJourneyService {
   private async getJourneyById(
     journeyId: string,
   ): Promise<FinancialJourney | null> {
-    const { data } = await this.supabase
+    const { data, error } = await this.supabase
       .from("financial_journeys")
       .select("*")
       .eq("id", journeyId)
       .single();
 
+    if (error && error.code !== "PGRST116") throw error;
     return data ? this.fromDbFormat(data) : null;
   }
 

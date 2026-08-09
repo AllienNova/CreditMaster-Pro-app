@@ -282,6 +282,18 @@ export const investmentsApi = {
       cacheTime: 60000, // Cache for 1 minute
       ...config,
     }),
+
+  /**
+   * Get dividend tracking data for user holdings
+   */
+  getDividends: (
+    config?: RequestConfig,
+  ): Promise<ApiResponse<DividendDataResponse>> =>
+    api.get<DividendDataResponse>("/investments/dividends", {
+      enableCache: true,
+      cacheTime: 120000, // Cache for 2 minutes
+      ...config,
+    }),
 };
 
 // Extended Types for new endpoints
@@ -466,6 +478,33 @@ export interface PortfolioAnalysisResponse {
     diversificationScore: number;
     riskLevel?: "low" | "moderate" | "high";
   };
+}
+
+// Dividend Types
+export type DividendFrequency =
+  | "monthly"
+  | "quarterly"
+  | "semi-annual"
+  | "annual"
+  | "irregular";
+
+export interface DividendHolding {
+  symbol: string;
+  name: string;
+  shares: number;
+  dividendPerShare: number;
+  annualDividend: number;
+  yield: number;
+  frequency: DividendFrequency;
+  nextPayDate: string | null;
+  lastPayDate: string | null;
+}
+
+export interface DividendDataResponse {
+  holdings: DividendHolding[];
+  totalAnnualIncome: number;
+  averageYield: number;
+  nextPaymentDate: string | null;
 }
 
 export default investmentsApi;

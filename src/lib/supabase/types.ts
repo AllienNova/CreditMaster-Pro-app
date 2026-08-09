@@ -19,7 +19,13 @@ export interface Database {
         Row: {
           id: string;
           full_name: string | null;
-          subscription_tier: "free" | "basic" | "premium" | "enterprise";
+          subscription_tier:
+            | "free"
+            | "standard"
+            | "pro"
+            | "family-duo"
+            | "family"
+            | "family-plus";
           subscription_status: "active" | "canceled" | "past_due" | null;
           stripe_customer_id: string | null;
           created_at: string;
@@ -28,7 +34,13 @@ export interface Database {
         Insert: {
           id: string;
           full_name?: string | null;
-          subscription_tier?: "free" | "basic" | "premium" | "enterprise";
+          subscription_tier?:
+            | "free"
+            | "standard"
+            | "pro"
+            | "family-duo"
+            | "family"
+            | "family-plus";
           subscription_status?: "active" | "canceled" | "past_due" | null;
           stripe_customer_id?: string | null;
           created_at?: string;
@@ -37,7 +49,13 @@ export interface Database {
         Update: {
           id?: string;
           full_name?: string | null;
-          subscription_tier?: "free" | "basic" | "premium" | "enterprise";
+          subscription_tier?:
+            | "free"
+            | "standard"
+            | "pro"
+            | "family-duo"
+            | "family"
+            | "family-plus";
           subscription_status?: "active" | "canceled" | "past_due" | null;
           stripe_customer_id?: string | null;
           created_at?: string;
@@ -58,6 +76,7 @@ export interface Database {
           created_at: string;
           sent_at: string | null;
           resolved_at: string | null;
+          notes: string | null;
         };
         Insert: {
           id?: string;
@@ -72,6 +91,7 @@ export interface Database {
           created_at?: string;
           sent_at?: string | null;
           resolved_at?: string | null;
+          notes?: string | null;
         };
         Update: {
           id?: string;
@@ -86,6 +106,7 @@ export interface Database {
           created_at?: string;
           sent_at?: string | null;
           resolved_at?: string | null;
+          notes?: string | null;
         };
       };
       documents: {
@@ -100,6 +121,8 @@ export interface Database {
           s3_key: string;
           s3_url: string | null;
           uploaded_at: string;
+          metadata: Json | null;
+          tags: string[] | null;
         };
         Insert: {
           id?: string;
@@ -112,6 +135,8 @@ export interface Database {
           s3_key: string;
           s3_url?: string | null;
           uploaded_at?: string;
+          metadata?: Json | null;
+          tags?: string[] | null;
         };
         Update: {
           id?: string;
@@ -124,6 +149,40 @@ export interface Database {
           s3_key?: string;
           s3_url?: string | null;
           uploaded_at?: string;
+          metadata?: Json | null;
+          tags?: string[] | null;
+        };
+      };
+      document_share_links: {
+        Row: {
+          id: string;
+          document_id: string;
+          user_id: string;
+          recipients: string[];
+          permissions: "view" | "download";
+          url: string;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          document_id: string;
+          user_id: string;
+          recipients?: string[];
+          permissions?: "view" | "download";
+          url: string;
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          document_id?: string;
+          user_id?: string;
+          recipients?: string[];
+          permissions?: "view" | "download";
+          url?: string;
+          expires_at?: string;
+          created_at?: string;
         };
       };
       notifications: {
@@ -134,7 +193,14 @@ export interface Database {
             | "dispute_update"
             | "payment_success"
             | "document_uploaded"
-            | "tip";
+            | "tip"
+            | "dispute_overdue"
+            | "dispute_reminder"
+            | "draft_reminder"
+            | "score_reminder"
+            | "subscription_expiring"
+            | "welcome"
+            | "system";
           title: string;
           message: string;
           read: boolean;
@@ -147,7 +213,14 @@ export interface Database {
             | "dispute_update"
             | "payment_success"
             | "document_uploaded"
-            | "tip";
+            | "tip"
+            | "dispute_overdue"
+            | "dispute_reminder"
+            | "draft_reminder"
+            | "score_reminder"
+            | "subscription_expiring"
+            | "welcome"
+            | "system";
           title: string;
           message: string;
           read?: boolean;
@@ -160,7 +233,14 @@ export interface Database {
             | "dispute_update"
             | "payment_success"
             | "document_uploaded"
-            | "tip";
+            | "tip"
+            | "dispute_overdue"
+            | "dispute_reminder"
+            | "draft_reminder"
+            | "score_reminder"
+            | "subscription_expiring"
+            | "welcome"
+            | "system";
           title?: string;
           message?: string;
           read?: boolean;
@@ -889,6 +969,205 @@ export interface Database {
           last_used?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+      };
+      user_risk_settings: {
+        Row: {
+          id: string;
+          user_id: string;
+          settings: Json;
+          kill_switch: Json;
+          equity: number;
+          peak_equity: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          settings?: Json;
+          kill_switch?: Json;
+          equity?: number;
+          peak_equity?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          settings?: Json;
+          kill_switch?: Json;
+          equity?: number;
+          peak_equity?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      kill_switch_events: {
+        Row: {
+          id: string;
+          level: string;
+          previous_level: string;
+          reason: string;
+          actor_id: string;
+          dual_control_request_id: string | null;
+          canonical_package_version: string;
+          canonical_hash: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          level: string;
+          previous_level: string;
+          reason: string;
+          actor_id: string;
+          dual_control_request_id?: string | null;
+          canonical_package_version: string;
+          canonical_hash: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          level?: string;
+          previous_level?: string;
+          reason?: string;
+          actor_id?: string;
+          dual_control_request_id?: string | null;
+          canonical_package_version?: string;
+          canonical_hash?: string;
+          created_at?: string;
+        };
+      };
+      dual_control_requests: {
+        Row: {
+          id: string;
+          target_level: string;
+          requestor_id: string;
+          approver_id: string | null;
+          denier_id: string | null;
+          reason: string;
+          denial_reason: string | null;
+          status: string;
+          created_at: string;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          target_level: string;
+          requestor_id: string;
+          approver_id?: string | null;
+          denier_id?: string | null;
+          reason: string;
+          denial_reason?: string | null;
+          status?: string;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          target_level?: string;
+          requestor_id?: string;
+          approver_id?: string | null;
+          denier_id?: string | null;
+          reason?: string;
+          denial_reason?: string | null;
+          status?: string;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+      };
+      incidents: {
+        Row: {
+          id: string;
+          code: string;
+          category: string;
+          severity: string;
+          default_action: string;
+          auto_recoverable: boolean;
+          status: string;
+          raised_by: string;
+          resolved_by: string | null;
+          resolution_note: string | null;
+          details: Json;
+          canonical_package_version: string;
+          canonical_hash: string;
+          raised_at: string;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          category: string;
+          severity: string;
+          default_action: string;
+          auto_recoverable?: boolean;
+          status?: string;
+          raised_by: string;
+          resolved_by?: string | null;
+          resolution_note?: string | null;
+          details?: Json;
+          canonical_package_version: string;
+          canonical_hash: string;
+          raised_at?: string;
+          resolved_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          category?: string;
+          severity?: string;
+          default_action?: string;
+          auto_recoverable?: boolean;
+          status?: string;
+          raised_by?: string;
+          resolved_by?: string | null;
+          resolution_note?: string | null;
+          details?: Json;
+          canonical_package_version?: string;
+          canonical_hash?: string;
+          raised_at?: string;
+          resolved_at?: string | null;
+        };
+      };
+      trading_audit_trail: {
+        Row: {
+          id: string;
+          actor: string;
+          action: string;
+          resource_type: string;
+          resource_id: string | null;
+          reason: string;
+          success: boolean;
+          details: Json;
+          canonical_package_version: string;
+          canonical_hash: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor: string;
+          action: string;
+          resource_type: string;
+          resource_id?: string | null;
+          reason: string;
+          success: boolean;
+          details?: Json;
+          canonical_package_version?: string;
+          canonical_hash?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          actor?: string;
+          action?: string;
+          resource_type?: string;
+          resource_id?: string | null;
+          reason?: string;
+          success?: boolean;
+          details?: Json;
+          canonical_package_version?: string;
+          canonical_hash?: string;
+          created_at?: string;
         };
       };
     };

@@ -18,10 +18,15 @@ export default function LoginScreen() {
     useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const { login, isLoading, error, clearError } = useAuthStore();
 
   const handleLogin = async () => {
-    if (!email || !password) return;
+    if (!email || !password) {
+      setFormError("Please enter your email and password.");
+      return;
+    }
+    setFormError(null);
     clearError();
     const success = await login(email, password);
     if (success) {
@@ -68,7 +73,7 @@ export default function LoginScreen() {
       </View>
 
       <View style={{ flex: 1 }}>
-        {error && (
+        {(formError || error) && (
           <View
             style={{
               backgroundColor: withOpacity(colors.error, 0.1),
@@ -78,7 +83,7 @@ export default function LoginScreen() {
             }}
           >
             <Text style={{ color: colors.error, textAlign: "center" }}>
-              {error}
+              {formError || error}
             </Text>
           </View>
         )}
@@ -107,7 +112,10 @@ export default function LoginScreen() {
             placeholder="you@example.com"
             placeholderTextColor={colors.textSecondary}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(t) => {
+              setEmail(t);
+              if (formError) setFormError(null);
+            }}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
@@ -138,7 +146,10 @@ export default function LoginScreen() {
             placeholder="Enter your password"
             placeholderTextColor={colors.textSecondary}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(t) => {
+              setPassword(t);
+              if (formError) setFormError(null);
+            }}
             secureTextEntry
             autoComplete="password"
           />
@@ -146,12 +157,11 @@ export default function LoginScreen() {
 
         <TouchableOpacity
           style={{ alignSelf: "flex-end", marginBottom: spacing.lg }}
+          onPress={() => router.push("/(auth)/forgot-password")}
         >
-          <Link href="/(auth)/forgot-password">
-            <Text style={{ color: colors.primary, fontSize: fontSize.sm }}>
-              Forgot password?
-            </Text>
-          </Link>
+          <Text style={{ color: colors.primary, fontSize: fontSize.sm }}>
+            Forgot password?
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity

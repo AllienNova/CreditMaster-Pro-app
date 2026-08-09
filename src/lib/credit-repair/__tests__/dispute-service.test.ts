@@ -12,9 +12,9 @@
 // Mocks
 // ---------------------------------------------------------------------------
 
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
+  return { getServiceRoleClient: () => _client };
 });
 
 jest.mock("@/lib/ai-orchestrator", () => ({
@@ -24,7 +24,7 @@ jest.mock("@/lib/ai-orchestrator", () => ({
 }));
 
 function sb() {
-  return require("@/lib/supabase/client").getSupabase();
+  return require("@/lib/supabase/service-role").getServiceRoleClient();
 }
 
 function orchestrator() {
@@ -352,21 +352,21 @@ describe("DisputeService", () => {
       };
       mockFrom({ data: disputeData, error: null });
 
-      const result = await disputeService.trackDispute("d-1");
+      const result = await disputeService.trackDispute("d-1", "user-1");
       expect(result).toEqual(disputeData);
     });
 
     it("should return null when dispute not found", async () => {
       mockFrom({ data: null, error: { code: "PGRST116", message: "Not found" } });
 
-      const result = await disputeService.trackDispute("nonexistent");
+      const result = await disputeService.trackDispute("nonexistent", "user-1");
       expect(result).toBeNull();
     });
 
     it("should return null on general error", async () => {
       mockFrom({ data: null, error: { message: "DB error" } });
 
-      const result = await disputeService.trackDispute("d-1");
+      const result = await disputeService.trackDispute("d-1", "user-1");
       expect(result).toBeNull();
     });
   });

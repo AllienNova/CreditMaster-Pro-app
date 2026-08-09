@@ -5,29 +5,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
 import { federalIntegrationService } from "@/lib/federal-integration-service";
 import { logAIInteraction } from "@/lib/security/audit-logging";
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "federal_programs:check_eligibility",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (
-      !rbac.hasPermission(validation.user, "federal_programs:check_eligibility")
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const user = validation.user;
-
     // Parse request body
     const body = await request.json();
     const { program_type, ssn } = body;
@@ -102,9 +87,12 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
-export async function GET() {
+export const GET = withPermission(
+  "federal_programs:check_eligibility",
+  async () => {
   return NextResponse.json({
     message: "Federal Program Eligibility Check API",
     method: "POST",
@@ -113,4 +101,5 @@ export async function GET() {
     programTypes: ["fresh_start", "rehabilitation", "discharge"],
     description: "Checks eligibility for federal student loan programs",
   });
-}
+},
+);

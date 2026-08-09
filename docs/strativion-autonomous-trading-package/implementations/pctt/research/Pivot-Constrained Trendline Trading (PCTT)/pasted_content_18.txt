@@ -1,0 +1,219 @@
+ (good). For research-grade, put a similar caution near the risk module as well so it’s not just in conclusion.
+
+3) Pine implementation: additional practical gaps
+Gap 11 — Complexity constraints not addressed in the core algorithm
+
+Your candidate-pair approach can blow up (pivot pairs can be 
+𝑂
+(
+𝐾
+2
+)
+O(K
+2
+)). You mention “separate file” implementation, but the methodology should include:
+
+candidate cap (e.g., last 8 pivots),
+
+recomputation schedule (on new pivot only),
+
+sampling strategy for violations.
+
+This is needed for TradingView viability.
+
+Gap 12 — Missing “one-break-one-trade” formalization in the state machine
+
+You list it in portfolio circuit breakers 
+
+RG_Structure_Trading_Strategy_P…
+
+, but it should be encoded in the finite state machine definition to avoid re-entry ambiguity.
+
+4) The more comprehensive “v2” paper structure (what I recommend)
+
+Below is the upgraded blueprint that incorporates everything we talked about and closes the gaps above.
+
+Section 2 (Methodology) — upgraded
+
+Data normalization: ATR + optional log-price appendix (keep ATR as primary). 
+
+RG_Structure_Trading_Strategy_P…
+
+Pivot extraction: define pivot delays + how pivots enter “confirmed set.” 
+
+RG_Structure_Trading_Strategy_P…
+
+Boundary estimation:
+
+candidate generation (pivot pairs) 
+
+RG_Structure_Trading_Strategy_P…
+
+hard/soft constraint variants (no-cross vs penalty)
+
+sanity constraints 
+𝑈
+(
+𝑡
+)
+≥
+𝐿
+(
+𝑡
+)
+U(t)≥L(t)
+
+Scoring function (fully specified):
+
+define touch set 
+𝑘
+∈
+𝑃
+k∈P, violation set 
+𝑘
+∈
+𝑊
+k∈W 
+
+RG_Structure_Trading_Strategy_P…
+
+support/resistance symmetry
+
+Q-score:
+
+define as monotone index (baseline) 
+
+RG_Structure_Trading_Strategy_P…
+
+add optional calibration framework (research-grade)
+
+Risk geometry filter (define dSafety_max formally) 
+
+RG_Structure_Trading_Strategy_P…
+
+Regime classifier:
+
+define midline precisely
+
+ER + crossing thresholds + stability analysis 
+
+RG_Structure_Trading_Strategy_P…
+
+Event state machine (non-repainting)
+
+past-only boundaries rule (new)
+
+freeze protocol 
+
+RG_Structure_Trading_Strategy_P…
+
+retest window and timeouts
+
+robust rejection scoring 
+
+RG_Structure_Trading_Strategy_P…
+
+Structure-shift (CHOCH/MSS) module (new)
+
+pivot-based structure breaks as confirmation
+
+Section 3 (Risk) — upgraded
+
+formalize:
+
+stop placement on safety line (already good) 
+
+RG_Structure_Trading_Strategy_P…
+
+dynamic sizing (already good) 
+
+RG_Structure_Trading_Strategy_P…
+
+hybrid trailing stop (already good) 
+
+RG_Structure_Trading_Strategy_P…
+
+add:
+
+execution realism model (slippage/gaps)
+
+regime-dependent tightening/loosening
+
+“kill switch + circuit breakers” integration into state machine 
+
+RG_Structure_Trading_Strategy_P…
+
+Section 4 (Implementation) — critical correction
+
+remove / replace lookahead_on recommendation 
+
+RG_Structure_Trading_Strategy_P…
+
+add complexity controls + recomputation cadence
+
+explicitly document how you prevent boundary refit leakage
+
+5) “All gaps” master checklist (quick scan)
+
+Here’s the full list you can use as a revision tracker:
+
+Mathematics / Definitions
+
+ Past-only boundary evaluation at time 
+𝑡
+t (no self-refit leakage) 
+
+RG_Structure_Trading_Strategy_P…
+
+ Symmetric support/resistance touch+violation definitions 
+
+RG_Structure_Trading_Strategy_P…
+
+ Fully specified score index sets (pivot vs all bars) 
+
+RG_Structure_Trading_Strategy_P…
+
+ Q-score interpretation (index vs probability) + optional calibration 
+
+RG_Structure_Trading_Strategy_P…
+
+ Midline 
+𝜇
+𝑡
+μ
+t
+	​
+
+ explicitly defined for crossings 
+
+RG_Structure_Trading_Strategy_P…
+
+ Risk geometry filter definition (dSafety_max) 
+
+RG_Structure_Trading_Strategy_P…
+
+ Rejection definition strengthened (scored / multi-feature) 
+
+RG_Structure_Trading_Strategy_P…
+
+ Add CHOCH/MSS structure shift module
+
+Backtest integrity
+
+ HTF lookahead OFF (correct the Pine guidance) 
+
+RG_Structure_Trading_Strategy_P…
+
+ Execution model: slippage, spreads, gaps, partial fills
+
+ Walk-forward validation + sensitivity analysis
+
+Practical viability (TradingView)
+
+ Candidate cap 
+𝐾
+K, recompute schedule, sampling disclosure
+
+ One-break-one-trade encoded in state machine (not just a note) 
+
+RG_Structure_Trading_Strategy_P…

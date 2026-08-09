@@ -364,6 +364,90 @@ CREATE INDEX IF NOT EXISTS idx_investment_portfolios_user_id ON investment_portf
 CREATE INDEX IF NOT EXISTS idx_investment_portfolios_type ON investment_portfolios(portfolio_type);
 
 -- Investment Holdings
+-- ---------------------------------------------------------------------------
+
+-- ===========================================================================
+-- Twin-schema reconciliation, consolidated (M0 / ADR-0001).
+--
+-- Every table below is ALSO declared by
+-- `20250207000000_financial_intelligence_schema.sql`, which sorts first — so
+-- each `CREATE TABLE IF NOT EXISTS` in this file is skipped and the columns
+-- added after that earlier file was written never exist. Indexes, policies and
+-- application reads that depend on them then fail (provisioning aborted on
+-- `trading_signals.is_active`).
+--
+-- These ALTERs converge each table to the union of both shapes. They are
+-- additive and idempotent: no-ops where this file's CREATE ran, healing path
+-- where the earlier twin's did. `NOT NULL` is deliberately stripped — the
+-- columns are absent on the winning shape, so existing rows have nothing to
+-- backfill from and a NOT NULL would fail on a populated table.
+--
+-- Includes `financial_goals.milestones`, whose absence silently broke the
+-- goal-milestone alert signal (FR-302).
+-- ===========================================================================
+ALTER TABLE budgets ADD COLUMN IF NOT EXISTS alert_sent BOOLEAN DEFAULT FALSE;
+ALTER TABLE budgets ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE budgets ADD COLUMN IF NOT EXISTS subcategory TEXT;
+ALTER TABLE financial_chat_sessions ADD COLUMN IF NOT EXISTS financial_snapshot JSONB DEFAULT '{}';
+ALTER TABLE financial_chat_sessions ADD COLUMN IF NOT EXISTS session_type TEXT CHECK (session_type IN ('general', 'budget', 'goals', 'investment', 'debt', 'tax', 'retirement')) DEFAULT 'general';
+ALTER TABLE financial_chat_sessions ADD COLUMN IF NOT EXISTS total_tokens_used INTEGER DEFAULT 0;
+ALTER TABLE financial_goals ADD COLUMN IF NOT EXISTS ai_recommendations JSONB DEFAULT '[]';
+ALTER TABLE financial_goals ADD COLUMN IF NOT EXISTS milestones JSONB DEFAULT '[]';
+ALTER TABLE financial_health_scores ADD COLUMN IF NOT EXISTS benchmark_comparison JSONB DEFAULT '{}';
+ALTER TABLE financial_health_scores ADD COLUMN IF NOT EXISTS data_quality_score INTEGER CHECK (data_quality_score >= 0 AND data_quality_score <= 100);
+ALTER TABLE financial_health_scores ADD COLUMN IF NOT EXISTS income_stability_score INTEGER CHECK (income_stability_score >= 0 AND income_stability_score <= 100);
+ALTER TABLE financial_health_scores ADD COLUMN IF NOT EXISTS strengths JSONB DEFAULT '[]';
+ALTER TABLE financial_health_scores ADD COLUMN IF NOT EXISTS weaknesses JSONB DEFAULT '[]';
+ALTER TABLE financial_insights ADD COLUMN IF NOT EXISTS acted_upon BOOLEAN DEFAULT FALSE;
+ALTER TABLE financial_insights ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE financial_insights ADD COLUMN IF NOT EXISTS confidence_score DECIMAL(5, 2) CHECK (confidence_score >= 0 AND confidence_score <= 100);
+ALTER TABLE financial_insights ADD COLUMN IF NOT EXISTS impact_amount DECIMAL(15, 2);
+ALTER TABLE financial_insights ADD COLUMN IF NOT EXISTS impact_type TEXT CHECK (impact_type IN ('savings', 'cost', 'risk', 'opportunity'));
+ALTER TABLE financial_insights ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE investment_portfolios ADD COLUMN IF NOT EXISTS day_change DECIMAL(15, 2) DEFAULT 0;
+ALTER TABLE investment_portfolios ADD COLUMN IF NOT EXISTS day_change_percent DECIMAL(10, 4) DEFAULT 0;
+ALTER TABLE investment_portfolios ADD COLUMN IF NOT EXISTS diversification_score INTEGER CHECK (diversification_score >= 0 AND diversification_score <= 100);
+ALTER TABLE investment_portfolios ADD COLUMN IF NOT EXISTS last_rebalance_at TIMESTAMPTZ;
+ALTER TABLE investment_portfolios ADD COLUMN IF NOT EXISTS rebalance_threshold DECIMAL(5, 2) DEFAULT 5.00;
+ALTER TABLE investment_portfolios ADD COLUMN IF NOT EXISTS risk_score INTEGER CHECK (risk_score >= 1 AND risk_score <= 10);
+ALTER TABLE investment_portfolios ADD COLUMN IF NOT EXISTS target_allocation JSONB DEFAULT '{}';
+ALTER TABLE recurring_bills ADD COLUMN IF NOT EXISTS average_amount DECIMAL(15, 2);
+ALTER TABLE recurring_bills ADD COLUMN IF NOT EXISTS detection_confidence DECIMAL(5, 2) CHECK (detection_confidence >= 0 AND detection_confidence <= 100);
+ALTER TABLE recurring_bills ADD COLUMN IF NOT EXISTS is_variable BOOLEAN DEFAULT FALSE;
+ALTER TABLE recurring_bills ADD COLUMN IF NOT EXISTS last_paid_amount DECIMAL(15, 2);
+ALTER TABLE recurring_bills ADD COLUMN IF NOT EXISTS provider TEXT;
+ALTER TABLE recurring_bills ADD COLUMN IF NOT EXISTS transaction_pattern JSONB;
+ALTER TABLE trading_signals ADD COLUMN IF NOT EXISTS fundamental_metrics JSONB DEFAULT '{}';
+ALTER TABLE trading_signals ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE trading_signals ADD COLUMN IF NOT EXISTS outcome_return_percent DECIMAL(10, 4);
+ALTER TABLE trading_signals ADD COLUMN IF NOT EXISTS reasoning TEXT;
+ALTER TABLE trading_signals ADD COLUMN IF NOT EXISTS risk_reward_ratio DECIMAL(5, 2);
+ALTER TABLE trading_signals ADD COLUMN IF NOT EXISTS sentiment_score DECIMAL(5, 2);
+ALTER TABLE trading_signals ADD COLUMN IF NOT EXISTS supporting_factors JSONB DEFAULT '[]';
+ALTER TABLE trading_signals ADD COLUMN IF NOT EXISTS take_profit DECIMAL(15, 4);
+ALTER TABLE trading_signals ADD COLUMN IF NOT EXISTS technical_indicators JSONB DEFAULT '{}';
+ALTER TABLE trading_signals ADD COLUMN IF NOT EXISTS viewed BOOLEAN DEFAULT FALSE;
+-- Twin-schema reconciliation (M0 / ADR-0001).
+--
+-- `20250207000000_financial_intelligence_schema.sql` also declares
+-- `CREATE TABLE IF NOT EXISTS investment_holdings` and sorts first, so the
+-- richer CREATE in this file is skipped. Its shape has NO `user_id` (ownership
+-- is reachable only by joining `portfolio_id` -> investment_portfolios), so the
+-- `user_id` index below aborted provisioning.
+--
+-- `user_id` is added NULLABLE deliberately: the column is absent on the winning
+-- shape, so existing rows have no value to backfill from here and a NOT NULL
+-- would fail on a populated table. Direct-ownership filtering must therefore
+-- keep using the portfolio join until a backfill lands (M0 follow-up).
+-- ---------------------------------------------------------------------------
+ALTER TABLE investment_holdings ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES profiles(id) ON DELETE CASCADE;
+ALTER TABLE investment_holdings ADD COLUMN IF NOT EXISTS day_change DECIMAL(15, 2);
+ALTER TABLE investment_holdings ADD COLUMN IF NOT EXISTS day_change_percent DECIMAL(10, 4);
+ALTER TABLE investment_holdings ADD COLUMN IF NOT EXISTS allocation_percent DECIMAL(5, 2);
+ALTER TABLE investment_holdings ADD COLUMN IF NOT EXISTS industry TEXT;
+ALTER TABLE investment_holdings ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'US';
+ALTER TABLE investment_holdings ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'USD';
+
 CREATE INDEX IF NOT EXISTS idx_investment_holdings_portfolio_id ON investment_holdings(portfolio_id);
 CREATE INDEX IF NOT EXISTS idx_investment_holdings_user_id ON investment_holdings(user_id);
 CREATE INDEX IF NOT EXISTS idx_investment_holdings_symbol ON investment_holdings(symbol);
@@ -371,6 +455,12 @@ CREATE INDEX IF NOT EXISTS idx_investment_holdings_asset_type ON investment_hold
 CREATE INDEX IF NOT EXISTS idx_investment_holdings_sector ON investment_holdings(sector);
 
 -- Investment Transactions
+-- Twin reconciliation (M0 / ADR-0001): the winning `investment_transactions`
+-- shape in 20250207000000_financial_intelligence_schema.sql has no `user_id`
+-- (ownership only via portfolio_id), which aborted the index below. Nullable
+-- for the same reason as investment_holdings above — no value to backfill here.
+ALTER TABLE investment_transactions ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES profiles(id) ON DELETE CASCADE;
+
 CREATE INDEX IF NOT EXISTS idx_investment_transactions_portfolio_id ON investment_transactions(portfolio_id);
 CREATE INDEX IF NOT EXISTS idx_investment_transactions_user_id ON investment_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_investment_transactions_symbol ON investment_transactions(symbol);
@@ -392,6 +482,12 @@ CREATE INDEX IF NOT EXISTS idx_financial_chat_sessions_updated_at ON financial_c
 CREATE INDEX IF NOT EXISTS idx_financial_chat_sessions_type ON financial_chat_sessions(session_type);
 
 -- Financial Chat Messages
+-- Twin reconciliation (M0 / ADR-0001): the winning `financial_chat_messages`
+-- shape in 20250207000000_financial_intelligence_schema.sql has no `user_id`
+-- (ownership only via session_id), which aborts the index below. Nullable —
+-- no source to backfill from at this point in the chain.
+ALTER TABLE financial_chat_messages ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES profiles(id) ON DELETE CASCADE;
+
 CREATE INDEX IF NOT EXISTS idx_financial_chat_messages_session_id ON financial_chat_messages(session_id);
 CREATE INDEX IF NOT EXISTS idx_financial_chat_messages_user_id ON financial_chat_messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_financial_chat_messages_created_at ON financial_chat_messages(created_at);
@@ -419,17 +515,20 @@ ALTER TABLE financial_chat_messages ENABLE ROW LEVEL SECURITY;
 -- PROFILES POLICIES
 -- ============================================================================
 DO $$ BEGIN
-  CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+  DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+  DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+  DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -437,22 +536,26 @@ END $$;
 -- FINANCIAL GOALS POLICIES
 -- ============================================================================
 DO $$ BEGIN
-  CREATE POLICY "Users can view own goals" ON financial_goals FOR SELECT USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can view own goals" ON financial_goals;
+CREATE POLICY "Users can view own goals" ON financial_goals FOR SELECT USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can create own goals" ON financial_goals FOR INSERT WITH CHECK (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can create own goals" ON financial_goals;
+CREATE POLICY "Users can create own goals" ON financial_goals FOR INSERT WITH CHECK (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can update own goals" ON financial_goals FOR UPDATE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can update own goals" ON financial_goals;
+CREATE POLICY "Users can update own goals" ON financial_goals FOR UPDATE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can delete own goals" ON financial_goals FOR DELETE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can delete own goals" ON financial_goals;
+CREATE POLICY "Users can delete own goals" ON financial_goals FOR DELETE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -460,12 +563,14 @@ END $$;
 -- FINANCIAL HEALTH SCORES POLICIES
 -- ============================================================================
 DO $$ BEGIN
-  CREATE POLICY "Users can view own health scores" ON financial_health_scores FOR SELECT USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can view own health scores" ON financial_health_scores;
+CREATE POLICY "Users can view own health scores" ON financial_health_scores FOR SELECT USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can create own health scores" ON financial_health_scores FOR INSERT WITH CHECK (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can create own health scores" ON financial_health_scores;
+CREATE POLICY "Users can create own health scores" ON financial_health_scores FOR INSERT WITH CHECK (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -473,17 +578,20 @@ END $$;
 -- FINANCIAL INSIGHTS POLICIES
 -- ============================================================================
 DO $$ BEGIN
-  CREATE POLICY "Users can view own insights" ON financial_insights FOR SELECT USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can view own insights" ON financial_insights;
+CREATE POLICY "Users can view own insights" ON financial_insights FOR SELECT USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can create own insights" ON financial_insights FOR INSERT WITH CHECK (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can create own insights" ON financial_insights;
+CREATE POLICY "Users can create own insights" ON financial_insights FOR INSERT WITH CHECK (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can update own insights" ON financial_insights FOR UPDATE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can update own insights" ON financial_insights;
+CREATE POLICY "Users can update own insights" ON financial_insights FOR UPDATE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -491,22 +599,26 @@ END $$;
 -- RECURRING BILLS POLICIES
 -- ============================================================================
 DO $$ BEGIN
-  CREATE POLICY "Users can view own bills" ON recurring_bills FOR SELECT USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can view own bills" ON recurring_bills;
+CREATE POLICY "Users can view own bills" ON recurring_bills FOR SELECT USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can create own bills" ON recurring_bills FOR INSERT WITH CHECK (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can create own bills" ON recurring_bills;
+CREATE POLICY "Users can create own bills" ON recurring_bills FOR INSERT WITH CHECK (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can update own bills" ON recurring_bills FOR UPDATE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can update own bills" ON recurring_bills;
+CREATE POLICY "Users can update own bills" ON recurring_bills FOR UPDATE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can delete own bills" ON recurring_bills FOR DELETE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can delete own bills" ON recurring_bills;
+CREATE POLICY "Users can delete own bills" ON recurring_bills FOR DELETE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -514,22 +626,26 @@ END $$;
 -- BUDGETS POLICIES
 -- ============================================================================
 DO $$ BEGIN
-  CREATE POLICY "Users can view own budgets" ON budgets FOR SELECT USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can view own budgets" ON budgets;
+CREATE POLICY "Users can view own budgets" ON budgets FOR SELECT USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can create own budgets" ON budgets FOR INSERT WITH CHECK (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can create own budgets" ON budgets;
+CREATE POLICY "Users can create own budgets" ON budgets FOR INSERT WITH CHECK (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can update own budgets" ON budgets FOR UPDATE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can update own budgets" ON budgets;
+CREATE POLICY "Users can update own budgets" ON budgets FOR UPDATE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can delete own budgets" ON budgets FOR DELETE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can delete own budgets" ON budgets;
+CREATE POLICY "Users can delete own budgets" ON budgets FOR DELETE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -537,22 +653,26 @@ END $$;
 -- INVESTMENT PORTFOLIOS POLICIES
 -- ============================================================================
 DO $$ BEGIN
-  CREATE POLICY "Users can view own portfolios" ON investment_portfolios FOR SELECT USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can view own portfolios" ON investment_portfolios;
+CREATE POLICY "Users can view own portfolios" ON investment_portfolios FOR SELECT USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can create own portfolios" ON investment_portfolios FOR INSERT WITH CHECK (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can create own portfolios" ON investment_portfolios;
+CREATE POLICY "Users can create own portfolios" ON investment_portfolios FOR INSERT WITH CHECK (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can update own portfolios" ON investment_portfolios FOR UPDATE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can update own portfolios" ON investment_portfolios;
+CREATE POLICY "Users can update own portfolios" ON investment_portfolios FOR UPDATE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can delete own portfolios" ON investment_portfolios FOR DELETE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can delete own portfolios" ON investment_portfolios;
+CREATE POLICY "Users can delete own portfolios" ON investment_portfolios FOR DELETE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -560,23 +680,27 @@ END $$;
 -- INVESTMENT HOLDINGS POLICIES (through user_id and portfolio ownership)
 -- ============================================================================
 DO $$ BEGIN
-  CREATE POLICY "Users can view own holdings" ON investment_holdings FOR SELECT USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can view own holdings" ON investment_holdings;
+CREATE POLICY "Users can view own holdings" ON investment_holdings FOR SELECT USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can create own holdings" ON investment_holdings FOR INSERT
+  DROP POLICY IF EXISTS "Users can create own holdings" ON investment_holdings;
+CREATE POLICY "Users can create own holdings" ON investment_holdings FOR INSERT
     WITH CHECK (auth.uid() = user_id AND portfolio_id IN (SELECT id FROM investment_portfolios WHERE user_id = auth.uid()));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can update own holdings" ON investment_holdings FOR UPDATE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can update own holdings" ON investment_holdings;
+CREATE POLICY "Users can update own holdings" ON investment_holdings FOR UPDATE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can delete own holdings" ON investment_holdings FOR DELETE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can delete own holdings" ON investment_holdings;
+CREATE POLICY "Users can delete own holdings" ON investment_holdings FOR DELETE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -584,12 +708,14 @@ END $$;
 -- INVESTMENT TRANSACTIONS POLICIES
 -- ============================================================================
 DO $$ BEGIN
-  CREATE POLICY "Users can view own transactions" ON investment_transactions FOR SELECT USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can view own transactions" ON investment_transactions;
+CREATE POLICY "Users can view own transactions" ON investment_transactions FOR SELECT USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can create own transactions" ON investment_transactions FOR INSERT
+  DROP POLICY IF EXISTS "Users can create own transactions" ON investment_transactions;
+CREATE POLICY "Users can create own transactions" ON investment_transactions FOR INSERT
     WITH CHECK (auth.uid() = user_id AND portfolio_id IN (SELECT id FROM investment_portfolios WHERE user_id = auth.uid()));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -598,17 +724,20 @@ END $$;
 -- TRADING SIGNALS POLICIES
 -- ============================================================================
 DO $$ BEGIN
-  CREATE POLICY "Users can view own signals" ON trading_signals FOR SELECT USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can view own signals" ON trading_signals;
+CREATE POLICY "Users can view own signals" ON trading_signals FOR SELECT USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can create own signals" ON trading_signals FOR INSERT WITH CHECK (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can create own signals" ON trading_signals;
+CREATE POLICY "Users can create own signals" ON trading_signals FOR INSERT WITH CHECK (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can update own signals" ON trading_signals FOR UPDATE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can update own signals" ON trading_signals;
+CREATE POLICY "Users can update own signals" ON trading_signals FOR UPDATE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -616,22 +745,26 @@ END $$;
 -- FINANCIAL CHAT SESSIONS POLICIES
 -- ============================================================================
 DO $$ BEGIN
-  CREATE POLICY "Users can view own chat sessions" ON financial_chat_sessions FOR SELECT USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can view own chat sessions" ON financial_chat_sessions;
+CREATE POLICY "Users can view own chat sessions" ON financial_chat_sessions FOR SELECT USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can create own chat sessions" ON financial_chat_sessions FOR INSERT WITH CHECK (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can create own chat sessions" ON financial_chat_sessions;
+CREATE POLICY "Users can create own chat sessions" ON financial_chat_sessions FOR INSERT WITH CHECK (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can update own chat sessions" ON financial_chat_sessions FOR UPDATE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can update own chat sessions" ON financial_chat_sessions;
+CREATE POLICY "Users can update own chat sessions" ON financial_chat_sessions FOR UPDATE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can delete own chat sessions" ON financial_chat_sessions FOR DELETE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can delete own chat sessions" ON financial_chat_sessions;
+CREATE POLICY "Users can delete own chat sessions" ON financial_chat_sessions FOR DELETE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -639,18 +772,21 @@ END $$;
 -- FINANCIAL CHAT MESSAGES POLICIES
 -- ============================================================================
 DO $$ BEGIN
-  CREATE POLICY "Users can view own chat messages" ON financial_chat_messages FOR SELECT USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can view own chat messages" ON financial_chat_messages;
+CREATE POLICY "Users can view own chat messages" ON financial_chat_messages FOR SELECT USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can create own chat messages" ON financial_chat_messages FOR INSERT
+  DROP POLICY IF EXISTS "Users can create own chat messages" ON financial_chat_messages;
+CREATE POLICY "Users can create own chat messages" ON financial_chat_messages FOR INSERT
     WITH CHECK (auth.uid() = user_id AND session_id IN (SELECT id FROM financial_chat_sessions WHERE user_id = auth.uid()));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Users can update own chat messages" ON financial_chat_messages FOR UPDATE USING (auth.uid() = user_id);
+  DROP POLICY IF EXISTS "Users can update own chat messages" ON financial_chat_messages;
+CREATE POLICY "Users can update own chat messages" ON financial_chat_messages FOR UPDATE USING (auth.uid() = user_id);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 

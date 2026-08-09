@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useOnboardingProgress } from "@/hooks/useOnboardingProgress";
 import { ClockIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { FadeIn } from "@/components/ui/animations";
 
 const steps = [
   { path: "/onboarding", label: "Welcome", step: 1, timeEstimate: "30 sec" },
@@ -202,7 +203,9 @@ export default function OnboardingLayout({
       </div>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-12">{children}</main>
+      <main className="max-w-4xl mx-auto px-4 py-12">
+        <FadeIn key={pathname}>{children}</FadeIn>
+      </main>
     </div>
   );
 }

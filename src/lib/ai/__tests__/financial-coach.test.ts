@@ -5,8 +5,8 @@
  * Target Coverage: 90%+
  */
 
-import { FinancialCoach, setAIMLService } from "../financial-coach";
-import { AIMLService } from "@/lib/aiml-service";
+import { FinancialCoach, setModelRouter } from "../financial-coach";
+import { ModelRouter, TaskType } from "@/lib/model-router";
 import { financialContextEngine } from "@/lib/financial/financial-context-engine";
 import { FinancialContext } from "@/lib/financial/types/financial-context.types";
 
@@ -305,19 +305,19 @@ const mockAdviceResponse = {
 
 describe("FinancialCoach", () => {
   let coach: FinancialCoach;
-  let mockAIMLInstance: jest.Mocked<AIMLService>;
+  let mockModelRouter: jest.Mocked<ModelRouter>;
 
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
 
-    // Create mock AIML instance with default response
-    mockAIMLInstance = {
-      chat: jest.fn().mockResolvedValue(mockAIAnalysisResponse),
-    } as any;
+    // Create mock ModelRouter instance with default response
+    mockModelRouter = {
+      complete: jest.fn().mockResolvedValue(mockAIAnalysisResponse),
+    } as unknown as jest.Mocked<ModelRouter>;
 
-    // Set the mock AI service
-    setAIMLService(mockAIMLInstance);
+    // Set the mock router
+    setModelRouter(mockModelRouter);
 
     // Mock financial context
     (financialContextEngine.getFinancialContext as jest.Mock).mockResolvedValue(
@@ -334,7 +334,7 @@ describe("FinancialCoach", () => {
 
   describe("analyzeFinancialSituation", () => {
     it("should analyze financial situation and return comprehensive analysis", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAIAnalysisResponse as any);
 
       const result = await coach.analyzeFinancialSituation(
         "test-user-123",
@@ -358,7 +358,7 @@ describe("FinancialCoach", () => {
       (
         financialContextEngine.getFinancialContext as jest.Mock
       ).mockResolvedValue(contextWithLowSavings);
-      mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAIAnalysisResponse as any);
 
       const result = await coach.analyzeFinancialSituation("test-user-123");
 
@@ -366,7 +366,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should determine Baby Step 2 when has savings but still has debt", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAIAnalysisResponse as any);
 
       const result = await coach.analyzeFinancialSituation("test-user-123");
 
@@ -382,7 +382,7 @@ describe("FinancialCoach", () => {
       (
         financialContextEngine.getFinancialContext as jest.Mock
       ).mockResolvedValue(contextDebtFree);
-      mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAIAnalysisResponse as any);
 
       const result = await coach.analyzeFinancialSituation("test-user-123");
 
@@ -402,7 +402,7 @@ describe("FinancialCoach", () => {
       (
         financialContextEngine.getFinancialContext as jest.Mock
       ).mockResolvedValue(contextNegativeCashFlow);
-      mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAIAnalysisResponse as any);
 
       const result = await coach.analyzeFinancialSituation("test-user-123");
 
@@ -413,7 +413,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should find opportunities for improvement", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAIAnalysisResponse as any);
 
       const result = await coach.analyzeFinancialSituation(
         "test-user-123",
@@ -426,7 +426,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should handle AI service errors gracefully", async () => {
-      mockAIMLInstance.chat.mockRejectedValue(
+      mockModelRouter.complete.mockRejectedValue(
         new Error("AI service unavailable"),
       );
 
@@ -445,7 +445,7 @@ describe("FinancialCoach", () => {
 
   describe("generateActionPlan", () => {
     it("should generate comprehensive action plan", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockActionPlanResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockActionPlanResponse as any);
 
       const result = await coach.generateActionPlan(
         "test-user-123",
@@ -462,7 +462,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should include Dave Ramsey Baby Steps in plan", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockActionPlanResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockActionPlanResponse as any);
 
       const result = await coach.generateActionPlan(
         "test-user-123",
@@ -478,7 +478,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should handle multiple goals", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockActionPlanResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockActionPlanResponse as any);
 
       const goals = [
         "Pay off credit card debt",
@@ -493,11 +493,11 @@ describe("FinancialCoach", () => {
       );
 
       expect(result).toBeDefined();
-      expect(mockAIMLInstance.chat).toHaveBeenCalled();
+      expect(mockModelRouter.complete).toHaveBeenCalled();
     });
 
     it("should handle AI parsing errors gracefully", async () => {
-      mockAIMLInstance.chat.mockResolvedValue({
+      mockModelRouter.complete.mockResolvedValue({
         choices: [{ message: { content: "Invalid JSON response" } }],
         usage: { total_tokens: 100 },
       } as any);
@@ -520,7 +520,7 @@ describe("FinancialCoach", () => {
 
   describe("getPersonalizedAdvice", () => {
     it("should provide personalized advice for specific question", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockAdviceResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAdviceResponse as any);
 
       const result = await coach.getPersonalizedAdvice(
         "test-user-123",
@@ -538,14 +538,14 @@ describe("FinancialCoach", () => {
     });
 
     it("should reference user financial data in advice", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockAdviceResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAdviceResponse as any);
 
       await coach.getPersonalizedAdvice(
         "test-user-123",
         "How much should I save?",
       );
 
-      const callArgs = mockAIMLInstance.chat.mock.calls[0];
+      const callArgs = mockModelRouter.complete.mock.calls[0];
       const userPrompt = callArgs[1][1].content;
 
       expect(userPrompt).toContain("$5000"); // Monthly income (no comma in implementation)
@@ -553,14 +553,14 @@ describe("FinancialCoach", () => {
     });
 
     it("should align advice with Dave Ramsey philosophy", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockAdviceResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAdviceResponse as any);
 
       await coach.getPersonalizedAdvice(
         "test-user-123",
         "Should I invest while I have debt?",
       );
 
-      const callArgs = mockAIMLInstance.chat.mock.calls[0];
+      const callArgs = mockModelRouter.complete.mock.calls[0];
       const systemPrompt = callArgs[1][0].content;
 
       expect(systemPrompt).toContain("Dave Ramsey");
@@ -568,7 +568,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should handle AI errors with fallback advice", async () => {
-      mockAIMLInstance.chat.mockRejectedValue(new Error("AI unavailable"));
+      mockModelRouter.complete.mockRejectedValue(new Error("AI unavailable"));
 
       const result = await coach.getPersonalizedAdvice(
         "test-user-123",
@@ -587,7 +587,7 @@ describe("FinancialCoach", () => {
 
   describe("getProactiveRecommendations", () => {
     it("should generate proactive recommendations", async () => {
-      mockAIMLInstance.chat.mockResolvedValue({
+      mockModelRouter.complete.mockResolvedValue({
         choices: [
           {
             message: {
@@ -621,7 +621,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should prioritize high-impact recommendations", async () => {
-      mockAIMLInstance.chat.mockResolvedValue({
+      mockModelRouter.complete.mockResolvedValue({
         choices: [
           {
             message: {
@@ -664,7 +664,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should handle empty recommendations gracefully", async () => {
-      mockAIMLInstance.chat.mockResolvedValue({
+      mockModelRouter.complete.mockResolvedValue({
         choices: [{ message: { content: "{}" } }],
         usage: { total_tokens: 50 },
       } as any);
@@ -689,7 +689,7 @@ describe("FinancialCoach", () => {
       (
         financialContextEngine.getFinancialContext as jest.Mock
       ).mockResolvedValue(contextNoSavings);
-      mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAIAnalysisResponse as any);
 
       const result = await coach.analyzeFinancialSituation("test-user-123");
 
@@ -700,7 +700,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should recommend debt snowball for Baby Step 2", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAIAnalysisResponse as any);
 
       const result = await coach.analyzeFinancialSituation(
         "test-user-123",
@@ -715,7 +715,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should calculate debt snowball correctly", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAIAnalysisResponse as any);
 
       const result = await coach.analyzeFinancialSituation("test-user-123");
 
@@ -745,7 +745,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should handle AI timeout gracefully", async () => {
-      mockAIMLInstance.chat.mockImplementation(
+      mockModelRouter.complete.mockImplementation(
         () =>
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error("Timeout")), 100),
@@ -759,7 +759,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should handle malformed AI responses", async () => {
-      mockAIMLInstance.chat.mockResolvedValue({
+      mockModelRouter.complete.mockResolvedValue({
         choices: [{ message: { content: "Not JSON at all!" } }],
         usage: { total_tokens: 50 },
       } as any);
@@ -777,7 +777,7 @@ describe("FinancialCoach", () => {
 
   describe("Financial Context Utilization", () => {
     it("should use actual income and expenses in analysis", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAIAnalysisResponse as any);
 
       await coach.analyzeFinancialSituation("test-user-123");
 
@@ -787,7 +787,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should consider debt-to-income ratio", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAIAnalysisResponse as any);
 
       const result = await coach.analyzeFinancialSituation("test-user-123");
 
@@ -795,7 +795,7 @@ describe("FinancialCoach", () => {
     });
 
     it("should calculate emergency fund months correctly", async () => {
-      mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
+      mockModelRouter.complete.mockResolvedValue(mockAIAnalysisResponse as any);
 
       const result = await coach.analyzeFinancialSituation("test-user-123");
 

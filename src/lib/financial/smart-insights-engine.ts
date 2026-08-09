@@ -12,8 +12,8 @@
  * - Automatic expiration and cleanup
  */
 
-import { getSupabase } from "@/lib/supabase/client";
-import { AIMLService } from "@/lib/aiml-service";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import {
   FinancialInsight,
   InsightType,
@@ -52,29 +52,11 @@ const PRIORITY_ORDER: Record<InsightPriority, number> = {
   info: 1,
 };
 
-const AI_MODEL = "anthropic/claude-4.5-sonnet";
-
 // ============================================================================
 // SMART INSIGHTS ENGINE
 // ============================================================================
 
 class SmartInsightsEngine {
-  private aimlService: AIMLService | null = null;
-
-  /**
-   * Get or create AIML service instance
-   */
-  private getAIService(): AIMLService | null {
-    if (!this.aimlService && process.env.AIML_API_KEY) {
-      try {
-        this.aimlService = new AIMLService();
-      } catch {
-        // SmartInsightsEngine warning: Failed to initialize AIML service for insights
-      }
-    }
-    return this.aimlService;
-  }
-
   /**
    * Generate all financial insights for a user
    */
@@ -133,7 +115,7 @@ class SmartInsightsEngine {
       insights,
       generatedAt: new Date(),
       processingTimeMs: Date.now() - startTime,
-      aiModelUsed: mergedOptions.includeAI ? AI_MODEL : undefined,
+      aiModelUsed: mergedOptions.includeAI ? getModelRouter().getModel(TaskType.REASONING) : undefined,
       dataSourcesUsed: [
         "accounts",
         "transactions",
@@ -153,7 +135,7 @@ class SmartInsightsEngine {
   ): Promise<FinancialInsight[]> {
     const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
 
-    let query = getSupabase()
+    let query = getServiceRoleClient()
       .from("financial_insights")
       .select("*")
       .eq("user_id", userId)
@@ -174,7 +156,16 @@ class SmartInsightsEngine {
     const { data, error } = await query;
 
     if (error) {
-      // SmartInsightsEngine error: Error fetching stored insights
+      // A failed query must not read as "this user has no insights" — that
+      // silent degradation is what hid the anon-client bug, where RLS
+      // returned zero rows to every caller and the empty list looked like a
+      // legitimate answer. Log it so the failure is observable, but still
+      // degrade to an empty list rather than throwing: insights are
+      // supplementary and must not take down the page that renders them.
+      console.error("getStoredInsights failed", {
+        userId,
+        error: error.message,
+      });
       return [];
     }
 
@@ -214,12 +205,16 @@ class SmartInsightsEngine {
     }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (getSupabase() as any)
+    const { error } = await (getServiceRoleClient() as any)
       .from("financial_insights")
       .upsert(records, { onConflict: "id" });
 
     if (error) {
-      // SmartInsightsEngine error: Error saving insights
+      // A write that fails silently is worse than one that throws: the caller
+      // has no way to know the insights it just generated were discarded, and
+      // the next read returns an empty list that is indistinguishable from
+      // "nothing to report". Throw so the failure reaches the caller.
+      throw new Error(`Failed to save insights: ${error.message}`);
     }
   }
 
@@ -228,7 +223,7 @@ class SmartInsightsEngine {
    */
   async dismissInsight(insightId: string, userId: string): Promise<boolean> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (getSupabase() as any)
+    const { error } = await (getServiceRoleClient() as any)
       .from("financial_insights")
       .update({ dismissed: true, dismissed_at: new Date().toISOString() })
       .eq("id", insightId)
@@ -246,7 +241,7 @@ class SmartInsightsEngine {
     action: string,
   ): Promise<boolean> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (getSupabase() as any)
+    const { error } = await (getServiceRoleClient() as any)
       .from("financial_insights")
       .update({
         action_taken: action,
@@ -416,7 +411,7 @@ class SmartInsightsEngine {
     }
 
     // Get upcoming bills from database
-    const { data: billsData } = await getSupabase()
+    const { data: billsData } = await getServiceRoleClient()
       .from("recurring_bills")
       .select("*")
       .eq("user_id", userId)
@@ -675,8 +670,7 @@ class SmartInsightsEngine {
     insights: FinancialInsight[],
     context: FinancialContext,
   ): Promise<FinancialInsight[]> {
-    const aiService = this.getAIService();
-    if (!aiService || insights.length === 0) {
+    if (insights.length === 0) {
       return insights;
     }
 
@@ -684,7 +678,7 @@ class SmartInsightsEngine {
       const topInsights = insights.slice(0, 5);
       const prompt = this.buildAIPrompt(topInsights, context);
 
-      const response = await aiService.chat(AI_MODEL, [
+      const response = await getModelRouter().complete(TaskType.REASONING, [
         {
           role: "system",
           content:

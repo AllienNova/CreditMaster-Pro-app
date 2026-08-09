@@ -5,17 +5,19 @@
  * Includes accessibility-focused helpers for WCAG compliance.
  */
 
+import { CHART_COLORS as TOKENS } from "@/lib/design-tokens/chart-colors";
+
 // Axis tick styles with proper dark mode support and responsive sizing
 export const AXIS_TICK_STYLE = {
   fontSize: 11,
-  fill: "#6B7280",
+  fill: TOKENS.gray,
 };
 
 // Dark mode aware axis styles
 export const getAxisStyles = (isDark = false) => ({
   tick: {
     fontSize: 11,
-    fill: isDark ? "#9CA3AF" : "#6B7280",
+    fill: isDark ? "#9CA3AF" : TOKENS.gray,
   },
   tickLine: {
     stroke: isDark ? "#4B5563" : "#E5E7EB",
@@ -27,7 +29,7 @@ export const getAxisStyles = (isDark = false) => ({
 
 // Grid styles with dark mode support
 export const getGridStyles = (isDark = false) => ({
-  stroke: isDark ? "#374151" : "#E5E7EB",
+  stroke: isDark ? TOKENS.darkGray : "#E5E7EB",
   strokeDasharray: "3 3",
 });
 
@@ -46,50 +48,50 @@ export function generateChartDescription(
 
 // Primary chart color palette - matches Fynvita brand
 export const CHART_COLORS = {
-  primary: "#3B82F6", // Blue
-  secondary: "#10B981", // Green
-  tertiary: "#8B5CF6", // Purple
-  quaternary: "#F59E0B", // Amber
-  quinary: "#EF4444", // Red
-  senary: "#06B6D4", // Cyan
-  septenary: "#EC4899", // Pink
-  octonary: "#6366F1", // Indigo
+  primary: TOKENS.blue,
+  secondary: TOKENS.emerald,
+  tertiary: TOKENS.purple,
+  quaternary: TOKENS.amber,
+  quinary: TOKENS.red,
+  senary: "#06B6D4", // Cyan - not in chart tokens (axis/grid utility)
+  septenary: TOKENS.pink,
+  octonary: TOKENS.indigo,
 
   // Category-specific colors for financial data
   categories: {
-    food: "#F97316", // Orange
-    transportation: "#3B82F6", // Blue
-    housing: "#8B5CF6", // Purple
+    food: TOKENS.orange,
+    transportation: TOKENS.blue,
+    housing: TOKENS.purple,
     utilities: "#06B6D4", // Cyan
-    entertainment: "#EC4899", // Pink
-    healthcare: "#EF4444", // Red
-    shopping: "#F59E0B", // Amber
-    personal: "#10B981", // Green
-    education: "#6366F1", // Indigo
-    savings: "#22C55E", // Emerald
-    debt: "#DC2626", // Dark Red
-    income: "#16A34A", // Green
-    expenses: "#EF4444", // Red
-    other: "#6B7280", // Gray
+    entertainment: TOKENS.pink,
+    healthcare: TOKENS.red,
+    shopping: TOKENS.amber,
+    personal: TOKENS.emerald,
+    education: TOKENS.indigo,
+    savings: "#22C55E", // Emerald-500 shade (distinct from emerald token)
+    debt: "#DC2626", // Red-600 shade (distinct from red token)
+    income: "#16A34A", // Green-600 shade (distinct from emerald token)
+    expenses: TOKENS.red,
+    other: TOKENS.gray,
   },
 
   // Status colors
   status: {
-    success: "#10B981",
-    warning: "#F59E0B",
-    danger: "#EF4444",
-    info: "#3B82F6",
-    neutral: "#6B7280",
+    success: TOKENS.emerald,
+    warning: TOKENS.amber,
+    danger: TOKENS.red,
+    info: TOKENS.blue,
+    neutral: TOKENS.gray,
   },
 
   // Gradient pairs for area/bar fills
   gradients: {
-    blue: ["#3B82F6", "#1D4ED8"],
-    green: ["#10B981", "#059669"],
-    purple: ["#8B5CF6", "#7C3AED"],
-    amber: ["#F59E0B", "#D97706"],
-    red: ["#EF4444", "#DC2626"],
-    cyan: ["#06B6D4", "#0891B2"],
+    blue: [TOKENS.blue, "#1D4ED8"] as const,
+    green: [TOKENS.emerald, "#059669"] as const,
+    purple: [TOKENS.purple, "#7C3AED"] as const,
+    amber: [TOKENS.amber, "#D97706"] as const,
+    red: [TOKENS.red, "#DC2626"] as const,
+    cyan: ["#06B6D4", "#0891B2"] as const,
   },
 };
 
@@ -110,22 +112,22 @@ export const CHART_GRADIENTS = {
   primaryGradient: {
     id: "primaryGradient",
     colors: [
-      { offset: "0%", color: "#3B82F6", opacity: 0.8 },
-      { offset: "100%", color: "#3B82F6", opacity: 0.1 },
+      { offset: "0%", color: TOKENS.blue, opacity: 0.8 },
+      { offset: "100%", color: TOKENS.blue, opacity: 0.1 },
     ],
   },
   successGradient: {
     id: "successGradient",
     colors: [
-      { offset: "0%", color: "#10B981", opacity: 0.8 },
-      { offset: "100%", color: "#10B981", opacity: 0.1 },
+      { offset: "0%", color: TOKENS.emerald, opacity: 0.8 },
+      { offset: "100%", color: TOKENS.emerald, opacity: 0.1 },
     ],
   },
   dangerGradient: {
     id: "dangerGradient",
     colors: [
-      { offset: "0%", color: "#EF4444", opacity: 0.8 },
-      { offset: "100%", color: "#EF4444", opacity: 0.1 },
+      { offset: "0%", color: TOKENS.red, opacity: 0.8 },
+      { offset: "100%", color: TOKENS.red, opacity: 0.1 },
     ],
   },
 };

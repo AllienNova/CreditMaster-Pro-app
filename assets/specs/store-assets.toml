@@ -1,0 +1,61 @@
+name = "store-assets"
+wave = 5
+model = "gemini-3-pro-image-preview"
+resolution = "2K"
+out_dir = "assets/raw/store-assets"
+count = 12
+preamble = true
+
+shared_prompt = """
+Professional app store screenshot/promotional asset for Fynvita, a financial wellness platform. Clean, premium, Apple/Google store-quality. Uses brand palette: Vital Green #10B981, Trust Blue #3B82F6, Deep Navy #1E40AF, Emerald #059669, Energy Gold #F59E0B. NO gradients, flat design, modern. 2048x2048.
+"""
+
+negative = ["gradients", "shadows", "3D", "photography", "blur"]
+
+[[variants]]
+id = "ios-screenshot-dashboard"
+prompt = "iPhone mockup showing a financial dashboard: credit score ring (780, Vital Green), spending summary cards, and a small blob mascot waving. Deep Navy status bar. Clean white card layouts. Caption zone at top: cream band. Premium fintech dashboard."
+
+[[variants]]
+id = "ios-screenshot-credit"
+prompt = "iPhone mockup showing credit health: three bureau cards (Experian, Equifax, TransUnion in brand colors), credit score trend line (upward, Vital Green). Cream caption zone at top."
+
+[[variants]]
+id = "ios-screenshot-investments"
+prompt = "iPhone mockup showing investment portfolio: candlestick chart (Emerald/Vital Green), portfolio allocation pie chart, watchlist cards. Clean, data-rich but uncluttered."
+
+[[variants]]
+id = "ios-screenshot-goals"
+prompt = "iPhone mockup showing financial goals: progress rings for 3 goals (emergency fund in Vital Green, vacation in Trust Blue, house in Energy Gold). Each ring partially filled. Achievement badges below."
+
+[[variants]]
+id = "ios-screenshot-ai-coach"
+prompt = "iPhone mockup showing AI coach chat: a friendly Trust Blue chat bubble with financial advice text, the user's green response bubble. Clean chat UI, professional."
+
+[[variants]]
+id = "play-feature-graphic"
+prompt = "Google Play feature graphic (landscape 1024x500 proportions within the 2048 canvas). Deep Navy background. Fynvita heart+arrow mark (white) center-left. 'Your Financial Vitality' text (white, right). Vital Green accent shapes at edges. Premium, bold."
+
+[[variants]]
+id = "play-screenshot-dashboard"
+prompt = "Similar to ios-screenshot-dashboard but in portrait Android frame with rounded corners. Material Design card styling. Same content: credit score ring, spending cards."
+
+[[variants]]
+id = "play-screenshot-wellness"
+prompt = "Android frame showing financial wellness dashboard: budget overview (pie chart in brand colors), savings goal progress bar (Vital Green fill), bill calendar. Clean Material Design."
+
+[[variants]]
+id = "play-screenshot-disputes"
+prompt = "Android frame showing AI dispute management: dispute letter preview card, success rate indicator (Emerald), recent dispute status list with colored badges."
+
+[[variants]]
+id = "promo-social-launch"
+prompt = "Social media launch announcement. Deep Navy background. Large Fynvita mark (Vital Green heart+arrow, white). 'Coming Soon' or 'Now Available' in white Inter Bold. Energy Gold confetti accents. Square 1:1."
+
+[[variants]]
+id = "promo-banner-wide"
+prompt = "Wide promotional banner (16:9 proportions). Left: Vital Green arc with white mark. Center: 'Your Financial Vitality' in Deep Navy on cream. Right: Energy Gold accent blocks. Clean, impactful."
+
+[[variants]]
+id = "og-card-template"
+prompt = "Open Graph social card template (1200x630 proportions). Left third: Deep Navy with white Fynvita mark. Right two-thirds: cream with text placeholder zone. Thin Vital Green accent line dividing. Professional, LinkedIn/Twitter-ready."

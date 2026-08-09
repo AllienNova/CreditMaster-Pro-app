@@ -164,10 +164,19 @@ export async function checkPortfolioHealth(
     const lossVelocity = await calculateLossVelocity(userId);
 
     if (lossVelocity > 0.03) {
+      // A non-finite velocity means the guard could not be evaluated at all —
+      // calculateLossVelocity returns Infinity when the account has no usable
+      // equity. Say that, rather than reporting "Infinity%/hr" as if it were a
+      // measurement, because the operator's response differs: one is a losing
+      // session, the other is a broken risk record.
+      const message = Number.isFinite(lossVelocity)
+        ? `Loss velocity ${(lossVelocity * 100).toFixed(1)}%/hr exceeds 3%/hr threshold`
+        : "Loss velocity could not be evaluated: no usable account equity in user_risk_settings. Failing closed.";
+
       alerts.push({
         severity: "critical",
         type: "loss_velocity",
-        message: `Loss velocity ${(lossVelocity * 100).toFixed(1)}%/hr exceeds 3%/hr threshold`,
+        message,
         value: lossVelocity,
         threshold: 0.03,
       });
@@ -307,16 +316,38 @@ async function calculateLossVelocity(userId: string): Promise<number> {
       0,
     );
 
-    // Get account size for percentage calculation
+    // Account equity is the denominator for the loss-velocity circuit breaker.
+    //
+    // This read `trading_accounts.account_size`, a column that does not exist
+    // on that table and never has. The select therefore returned no usable row
+    // and `?? 100_000` took over, so loss velocity was ALWAYS measured against
+    // a hardcoded $100k account. On a $10k account a 5%-of-equity loss
+    // registered as 0.5% and the breaker never tripped — the guard was
+    // reporting on an account nobody owns.
+    //
+    // `user_risk_settings.equity` is the real figure: that table is the risk
+    // surface (equity, peak_equity, kill_switch) and is what the rest of the
+    // risk layer reads.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: account } = await (supabaseAdmin as any)
-      .from("trading_accounts")
-      .select("account_size")
+    const { data: risk, error: riskError } = await (supabaseAdmin as any)
+      .from("user_risk_settings")
+      .select("equity")
       .eq("user_id", userId)
       .single();
 
-    const accountSize = account?.account_size ?? 100_000;
-    return totalLoss / accountSize;
+    const accountEquity = Number(risk?.equity);
+    if (riskError || !Number.isFinite(accountEquity) || accountEquity <= 0) {
+      // Refuse to invent a denominator. Returning 0 would read as "no losses"
+      // and quietly disarm the breaker; a non-finite ratio makes the caller's
+      // threshold comparison fail closed instead.
+      console.error("calculateLossVelocity: no usable equity for user", {
+        userId,
+        error: riskError?.message,
+      });
+      return Number.POSITIVE_INFINITY;
+    }
+
+    return totalLoss / accountEquity;
   } catch {
     return 0;
   }
@@ -352,6 +383,15 @@ async function triggerAutonomousKillSwitch(
   }
 }
 
+// autonomous_execution_logs does not exist in the Next.js app's Supabase
+// project as of Wave 7 (docs/qa/triage-trading.md): this whole autonomous/
+// directory only runs on the separate Fly.io autonomous-trading service, so
+// whether the table is needed at all depends on infrastructure state this
+// repo can't answer. The try/catch below used to be dead code for that
+// specific failure: postgrest-js resolves `{ error }` rather than throwing,
+// so a missing-table response was never an exception and the catch never
+// ran. Now the resolved `error` is actually checked, so this audit-log
+// write finally logs its own failure instead of silently doing nothing.
 async function logAutonomousExecution(
   userId: string,
   scanResult: ScanResult,
@@ -359,21 +399,32 @@ async function logAutonomousExecution(
 ): Promise<void> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabaseAdmin as any).from("autonomous_execution_logs").insert({
-      user_id: userId,
-      symbol: scanResult.symbol,
-      side: scanResult.side,
-      q_score: scanResult.qScore,
-      entry_price: executionResult.entryPrice,
-      stop_loss: executionResult.stopLoss,
-      take_profit: executionResult.takeProfit,
-      order_id: executionResult.orderId,
-      success: executionResult.success,
-      error: executionResult.error,
-      operating_mode: executionResult.operatingMode,
-    });
-  } catch {
-    // Non-blocking
-    console.error(`[autonomous] Failed to log execution for ${scanResult.symbol}`);
+    const { error } = await (supabaseAdmin as any)
+      .from("autonomous_execution_logs")
+      .insert({
+        user_id: userId,
+        symbol: scanResult.symbol,
+        side: scanResult.side,
+        q_score: scanResult.qScore,
+        entry_price: executionResult.entryPrice,
+        stop_loss: executionResult.stopLoss,
+        take_profit: executionResult.takeProfit,
+        order_id: executionResult.orderId,
+        success: executionResult.success,
+        error: executionResult.error,
+        operating_mode: executionResult.operatingMode,
+      });
+
+    if (error) {
+      console.error(
+        `[autonomous] Failed to log execution for ${scanResult.symbol}: ${error.message}`,
+      );
+    }
+  } catch (err) {
+    // Non-blocking — genuine network/exception failures land here
+    console.error(
+      `[autonomous] Failed to log execution for ${scanResult.symbol}`,
+      err,
+    );
   }
 }

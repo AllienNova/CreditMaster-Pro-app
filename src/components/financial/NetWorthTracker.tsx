@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/Toast";
 import AreaChartComponent from "@/components/charts/AreaChart";
 import PieChartComponent from "@/components/charts/PieChart";
 import { Icon } from "@/components/ui/Icon";
+import { CHART_COLORS } from "@/lib/design-tokens/chart-colors";
 
 // Types
 interface Asset {
@@ -78,27 +79,27 @@ const ASSET_CATEGORIES: {
   icon: string;
   color: string;
 }[] = [
-  { value: "cash", label: "Cash & Savings", icon: "wallet", color: "#10B981" },
+  { value: "cash", label: "Cash & Savings", icon: "wallet", color: CHART_COLORS.emerald },
   {
     value: "investments",
     label: "Investments",
     icon: "trending-up",
-    color: "#3B82F6",
+    color: CHART_COLORS.blue,
   },
   {
     value: "retirement",
     label: "Retirement",
     icon: "shield",
-    color: "#8B5CF6",
+    color: CHART_COLORS.purple,
   },
   {
     value: "real_estate",
     label: "Real Estate",
     icon: "home",
-    color: "#F59E0B",
+    color: CHART_COLORS.amber,
   },
-  { value: "vehicles", label: "Vehicles", icon: "truck", color: "#6366F1" },
-  { value: "other", label: "Other", icon: "puzzle-piece", color: "#6B7280" },
+  { value: "vehicles", label: "Vehicles", icon: "truck", color: CHART_COLORS.indigo },
+  { value: "other", label: "Other", icon: "puzzle-piece", color: CHART_COLORS.gray },
 ];
 
 const LIABILITY_CATEGORIES: {
@@ -111,23 +112,23 @@ const LIABILITY_CATEGORIES: {
     value: "credit_card",
     label: "Credit Cards",
     icon: "credit-card",
-    color: "#EF4444",
+    color: CHART_COLORS.red,
   },
-  { value: "mortgage", label: "Mortgage", icon: "home", color: "#F97316" },
-  { value: "auto_loan", label: "Auto Loans", icon: "truck", color: "#F59E0B" },
+  { value: "mortgage", label: "Mortgage", icon: "home", color: CHART_COLORS.orange },
+  { value: "auto_loan", label: "Auto Loans", icon: "truck", color: CHART_COLORS.amber },
   {
     value: "student_loan",
     label: "Student Loans",
     icon: "academic-cap",
-    color: "#EAB308",
+    color: CHART_COLORS.yellow,
   },
   {
     value: "personal_loan",
     label: "Personal Loans",
     icon: "banknotes",
-    color: "#84CC16",
+    color: CHART_COLORS.lime,
   },
-  { value: "other", label: "Other", icon: "puzzle-piece", color: "#6B7280" },
+  { value: "other", label: "Other", icon: "puzzle-piece", color: CHART_COLORS.gray },
 ];
 
 export default function NetWorthTracker() {
@@ -559,7 +560,7 @@ export default function NetWorthTracker() {
                       {
                         dataKey: "netWorth",
                         name: "Net Worth",
-                        color: "#8B5CF6",
+                        color: CHART_COLORS.purple,
                       },
                     ]}
                     height={256}
@@ -797,11 +798,11 @@ export default function NetWorthTracker() {
                       liabilities: h.liabilities,
                     }))}
                     areas={[
-                      { dataKey: "assets", name: "Assets", color: "#10B981" },
+                      { dataKey: "assets", name: "Assets", color: CHART_COLORS.emerald },
                       {
                         dataKey: "liabilities",
                         name: "Liabilities",
-                        color: "#EF4444",
+                        color: CHART_COLORS.red,
                       },
                     ]}
                     height={256}

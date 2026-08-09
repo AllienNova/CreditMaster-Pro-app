@@ -1,9 +1,10 @@
 /**
  * Fynvita Documents Library Screen
- * Manage credit repair documents
+ * Manage credit repair documents — backed by the real documents API
+ * (documentApi.getAll / documentApi.upload). No mock data.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,125 +12,161 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Image,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as DocumentPicker from "expo-document-picker";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { documentApi } from "../../src/services/api/user";
+import type { Document } from "../../src/services/api/types";
 
-interface Document {
-  id: string;
-  name: string;
-  type: "report" | "letter" | "response" | "id";
-  size: string;
-  date: string;
-  status: "verified" | "pending" | "expired";
-}
-
-const DOCUMENTS: Document[] = [
-  {
-    id: "1",
-    name: "Experian Credit Report",
-    type: "report",
-    size: "2.4 MB",
-    date: "2024-12-01",
-    status: "verified",
-  },
-  {
-    id: "2",
-    name: "Dispute Letter - Late Payment",
-    type: "letter",
-    size: "156 KB",
-    date: "2024-11-28",
-    status: "verified",
-  },
-  {
-    id: "3",
-    name: "Equifax Response",
-    type: "response",
-    size: "890 KB",
-    date: "2024-11-25",
-    status: "pending",
-  },
-  {
-    id: "4",
-    name: "Driver License",
-    type: "id",
-    size: "1.2 MB",
-    date: "2024-11-20",
-    status: "verified",
-  },
-  {
-    id: "5",
-    name: "TransUnion Report",
-    type: "report",
-    size: "2.1 MB",
-    date: "2024-11-15",
-    status: "expired",
-  },
-  {
-    id: "6",
-    name: "Goodwill Letter Template",
-    type: "letter",
-    size: "45 KB",
-    date: "2024-11-10",
-    status: "verified",
-  },
+const FILTER_TYPES: { key: Document["type"] | "all"; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "credit_report", label: "Reports" },
+  { key: "dispute_response", label: "Responses" },
+  { key: "identity", label: "Identity" },
+  { key: "income", label: "Income" },
+  { key: "other", label: "Other" },
 ];
 
 export default function DocumentsScreen() {
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [filter, setFilter] = useState<Document["type"] | null>(null);
 
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 800);
+  const loadDocuments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const response = await documentApi.getAll();
+    if (response.success && response.data) {
+      setDocuments(response.data.documents);
+    } else {
+      setError(
+        response.error?.message ||
+          response.message ||
+          "Failed to load documents",
+      );
+    }
+    setLoading(false);
   }, []);
 
-  const getTypeIcon = (type: string) => {
+  useEffect(() => {
+    loadDocuments();
+  }, [loadDocuments]);
+
+  const handleUpload = useCallback(async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "image/*"],
+        copyToCacheDirectory: true,
+      });
+
+      const asset = result.assets?.[0];
+      if (result.canceled || !asset) {
+        return;
+      }
+
+      setUploading(true);
+      const response = await documentApi.upload(
+        {
+          uri: asset.uri,
+          name: asset.name,
+          type: asset.mimeType || "application/octet-stream",
+        },
+        "other",
+      );
+      setUploading(false);
+
+      if (response.success) {
+        Alert.alert("Upload Complete", "Your document is being processed.");
+        await loadDocuments();
+      } else {
+        Alert.alert(
+          "Upload Failed",
+          response.error?.message ||
+            response.message ||
+            "Failed to upload document. Please try again.",
+        );
+      }
+    } catch {
+      setUploading(false);
+      Alert.alert("Error", "Failed to upload document. Please try again.");
+    }
+  }, [loadDocuments]);
+
+  const getTypeIcon = (type: Document["type"]) => {
     switch (type) {
-      case "report":
+      case "credit_report":
         return "document-text";
-      case "letter":
-        return "mail";
-      case "response":
-        return "chatbox";
-      case "id":
+      case "dispute_response":
+        return "chatbox-ellipses";
+      case "identity":
         return "card";
+      case "income":
+        return "cash";
       default:
         return "document";
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: Document["status"]) => {
     switch (status) {
-      case "verified":
+      case "analyzed":
         return theme.colors.success;
-      case "pending":
+      case "processing":
         return theme.colors.warning;
-      case "expired":
+      case "error":
         return theme.colors.error;
       default:
         return theme.colors.textSecondary;
     }
   };
 
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   const filteredDocs = filter
-    ? DOCUMENTS.filter((d) => d.type === filter)
-    : DOCUMENTS;
+    ? documents.filter((d) => d.type === filter)
+    : documents;
   const stats = {
-    total: DOCUMENTS.length,
-    reports: DOCUMENTS.filter((d) => d.type === "report").length,
-    letters: DOCUMENTS.filter((d) => d.type === "letter").length,
+    total: documents.length,
+    reports: documents.filter((d) => d.type === "credit_report").length,
+    responses: documents.filter((d) => d.type === "dispute_response").length,
   };
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View testID="loading-indicator" style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading documents...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View testID="error-state" style={styles.centeredState}>
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.error}
+          />
+          <Text style={styles.stateTitle}>Couldn't load documents</Text>
+          <Text style={styles.stateSubtitle}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadDocuments}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -152,8 +189,17 @@ export default function DocumentsScreen() {
             <Text style={styles.title}>Documents</Text>
             <Text style={styles.subtitle}>Manage your files</Text>
           </View>
-          <TouchableOpacity style={styles.uploadButton}>
-            <Ionicons name="cloud-upload" size={24} color="#fff" />
+          <TouchableOpacity
+            testID="upload-button"
+            style={styles.uploadButton}
+            onPress={handleUpload}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="cloud-upload" size={24} color="#fff" />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -181,9 +227,9 @@ export default function DocumentsScreen() {
             ]}
           >
             <Text style={[styles.statValue, { color: theme.colors.secondary }]}>
-              {stats.letters}
+              {stats.responses}
             </Text>
-            <Text style={styles.statLabel}>Letters</Text>
+            <Text style={styles.statLabel}>Responses</Text>
           </Card>
         </View>
 
@@ -193,72 +239,86 @@ export default function DocumentsScreen() {
           showsHorizontalScrollIndicator={false}
           style={styles.filterRow}
         >
-          {["All", "report", "letter", "response", "id"].map((type) => (
-            <TouchableOpacity
-              key={type}
-              style={[
-                styles.filterChip,
-                (filter === type || (type === "All" && !filter)) &&
-                  styles.filterChipActive,
-              ]}
-              onPress={() => setFilter(type === "All" ? null : type)}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  (filter === type || (type === "All" && !filter)) &&
-                    styles.filterTextActive,
-                ]}
+          {FILTER_TYPES.map(({ key, label }) => {
+            const isActive =
+              filter === key || (key === "all" && filter === null);
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[styles.filterChip, isActive && styles.filterChipActive]}
+                onPress={() => setFilter(key === "all" ? null : key)}
               >
-                {type.charAt(0).toUpperCase() + type.slice(1)}s
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.filterText,
+                    isActive && styles.filterTextActive,
+                  ]}
+                >
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         {/* Documents List */}
         <View style={styles.docsList}>
-          {filteredDocs.map((doc) => (
-            <TouchableOpacity
-              key={doc.id}
-              onPress={() => router.push(`/documents/${doc.id}`)}
-            >
-              <Card style={styles.docCard}>
-                <View style={styles.docIcon}>
-                  <Ionicons
-                    name={
-                      getTypeIcon(doc.type) as keyof typeof Ionicons.glyphMap
-                    }
-                    size={24}
-                    color={theme.colors.primary}
-                  />
-                </View>
-                <View style={styles.docInfo}>
-                  <Text style={styles.docName} numberOfLines={1}>
-                    {doc.name}
-                  </Text>
-                  <Text style={styles.docMeta}>
-                    {doc.size} • {doc.date}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: `${getStatusColor(doc.status)}15` },
-                  ]}
-                >
-                  <Text
+          {filteredDocs.length === 0 ? (
+            <View testID="empty-state" style={styles.centeredState}>
+              <Ionicons
+                name="folder-open-outline"
+                size={48}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.stateTitle}>No documents yet</Text>
+              <Text style={styles.stateSubtitle}>
+                Upload your credit reports and letters to get started.
+              </Text>
+            </View>
+          ) : (
+            filteredDocs.map((doc) => (
+              <TouchableOpacity
+                key={doc.id}
+                onPress={() => router.push(`/documents/${doc.id}`)}
+              >
+                <Card style={styles.docCard}>
+                  <View style={styles.docIcon}>
+                    <Ionicons
+                      name={
+                        getTypeIcon(doc.type) as keyof typeof Ionicons.glyphMap
+                      }
+                      size={24}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <View style={styles.docInfo}>
+                    <Text style={styles.docName} numberOfLines={1}>
+                      {doc.name}
+                    </Text>
+                    <Text style={styles.docMeta}>
+                      {formatSize(doc.fileSize)} •{" "}
+                      {new Date(doc.uploadedAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <View
                     style={[
-                      styles.statusText,
-                      { color: getStatusColor(doc.status) },
+                      styles.statusBadge,
+                      { backgroundColor: `${getStatusColor(doc.status)}15` },
                     ]}
                   >
-                    {doc.status}
-                  </Text>
-                </View>
-              </Card>
-            </TouchableOpacity>
-          ))}
+                    <Text
+                      style={[
+                        styles.statusText,
+                        { color: getStatusColor(doc.status) },
+                      ]}
+                    >
+                      {doc.status}
+                    </Text>
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -273,6 +333,32 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
     color: theme.colors.textSecondary,
   },
+  centeredState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.spacing.xl,
+  },
+  stateTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  stateSubtitle: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
+  },
+  retryButton: {
+    marginTop: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 12,
+  },
+  retryText: { color: "#fff", fontWeight: "600", fontSize: 14 },
   header: {
     flexDirection: "row",
     alignItems: "center",

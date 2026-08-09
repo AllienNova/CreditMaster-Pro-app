@@ -34,7 +34,7 @@ const GUIDE_CONTENT: Record<string, GuideContent> = {
     title: "Understanding Your Credit Score",
     category: "Credit Basics",
     readTime: "5 min",
-    author: "Credit Pro Team",
+    author: "Fynvita Team",
     updatedAt: "Dec 1, 2024",
     sections: [
       {
@@ -64,7 +64,7 @@ const GUIDE_CONTENT: Record<string, GuideContent> = {
     title: "How to Dispute Errors",
     category: "Disputes",
     readTime: "8 min",
-    author: "Credit Pro Team",
+    author: "Fynvita Team",
     updatedAt: "Nov 28, 2024",
     sections: [
       {
@@ -184,7 +184,7 @@ export default function GuideDetailScreen() {
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push("/disputes")}
+            onPress={() => router.push("/(tabs)/disputes")}
           >
             <Ionicons
               name="document-text"

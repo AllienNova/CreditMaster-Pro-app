@@ -153,7 +153,7 @@ describe("PortfolioAnalytics Pipeline", () => {
   let mockHoldings: ReturnType<typeof createMockHoldings>;
 
   beforeEach(() => {
-    analytics = new PortfolioAnalytics();
+    analytics = new PortfolioAnalytics("user-001");
     mockPortfolio = createMockPortfolio(3);
     mockHoldings = createMockHoldings(3);
 
@@ -202,10 +202,16 @@ describe("PortfolioAnalytics Pipeline", () => {
       expect(metrics.conditionalVaR.cvar95).toBeGreaterThanOrEqual(0);
       expect(metrics.conditionalVaR.cvar99).toBeGreaterThanOrEqual(0);
 
-      // Risk-adjusted returns are numeric
-      expect(typeof metrics.sharpeRatio).toBe("number");
-      expect(typeof metrics.sortinoRatio).toBe("number");
-      expect(typeof metrics.calmarRatio).toBe("number");
+      // Risk-adjusted returns are number | null (null when denominator = 0, per FND-031 fix)
+      expect(
+        metrics.sharpeRatio === null || Number.isFinite(metrics.sharpeRatio),
+      ).toBe(true);
+      expect(
+        metrics.sortinoRatio === null || Number.isFinite(metrics.sortinoRatio),
+      ).toBe(true);
+      expect(
+        metrics.calmarRatio === null || Number.isFinite(metrics.calmarRatio),
+      ).toBe(true);
 
       // Beta and alpha
       expect(typeof metrics.beta).toBe("number");
@@ -685,10 +691,19 @@ describe("PortfolioAnalytics Pipeline", () => {
       expect(perf.returns.daily.length).toBeGreaterThan(0);
       expect(perf.returns.cumulative.length).toBeGreaterThan(0);
 
-      // Risk-adjusted returns
-      expect(typeof perf.riskAdjustedReturns.sharpeRatio).toBe("number");
-      expect(typeof perf.riskAdjustedReturns.sortinoRatio).toBe("number");
-      expect(typeof perf.riskAdjustedReturns.calmarRatio).toBe("number");
+      // Risk-adjusted returns are number | null (null when denominator = 0, per FND-031 fix)
+      expect(
+        perf.riskAdjustedReturns.sharpeRatio === null ||
+          Number.isFinite(perf.riskAdjustedReturns.sharpeRatio),
+      ).toBe(true);
+      expect(
+        perf.riskAdjustedReturns.sortinoRatio === null ||
+          Number.isFinite(perf.riskAdjustedReturns.sortinoRatio),
+      ).toBe(true);
+      expect(
+        perf.riskAdjustedReturns.calmarRatio === null ||
+          Number.isFinite(perf.riskAdjustedReturns.calmarRatio),
+      ).toBe(true);
 
       // No benchmark provided, so benchmark should be undefined
       expect(perf.benchmark).toBeUndefined();
@@ -1493,8 +1508,8 @@ describe("PortfolioAnalytics Pipeline", () => {
 
       // With all positive returns, downside deviation should be 0
       expect(metrics.volatility.downside).toBe(0);
-      // Sortino ratio will be Infinity (division by 0) or some large number
-      expect(typeof metrics.sortinoRatio).toBe("number");
+      // downsideDeviation = 0 → sortinoRatio denominator = 0 → must be null (FND-031 fix)
+      expect(metrics.sortinoRatio).toBeNull();
     });
 
     it("should handle empty drawdowns array giving currentDrawdown = 0 (line 941)", async () => {

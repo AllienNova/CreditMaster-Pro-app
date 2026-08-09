@@ -1,0 +1,142 @@
+# Strativion Market Playbook: Options
+# Source: Chapter 35 - The 30 Indisputable Laws of Trading
+
+market: "Options"
+description: "Options trading playbook. Beyond the Greeks. Volatility regime-based strategy selection."
+
+vix_regime_framework:
+  description: "The first-order question: buy premium or sell premium?"
+  regimes:
+    ultra_low:
+      vix_range: [0, 14]
+      strategy: "Buy premium (straddles, strangles)"
+      rationale: "Volatility compressed (Law 3). Expansion coming. Options are cheap."
+    normal:
+      vix_range: [14, 18]
+      strategy: "Sell credit spreads, iron condors"
+      rationale: "Collect premium. Volatility risk premium is your edge."
+      iron_condor_win_rate: 0.72
+      avg_profit_per_contract: 185
+    elevated:
+      vix_range: [18, 25]
+      strategy: "Sell put spreads on quality stocks"
+      rationale: "IV elevated, premiums rich. Sell fear."
+    high:
+      vix_range: [25, 35]
+      strategy: "Sell puts selectively on extreme fear days"
+      rationale: "VIX spikes are mean-reverting (Law 5). Wait for spike to crest."
+    crisis:
+      vix_range: [35, 100]
+      strategy: "Do NOT sell premium. Buy puts for protection."
+      rationale: "Tail risk is real (Law 7). Selling here can bankrupt you."
+      iron_condor_win_rate: 0.45
+      avg_loss_per_contract: -320
+
+  vix_mean_reversion:
+    long_term_median: 17.5
+    typical_range: [12, 25]
+    max_above_40_consecutive_days: 15
+    max_below_10_consecutive_days: 40
+
+regime_strategy_matrix:
+  # Format: [view][vix_level] = strategy
+  neutral:
+    below_14: "Buy straddle"
+    14_to_18: "Iron condor"
+    18_to_25: "Iron condor (wider)"
+    25_to_35: "Sell puts selectively"
+    above_35: "Cash"
+  bullish:
+    below_14: "Buy calls"
+    14_to_18: "Bull put spread"
+    18_to_25: "Bull put spread"
+    25_to_35: "Sell puts on quality"
+    above_35: "Cash or buy calls on panic"
+  bearish:
+    below_14: "Buy puts"
+    14_to_18: "Bear call spread"
+    18_to_25: "Bear call spread"
+    25_to_35: "Buy puts"
+    above_35: "Already hedged or cash"
+
+primary_setups:
+  - name: "Iron Condor (Normal Regime)"
+    vix_range: [14, 18]
+    structure:
+      - "Sell OTM put, buy further OTM put (bull put spread)"
+      - "Sell OTM call, buy further OTM call (bear call spread)"
+    typical_credit: "$1.00-$1.50 per share"
+    typical_max_risk: "$3.50-$4.00 per share"
+    probability_of_profit: 0.68
+    optimal_dte: [30, 45]
+    management_rules:
+      close_at_50pct_profit: true
+      close_threatened_side_at_2x_credit: true
+      never_roll_into_more_risk: true
+      no_earnings_fomc_nfp: true
+    laws_applied: [5, 16, 25]
+
+  - name: "Earnings Straddle (Pre-Event IV Sell)"
+    description: "Buy straddle 5-7 days before earnings. Sell day before earnings to capture IV build."
+    avoid: "Holding straddle through earnings. IV crush often destroys trade even when direction is correct."
+    laws_applied: [3, 9]
+
+  - name: "VIX Call Hedge (Compression Signal)"
+    conditions:
+      - "VIX below 14 (bottom 10th percentile)"
+      - "Extended period of low volatility"
+    structure: "Buy OTM VIX calls, 30-60 DTE"
+    typical_cost: "$0.50-$1.50 per contract"
+    potential_return: "2,000%+ on volatility explosion"
+    example: "July 2024: VIX 12.46, bought $18 calls at $0.85. Aug 5: VIX spiked to 38.57. Calls worth $20.57. Return: 2,320%."
+    laws_applied: [3, 7]
+
+  - name: "Gamma Scalp"
+    description: "Buy ATM straddle, continuously delta-hedge by trading underlying."
+    when_profitable: "Realized volatility exceeds implied volatility"
+    when_unprofitable: "Low realized volatility. Theta eats straddle alive."
+    laws_applied: [3]
+
+  - name: "Covered Call"
+    description: "Own shares, sell OTM call for premium"
+    best_regime: "Flat to mildly bullish (most common)"
+    tradeoff: "Sacrifice upside above strike for immediate premium income"
+
+greeks_quick_reference:
+  delta: "Directional exposure. ATM ~0.50 calls, -0.50 puts."
+  gamma: "Rate of delta change. High gamma = accelerating delta. Creates feedback loops."
+  theta: "Time decay. Accelerates after 45 DTE. Selling sweet spot: 30-45 DTE."
+  vega: "Volatility sensitivity. Long vega profits from IV expansion. Short vega profits from IV crush."
+
+expiration_selection:
+  selling_premium: "30-45 DTE (theta decay sweet spot)"
+  buying_for_earnings: "7-14 DTE"
+  portfolio_hedges: "30-60 DTE"
+
+position_sizing:
+  max_per_trade: "3-5% of account measured by maximum loss, not premium"
+  never_sell_naked: true
+  scale_inversely_with_vix: "VIX 25 = half the contracts of VIX 15"
+
+five_deadly_sins:
+  - "Selling naked puts on margin (Optionsellers.com lost $150M in one week)"
+  - "Holding through earnings without planning for IV crush"
+  - "Ignoring VIX regime"
+  - "Averaging down on losing options (they expire, unlike stocks)"
+  - "Trading illiquid options ($0.50 spread on $1.00 credit = 25% lost to spread)"
+
+liquid_underlyings: ["SPY", "QQQ", "AAPL", "AMZN", "TSLA", "MSFT", "NVDA"]
+
+expected_move_formula:
+  rule_of_thumb: "Expected Move = Straddle Price x 0.85"
+  example: "Stock $200, ATM straddle $16. Expected move = $13.60. Range: $186.40-$213.60."
+
+iv_to_daily_move:
+  formula: "Daily Move = Price x IV / sqrt(252)"
+  example: "Stock $100, IV 30%. Daily move = $100 x 0.30 / 15.87 = $1.89"
+
+key_correlations:
+  SPY_options_VIX: -0.80
+  TSLA_earnings_move_above_5pct: 0.75
+
+laws_most_relevant: [2, 3, 5, 7, 16, 25]

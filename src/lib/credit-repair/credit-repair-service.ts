@@ -5,9 +5,9 @@
  * Focuses on PROVEN strategies that actually work
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import { CreditBureauService } from "@/lib/credit-bureau";
 import type {
   CreditRepairScore,

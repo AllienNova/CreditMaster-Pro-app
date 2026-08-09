@@ -1,0 +1,33 @@
+name = "onboarding"
+wave = 2
+model = "gemini-2.5-flash-image"
+resolution = "1024x1024"
+out_dir = "assets/raw/onboarding"
+count = 5
+preamble = true
+
+shared_prompt = """
+Fynvita illustration in soft-organic style: rounded blob shapes, flat vector design, NO gradients, NO shadows, NO 3D, NO photorealism, NO thin lines. Palette: Vital Green #10B981, Trust Blue #3B82F6, Deep Navy #1E40AF, Emerald #059669, Energy Gold #F59E0B, cream/white #F3F4F6 backgrounds. Blob characters are simple rounded shapes with small dot eyes and tiny smile. Warm, friendly, approachable. 1024x1024 square, subject centered, generous breathing room.
+"""
+
+negative = ["gradients", "shadows", "3D", "photography", "thin lines", "realistic"]
+
+[[variants]]
+id = "onboard-01-welcome"
+prompt = "A cheerful green blob character stands with arms outstretched in greeting. Small floating accent shapes surround it: a coin in gold, a leaf in emerald, a heart in green. Welcoming, warm, inviting."
+
+[[variants]]
+id = "onboard-02-connect"
+prompt = "Two blob characters (one green, one blue) exchange credit-card shapes across a small bridge. A soft green hill behind. A small gold padlock floats above. Gentle, trustworthy — connecting accounts securely."
+
+[[variants]]
+id = "onboard-03-goals"
+prompt = "A green blob character holds a flag atop a rounded hill. Above: floating goal icons — a house in cream, a seedling in emerald, a suitcase in blue. Setting personal financial goals. Optimistic."
+
+[[variants]]
+id = "onboard-04-insights"
+prompt = "A curious green blob character looks up at a large friendly chart with rounded bars and a smooth upward line. Small sparkle shapes around its head. Chart bars: blue, emerald, gold. Gaining insights. Thoughtful."
+
+[[variants]]
+id = "onboard-05-ready"
+prompt = "The green blob character stands tall with arms raised in celebration. Soft confetti in gold and blue drifts down. A rounded emerald ribbon behind. Triumphant but gentle."

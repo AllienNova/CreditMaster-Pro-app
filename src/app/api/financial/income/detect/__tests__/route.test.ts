@@ -14,8 +14,19 @@
 
 import { NextRequest } from "next/server";
 
+const mockValidateFromHeaders = jest.fn();
 jest.mock("@/lib/supabase/server");
 jest.mock("@/lib/financial/income-tracking-service");
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 
 import { POST, GET } from "../route";
 import { createClient } from "@/lib/supabase/server";
@@ -66,6 +77,10 @@ const mockPatterns = [
 describe("POST /api/financial/income/detect", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -154,24 +169,23 @@ describe("POST /api/financial/income/detect", () => {
     expect(data.error).toContain("Missing or invalid transactions array");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/income/detect",
+        {
+          method: "POST",
+          body: { transactions: [] },
+        },
+      );
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/income/detect",
-      {
-        method: "POST",
-        body: { transactions: [] },
-      },
-    );
-    const response = await POST(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 500 on service error", async () => {
@@ -201,6 +215,10 @@ describe("POST /api/financial/income/detect", () => {
 describe("GET /api/financial/income/detect", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
 
     const queryChain = createChainableQuery([
       { id: "tx1", date: "2025-01-15", amount: 3500, merchant_name: "Employer", category: "income", account_id: "acc-1" },
@@ -236,7 +254,7 @@ describe("GET /api/financial/income/detect", () => {
   });
 
   it("should detect income from stored transactions", async () => {
-    const response = await GET();
+    const response = await GET(createMockRequest("http://localhost:3000/api/financial/income/detect"));
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -275,7 +293,7 @@ describe("GET /api/financial/income/detect", () => {
     };
     (createClient as jest.Mock).mockResolvedValue(supabaseEmpty);
 
-    const response = await GET();
+    const response = await GET(createMockRequest("http://localhost:3000/api/financial/income/detect"));
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -284,22 +302,18 @@ describe("GET /api/financial/income/detect", () => {
     expect(data.message).toContain("No transactions found");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    const supabaseUnauth = {
-      auth: {
-        getUser: jest.fn().mockResolvedValue({
-          data: { user: null },
-          error: { message: "Not authenticated" },
-        }),
-      },
-    };
-    (createClient as jest.Mock).mockResolvedValue(supabaseUnauth);
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const response = await GET();
-    const data = await response.json();
+      const response = await GET(
+        createMockRequest("http://localhost:3000/api/financial/income/detect"),
+      );
+      const data = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 when transaction query fails", async () => {
@@ -329,7 +343,7 @@ describe("GET /api/financial/income/detect", () => {
     };
     (createClient as jest.Mock).mockResolvedValue(supabaseError);
 
-    const response = await GET();
+    const response = await GET(createMockRequest("http://localhost:3000/api/financial/income/detect"));
     const data = await response.json();
 
     expect(response.status).toBe(500);

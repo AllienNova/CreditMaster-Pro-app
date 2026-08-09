@@ -1,0 +1,311 @@
+                int dx = idx2 - idx1
+                if dx != 0
+                    float m = (p2 - p1) / dx
+                    float lineNow = p1 + m * (bar_index - idx1)
+                    [touchW, touches, violSev] = f_scoreLine(isSupport, lineNow, m,
+                                                             _pIdx, _pVal, _pAtr,
+                                                             lookbackN, stepBars, tauMult_, wSpan_, lamViol_)
+                    if touches >= minTouches_
+                        float span = math.abs(dx)
+                        float score = touchW + wSpan_ * math.log(1 + span) - lamViol_ * violSev
+                        if na(bestScore) or score > bestScore
+                            bestScore := score
+                            bestLine  := lineNow
+                            bestM     := m
+                            bestT     := touches
+    bestQ := na(bestScore) ? na : f_sigmoid(bestScore)
+    [bestLine, bestM, bestQ, bestT]
+
+// =========================
+// Pivot storage
+// =========================
+var pivLowIdx  = array.new_int()
+var pivLowVal  = array.new_float()
+var pivLowAtr  = array.new_float()
+
+var pivHighIdx = array.new_int()
+var pivHighVal = array.new_float()
+var pivHighAtr = array.new_float()
+
+pl = ta.pivotlow(low, left, right)
+ph = ta.pivothigh(high, left, right)
+
+if not na(pl)
+    int idx = bar_index - right
+    f_pushPivot(pivLowIdx, pivLowVal, pivLowAtr, idx, pl, atr[right], maxPivots)
+
+if not na(ph)
+    int idx = bar_index - right
+    f_pushPivot(pivHighIdx, pivHighVal, pivHighAtr, idx, ph, atr[right], maxPivots)
+
+// =========================
+// Compute boundaries (support/resistance)
+// =========================
+[supNow, supM, supQ, supT] = f_bestBoundary(true,  pivLowIdx,  pivLowVal,  pivLowAtr,
+                                            N, evalStep, minTouches, tauMult, wSpan, lamViol)
+[resNow, resM, resQ, resT] = f_bestBoundary(false, pivHighIdx, pivHighVal, pivHighAtr,
+                                            N, evalStep, minTouches, tauMult, wSpan, lamViol)
+
+sup = supNow
+res = resNow
+
+// Midline for crossings
+mid = (not na(sup) and not na(res)) ? (sup + res) / 2.0 : ta.linreg(src, erLen, 0)
+
+// =========================
+// Regime
+// =========================
+er = f_er(src, erLen)
+crosses = f_crossCount(src, mid, erLen)
+bool isTrend = (er >= erTrendThr) and (crosses <= crossTrendMx)
+bool isRange = (er <= erRangeThr) or (crosses >= crossRangeMn)
+int regime = isTrend ? 1 : isRange ? 2 : 0  // 1 trend, 2 range, 0 transition
+
+// =========================
+// Break → Retest State Machine (freeze Action/Safety)
+// =========================
+var int   state = 0  // 0 idle, 1 waitRetestDown, 2 waitRetestUp
+var int   breakBar = na
+var float action0 = na, actionM = na
+var float safety0 = na, safetyM = na
+
+actionLine = na
+safetyLine = na
+if state != 0 and not na(breakBar)
+    int k = bar_index - breakBar
+    actionLine := action0 + actionM * k
+    safetyLine := safety0 + safetyM * k
+
+breakDown = (regime != 2) and not na(sup) and (low < sup - breakPenATR*atr) and (close < sup - breakConfATR*atr)
+breakUp   = (regime != 2) and not na(res) and (high > res + breakPenATR*atr) and (close > res + breakConfATR*atr)
+
+// Freeze on break
+if state == 0
+    if breakDown and not na(res)
+        state := 1
+        breakBar := bar_index
+        action0 := sup
+        actionM := supM
+        safety0 := res
+        safetyM := resM
+    else if breakUp and not na(sup)
+        state := 2
+        breakBar := bar_index
+        action0 := res
+        actionM := resM
+        safety0 := sup
+        safetyM := supM
+
+// Retest / fail / reject
+retestDown = false
+retestUp   = false
+failDown   = false
+failUp     = false
+
+bufRet = retestATR * atr
+
+if state == 1 and not na(actionLine)
+    if (bar_index - breakBar) > retestMaxBars
+        state := 0
+    else
+        failDown := close > actionLine + failATR*atr
+        if failDown
+            state := 0
+        else
+            retestDown := (high >= actionLine - bufRet) and (low <= actionLine + bufRet)
+
+if state == 2 and not na(actionLine)
+    if (bar_index - breakBar) > retestMaxBars
+        state := 0
+    else
+        failUp := close < actionLine - failATR*atr
+        if failUp
+            state := 0
+        else
+            retestUp := (low <= actionLine + bufRet) and (high >= actionLine - bufRet)
+
+// Rejection triggers (simple, replace with your preferred)
+bearReject = retestDown and (close < open) and (close < actionLine)
+bullReject = retestUp   and (close > open) and (close > actionLine)
+
+// =========================
+// Risk geometry filter
+// =========================
+dSafety = (not na(safetyLine) and atr > 0) ? math.abs(close - safetyLine) / atr : na
+
+// Quality gates: action boundary quality (use supQ for down breaks, resQ for up breaks)
+qAction = state == 1 ? supQ : state == 2 ? resQ : na
+isA = (not na(qAction)) and (qAction >= qA)
+isB = (not na(qAction)) and (qAction >= qB) and (qAction < qA)
+
+allowTrade = (regime != 2) and (not na(dSafety)) and (dSafety <= dSafetyMax) and (isA or isB)
+
+// =========================
+// Position sizing (risk-based)
+// =========================
+riskPct = isA ? riskPctA : riskPctB
+
+// Compute qty so that stop distance equals riskPct% of equity
+f_qtyForRisk(entryPrice, stopPrice, riskPercent) =>
+    float riskCash = strategy.equity * (riskPercent/100.0)
+    float perUnit  = math.abs(entryPrice - stopPrice)
+    perUnit > 0 ? (riskCash / perUnit) : 0.0
+
+// =========================
+// Entries
+// =========================
+stopBuf = 0.20 * atr
+
+// Long entry on bullReject
+if allowTrade and bullReject and strategy.position_size == 0
+    float entryP = close
+    float stopP  = safetyLine - stopBuf
+    float qty    = f_qtyForRisk(entryP, stopP, riskPct)
+    strategy.entry("L", strategy.long, qty=qty)
+
+// Short entry on bearReject
+if allowTrade and bearReject and strategy.position_size == 0
+    float entryP = close
+    float stopP  = safetyLine + stopBuf
+    float qty    = f_qtyForRisk(entryP, stopP, riskPct)
+    strategy.entry("S", strategy.short, qty=qty)
+
+// =========================
+// Trade management: BE + Partial + Pivot Trail + Time stop
+// =========================
+var float entry = na
+var float initStop = na
+var int   entryBar = na
+var float trailStop = na
+
+// Track pivots for trailing
+trailPL = ta.pivotlow(low, left, right)
+trailPH = ta.pivothigh(high, left, right)
+trailBuf = trailBufATR * atr
+
+if strategy.position_size != 0 and na(entry)
+    entry := strategy.position_avg_price
+    entryBar := bar_index
+    // initial stop from safety line
+    initStop := strategy.position_size > 0 ? (safetyLine - stopBuf) : (safetyLine + stopBuf)
+    trailStop := initStop
+
+if strategy.position_size == 0
+    entry := na
+    initStop := na
+    entryBar := na
+    trailStop := na
+
+// Compute R multiple
+risk = (not na(entry) and not na(initStop)) ? math.abs(entry - initStop) : na
+rNow = (not na(risk) and risk > 0) ? (strategy.position_size > 0 ? (close - entry)/risk : (entry - close)/risk) : na
+
+// Partial take at 1R
+if strategy.position_size > 0 and not na(rNow) and rNow >= partialR
+    strategy.exit("TP1L", "L", qty_percent=partialPct, limit=entry + partialR*risk)
+
+if strategy.position_size < 0 and not na(rNow) and rNow >= partialR
+    strategy.exit("TP1S", "S", qty_percent=partialPct, limit=entry - partialR*risk)
+
+// Time stop (if trade doesn’t progress)
+if strategy.position_size != 0 and not na(entryBar)
+    if (bar_index - entryBar) >= timeStopBars and (na(rNow) or rNow < 0.5)
+        strategy.close(strategy.position_size > 0 ? "L" : "S", comment="TimeStop")
+
+// Build trailing stop candidate
+if strategy.position_size > 0 and not na(entry)
+    float volStop = entry - 1.5*atr
+    float beStop  = entry + syminfo.mintick
+    float structStop = not na(trailPL) ? (trailPL - trailBuf) : na
+
+    float cand = initStop
+    cand := math.max(cand, volStop)
+    if not na(rNow) and rNow >= beTrigR
+        cand := math.max(cand, beStop)
+    if not na(rNow) and rNow >= trailStartR and not na(structStop)
+        cand := math.max(cand, structStop)
+
+    trailStop := math.max(trailStop, cand)
+    strategy.exit("XL", "L", stop=trailStop)
+
+if strategy.position_size < 0 and not na(entry)
+    float volStop = entry + 1.5*atr
+    float beStop  = entry - syminfo.mintick
+    float structStop = not na(trailPH) ? (trailPH + trailBuf) : na
+
+    float cand = initStop
+    cand := math.min(cand, volStop)
+    if not na(rNow) and rNow >= beTrigR
+        cand := math.min(cand, beStop)
+    if not na(rNow) and rNow >= trailStartR and not na(structStop)
+        cand := math.min(cand, structStop)
+
+    trailStop := math.min(trailStop, cand)
+    strategy.exit("XS", "S", stop=trailStop)
+
+// =========================
+// Visuals / Debug
+// =========================
+plot(res, "Resistance", color=color.new(color.red, 0))
+plot(sup, "Support", color=color.new(color.green, 0))
+plot(actionLine, "Action (frozen)", color=color.new(color.orange, 0), linewidth=2)
+plot(safetyLine, "Safety (frozen)", color=color.new(color.blue, 0), linewidth=2)
+
+bgcolor(regime == 1 ? color.new(color.green, 92) : regime == 2 ? color.new(color.red, 92) : na)
+
+plot(er, "ER", display=display.data_window)
+plot(crosses, "Crossings", display=display.data_window)
+plot(supQ, "Q_support", display=display.data_window)
+plot(resQ, "Q_resist", display=display.data_window)
+plot(dSafety, "dSafety", display=display.data_window)
+```
+
+---
+
+# 7) How to Use This in Real Trading (simple rules)
+
+### Trade checklist
+
+Only take trades when:
+
+1. regime is **trend or transition**
+2. break was **close-confirmed**
+3. retest occurred within M bars
+4. rejection candle printed
+5. Q is high and dSafety is reasonable
+
+### Execution
+
+* Stop: safety line ± buffer
+* Partial: 60% at 1R
+* BE: at 0.8R
+* Trail: pivot trail after 1R
+
+---
+
+# 8) What makes this “best” (and not just complicated)
+
+This strategy is strong because the parts are consistent:
+
+* Structure defines where reversals/transitions happen
+* Regime prevents you from trading when structure is unreliable
+* Quality prevents you from trading weak lines
+* Risk geometry prevents oversized stops
+* Break → retest removes most false break entries
+* Pivot trailing keeps it price-action pure and non-gimmicky
+
+---
+
+# 9) What I’d tune first (highest ROI tuning)
+
+1. Pivot sensitivity (`left/right`)
+2. Q thresholds (qA/qB)
+3. dSafetyMax
+4. Retest window M
+5. Trail start R and trail buffer
+
+Those matter far more than “more indicators.”
+
+---
+
+If you tell me **what you trade (BTC, NQ, ES, XAU, EURUSD, etc.)** and your **main timeframe**, I’ll recommend a **default parameter set** (pivot size, N, ER thresholds, buffers) that tends to be stable for that market — and I’ll suggest the best “high hit-rate” vs “high expectancy” mode settings for your goals.

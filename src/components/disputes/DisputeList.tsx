@@ -2,11 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Dispute, DisputeStatus, Bureau } from "@/lib/disputes/dispute-service";
 import AIDisputeStrategy from "./AIDisputeStrategy";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function DisputeList() {
+  const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,19 +165,23 @@ export default function DisputeList() {
 
         {/* Disputes List */}
         {paginatedDisputes.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 dark:text-slate-400">
+          <div>
             {searchTerm || statusFilter !== "all" || bureauFilter !== "all" ? (
-              <p>No disputes match your filters</p>
+              <EmptyState
+                type="search-empty"
+                title="No disputes match your filters"
+                description="Try adjusting your search or filter criteria"
+              />
             ) : (
-              <div>
-                <p className="mb-4">You haven't created any disputes yet</p>
-                <Link
-                  href="/disputes/new"
-                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Create Your First Dispute
-                </Link>
-              </div>
+              <EmptyState
+                type="no-data"
+                title="No disputes yet"
+                description="Start a new dispute to improve your credit"
+                primaryAction={{
+                  label: "New Dispute",
+                  onClick: () => router.push("/disputes/new"),
+                }}
+              />
             )}
           </div>
         ) : (

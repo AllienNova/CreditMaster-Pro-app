@@ -15,7 +15,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { negotiationService } from "@/lib/credit-repair";
 import { db } from "@/lib/credit-repair/db";
 import { auditLogger } from "@/lib/security/audit-logging";
@@ -36,16 +37,8 @@ interface SettlementSummary {
  * GET /api/credit-repair/negotiate
  * Get all negotiations for authenticated user
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
     // 2. Parse query parameters
     const { searchParams } = new URL(request.url);
     const statusParam = searchParams.get("status");
@@ -138,22 +131,14 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/credit-repair/negotiate
  * Create new negotiation with AI script generation
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
     // 2. Parse and validate input
     const body = await request.json();
     const {
@@ -194,7 +179,7 @@ export async function POST(request: NextRequest) {
         originalCreditor || "Unknown",
         originalBalance || currentBalance,
         currentBalance,
-        { name: user.name || "User", email: user.email },
+        { name: user.email, email: user.email },
       );
       // result contains phoneScript, emailScript, letterScript directly
       scripts = result;
@@ -262,4 +247,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from "react";
+import { CHART_COLORS } from "@/lib/design-tokens/chart-colors";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PieChart,
@@ -71,47 +72,47 @@ const ASSET_CLASS_INFO: Record<
 > = {
   us_stocks: {
     label: "US Stocks",
-    color: "#3B82F6",
+    color: CHART_COLORS.blue,
     icon: <TrendingUp className="w-4 h-4" />,
   },
   international_stocks: {
     label: "International Stocks",
-    color: "#8B5CF6",
+    color: CHART_COLORS.purple,
     icon: <TrendingUp className="w-4 h-4" />,
   },
   emerging_markets: {
     label: "Emerging Markets",
-    color: "#EC4899",
+    color: CHART_COLORS.pink,
     icon: <TrendingUp className="w-4 h-4" />,
   },
   bonds: {
     label: "Bonds",
-    color: "#10B981",
+    color: CHART_COLORS.emerald,
     icon: <Shield className="w-4 h-4" />,
   },
   real_estate: {
     label: "Real Estate",
-    color: "#F59E0B",
+    color: CHART_COLORS.amber,
     icon: <Briefcase className="w-4 h-4" />,
   },
   commodities: {
     label: "Commodities",
-    color: "#EF4444",
+    color: CHART_COLORS.red,
     icon: <Briefcase className="w-4 h-4" />,
   },
   cash: {
     label: "Cash",
-    color: "#6B7280",
+    color: CHART_COLORS.gray,
     icon: <Wallet className="w-4 h-4" />,
   },
   crypto: {
     label: "Crypto",
-    color: "#F97316",
+    color: CHART_COLORS.orange,
     icon: <TrendingUp className="w-4 h-4" />,
   },
   alternatives: {
     label: "Alternatives",
-    color: "#14B8A6",
+    color: CHART_COLORS.teal,
     icon: <Briefcase className="w-4 h-4" />,
   },
 };
@@ -670,7 +671,7 @@ export function AllocationConfigPanel({
           disabled={isSaving}
           className="px-4 py-2 text-gray-400 dark:text-slate-500 hover:text-white flex items-center gap-2 transition-colors"
         >
-          <RotateCcw className="w-4 h-4" />
+          <RotateCcw className="w-4 h-4" aria-hidden="true" />
           Reset
         </button>
 

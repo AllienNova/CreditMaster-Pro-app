@@ -5,39 +5,70 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { createClient } from "@supabase/supabase-js";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+let _supabase: SupabaseClient | null = null;
+const supabase = new Proxy({} as SupabaseClient, {
+  get(_t, prop, recv) {
+    if (!_supabase)
+      _supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      );
+    const v = Reflect.get(_supabase, prop, recv);
+    return typeof v === "function" ? v.bind(_supabase) : v;
+  },
+});
+
+// ============================================================================
+// VALIDATION SCHEMAS
+// ============================================================================
+
+const HOLDINGS_MAX_LENGTH = 500;
+
+const holdingSchema = z.object({
+  symbol: z.string().min(1),
+  shares: z.number().finite().positive(),
+  costBasis: z.number().finite().nonnegative(),
+  currentPrice: z.number().finite().nonnegative(),
+  sector: z.string().optional(),
+  assetClass: z
+    .enum(["stock", "etf", "bond", "crypto", "commodity", "cash", "option", "reit"])
+    .optional(),
+});
+
+const analyzeBodySchema = z.object({
+  holdings: z.array(holdingSchema).min(1).max(HOLDINGS_MAX_LENGTH),
+  includeStressTest: z.boolean().optional().default(false),
+  includeRebalance: z.boolean().optional().default(false),
+  targetAllocation: z.record(z.string(), z.number()).optional(),
+});
 
 // ============================================================================
 // POST - Analyze Portfolio
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const rawBody = await request.json();
 
-    const body = await request.json();
-    const {
-      holdings,
-      includeStressTest = false,
-      includeRebalance = false,
-      targetAllocation,
-    } = body;
-
-    if (!holdings || !Array.isArray(holdings) || holdings.length === 0) {
+    const parsed = analyzeBodySchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Holdings array required" },
+        { error: "Invalid request body" },
         { status: 400 },
       );
     }
+
+    const {
+      holdings,
+      includeStressTest,
+      includeRebalance,
+      targetAllocation,
+    } = parsed.data;
 
     // Import portfolio analysis service
     const { PortfolioAnalysisService } =
@@ -92,19 +123,16 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
 
 // ============================================================================
 // GET - Get user's portfolio analysis
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const userId = validation.user.id;
+    const userId = user.id;
 
     // Fetch user's holdings from database
     const { data: holdingsData, error } = await supabase
@@ -128,14 +156,22 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Transform to PortfolioHolding format
+    // Transform to PortfolioHolding format. investment_holdings has no
+    // "shares", "cost_basis", or "asset_class" column — verified live via
+    // \d+ investment_holdings (same schema already fixed in
+    // src/lib/ai/financial-chat-engine.ts, commit 058a501). Real columns:
+    // quantity, average_cost (per-share — matches PortfolioAnalysisService's
+    // `h.shares * h.costBasis` usage), current_price, asset_type. Before this
+    // fix, shares/costBasis silently read `undefined` and assetClass
+    // silently defaulted to "stock" for every holding regardless of its
+    // real asset type.
     const holdings = holdingsData.map((h) => ({
       symbol: h.symbol,
-      shares: h.shares,
-      costBasis: h.cost_basis,
-      currentPrice: h.current_price || h.cost_basis,
+      shares: h.quantity,
+      costBasis: h.average_cost,
+      currentPrice: h.current_price || h.average_cost,
       sector: h.sector,
-      assetClass: h.asset_class || "stock",
+      assetClass: h.asset_type || "stock",
     }));
 
     // Run analysis
@@ -165,4 +201,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

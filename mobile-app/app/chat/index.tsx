@@ -8,11 +8,13 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
 import { useCoaching } from "../../src/hooks/useCoaching";
+import api from "../../src/services/api/client";
 
 interface Message {
   id: string;
@@ -20,6 +22,57 @@ interface Message {
   content: string;
   timestamp: Date;
   suggestions?: string[];
+  isError?: boolean;
+  retryMessage?: string;
+}
+
+interface ChatApiResponse {
+  content: string;
+  model: string;
+  usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+  timestamp: string;
+}
+
+function TypingDots() {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animate = (dot: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0, duration: 300, useNativeDriver: true }),
+        ]),
+      );
+    const a1 = animate(dot1, 0);
+    const a2 = animate(dot2, 150);
+    const a3 = animate(dot3, 300);
+    a1.start();
+    a2.start();
+    a3.start();
+    return () => { a1.stop(); a2.stop(); a3.stop(); };
+  }, [dot1, dot2, dot3]);
+
+  const dotStyle = (anim: Animated.Value) => ({
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: lightTheme.colors.textSecondary,
+    marginHorizontal: 2,
+    opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }),
+    transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }],
+  });
+
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 4 }}>
+      <Animated.View style={dotStyle(dot1)} />
+      <Animated.View style={dotStyle(dot2)} />
+      <Animated.View style={dotStyle(dot3)} />
+    </View>
+  );
 }
 
 const INITIAL_MESSAGES: Message[] = [
@@ -51,6 +104,7 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const sessionIdRef = useRef<string | null>(null);
 
   // Coaching integration
   const {
@@ -60,13 +114,27 @@ export default function ChatScreen() {
     sendMessage: sendCoachingMessage,
   } = useCoaching();
 
+  const getSessionId = (): string => {
+    if (!sessionIdRef.current) {
+      sessionIdRef.current = `chat-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    }
+    return sessionIdRef.current;
+  };
+
+  const buildChatMessages = (conversationMessages: Message[]): Array<{ role: string; content: string }> => {
+    return conversationMessages
+      .filter((m) => !m.isError)
+      .map((m) => ({ role: m.role, content: m.content }));
+  };
+
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
+    const trimmed = text.trim();
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: text.trim(),
+      content: trimmed,
       timestamp: new Date(),
     };
 
@@ -74,31 +142,58 @@ export default function ChatScreen() {
     setInputText("");
     setIsTyping(true);
 
-    // Simulate AI response
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const chatMessages = buildChatMessages([...messages, userMessage]);
+      const response = await api.post<ChatApiResponse>("/ai/chat", {
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are Fynvita's AI financial coach. Help users with credit scores, budgeting, savings strategies, debt management, and financial planning. Be concise, actionable, and encouraging.",
+          },
+          ...chatMessages,
+        ],
+        sessionId: getSessionId(),
+      });
 
-    const responses: Record<string, string> = {
-      "How can I improve my score?":
-        "Great question! Here are the top ways to improve your credit score:\n\n1. **Pay bills on time** - Payment history is 35% of your score\n2. **Reduce credit utilization** - Keep it below 30%, ideally under 10%\n3. **Don't close old accounts** - Length of credit history matters\n4. **Limit hard inquiries** - Only apply for credit when needed\n5. **Dispute errors** - Check your reports for inaccuracies\n\nWould you like me to analyze your specific situation?",
-      "Explain my credit utilization":
-        "Credit utilization is the percentage of your available credit that you're using. For example, if you have a $10,000 credit limit and a $3,000 balance, your utilization is 30%.\n\n**Your current utilization:** 28%\n\n**Recommendations:**\n- Aim for under 30% (you're close!)\n- Ideal is under 10%\n- Pay down balances before statement closes\n- Consider requesting credit limit increases",
-      "Help me dispute an item":
-        "I'd be happy to help you dispute an item! Let me guide you through the process:\n\n1. **Identify the item** - Which account or item do you want to dispute?\n2. **Choose the reason** - Common reasons include:\n   - Not my account\n   - Incorrect balance\n   - Wrong payment status\n   - Account should be removed\n\n3. **Select bureaus** - Which bureaus are reporting this?\n\nWould you like me to start a dispute wizard for you?",
-      "What affects my score most?":
-        "Your credit score is calculated using these factors:\n\n📊 **Payment History (35%)**\nMost important! Late payments hurt significantly.\n\n💳 **Credit Utilization (30%)**\nHow much of your available credit you're using.\n\n📅 **Length of History (15%)**\nOlder accounts help your score.\n\n🔍 **Credit Mix (10%)**\nHaving different types of credit.\n\n📝 **New Credit (10%)**\nRecent applications and inquiries.\n\nBased on your profile, focusing on utilization would have the biggest impact!",
-    };
+      if (response.success && response.data) {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: response.data.content,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: "Couldn't get a response. Tap to retry.",
+          timestamp: new Date(),
+          isError: true,
+          retryMessage: trimmed,
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } catch {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Couldn't get a response. Tap to retry.",
+        timestamp: new Date(),
+        isError: true,
+        retryMessage: trimmed,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
-    const assistantMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: "assistant",
-      content:
-        responses[text] ||
-        "I understand you're asking about credit. Let me help you with that. Could you provide more details about what specific aspect of your credit you'd like to discuss?",
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, assistantMessage]);
-    setIsTyping(false);
+  const handleRetry = (retryText: string, errorMessageId: string) => {
+    setMessages((prev) => prev.filter((m) => m.id !== errorMessageId));
+    handleSendMessage(retryText);
   };
 
   return (
@@ -138,44 +233,63 @@ export default function ChatScreen() {
           scrollViewRef.current?.scrollToEnd({ animated: true })
         }
       >
-        {messages.map((message) => (
-          <View
-            key={message.id}
-            style={[
-              styles.messageBubble,
-              message.role === "user"
-                ? styles.userBubble
-                : styles.assistantBubble,
-            ]}
-          >
-            {message.role === "assistant" && (
-              <View style={styles.avatarContainer}>
-                <Ionicons
-                  name="sparkles"
-                  size={20}
-                  color={lightTheme.colors.primary}
-                />
-              </View>
-            )}
+        {messages.map((message) => {
+          const isError = message.isError;
+          const bubble = (
             <View
+              key={message.id}
               style={[
-                styles.messageContent,
+                styles.messageBubble,
                 message.role === "user"
-                  ? styles.userContent
-                  : styles.assistantContent,
+                  ? styles.userBubble
+                  : styles.assistantBubble,
               ]}
             >
-              <Text
+              {message.role === "assistant" && (
+                <View style={styles.avatarContainer}>
+                  <Ionicons
+                    name={isError ? "alert-circle" : "sparkles"}
+                    size={20}
+                    color={isError ? lightTheme.colors.error ?? "#ef4444" : lightTheme.colors.primary}
+                  />
+                </View>
+              )}
+              <View
                 style={[
-                  styles.messageText,
-                  message.role === "user" && styles.userText,
+                  styles.messageContent,
+                  message.role === "user"
+                    ? styles.userContent
+                    : styles.assistantContent,
+                  isError && styles.errorContent,
                 ]}
               >
-                {message.content}
-              </Text>
+                <Text
+                  style={[
+                    styles.messageText,
+                    message.role === "user" && styles.userText,
+                    isError && styles.errorText,
+                  ]}
+                >
+                  {message.content}
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
+          );
+
+          if (isError && message.retryMessage) {
+            return (
+              <TouchableOpacity
+                key={message.id}
+                activeOpacity={0.7}
+                onPress={() => handleRetry(message.retryMessage!, message.id)}
+              >
+                {bubble}
+              </TouchableOpacity>
+            );
+          }
+
+          return bubble;
+        })}
         {isTyping && (
           <View style={[styles.messageBubble, styles.assistantBubble]}>
             <View style={styles.avatarContainer}>
@@ -186,7 +300,7 @@ export default function ChatScreen() {
               />
             </View>
             <View style={[styles.messageContent, styles.assistantContent]}>
-              <Text style={styles.typingText}>Thinking...</Text>
+              <TypingDots />
             </View>
           </View>
         )}
@@ -288,6 +402,15 @@ const styles = StyleSheet.create({
   },
   messageText: { fontSize: 15, color: lightTheme.colors.text, lineHeight: 22 },
   userText: { color: "#FFFFFF" },
+  errorContent: {
+    backgroundColor: (lightTheme.colors.error ?? "#ef4444") + "15",
+    borderColor: (lightTheme.colors.error ?? "#ef4444") + "40",
+    borderWidth: 1,
+  },
+  errorText: {
+    color: lightTheme.colors.error ?? "#ef4444",
+    fontStyle: "italic",
+  },
   typingText: {
     fontSize: 15,
     color: lightTheme.colors.textSecondary,

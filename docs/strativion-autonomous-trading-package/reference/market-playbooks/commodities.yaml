@@ -1,0 +1,249 @@
+# Strativion Market Playbook: Commodities
+# Source: Chapter 37 - The 30 Indisputable Laws of Trading
+
+market: "Commodities"
+description: "Oil, gold, and agricultural futures. Physical reality creates unique dynamics."
+
+instruments:
+  energy:
+    - symbol: "CL"
+      name: "WTI Crude Oil"
+      exchange: "NYMEX/CME"
+      tick_size: 0.01
+      tick_value: 10
+      point_value: 1000
+      typical_margin: 6000
+      typical_daily_range: [1.50, 3.00]
+      avg_daily_volume: 400_000
+      delivery_point: "Cushing, Oklahoma"
+      warning: "Apr 20 2020: CL went to -$37.63. Never hold through expiration without delivery plan."
+
+    - symbol: "MCL"
+      name: "Micro WTI Crude Oil"
+      exchange: "NYMEX/CME"
+      tick_size: 0.01
+      tick_value: 1
+      point_value: 100
+      typical_margin: 600
+      typical_daily_range: [1.50, 3.00]
+      notes: "1/10th of CL. Use for accounts under $50,000."
+
+    - symbol: "BZ"
+      name: "Brent Crude Oil"
+      exchange: "ICE"
+      tick_size: 0.01
+      tick_value: 10
+      point_value: 1000
+      typical_margin: 6000
+      typical_daily_range: [1.50, 3.00]
+
+  metals:
+    - symbol: "GC"
+      name: "Gold (100 oz)"
+      exchange: "COMEX/CME"
+      tick_size: 0.10
+      tick_value: 10
+      point_value: 100
+      typical_margin: 8000
+      typical_daily_range: [20, 40]
+      avg_daily_volume: 200_000
+
+    - symbol: "MGC"
+      name: "Micro Gold (10 oz)"
+      exchange: "COMEX/CME"
+      tick_size: 0.10
+      tick_value: 1
+      point_value: 10
+      typical_margin: 800
+      notes: "1/10th of GC. Use for accounts under $50,000."
+
+    - symbol: "SI"
+      name: "Silver (5,000 oz)"
+      exchange: "COMEX/CME"
+      tick_size: 0.005
+      tick_value: 25
+      point_value: 5000
+      typical_margin: 9000
+      typical_daily_range: [0.30, 0.80]
+
+  agricultural:
+    - symbol: "ZC"
+      name: "Corn"
+      exchange: "CBOT/CME"
+      contract_size: "5,000 bushels"
+      tick_size: 0.0025
+      tick_value: 12.50
+      point_value: 50
+      typical_daily_range_cents: [10, 20]
+
+    - symbol: "ZS"
+      name: "Soybeans"
+      exchange: "CBOT/CME"
+      contract_size: "5,000 bushels"
+      tick_size: 0.0025
+      tick_value: 12.50
+      point_value: 50
+      typical_daily_range_cents: [15, 30]
+      notes: "China imports ~60% of global trade. Geopolitically sensitive."
+
+    - symbol: "ZW"
+      name: "Wheat"
+      exchange: "CBOT/CME"
+      contract_size: "5,000 bushels"
+      tick_size: 0.0025
+      tick_value: 12.50
+      point_value: 50
+      notes: "Russia/Ukraine = 30% of global exports. War commodity."
+
+futures_curve:
+  contango:
+    description: "Future months higher than current. Normal state. Storage costs explain spread."
+    implication: "Long ETFs bleed via roll cost. USO lost 75% (2015-2020) while spot oil was flat."
+    trading: "Fade rallies. Sell premium. Avoid long ETFs."
+    law: 25
+  backwardation:
+    description: "Current month higher than future months. Signal of physical scarcity."
+    implication: "Structural tailwind for longs. Trend following favored."
+    trading: "Favor long positions. Trail stops widely."
+  regime_signal:
+    steep_contango: "Oversupply, weak demand"
+    mild_contango: "Normal carry market"
+    flat: "Transitional. Watch for regime shift."
+    mild_backwardation: "Tightening supply"
+    steep_backwardation: "Supply crisis. Strong uptrend likely."
+  extreme_example: "Apr 2020: $58 contango between front and second month. Market drowning in oil."
+
+crude_oil_drivers:
+  - name: "OPEC+ Production Decisions"
+    impact: "7-10% single-session moves on surprise cuts"
+    example: "Apr 2 2023: Surprise 1.16M bbl/day cut. WTI +7.7% in one session."
+  - name: "Global Demand (GDP, China)"
+    note: "China consumes 16M bbl/day. Chinese PMI below 50 = bearish oil."
+  - name: "US Shale Production"
+    indicator: "Baker Hughes rig count (Friday 13:00 ET). Rising = future supply, caps rallies."
+  - name: "Geopolitical Risk Premium"
+    typical_premium: "$5-$15/barrel"
+    example: "Feb 24 2022 Russia/Ukraine: WTI $92.10 to $123.70 in 8 days."
+  - name: "US Dollar Strength"
+    correlation: -0.65
+    rule: "DXY up 2% = crude down 1.5-2.5%"
+
+gold_drivers:
+  - name: "Real Interest Rates (TIPS Yields)"
+    correlation: -0.85
+    description: "Single most important driver. Gold pays no yield; competes with real rates."
+  - name: "US Dollar (DXY)"
+    correlation: -0.80
+  - name: "Central Bank Buying"
+    data: "2022: 1,082 tonnes. 2023: 1,037 tonnes. Structural floor under prices."
+  - name: "Geopolitical Risk"
+    examples: ["SVB crisis Mar 2023: +9.7%", "Russia invasion 2022", "Israel Oct 2023"]
+
+gold_regime_matrix:
+  gold_up_stocks_up: "Late-cycle inflation. Too much money chasing assets."
+  gold_up_stocks_down: "Fear and crisis. Flight to safety."
+  gold_down_stocks_up: "Risk-on, disinflation. Confidence in growth."
+  gold_down_stocks_down: "Dollar strength or liquidity crisis. Even safe havens sold."
+  warning: "In liquidity crisis (early Mar 2020), gold sells off too. Resumes safe-haven role after central banks restore liquidity."
+
+agricultural_seasonal_cycle:
+  corn:
+    planting: {months: "Apr-May", tendency: "Bullish (uncertainty)"}
+    weather_premium: {months: "Jun-Jul", tendency: "Most volatile. Pollination risk."}
+    harvest_pressure: {months: "Sep-Nov", tendency: "Bearish (supply hits market)"}
+    winter_stability: {months: "Dec-Mar", tendency: "Stable (focus on demand)"}
+  soybeans:
+    strongest: "May-Jun"
+    weakest: "Sep"
+  wheat:
+    geopolitical_sensitivity: "Russia/Ukraine = 30% global exports"
+    example: "Feb 24 2022: $8.00 to $13.63 in two weeks (+70.4%)"
+
+seasonal_tendencies_avg_monthly_returns:
+  # 1980-2023 averages
+  corn: {Jan: -0.5, Feb: 0.3, Mar: 1.2, Apr: 1.8, May: 2.3, Jun: 3.1, Jul: 1.5, Aug: -2.0, Sep: -3.5, Oct: -1.5, Nov: 0.5, Dec: 0.8}
+  soybeans: {Jan: 0.8, Feb: 0.5, Mar: 1.5, Apr: 1.2, May: 1.0, Jun: 2.5, Jul: 1.8, Aug: -1.5, Sep: -3.0, Oct: -1.2, Nov: 0.3, Dec: 0.5}
+  wheat: {Jan: -1.2, Feb: -0.8, Mar: 0.5, Apr: 0.3, May: 1.5, Jun: 2.8, Jul: -1.5, Aug: -2.0, Sep: -1.5, Oct: 0.5, Nov: 0.8, Dec: 0.3}
+  crude_oil: {Jan: 1.5, Feb: 2.1, Mar: 0.8, Apr: 1.0, May: -0.5, Jun: 0.3, Jul: -0.5, Aug: -0.3, Sep: -1.5, Oct: -0.8, Nov: 0.5, Dec: 1.2}
+  gold: {Jan: 2.3, Feb: -0.5, Mar: 0.3, Apr: -0.2, May: -1.0, Jun: -0.8, Jul: 0.5, Aug: 1.2, Sep: -1.5, Oct: -0.3, Nov: 1.8, Dec: 1.5}
+
+primary_setups:
+  - name: "OPEC Surprise Cut"
+    conditions:
+      - "Unexpected production cut announced"
+      - "Price gaps and confirms direction"
+    example: "Apr 2023: Long CL at $76.50, target $85. Hit in 25 days. 1.9R."
+    laws_applied: [1]
+
+  - name: "Gold Regime Shift (Banking Crisis / Fed Pivot)"
+    conditions:
+      - "Regime shifts to financial stress or Fed easing"
+      - "Real rates declining"
+    example: "Mar 2023 SVB: Long GC $1,870, target $2,050. Hit in 17 days. 4.5R."
+    laws_applied: [8, 18]
+
+  - name: "Agricultural Harvest Pressure Short"
+    conditions:
+      - "No weather disruption during growing season"
+      - "USDA Crop Progress shows large harvest coming"
+      - "September-October seasonal window"
+    example: "Sep 2023: Short ZC $4.95, target $4.60. Hit in 31 days. 1.75R."
+    laws_applied: [14]
+
+  - name: "Crude Oil Demand Destruction Short"
+    conditions:
+      - "Oil rallied on supply fears"
+      - "Chinese economic data deteriorating"
+      - "Bearish reversal candle on daily chart"
+    example: "Oct 2023: Short CL $92, target $82. Hit in 17 days. 3.3R."
+    laws_applied: [5]
+
+account_sizing:
+  under_25k: {instruments: ["MCL", "MGC"], max_risk: "$250 (1%)"}
+  25k_to_50k: {instruments: ["MCL", "MGC", "mini ags"], max_risk: "$500 (1-2%)"}
+  50k_to_100k: {instruments: ["1 CL", "1 GC", "ags"], max_risk: "$1,000 (1-2%)"}
+  over_100k: {instruments: ["Multiple CL, GC, ags"], max_risk: "$2,000 (1-2%)"}
+
+key_reports:
+  - name: "EIA Crude Oil Inventories"
+    frequency: "Weekly (Wednesday)"
+    time: "10:30 ET"
+    impact: "high"
+    typical_move: "1-3% CL in first 30 minutes"
+  - name: "API Crude Oil Inventory"
+    frequency: "Weekly (Tuesday)"
+    time: "16:30 ET"
+    impact: "medium (preview of EIA)"
+  - name: "Baker Hughes Rig Count"
+    frequency: "Weekly (Friday)"
+    time: "13:00 ET"
+    impact: "medium"
+  - name: "USDA Crop Progress"
+    frequency: "Weekly (Monday)"
+    time: "16:00 ET"
+    impact: "high (agricultural)"
+  - name: "USDA WASDE Report"
+    frequency: "Monthly"
+    time: "12:00 ET"
+    impact: "high (agricultural). Can move ags 3-5% in minutes."
+  - name: "OPEC Monthly Report"
+    frequency: "Monthly"
+    impact: "medium-high"
+  - name: "Gold COT Report"
+    frequency: "Weekly (Friday)"
+    time: "15:30 ET"
+
+survival_rules:
+  - "Never hold through expiration without physical delivery plan"
+  - "Never hold ags through USDA report without defined risk"
+  - "Always check futures curve before entering"
+  - "Respect the correlation cluster (oil/dollar/rates, gold/real rates/dollar, ags/weather)"
+  - "Use micro contracts until account can absorb full-sized losses"
+
+key_correlations:
+  CL_DXY: -0.65
+  GC_DXY: -0.80
+  GC_TIPS: -0.85
+  CL_geopolitical_premium: "$5-$15/barrel"
+
+laws_most_relevant: [1, 3, 7, 8, 14, 21, 25]

@@ -71,7 +71,14 @@ export interface ChallengeParticipant {
 
   // Progress
   currentProgress: number;
-  goalProgress: number; // Percentage 0-100
+  /**
+   * Percentage 0-100, DERIVED from currentProgress against the challenge
+   * target. Optional because it is only knowable where the target is in
+   * scope — participantFromDb maps a row that does not carry it, and
+   * inventing a number there (0, say) would be the fabrication this wave
+   * exists to remove. There is no stored percentage column.
+   */
+  goalProgress?: number; // Percentage 0-100
 
   // Stats
   startingValue?: number;
@@ -371,31 +378,46 @@ export class CommunityChallengesService {
     };
 
     const { data, error } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .insert(this.participantToDb(participant))
       .select()
       .single();
 
     if (error) throw error;
 
-    // Increment participant count
-    await this.supabase
-      .from("community_challenges")
-      .update({ current_participants: challenge.currentParticipants + 1 })
-      .eq("id", challengeId);
+    // Increment participant count ATOMICALLY. The previous read-modify-write
+    // (currentParticipants + 1) lost an increment whenever two users joined at
+    // once — and since the column did not exist, the value was undefined and
+    // the expression evaluated to NaN. Uses the same atomic-RPC template as
+    // commit d64e8d5.
+    const { error: countError } = await this.supabase.rpc(
+      "increment_challenge_participants",
+      { p_challenge_id: challengeId },
+    );
+
+    if (countError) {
+      // The participant row is already written; a failed counter must be
+      // visible rather than leaving the displayed total silently short.
+      console.error("Failed to increment challenge participant count", {
+        challengeId,
+        error: countError,
+      });
+    }
 
     return this.participantFromDb(data);
   }
 
   async updateProgress(
     participantId: string,
+    userId: string,
     newProgress: number,
     currentValue?: number,
   ): Promise<ChallengeParticipant> {
     const { data: participant } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*, community_challenges(*)")
       .eq("id", participantId)
+      .eq("user_id", userId)
       .single();
 
     if (!participant) throw new Error("Participant not found");
@@ -419,7 +441,7 @@ export class CommunityChallengesService {
     }
 
     const { data, error } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .update(this.participantToDb(updates))
       .eq("id", participantId)
       .select()
@@ -431,7 +453,7 @@ export class CommunityChallengesService {
 
   async getUserParticipations(userId: string): Promise<ChallengeParticipant[]> {
     const { data, error } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*")
       .eq("user_id", userId)
       .order("joined_at", { ascending: false });
@@ -444,7 +466,7 @@ export class CommunityChallengesService {
     userId: string,
   ): Promise<{ challenge: Challenge; participation: ChallengeParticipant }[]> {
     const { data, error } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*, community_challenges(*)")
       .eq("user_id", userId)
       .in("status", ["joined", "active"]);
@@ -466,11 +488,24 @@ export class CommunityChallengesService {
     userId?: string,
     limit: number = 50,
   ): Promise<Leaderboard> {
+    // progressPercent is DERIVED from the challenge target, not stored. There
+    // has never been a percentage column on user_challenge_participation, so
+    // the old `row.goal_progress` was always undefined.
+    const { data: challengeRow } = await this.supabase
+      .from("community_challenges")
+      .select("target_value")
+      .eq("id", challengeId)
+      .single();
+    const challengeTarget = (challengeRow?.target_value as number) ?? 0;
+
     const { data, error } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*, profiles(display_name, avatar_url)")
       .eq("challenge_id", challengeId)
-      .order("goal_progress", { ascending: false })
+      // `goal_progress` is not a column; the real progress value is
+      // `current_progress`. Ordering by a nonexistent column errored the
+      // whole query, so getLeaderboard threw on every call.
+      .order("current_progress", { ascending: false })
       .limit(limit);
 
     if (error) throw error;
@@ -482,13 +517,20 @@ export class CommunityChallengesService {
         row.profiles?.display_name || `User ${row.user_id.slice(0, 6)}`,
       avatarUrl: row.profiles?.avatar_url,
       progress: row.current_progress,
-      progressPercent: row.goal_progress,
+      // Derived, not stored. There has never been a percentage column —
+      // `goal_progress` resolved to undefined, so every leaderboard entry
+      // reported an undefined percent. Computed from the challenge target so
+      // the number is real rather than absent.
+      progressPercent:
+        challengeTarget > 0
+          ? Math.min(100, (row.current_progress / challengeTarget) * 100)
+          : 0,
       isCurrentUser: row.user_id === userId,
     }));
 
     // Get total count
     const { count } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*", { count: "exact", head: true })
       .eq("challenge_id", challengeId);
 
@@ -505,8 +547,10 @@ export class CommunityChallengesService {
     userId: string,
   ): Promise<{ rank: number; total: number } | null> {
     const { data } = await this.supabase
-      .from("challenge_participants")
-      .select("goal_progress")
+      .from("user_challenge_participation")
+      // Real column is `current_progress`; `goal_progress` does not exist,
+      // so this select errored and getUserRank always resolved to null.
+      .select("current_progress")
       .eq("challenge_id", challengeId)
       .eq("user_id", userId)
       .single();
@@ -514,13 +558,13 @@ export class CommunityChallengesService {
     if (!data) return null;
 
     const { count: betterCount } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*", { count: "exact", head: true })
       .eq("challenge_id", challengeId)
-      .gt("goal_progress", data.goal_progress);
+      .gt("current_progress", data.current_progress);
 
     const { count: totalCount } = await this.supabase
-      .from("challenge_participants")
+      .from("user_challenge_participation")
       .select("*", { count: "exact", head: true })
       .eq("challenge_id", challengeId);
 
@@ -636,7 +680,6 @@ export class CommunityChallengesService {
       user_id: participant.userId,
       status: participant.status,
       current_progress: participant.currentProgress,
-      goal_progress: participant.goalProgress,
       starting_value: participant.startingValue,
       current_value: participant.currentValue,
       rank: participant.rank,
@@ -657,7 +700,9 @@ export class CommunityChallengesService {
       userId: data.user_id as string,
       status: data.status as ParticipantStatus,
       currentProgress: data.current_progress as number,
-      goalProgress: data.goal_progress as number,
+      // Derived from current_progress against the challenge target; there is
+      // no stored percentage column, and adding one would invite drift.
+      goalProgress: undefined,
       startingValue: data.starting_value as number | undefined,
       currentValue: data.current_value as number | undefined,
       rank: data.rank as number | undefined,

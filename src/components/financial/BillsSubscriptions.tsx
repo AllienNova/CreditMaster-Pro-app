@@ -816,6 +816,7 @@ export default function BillsSubscriptions() {
                           onClick={() => openEditModal(bill)}
                           className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
                           title="Edit"
+                          aria-label="Edit bill"
                         ></button>
                         <button
                           type="button"
@@ -825,6 +826,7 @@ export default function BillsSubscriptions() {
                           }}
                           className="p-2 text-gray-500 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                           title="Delete"
+                          aria-label="Delete bill"
                         ></button>
                       </div>
                     </div>

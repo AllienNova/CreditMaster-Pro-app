@@ -1,24 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { plaidService } from "@/lib/financial/plaid-service";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "financial:link_accounts",
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:link_accounts")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Extract userId from validated token
-    const userId = validation.user.id;
 
     const body = await request.json();
     const { publicToken } = body;
@@ -49,4 +39,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

@@ -4,7 +4,7 @@
  * Review operations: getReviews, createReview, markHelpful
  */
 
-import { getSupabase } from "../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Database } from "../supabase/types";
 
 type ReviewRow = Database["public"]["Tables"]["marketplace_reviews"]["Row"];
@@ -22,6 +22,40 @@ export interface Review {
   createdAt: Date;
 }
 
+/**
+ * Public projection of a Review — the shape returned to UNAUTHENTICATED callers
+ * (e.g. the public provider-detail catalog route). Deliberately omits `userId`
+ * (the internal Supabase auth UUID) so anonymous callers cannot deanonymise or
+ * correlate reviewers. Built as an explicit allowlist: any per-user field added
+ * to `Review` later stays out of the public payload unless added here on purpose.
+ */
+export interface PublicReview {
+  id: string;
+  productId: string | null;
+  providerId: string | null;
+  rating: number;
+  title: string | null;
+  content: string;
+  verifiedPurchase: boolean;
+  helpfulCount: number;
+  createdAt: Date;
+}
+
+/** Strip per-user identifiers from a Review for public (unauthenticated) responses. */
+export function toPublicReview(review: Review): PublicReview {
+  return {
+    id: review.id,
+    productId: review.productId,
+    providerId: review.providerId,
+    rating: review.rating,
+    title: review.title,
+    content: review.content,
+    verifiedPurchase: review.verifiedPurchase,
+    helpfulCount: review.helpfulCount,
+    createdAt: review.createdAt,
+  };
+}
+
 export interface CreateReviewInput {
   productId?: string;
   providerId?: string;
@@ -30,7 +64,7 @@ export interface CreateReviewInput {
   content: string;
 }
 
-const reviews = () => getSupabase().from("marketplace_reviews");
+const reviews = () => getServiceRoleClient().from("marketplace_reviews");
 
 class ReviewService {
   async getReviewsForProduct(productId: string): Promise<Review[]> {
@@ -59,6 +93,18 @@ class ReviewService {
     }
 
     return (data || []).map(this.mapToReview);
+  }
+
+  /**
+   * Public (unauthenticated) provider reviews — same rows as
+   * getReviewsForProvider, projected through toPublicReview so no reviewer
+   * userId reaches anonymous callers. Used by the public provider-detail route.
+   */
+  async getPublicReviewsForProvider(
+    providerId: string,
+  ): Promise<PublicReview[]> {
+    const providerReviews = await this.getReviewsForProvider(providerId);
+    return providerReviews.map(toPublicReview);
   }
 
   async getUserReviews(userId: string): Promise<Review[]> {
@@ -107,6 +153,9 @@ class ReviewService {
   }
 
   async markHelpful(reviewId: string): Promise<boolean> {
+    // idor-audit: cross-user — marking a review helpful is a public action on
+    // someone else's review; marketplace_reviews.user_id is the AUTHOR, not
+    // the actor, so scoping by it would break the feature.
     const { data: current, error: fetchError } = await reviews()
       .select("helpful_count")
       .eq("id", reviewId)

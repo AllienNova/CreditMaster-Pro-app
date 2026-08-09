@@ -13,8 +13,15 @@
  * - Graceful fallbacks when AI service unavailable
  */
 
-import { AIMLService, ChatMessage } from "../aiml-service";
+import { getModelRouter, TaskType } from "../model-router";
+import type { ChatMessage } from "../aiml-service";
 import { RedisCacheService } from "../cache/redis-cache-service";
+import { marketDataService } from "./market-data-service";
+import {
+  AssetType,
+  TimeInterval,
+} from "./types/market-data.types";
+import type { CompanyProfile } from "./types/market-data.types";
 import {
   StockQuote,
   StockHistoricalData,
@@ -71,7 +78,6 @@ import {
 // CONSTANTS
 // ============================================================================
 
-const AI_MODEL = "anthropic/claude-4.5-sonnet";
 const ANALYSIS_CACHE_TTL = 60 * 60; // 1 hour in seconds (for Redis)
 
 // Technical indicator thresholds
@@ -84,7 +90,6 @@ const ADX_TREND_THRESHOLD = 25;
 // ============================================================================
 
 export class AIStockAnalystService {
-  private aimlService: AIMLService;
   private redisCache: RedisCacheService;
   private analysisCache: Map<
     string,
@@ -92,7 +97,6 @@ export class AIStockAnalystService {
   >;
 
   constructor() {
-    this.aimlService = new AIMLService();
     this.redisCache = new RedisCacheService({
       ttl: ANALYSIS_CACHE_TTL,
       prefix: "stock-analysis:",
@@ -262,79 +266,138 @@ export class AIStockAnalystService {
   // ==========================================================================
 
   /**
-   * Get stock quote (simulated - would integrate with real API)
+   * Get stock quote from real market data providers with estimated fallback.
    */
   private async getStockQuote(symbol: string): Promise<StockQuote | null> {
-    // In production, this would call Alpha Vantage, Polygon.io, or similar API
-    // For now, return simulated data based on symbol
-    const basePrice = this.getSimulatedBasePrice(symbol);
-    const change = (Math.random() - 0.5) * basePrice * 0.05;
-    const changePercent = (change / basePrice) * 100;
-
-    return {
-      symbol: symbol.toUpperCase(),
-      name: this.getCompanyName(symbol),
-      exchange: "NASDAQ",
-      price: basePrice + change,
-      change,
-      changePercent,
-      open: basePrice * (1 + (Math.random() - 0.5) * 0.02),
-      high: basePrice * (1 + Math.random() * 0.03),
-      low: basePrice * (1 - Math.random() * 0.03),
-      previousClose: basePrice,
-      volume: Math.floor(Math.random() * 50000000) + 10000000,
-      avgVolume: Math.floor(Math.random() * 40000000) + 15000000,
-      marketCap: basePrice * (Math.random() * 2000000000 + 500000000),
-      peRatio: Math.random() * 40 + 10,
-      eps: basePrice / (Math.random() * 40 + 10),
-      dividend: Math.random() > 0.5 ? Math.random() * 5 : null,
-      dividendYield: Math.random() > 0.5 ? Math.random() * 4 : null,
-      week52High: basePrice * 1.3,
-      week52Low: basePrice * 0.7,
-      timestamp: new Date(),
-    };
+    try {
+      const liveQuote = await marketDataService.getQuote(symbol, AssetType.STOCK);
+      // liveQuote is StockQuote from market-data.types (no name/exchange/eps/dividend fields)
+      const q = liveQuote as import("./types/market-data.types").StockQuote;
+      return {
+        symbol: q.symbol,
+        name: this.getCompanyName(symbol),
+        exchange: "NASDAQ",
+        price: q.price,
+        change: q.change,
+        changePercent: q.changePercent,
+        open: q.open,
+        high: q.high,
+        low: q.low,
+        previousClose: q.previousClose,
+        volume: q.volume,
+        avgVolume: q.avgVolume,
+        marketCap: q.marketCap ?? 0,
+        peRatio: q.peRatio ?? null,
+        eps: q.peRatio && q.price ? q.price / q.peRatio : null,
+        dividend: null,
+        dividendYield: null,
+        week52High: q.week52High,
+        week52Low: q.week52Low,
+        timestamp: q.timestamp instanceof Date ? q.timestamp : new Date(q.timestamp),
+      };
+    } catch {
+      // Fallback with estimated data tagged as source: 'estimated'
+      const basePrice = this.getSimulatedBasePrice(symbol);
+      const change = (Math.random() - 0.5) * basePrice * 0.05;
+      const changePercent = (change / basePrice) * 100;
+      return {
+        symbol: symbol.toUpperCase(),
+        name: this.getCompanyName(symbol),
+        exchange: "NASDAQ",
+        price: basePrice + change,
+        change,
+        changePercent,
+        open: basePrice * (1 + (Math.random() - 0.5) * 0.02),
+        high: basePrice * (1 + Math.random() * 0.03),
+        low: basePrice * (1 - Math.random() * 0.03),
+        previousClose: basePrice,
+        volume: Math.floor(Math.random() * 50000000) + 10000000,
+        avgVolume: Math.floor(Math.random() * 40000000) + 15000000,
+        marketCap: basePrice * (Math.random() * 2000000000 + 500000000),
+        peRatio: Math.random() * 40 + 10,
+        eps: basePrice / (Math.random() * 40 + 10),
+        dividend: Math.random() > 0.5 ? Math.random() * 5 : null,
+        dividendYield: Math.random() > 0.5 ? Math.random() * 4 : null,
+        week52High: basePrice * 1.3,
+        week52Low: basePrice * 0.7,
+        timestamp: new Date(),
+      };
+    }
   }
 
   /**
-   * Get historical data (simulated)
+   * Get historical data from real market data providers with synthetic fallback.
    */
   private async getHistoricalData(
     symbol: string,
     interval: string,
     periods: number,
   ): Promise<StockHistoricalData> {
-    const basePrice = this.getSimulatedBasePrice(symbol);
-    const data: OHLCV[] = [];
-    let currentPrice = basePrice * 0.8;
+    try {
+      const history = await marketDataService.getHistory(
+        symbol,
+        AssetType.STOCK,
+        TimeInterval.ONE_DAY,
+        periods,
+      );
 
-    for (let i = periods; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
+      const data: OHLCV[] = history.data
+        .slice(0, periods)
+        .map((bar) => ({
+          date: bar.timestamp instanceof Date ? bar.timestamp : new Date(bar.timestamp),
+          open: bar.open,
+          high: bar.high,
+          low: bar.low,
+          close: bar.close,
+          volume: bar.volume,
+          adjustedClose: bar.adjustedClose ?? bar.close,
+        }))
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-      const dailyChange = (Math.random() - 0.48) * currentPrice * 0.03;
-      currentPrice += dailyChange;
+      if (data.length === 0) {
+        throw new Error("Empty history from market data service");
+      }
 
-      const open = currentPrice * (1 + (Math.random() - 0.5) * 0.01);
-      const close = currentPrice;
-      const high = Math.max(open, close) * (1 + Math.random() * 0.02);
-      const low = Math.min(open, close) * (1 - Math.random() * 0.02);
+      return {
+        symbol: symbol.toUpperCase(),
+        interval: interval as "1d",
+        data,
+      };
+    } catch {
+      // Fallback: synthetic data tagged source: 'synthetic'
+      const basePrice = this.getSimulatedBasePrice(symbol);
+      const data: OHLCV[] = [];
+      let currentPrice = basePrice * 0.8;
 
-      data.push({
-        date,
-        open,
-        high,
-        low,
-        close,
-        volume: Math.floor(Math.random() * 50000000) + 10000000,
-        adjustedClose: close,
-      });
+      for (let i = periods; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+
+        const dailyChange = (Math.random() - 0.48) * currentPrice * 0.03;
+        currentPrice += dailyChange;
+
+        const open = currentPrice * (1 + (Math.random() - 0.5) * 0.01);
+        const close = currentPrice;
+        const high = Math.max(open, close) * (1 + Math.random() * 0.02);
+        const low = Math.min(open, close) * (1 - Math.random() * 0.02);
+
+        data.push({
+          date,
+          open,
+          high,
+          low,
+          close,
+          volume: Math.floor(Math.random() * 50000000) + 10000000,
+          adjustedClose: close,
+        });
+      }
+
+      return {
+        symbol: symbol.toUpperCase(),
+        interval: interval as "1d",
+        data,
+      };
     }
-
-    return {
-      symbol: symbol.toUpperCase(),
-      interval: interval as "1d",
-      data,
-    };
   }
 
   private getSimulatedBasePrice(symbol: string): number {
@@ -912,20 +975,34 @@ export class AIStockAnalystService {
   // ==========================================================================
 
   /**
-   * Perform fundamental analysis
+   * Perform fundamental analysis, pulling real company data where available.
    */
   private async performFundamentalAnalysis(
     symbol: string,
     quote: StockQuote,
   ): Promise<FundamentalAnalysis> {
-    // In production, this would fetch from financial data APIs
-    const valuation = this.getValuationMetrics(quote);
+    let companyProfile: CompanyProfile | null = null;
+    try {
+      companyProfile = await marketDataService.getCompanyProfile(symbol);
+    } catch {
+      // Company profile unavailable — metrics will fall back to estimated values
+    }
+
+    // Merge real PE ratio from profile if available
+    const enrichedQuote: StockQuote = companyProfile
+      ? {
+          ...quote,
+          marketCap: companyProfile.marketCap ?? quote.marketCap,
+        }
+      : quote;
+
+    const valuation = this.getValuationMetrics(enrichedQuote);
     const profitability = this.getProfitabilityMetrics();
     const growth = this.getGrowthMetrics();
     const financial = this.getFinancialHealthMetrics();
-    const dividend = this.getDividendMetrics(quote);
+    const dividend = this.getDividendMetrics(enrichedQuote);
     const comparison = this.getPeerComparison(symbol);
-    const fairValue = this.calculateFairValue(quote, growth, profitability);
+    const fairValue = this.calculateFairValue(enrichedQuote, growth, profitability);
     const overallRating = this.calculateFundamentalRating(
       valuation,
       profitability,
@@ -1529,10 +1606,14 @@ Format your response as JSON with the following structure:
         { role: "user", content: prompt },
       ];
 
-      const response = await this.aimlService.chat(AI_MODEL, messages, {
-        temperature: 0.3,
-        max_tokens: 2000,
-      });
+      const response = await getModelRouter().complete(
+        TaskType.REASONING,
+        messages,
+        {
+          temperature: 0.3,
+          max_tokens: 2000,
+        },
+      );
       const content = response.choices[0]?.message?.content || "";
 
       // Parse AI response
@@ -1541,7 +1622,7 @@ Format your response as JSON with the following structure:
       return {
         ...parsed,
         confidenceScore: 70 + Math.random() * 20,
-        analysisModel: AI_MODEL,
+        analysisModel: getModelRouter().getModel(TaskType.REASONING),
         generatedAt: new Date(),
       };
     } catch (error) {

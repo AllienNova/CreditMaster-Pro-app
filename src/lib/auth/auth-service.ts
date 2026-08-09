@@ -9,9 +9,27 @@
  * - Token validation
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { logger } from "@/lib/monitoring/logger";
 
-const supabase = getSupabase();
+/**
+ * Browser client, NOT the anon-keyed getSupabase() singleton this used to hold.
+ *
+ * getSupabase() builds a raw createClient(url, ANON_KEY), which stores its
+ * session in localStorage. The app signs in through useAuth -> createClient()
+ * -> @supabase/ssr's createBrowserClient, which stores its session in COOKIES.
+ * Two different stores: the raw client never saw the session the app actually
+ * established, so auth.uid() was NULL here and every RLS policy of the form
+ * (auth.uid() = user_id) matched nothing — zero rows, no error.
+ *
+ * These modules are called at runtime from "use client" components, so they
+ * must NOT use the service role (that key is server-only). createBrowserClient
+ * returns a cached singleton in the browser (@supabase/ssr 0.7.0,
+ * createBrowserClient.js:8-14,46), so this is the same client useAuth holds,
+ * and RLS correctly enforces ownership under the user's own identity.
+ */
+const supabase = createClient();
 import {
   validateSignUpData,
   validateSignInData,
@@ -116,7 +134,25 @@ class AuthService {
       });
 
       if (profileError) {
-        // Profile creation failed - error captured in profileError variable
+        // FND-009: signup must be atomic. A failed profile insert previously
+        // left an orphaned auth user (an account with no profile row). Roll
+        // back by deleting the just-created auth user and fail the signup so
+        // the caller can retry cleanly.
+        const { error: deleteError } =
+          await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        if (deleteError) {
+          // Cleanup itself failed — the orphan persists. Surface it loudly
+          // so it can be reconciled rather than silently lost.
+          logger.error(
+            "Failed to roll back orphaned auth user after profile insert failure",
+            deleteError,
+            { userId: authData.user.id },
+          );
+        }
+        return {
+          success: false,
+          error: "Failed to create user profile. Please try again.",
+        };
       }
 
       const user: User = {

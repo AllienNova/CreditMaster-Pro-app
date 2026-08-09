@@ -111,36 +111,44 @@ ALTER TABLE bill_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bill_alerts ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for bills
+DROP POLICY IF EXISTS "Users can view their own bills" ON bills;
 CREATE POLICY "Users can view their own bills"
   ON bills FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own bills" ON bills;
 CREATE POLICY "Users can create their own bills"
   ON bills FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own bills" ON bills;
 CREATE POLICY "Users can update their own bills"
   ON bills FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own bills" ON bills;
 CREATE POLICY "Users can delete their own bills"
   ON bills FOR DELETE
   USING (auth.uid() = user_id);
 
 -- RLS Policies for bill_payments
+DROP POLICY IF EXISTS "Users can view their own bill payments" ON bill_payments;
 CREATE POLICY "Users can view their own bill payments"
   ON bill_payments FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own bill payments" ON bill_payments;
 CREATE POLICY "Users can create their own bill payments"
   ON bill_payments FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- RLS Policies for bill_alerts
+DROP POLICY IF EXISTS "Users can view their own bill alerts" ON bill_alerts;
 CREATE POLICY "Users can view their own bill alerts"
   ON bill_alerts FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own bill alerts" ON bill_alerts;
 CREATE POLICY "Users can update their own bill alerts"
   ON bill_alerts FOR UPDATE
   USING (auth.uid() = user_id);

@@ -5,29 +5,15 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { CreditBureauService } from "@/lib/credit-bureau/credit-bureau-service";
 import type { Bureau } from "@/lib/credit-bureau/types";
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "credit:read",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate user
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
-    // 2. Check permission
-    if (!rbac.hasPermission(user, "credit:read")) {
-      return NextResponse.json(
-        { error: "Forbidden - Insufficient permissions" },
-        { status: 403 },
-      );
-    }
-
     // 3. Get query parameters
     const { searchParams } = new URL(request.url);
     const bureau = searchParams.get("bureau") as Bureau | null;
@@ -71,26 +57,13 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "credit:read",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate user
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
-    // 2. Check permission
-    if (!rbac.hasPermission(user, "credit:read")) {
-      return NextResponse.json(
-        { error: "Forbidden - Insufficient permissions" },
-        { status: 403 },
-      );
-    }
-
     // 3. Parse request body
     const body = await request.json();
     const { bureau, reportType = "full" } = body;
@@ -130,4 +103,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);

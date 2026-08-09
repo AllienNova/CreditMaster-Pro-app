@@ -12,6 +12,9 @@ import { NextRequest } from "next/server";
 jest.mock("@/lib/api/financial-api-middleware");
 jest.mock("@/lib/financial/savings-optimizer");
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/auth/rbac");
 
 import { GET } from "../route";
@@ -59,6 +62,7 @@ const mockOptimizer = {
 describe("GET /api/financial/savings/recommendations", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (applyFinancialAPIMiddleware as jest.Mock).mockResolvedValue({
       userId: "user-123",
       startTime: Date.now(),
@@ -89,49 +93,50 @@ describe("GET /api/financial/savings/recommendations", () => {
     expect(mockOptimizer.calculatePotentialSavings).toHaveBeenCalledWith("user-123");
   });
 
-  it("should return middleware error when auth fails", async () => {
-    const errorResponse = new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-    });
-    (applyFinancialAPIMiddleware as jest.Mock).mockResolvedValue({
-      error: errorResponse,
-    });
+  describe("negative-auth", () => {
+    it("should return middleware error when auth fails", async () => {
+      const errorResponse = new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+      });
+      (applyFinancialAPIMiddleware as jest.Mock).mockResolvedValue({
+        error: errorResponse,
+      });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/savings/recommendations",
-    );
-    const response = await GET(request);
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/savings/recommendations",
+      );
+      const response = await GET(request);
 
-    expect(response.status).toBe(401);
-  });
-
-  it("should return 401 for invalid JWT", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+      expect(response.status).toBe(401);
     });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/savings/recommendations",
-    );
-    const response = await GET(request);
-    const data = await response.json();
+    it("should return 401 for invalid JWT", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
 
-    expect(response.status).toBe(401);
-    expect(data.success).toBe(false);
-  });
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/savings/recommendations",
+      );
+      const response = await GET(request);
+      const data = await response.json();
 
-  it("should return 403 for user without permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      expect(response.status).toBe(401);
+    });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/savings/recommendations",
-    );
-    const response = await GET(request);
-    const data = await response.json();
+    it("should return 403 for user without permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
 
-    expect(response.status).toBe(403);
-    expect(data.error).toContain("Forbidden");
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/savings/recommendations",
+      );
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(data.error).toContain("Forbidden");
+    });
   });
 
   it("should return 500 on optimizer error", async () => {

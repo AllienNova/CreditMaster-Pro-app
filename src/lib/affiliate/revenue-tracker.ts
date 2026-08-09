@@ -1,14 +1,25 @@
 /**
  * Affiliate Revenue Tracker
  *
- * In-memory tracker for affiliate revenue events (clicks, applications,
- * approvals, conversions). Provides reporting, funnel analysis, and
- * top-performer ranking.
+ * Persistent tracker for affiliate revenue events (clicks, applications,
+ * approvals, conversions). Writes through to the `revenue_events` Supabase
+ * table so events survive serverless cold starts (FND-025).
  *
- * Part of AFF-02.
+ * Part of AFF-02 / TASK-MNY-05.
  */
 
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
+import { fromDollars } from "@/lib/money";
+
+// =============================================================================
+// Supabase client (service role — no end-user RLS policies on revenue_events)
+// =============================================================================
+
+// Lazy singleton: constructed on first use so module import during next build's
+// "collect page data" phase doesn't throw when env vars are absent.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- unparameterized admin client; table types are asserted at call sites
 
 // =============================================================================
 // Types
@@ -64,25 +75,67 @@ export interface ConversionFunnel {
 }
 
 // =============================================================================
+// DB row shape
+// =============================================================================
+
+interface RevenueEventRow {
+  id: string;
+  event_id: string;
+  user_id: string;
+  product_id: string;
+  partner_id: string;
+  event_type: string;
+  commission_amount_cents: number | null;
+  commission_currency: string | null;
+  metadata: Record<string, string> | null;
+  created_at: string;
+}
+
+// =============================================================================
 // Revenue Tracker
 // =============================================================================
 
 class RevenueTracker {
-  private events: RevenueEvent[] = [];
-
   // ---------------------------------------------------------------------------
   // Event Tracking
   // ---------------------------------------------------------------------------
 
   /**
-   * Record a revenue event. Generates a unique eventId automatically.
+   * Record a revenue event. Generates a unique eventId automatically and
+   * persists the event to `revenue_events`. Returns the event with its id.
    */
-  trackEvent(event: Omit<RevenueEvent, "eventId">): RevenueEvent {
+  async trackEvent(event: Omit<RevenueEvent, "eventId">): Promise<RevenueEvent> {
     const fullEvent: RevenueEvent = {
       ...event,
       eventId: `rev_${randomUUID().replace(/-/g, "")}`,
     };
-    this.events.push(fullEvent);
+
+    // Convert dollars → integer Cents for storage (FND-029 / TASK-MNY-06).
+    const commissionAmountCents =
+      fullEvent.commissionAmount !== undefined
+        ? fromDollars(fullEvent.commissionAmount)
+        : null;
+
+    const { error: insertError } = await getServiceRoleClient()
+      .from("revenue_events")
+      .insert({
+        event_id: fullEvent.eventId,
+        user_id: fullEvent.userId,
+        product_id: fullEvent.productId,
+        partner_id: fullEvent.partnerId,
+        event_type: fullEvent.eventType,
+        commission_amount_cents: commissionAmountCents,
+        commission_currency: fullEvent.commissionCurrency ?? null,
+        metadata: fullEvent.metadata ?? null,
+        // created_at maps from timestamp — Supabase accepts ISO string.
+        created_at: fullEvent.timestamp.toISOString(),
+      })
+      .select();
+
+    if (insertError) {
+      throw new Error(`revenue_events insert failed: ${insertError.message}`);
+    }
+
     return fullEvent;
   }
 
@@ -92,70 +145,12 @@ class RevenueTracker {
 
   /**
    * Generate an aggregate revenue report, optionally filtered by date range.
+   * Reads from `revenue_events`; convert cents → dollars before returning.
    */
-  getReport(period?: { start: Date; end: Date }): RevenueReport {
-    const filtered = this.filterByPeriod(period);
-
-    const totalClicks = filtered.filter((e) => e.eventType === "click").length;
-    const totalConversions = filtered.filter(
-      (e) => e.eventType === "conversion",
-    ).length;
-
-    const commissionEvents = filtered.filter(
-      (e) => e.commissionAmount !== undefined && e.commissionAmount > 0,
-    );
-    const totalRevenue = commissionEvents.reduce(
-      (sum, e) => sum + (e.commissionAmount ?? 0),
-      0,
-    );
-    const averageCommission =
-      commissionEvents.length > 0
-        ? totalRevenue / commissionEvents.length
-        : 0;
-
-    const conversionRate =
-      totalClicks > 0 ? totalConversions / totalClicks : 0;
-
-    const byPartner = new Map<string, PartnerStats>();
-    const byProduct = new Map<string, ProductStats>();
-
-    for (const event of filtered) {
-      // By partner
-      const partnerEntry = byPartner.get(event.partnerId) ?? {
-        revenue: 0,
-        clicks: 0,
-        conversions: 0,
-      };
-      if (event.eventType === "click") partnerEntry.clicks++;
-      if (event.eventType === "conversion") partnerEntry.conversions++;
-      if (event.commissionAmount) partnerEntry.revenue += event.commissionAmount;
-      byPartner.set(event.partnerId, partnerEntry);
-
-      // By product
-      const productEntry = byProduct.get(event.productId) ?? {
-        revenue: 0,
-        clicks: 0,
-        conversions: 0,
-      };
-      if (event.eventType === "click") productEntry.clicks++;
-      if (event.eventType === "conversion") productEntry.conversions++;
-      if (event.commissionAmount)
-        productEntry.revenue += event.commissionAmount;
-      byProduct.set(event.productId, productEntry);
-    }
-
-    const reportPeriod = period ?? this.inferPeriod(filtered);
-
-    return {
-      totalRevenue: Math.round(totalRevenue * 100) / 100,
-      totalClicks,
-      totalConversions,
-      conversionRate: Math.round(conversionRate * 10000) / 10000,
-      averageCommission: Math.round(averageCommission * 100) / 100,
-      byPartner,
-      byProduct,
-      period: reportPeriod,
-    };
+  async getReport(period?: { start: Date; end: Date }): Promise<RevenueReport> {
+    const rows = await this.fetchRows(period);
+    const events = rows.map(rowToEvent);
+    return buildReport(events, period);
   }
 
   // ---------------------------------------------------------------------------
@@ -165,10 +160,10 @@ class RevenueTracker {
   /**
    * Top products sorted by revenue descending.
    */
-  getTopProducts(
+  async getTopProducts(
     limit = 10,
-  ): Array<{ productId: string; revenue: number; conversions: number }> {
-    const report = this.getReport();
+  ): Promise<Array<{ productId: string; revenue: number; conversions: number }>> {
+    const report = await this.getReport();
     const entries: Array<{
       productId: string;
       revenue: number;
@@ -190,10 +185,10 @@ class RevenueTracker {
   /**
    * Top partners sorted by revenue descending.
    */
-  getTopPartners(
+  async getTopPartners(
     limit = 10,
-  ): Array<{ partnerId: string; revenue: number; conversions: number }> {
-    const report = this.getReport();
+  ): Promise<Array<{ partnerId: string; revenue: number; conversions: number }>> {
+    const report = await this.getReport();
     const entries: Array<{
       partnerId: string;
       revenue: number;
@@ -219,20 +214,16 @@ class RevenueTracker {
   /**
    * Get the conversion funnel. Optionally filter to a single product.
    */
-  getConversionFunnel(productId?: string): ConversionFunnel {
-    let filtered = this.events;
-    if (productId) {
-      filtered = filtered.filter((e) => e.productId === productId);
-    }
+  async getConversionFunnel(productId?: string): Promise<ConversionFunnel> {
+    const rows = await this.fetchRows(undefined, productId);
+    const events = rows.map(rowToEvent);
 
-    const clicks = filtered.filter((e) => e.eventType === "click").length;
-    const applications = filtered.filter(
+    const clicks = events.filter((e) => e.eventType === "click").length;
+    const applications = events.filter(
       (e) => e.eventType === "application",
     ).length;
-    const approvals = filtered.filter(
-      (e) => e.eventType === "approval",
-    ).length;
-    const conversions = filtered.filter(
+    const approvals = events.filter((e) => e.eventType === "approval").length;
+    const conversions = events.filter(
       (e) => e.eventType === "conversion",
     ).length;
 
@@ -250,17 +241,21 @@ class RevenueTracker {
   // ---------------------------------------------------------------------------
 
   /**
-   * Get all tracked events (read-only copy).
+   * Get all tracked events from the DB.
    */
-  getEvents(): ReadonlyArray<RevenueEvent> {
-    return [...this.events];
+  async getEvents(): Promise<RevenueEvent[]> {
+    const rows = await this.fetchRows();
+    return rows.map(rowToEvent);
   }
 
   /**
-   * Clear all tracked events.
+   * Delete all tracked events from the DB.
    */
-  clear(): void {
-    this.events = [];
+  async clear(): Promise<void> {
+    // idor-audit: cross-user — wipes the whole revenue ledger by design; no
+    // production caller (maintenance/test only), and revenue_events is an
+    // aggregate business ledger, not per-user data.
+    await getServiceRoleClient().from("revenue_events").delete().not("id", "is", null);
   }
 
   // ---------------------------------------------------------------------------
@@ -268,39 +263,145 @@ class RevenueTracker {
   // ---------------------------------------------------------------------------
 
   /**
-   * Filter events by an optional date range.
+   * Fetch rows from `revenue_events`, optionally filtered by period and/or productId.
    */
-  private filterByPeriod(
+  private async fetchRows(
     period?: { start: Date; end: Date },
-  ): RevenueEvent[] {
-    if (!period) return this.events;
+    productId?: string,
+  ): Promise<RevenueEventRow[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase PostgrestFilterBuilder type changes on each chained method; typed at the `as RevenueEventRow[]` boundary
+    // idor-audit: cross-user — affiliate revenue reporting aggregates across
+    // all users. Only reachable via /api/admin/affiliate/revenue, which is
+    // withRole("admin"). Scoping this by user_id would make the report wrong.
+    let query: any = getServiceRoleClient().from("revenue_events").select("*");
 
-    return this.events.filter((e) => {
-      const t = e.timestamp.getTime();
-      return t >= period.start.getTime() && t <= period.end.getTime();
-    });
-  }
-
-  /**
-   * Infer period from event timestamps when no explicit period is given.
-   */
-  private inferPeriod(events: RevenueEvent[]): { start: Date; end: Date } {
-    if (events.length === 0) {
-      const now = new Date();
-      return { start: now, end: now };
+    if (period) {
+      query = query
+        .gte("created_at", period.start.toISOString())
+        .lte("created_at", period.end.toISOString());
     }
 
-    let earliest = events[0].timestamp.getTime();
-    let latest = events[0].timestamp.getTime();
-
-    for (const event of events) {
-      const t = event.timestamp.getTime();
-      if (t < earliest) earliest = t;
-      if (t > latest) latest = t;
+    if (productId) {
+      query = query.eq("product_id", productId);
     }
 
-    return { start: new Date(earliest), end: new Date(latest) };
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`revenue_events fetch failed: ${error.message}`);
+    }
+
+    return (data ?? []) as RevenueEventRow[];
   }
+}
+
+// =============================================================================
+// Pure helpers
+// =============================================================================
+
+/** Convert a DB row to a RevenueEvent, returning commission in dollars. */
+function rowToEvent(row: RevenueEventRow): RevenueEvent {
+  return {
+    eventId: row.event_id,
+    userId: row.user_id,
+    productId: row.product_id,
+    partnerId: row.partner_id,
+    eventType: row.event_type as RevenueEventType,
+    // cents → dollars on read.
+    commissionAmount:
+      row.commission_amount_cents !== null
+        ? row.commission_amount_cents / 100
+        : undefined,
+    commissionCurrency: row.commission_currency ?? undefined,
+    timestamp: new Date(row.created_at),
+    metadata: row.metadata ?? undefined,
+  };
+}
+
+/** Build a RevenueReport from an array of in-memory events (already in dollars). */
+function buildReport(
+  events: RevenueEvent[],
+  period?: { start: Date; end: Date },
+): RevenueReport {
+  const totalClicks = events.filter((e) => e.eventType === "click").length;
+  const totalConversions = events.filter(
+    (e) => e.eventType === "conversion",
+  ).length;
+
+  const commissionEvents = events.filter(
+    (e) => e.commissionAmount !== undefined && e.commissionAmount > 0,
+  );
+  const totalRevenue = commissionEvents.reduce(
+    (sum, e) => sum + (e.commissionAmount ?? 0),
+    0,
+  );
+  const averageCommission =
+    commissionEvents.length > 0
+      ? totalRevenue / commissionEvents.length
+      : 0;
+
+  const conversionRate =
+    totalClicks > 0 ? totalConversions / totalClicks : 0;
+
+  const byPartner = new Map<string, PartnerStats>();
+  const byProduct = new Map<string, ProductStats>();
+
+  for (const event of events) {
+    // By partner
+    const partnerEntry = byPartner.get(event.partnerId) ?? {
+      revenue: 0,
+      clicks: 0,
+      conversions: 0,
+    };
+    if (event.eventType === "click") partnerEntry.clicks++;
+    if (event.eventType === "conversion") partnerEntry.conversions++;
+    if (event.commissionAmount) partnerEntry.revenue += event.commissionAmount;
+    byPartner.set(event.partnerId, partnerEntry);
+
+    // By product
+    const productEntry = byProduct.get(event.productId) ?? {
+      revenue: 0,
+      clicks: 0,
+      conversions: 0,
+    };
+    if (event.eventType === "click") productEntry.clicks++;
+    if (event.eventType === "conversion") productEntry.conversions++;
+    if (event.commissionAmount)
+      productEntry.revenue += event.commissionAmount;
+    byProduct.set(event.productId, productEntry);
+  }
+
+  const reportPeriod = period ?? inferPeriod(events);
+
+  return {
+    totalRevenue: Math.round(totalRevenue * 100) / 100,
+    totalClicks,
+    totalConversions,
+    conversionRate: Math.round(conversionRate * 10000) / 10000,
+    averageCommission: Math.round(averageCommission * 100) / 100,
+    byPartner,
+    byProduct,
+    period: reportPeriod,
+  };
+}
+
+/** Infer period from event timestamps when no explicit period is given. */
+function inferPeriod(events: RevenueEvent[]): { start: Date; end: Date } {
+  if (events.length === 0) {
+    const now = new Date();
+    return { start: now, end: now };
+  }
+
+  let earliest = events[0].timestamp.getTime();
+  let latest = events[0].timestamp.getTime();
+
+  for (const event of events) {
+    const t = event.timestamp.getTime();
+    if (t < earliest) earliest = t;
+    if (t > latest) latest = t;
+  }
+
+  return { start: new Date(earliest), end: new Date(latest) };
 }
 
 // =============================================================================

@@ -1,25 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import {
+  withAuth,
+  withPermission,
+  type AuthedUser,
+} from "@/lib/auth/api-guard";
 import { JobScheduler } from "@/lib/automation/job-scheduler";
 
 /**
  * GET /api/automation/jobs
  * Get user's scheduled jobs
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (_request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const startTime = Date.now();
 
     // Get jobs
-    const jobs = JobScheduler.getUserJobs(validation.user.id);
+    const jobs = JobScheduler.getUserJobs(user.id);
 
     // JobsAPI: Fetched jobs for user
     const duration = Date.now() - startTime;
@@ -34,26 +30,16 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/automation/jobs
  * Schedule a new job
  */
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "automation:jobs:create",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "automation:jobs:create")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const startTime = Date.now();
     const body = await request.json();
 
@@ -75,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Schedule job
     const job = await JobScheduler.scheduleJob({
-      user_id: validation.user.id,
+      user_id: user.id,
       job_type,
       schedule_type,
       cron_expression,
@@ -99,26 +85,17 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
 /**
  * DELETE /api/automation/jobs
  * Cancel a job
  */
-export async function DELETE(request: NextRequest) {
+export const DELETE = withPermission(
+  "automation:jobs:delete",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "automation:jobs:delete")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const { searchParams } = new URL(request.url);
     const jobId = searchParams.get("job_id");
 
@@ -131,7 +108,7 @@ export async function DELETE(request: NextRequest) {
 
     // Verify job belongs to user
     const job = JobScheduler.getJob(jobId);
-    if (!job || job.user_id !== validation.user.id) {
+    if (!job || job.user_id !== user.id) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
@@ -153,4 +130,5 @@ export async function DELETE(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

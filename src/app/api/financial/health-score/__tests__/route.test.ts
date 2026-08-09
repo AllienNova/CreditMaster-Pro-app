@@ -37,11 +37,14 @@ const mockSupabase = {
   rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
 };
 
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: () => mockSupabase,
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: () => mockSupabase,
 }));
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/auth/rbac");
 jest.mock("@/lib/financial/health-score-calculator-v2");
 jest.mock("@/lib/financial/financial-aggregation-service");
@@ -104,6 +107,7 @@ const mockContext = { accounts: {}, budgets: {}, goals: {} };
 describe("GET /api/financial/health-score", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     // Re-set supabase mock chain
     Object.keys(mockBuilder).forEach((key) => {
       if (key !== "then" && key !== "single" && key !== "maybeSingle") {
@@ -128,25 +132,25 @@ describe("GET /api/financial/health-score", () => {
     (healthScoreCalculatorV2.getScoreHistory as jest.Mock).mockResolvedValue([]);
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const request = createMockRequest("http://localhost:3000/api/financial/health-score");
+      const response = await GET(request);
+      const data = await response.json();
+      expect(response.status).toBe(401);
     });
-    const request = createMockRequest("http://localhost:3000/api/financial/health-score");
-    const response = await GET(request);
-    const data = await response.json();
-    expect(response.status).toBe(401);
-    expect(data.success).toBe(false);
-  });
 
-  it("should return 403 for user without permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-    const request = createMockRequest("http://localhost:3000/api/financial/health-score");
-    const response = await GET(request);
-    const data = await response.json();
-    expect(response.status).toBe(403);
-    expect(data.success).toBe(false);
+    it("should return 403 for user without permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      const request = createMockRequest("http://localhost:3000/api/financial/health-score");
+      const response = await GET(request);
+      const data = await response.json();
+      expect(response.status).toBe(403);
+    });
   });
 
   it("should return historical scores when history=true", async () => {
@@ -218,6 +222,7 @@ describe("GET /api/financial/health-score", () => {
 describe("POST /api/financial/health-score", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     Object.keys(mockBuilder).forEach((key) => {
       if (key !== "then" && key !== "single" && key !== "maybeSingle") {
         mockBuilder[key].mockReturnValue(mockBuilder);
@@ -239,27 +244,29 @@ describe("POST /api/financial/health-score", () => {
     (healthScoreCalculatorV2.getGrade as jest.Mock).mockReturnValue("C+");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const request = createMockRequest("http://localhost:3000/api/financial/health-score", {
+        method: "POST",
+        body: {},
+      });
+      const response = await POST(request);
+      expect(response.status).toBe(401);
     });
-    const request = createMockRequest("http://localhost:3000/api/financial/health-score", {
-      method: "POST",
-      body: {},
-    });
-    const response = await POST(request);
-    expect(response.status).toBe(401);
-  });
 
-  it("should return 403 for user without permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-    const request = createMockRequest("http://localhost:3000/api/financial/health-score", {
-      method: "POST",
-      body: {},
+    it("should return 403 for user without permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      const request = createMockRequest("http://localhost:3000/api/financial/health-score", {
+        method: "POST",
+        body: {},
+      });
+      const response = await POST(request);
+      expect(response.status).toBe(403);
     });
-    const response = await POST(request);
-    expect(response.status).toBe(403);
   });
 
   it("should calculate and save new score with forceRecalculate=true", async () => {

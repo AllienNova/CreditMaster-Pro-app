@@ -1,0 +1,508 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/policy.incidents.v1.schema.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_role",
+        "schema_version",
+        "canonical_package_version"
+      ],
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "enum": [
+            "policy",
+            "workflow"
+          ]
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "file_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "canonical_package_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        }
+      }
+    },
+    "codes": {
+      "type": "array"
+    },
+    "severity_map": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "SEV1": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "response": {
+              "type": "string"
+            },
+            "page_delay": {
+              "type": "string"
+            },
+            "scope_action": {
+              "type": "string"
+            }
+          }
+        },
+        "SEV2": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "response": {
+              "type": "string"
+            },
+            "page_delay": {
+              "type": "string"
+            },
+            "scope_action": {
+              "type": "string"
+            }
+          }
+        },
+        "SEV3": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "response": {
+              "type": "string"
+            },
+            "page_delay": {},
+            "scope_action": {
+              "type": "string"
+            }
+          }
+        },
+        "SEV4": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "response": {
+              "type": "string"
+            },
+            "page_delay": {},
+            "scope_action": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "action_map": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "ALERT_ONLY": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "trading_impact": {
+              "type": "string"
+            },
+            "examples": {
+              "type": "array"
+            }
+          }
+        },
+        "PAUSE_SYMBOL": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "trading_impact": {
+              "type": "string"
+            },
+            "cancel_working_orders_for_symbol": {
+              "type": "boolean"
+            },
+            "examples": {
+              "type": "array"
+            }
+          }
+        },
+        "PAUSE_STRATEGY": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "trading_impact": {
+              "type": "string"
+            },
+            "cancel_working_orders_for_strategy": {
+              "type": "boolean"
+            },
+            "examples": {
+              "type": "array"
+            }
+          }
+        },
+        "PAUSE_TENANT": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "trading_impact": {
+              "type": "string"
+            },
+            "cancel_working_orders_for_tenant": {
+              "type": "boolean"
+            },
+            "examples": {
+              "type": "array"
+            }
+          }
+        },
+        "PAUSE_PLATFORM": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "trading_impact": {
+              "type": "string"
+            },
+            "cancel_working_orders_platform": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string"
+            },
+            "examples": {
+              "type": "array"
+            }
+          }
+        },
+        "CANCEL_WORKING_ORDERS": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "trading_impact": {
+              "type": "string"
+            },
+            "new_orders_also_paused": {
+              "type": "boolean"
+            },
+            "examples": {
+              "type": "array"
+            }
+          }
+        },
+        "FREEZE_AND_ALERT": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "trading_impact": {
+              "type": "string"
+            },
+            "cancel_working_orders": {
+              "type": "boolean"
+            },
+            "flatten_positions": {
+              "type": "boolean"
+            },
+            "examples": {
+              "type": "array"
+            }
+          }
+        },
+        "DEGRADE_TO_PAPER": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "trading_impact": {
+              "type": "string"
+            },
+            "paper_mode_active": {
+              "type": "boolean"
+            },
+            "examples": {
+              "type": "array"
+            }
+          }
+        },
+        "DEMOTE_PROMOTION_STAGE": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "trading_impact": {
+              "type": "string"
+            },
+            "requires_human_review_before_repromotion": {
+              "type": "boolean"
+            },
+            "examples": {
+              "type": "array"
+            }
+          }
+        }
+      }
+    },
+    "supervisory_signals": {
+      "type": "array"
+    },
+    "escalation": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "rosters": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "on_call_primary": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "contact_source": {
+                  "type": "string"
+                },
+                "rotation_frequency": {
+                  "type": "string"
+                }
+              }
+            },
+            "on_call_secondary": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "contact_source": {
+                  "type": "string"
+                },
+                "escalation_delay": {
+                  "type": "string"
+                }
+              }
+            },
+            "compliance_on_call": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "contact_source": {
+                  "type": "string"
+                },
+                "categories_requiring_page": {
+                  "type": "array"
+                },
+                "minimum_severity_for_page": {
+                  "type": "string"
+                }
+              }
+            },
+            "executive_escalation": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "contact_source": {
+                  "type": "string"
+                },
+                "escalation_trigger_delay": {
+                  "type": "string"
+                },
+                "mandatory_codes": {
+                  "type": "array"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sinks": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "pagerduty": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "integration_key_ref": {
+              "type": "string"
+            },
+            "minimum_severity": {
+              "type": "string"
+            },
+            "categories": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        },
+        "slack_webhook": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "webhook_ref": {
+              "type": "string"
+            },
+            "minimum_severity": {
+              "type": "string"
+            },
+            "categories": {
+              "type": "string"
+            },
+            "include_supervisory_signals": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        },
+        "email_dl": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "distribution_list_ref": {
+              "type": "string"
+            },
+            "minimum_severity": {
+              "type": "string"
+            },
+            "categories": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        },
+        "sms": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "recipients_ref": {
+              "type": "string"
+            },
+            "minimum_severity": {
+              "type": "string"
+            },
+            "categories": {
+              "type": "array"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        },
+        "audit_log": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "sink_type": {
+              "type": "string"
+            },
+            "minimum_severity": {
+              "type": "string"
+            },
+            "categories": {
+              "type": "string"
+            },
+            "include_supervisory_signals": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "deduplication": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "suppression_window": {
+          "type": "string"
+        },
+        "scope_keys": {
+          "type": "array"
+        },
+        "exemptions": {
+          "type": "array"
+        }
+      }
+    }
+  }
+}

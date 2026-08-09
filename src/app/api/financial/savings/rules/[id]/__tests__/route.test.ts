@@ -14,6 +14,9 @@
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/financial/savings-automation-service");
 
 import { GET, PATCH, DELETE } from "../route";
@@ -63,7 +66,7 @@ describe("GET /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/rule-1",
     );
-    const response = await GET(request, createParams("rule-1"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -78,27 +81,29 @@ describe("GET /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/nonexistent",
     );
-    const response = await GET(request, createParams("nonexistent"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(404);
     expect(data.error).toBe("Rule not found");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/savings/rules/rule-1",
+      );
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/savings/rules/rule-1",
-    );
-    const response = await GET(request, createParams("rule-1"));
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 500 on service error", async () => {
@@ -109,7 +114,7 @@ describe("GET /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/rule-1",
     );
-    const response = await GET(request, createParams("rule-1"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -139,7 +144,7 @@ describe("PATCH /api/financial/savings/rules/[id]", () => {
         body: { name: "Updated rule", config: { amount: 5 } },
       },
     );
-    const response = await PATCH(request, createParams("rule-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -160,7 +165,7 @@ describe("PATCH /api/financial/savings/rules/[id]", () => {
         body: { action: "toggle" },
       },
     );
-    const response = await PATCH(request, createParams("rule-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -169,21 +174,23 @@ describe("PATCH /api/financial/savings/rules/[id]", () => {
     expect(savingsAutomationService.toggleRuleStatus).toHaveBeenCalledWith("user-123", "rule-1");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/savings/rules/rule-1",
+        { method: "PATCH", body: { name: "Test" } },
+      );
+      const response = await PATCH(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/savings/rules/rule-1",
-      { method: "PATCH", body: { name: "Test" } },
-    );
-    const response = await PATCH(request, createParams("rule-1"));
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 500 on service error", async () => {
@@ -195,7 +202,7 @@ describe("PATCH /api/financial/savings/rules/[id]", () => {
       "http://localhost:3000/api/financial/savings/rules/rule-1",
       { method: "PATCH", body: { name: "Test" } },
     );
-    const response = await PATCH(request, createParams("rule-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -217,7 +224,7 @@ describe("DELETE /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/rule-1",
     );
-    const response = await DELETE(request, createParams("rule-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -231,27 +238,29 @@ describe("DELETE /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/rule-1",
     );
-    const response = await DELETE(request, createParams("rule-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
     expect(data.error).toBe("Failed to delete rule");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/savings/rules/rule-1",
+      );
+      const response = await DELETE(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/savings/rules/rule-1",
-    );
-    const response = await DELETE(request, createParams("rule-1"));
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 500 on service error", async () => {
@@ -262,7 +271,7 @@ describe("DELETE /api/financial/savings/rules/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/rules/rule-1",
     );
-    const response = await DELETE(request, createParams("rule-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);

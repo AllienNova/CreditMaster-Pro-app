@@ -335,7 +335,7 @@ describe("API Integration Tests", () => {
         });
 
         const result = await mockSupabaseClient
-          .from("credit_disputes")
+          .from("disputes")
           .insert(disputeRequest)
           .select()
           .single();

@@ -5,84 +5,72 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
 import { studentLoanAIEngine } from "@/lib/student-loan-ai-engine";
 import { logAIInteraction } from "@/lib/security/audit-logging";
 
-export async function POST(request: NextRequest) {
-  try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
+export const POST = withPermission(
+  "ai:predict_outcomes",
+  async (request: NextRequest, user: AuthedUser) => {
+    try {
+      // Parse request body
+      const body = await request.json();
+      const { strategy, loans, portfolio_analysis } = body;
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+      // Validate required fields
+      if (!strategy || !loans) {
+        return NextResponse.json(
+          { error: "Missing required fields: strategy, loans" },
+          { status: 400 },
+        );
+      }
 
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "ai:predict_outcomes")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+      // Track timing
+      const startTime = Date.now();
 
-    const user = validation.user;
+      // Predict outcomes
+      const predictions = await studentLoanAIEngine.predictOutcomes(
+        [strategy],
+        loans,
+      );
 
-    // Parse request body
-    const body = await request.json();
-    const { strategy, loans, portfolio_analysis } = body;
+      const duration = Date.now() - startTime;
 
-    // Validate required fields
-    if (!strategy || !loans) {
+      // Audit log
+      logAIInteraction({
+        userId: user.id,
+        model: "student-loan-ai-engine",
+        prompt: JSON.stringify({ strategy, loans, portfolio_analysis }),
+        response: JSON.stringify(predictions),
+        tokens: 0,
+        cost: 0,
+        duration,
+        inputValid: true,
+        outputValid: true,
+      });
+
+      return NextResponse.json({
+        success: true,
+        predictions,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_error) {
+      // Error logged
       return NextResponse.json(
-        { error: "Missing required fields: strategy, loans" },
-        { status: 400 },
+        {
+          success: false,
+          error:
+            _error instanceof Error
+              ? _error.message
+              : "Failed to predict outcomes",
+        },
+        { status: 500 },
       );
     }
+  },
+);
 
-    // Track timing
-    const startTime = Date.now();
-
-    // Predict outcomes
-    const predictions = await studentLoanAIEngine.predictOutcomes(
-      [strategy],
-      loans,
-    );
-
-    const duration = Date.now() - startTime;
-
-    // Audit log
-    logAIInteraction({
-      userId: user.id,
-      model: "student-loan-ai-engine",
-      prompt: JSON.stringify({ strategy, loans, portfolio_analysis }),
-      response: JSON.stringify(predictions),
-      tokens: 0,
-      cost: 0,
-      duration,
-      inputValid: true,
-      outputValid: true,
-    });
-
-    return NextResponse.json({
-      success: true,
-      predictions,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (_error) {
-    // Error logged
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          _error instanceof Error
-            ? _error.message
-            : "Failed to predict outcomes",
-      },
-      { status: 500 },
-    );
-  }
-}
-
-export async function GET() {
+export const GET = withPermission("ai:predict_outcomes", async () => {
   return NextResponse.json({
     message: "AI Outcome Prediction API",
     method: "POST",
@@ -92,4 +80,4 @@ export async function GET() {
     description:
       "Predicts outcomes for student loan strategies using ML models",
   });
-}
+});

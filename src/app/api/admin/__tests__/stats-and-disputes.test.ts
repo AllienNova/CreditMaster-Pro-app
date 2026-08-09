@@ -3,11 +3,17 @@
  */
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
-const mockRequireRole = jest.fn();
-const mockCreateAuthResponse = jest.fn();
-jest.mock("@/lib/security/auth-middleware", () => ({
-  requireRole: mockRequireRole,
-  createAuthResponse: mockCreateAuthResponse,
+// Routes wrapped in withRole("admin") (TASK-AUTH-03a); guard resolves auth via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRole(...args),
 }));
 
 // Mock @supabase/supabase-js – stats and disputes routes create their own client
@@ -43,21 +49,23 @@ function makeRequest(
 }
 
 function authenticatedAdmin() {
-  mockRequireRole.mockResolvedValue({
-    authenticated: true,
-    user: { id: "admin-1", email: "admin@fynvita.com", role: "admin" },
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "admin-1", email: "admin@fynvita.com" },
   });
+  mockResolveRole.mockResolvedValue("admin");
 }
 
-function unauthenticated(errorMsg = "Not authenticated") {
-  mockRequireRole.mockResolvedValue({
-    authenticated: false,
-    error: errorMsg,
+function unauthenticated() {
+  mockValidate.mockResolvedValue({ valid: false, user: null });
+}
+
+function authenticatedNonAdmin() {
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "user-1", email: "user@example.com" },
   });
-  mockCreateAuthResponse.mockReturnValue({
-    status: 401,
-    json: async () => ({ error: errorMsg }),
-  });
+  mockResolveRole.mockResolvedValue("user");
 }
 
 // ── Setup / Teardown ─────────────────────────────────────────────────────────
@@ -75,46 +83,44 @@ describe("Admin Stats API – GET /api/admin/stats", () => {
       const res = await getStats(
         makeRequest("http://localhost:3000/api/admin/stats"),
       );
-      expect(mockRequireRole).toHaveBeenCalled();
-      expect(mockCreateAuthResponse).toHaveBeenCalled();
+      expect(mockValidate).toHaveBeenCalled();
       expect(res.status).toBe(401);
     });
 
-    it("should call requireRole with 'admin'", async () => {
-      unauthenticated();
-      const req = makeRequest("http://localhost:3000/api/admin/stats");
-      await getStats(req);
-      expect(mockRequireRole).toHaveBeenCalledWith(req, "admin");
+    it("should return 403 when authenticated user is not admin", async () => {
+      authenticatedNonAdmin();
+      const res = await getStats(
+        makeRequest("http://localhost:3000/api/admin/stats"),
+      );
+      expect(res.status).toBe(403);
     });
   });
 
-  describe("Mock data fallback (no env vars)", () => {
+  describe("DB not configured (no env vars)", () => {
+    // ADM-2 (FND-052/053): route no longer returns fabricated data; it returns
+    // 503 with an error message so the UI can show an honest "unavailable" state.
     beforeEach(() => {
       authenticatedAdmin();
-      // Remove env vars so route returns mock data
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
       delete process.env.SUPABASE_SERVICE_ROLE_KEY;
     });
 
     afterEach(() => {
-      // Restore for other tests
       process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
       process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
     });
 
-    it("should return mock stats when Supabase is not configured", async () => {
+    it("should return 503 with error when Supabase is not configured", async () => {
       const res = await getStats(
         makeRequest("http://localhost:3000/api/admin/stats"),
       );
       const body = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(body.totalUsers).toBe(1247);
-      expect(body.activeSubscriptions).toBe(892);
-      expect(body.totalDisputes).toBe(3456);
-      expect(body.resolvedDisputes).toBe(2891);
-      expect(body.monthlyRevenue).toBe(45670);
-      expect(body.userGrowth).toBe(12.5);
+      // Route must NOT return the old hardcoded fabricated stats (FND-052/053 fix)
+      expect(res.status).toBe(503);
+      expect(body.error).toBeDefined();
+      expect(body.totalUsers).toBeUndefined();
+      expect(body.monthlyRevenue).toBeUndefined();
     });
   });
 
@@ -138,13 +144,15 @@ describe("Admin Stats API – GET /api/admin/stats", () => {
       const resolvedEq = jest.fn().mockResolvedValue({ count: 120 });
       const resolvedSelect = jest.fn().mockReturnValue({ eq: resolvedEq });
 
-      // subscriptions for revenue
+      // subscriptions for revenue — ADM-2: route now reads `plan` column with the
+      // real 6-tier priceMap (standard=29.99, pro=99.99, family=199.99)
       const revenueSubsEq = jest.fn().mockResolvedValue({
         data: [
-          { stripe_price_id: "price_basic" },
-          { stripe_price_id: "price_premium" },
-          { stripe_price_id: "price_enterprise" },
+          { stripe_price_id: "price_standard" },
+          { stripe_price_id: "price_pro" },
+          { stripe_price_id: "price_family" },
         ],
+        error: null,
       });
       const revenueSubsSelect = jest.fn().mockReturnValue({ eq: revenueSubsEq });
 
@@ -200,13 +208,16 @@ describe("Admin Stats API – GET /api/admin/stats", () => {
       expect(body.activeSubscriptions).toBe(300);
       expect(body.totalDisputes).toBe(150);
       expect(body.resolvedDisputes).toBe(120);
-      // Revenue: 29 (basic) + 79 (premium) + 199 (enterprise) = 307
-      expect(body.monthlyRevenue).toBe(307);
+      // Revenue: standard(29.99) + pro(99.99) + family(199.99) = 329.97
+      // ADM-2: 6-tier priceMap replaces old 3-tier (price_basic/premium/enterprise) prices
+      expect(body.monthlyRevenue).toBeCloseTo(329.97, 1);
       // User growth: (50 - 40) / 40 * 100 = 25.0
       expect(body.userGrowth).toBe(25);
     });
 
-    it("should return mock data on exception from Supabase", async () => {
+    it("should return 500 with error on exception from Supabase", async () => {
+      // ADM-2 (FND-052/053): route no longer falls back to hardcoded mock data;
+      // DB errors surface as 500 so callers know the data is unavailable.
       mockCreateClient.mockReturnValue({
         from: jest.fn().mockImplementation(() => {
           throw new Error("DB connection failed");
@@ -218,9 +229,9 @@ describe("Admin Stats API – GET /api/admin/stats", () => {
       );
       const body = await res.json();
 
-      // Falls back to mock data on error
-      expect(res.status).toBe(200);
-      expect(body.totalUsers).toBe(1247);
+      expect(res.status).toBe(500);
+      expect(body.error).toBeDefined();
+      expect(body.totalUsers).toBeUndefined();
     });
   });
 });
@@ -237,9 +248,19 @@ describe("Admin Disputes API – GET /api/admin/disputes", () => {
       );
       expect(res.status).toBe(401);
     });
+
+    it("should return 403 when authenticated user is not admin", async () => {
+      authenticatedNonAdmin();
+      const res = await getDisputes(
+        makeRequest("http://localhost:3000/api/admin/disputes"),
+      );
+      expect(res.status).toBe(403);
+    });
   });
 
-  describe("Mock data fallback (no env vars)", () => {
+  // FND-049 remediation (commit 9086c75): the route no longer fabricates mock
+  // disputes when Supabase is unconfigured — it returns an honest 503.
+  describe("Database not configured (honest 503, never mock)", () => {
     beforeEach(() => {
       authenticatedAdmin();
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -251,47 +272,15 @@ describe("Admin Disputes API – GET /api/admin/disputes", () => {
       process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
     });
 
-    it("should return 6 mock disputes when Supabase is not configured", async () => {
+    it("returns 503 with no fabricated disputes when Supabase is not configured", async () => {
       const res = await getDisputes(
         makeRequest("http://localhost:3000/api/admin/disputes"),
       );
       const body = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(body.disputes.length).toBe(6);
-      expect(body.total).toBe(6);
-    });
-
-    it("should include expected fields in mock disputes", async () => {
-      const res = await getDisputes(
-        makeRequest("http://localhost:3000/api/admin/disputes"),
-      );
-      const body = await res.json();
-
-      const first = body.disputes[0];
-      expect(first).toHaveProperty("id");
-      expect(first).toHaveProperty("user_id");
-      expect(first).toHaveProperty("user_email");
-      expect(first).toHaveProperty("bureau");
-      expect(first).toHaveProperty("status");
-      expect(first).toHaveProperty("item_type");
-      expect(first).toHaveProperty("item_description");
-    });
-
-    it("should have disputes with various statuses in mock data", async () => {
-      const res = await getDisputes(
-        makeRequest("http://localhost:3000/api/admin/disputes"),
-      );
-      const body = await res.json();
-      const statuses = body.disputes.map(
-        (d: { status: string }) => d.status,
-      );
-
-      expect(statuses).toContain("resolved");
-      expect(statuses).toContain("under_review");
-      expect(statuses).toContain("sent");
-      expect(statuses).toContain("draft");
-      expect(statuses).toContain("rejected");
+      expect(res.status).toBe(503);
+      expect(body.error).toMatch(/database not configured/i);
+      expect(body.disputes).toBeUndefined();
     });
   });
 
@@ -411,14 +400,38 @@ describe("Admin Disputes API – GET /api/admin/disputes", () => {
 //  DISPUTES – PATCH /api/admin/disputes
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Admin Disputes API – PATCH /api/admin/disputes", () => {
-  // PATCH does NOT use requireRole -- it uses plain Request, not NextRequest
-  // We need to provide a standard Request-like object with a json() method.
-
+  // PATCH is wrapped in withRole("admin") (TASK-AUTH-03a, FND-051).
   function makePatchRequest(body: Record<string, unknown>) {
     return {
       json: jest.fn().mockResolvedValue(body),
-    } as unknown as Request;
+    } as unknown as NextRequest;
   }
+
+  beforeEach(() => {
+    authenticatedAdmin();
+  });
+
+  describe("Authentication", () => {
+    it("should return 401 when user is not authenticated", async () => {
+      unauthenticated();
+      const req = makePatchRequest({
+        disputeId: "d1",
+        updates: { status: "resolved" },
+      });
+      const res = await patchDispute(req);
+      expect(res.status).toBe(401);
+    });
+
+    it("should return 403 when authenticated user is not admin", async () => {
+      authenticatedNonAdmin();
+      const req = makePatchRequest({
+        disputeId: "d1",
+        updates: { status: "resolved" },
+      });
+      const res = await patchDispute(req);
+      expect(res.status).toBe(403);
+    });
+  });
 
   describe("Validation", () => {
     it("should return 400 when disputeId is missing", async () => {
@@ -447,7 +460,9 @@ describe("Admin Disputes API – PATCH /api/admin/disputes", () => {
     });
   });
 
-  describe("Mock update (no env vars)", () => {
+  // FND-049 remediation (9086c75): PATCH returns an honest 503 when Supabase is
+  // unconfigured, never a fabricated "Mock update successful".
+  describe("Update with no DB configured (honest 503, never mock)", () => {
     beforeEach(() => {
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
       delete process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -458,7 +473,7 @@ describe("Admin Disputes API – PATCH /api/admin/disputes", () => {
       process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
     });
 
-    it("should return mock success when Supabase is not configured", async () => {
+    it("returns 503 (never a fabricated success) when Supabase is not configured", async () => {
       const req = makePatchRequest({
         disputeId: "d1",
         updates: { status: "resolved" },
@@ -466,9 +481,9 @@ describe("Admin Disputes API – PATCH /api/admin/disputes", () => {
       const res = await patchDispute(req);
       const body = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(body.success).toBe(true);
-      expect(body.message).toBe("Mock update successful");
+      expect(res.status).toBe(503);
+      expect(body.error).toMatch(/database not configured/i);
+      expect(body.success).toBeUndefined();
     });
   });
 
@@ -524,7 +539,7 @@ describe("Admin Disputes API – PATCH /api/admin/disputes", () => {
     it("should return 500 when request.json() throws", async () => {
       const req = {
         json: jest.fn().mockRejectedValue(new Error("Parse error")),
-      } as unknown as Request;
+      } as unknown as NextRequest;
 
       const res = await patchDispute(req);
       const body = await res.json();

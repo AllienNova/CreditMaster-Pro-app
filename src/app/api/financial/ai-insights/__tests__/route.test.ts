@@ -1,27 +1,47 @@
 /**
- * Tests for /api/financial/ai-insights
+ * Tests for /api/financial/ai-insights.
+ *
+ * - Negative-auth: 401 unauthenticated, 403 without financial:read.
+ * - Real data (PARITY-P1): healthScore/healthTrend come from
+ *   vitalityScoreService, and predictions from spendingForecastService — the
+ *   route previously hardcoded healthScore = 78 and a fabricated predictions
+ *   array with a lying "ML forecasting model" comment.
+ * - Fallback: on a service error the route returns empty/zeroed fallback data.
  */
 
+import fs from "fs";
+import path from "path";
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/auth/rbac");
 jest.mock("@/lib/financial/smart-insights-engine");
+jest.mock("@/lib/financial/vitality-score-service", () => ({
+  vitalityScoreService: { calculateVitalityScore: jest.fn() },
+}));
+jest.mock("@/lib/financial/spending-forecast-service", () => ({
+  spendingForecastService: { generateForecast: jest.fn() },
+}));
 
 import { GET } from "../route";
 import { jwtValidation } from "@/lib/auth/jwt-validation";
 import { rbac } from "@/lib/auth/rbac";
 import { smartInsightsEngine } from "@/lib/financial/smart-insights-engine";
+import { vitalityScoreService } from "@/lib/financial/vitality-score-service";
+import { spendingForecastService } from "@/lib/financial/spending-forecast-service";
 
 const mockUser = { id: "user-123", email: "test@example.com", role: "premium" };
 
-function createMockRequest(url: string) {
-  const parsedUrl = new URL(url);
+function createMockRequest(): NextRequest {
+  const url = "http://localhost:3000/api/financial/ai-insights";
   return {
     url,
     method: "GET",
     headers: new Headers(),
-    nextUrl: parsedUrl,
+    nextUrl: new URL(url),
   } as unknown as NextRequest;
 }
 
@@ -41,84 +61,156 @@ const mockInsightsResult = {
   processingTimeMs: 150,
 };
 
+// currentMonthlyAvg sums to 2900, predictedSpending 2750 — deliberately NOT the
+// old hardcoded 3200/3050, so a coincidental pass can't hide a regression.
+function forecast(trend: "increasing" | "decreasing" | "stable" = "decreasing") {
+  return {
+    predictions: [
+      {
+        predictedSpending: 2750,
+        monthLabel: "Feb 2026",
+        trend,
+        confidenceInterval: { low: 2600, high: 2900, confidence: 0.9 },
+      },
+    ],
+    categoryForecasts: [
+      { currentMonthlyAvg: 1800, predictedMonthlyAvg: 1700 },
+      { currentMonthlyAvg: 1100, predictedMonthlyAvg: 1050 },
+    ],
+  };
+}
+
 describe("GET /api/financial/ai-insights", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
     });
-    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (smartInsightsEngine.generateInsights as jest.Mock).mockResolvedValue(
       mockInsightsResult,
     );
+    (vitalityScoreService.calculateVitalityScore as jest.Mock).mockResolvedValue(
+      { overall: 82, trend: "improving", grade: "B" },
+    );
+    (spendingForecastService.generateForecast as jest.Mock).mockResolvedValue(
+      forecast("decreasing"),
+    );
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("returns 401 for an unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      expect((await GET(createMockRequest())).status).toBe(401);
     });
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/ai-insights",
-    );
-    const response = await GET(request);
-    expect(response.status).toBe(401);
+
+    it("returns 403 without financial:read permission", async () => {
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
+      expect((await GET(createMockRequest())).status).toBe(403);
+    });
   });
 
-  it("should return 403 for user without financial:read permission", async () => {
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/ai-insights",
-    );
-    const response = await GET(request);
-    expect(response.status).toBe(403);
+  it("returns the real vitality health score + forecast prediction (not the hardcoded 78/3200)", async () => {
+    const data = (await (await GET(createMockRequest())).json()).data;
+
+    expect(data.healthScore).toBe(82); // from vitality.overall, not 78
+    expect(data.healthTrend).toBe("improving"); // vitality.trend passes through
+    expect(data.predictions).toEqual([
+      {
+        metric: "Monthly Spending",
+        currentValue: 2900, // sum of categoryForecasts currentMonthlyAvg
+        predictedValue: 2750, // predictions[0].predictedSpending
+        timeframe: "Feb 2026",
+        confidence: 90, // confidenceInterval.confidence * 100
+        trend: "down", // "decreasing" → "down"
+      },
+    ]);
   });
 
-  it("should return AI insights panel data successfully", async () => {
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/ai-insights",
+  it("passes through a null health score honestly (no laundering to a number) when vitality has no data", async () => {
+    // When the user has no real per-user data, the vitality service returns a
+    // null overall. The route must surface that null — an honest empty-state —
+    // never a fabricated number.
+    (vitalityScoreService.calculateVitalityScore as jest.Mock).mockResolvedValue(
+      { overall: null, trend: "stable", grade: null },
     );
-    const response = await GET(request);
-    const data = await response.json();
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data.data.insights).toBeDefined();
-    expect(data.data.predictions).toBeDefined();
-    expect(data.data.healthScore).toBeDefined();
-    expect(data.data.healthTrend).toBeDefined();
-    expect(data.data.topRecommendation).toBeDefined();
-    expect(data._meta.generatedAt).toBeDefined();
+    const data = (await (await GET(createMockRequest())).json()).data;
+    expect(data.healthScore).toBeNull();
+    expect(data.healthTrend).toBe("stable");
   });
 
-  it("should return fallback data on error instead of 500", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockRejectedValue(
-      new Error("Unexpected error"),
+  it("maps forecast trend increasing→up and stable→stable", async () => {
+    (spendingForecastService.generateForecast as jest.Mock).mockResolvedValue(
+      forecast("increasing"),
     );
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/ai-insights",
+    expect(
+      (await (await GET(createMockRequest())).json()).data.predictions[0].trend,
+    ).toBe("up");
+
+    (spendingForecastService.generateForecast as jest.Mock).mockResolvedValue(
+      forecast("stable"),
     );
-    const response = await GET(request);
-    const data = await response.json();
-    // This route returns fallback data on error
-    expect(data.success).toBe(true);
-    expect(data._meta.fallback).toBe(true);
-    expect(data.data.insights).toEqual([]);
-    expect(data.data.predictions).toEqual([]);
-    expect(data.data.healthScore).toBe(0);
+    expect(
+      (await (await GET(createMockRequest())).json()).data.predictions[0].trend,
+    ).toBe("stable");
   });
 
-  it("should include insight type mapping", async () => {
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/ai-insights",
+  it("returns empty predictions (no fabricated row) when the forecast has none", async () => {
+    (spendingForecastService.generateForecast as jest.Mock).mockResolvedValue({
+      predictions: [],
+      categoryForecasts: [],
+    });
+    const data = (await (await GET(createMockRequest())).json()).data;
+    expect(data.predictions).toEqual([]);
+    expect(data.healthScore).toBe(82); // health score still real
+  });
+
+  it("no longer contains the hardcoded 78 / 3200 / ML-model fabrications in source", () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, "..", "route.ts"),
+      "utf-8",
     );
-    const response = await GET(request);
-    const data = await response.json();
-    // savings_opportunity should map to "opportunity"
-    if (data.data.insights.length > 0) {
-      expect(["opportunity", "warning", "tip", "prediction"]).toContain(
-        data.data.insights[0].type,
-      );
-    }
+    expect(source).not.toMatch(/healthScore = 78/);
+    expect(source).not.toMatch(/currentValue: 3200/);
+    expect(source).not.toContain("ML forecasting model");
+  });
+
+  it("returns fallback data when the insights service throws", async () => {
+    (smartInsightsEngine.generateInsights as jest.Mock).mockRejectedValue(
+      new Error("insights boom"),
+    );
+    const body = await (await GET(createMockRequest())).json();
+    expect(body.success).toBe(true);
+    expect(body._meta.fallback).toBe(true);
+    expect(body.data.insights).toEqual([]);
+    expect(body.data.predictions).toEqual([]);
+    expect(body.data.healthScore).toBe(0);
+  });
+
+  it("surfaces the real health score even when the vitality service had a transient persistence failure (finding 1: never launders to 0)", async () => {
+    // Post-fix, a history-WRITE failure inside the vitality service is swallowed
+    // there and the real computed score is still returned (that service-level
+    // behavior is locked in vitality-score-service.test.ts). So the route reports
+    // the real healthScore and does NOT fall back to the laundered 0.
+    (vitalityScoreService.calculateVitalityScore as jest.Mock).mockResolvedValue({
+      overall: 91,
+      trend: "improving",
+      grade: "A",
+    });
+    const body = await (await GET(createMockRequest())).json();
+    expect(body.data.healthScore).toBe(91);
+    expect(body.data.healthTrend).toBe("improving");
+    expect(body._meta.fallback).toBeUndefined();
+  });
+
+  it("maps insight types to the panel union", async () => {
+    const data = (await (await GET(createMockRequest())).json()).data;
+    expect(["opportunity", "warning", "tip", "prediction"]).toContain(
+      data.insights[0].type,
+    );
   });
 });

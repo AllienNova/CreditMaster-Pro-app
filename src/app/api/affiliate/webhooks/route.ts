@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revenueTracker } from "@/lib/affiliate/revenue-tracker";
 import type { RevenueEventType } from "@/lib/affiliate/revenue-tracker";
+import { commissionCalculator } from "@/lib/commerce/affiliate";
+import type { ConversionType } from "@/lib/commerce/affiliate";
+import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 
 /**
  * POST /api/affiliate/webhooks
@@ -66,7 +69,7 @@ export async function POST(request: NextRequest) {
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-    if (signature !== expectedHex) {
+    if (!timingSafeEqual(signature, expectedHex)) {
       return NextResponse.json(
         { error: "Invalid signature" },
         { status: 401 },
@@ -91,6 +94,17 @@ export async function POST(request: NextRequest) {
       "conversion.completed": "conversion",
     };
 
+    // Map revenue event types to ConversionType for commission calculation.
+    // `conversion` -> `purchase`: a conversion.completed event is a fulfilled
+    // transaction (a sale), not a lead. cpl partners intentionally pay 0 for a
+    // `purchase` — fulfilment events belong to cpa/revenue_share/hybrid partners.
+    const conversionTypeMap: Record<RevenueEventType, ConversionType> = {
+      click: "click",
+      application: "application",
+      approval: "approval",
+      conversion: "purchase",
+    };
+
     const eventType = eventMap[body.event];
     if (!eventType) {
       // Acknowledge unknown events without processing
@@ -98,13 +112,27 @@ export async function POST(request: NextRequest) {
     }
 
     const { data } = body;
+    const partnerId = String(data.partnerId || "");
+    const amount = typeof data.amount === "number" ? data.amount : 0;
 
-    revenueTracker.trackEvent({
+    // Recompute commission server-side from trusted inputs.
+    // The inbound data.commission is IGNORED — a signed webhook proves origin,
+    // not that the body's money values are correct.
+    // calculateCommission throws for an unknown/unresolvable partner or rule
+    // lookup error rather than returning 0 — the catch block below turns that
+    // into a 500 so the sender retries instead of silently recording $0.
+    const commissionAmount = await commissionCalculator.calculateCommission(
+      partnerId,
+      conversionTypeMap[eventType],
+      amount,
+    );
+
+    await revenueTracker.trackEvent({
       eventType,
       productId: String(data.productId || ""),
-      partnerId: String(data.partnerId || ""),
+      partnerId,
       userId: String(data.userId || "anonymous"),
-      commissionAmount: typeof data.commission === "number" ? data.commission : undefined,
+      commissionAmount,
       timestamp: new Date(),
       metadata: {
         clickId: String(data.clickId || ""),

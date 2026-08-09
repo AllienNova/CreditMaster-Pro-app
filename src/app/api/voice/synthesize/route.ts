@@ -1,14 +1,23 @@
 /**
  * Voice Synthesis API
  *
- * Converts text to speech using AIML API's voice models
+ * Converts text to speech using AIML API's voice models.
+ * The model is validated server-side against an allowlist (FND-060 / CMP-6).
  * (OpenAI TTS-1 HD or ElevenLabs)
+ *
+ * NOTE: This route imports AIMLService directly because ModelRouter.complete()
+ * targets chat completions only; TTS is a distinct audio.speech call with no
+ * ModelRouter execution path. Exempt in no-direct-aiml-service lint rule.
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/api-guard";
 import { getAIMLService } from "@/lib/aiml-service";
 
-export async function POST(request: NextRequest) {
+const VALID_TTS_MODELS = ["tts-1", "tts-1-hd"] as const;
+type TTSModel = (typeof VALID_TTS_MODELS)[number];
+
+export const POST = withAuth(async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -35,7 +44,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const model = body.model || "tts-1-hd";
+    // Validate model against server-side whitelist (FND-060)
+    const requestedModel: string = body.model ?? "tts-1-hd";
+    if (!VALID_TTS_MODELS.includes(requestedModel as TTSModel)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Invalid model. Must be one of: ${VALID_TTS_MODELS.join(", ")}`,
+        },
+        { status: 400 },
+      );
+    }
+    const model = requestedModel as TTSModel;
+
     const voice = body.voice || "alloy";
 
     // Validate voice
@@ -80,9 +101,9 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function GET() {
+export const GET = withAuth(async () => {
   return NextResponse.json({
     message: "Voice Synthesis API",
     method: "POST",
@@ -90,7 +111,7 @@ export async function GET() {
     requiredFields: ["text"],
     optionalFields: ["model", "voice"],
     availableVoices: ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
-    availableModels: ["tts-1", "tts-1-hd"],
+    availableModels: VALID_TTS_MODELS,
     maxTextLength: 4096,
   });
-}
+});

@@ -1,0 +1,340 @@
+Excellent — now we have **all the ingredients**:
+trendlines → action vs safety line → entry → exit → risk → sizing.
+
+Below is a **clean, professional, financial-programmer rewrite** that **fully formalizes** the strategy you shared, removes ambiguity, and **enhances it into a robust, testable trading system**.
+
+This is written as if it were going into:
+
+* a strategy design document
+* a quant notebook
+* or an algo-trading specification
+
+---
+
+# Enhanced Strategy Specification
+
+## **Action–Safety Trendline Break & Retest System (ASTBRS)**
+
+---
+
+## 1. Strategy Philosophy
+
+Markets move in **structured trends**, not randomness.
+Price behavior around **trendlines** reflects collective positioning by participants.
+
+This system exploits **structural transitions**:
+
+* from trend continuation → trend exhaustion → trend reversal or acceleration
+  by entering **only after confirmation**, with **strict downside control**.
+
+The strategy prioritizes:
+
+* capital preservation
+* asymmetrical reward
+* repeatability
+* low cognitive and execution complexity
+
+---
+
+## 2. Core Structural Components
+
+### 2.1 Two Structural Lines
+
+Every setup is defined by **two non-horizontal trendlines**:
+
+1. **Action Line**
+
+   * The trendline that is **broken**
+   * Represents the **old trend**
+   * Break = actionable information
+
+2. **Safety Line**
+
+   * The trendline **opposite** the Action Line
+   * Represents structural invalidation
+   * Used for **stop-loss placement and risk definition**
+
+> If price violates the Safety Line, the thesis is invalid.
+
+---
+
+## 3. Top-Down Context Filter (Mandatory)
+
+### 3.1 Timeframe Hierarchy
+
+| Layer            | Purpose                             |
+| ---------------- | ----------------------------------- |
+| HTF (Daily / 4H) | Structural context & dominant trend |
+| LTF (1H / 15m)   | Entry timing & execution            |
+
+**Rule**
+No trade is taken on LTF unless it aligns with **HTF structure or HTF transition**.
+
+---
+
+### 3.2 HTF Regime Classification
+
+Classify HTF into one of three states:
+
+1. **Trending**
+
+   * Clear HH/HL or LL/LH structure
+2. **Transitioning**
+
+   * Compression, wedge, channel breakdown
+3. **Ranging**
+
+   * Flat structure, overlapping candles
+
+**Trade Priority**
+
+* Trending / Transitioning → allowed
+* Ranging → only with horizontal confluence + reduced size
+
+---
+
+## 4. Trendline Construction Rules (Deterministic)
+
+### 4.1 Valid Trendline Criteria
+
+A trendline is valid if:
+
+* ≥ **3 confirmed touchpoints**
+* Touchpoints are **swing highs or swing lows**
+* Price respects the line (no repeated candle cuts)
+* Line spans sufficient history (≥ 30 candles recommended)
+
+### 4.2 Line Violation Tolerance
+
+Allow minimal tolerance defined by volatility:
+
+```
+tolerance = ATR(14) × 0.1
+```
+
+A line is invalid if:
+
+* Multiple closes breach tolerance
+* Price oscillates freely through it
+
+---
+
+## 5. Break Definition (Action Trigger)
+
+A **break** occurs when:
+
+* Candle **closes beyond** the Action Line
+* Close exceeds Action Line by:
+
+```
+break_threshold = ATR × 0.15
+```
+
+Optional confirmation (recommended):
+
+* Momentum candle (body > median body)
+* Structure break (close beyond last swing)
+
+**Wicks alone do not count.**
+
+---
+
+## 6. Retest Logic (Risk Optimization Layer)
+
+### 6.1 Retest Zone
+
+After the break, define the retest zone:
+
+```
+retest_zone = Action Line ± ATR × 0.2
+```
+
+### 6.2 Retest Conditions
+
+A valid retest requires:
+
+* Price revisits the zone
+* Occurs within `N = 3–15` candles after break
+* Does NOT close back beyond Safety Line
+
+No retest → no trade.
+
+---
+
+## 7. Entry Execution (Low-Risk Trigger)
+
+Entry is allowed **only after retest confirmation**.
+
+### Entry Methods (Choose One)
+
+**Method A – Rejection Candle**
+
+* Pin bar / engulfing / strong close away from zone
+
+**Method B – Micro-Structure Break**
+
+* Break of LTF swing high (long)
+* Break of LTF swing low (short)
+
+**Method C – Limit Entry (Advanced)**
+
+* Limit at zone midpoint
+* Requires HTF alignment
+
+---
+
+## 8. Stop-Loss Placement (Safety Line Rule)
+
+**Hard Rule**
+
+> Stop loss always goes **beyond the Safety Line**
+
+```
+stop = Safety Line ± ATR × 0.2
+```
+
+If stop distance is too large → trade is invalid.
+
+This guarantees:
+
+* Structural invalidation
+* No discretionary stop movement
+
+---
+
+## 9. Position Sizing (Capital Preservation Engine)
+
+### Fixed Fractional Risk Model
+
+Risk per trade:
+
+```
+risk_$ = account_equity × risk_percent
+```
+
+Recommended:
+
+```
+risk_percent = 1% (max 2%)
+```
+
+Position size:
+
+```
+position_size = risk_$ / |entry − stop|
+```
+
+This normalizes risk across:
+
+* instruments
+* volatility regimes
+* account sizes
+
+---
+
+## 10. Profit Targeting & Exit Strategy
+
+### 10.1 Minimum Reward Requirement
+
+Trade must offer:
+
+```
+reward ≥ 2 × risk
+```
+
+Otherwise → skip.
+
+---
+
+### 10.2 Exit Framework (Hybrid)
+
+**Partial Exit**
+
+* 25–50% at 1R
+* Stop moves to break-even
+
+**Runner Exit**
+One of:
+
+* Trailing swing highs/lows
+* ATR trailing stop
+* Opposite trendline break (original rule)
+
+---
+
+### 10.3 Forced Exit Conditions
+
+Exit immediately if:
+
+* Price closes back inside broken channel
+* Safety Line violated
+* Time-based stop (e.g., no progress after N candles)
+
+---
+
+## 11. Optional Enhancements
+
+### Horizontal Confluence (Optional)
+
+Add weight if:
+
+* Retest aligns with horizontal support/resistance
+* Level shows ≥ 3 historical reactions
+
+### Volatility Filter
+
+Skip trades if:
+
+* ATR below minimum threshold (chop)
+* ATR spike > 2× baseline (news risk)
+
+### Cooldown Rule
+
+After loss:
+
+* Skip next `N` setups on same instrument
+
+---
+
+## 12. Strategy Strengths
+
+* Structure-based, not indicator-dependent
+* Objective invalidation
+* Naturally asymmetric
+* Works across asset classes
+* Scales cleanly in automation
+
+---
+
+## 13. Strategy Weaknesses (Known)
+
+* Requires patience
+* Misses V-reversals
+* Needs clean structure (not ideal in chop)
+
+These are **features**, not bugs.
+
+---
+
+## 14. One-Sentence System Summary
+
+> **Identify structure → wait for break → wait for retest → enter with safety-line risk → manage asymmetrically.**
+
+---
+
+## Next Steps (If You Want)
+
+I can:
+
+1. Translate this into **Python (pandas / backtrader)**
+2. Convert it into **TradingView Pine Script**
+3. Build a **state-machine diagram** for automation
+4. Add **statistical validation metrics** (expectancy, MAE/MFE)
+
+Tell me:
+
+* platform (Python / TradingView / MT5 / NinjaTrader)
+* asset class (stocks, futures, forex, crypto)
+* timeframe preference
+
+You’re very close to a **production-ready trading system**.

@@ -2,10 +2,23 @@
  * Redis-based Rate Limiting Service
  *
  * Distributed rate limiting using Redis for multi-instance deployments
- * Falls back to in-memory store if Redis is unavailable
+ * Falls back to in-memory store if Redis is unavailable.
+ *
+ * This is the single canonical rate limiter for the platform.
  */
 
-import { RateLimitConfig, RateLimitResult } from "./rate-limiting";
+export interface RateLimitConfig {
+  windowMs: number; // Time window in milliseconds
+  maxRequests: number; // Max requests per window
+  keyGenerator?: (identifier: string) => string;
+}
+
+export interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  resetAt: Date;
+  retryAfter?: number; // Seconds until retry
+}
 
 // Redis configuration
 const REDIS_URL =
@@ -180,3 +193,57 @@ export const bureauRateLimiter = new RedisRateLimiter(
   },
   "bureau",
 );
+
+/**
+ * Lightweight per-window rate-limit factory.
+ *
+ * Compatibility shim preserving the API previously exported by the removed
+ * `src/lib/rate-limit.ts`. Callers configure the time window once, then call
+ * `check(limit, token)` per request — the per-call limit is honored so a single
+ * factory can guard endpoints with different quotas. `check` throws when the
+ * limit is exceeded; `getRemaining` and `reset` are non-throwing.
+ *
+ * Backed by `RedisRateLimiter` (distributed when Redis is configured, in-memory
+ * fallback otherwise).
+ */
+export interface RateLimitFactoryConfig {
+  interval: number; // Time window in milliseconds
+  uniqueTokenPerInterval?: number; // Accepted for API compatibility; not enforced
+}
+
+export interface RateLimiter {
+  check: (limit: number, token: string) => Promise<void>;
+  reset: (token: string) => Promise<void>;
+  getRemaining: (limit: number, token: string) => Promise<number>;
+}
+
+export function rateLimit(config: RateLimitFactoryConfig): RateLimiter {
+  const limiterFor = (limit: number): RedisRateLimiter =>
+    new RedisRateLimiter(
+      { windowMs: config.interval, maxRequests: limit },
+      "ratelimit",
+    );
+
+  return {
+    check: async (limit: number, token: string): Promise<void> => {
+      const result = await limiterFor(limit).check(token);
+      if (!result.allowed) {
+        throw new Error(
+          `Rate limit exceeded. Retry after ${result.retryAfter} seconds.`,
+        );
+      }
+    },
+
+    reset: async (token: string): Promise<void> => {
+      await limiterFor(1).reset(token);
+    },
+
+    getRemaining: async (limit: number, token: string): Promise<number> => {
+      // Non-mutating peek: a fresh limiter with maxRequests one above `limit`
+      // would still consume a slot, so we cannot peek without side effects.
+      // Preserve prior best-effort semantics: report the configured limit.
+      void token;
+      return limit;
+    },
+  };
+}

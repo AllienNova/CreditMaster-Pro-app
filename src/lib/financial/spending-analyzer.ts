@@ -13,11 +13,10 @@
  * - AI-generated insights and recommendations
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
-import { AIMLService } from "@/lib/aiml-service";
-import { ModelRouter } from "@/lib/model-router";
+const supabase = getServiceRoleClient();
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import type {
   SpendingPatternAnalysis,
   DetectedPattern,
@@ -53,10 +52,6 @@ import type {
 // CONFIGURATION
 // ============================================================================
 
-const AI_MODEL =
-  process.env.AIML_DEFAULT_CHAT_MODEL || "anthropic/claude-4.5-sonnet";
-const AI_REASONING_MODEL =
-  process.env.AIML_REASONING_MODEL || "deepseek/deepseek-r1";
 const AI_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 // Anomaly detection thresholds
@@ -93,6 +88,24 @@ interface Transaction {
   created_at: Date;
 }
 
+const UNCATEGORIZED = "Uncategorized";
+
+/**
+ * Narrow a stored `transactions.category` (TEXT[], Plaid's hierarchy, most
+ * general first) to the single string this analyzer works in. Tolerates the
+ * legacy scalar shape and never returns an empty key.
+ */
+function normalizeCategory(raw: unknown): string {
+  if (Array.isArray(raw)) {
+    const first = raw.find(
+      (c): c is string => typeof c === "string" && c.trim().length > 0,
+    );
+    return first ?? UNCATEGORIZED;
+  }
+  if (typeof raw === "string" && raw.trim().length > 0) return raw;
+  return UNCATEGORIZED;
+}
+
 interface CategoryStats {
   category: string;
   mean: number;
@@ -110,25 +123,8 @@ interface CategoryStats {
 // ============================================================================
 
 export class SpendingAnalyzer {
-  private aiService: AIMLService | null = null;
-  private modelRouter: ModelRouter;
   private aiCache: Map<string, { data: unknown; timestamp: number }> =
     new Map();
-
-  constructor() {
-    this.modelRouter = new ModelRouter();
-    this.initializeAIService();
-  }
-
-  private async initializeAIService(): Promise<void> {
-    try {
-      this.aiService = new AIMLService();
-    } catch (_error) {
-      // SpendingAnalyzer warning: AI service initialization failed, will use rule-based analysis
-      void _error;
-      this.aiService = null;
-    }
-  }
 
   // ============================================================================
   // PUBLIC METHODS
@@ -430,7 +426,7 @@ export class SpendingAnalyzer {
       summary,
       generatedAt: new Date(),
       processingTimeMs,
-      aiModelUsed: this.aiService ? AI_MODEL : undefined,
+      aiModelUsed: getModelRouter().getModel(TaskType.FINANCIAL_ADVICE),
     };
   }
 
@@ -612,6 +608,14 @@ export class SpendingAnalyzer {
       ...t,
       date: new Date(t.date),
       created_at: new Date(t.created_at),
+      // `transactions.category` is TEXT[] — Plaid returns a category hierarchy
+      // (most general first) and the writer stores it verbatim. Everything
+      // downstream of this method treats `category` as a single string, so the
+      // array is narrowed to its leading element here, at the one read
+      // boundary, rather than being coerced ad hoc at each use site. An empty
+      // array becomes "Uncategorized" rather than `undefined`, which would
+      // silently bucket spend under a blank key.
+      category: normalizeCategory(t.category),
     }));
   }
 
@@ -1004,15 +1008,13 @@ export class SpendingAnalyzer {
       });
     }
 
-    // Try AI-powered insights if available
-    if (this.aiService) {
-      try {
-        const aiInsights = await this.getAIInsights(userId, context);
-        insights.push(...aiInsights);
-      } catch (_error) {
-        // SpendingAnalyzer warning: AI insights generation failed
-        void _error;
-      }
+    // Try AI-powered insights
+    try {
+      const aiInsights = await this.getAIInsights(userId, context);
+      insights.push(...aiInsights);
+    } catch (_error) {
+      // SpendingAnalyzer warning: AI insights generation failed
+      void _error;
     }
 
     return insights;

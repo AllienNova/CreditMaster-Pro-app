@@ -14,6 +14,9 @@
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/financial/savings-automation-service");
 
 import { GET, PATCH, DELETE } from "../route";
@@ -65,7 +68,7 @@ describe("GET /api/financial/savings/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/goals/goal-1",
     );
-    const response = await GET(request, createParams("goal-1"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -80,27 +83,29 @@ describe("GET /api/financial/savings/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/goals/nonexistent",
     );
-    const response = await GET(request, createParams("nonexistent"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(404);
     expect(data.error).toBe("Goal not found");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/savings/goals/goal-1",
+      );
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/savings/goals/goal-1",
-    );
-    const response = await GET(request, createParams("goal-1"));
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 500 on service error", async () => {
@@ -111,7 +116,7 @@ describe("GET /api/financial/savings/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/goals/goal-1",
     );
-    const response = await GET(request, createParams("goal-1"));
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -139,7 +144,7 @@ describe("PATCH /api/financial/savings/goals/[id]", () => {
         body: { name: "Updated Fund", targetAmount: 15000 },
       },
     );
-    const response = await PATCH(request, createParams("goal-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -160,7 +165,7 @@ describe("PATCH /api/financial/savings/goals/[id]", () => {
         body: { action: "contribute", amount: 500, source: "manual" },
       },
     );
-    const response = await PATCH(request, createParams("goal-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -173,21 +178,23 @@ describe("PATCH /api/financial/savings/goals/[id]", () => {
     );
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/savings/goals/goal-1",
+        { method: "PATCH", body: { name: "Test" } },
+      );
+      const response = await PATCH(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/savings/goals/goal-1",
-      { method: "PATCH", body: { name: "Test" } },
-    );
-    const response = await PATCH(request, createParams("goal-1"));
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 500 on service error", async () => {
@@ -199,7 +206,7 @@ describe("PATCH /api/financial/savings/goals/[id]", () => {
       "http://localhost:3000/api/financial/savings/goals/goal-1",
       { method: "PATCH", body: { name: "Test" } },
     );
-    const response = await PATCH(request, createParams("goal-1"));
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -221,7 +228,7 @@ describe("DELETE /api/financial/savings/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/goals/goal-1",
     );
-    const response = await DELETE(request, createParams("goal-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -235,27 +242,29 @@ describe("DELETE /api/financial/savings/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/goals/goal-1",
     );
-    const response = await DELETE(request, createParams("goal-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
     expect(data.error).toBe("Failed to delete goal");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/savings/goals/goal-1",
+      );
+      const response = await DELETE(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/savings/goals/goal-1",
-    );
-    const response = await DELETE(request, createParams("goal-1"));
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 500 on service error", async () => {
@@ -266,7 +275,7 @@ describe("DELETE /api/financial/savings/goals/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/savings/goals/goal-1",
     );
-    const response = await DELETE(request, createParams("goal-1"));
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);

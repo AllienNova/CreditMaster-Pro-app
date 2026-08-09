@@ -1,0 +1,90 @@
+meta:
+  document_role: governance
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0-rc1"
+  purpose: "Machine-readable coverage matrix. Human-readable companion at COVERAGE-MATRIX.md."
+
+legend:
+  full: "Numeric and behaviour specified in canonical."
+  partial: "Behaviour specified; tenant/app must parameterise one or more fields."
+  ref: "Consumer must wire to an external source (broker, venue, calendar vendor)."
+  n_a: "Not applicable to this class or mode."
+
+domain_by_instrument:
+  sessions_and_execution_windows:    {equities: full,    etfs: full,    options: partial, futures: partial, crypto: partial}
+  tick_size_multiplier_metadata:     {equities: ref,     etfs: ref,     options: ref,     futures: ref,     crypto: ref}
+  halt_luld:                         {equities: full,    etfs: full,    options: partial, futures: partial, crypto: n_a}
+  auction_state:                     {equities: full,    etfs: full,    options: partial, futures: partial, crypto: n_a}
+  short_sale_locate_ssr:             {equities: full,    etfs: full,    options: n_a,     futures: n_a,     crypto: partial}
+  mwcb:                              {equities: full,    etfs: full,    options: partial, futures: partial, crypto: n_a}
+  corporate_actions:                 {equities: partial, etfs: partial, options: partial, futures: n_a,     crypto: n_a}
+  expiry_assignment_pin_risk:        {equities: n_a,     etfs: n_a,     options: full,    futures: n_a,     crypto: n_a}
+  roll_first_notice_delivery:        {equities: n_a,     etfs: n_a,     options: n_a,     futures: full,    crypto: n_a}
+  venue_health_outage:               {equities: partial, etfs: partial, options: partial, futures: partial, crypto: full}
+  stablecoin_depeg:                  {equities: n_a,     etfs: n_a,     options: n_a,     futures: n_a,     crypto: full}
+  weekend_overnight_controls:        {equities: full,    etfs: full,    options: full,    futures: full,    crypto: full}
+
+domain_by_mode:
+  per_trade_risk_cap:                {autonomous_normal: full,             autonomous_restricted: full,             supervised_crisis: full,       manual_only: zero}
+  portfolio_heat:                    {autonomous_normal: full,             autonomous_restricted: full,             supervised_crisis: full,       manual_only: n_a}
+  drawdown_kill_switch:              {autonomous_normal: full,             autonomous_restricted: full,             supervised_crisis: full,       manual_only: full}
+  stop_management:                   {autonomous_normal: full,             autonomous_restricted: full,             supervised_crisis: partial,    manual_only: n_a}
+  crisis_playbook_invocation:        {autonomous_normal: partial,          autonomous_restricted: partial,          supervised_crisis: full,       manual_only: n_a}
+  new_entries:                       {autonomous_normal: allowed,          autonomous_restricted: restricted,       supervised_crisis: operator_only, manual_only: forbidden}
+  flatten_authority:                 {autonomous_normal: automated_crisis, autonomous_restricted: automated_crisis, supervised_crisis: operator,   manual_only: operator}
+  learning_driven_param_change:      {autonomous_normal: forbidden,        autonomous_restricted: forbidden,        supervised_crisis: forbidden,  manual_only: forbidden}
+
+operational:
+  data_freshness:                      {status: full,    source: "policy.data-quality.yaml"}
+  clock_skew:                          {status: full,    source: "policy.execution-errors.yaml#clock_skew"}
+  outlier_price:                       {status: full,    source: "policy.data-quality.yaml#bad_print"}
+  cross_venue_disagreement:            {status: full,    source: "policy.data-quality.yaml#cross_venue"}
+  duplicate_order_detection:           {status: full,    source: "policy.order-lifecycle.yaml#idempotency"}
+  cancel_replace_race:                 {status: full,    source: "policy.order-lifecycle.yaml#cancel_replace"}
+  partial_fill:                        {status: full,    source: "policy.order-lifecycle.yaml#partial_fill"}
+  idempotency:                         {status: full,    source: "policy.order-lifecycle.yaml#idempotency"}
+  pdt:                                 {status: full,    source: "policy.compliance.yaml#pdt"}
+  sec_15c3_5:                          {status: full,    source: "policy.compliance.yaml#pre_trade_checks"}
+  reg_sho:                             {status: full,    source: "policy.compliance.yaml#reg_sho"}
+  mwcb:                                {status: full,    source: "policy.compliance.yaml#mwcb"}
+  luld:                                {status: full,    source: "policy.compliance.yaml#luld"}
+  best_execution:                      {status: partial, source: "policy.execution-quality.yaml"}
+  tax_lot_wash_sale:                   {status: partial, source: "consumer-side override"}
+  promotion_gates:                     {status: full,    source: "policy.promotion.yaml"}
+  canary_baseline_regression:          {status: full,    source: "policy.promotion.yaml"}
+  override_mechanism:                  {status: full,    source: "governance/OVERRIDE-SCHEMA.md"}
+  audit_entry:                         {status: full,    source: "canonical/schemas/audit-entry.v1.schema.json"}
+  canonical_hash_binding:              {status: full,    source: "canonical/MANIFEST.json"}
+  kill_switch:                         {status: full,    source: "policy.dr.yaml#kill_switch"}
+  rto_rpo:                             {status: full,    source: "policy.dr.yaml#rto_minutes"}
+  chaos_drills:                        {status: full,    source: "policy.dr.yaml#chaos_testing"}
+  postmortem_sla:                      {status: full,    source: "policy.dr.yaml#postmortem"}
+  incident_taxonomy:                   {status: full,    source: "policy.incidents.yaml#codes"}
+  escalation_roster:                   {status: full,    source: "policy.incidents.yaml#escalation.rosters"}
+  alert_sinks:                         {status: full,    source: "policy.incidents.yaml#sinks"}
+  confluence_pipeline:                 {status: full,    source: "workflow.confluence.yaml"}
+  tenant_registry:                     {status: full,    source: "policy.tenancy.yaml"}
+  tenant_override_validation:          {status: full,    source: "governance/OVERRIDE-SCHEMA.md"}
+  per_tenant_data_retention:           {status: full,    source: "policy.tenancy.yaml#data_retention"}
+  calendar_blackouts:                  {status: full,    source: "policy.calendar.yaml"}
+
+consumer_responsibilities:
+  - "Venue and broker adapters (FIX, REST, WebSocket)."
+  - "Market-data feed integration matching policy.data-quality.yaml#staleness."
+  - "Secrets management (HSM/KMS) per policy.dr.yaml#kill_switch.authority.key_storage."
+  - "Local jurisdiction compliance outside policy.compliance.yaml#meta.jurisdiction_scope."
+  - "Disaster recovery infrastructure (hot-standby, geographically distinct regions)."
+  - "Strategy engines under implementations/<your-strategy>/."
+  - "Observability pipeline (PagerDuty, Slack, SIEM routing)."
+
+non_us_jurisdictions_open:
+  target_release: "2.6.0"
+  scope:
+    - EU_MiFID_II
+    - UK_FCA
+    - AU_ASIC
+    - HK_SFC
+    - SG_MAS
+    - CA_IIROC
+    - JP_FSA

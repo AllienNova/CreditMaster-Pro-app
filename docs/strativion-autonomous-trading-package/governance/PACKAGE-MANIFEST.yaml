@@ -1,0 +1,165 @@
+meta:
+  package_name: "strativion-autonomous-trading-package"
+  package_version: "2.5.0-rc1"
+  maturity: "pre_production"
+  purpose: "Reusable trading law, policy, workflow, schema, and context package for autonomous trading applications."
+  unit_convention: "decimal_fraction"
+  timezone_convention: "IANA_America_New_York"
+  upstream_review: "strativion_fix_pack/PRINCIPAL-REVIEW.md"
+  upstream_review_closed: ["P0-1","P0-2","P0-3","P0-4","P0-5","P0-6","P0-7","P0-8","P0-9","P0-10","P1-1","P1-2","P1-3","P1-4","P1-5","P1-6","P1-7","P1-8","P1-9","P1-10","P1-11","P1-12"]
+
+classes:
+  canonical:
+    description: "Normative machine-facing artifacts. Every file is schema-bound and owned by an entry in CANONICAL-FIELD-INDEX.md."
+    paths:
+      - "canonical/policy"
+      - "canonical/laws"
+      - "canonical/workflows"
+      - "canonical/schemas"
+  contexts:
+    description: "Reasoning and prompt context for agents. Strategy-agnostic, numerics-free."
+    paths:
+      - "contexts/agent-contexts"
+  implementations:
+    description: "Strategy-specific engines and reference implementations."
+    paths:
+      - "implementations/python-formulas"
+      - "implementations/pctt"
+  reference:
+    description: "Historical, manuscript, example, knowledge, guide, playbook, and market-specific material. Non-binding."
+    paths:
+      - "reference/examples"
+      - "reference/guides"
+      - "reference/knowledge"
+      - "reference/manuscript"
+      - "reference/market-playbooks"
+      - "reference/playbooks"
+      - "reference/seasonality"
+  governance:
+    description: "Consumer contract, field index, versioning, override schema, validation rules."
+    paths:
+      - "governance"
+  tooling:
+    description: "Editor, assistant, and validator tooling."
+    paths:
+      - "tooling"
+
+precedence:
+  - "canonical/policy/policy.runtime.yaml"
+  - "canonical/policy/policy.modes.yaml"
+  - "canonical/policy/policy.invariants.yaml"
+  - "canonical/laws/law.automation-map.yaml"
+  - "canonical/policy/*"
+  - "canonical/workflows/*"
+  - "contexts/*"
+  - "reference/*"
+  - "implementations/*"
+
+binding_files:
+  - "canonical/policy/policy.runtime.yaml"
+  - "canonical/policy/policy.modes.yaml"
+  - "canonical/policy/policy.invariants.yaml"
+  - "canonical/laws/law.automation-map.yaml"
+
+supporting_canonical_files:
+  - "canonical/policy/policy.regimes.yaml"
+  - "canonical/policy/policy.sizing.yaml"
+  - "canonical/policy/policy.execution.yaml"
+  - "canonical/policy/policy.execution-quality.yaml"
+  - "canonical/policy/policy.execution-errors.yaml"
+  - "canonical/policy/policy.data-quality.yaml"
+  - "canonical/policy/policy.order-lifecycle.yaml"
+  - "canonical/policy/policy.compliance.yaml"
+  - "canonical/policy/policy.instruments.yaml"
+  - "canonical/policy/policy.portfolio.yaml"
+  - "canonical/policy/policy.correlations.yaml"
+  - "canonical/policy/policy.calendar.yaml"
+  - "canonical/policy/policy.promotion.yaml"
+  - "canonical/policy/policy.incidents.yaml"
+  - "canonical/policy/policy.dr.yaml"
+  - "canonical/policy/policy.tenancy.yaml"
+  - "canonical/policy/policy.governance.yaml"
+  - "canonical/laws/law.catalog.yaml"
+  - "canonical/workflows/workflow.confluence.yaml"
+  - "canonical/workflows/workflow.order-lifecycle.yaml"
+  - "canonical/workflows/workflow.crisis.yaml"
+  - "canonical/workflows/workflow.lifecycle.yaml"
+  - "canonical/workflows/workflow.incidents.yaml"
+  - "canonical/workflows/workflow.correlation.yaml"
+  - "canonical/workflows/workflow.checklists.yaml"
+
+canonical_schemas:
+  - "canonical/schemas/policy.runtime.v2.schema.json"
+  - "canonical/schemas/policy.sizing.v1.schema.json"
+  - "canonical/schemas/policy.execution.v1.schema.json"
+  - "canonical/schemas/policy.execution-errors.v1.schema.json"
+  - "canonical/schemas/policy.data-quality.v2.schema.json"
+  - "canonical/schemas/policy.order-lifecycle.v1.schema.json"
+  - "canonical/schemas/policy.compliance.v1.schema.json"
+  - "canonical/schemas/policy.calendar.v1.schema.json"
+  - "canonical/schemas/policy.promotion.v1.schema.json"
+  - "canonical/schemas/policy.incidents.v1.schema.json"
+  - "canonical/schemas/policy.dr.v1.schema.json"
+  - "canonical/schemas/policy.tenancy.v1.schema.json"
+  - "canonical/schemas/tenant-override.v1.schema.json"
+  - "canonical/schemas/audit-entry.v1.schema.json"
+  - "canonical/schemas/law.automation-map.schema.json"
+
+non_binding_defaults:
+  - "contexts/*"
+  - "reference/*"
+  - "implementations/*"
+
+governance_index:
+  - "governance/CONSUMER-CONTRACT.md"
+  - "governance/CANONICAL-FIELD-INDEX.md"
+  - "governance/COVERAGE-MATRIX.md"
+  - "governance/MIGRATION-MAP.md"
+  - "governance/OVERRIDE-SCHEMA.md"
+  - "governance/UNITS.md"
+  - "governance/VALIDATION-RULES.md"
+  - "governance/VERSIONING.md"
+
+tooling_index:
+  - "tooling/validate/validate_package.py"
+  - "tooling/validate/README.md"
+  - "tooling/claude/settings.json"
+
+changes_in_2_5_0_rc1:
+  absorbed_from_fix_pack:
+    - "canonical/policy/policy.compliance.yaml (10 controls C-01..C-11)"
+    - "canonical/policy/policy.data-quality.yaml (9 controls D-01..D-09)"
+    - "canonical/policy/policy.order-lifecycle.yaml (4 controls E-06..E-09)"
+    - "canonical/policy/policy.execution-errors.yaml (3 controls E-10..E-12)"
+    - "canonical/policy/policy.incidents.yaml (6 controls I-01..I-06, 57 machine codes)"
+    - "canonical/policy/policy.dr.yaml (6 controls DR-01..DR-06, LEVEL_1..LEVEL_4 kill switch)"
+    - "canonical/policy/policy.tenancy.yaml (5 controls T-01..T-05)"
+    - "canonical/policy/policy.promotion.yaml (5 controls M-02..M-06)"
+    - "canonical/policy/policy.calendar.yaml (9 controls K-01..K-09)"
+    - "canonical/workflows/workflow.confluence.yaml"
+    - "canonical/workflows/workflow.order-lifecycle.yaml"
+    - "canonical/workflows/workflow.crisis.yaml (flatten-prohibition for state_untrusted)"
+    - "canonical/schemas/*.v1.schema.json + v2 (14 JSON Schemas)"
+    - "governance/CANONICAL-FIELD-INDEX.md (R-/S-/E-/C-/D-/K-/M-/I-/DR-/T- control IDs)"
+    - "governance/VERSIONING.md (BRK-* breaking-change taxonomy + MANIFEST.json binding)"
+    - "governance/OVERRIDE-SCHEMA.md (5-layer precedence, tightening-only, dual-control)"
+  added_new:
+    - "canonical/policy/policy.correlations.yaml (R-14, R-15)"
+    - "canonical/policy/policy.invariants.yaml (15 invariants I-01..I-15)"
+  restructured:
+    - "canonical/policy/policy.runtime.yaml (new risk.cluster, risk.kill_switch, risk.margin structure; owns M-01 mode.active)"
+    - "canonical/policy/policy.sizing.yaml (S-01..S-07)"
+    - "canonical/policy/policy.execution.yaml (E-01..E-05 aligned)"
+    - "canonical/policy/policy.portfolio.yaml (heat moved to runtime; concentration + regime_budgets stay)"
+    - "canonical/policy/policy.modes.yaml (mode capabilities + transitions; mode.active owned by runtime)"
+    - "canonical/policy/policy.regimes.yaml (references runtime for per-trade and heat ceilings)"
+  removed:
+    - "canonical/policy/policy.risk.yaml (subsumed by policy.runtime.yaml)"
+    - "canonical/schemas/_shared.schema.json (fix-pack schemas are self-contained)"
+    - "canonical/schemas/policy.runtime.schema.json (superseded by v2)"
+    - "canonical/schemas/policy.modes.schema.json"
+    - "canonical/schemas/policy.risk.schema.json"
+    - "canonical/schemas/policy.incidents.schema.json (superseded by v1)"
+    - "canonical/schemas/policy.compliance.schema.json (superseded by v1)"
+    - "canonical/schemas/policy.order-lifecycle.schema.json (superseded by v1)"
+    - "canonical/schemas/policy.invariants.schema.json"

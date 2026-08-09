@@ -2,12 +2,16 @@
  * Trading Risk API Route
  *
  * Handles portfolio risk monitoring and controls:
- * - GET: Retrieve risk metrics, exposure, heat
- * - POST: Update risk settings, trigger kill switch
+ * - GET: Retrieve risk metrics, settings, or kill-switch state
+ * - POST: Update risk settings, equity, or toggle kill switch
+ *
+ * Persistence: user_risk_settings table (Supabase). Each user has one row
+ * (upserted on first write). Defaults are applied when no row exists yet.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
+import { supabaseAdmin } from "@/lib/supabase/server";
 import { getPositionManager } from "@/lib/trading/positions";
 
 // ============================================================================
@@ -68,8 +72,25 @@ interface RiskSettings {
   enableKillSwitch: boolean;
 }
 
-// In-memory risk state
-const riskSettings: RiskSettings = {
+interface KillSwitchState {
+  active: boolean;
+  reason?: string;
+  activatedAt?: Date;
+  activatedBy?: string;
+}
+
+interface UserRiskRow {
+  settings: RiskSettings;
+  kill_switch: KillSwitchState;
+  equity: number;
+  peak_equity: number;
+}
+
+// ============================================================================
+// DEFAULTS
+// ============================================================================
+
+const DEFAULT_RISK_SETTINGS: RiskSettings = {
   maxHeat: 0.06,
   maxPositionSize: 0.2,
   maxGrossExposure: 2.0,
@@ -81,192 +102,181 @@ const riskSettings: RiskSettings = {
   enableKillSwitch: true,
 };
 
-let killSwitchState = {
-  active: false,
-  reason: undefined as string | undefined,
-  activatedAt: undefined as Date | undefined,
-  activatedBy: undefined as string | undefined,
-};
+const DEFAULT_KILL_SWITCH: KillSwitchState = { active: false };
+const DEFAULT_EQUITY = 100000;
 
-let accountEquity = 100000;
-let peakEquity = 100000;
+// ============================================================================
+// DB HELPERS
+// ============================================================================
+
+async function loadUserRisk(userId: string): Promise<UserRiskRow> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabaseAdmin as any)
+    .from("user_risk_settings")
+    .select("settings, kill_switch, equity, peak_equity")
+    .eq("user_id", userId)
+    .single();
+
+  if (!data) {
+    return {
+      settings: DEFAULT_RISK_SETTINGS,
+      kill_switch: DEFAULT_KILL_SWITCH,
+      equity: DEFAULT_EQUITY,
+      peak_equity: DEFAULT_EQUITY,
+    };
+  }
+
+  return {
+    settings: { ...DEFAULT_RISK_SETTINGS, ...(data.settings as RiskSettings) },
+    kill_switch: (data.kill_switch as KillSwitchState) ?? DEFAULT_KILL_SWITCH,
+    equity: Number(data.equity) || DEFAULT_EQUITY,
+    peak_equity: Number(data.peak_equity) || DEFAULT_EQUITY,
+  };
+}
+
+async function saveUserRisk(userId: string, row: Partial<UserRiskRow>): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabaseAdmin as any)
+    .from("user_risk_settings")
+    .upsert(
+      { user_id: userId, ...row, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" },
+    );
+}
 
 // ============================================================================
 // GET - Retrieve Risk Metrics
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const action = searchParams.get("action");
 
+    const { settings: riskSettings, kill_switch: killSwitchState, equity: accountEquity, peak_equity: peakEquity } =
+      await loadUserRisk(user.id);
+
+    // Get kill switch status only
+    if (action === "killswitch") {
+      return NextResponse.json({ success: true, data: killSwitchState });
+    }
+
+    // Get settings only
+    if (action === "settings") {
+      return NextResponse.json({ success: true, data: riskSettings });
+    }
+
+    // Calculate risk metrics (default action or action === "metrics")
     const positionManager = getPositionManager();
     await positionManager.loadPositions(user.id);
 
     const summary = positionManager.getSummary();
 
-    // Calculate risk metrics
-    if (action === "metrics" || !action) {
-      const currentDrawdown =
-        peakEquity > 0 ? (peakEquity - accountEquity) / peakEquity : 0;
+    const currentDrawdown =
+      peakEquity > 0 ? (peakEquity - accountEquity) / peakEquity : 0;
 
-      // Calculate portfolio heat (sum of position risks)
-      const openPositions = positionManager.getOpenPositions();
-      let portfolioHeat = 0;
-
-      for (const position of openPositions) {
-        if (position.riskPercent) {
-          portfolioHeat += position.riskPercent;
-        }
+    const openPositions = positionManager.getOpenPositions();
+    let portfolioHeat = 0;
+    for (const position of openPositions) {
+      if (position.riskPercent) {
+        portfolioHeat += position.riskPercent;
       }
-
-      // Determine risk level
-      let riskLevel: RiskMetrics["riskLevel"] = "low";
-      let riskScore = 0;
-
-      const heatRatio = portfolioHeat / riskSettings.maxHeat;
-      const drawdownRatio = currentDrawdown / riskSettings.maxDrawdown;
-      const exposureRatio =
-        summary.grossExposure / (accountEquity * riskSettings.maxGrossExposure);
-
-      riskScore =
-        (heatRatio * 0.4 + drawdownRatio * 0.4 + exposureRatio * 0.2) * 100;
-
-      if (riskScore > 80) riskLevel = "critical";
-      else if (riskScore > 60) riskLevel = "high";
-      else if (riskScore > 40) riskLevel = "medium";
-
-      // Determine if trading is allowed
-      const blockReasons: string[] = [];
-
-      if (killSwitchState.active) {
-        blockReasons.push(`Kill switch active: ${killSwitchState.reason}`);
-      }
-      if (portfolioHeat >= riskSettings.maxHeat) {
-        blockReasons.push(
-          `Portfolio heat (${(portfolioHeat * 100).toFixed(1)}%) exceeds limit`,
-        );
-      }
-      if (currentDrawdown >= riskSettings.maxDrawdown) {
-        blockReasons.push(
-          `Drawdown (${(currentDrawdown * 100).toFixed(1)}%) exceeds limit`,
-        );
-      }
-      if (
-        Math.abs(summary.dayPL) / accountEquity >=
-        riskSettings.maxDailyLoss
-      ) {
-        blockReasons.push(`Daily loss limit reached`);
-      }
-
-      // Calculate drawdown scale factor
-      let drawdownScaleFactor = 1.0;
-      if (currentDrawdown > 0.05) {
-        drawdownScaleFactor = 0.5; // Half size at 5% drawdown
-      }
-      if (currentDrawdown > 0.08) {
-        drawdownScaleFactor = 0.25; // Quarter size at 8% drawdown
-      }
-
-      const metrics: RiskMetrics = {
-        portfolioHeat,
-        maxHeat: riskSettings.maxHeat,
-        heatUtilization: portfolioHeat / riskSettings.maxHeat,
-
-        grossExposure: summary.grossExposure,
-        netExposure: summary.netExposure,
-        longExposure:
-          summary.totalPositions > 0
-            ? summary.grossExposure *
-              (summary.longPositions / summary.totalPositions)
-            : 0,
-        shortExposure:
-          summary.totalPositions > 0
-            ? summary.grossExposure *
-              (summary.shortPositions / summary.totalPositions)
-            : 0,
-
-        largestPosition: summary.largestPosition,
-
-        currentDrawdown,
-        maxDrawdown: riskSettings.maxDrawdown,
-        drawdownScaleFactor,
-
-        dailyPL: summary.dayPL,
-        dailyPLPercent: accountEquity > 0 ? summary.dayPL / accountEquity : 0,
-        weeklyPL: summary.weekPL,
-        monthlyPL: summary.monthPL,
-
-        openPositions: summary.totalPositions,
-        correlatedGroups: [], // Would need correlation calculation
-
-        riskScore,
-        riskLevel,
-
-        canTrade: blockReasons.length === 0,
-        blockReasons,
-
-        killSwitch: killSwitchState,
-      };
-
-      return NextResponse.json({ success: true, data: metrics });
     }
 
-    // Get settings
-    if (action === "settings") {
-      return NextResponse.json({
-        success: true,
-        data: riskSettings,
-      });
+    let riskLevel: RiskMetrics["riskLevel"] = "low";
+    const heatRatio = portfolioHeat / riskSettings.maxHeat;
+    const drawdownRatio = currentDrawdown / riskSettings.maxDrawdown;
+    const exposureRatio =
+      summary.grossExposure / (accountEquity * riskSettings.maxGrossExposure);
+
+    const riskScore =
+      (heatRatio * 0.4 + drawdownRatio * 0.4 + exposureRatio * 0.2) * 100;
+
+    if (riskScore > 80) riskLevel = "critical";
+    else if (riskScore > 60) riskLevel = "high";
+    else if (riskScore > 40) riskLevel = "medium";
+
+    const blockReasons: string[] = [];
+    if (killSwitchState.active) {
+      blockReasons.push(`Kill switch active: ${killSwitchState.reason}`);
+    }
+    if (portfolioHeat >= riskSettings.maxHeat) {
+      blockReasons.push(
+        `Portfolio heat (${(portfolioHeat * 100).toFixed(1)}%) exceeds limit`,
+      );
+    }
+    if (currentDrawdown >= riskSettings.maxDrawdown) {
+      blockReasons.push(
+        `Drawdown (${(currentDrawdown * 100).toFixed(1)}%) exceeds limit`,
+      );
+    }
+    if (Math.abs(summary.dayPL) / accountEquity >= riskSettings.maxDailyLoss) {
+      blockReasons.push(`Daily loss limit reached`);
     }
 
-    // Get kill switch status
-    if (action === "killswitch") {
-      return NextResponse.json({
-        success: true,
-        data: killSwitchState,
-      });
-    }
+    let drawdownScaleFactor = 1.0;
+    if (currentDrawdown > 0.05) drawdownScaleFactor = 0.5;
+    if (currentDrawdown > 0.08) drawdownScaleFactor = 0.25;
 
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    const metrics: RiskMetrics = {
+      portfolioHeat,
+      maxHeat: riskSettings.maxHeat,
+      heatUtilization: portfolioHeat / riskSettings.maxHeat,
+
+      grossExposure: summary.grossExposure,
+      netExposure: summary.netExposure,
+      longExposure:
+        summary.totalPositions > 0
+          ? summary.grossExposure * (summary.longPositions / summary.totalPositions)
+          : 0,
+      shortExposure:
+        summary.totalPositions > 0
+          ? summary.grossExposure * (summary.shortPositions / summary.totalPositions)
+          : 0,
+
+      largestPosition: summary.largestPosition,
+
+      currentDrawdown,
+      maxDrawdown: riskSettings.maxDrawdown,
+      drawdownScaleFactor,
+
+      dailyPL: summary.dayPL,
+      dailyPLPercent: accountEquity > 0 ? summary.dayPL / accountEquity : 0,
+      weeklyPL: summary.weekPL,
+      monthlyPL: summary.monthPL,
+
+      openPositions: summary.totalPositions,
+      correlatedGroups: [],
+
+      riskScore,
+      riskLevel,
+
+      canTrade: blockReasons.length === 0,
+      blockReasons,
+
+      killSwitch: killSwitchState,
+    };
+
+    return NextResponse.json({ success: true, data: metrics });
   } catch (_error) {
-    // RiskAPI error: Risk GET error
     void _error;
     return NextResponse.json(
       { error: "Failed to retrieve risk metrics" },
       { status: 500 },
     );
   }
-}
+});
 
 // ============================================================================
 // POST - Update Risk Settings
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { action } = body;
+
+    const current = await loadUserRisk(user.id);
 
     switch (action) {
       case "updateSettings": {
@@ -279,72 +289,62 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Validate and update settings
+        const updated: RiskSettings = { ...current.settings };
+
         if (settings.maxHeat !== undefined) {
-          riskSettings.maxHeat = Math.max(
-            0.01,
-            Math.min(0.2, settings.maxHeat),
-          );
+          updated.maxHeat = Math.max(0.01, Math.min(0.2, settings.maxHeat));
         }
         if (settings.maxPositionSize !== undefined) {
-          riskSettings.maxPositionSize = Math.max(
-            0.01,
-            Math.min(0.5, settings.maxPositionSize),
-          );
+          updated.maxPositionSize = Math.max(0.01, Math.min(0.5, settings.maxPositionSize));
         }
         if (settings.maxGrossExposure !== undefined) {
-          riskSettings.maxGrossExposure = Math.max(
-            0.5,
-            Math.min(4.0, settings.maxGrossExposure),
-          );
+          updated.maxGrossExposure = Math.max(0.5, Math.min(4.0, settings.maxGrossExposure));
         }
         if (settings.maxDailyLoss !== undefined) {
-          riskSettings.maxDailyLoss = Math.max(
-            0.01,
-            Math.min(0.1, settings.maxDailyLoss),
-          );
+          updated.maxDailyLoss = Math.max(0.01, Math.min(0.1, settings.maxDailyLoss));
         }
         if (settings.maxDrawdown !== undefined) {
-          riskSettings.maxDrawdown = Math.max(
-            0.05,
-            Math.min(0.25, settings.maxDrawdown),
-          );
+          updated.maxDrawdown = Math.max(0.05, Math.min(0.25, settings.maxDrawdown));
+        }
+        if (settings.maxNetExposure !== undefined) {
+          updated.maxNetExposure = settings.maxNetExposure;
+        }
+        if (settings.correlationThreshold !== undefined) {
+          updated.correlationThreshold = settings.correlationThreshold;
+        }
+        if (settings.maxCorrelatedExposure !== undefined) {
+          updated.maxCorrelatedExposure = settings.maxCorrelatedExposure;
+        }
+        if (settings.enableKillSwitch !== undefined) {
+          updated.enableKillSwitch = Boolean(settings.enableKillSwitch);
         }
 
-        return NextResponse.json({
-          success: true,
-          data: riskSettings,
-        });
+        await saveUserRisk(user.id, { settings: updated });
+
+        return NextResponse.json({ success: true, data: updated });
       }
 
       case "activateKillSwitch": {
         const { reason } = body;
 
-        killSwitchState = {
+        const killSwitch: KillSwitchState = {
           active: true,
           reason: reason || "Manual activation",
           activatedAt: new Date(),
           activatedBy: user.id,
         };
 
-        return NextResponse.json({
-          success: true,
-          data: killSwitchState,
-        });
+        await saveUserRisk(user.id, { kill_switch: killSwitch });
+
+        return NextResponse.json({ success: true, data: killSwitch });
       }
 
       case "deactivateKillSwitch": {
-        killSwitchState = {
-          active: false,
-          reason: undefined,
-          activatedAt: undefined,
-          activatedBy: undefined,
-        };
+        const killSwitch: KillSwitchState = { active: false };
 
-        return NextResponse.json({
-          success: true,
-          data: killSwitchState,
-        });
+        await saveUserRisk(user.id, { kill_switch: killSwitch });
+
+        return NextResponse.json({ success: true, data: killSwitch });
       }
 
       case "updateEquity": {
@@ -357,26 +357,25 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        accountEquity = equity;
-        if (equity > peakEquity) {
-          peakEquity = equity;
-        }
+        const newPeak = equity > current.peak_equity ? equity : current.peak_equity;
+
+        await saveUserRisk(user.id, { equity, peak_equity: newPeak });
 
         const positionManager = getPositionManager();
         positionManager.setAccountEquity(equity);
 
         return NextResponse.json({
           success: true,
-          data: { equity: accountEquity, peakEquity },
+          data: { equity, peakEquity: newPeak },
         });
       }
 
       case "resetPeak": {
-        peakEquity = accountEquity;
+        await saveUserRisk(user.id, { peak_equity: current.equity });
 
         return NextResponse.json({
           success: true,
-          data: { equity: accountEquity, peakEquity },
+          data: { equity: current.equity, peakEquity: current.equity },
         });
       }
 
@@ -384,11 +383,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
   } catch (_error) {
-    // RiskAPI error: Risk POST error
     void _error;
     return NextResponse.json(
       { error: "Failed to update risk settings" },
       { status: 500 },
     );
   }
-}
+});

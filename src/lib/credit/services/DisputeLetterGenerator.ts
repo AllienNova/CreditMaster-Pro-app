@@ -10,7 +10,7 @@
  * Complies with FCRA requirements and best practices.
  */
 
-import { AIMLService } from "@/lib/aiml-service";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 
 // ============================================================================
 // TYPES
@@ -323,9 +323,8 @@ Generate only the letter content in plain text format. Do not include any explan
 
   private async callAI(prompt: string): Promise<string> {
     try {
-      const aiService = new AIMLService();
-      const response = await aiService.chat(
-        "anthropic/claude-4.5-sonnet",
+      const response = await getModelRouter().complete(
+        TaskType.DISPUTE_GENERATION,
         [
           {
             role: "system",

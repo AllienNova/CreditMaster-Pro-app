@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-04-16T13:48:15.621Z",
+  "source_spec": "assets/specs/splash-source.toml",
+  "files": [
+    {
+      "path": "assets/production/splash/splash-1284x2778.png",
+      "dimensions": "1284x2778",
+      "bytes": 261400,
+      "usage": "Expo splash screen portrait 1284x2778 (iPhone 14 Pro Max)"
+    },
+    {
+      "path": "assets/production/splash/splash-1024x1024.png",
+      "dimensions": "1024x1024",
+      "bytes": 357553,
+      "usage": "Expo splash screen square 1024x1024 (contain-mode fallback)"
+    },
+    {
+      "path": "mobile-app/assets/splash.png",
+      "dimensions": "1284x2778",
+      "bytes": 261400,
+      "usage": "mobile-app splash.png (Expo splash screen)"
+    },
+    {
+      "path": "mobile-app/assets/icon.png",
+      "dimensions": "1024x1024",
+      "bytes": 794495,
+      "usage": "mobile-app icon.png (Expo app icon 1024x1024)"
+    },
+    {
+      "path": "mobile-app/assets/adaptive-icon.png",
+      "dimensions": "1024x1024",
+      "bytes": 794495,
+      "usage": "mobile-app adaptive-icon.png (Android adaptive icon foreground)"
+    },
+    {
+      "path": "mobile-app/assets/favicon.png",
+      "dimensions": "48x48",
+      "bytes": 1790,
+      "usage": "mobile-app favicon.png (web favicon 48x48)"
+    },
+    {
+      "path": "mobile-app/assets/notification-icon.png",
+      "dimensions": "96x96",
+      "bytes": 3657,
+      "usage": "mobile-app notification-icon.png (96x96 mono silhouette)"
+    }
+  ]
+}

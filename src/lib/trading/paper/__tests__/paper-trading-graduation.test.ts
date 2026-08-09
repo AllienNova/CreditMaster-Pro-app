@@ -9,6 +9,13 @@
  * - @supabase/supabase-js: Supabase client for paper trading
  * - @/lib/trading/modes/operating-mode-manager: Mode manager factory
  * - @/lib/supabase/server: Required by operating-mode-manager (transitive)
+ *
+ * Mock DATA payloads for paper_accounts/paper_positions/paper_orders use the
+ * real snake_case column names (20260731000030_paper_trading_tables.sql) —
+ * they represent raw DB rows fed through PaperTradingEngine's mapDbToX().
+ * sampleOrder() is the exception: it's passed directly as executeOrder()'s
+ * typed `Order` parameter (a post-mapping domain object, not a DB row), so it
+ * stays camelCase.
  */
 
 // ============================================================================
@@ -105,44 +112,51 @@ function makeEngine(config = {}): PaperTradingEngine {
   });
 }
 
+/** Raw paper_accounts row shape (snake_case). */
 function sampleAccount(overrides = {}) {
   return {
     id: "acct-1",
-    userId: "user-1",
+    user_id: "user-1",
     name: "Paper Trading Account",
-    initialBalance: 100000,
-    cashBalance: 100000,
-    buyingPower: 100000,
-    portfolioValue: 0,
-    totalValue: 100000,
-    dayTradeCount: 0,
-    isPDTRestricted: false,
-    createdAt: "2026-01-01T00:00:00.000Z",
-    updatedAt: "2026-01-01T00:00:00.000Z",
+    initial_balance: 100000,
+    cash_balance: 100000,
+    buying_power: 100000,
+    portfolio_value: 0,
+    total_value: 100000,
+    day_trade_count: 0,
+    is_pdt_restricted: false,
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
     ...overrides,
   };
 }
 
+/** Raw paper_positions row shape (snake_case). */
 function samplePosition(overrides = {}) {
   return {
     id: "pos-1",
-    accountId: "acct-1",
+    account_id: "acct-1",
     symbol: "AAPL",
     quantity: 10,
-    avgEntryPrice: 150,
-    currentPrice: 150,
-    marketValue: 1500,
-    unrealizedPL: 0,
-    unrealizedPLPercent: 0,
-    realizedPL: 0,
-    costBasis: 1500,
+    avg_entry_price: 150,
+    current_price: 150,
+    market_value: 1500,
+    unrealized_pl: 0,
+    unrealized_pl_percent: 0,
+    realized_pl: 0,
+    cost_basis: 1500,
     side: "long",
-    createdAt: "2026-01-01T00:00:00.000Z",
-    updatedAt: "2026-01-01T00:00:00.000Z",
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
     ...overrides,
   };
 }
 
+/**
+ * A domain-level Order (camelCase) — this is passed directly as
+ * executeOrder()'s typed parameter, not read back from a DB row, so it does
+ * NOT use snake_case like the DB-row helpers above.
+ */
 function sampleOrder(overrides = {}) {
   return {
     id: "order-1",
@@ -368,28 +382,30 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
      * Helper to run executeOrder via the private method directly.
      * We access it through prototype to test graduation tracking in isolation
      * without needing to mock the full placeOrder flow.
+     *
+     * executeOrder's DB call sequence (all tables routed by name, not by
+     * call order, so exact sequencing doesn't matter — only which table is
+     * queried):
+     *   1. paper_fills insert (bare, no .single())
+     *   2. computeRealizedPL -> paper_positions getPosition (.single())
+     *   3. updatePosition -> paper_positions getPosition (.single()), then
+     *      insert/update/delete (bare)
+     *   4. updateAccountBalance -> paper_accounts getAccountRowById
+     *      (.single()), then paper_positions getPositions (bare, .gt()),
+     *      then paper_accounts update (bare)
+     *   5. paper_trades insert (bare, no .single())
+     *   6. paper_accounts getUserIdForAccount (.single())
+     *   7. paper_orders update (.single())
      */
     async function callExecuteOrder(
       engineInstance: PaperTradingEngine,
       order: ReturnType<typeof sampleOrder>,
       executionPrice: number,
     ) {
-      // Mock the full chain for executeOrder's internal calls
       const account = sampleAccount();
       const position = samplePosition();
 
-      // Set up Supabase mock responses for each .from() call:
-      // 1. paper_fills insert
-      // 2. paper_positions select (for computeRealizedPL -> getPosition)
-      // 3. paper_positions select/update (for updatePosition -> getPosition + update)
-      // 4. paper_accounts select/update (for updateAccountBalance)
-      // 5. paper_trades insert
-      // 6. paper_accounts select (for getUserIdForAccount)
-      // 7. paper_orders update (final status update)
-
-      let callIndex = 0;
       mockFrom.mockImplementation((table: string) => {
-        callIndex++;
         const c = makeChainable();
 
         if (table === "paper_fills") {
@@ -415,8 +431,11 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
             data: account,
             error: null,
           });
-          // For the non-terminal .select("*").eq(...) pattern without .single()
-          c.data = [position];
+          // For the non-terminal .select("*").eq(...).gt(...) pattern
+          // (getPositions, actually queried against paper_positions — this
+          // branch's non-.single() thenable is for paper_accounts' own bare
+          // .update().eq() call, whose `data` value is never read).
+          c.data = [];
           c.error = null;
           return c;
         }
@@ -429,7 +448,15 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
 
         if (table === "paper_orders") {
           (c.single as jest.Mock).mockResolvedValue({
-            data: { ...order, status: "filled", filledQty: order.quantity, filledAvgPrice: executionPrice },
+            data: {
+              id: order.id,
+              symbol: order.symbol,
+              side: order.side,
+              account_id: order.accountId,
+              status: "filled",
+              filled_qty: order.quantity,
+              filled_avg_price: executionPrice,
+            },
             error: null,
           });
           return c;
@@ -524,7 +551,13 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
 
         if (table === "paper_orders") {
           (c.single as jest.Mock).mockResolvedValue({
-            data: { ...sampleOrder({ side: "buy" }), status: "filled" },
+            data: {
+              id: "order-1",
+              symbol: "AAPL",
+              side: "buy",
+              account_id: "acct-1",
+              status: "filled",
+            },
             error: null,
           });
           return c;
@@ -568,9 +601,10 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
     });
 
     it("should not call graduation tracking when userId cannot be resolved", async () => {
-      // paper_accounts is queried twice in executeOrder:
-      // 1. updateAccountBalance (must succeed)
-      // 2. getUserIdForAccount (should fail to trigger no-graduation path)
+      // paper_accounts is queried three times in executeOrder:
+      // 1. updateAccountBalance -> getAccountRowById (.single(), must succeed)
+      // 2. updateAccountBalance's own bare .update().eq() (no .single())
+      // 3. getUserIdForAccount (.single(), should fail to trigger no-graduation path)
       let paperAccountCallCount = 0;
       mockFrom.mockImplementation((table: string) => {
         const c = makeChainable();
@@ -590,7 +624,7 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
           if (paperAccountCallCount <= 2) {
             // First two calls: updateAccountBalance (select + update) — must succeed
             (c.single as jest.Mock).mockResolvedValue({
-              data: { cashBalance: 100000, buyingPower: 100000 },
+              data: { cash_balance: 100000, buying_power: 100000 },
               error: null,
             });
             c.data = [];
@@ -609,7 +643,13 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
 
         if (table === "paper_orders") {
           (c.single as jest.Mock).mockResolvedValue({
-            data: { ...sampleOrder(), status: "filled" },
+            data: {
+              id: "order-1",
+              symbol: "AAPL",
+              side: "sell",
+              account_id: "acct-1",
+              status: "filled",
+            },
             error: null,
           });
           return c;
@@ -934,7 +974,7 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
     it("should compute positive P&L for selling long position at profit", async () => {
       // Position: 10 shares at avg entry 150, selling 5 at 160
       mockSingle.mockResolvedValue({
-        data: samplePosition({ quantity: 10, avgEntryPrice: 150 }),
+        data: samplePosition({ quantity: 10, avg_entry_price: 150 }),
         error: null,
       });
 
@@ -946,7 +986,7 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
 
     it("should compute negative P&L for selling long position at loss", async () => {
       mockSingle.mockResolvedValue({
-        data: samplePosition({ quantity: 10, avgEntryPrice: 150 }),
+        data: samplePosition({ quantity: 10, avg_entry_price: 150 }),
         error: null,
       });
 
@@ -959,7 +999,7 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
     it("should compute P&L for covering short position at profit", async () => {
       // Short position: -10 shares at avg entry 150, covering 5 at 140
       mockSingle.mockResolvedValue({
-        data: samplePosition({ quantity: -10, avgEntryPrice: 150, side: "short" }),
+        data: samplePosition({ quantity: -10, avg_entry_price: 150, side: "short" }),
         error: null,
       });
 
@@ -971,7 +1011,7 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
 
     it("should compute P&L for covering short position at loss", async () => {
       mockSingle.mockResolvedValue({
-        data: samplePosition({ quantity: -10, avgEntryPrice: 150, side: "short" }),
+        data: samplePosition({ quantity: -10, avg_entry_price: 150, side: "short" }),
         error: null,
       });
 
@@ -994,7 +1034,7 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
 
     it("should return 0 when adding to long position (buy on existing long)", async () => {
       mockSingle.mockResolvedValue({
-        data: samplePosition({ quantity: 10, avgEntryPrice: 150 }),
+        data: samplePosition({ quantity: 10, avg_entry_price: 150 }),
         error: null,
       });
 
@@ -1006,7 +1046,7 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
 
     it("should return 0 when adding to short position (sell on existing short)", async () => {
       mockSingle.mockResolvedValue({
-        data: samplePosition({ quantity: -10, avgEntryPrice: 150, side: "short" }),
+        data: samplePosition({ quantity: -10, avg_entry_price: 150, side: "short" }),
         error: null,
       });
 
@@ -1017,7 +1057,7 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
 
     it("should handle partial close (selling less than position size)", async () => {
       mockSingle.mockResolvedValue({
-        data: samplePosition({ quantity: 100, avgEntryPrice: 50 }),
+        data: samplePosition({ quantity: 100, avg_entry_price: 50 }),
         error: null,
       });
 
@@ -1029,7 +1069,7 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
 
     it("should handle selling more than position size", async () => {
       mockSingle.mockResolvedValue({
-        data: samplePosition({ quantity: 5, avgEntryPrice: 150 }),
+        data: samplePosition({ quantity: 5, avg_entry_price: 150 }),
         error: null,
       });
 
@@ -1066,7 +1106,7 @@ describe("PaperTradingEngine - Graduation Tracking", () => {
 
     it("should return userId when account exists", async () => {
       mockSingle.mockResolvedValue({
-        data: { userId: "user-42" },
+        data: { user_id: "user-42" },
         error: null,
       });
 

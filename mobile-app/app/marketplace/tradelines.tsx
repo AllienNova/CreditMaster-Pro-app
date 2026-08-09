@@ -1,9 +1,9 @@
 /**
  * Fynvita Tradelines Marketplace Screen
- * Authorized user tradelines
+ * Authorized user tradelines from marketplace API
  */
 
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -11,82 +11,108 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-
-interface Tradeline {
-  id: string;
-  bank: string;
-  creditLimit: number;
-  age: string;
-  utilization: number;
-  price: number;
-  available: boolean;
-}
-
-const TRADELINES: Tradeline[] = [
-  {
-    id: "1",
-    bank: "Chase",
-    creditLimit: 15000,
-    age: "8 years",
-    utilization: 5,
-    price: 350,
-    available: true,
-  },
-  {
-    id: "2",
-    bank: "American Express",
-    creditLimit: 25000,
-    age: "12 years",
-    utilization: 3,
-    price: 550,
-    available: true,
-  },
-  {
-    id: "3",
-    bank: "Capital One",
-    creditLimit: 10000,
-    age: "5 years",
-    utilization: 8,
-    price: 250,
-    available: false,
-  },
-  {
-    id: "4",
-    bank: "Discover",
-    creditLimit: 8000,
-    age: "6 years",
-    utilization: 10,
-    price: 200,
-    available: true,
-  },
-  {
-    id: "5",
-    bank: "Citi",
-    creditLimit: 20000,
-    age: "10 years",
-    utilization: 2,
-    price: 450,
-    available: true,
-  },
-];
+import { useMarketplaceStore } from "../../src/store/marketplaceStore";
+import type { MarketplaceProduct } from "../../src/services/api/marketplace";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 export default function TradelinesScreen() {
-  const handlePurchase = (tradeline: Tradeline) => {
+  const { products, isLoadingProducts, error, fetchProducts, clearError } =
+    useMarketplaceStore();
+
+  useEffect(() => {
+    fetchProducts("tradelines");
+  }, []);
+
+  const handlePurchase = (product: MarketplaceProduct) => {
     Alert.alert(
       "Purchase Tradeline",
-      `Add ${tradeline.bank} tradeline for $${tradeline.price}?`,
+      `Add ${product.name} tradeline for $${product.price}?`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Continue", onPress: () => router.push("/settings/billing") },
+        {
+          text: "Continue",
+          onPress: () => {
+            if (product.provider?.website) {
+              openExternalUrl(product.provider.website);
+            }
+          },
+        },
       ],
     );
   };
+
+  const renderFeatures = (features: Record<string, unknown>): string[] => {
+    if (Array.isArray(features)) return features as string[];
+    if (features && typeof features === "object" && "list" in features) {
+      return features.list as string[];
+    }
+    return Object.values(features).filter(
+      (v) => typeof v === "string",
+    ) as string[];
+  };
+
+  if (isLoadingProducts) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={[styles.header, { padding: theme.spacing.lg }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Tradelines</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Loading tradelines...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={[styles.header, { padding: theme.spacing.lg }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Tradelines</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.centerContent}>
+          <Ionicons
+            name="cloud-offline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.errorTitle}>Unable to load tradelines</Text>
+          <Text style={styles.errorSubtitle}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              clearError();
+              fetchProducts("tradelines");
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -143,60 +169,86 @@ export default function TradelinesScreen() {
 
         {/* Tradelines List */}
         <Text style={styles.sectionTitle}>Available Tradelines</Text>
-        {TRADELINES.map((tradeline) => (
-          <Card
-            key={tradeline.id}
-            style={[
-              styles.tradelineCard,
-              !tradeline.available && styles.unavailableCard,
-            ]}
-          >
-            <View style={styles.tradelineHeader}>
-              <View>
-                <Text style={styles.tradelineBank}>{tradeline.bank}</Text>
-                <Text style={styles.tradelineAge}>{tradeline.age} old</Text>
-              </View>
-              <Text style={styles.tradelinePrice}>${tradeline.price}</Text>
-            </View>
 
-            <View style={styles.tradelineStats}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Credit Limit</Text>
-                <Text style={styles.statValue}>
-                  ${tradeline.creditLimit.toLocaleString()}
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Utilization</Text>
-                <Text style={styles.statValue}>{tradeline.utilization}%</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Status</Text>
-                <Text
-                  style={[
-                    styles.statValue,
-                    { color: tradeline.available ? "#22C55E" : "#EF4444" },
-                  ]}
-                >
-                  {tradeline.available ? "Available" : "Sold Out"}
-                </Text>
-              </View>
-            </View>
+        {products.length === 0 && (
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="trending-up-outline"
+              size={48}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.emptyTitle}>
+              No tradelines available yet
+            </Text>
+            <Text style={styles.emptySubtitle}>
+              Check back later for new offerings
+            </Text>
+          </View>
+        )}
 
-            <TouchableOpacity
-              style={[
-                styles.purchaseButton,
-                !tradeline.available && styles.purchaseButtonDisabled,
-              ]}
-              onPress={() => handlePurchase(tradeline)}
-              disabled={!tradeline.available}
-            >
-              <Text style={styles.purchaseButtonText}>
-                {tradeline.available ? "Purchase" : "Unavailable"}
-              </Text>
-            </TouchableOpacity>
-          </Card>
-        ))}
+        {products.map((product) => {
+          const features = renderFeatures(product.features);
+          return (
+            <Card key={product.id} style={styles.tradelineCard}>
+              <View style={styles.tradelineHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.tradelineBank}>{product.name}</Text>
+                  <Text style={styles.tradelineAge}>
+                    {product.provider?.name || ""}
+                  </Text>
+                </View>
+                <Text style={styles.tradelinePrice}>${product.price}</Text>
+              </View>
+
+              <View style={styles.tradelineStats}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Rating</Text>
+                  <Text style={styles.statValue}>
+                    {product.rating.toFixed(1)}
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Reviews</Text>
+                  <Text style={styles.statValue}>{product.reviewCount}</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Status</Text>
+                  <Text style={[styles.statValue, { color: product.active ? "#22C55E" : "#EF4444" }]}>
+                    {product.active ? "Available" : "Sold Out"}
+                  </Text>
+                </View>
+              </View>
+
+              {features.length > 0 && (
+                <View style={styles.featuresSection}>
+                  {features.slice(0, 3).map((feature, idx) => (
+                    <View key={idx} style={styles.featureRow}>
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={14}
+                        color="#22C55E"
+                      />
+                      <Text style={styles.featureText}>{feature}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={[
+                  styles.purchaseButton,
+                  !product.active && styles.purchaseButtonDisabled,
+                ]}
+                onPress={() => handlePurchase(product)}
+                disabled={!product.active}
+              >
+                <Text style={styles.purchaseButtonText}>
+                  {product.active ? "Purchase" : "Unavailable"}
+                </Text>
+              </TouchableOpacity>
+            </Card>
+          );
+        })}
 
         {/* Disclaimer */}
         <Card style={styles.disclaimerCard}>
@@ -259,7 +311,6 @@ const styles = StyleSheet.create({
   stepTitle: { fontSize: 13, fontWeight: "600", color: theme.colors.text },
   stepDesc: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
   tradelineCard: { marginBottom: theme.spacing.sm },
-  unavailableCard: { opacity: 0.6 },
   tradelineHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -293,6 +344,13 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginTop: 2,
   },
+  featuresSection: { marginTop: theme.spacing.sm },
+  featureRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
+  featureText: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginLeft: 6,
+  },
   purchaseButton: {
     backgroundColor: theme.colors.primary,
     paddingVertical: 12,
@@ -314,5 +372,48 @@ const styles = StyleSheet.create({
     color: "#92400E",
     marginLeft: 10,
     lineHeight: 16,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.spacing.xl,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.md,
+  },
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  errorSubtitle: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
+    textAlign: "center",
+  },
+  retryButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: theme.spacing.lg,
+  },
+  retryButtonText: { fontSize: 14, fontWeight: "600", color: "#fff" },
+  emptyState: { alignItems: "center", paddingVertical: 60 },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: 12,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
   },
 });

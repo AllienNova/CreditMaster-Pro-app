@@ -7,7 +7,7 @@
  */
 
 import { Resend } from "resend";
-import { getSupabase } from "../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Database } from "../supabase/types";
 
 // Type helpers for Supabase operations
@@ -18,7 +18,7 @@ type NotificationUpdate =
   Database["public"]["Tables"]["notifications"]["Update"];
 
 // Helper to get typed table reference
-const notifications = () => getSupabase().from("notifications");
+const notifications = () => getServiceRoleClient().from("notifications");
 
 const resend = new Resend(process.env.RESEND_API_KEY || "dummy_key_for_build");
 
@@ -26,7 +26,14 @@ export type NotificationType =
   | "dispute_update"
   | "payment_success"
   | "document_uploaded"
-  | "tip";
+  | "tip"
+  | "dispute_overdue"
+  | "dispute_reminder"
+  | "draft_reminder"
+  | "score_reminder"
+  | "subscription_expiring"
+  | "welcome"
+  | "system";
 
 export interface Notification {
   id: string;
@@ -36,6 +43,7 @@ export interface Notification {
   message: string;
   read: boolean;
   createdAt: Date;
+  data?: Record<string, unknown>;
 }
 
 /**
@@ -84,7 +92,7 @@ class NotificationServiceDB {
     };
 
     const { data, error } = await notifications()
-      .insert(insertData as any)
+      .insert(insertData)
       .select()
       .single();
 
@@ -120,10 +128,16 @@ class NotificationServiceDB {
   /**
    * Mark notification as read
    */
-  async markAsRead(notificationId: string): Promise<boolean> {
+  async markAsRead(
+    notificationId: string,
+    userId: string,
+  ): Promise<boolean> {
     const updateData: NotificationUpdate = { read: true };
     const query = notifications();
-    const { error } = await query.update(updateData).eq("id", notificationId);
+    const { error } = await query
+      .update(updateData)
+      .eq("id", notificationId)
+      .eq("user_id", userId);
 
     if (error) {
       // NotificationServiceDB error: Failed to mark notification as read
@@ -157,8 +171,14 @@ class NotificationServiceDB {
   /**
    * Delete notification
    */
-  async deleteNotification(notificationId: string): Promise<boolean> {
-    const { error } = await notifications().delete().eq("id", notificationId);
+  async deleteNotification(
+    notificationId: string,
+    userId: string,
+  ): Promise<boolean> {
+    const { error } = await notifications()
+      .delete()
+      .eq("id", notificationId)
+      .eq("user_id", userId);
 
     if (error) {
       // NotificationServiceDB error: Failed to delete notification

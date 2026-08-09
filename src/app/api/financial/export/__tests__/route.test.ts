@@ -43,6 +43,9 @@ jest.mock("next/server", () => {
 });
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/financial/budget-service");
 jest.mock("@/lib/financial/bill-detection-service");
 jest.mock("@/lib/financial/spending-analysis-service");
@@ -117,16 +120,18 @@ describe("GET /api/financial/export", () => {
     });
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/export",
+      );
+      const response = await GET(request);
+      expect(response.status).toBe(401);
     });
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/export",
-    );
-    const response = await GET(request);
-    expect(response.status).toBe(401);
   });
 
   it("should export budgets as CSV", async () => {

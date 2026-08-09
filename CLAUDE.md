@@ -1,7 +1,23 @@
 # CLAUDE.md - Fynvita Pair Programming Guide
 
 > Canonical AI context for the Fynvita platform. All metrics sourced from `docs/ssot/`.
-> Last verified: 2026-03-02 | DICE v3.3 | VERSION-012
+> Last verified: 2026-05-03 | Status reconciled: 2026-07-24 (see `docs/qa/qa-report.md`) | DICE v3.3 | **VERSION-013 — AUDIT-DRIVEN RE-BASELINE**
+
+---
+
+> ## ⚠ STATUS BANNER (updated 2026-07-24 — verified reconciliation)
+>
+> **Verdict: GO WITH CONDITIONS for M1 Closed Beta. NOT "done", NOT "ship-ready", NOT "100%".** The earlier "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010..012) was false and triggered this remediation; status here is stated conditionally and backed by fresh evidence, never as unconditional success.
+>
+> **What is verified.** Adversarial re-verification from source (4 reviewers, 187 commits, `docs/qa/qa-report.md`) confirmed **30 of 32 M1-scope CRITICALs CLOSED_REAL** (FND-001 inert, FND-026 partial) with 600+ security/money tests run fresh (0 failures). Verification also found and FIXED two previously-undisclosed live bugs this session: **B1** payout `calculateFees` dollar/cent unit bug — a $50 payout netted $0 (`14dd011`); **B2** GDPR-erasure RPC resilience over 5 unmigrated tables (`7069485`). Tip gates green: web + mobile `tsc` 0, `npm run lint` 0 errors, build OK, `audit:auth` 295/295, `test:auth-negative` 611, `npm test` 16,195 pass / 0 fail.
+>
+> **What still gates launch (conditions UNMET, operator-owned).** (1) **FND-001** is INERT_BEHIND_FLAG — per-route `withAuth` guards enforce, but the middleware deny-by-default backstop needs a 24 h staging soak → SEC sign-off on `PUBLIC_ROUTES.ts` → prod flip, plus `audit:auth` + `test:auth-negative` wired into CI as blocking gates (see `docs/deployment/LAUNCH_CHECKLIST.md`). (2) Live-schema audit — payout/affiliate + 5 erasure tables absent from migrations (schema drift). (3) FND-026 dual payout-rail decision before wiring. (4) Closed-beta cohort. (5) `main` branch protection. (6) `npm audit` (32 vulns, 1 critical).
+>
+> Pre-launch context: no live users yet, so no GDPR Art. 33 / CCPA disclosure obligation is triggered today. Re-evaluate before public launch.
+>
+> Full detail: `docs/qa/qa-report.md` (verification record) and `docs/ssot/gap_analysis.md` (71-finding register + 2026-07-24 addendum). Roadmap: `docs/ssot/MASTER-IMPLEMENTATION-PLAN.md` § Wave 7.
+>
+> **First-fix template** (shipped): commit `d64e8d5` — atomic Postgres RPC + `UNIQUE` constraint + `REVOKE EXECUTE FROM PUBLIC; GRANT TO service_role`. Reuse for read-modify-write replacements.
 
 ---
 
@@ -11,10 +27,10 @@
 |-------|-------|
 | **Project** | Fynvita - Your Financial Vitality Platform |
 | **Repository** | `github.com/AllienNova/CreditMaster-Pro-app` |
-| **Brand** | Fynvita (formerly CPFI / CreditMaster Pro) |
-| **Phase** | All 7 waves DONE (125/125 tasks complete, 100%) |
-| **Platform Score** | 102/102 modules complete (100%) — Wave 6 adds 3 new domains |
-| **Canonical Docs** | `docs/ssot/SSOT.md` (single source of truth) |
+| **Brand** | Fynvita (formerly CPFI / CreditMaster Pro) — pre-launch, branded as financial-education company |
+| **Phase** | **Wave 7 (Security & Correctness Remediation) — GO WITH CONDITIONS for M1 Closed Beta** (verified 2026-07-24, `docs/qa/qa-report.md`). Conditions unmet; see STATUS BANNER. Waves 0-6 originals remain NEEDS_VERIFICATION. |
+| **Quality** | **30 of 32 M1 CRITICALs verified CLOSED_REAL (FND-001 inert, FND-026 partial); launch conditions remain open** (FND-001 flag-gated, live-schema audit, CI wiring, `npm audit`) — see `docs/qa/qa-report.md` + `docs/ssot/gap_analysis.md` |
+| **Canonical Docs** | `docs/ssot/SSOT.md` (single source of truth); `docs/ssot/gap_analysis.md` (audit findings) |
 
 ---
 
@@ -198,30 +214,7 @@ cd mobile-app && npx expo start  # Start Expo dev server
 
 ## 8. Testing
 
-### Current State (2026-03-02)
-
-| Metric | Value |
-|--------|-------|
-| **Test Suites** | 504 passed, 2 skipped, 506 total |
-| **Test Cases** | 13,585 passed, 19 skipped, 13,604 total |
-| **Pass Rate** | 99.86% |
-| **Failures** | 0 |
-| **Execution Time** | ~15s |
-
-### Coverage by Domain
-
-| Domain | Status | Notes |
-|--------|--------|-------|
-| Financial Services | PASS (>=80%) | 45+ test files |
-| Trading Engine | PASS (>=80%) | 15+ test files (was ~60%, TASK-TRD-07 DONE) |
-| Credit Services | PASS (>=80%) | 8+ test files |
-| Investment Services | PASS (>=80%) | 6+ test files |
-| Security/Auth | PASS (>=80%) | 10+ test files |
-| Notifications | PASS (>=80%) | 5+ test files (was ~50%, TASK-NTF-03 DONE) |
-| Admin | PASS (>=80%) | 8+ test files (was ~50%, TASK-ADM-03 DONE) |
-| Components (UI) | PASS (>=70%) | 40+ test files |
-| API Routes | PASS (>=80%) | 80+ test files |
-| Mobile App | NOT STARTED (0%) | TASK-MOB-01 (Wave 4) |
+> **Live test/lint/build/audit numbers live in `docs/ssot/health_metrics.md` — that file is canonical and re-baselined per Wave 7 task TASK-PRE-01.** Do not hardcode counts here; they drift. As of the 2026-05-16 re-baseline (VERSION-015): 14,967 tests pass, 0 fail, 19 skip; mobile coverage 0%.
 
 ### Test File Location
 Tests are co-located: `src/**/__tests__/*.test.ts(x)` alongside their source modules.
@@ -233,27 +226,19 @@ Tests are co-located: `src/**/__tests__/*.test.ts(x)` alongside their source mod
 Run in order after any code change:
 
 ```
-1. LINT     npm run lint              # 0 blocking errors (7 non-blocking, 841 warnings)
-2. TYPES    npx tsc --noEmit          # 0 errors (production + test)
-3. TEST     npm test                  # 13,585 passing, 0 failures
-4. BUILD    npm run build             # SUCCESS, 539 kB first load JS
-5. SECURITY npm audit                 # 0 production vulns (2 low dev-only)
+1. LINT     npm run lint              # ESLint via next lint
+2. TYPES    npm run type-check        # tsc --noEmit (strict)
+3. TEST     npm test                  # Jest
+4. BUILD    npm run build             # next build
+5. SECURITY npm audit                 # dependency scan
+6. AUDIT    9-domain code review      # 30 of 32 M1 CRITICALs CLOSED_REAL (FND-001 inert, FND-026 partial); launch conditions open (qa-report.md)
 ```
 
-### Quality Scorecard
-
-| Gate | Status |
-|------|--------|
-| Tests Pass (0 failures) | PASS |
-| Type Safety (0 prod errors) | PASS |
-| Build Succeeds | PASS |
-| Lint Clean (0 blocking) | PASS |
-| Security (0 prod vulns) | PASS |
-| Coverage >=80% (overall) | PASS |
-| Coverage >=80% (per-domain) | PASS (all web domains) |
-| Mobile Coverage | FAIL (0%) |
-
-**Overall: GREEN (web) / RED (mobile)**
+> **The live pass/fail status and exact counts for every gate are in `docs/ssot/health_metrics.md` § 8 — that file is canonical.** Do not hardcode results here.
+>
+> Verified state at tip (2026-07-24, `docs/qa/qa-report.md`): lint 0 errors, web + mobile type-check 0 errors, build OK, `npm test` 16,195 pass / 0 fail, `audit:auth` 295/295, `test:auth-negative` 611. Adversarial re-verification confirmed **30 of 32 M1-scope CRITICALs CLOSED_REAL** (FND-001 inert, FND-026 partial), and found + fixed 2 previously-undisclosed live bugs (B1 payout fee `14dd011`, B2 erasure resilience `7069485`). Green gates do NOT by themselves clear the launch conditions below.
+>
+> **Overall: GO WITH CONDITIONS for M1 Closed Beta — not "green", not ship-ready.** Launch remains gated on operator-owned conditions: FND-001 deny-by-default staging soak + prod flip + CI wiring, live-schema audit, FND-026 rail decision, closed-beta cohort, `main` branch protection, `npm audit` (32 vulns, 1 critical). See `docs/deployment/LAUNCH_CHECKLIST.md` § Wave 7 M1 Security Gate.
 
 ---
 
@@ -272,17 +257,46 @@ Run in order after any code change:
 
 ## 11. Current Build Plan
 
-7 waves, 125 total tasks. 125 DONE (100%), 0 NOT_STARTED. Task IDs follow `TASK-{DOMAIN}-{NN}` pattern.
+8 waves now (Wave 7 opened 2026-05-03 in response to comprehensive audit). Task IDs follow `TASK-{DOMAIN}-{NN}` pattern.
 
 | Wave | Focus | Status | Tasks |
 |------|-------|--------|-------|
-| 0 | Foundation fixes | DONE | INF-01 through INF-10, SEC-01 |
-| 1 | Core gaps | DONE | TRD-07, NTF-03, ADM-03, coverage gates |
-| 2 | Financial depth | DONE | Bill negotiation, savings, debt |
-| 3 | Trading + Commerce | DONE | PCTT, paper trading, marketplace |
-| 4 | Mobile + Platform | DONE | Gamification, onboarding, mobile parity |
-| 5 | Scale + Polish | DONE | Performance, monitoring, white-label |
+| 0 | Foundation fixes | DONE (NEEDS_VERIFICATION) | INF-01 through INF-10, SEC-01 |
+| 1 | Core gaps | DONE (NEEDS_VERIFICATION — TRD-07, NTF-03, ADM-03 reopened) | TRD-07, NTF-03, ADM-03, coverage gates |
+| 2 | Financial depth | DONE (NEEDS_VERIFICATION) | Bill negotiation, savings, debt |
+| 3 | Trading + Commerce | DONE (NEEDS_VERIFICATION — commerce reopened) | PCTT, paper trading, marketplace |
+| 4 | Mobile + Platform | DONE (NEEDS_VERIFICATION — mobile reopened) | Gamification, onboarding, mobile parity |
+| 5 | Scale + Polish | DONE (NEEDS_VERIFICATION) | Performance, monitoring, white-label |
 | 6 | External Integrations | DONE | Plaid SDK, DriveWealth, Affiliate (13 tasks) |
+| **7** | **Security & Correctness Remediation** | **IN PROGRESS — GO WITH CONDITIONS (M1)** | **30 of 32 M1 CRITICALs verified CLOSED_REAL (FND-001 inert, FND-026 partial); launch conditions open — see `docs/qa/qa-report.md`** |
+
+### Wave 7 — Security & Correctness Remediation
+
+| Phase | Focus | Task IDs |
+|-------|-------|----------|
+| 0 | Prereqs (re-baseline, branch policy, feature flags, lint guards, branch hygiene on `feat/asset-system-regen`) | TASK-PRE-01..06 |
+| 1 | Auth/RBAC rebuild (remove `user_metadata` role, remove admin email whitelist, wire 284 routes through existing `withAuth`, middleware deny-by-default with `PUBLIC_ROUTES.ts`, kill AIML key reuse, single rate limiter) | TASK-AUTH-01..12 |
+| 2 | Webhook idempotency + tier mapping (`processed_webhook_events` UNIQUE table; fix `getTierFromPriceId`; remove `billing-profile-store` mock; rethrow swallowed errors; server-authoritative checkout fields) | TASK-WBH-01..07 |
+| 3 | Money correctness (Stripe payout cents conversion, atomic `increment_referral_use` RPC, self-referral guard, `Idempotency-Key` on transfers, `Money` branded type) | TASK-MNY-01..07 |
+| 4 | Mock-data sweep (admin analytics, billing profile, debt API, AI insights, mobile dispute screen; lint rule escalation) | TASK-MOK-01..06 |
+| 5 | Compliance + AI hygiene (consent persistence, breach notification wiring, GDPR cascade table expansion, ModelRouter enforcement, PII redaction) | TASK-CMP-01..05 |
+| 6 | Mobile hardening (SecureStore migration, `Linking.openURL` allowlist, `npm audit fix`, delete deprecated `financialStore`, remove `__DEV__` auth bypass) | TASK-MOB-01..07 |
+| 7 | IDOR sweep (audit script + portfolio/plaid/notification/admin fixes) | TASK-IDR-01..05 |
+
+### Critical findings to know about (full list: `docs/ssot/gap_analysis.md`)
+
+- **FND-001** middleware whitelists ALL `/api/*`; only 4 of 118 routes use `withAuth`
+- **FND-005** `getUserRole` reads `user_metadata.role` → user can self-grant admin
+- **FND-003/004** hardcoded admin emails + enterprise tier = admin
+- **FND-024** Stripe payout sends dollars as cents → 1% of intended payout (live financial loss before launch)
+- **FND-018** `getTierFromPriceId` references nonexistent env vars → every paid sub silently lands on `free`
+- **FND-014/015** `handleInvoicePaid` swallows errors silently → no Stripe retry on transient failures
+- **FND-016/017** `billing-profile-store` returns fake Visa 4242 to every new user; `updatePlan` activates without calling Stripe
+- **FND-030** `portfolio-service` deliberately omits `user_id` filter → IDOR on holdings/P&L for any authenticated user
+- **FND-041..044** all 4 `/api/notifications/*` routes accept `userId` from body/query with no auth
+- **FND-049..053** admin endpoints unauth'd; `analytics` returns `Math.random()`; mock data on DB error
+- **FND-056..058** GDPR breach notification is a no-op; consent stored in process-local Map; cascade-delete missing ~34 tables
+- **FND-064** mobile `__DEV__` auth bypass — one bad EAS flag from shipping fully-authenticated mock user
 
 ### Wave 6 Breakdown (13 tasks)
 
@@ -292,13 +306,15 @@ Run in order after any code change:
 | Broker Expansion | TRD-15 through TRD-18 | DriveWealth, multi-broker router, fractional, KYC |
 | Affiliate Monetization | AFF-01 through AFF-04 | Engine by MoneyLion, credit cards, insurance, compliance |
 
-### Task Completion Status
+### Task Completion Status (Re-baselined 2026-05-03, VERSION-013)
 
-| Status | Count | % |
-|--------|-------|---|
-| **DONE** | 125 | 100% |
-| **NOT_STARTED** | 0 | 0% |
-| **Total** | 125 | 100% |
+> Prior "125/125 DONE / 100%" status was invalidated by the 9-domain audit. All 125 originals are NEEDS_VERIFICATION pending TASK-PRE-01 re-run; Wave 7 adds 59 new remediation tasks.
+
+| Wave | Status | Count |
+|------|--------|------:|
+| 0-6 (originals) | NEEDS_VERIFICATION (some REOPENED) | 125 |
+| 7 (Security & Correctness Remediation) | IN PROGRESS — GO WITH CONDITIONS (M1); 30 of 32 M1 CRITICALs CLOSED_REAL (FND-001 inert, FND-026 partial) | 59 |
+| **Total** | **mixed** | **184** |
 
 ---
 

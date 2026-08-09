@@ -5,26 +5,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
 import { logAIInteraction } from "@/lib/security/audit-logging";
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "student_loans:analyze",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "student_loans:analyze")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const user = validation.user;
-
     // Parse request body
     const body = await request.json();
     const { loans } = body;
@@ -103,9 +90,10 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
-export async function GET() {
+export const GET = withPermission("student_loans:analyze", async () => {
   return NextResponse.json({
     message: "Student Loan Portfolio Analysis API",
     method: "POST",
@@ -114,4 +102,4 @@ export async function GET() {
     description:
       "Analyzes complete student loan portfolio and provides insights",
   });
-}
+});

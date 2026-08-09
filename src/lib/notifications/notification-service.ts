@@ -9,36 +9,17 @@
  */
 
 import { Resend } from "resend";
+import { escapeHtml, sanitizeUrl } from "@/lib/security/sanitize";
 import {
   webPushService,
   type PushNotificationPayload,
 } from "./web-push-service";
 
+// Re-export canonical types from the DB service so UI consumers can import
+// from either service without breaking (FND-047 / TASK-NTF-03).
+export type { NotificationType, Notification } from "./notification-service-db";
+
 const resend = new Resend(process.env.RESEND_API_KEY || "dummy_key_for_build");
-
-export type NotificationType =
-  | "dispute_created"
-  | "dispute_updated"
-  | "dispute_resolved"
-  | "credit_score_changed"
-  | "payment_successful"
-  | "payment_failed"
-  | "subscription_renewed"
-  | "subscription_canceled"
-  | "document_uploaded"
-  | "welcome"
-  | "password_reset";
-
-export interface Notification {
-  id: string;
-  userId: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: Date;
-  data?: Record<string, any>;
-}
 
 export interface EmailTemplate {
   subject: string;
@@ -48,10 +29,10 @@ export interface EmailTemplate {
 
 /**
  * Notification Service Class
+ * Handles email templates and web push notifications only.
+ * In-app CRUD is owned by notification-service-db.ts (TASK-NTF-03 / FND-047).
  */
 class NotificationService {
-  private readonly notifications: Map<string, Notification[]> = new Map();
-
   /**
    * Send email notification
    */
@@ -76,98 +57,6 @@ class NotificationService {
     }
   }
 
-  /**
-   * Create in-app notification
-   */
-  createNotification(
-    userId: string,
-    type: NotificationType,
-    title: string,
-    message: string,
-    data?: Record<string, any>,
-  ): Notification {
-    const notification: Notification = {
-      id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-      userId,
-      type,
-      title,
-      message,
-      read: false,
-      createdAt: new Date(),
-      data,
-    };
-
-    const userNotifications = this.notifications.get(userId) || [];
-    userNotifications.unshift(notification);
-    this.notifications.set(userId, userNotifications);
-
-    return notification;
-  }
-
-  /**
-   * Get user notifications
-   */
-  getUserNotifications(userId: string, limit: number = 50): Notification[] {
-    const notifications = this.notifications.get(userId) || [];
-    return notifications.slice(0, limit);
-  }
-
-  /**
-   * Mark notification as read
-   */
-  markAsRead(userId: string, notificationId: string): boolean {
-    const notifications = this.notifications.get(userId) || [];
-    const notification = notifications.find((n) => n.id === notificationId);
-
-    if (notification) {
-      notification.read = true;
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Mark all notifications as read
-   */
-  markAllAsRead(userId: string): number {
-    const notifications = this.notifications.get(userId) || [];
-    let count = 0;
-
-    notifications.forEach((n) => {
-      if (!n.read) {
-        n.read = true;
-        count++;
-      }
-    });
-
-    return count;
-  }
-
-  /**
-   * Delete notification
-   */
-  deleteNotification(userId: string, notificationId: string): boolean {
-    const notifications = this.notifications.get(userId) || [];
-    const index = notifications.findIndex((n) => n.id === notificationId);
-
-    if (index !== -1) {
-      notifications.splice(index, 1);
-      this.notifications.set(userId, notifications);
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Get unread count
-   */
-  getUnreadCount(userId: string): number {
-    const notifications = this.notifications.get(userId) || [];
-    return notifications.filter((n) => !n.read).length;
-  }
-
   // Email templates
 
   /**
@@ -175,10 +64,11 @@ class NotificationService {
    */
   async sendWelcomeEmail(to: string, name: string): Promise<void> {
     const subject = "Welcome to Fynvita! ";
+    const safeName = escapeHtml(name);
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #4F46E5;">Welcome to Fynvita!</h1>
-        <p>Hi ${name},</p>
+        <p>Hi ${safeName},</p>
         <p>We're excited to have you on board! Fynvita uses advanced AI to help you repair your credit and achieve your financial goals.</p>
         <h2>Get Started:</h2>
         <ol>
@@ -210,13 +100,14 @@ class NotificationService {
     itemDescription: string,
   ): Promise<void> {
     const subject = "Dispute Created Successfully ";
+    const safeDescription = escapeHtml(itemDescription);
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #4F46E5;">Dispute Created</h1>
         <p>Your dispute has been created and sent to the credit bureau.</p>
         <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Dispute ID:</strong> ${disputeId}</p>
-          <p><strong>Item:</strong> ${itemDescription}</p>
+          <p><strong>Item:</strong> ${safeDescription}</p>
           <p><strong>Status:</strong> Sent to Bureau</p>
         </div>
         <p>We'll notify you when there's an update on your dispute.</p>
@@ -251,13 +142,14 @@ class NotificationService {
         ? "Great News! Dispute Resolved - Item Removed "
         : "Dispute Resolved";
 
+    const safeDescription = escapeHtml(itemDescription);
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: ${outcome === "removed" ? "#10B981" : "#4F46E5"};">Dispute Resolved</h1>
         <p>${outcomeText[outcome]}</p>
         <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Dispute ID:</strong> ${disputeId}</p>
-          <p><strong>Item:</strong> ${itemDescription}</p>
+          <p><strong>Item:</strong> ${safeDescription}</p>
           <p><strong>Outcome:</strong> ${outcome.charAt(0).toUpperCase() + outcome.slice(1)}</p>
         </div>
         ${outcome === "removed" ? "<p>This should positively impact your credit score!</p>" : ""}
@@ -350,13 +242,14 @@ class NotificationService {
     reason: string,
   ): Promise<void> {
     const subject = "Payment Failed - Action Required ";
+    const safeReason = escapeHtml(reason);
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #EF4444;">Payment Failed</h1>
         <p>We were unable to process your payment.</p>
         <div style="background-color: #FEE2E2; padding: 16px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Amount:</strong> $${amount.toFixed(2)}</p>
-          <p><strong>Reason:</strong> ${reason}</p>
+          <p><strong>Reason:</strong> ${safeReason}</p>
         </div>
         <p>Please update your payment method to continue using Fynvita.</p>
         <p style="margin-top: 30px;">
@@ -495,10 +388,11 @@ class NotificationService {
     invoiceId: string,
   ): Promise<void> {
     const subject = "Payment Received - Thank You! ";
+    const safeCustomerName = escapeHtml(customerName);
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #10B981;">Payment Successful</h1>
-        <p>Hi ${customerName},</p>
+        <p>Hi ${safeCustomerName},</p>
         <p>Thank you for your payment!</p>
         <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Amount:</strong> $${amount.toFixed(2)}</p>
@@ -531,19 +425,30 @@ class NotificationService {
     const { ownerEmail, documentName, recipients, shareUrl, expiresAt } =
       params;
     const senderName = ownerEmail || "A Fynvita user";
+    const safeSenderName = escapeHtml(senderName);
+    const safeDocumentName = escapeHtml(documentName);
+
+    const cleanUrl = sanitizeUrl(shareUrl);
+    if (!cleanUrl) {
+      // shareUrl is not a safe http/https URL (e.g. javascript: URI) — abort
+      return;
+    }
+    // Encode only the characters that can break out of a double-quoted href attribute.
+    // Full escapeHtml would percent-encode '/' and '=' which are valid URL characters.
+    const safeShareUrl = cleanUrl.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 
     for (const recipient of recipients) {
-      const subject = `${senderName} shared a document with you`;
+      const subject = `${safeSenderName} shared a document with you`;
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #4F46E5;">Document Shared With You</h1>
-          <p>${senderName} has shared a document with you.</p>
+          <p>${safeSenderName} has shared a document with you.</p>
           <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>Document:</strong> ${documentName}</p>
+            <p><strong>Document:</strong> ${safeDocumentName}</p>
             <p><strong>Expires:</strong> ${expiresAt.toLocaleDateString()} at ${expiresAt.toLocaleTimeString()}</p>
           </div>
           <p style="margin-top: 30px;">
-            <a href="${shareUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+            <a href="${safeShareUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
               View Document
             </a>
           </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
@@ -17,8 +17,18 @@ import {
   HelpCircle,
   Star,
   Filter,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  mapGoodwillLetter,
+  computeStats,
+  formatDate,
+  type WebGoodwillLetter,
+  type GoodwillLetterView,
+  type LetterDisplayStatus,
+} from "./goodwill-data";
 
 type LetterType =
   | "late_payment"
@@ -27,26 +37,6 @@ type LetterType =
   | "paid_in_full"
   | "medical_debt";
 
-type LetterStatus =
-  | "draft"
-  | "ready"
-  | "sent"
-  | "response_received"
-  | "successful"
-  | "unsuccessful";
-
-interface GoodwillLetter {
-  id: string;
-  creditorName: string;
-  accountNumber: string;
-  letterType: LetterType;
-  status: LetterStatus;
-  subject: string;
-  sentDate?: Date;
-  outcome?: "removed" | "declined" | "partial" | "pending";
-  createdAt: Date;
-}
-
 interface LetterTemplate {
   id: string;
   type: LetterType;
@@ -54,40 +44,6 @@ interface LetterTemplate {
   description: string;
   successRate: number;
 }
-
-const MOCK_LETTERS: GoodwillLetter[] = [
-  {
-    id: "1",
-    creditorName: "Chase Bank",
-    accountNumber: "****4521",
-    letterType: "late_payment",
-    status: "successful",
-    subject: "Goodwill Request for Late Payment Removal",
-    sentDate: new Date("2025-12-15"),
-    outcome: "removed",
-    createdAt: new Date("2025-12-10"),
-  },
-  {
-    id: "2",
-    creditorName: "Capital One",
-    accountNumber: "****8732",
-    letterType: "long_term_customer",
-    status: "sent",
-    subject: "Loyal Customer Goodwill Request",
-    sentDate: new Date("2026-01-05"),
-    outcome: "pending",
-    createdAt: new Date("2026-01-03"),
-  },
-  {
-    id: "3",
-    creditorName: "Discover",
-    accountNumber: "****2198",
-    letterType: "hardship",
-    status: "draft",
-    subject: "Goodwill Adjustment Request Due to Financial Hardship",
-    createdAt: new Date("2026-01-18"),
-  },
-];
 
 const LETTER_TEMPLATES: LetterTemplate[] = [
   {
@@ -127,7 +83,7 @@ const LETTER_TEMPLATES: LetterTemplate[] = [
   },
 ];
 
-const getStatusColor = (status: LetterStatus) => {
+const getStatusColor = (status: LetterDisplayStatus) => {
   switch (status) {
     case "successful":
       return "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300";
@@ -136,14 +92,12 @@ const getStatusColor = (status: LetterStatus) => {
     case "sent":
     case "response_received":
       return "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300";
-    case "ready":
-      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300";
     default:
       return "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 dark:bg-slate-700 dark:text-slate-300";
   }
 };
 
-const getStatusIcon = (status: LetterStatus) => {
+const getStatusIcon = (status: LetterDisplayStatus) => {
   switch (status) {
     case "successful":
       return <CheckCircle className="w-4 h-4" />;
@@ -157,37 +111,80 @@ const getStatusIcon = (status: LetterStatus) => {
   }
 };
 
-const getLetterTypeName = (type: LetterType) => {
-  const names: Record<LetterType, string> = {
-    late_payment: "Late Payment",
-    hardship: "Financial Hardship",
-    long_term_customer: "Long-Term Customer",
-    paid_in_full: "Paid in Full",
-    medical_debt: "Medical Debt",
-  };
-  return names[type];
-};
-
 export default function GoodwillLettersPage() {
-  const [letters, setLetters] = useState<GoodwillLetter[]>(MOCK_LETTERS);
+  const [letters, setLetters] = useState<GoodwillLetterView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showNewLetterModal, setShowNewLetterModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] =
     useState<LetterTemplate | null>(null);
-  const [filter, setFilter] = useState<"all" | LetterStatus>("all");
+  const [filter, setFilter] = useState<"all" | LetterDisplayStatus>("all");
+
+  useEffect(() => {
+    fetchLetters();
+  }, []);
+
+  const fetchLetters = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch("/api/credit-repair/goodwill");
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to load goodwill letters");
+      }
+
+      const raw: WebGoodwillLetter[] = Array.isArray(data.data?.letters)
+        ? data.data.letters
+        : [];
+      setLetters(raw.map(mapGoodwillLetter));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredLetters = letters.filter(
     (l) => filter === "all" || l.status === filter,
   );
 
-  const stats = {
-    total: letters.length,
-    sent: letters.filter((l) => l.sentDate).length,
-    successful: letters.filter((l) => l.outcome === "removed").length,
-    pending: letters.filter((l) => l.status === "sent").length,
-  };
+  const stats = computeStats(letters);
+  const successRate = stats.successRate;
 
-  const successRate =
-    stats.sent > 0 ? Math.round((stats.successful / stats.sent) * 100) : 0;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="text-center" data-testid="goodwill-loading">
+          <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mx-auto" />
+          <p className="mt-4 text-gray-600 dark:text-slate-400">
+            Loading goodwill letters...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center px-4">
+        <div className="text-center max-w-md" data-testid="goodwill-error">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
+          <h2 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
+            Couldn't load your letters
+          </h2>
+          <p className="mt-2 text-gray-600 dark:text-slate-400">{error}</p>
+          <button
+            onClick={fetchLetters}
+            className="mt-6 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
@@ -333,18 +330,20 @@ export default function GoodwillLettersPage() {
                           {letter.status.replace("_", " ")}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">
-                        {letter.subject}
-                      </p>
+                      {letter.reason && (
+                        <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">
+                          {letter.reason}
+                        </p>
+                      )}
                       <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-slate-400">
-                        <span>Account: {letter.accountNumber}</span>
-                        <span>
-                          Type: {getLetterTypeName(letter.letterType)}
-                        </span>
+                        {letter.accountNumber && (
+                          <span>Account: {letter.accountNumber}</span>
+                        )}
+                        {letter.createdAt && (
+                          <span>Created: {formatDate(letter.createdAt)}</span>
+                        )}
                         {letter.sentDate && (
-                          <span>
-                            Sent: {letter.sentDate.toLocaleDateString()}
-                          </span>
+                          <span>Sent: {formatDate(letter.sentDate)}</span>
                         )}
                       </div>
                     </div>

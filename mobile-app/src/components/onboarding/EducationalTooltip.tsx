@@ -11,10 +11,10 @@ import {
   TouchableOpacity,
   Modal,
   StyleSheet,
-  Linking,
   Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { openExternalUrl } from "../../utils/openExternalUrl";
 
 export interface EducationalTooltipProps {
   title: string;
@@ -35,7 +35,7 @@ export function EducationalTooltip({
 
   const handleLearnMore = () => {
     if (learnMoreUrl) {
-      Linking.openURL(learnMoreUrl);
+      openExternalUrl(learnMoreUrl);
     }
   };
 

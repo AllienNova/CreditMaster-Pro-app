@@ -4,9 +4,9 @@
  * Core business logic for financial management features
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import { plaidService, PlaidAccount, PlaidTransaction } from "./plaid-service";
 
 // Types
@@ -137,19 +137,17 @@ class FinancialService {
 
       const netWorth = totalAssets - totalLiabilities;
 
-      // Get recent transactions (last 30 days)
+      // Get recent transactions (last 30 days) — single batch query (FND-040)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const allTransactions: PlaidTransaction[] = [];
-      for (const account of accounts) {
-        const transactions = await plaidService.getTransactions(
-          account.accountId,
-          thirtyDaysAgo,
-          new Date(),
-        );
-        allTransactions.push(...transactions);
-      }
+      const accountIds = accounts.map((a) => a.accountId);
+      const allTransactions = await plaidService.getTransactionsForAccounts(
+        accountIds,
+        thirtyDaysAgo,
+        new Date(),
+        userId,
+      );
 
       // Calculate income and expenses
       const monthlyIncome = allTransactions
@@ -238,33 +236,29 @@ class FinancialService {
     const trends: MonthlyTrend[] = [];
     const accounts = await plaidService.getAccounts(userId);
 
+    const now = new Date();
+    const accountIds = accounts.map((a) => a.accountId);
+
     for (let i = months - 1; i >= 0; i--) {
-      const startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - i);
-      startDate.setDate(1);
+      const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const endDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
 
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + 1);
-      endDate.setDate(0);
+      // Single batch query for all accounts in this month — replaces
+      // the per-account serial loop (FND-040)
+      const transactions = await plaidService.getTransactionsForAccounts(
+        accountIds,
+        startDate,
+        endDate,
+        userId,
+      );
 
-      let income = 0;
-      let expenses = 0;
+      const income = transactions
+        .filter((t) => t.amount < 0)
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-      for (const account of accounts) {
-        const transactions = await plaidService.getTransactions(
-          account.accountId,
-          startDate,
-          endDate,
-        );
-
-        income += transactions
-          .filter((t) => t.amount < 0)
-          .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-
-        expenses += transactions
-          .filter((t) => t.amount > 0)
-          .reduce((sum, t) => sum + t.amount, 0);
-      }
+      const expenses = transactions
+        .filter((t) => t.amount > 0)
+        .reduce((sum, t) => sum + t.amount, 0);
 
       trends.push({
         month: startDate.toLocaleDateString("en-US", {
@@ -292,15 +286,16 @@ class FinancialService {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      const allTransactions: PlaidTransaction[] = [];
-      for (const account of accounts) {
-        const transactions = await plaidService.getTransactions(
-          account.accountId,
+      // Single batch query for all accounts — replaces per-account serial loop (FND-040)
+      const spendingAccountIds = accounts.map((a) => a.accountId);
+      const allTransactions = (
+        await plaidService.getTransactionsForAccounts(
+          spendingAccountIds,
           startDate,
           new Date(),
-        );
-        allTransactions.push(...transactions.filter((t) => t.amount > 0));
-      }
+          userId,
+        )
+      ).filter((t) => t.amount > 0);
 
       const totalSpending = allTransactions.reduce(
         (sum, t) => sum + t.amount,
@@ -335,17 +330,16 @@ class FinancialService {
       const previousMonthStart = new Date(startDate);
       previousMonthStart.setDate(previousMonthStart.getDate() - days);
 
-      let previousMonthSpending = 0;
-      for (const account of accounts) {
-        const transactions = await plaidService.getTransactions(
-          account.accountId,
-          previousMonthStart,
-          startDate,
-        );
-        previousMonthSpending += transactions
-          .filter((t) => t.amount > 0)
-          .reduce((sum, t) => sum + t.amount, 0);
-      }
+      // Single batch query for previous period — replaces per-account serial loop (FND-040)
+      const prevTransactions = await plaidService.getTransactionsForAccounts(
+        spendingAccountIds,
+        previousMonthStart,
+        startDate,
+        userId,
+      );
+      const previousMonthSpending = prevTransactions
+        .filter((t) => t.amount > 0)
+        .reduce((sum, t) => sum + t.amount, 0);
 
       const comparisonToPreviousMonth =
         previousMonthSpending > 0

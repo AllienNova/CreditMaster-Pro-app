@@ -10,6 +10,7 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/monitoring/logger";
 import {
   Position,
   PositionSide,
@@ -22,6 +23,51 @@ import {
   DEFAULT_POSITION_MANAGER_CONFIG,
 } from "./position-types";
 import { Order, Fill } from "../orders/order-types";
+
+// ============================================================================
+// DB ROW TYPE (positions table — supabase/migrations/20260731000000_trading_orders_positions.sql)
+// ============================================================================
+//
+// Same rationale as OrderRow in ../orders/order-manager.ts: src/lib/supabase/
+// types.ts doesn't model this table (owned by a separate slice), which
+// degrades `.upsert()`'s argument type to `never` even though `.from()`
+// itself accepts any string. This narrows the query builder locally.
+// PositionRow mirrors the migration's columns exactly.
+interface PositionRow {
+  id: string;
+  user_id: string;
+  account_id: string;
+  symbol: string;
+  side: PositionSide;
+  quantity: number;
+  avg_entry_price: number;
+  current_price: number;
+  cost_basis: number;
+  market_value: number;
+  unrealized_pl: number;
+  unrealized_pl_percent: number;
+  realized_pl: number;
+  total_pl: number;
+  stop_loss_price?: number;
+  take_profit_price?: number;
+  risk_amount?: number;
+  risk_percent?: number;
+  strategy_id?: string;
+  signal_id?: string;
+  opened_at: string;
+  last_updated_at: string;
+  closed_at?: string;
+  status: PositionStatus;
+  exchange?: string;
+  asset_class?: string;
+  notes?: string;
+}
+
+interface PositionsTableClient {
+  upsert(
+    row: PositionRow,
+  ): Promise<{ error: { message: string; code?: string } | null }>;
+}
 
 // ============================================================================
 // POSITION MANAGER CLASS
@@ -575,50 +621,69 @@ export class PositionManager {
     return `POS-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 
+  // Deliberately no try/catch here: a persist failure must surface to the
+  // caller (openPosition/addToPosition/reducePosition/closePosition), which
+  // ultimately propagates to the API route's own try/catch (positions/route.ts
+  // wraps both GET and POST handlers and returns a typed 5xx). Swallowing was
+  // the root cause of every position write silently no-op'ing: upsert()
+  // resolves with `{ error }` rather than throwing (postgrest-js only rejects
+  // on a network failure — confirmed via
+  // @supabase/postgrest-js/src/PostgrestBuilder.ts), and the old code never
+  // read `error` off the result at all, so the try/catch had nothing to catch.
   private async persistPosition(position: Position): Promise<void> {
-    try {
-      const supabase = await createClient();
+    const supabase = await createClient();
 
-      // Using type assertion since 'positions' table schema not yet defined in Supabase types
-      await (
-        supabase.from("positions") as unknown as {
-          upsert: (data: Record<string, unknown>) => Promise<unknown>;
-        }
-      ).upsert({
-        id: position.id,
-        user_id: position.userId,
-        account_id: position.accountId,
-        symbol: position.symbol,
-        side: position.side,
-        quantity: position.quantity,
-        avg_entry_price: position.avgEntryPrice,
-        current_price: position.currentPrice,
-        cost_basis: position.costBasis,
-        market_value: position.marketValue,
-        unrealized_pl: position.unrealizedPL,
-        unrealized_pl_percent: position.unrealizedPLPercent,
-        realized_pl: position.realizedPL,
-        total_pl: position.totalPL,
-        stop_loss_price: position.stopLossPrice,
-        take_profit_price: position.takeProfitPrice,
-        risk_amount: position.riskAmount,
-        risk_percent: position.riskPercent,
-        strategy_id: position.strategyId,
-        signal_id: position.signalId,
-        opened_at: position.openedAt.toISOString(),
-        last_updated_at: position.lastUpdatedAt.toISOString(),
-        closed_at: position.closedAt?.toISOString(),
-        status: position.status,
-        exchange: position.exchange,
-        asset_class: position.assetClass,
-        notes: position.notes,
-      });
-    } catch (_error) {
-      // PositionManager error: Failed to persist position
-      void _error;
+    const { error } = await (
+      supabase.from("positions") as unknown as PositionsTableClient
+    ).upsert({
+      id: position.id,
+      user_id: position.userId,
+      account_id: position.accountId,
+      symbol: position.symbol,
+      side: position.side,
+      quantity: position.quantity,
+      avg_entry_price: position.avgEntryPrice,
+      current_price: position.currentPrice,
+      cost_basis: position.costBasis,
+      market_value: position.marketValue,
+      unrealized_pl: position.unrealizedPL,
+      unrealized_pl_percent: position.unrealizedPLPercent,
+      realized_pl: position.realizedPL,
+      total_pl: position.totalPL,
+      stop_loss_price: position.stopLossPrice,
+      take_profit_price: position.takeProfitPrice,
+      risk_amount: position.riskAmount,
+      risk_percent: position.riskPercent,
+      strategy_id: position.strategyId,
+      signal_id: position.signalId,
+      opened_at: position.openedAt.toISOString(),
+      last_updated_at: position.lastUpdatedAt.toISOString(),
+      closed_at: position.closedAt?.toISOString(),
+      status: position.status,
+      exchange: position.exchange,
+      asset_class: position.assetClass,
+      notes: position.notes,
+    });
+
+    if (error) {
+      logger.error(
+        `Failed to persist position ${position.id}`,
+        new Error(error.message),
+        { positionId: position.id, userId: position.userId, code: error.code },
+      );
+      throw new Error(
+        `Failed to persist position ${position.id}: ${error.message}`,
+      );
     }
   }
 
+  // The DB error is logged then rethrown (not swallowed): loadPositions()
+  // hydrates this process-lifetime singleton's in-memory Map from the DB at
+  // the start of every request (positions/route.ts calls it before serving
+  // GET/POST) — a serverless cold start always begins with an empty Map, so
+  // a failed load must not be indistinguishable from "this user has zero
+  // positions." The route's own try/catch converts the rethrow into a typed
+  // 500 rather than a false "you have no positions" 200.
   async loadPositions(userId: string): Promise<void> {
     try {
       const supabase = await createClient();
@@ -635,9 +700,13 @@ export class PositionManager {
         this.positions.set(position.id, position);
         this.positionsBySymbol.set(position.symbol, position.id);
       }
-    } catch (_error) {
-      // PositionManager error: Failed to load positions
-      void _error;
+    } catch (err) {
+      logger.error(
+        `Failed to load positions for user ${userId}`,
+        err as Error,
+        { userId },
+      );
+      throw err;
     }
   }
 

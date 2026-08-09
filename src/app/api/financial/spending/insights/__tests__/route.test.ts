@@ -11,9 +11,18 @@
 
 import { NextRequest } from "next/server";
 
+const mockValidateFromHeaders = jest.fn();
 jest.mock("@/lib/api/financial-api-middleware");
 jest.mock("@/lib/financial/spending-analyzer");
-jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/auth/rbac");
 
 import { GET } from "../route";
@@ -50,6 +59,10 @@ const mockAnalyzer = {
 describe("GET /api/financial/spending/insights", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (applyFinancialAPIMiddleware as jest.Mock).mockResolvedValue({
       userId: "user-123",
       startTime: Date.now(),
@@ -93,20 +106,22 @@ describe("GET /api/financial/spending/insights", () => {
     expect(data.data.insights[0].priority).toBe("high");
   });
 
-  it("should return middleware error when auth fails", async () => {
-    const errorResponse = new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-    });
-    (applyFinancialAPIMiddleware as jest.Mock).mockResolvedValue({
-      error: errorResponse,
-    });
+  describe("negative-auth", () => {
+    it("should return middleware error when auth fails", async () => {
+      const errorResponse = new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+      });
+      (applyFinancialAPIMiddleware as jest.Mock).mockResolvedValue({
+        error: errorResponse,
+      });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/spending/insights",
-    );
-    const response = await GET(request);
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/spending/insights",
+      );
+      const response = await GET(request);
 
-    expect(response.status).toBe(401);
+      expect(response.status).toBe(401);
+    });
   });
 
   it("should return 500 on analyzer error", async () => {

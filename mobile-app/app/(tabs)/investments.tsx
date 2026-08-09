@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { EmptyState } from "../../src/components/EmptyState";
 import {
   useInvestmentStore,
   selectPortfolio,
@@ -268,23 +269,13 @@ export default function InvestmentsTab() {
           </View>
 
           {holdings.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <Ionicons
-                name="trending-up-outline"
-                size={48}
-                color={theme.colors.textSecondary}
-              />
-              <Text style={styles.emptyText}>No holdings yet</Text>
-              <Text style={styles.emptySubtext}>
-                Add your first investment to get started
-              </Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => router.push("/investments/add-holding")}
-              >
-                <Text style={styles.addButtonText}>Add Holding</Text>
-              </TouchableOpacity>
-            </Card>
+            <EmptyState
+              icon="trending-up-outline"
+              title="No investments yet"
+              description="Start investing to see your portfolio here"
+              actionLabel="Browse Stocks"
+              onAction={() => router.push("/investments/add-holding")}
+            />
           ) : (
             holdings.slice(0, 5).map((holding, index) => (
               <TouchableOpacity

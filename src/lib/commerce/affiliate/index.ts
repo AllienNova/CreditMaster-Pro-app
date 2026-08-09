@@ -13,10 +13,6 @@ export {
   default as affiliateServiceDefault,
 } from "./affiliate-service";
 export {
-  trackingService,
-  default as trackingServiceDefault,
-} from "./tracking-service";
-export {
   commissionCalculator,
   default as commissionCalculatorDefault,
 } from "./commission-calculator";

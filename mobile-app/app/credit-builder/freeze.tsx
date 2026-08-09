@@ -11,13 +11,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  Linking,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 interface Bureau {
   id: string;
@@ -96,7 +96,7 @@ export default function CreditFreezeScreen() {
   };
 
   const openBureauSite = (url: string) => {
-    Linking.openURL(url);
+    openExternalUrl(url);
   };
 
   return (
@@ -177,7 +177,7 @@ export default function CreditFreezeScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.bureauAction}
-                onPress={() => Linking.openURL(`tel:${bureau.phone}`)}
+                onPress={() => openExternalUrl(`tel:${bureau.phone}`)}
               >
                 <Ionicons
                   name="call-outline"

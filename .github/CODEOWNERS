@@ -1,0 +1,28 @@
+# CODEOWNERS — security-critical paths require review from a security owner.
+# Wave 7 TASK-PRE-02. Branch-protection ENFORCEMENT of these owners is a GitHub
+# repo setting (operator action); this file declares the gated surface.
+#
+# Replace @AllienNova with a dedicated security-team handle once one exists.
+
+# Authentication, authorization, RBAC, route guards
+/src/lib/auth/                                 @AllienNova
+/src/middleware.ts                             @AllienNova
+/src/lib/auth/PUBLIC_ROUTES.ts                 @AllienNova
+/docs/superpowers/auth-route-inventory.csv     @AllienNova
+/scripts/verify-auth-coverage.ts               @AllienNova
+
+# Security primitives (rate limiting, CSRF, input/output validation, audit)
+/src/lib/security/                             @AllienNova
+
+# Money paths — payments, subscriptions, payouts, commerce, affiliate
+/src/lib/payment/                              @AllienNova
+/src/lib/subscriptions/                        @AllienNova
+/src/lib/commerce/                             @AllienNova
+/src/lib/affiliate/                            @AllienNova
+/src/lib/money/                                @AllienNova
+
+# Compliance / PII / GDPR-CCPA
+/src/lib/compliance/                           @AllienNova
+
+# Database schema — RLS, grants, cascade-delete correctness
+/supabase/migrations/                          @AllienNova

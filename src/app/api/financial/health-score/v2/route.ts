@@ -21,7 +21,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { healthScoreCalculatorV2 } from "@/lib/financial/health-score-calculator-v2";
 import { financialAggregationService } from "@/lib/financial/financial-aggregation-service";
 import {
@@ -33,22 +34,13 @@ import {
 /**
  * GET - Calculate health score V2 with query parameters
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: "Invalid or missing authentication" },
-        { status: 401 },
-      );
-    }
-
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId") || validation.user.id;
+    const userId = searchParams.get("userId") || user.id;
 
-    // Verify user can access this data
-    if (userId !== validation.user.id) {
+    // Verify user can access this data (ownership check preserved)
+    if (userId !== user.id) {
       return NextResponse.json(
         { error: "Forbidden", message: "Cannot access other user data" },
         { status: 403 },
@@ -100,30 +92,21 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST - Calculate health score V2 with body options and optional save
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: "Invalid or missing authentication" },
-        { status: 401 },
-      );
-    }
-
     const body = await request.json();
     const { userId, options = {}, saveScore = false } = body;
 
     // Use authenticated user's ID if not provided
-    const targetUserId = userId || validation.user.id;
+    const targetUserId = userId || user.id;
 
-    // Verify user can access this data
-    if (targetUserId !== validation.user.id) {
+    // Verify user can access this data (ownership check preserved)
+    if (targetUserId !== user.id) {
       return NextResponse.json(
         { error: "Forbidden", message: "Cannot access other user data" },
         { status: 403 },
@@ -168,4 +151,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

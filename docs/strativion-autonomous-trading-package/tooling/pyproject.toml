@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "strativion-tooling"
+version = "2.5.0rc1"
+description = "Validator, manifest generator, override validator, and audit writer for the Strativion Autonomous Trading Package."
+readme = "validate/README.md"
+requires-python = ">=3.10"
+license = { file = "../LICENSE" }
+authors = [{ name = "Kimal Honour Djam", email = "president@aliennova.com" }]
+keywords = ["trading", "risk", "policy", "autonomous", "strativion"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Developers",
+    "License :: Other/Proprietary License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = [
+    "pyyaml>=6.0",
+    "jsonschema>=4.21",
+]
+
+[project.urls]
+Homepage = "https://strativion.io"
+Documentation = "https://strativion.io/docs"
+Source = "https://github.com/aliennova/strativion-autonomous-trading-package"
+Issues = "mailto:support@aliennova.com"
+
+[project.scripts]
+strativion-validate = "validate.validate_package:main"
+strativion-validate-override = "validate.validate_override:main"
+strativion-manifest = "manifest.generate_manifest:main"
+strativion-audit = "audit.audit_writer:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["validate", "manifest", "audit"]

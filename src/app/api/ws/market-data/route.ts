@@ -6,24 +6,31 @@
  * so we use SSE as an alternative for real-time updates
  */
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getMarketDataService } from "@/lib/investments/services/MarketDataService";
 
 /**
  * GET /api/ws/market-data
  *
- * Establishes a Server-Sent Events connection for real-time market data
+ * Establishes a Server-Sent Events connection for real-time market data.
+ * Authentication is enforced on the socket upgrade: an unauthenticated
+ * request is rejected with 401 before any stream is opened (TASK-AUTH-03e).
  *
  * Query Parameters:
  * - symbols: Comma-separated list of symbols to subscribe to (e.g., "AAPL,MSFT,GOOGL")
  */
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const symbolsParam = searchParams.get("symbols");
+export const GET = withAuth(
+  async (request: NextRequest, _user: AuthedUser): Promise<NextResponse> => {
+    const { searchParams } = new URL(request.url);
+    const symbolsParam = searchParams.get("symbols");
 
-  if (!symbolsParam) {
-    return new Response("Missing symbols parameter", { status: 400 });
-  }
+    if (!symbolsParam) {
+      return NextResponse.json(
+        { error: "Missing symbols parameter" },
+        { status: 400 },
+      );
+    }
 
   const symbols = symbolsParam.split(",").map((s) => s.trim().toUpperCase());
 
@@ -88,28 +95,33 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
-}
+    // NextResponse cannot wrap a streaming body; the SSE Response is
+    // structurally a Response and is cast to satisfy the guard's return type.
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    }) as unknown as NextResponse;
+  },
+);
 
 /**
- * GET /api/ws/market-data/status
+ * POST /api/ws/market-data
  *
- * Returns the status of the WebSocket service
+ * Returns the status of the WebSocket service.
  */
-export async function POST(request: NextRequest) {
-  return Response.json({
-    success: true,
-    data: {
-      status: "operational",
-      protocol: "SSE",
-      updateInterval: 5000,
-      message: "Market data streaming service is operational",
-    },
-  });
-}
+export const POST = withAuth(
+  async (_request: NextRequest, _user: AuthedUser) => {
+    return NextResponse.json({
+      success: true,
+      data: {
+        status: "operational",
+        protocol: "SSE",
+        updateInterval: 5000,
+        message: "Market data streaming service is operational",
+      },
+    });
+  },
+);

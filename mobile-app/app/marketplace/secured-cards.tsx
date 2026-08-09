@@ -1,114 +1,123 @@
 /**
  * Fynvita Secured Cards Marketplace Screen
- * Browse and compare secured credit cards
+ * Browse and compare secured credit cards from the marketplace API
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
-  Linking,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { useMarketplaceStore } from "../../src/store/marketplaceStore";
+import type { MarketplaceProduct } from "../../src/services/api/marketplace";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
-interface SecuredCard {
-  id: string;
-  name: string;
-  issuer: string;
-  annualFee: number;
-  deposit: string;
-  apr: string;
-  features: string[];
-  rating: number;
-  approvalOdds: "High" | "Medium" | "Low";
-}
+const getOddsColor = (rating: number): string => {
+  if (rating >= 4.5) return "#22C55E";
+  if (rating >= 3.5) return "#F59E0B";
+  return "#EF4444";
+};
 
-const SECURED_CARDS: SecuredCard[] = [
-  {
-    id: "1",
-    name: "Discover it® Secured",
-    issuer: "Discover",
-    annualFee: 0,
-    deposit: "$200-$2,500",
-    apr: "28.24%",
-    features: [
-      "2% cash back at restaurants & gas",
-      "No annual fee",
-      "Free FICO score",
-    ],
-    rating: 4.8,
-    approvalOdds: "High",
-  },
-  {
-    id: "2",
-    name: "Capital One Platinum Secured",
-    issuer: "Capital One",
-    annualFee: 0,
-    deposit: "$49-$200",
-    apr: "30.74%",
-    features: [
-      "Low deposit option",
-      "No annual fee",
-      "Credit line increase possible",
-    ],
-    rating: 4.5,
-    approvalOdds: "High",
-  },
-  {
-    id: "3",
-    name: "Chime Credit Builder",
-    issuer: "Chime",
-    annualFee: 0,
-    deposit: "No deposit",
-    apr: "0%",
-    features: ["No credit check", "No interest", "Reports to all 3 bureaus"],
-    rating: 4.7,
-    approvalOdds: "High",
-  },
-  {
-    id: "4",
-    name: "OpenSky® Secured Visa®",
-    issuer: "OpenSky",
-    annualFee: 35,
-    deposit: "$200-$3,000",
-    apr: "22.64%",
-    features: [
-      "No credit check",
-      "Reports to all 3 bureaus",
-      "Choose your credit limit",
-    ],
-    rating: 4.2,
-    approvalOdds: "High",
-  },
-];
-
-const getOddsColor = (odds: SecuredCard["approvalOdds"]): string => {
-  const colors = { High: "#22C55E", Medium: "#F59E0B", Low: "#EF4444" };
-  return colors[odds];
+const getOddsLabel = (rating: number): string => {
+  if (rating >= 4.5) return "High Approval";
+  if (rating >= 3.5) return "Medium Approval";
+  return "Low Approval";
 };
 
 export default function SecuredCardsScreen() {
-  const [sortBy, setSortBy] = useState<"rating" | "fee" | "apr">("rating");
+  const [sortBy, setSortBy] = useState<"rating" | "price">("rating");
+  const { products, isLoadingProducts, error, fetchProducts, clearError } =
+    useMarketplaceStore();
 
-  const sortedCards = [...SECURED_CARDS].sort((a, b) => {
+  useEffect(() => {
+    fetchProducts("secured_cards");
+  }, []);
+
+  const sortedProducts = [...products].sort((a, b) => {
     if (sortBy === "rating") return b.rating - a.rating;
-    if (sortBy === "fee") return a.annualFee - b.annualFee;
-    return parseFloat(a.apr) - parseFloat(b.apr);
+    return a.price - b.price;
   });
 
-  const handleApply = (card: SecuredCard) => {
-    Linking.openURL(
-      `https://www.${card.issuer.toLowerCase().replace(" ", "")}.com`,
-    );
+  const handleApply = (product: MarketplaceProduct) => {
+    if (product.provider?.website) {
+      openExternalUrl(product.provider.website);
+    }
   };
+
+  const renderFeatures = (features: Record<string, unknown>): string[] => {
+    if (Array.isArray(features)) return features as string[];
+    if (features && typeof features === "object" && "list" in features) {
+      return features.list as string[];
+    }
+    return Object.values(features).filter(
+      (v) => typeof v === "string",
+    ) as string[];
+  };
+
+  if (isLoadingProducts) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Secured Cards</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Loading secured cards...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={[styles.header, { padding: theme.spacing.lg }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Secured Cards</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.centerContent}>
+          <Ionicons
+            name="cloud-offline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.errorTitle}>Unable to load secured cards</Text>
+          <Text style={styles.errorSubtitle}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              clearError();
+              fetchProducts("secured_cards");
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -142,93 +151,131 @@ export default function SecuredCardsScreen() {
         </Card>
 
         {/* Sort Options */}
-        <View style={styles.sortRow}>
-          <Text style={styles.sortLabel}>Sort by:</Text>
-          {(["rating", "fee", "apr"] as const).map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={[
-                styles.sortChip,
-                sortBy === option && styles.sortChipActive,
-              ]}
-              onPress={() => setSortBy(option)}
-            >
-              <Text
+        {sortedProducts.length > 0 && (
+          <View style={styles.sortRow}>
+            <Text style={styles.sortLabel}>Sort by:</Text>
+            {(["rating", "price"] as const).map((option) => (
+              <TouchableOpacity
+                key={option}
                 style={[
-                  styles.sortText,
-                  sortBy === option && styles.sortTextActive,
+                  styles.sortChip,
+                  sortBy === option && styles.sortChipActive,
                 ]}
-              >
-                {option === "fee" ? "Fee" : option === "apr" ? "APR" : "Rating"}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Cards List */}
-        {sortedCards.map((card) => (
-          <Card key={card.id} style={styles.cardItem}>
-            <View style={styles.cardHeader}>
-              <View>
-                <Text style={styles.cardName}>{card.name}</Text>
-                <Text style={styles.cardIssuer}>{card.issuer}</Text>
-              </View>
-              <View
-                style={[
-                  styles.oddsBadge,
-                  { backgroundColor: `${getOddsColor(card.approvalOdds)}15` },
-                ]}
+                onPress={() => setSortBy(option)}
               >
                 <Text
                   style={[
-                    styles.oddsText,
-                    { color: getOddsColor(card.approvalOdds) },
+                    styles.sortText,
+                    sortBy === option && styles.sortTextActive,
                   ]}
                 >
-                  {card.approvalOdds} Approval
+                  {option === "price" ? "Price" : "Rating"}
                 </Text>
-              </View>
-            </View>
-
-            <View style={styles.cardStats}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Annual Fee</Text>
-                <Text style={styles.statValue}>${card.annualFee}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Deposit</Text>
-                <Text style={styles.statValue}>{card.deposit}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>APR</Text>
-                <Text style={styles.statValue}>{card.apr}</Text>
-              </View>
-            </View>
-
-            <View style={styles.featuresSection}>
-              {card.features.map((feature, idx) => (
-                <View key={idx} style={styles.featureRow}>
-                  <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
-                  <Text style={styles.featureText}>{feature}</Text>
-                </View>
-              ))}
-            </View>
-
-            <View style={styles.cardFooter}>
-              <View style={styles.ratingRow}>
-                <Ionicons name="star" size={16} color="#F59E0B" />
-                <Text style={styles.ratingText}>{card.rating}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.applyButton}
-                onPress={() => handleApply(card)}
-              >
-                <Text style={styles.applyButtonText}>Apply Now</Text>
-                <Ionicons name="open-outline" size={16} color="#fff" />
               </TouchableOpacity>
-            </View>
-          </Card>
-        ))}
+            ))}
+          </View>
+        )}
+
+        {/* Empty State */}
+        {sortedProducts.length === 0 && (
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="card-outline"
+              size={48}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.emptyTitle}>No secured cards available yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Check back later for new offerings
+            </Text>
+          </View>
+        )}
+
+        {/* Cards List */}
+        {sortedProducts.map((product) => {
+          const features = renderFeatures(product.features);
+          return (
+            <Card key={product.id} style={styles.cardItem}>
+              <View style={styles.cardHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardName}>{product.name}</Text>
+                  <Text style={styles.cardIssuer}>
+                    {product.provider?.name || ""}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.oddsBadge,
+                    {
+                      backgroundColor: `${getOddsColor(product.rating)}15`,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.oddsText,
+                      { color: getOddsColor(product.rating) },
+                    ]}
+                  >
+                    {getOddsLabel(product.rating)}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.cardStats}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Price</Text>
+                  <Text style={styles.statValue}>
+                    {product.price === 0
+                      ? "No fee"
+                      : `$${product.price}/${product.priceType === "monthly" ? "mo" : product.priceType === "yearly" ? "yr" : ""}`}
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Rating</Text>
+                  <Text style={styles.statValue}>
+                    {product.rating.toFixed(1)}
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Reviews</Text>
+                  <Text style={styles.statValue}>{product.reviewCount}</Text>
+                </View>
+              </View>
+
+              {features.length > 0 && (
+                <View style={styles.featuresSection}>
+                  {features.slice(0, 3).map((feature, idx) => (
+                    <View key={idx} style={styles.featureRow}>
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={16}
+                        color="#22C55E"
+                      />
+                      <Text style={styles.featureText}>{feature}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <View style={styles.cardFooter}>
+                <View style={styles.ratingRow}>
+                  <Ionicons name="star" size={16} color="#F59E0B" />
+                  <Text style={styles.ratingText}>
+                    {product.rating.toFixed(1)}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.applyButton}
+                  onPress={() => handleApply(product)}
+                >
+                  <Text style={styles.applyButtonText}>Apply Now</Text>
+                  <Ionicons name="open-outline" size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </Card>
+          );
+        })}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -292,7 +339,11 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   cardName: { fontSize: 16, fontWeight: "600", color: theme.colors.text },
-  cardIssuer: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  cardIssuer: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
   oddsBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   oddsText: { fontSize: 11, fontWeight: "600" },
   cardStats: {
@@ -347,5 +398,48 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#fff",
     marginRight: 6,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.spacing.xl,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.md,
+  },
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  errorSubtitle: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
+    textAlign: "center",
+  },
+  retryButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: theme.spacing.lg,
+  },
+  retryButtonText: { fontSize: 14, fontWeight: "600", color: "#fff" },
+  emptyState: { alignItems: "center", paddingVertical: 60 },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: 12,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
   },
 });

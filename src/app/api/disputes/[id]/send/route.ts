@@ -4,55 +4,28 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { disputeService } from "@/lib/disputes/dispute-service";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
+import { disputeServiceDB } from "@/lib/disputes/dispute-service-db";
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
+export const PATCH = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
+    try {
+      // The guard does not forward Next's route `params`; the path ends in
+      // /disputes/[id]/send, so the id is the second-to-last segment.
+      const segments = request.nextUrl.pathname.split("/");
+      const id = segments[segments.length - 2];
 
-    const { id } = await params;
-    const body = await request.json().catch(() => ({}));
+      // sendDispute is user-scoped — throws if the dispute belongs to
+      // another user (IDOR defence).
+      const dispute = await disputeServiceDB.sendDispute(id, user.id);
 
-    const existingDispute = disputeService.getDispute(id);
-    if (!existingDispute) {
-      return NextResponse.json(
-        { success: false, error: "Dispute not found" },
-        { status: 404 },
-      );
-    }
-
-    if (existingDispute.userId !== validation.user.id) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 },
-      );
-    }
-
-    const dispute = disputeService.sendDispute(id);
-
-    if (!dispute) {
+      return NextResponse.json({ success: true, data: dispute });
+    } catch (error) {
+      void error;
       return NextResponse.json(
         { success: false, error: "Failed to send dispute" },
         { status: 500 },
       );
     }
-
-    return NextResponse.json({ success: true, data: dispute });
-  } catch (error) {
-    console.error("Send dispute error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to send dispute" },
-      { status: 500 },
-    );
-  }
-}
+  },
+);

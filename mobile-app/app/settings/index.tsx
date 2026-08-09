@@ -70,6 +70,11 @@ export default function SettingsScreen() {
           route: "/settings/appearance",
         },
         {
+          icon: "git-compare",
+          title: "Transaction Rules",
+          route: "/settings/transaction-rules",
+        },
+        {
           icon: "download",
           title: "Export Data",
           route: "/settings/data-export",

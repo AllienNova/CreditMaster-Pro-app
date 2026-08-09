@@ -1,0 +1,599 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/policy.execution-errors.v1.schema.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_role",
+        "schema_version",
+        "canonical_package_version"
+      ],
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "enum": [
+            "policy",
+            "workflow"
+          ]
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "file_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "canonical_package_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        }
+      }
+    },
+    "fix_reject_codes": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "ord_rej_reason": {
+          "type": "array"
+        },
+        "session_reject_reason": {
+          "type": "array"
+        },
+        "unrecognized_code_action": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "machine_action": {
+              "type": "string"
+            },
+            "requires_human": {
+              "type": "boolean"
+            },
+            "incident_code": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "broker_circuit_breaker": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "per_broker": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "consecutive_reject_threshold": {
+              "type": "integer"
+            },
+            "window_seconds": {
+              "type": "integer"
+            },
+            "action_on_open": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            },
+            "half_open": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "probe_interval_seconds": {
+                  "type": "integer"
+                },
+                "probe_order_type": {
+                  "type": "string"
+                },
+                "probe_order_notional_usd": {
+                  "type": "integer"
+                },
+                "consecutive_successes_to_close": {
+                  "type": "integer"
+                },
+                "probe_failure_action": {
+                  "type": "string"
+                }
+              }
+            },
+            "full_close": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "consecutive_successes_required": {
+                  "type": "integer"
+                },
+                "incident_code": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "per_symbol": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "consecutive_reject_threshold": {
+              "type": "integer"
+            },
+            "window_seconds": {
+              "type": "integer"
+            },
+            "action_on_open": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            },
+            "half_open": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "probe_interval_seconds": {
+                  "type": "integer"
+                },
+                "consecutive_successes_to_close": {
+                  "type": "integer"
+                },
+                "probe_failure_action": {
+                  "type": "string"
+                }
+              }
+            },
+            "full_close": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "consecutive_successes_required": {
+                  "type": "integer"
+                },
+                "incident_code": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "state_scope": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "per_broker_key": {
+              "type": "array"
+            },
+            "per_symbol_key": {
+              "type": "array"
+            }
+          }
+        },
+        "state_persistence": {
+          "type": "string"
+        },
+        "state_ttl_hours": {
+          "type": "integer"
+        }
+      }
+    },
+    "clock_skew": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "max_ms": {
+          "type": "integer"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "ntp_stratum_max": {
+              "type": "integer"
+            },
+            "primary_ntp_server": {
+              "type": "string"
+            },
+            "fallback_ntp_server": {
+              "type": "string"
+            },
+            "sync_check_interval_seconds": {
+              "type": "integer"
+            },
+            "sync_failure_action": {
+              "type": "string"
+            },
+            "sync_failure_incident": {
+              "type": "string"
+            }
+          }
+        },
+        "measurement": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "measurement_interval_seconds": {
+              "type": "integer"
+            },
+            "consecutive_breach_count_to_act": {
+              "type": "integer"
+            },
+            "breach_action": {
+              "type": "array"
+            },
+            "resume_on_consecutive_ok_count": {
+              "type": "integer"
+            }
+          }
+        },
+        "exchange_heartbeat_comparison": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "max_divergence_from_exchange_time_ms": {
+              "type": "integer"
+            },
+            "divergence_incident": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "tif_defaults": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "equities": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "default": {
+              "type": "string"
+            },
+            "permitted": {
+              "type": "array"
+            },
+            "gtc_requires_explicit_signal_field": {
+              "type": "boolean"
+            }
+          }
+        },
+        "options": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "default": {
+              "type": "string"
+            },
+            "permitted": {
+              "type": "array"
+            },
+            "gtc_permitted": {
+              "type": "boolean"
+            },
+            "gtc_violation_action": {
+              "type": "string"
+            },
+            "gtc_violation_incident": {
+              "type": "string"
+            }
+          }
+        },
+        "futures": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "default": {
+              "type": "string"
+            },
+            "permitted": {
+              "type": "array"
+            },
+            "gtc_requires_explicit_signal_field": {
+              "type": "boolean"
+            }
+          }
+        },
+        "crypto": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "default": {
+              "type": "string"
+            },
+            "permitted": {
+              "type": "array"
+            },
+            "day_permitted": {
+              "type": "boolean"
+            },
+            "day_violation_action": {
+              "type": "string"
+            },
+            "day_violation_incident": {
+              "type": "string"
+            }
+          }
+        },
+        "fx": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "default": {
+              "type": "string"
+            },
+            "permitted": {
+              "type": "array"
+            }
+          }
+        },
+        "per_venue_overrides": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "examples": {
+              "type": "array"
+            }
+          }
+        }
+      }
+    },
+    "retry_policy": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "categories": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "transient_network": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "max_retries": {
+                  "type": "integer"
+                },
+                "backoff_schedule_ms": {
+                  "type": "array"
+                },
+                "after_max_retries": {
+                  "type": "string"
+                },
+                "incident_code": {
+                  "type": "string"
+                }
+              }
+            },
+            "rate_limit": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "max_retries": {
+                  "type": "integer"
+                },
+                "backoff_rule": {
+                  "type": "string"
+                },
+                "default_retry_after_ms": {
+                  "type": "integer"
+                },
+                "after_max_retries": {
+                  "type": "string"
+                },
+                "incident_code": {
+                  "type": "string"
+                }
+              }
+            },
+            "venue_down": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "max_retries": {
+                  "type": "integer"
+                },
+                "backoff_rule": {
+                  "type": "string"
+                },
+                "after_max_retries": {
+                  "type": "string"
+                },
+                "incident_code": {
+                  "type": "string"
+                }
+              }
+            },
+            "order_content_error": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "max_retries": {
+                  "type": "integer"
+                },
+                "backoff_rule": {
+                  "type": "string"
+                },
+                "after_max_retries": {
+                  "type": "string"
+                },
+                "incident_code": {
+                  "type": "string"
+                }
+              }
+            },
+            "compliance_reject": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "max_retries": {
+                  "type": "integer"
+                },
+                "backoff_rule": {
+                  "type": "string"
+                },
+                "after_max_retries": {
+                  "type": "string"
+                },
+                "incident_code": {
+                  "type": "string"
+                },
+                "requires_human": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        },
+        "unclassified_reject_category": {
+          "type": "string"
+        }
+      }
+    },
+    "dead_letter": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "persistence": {
+          "type": "string"
+        },
+        "required_fields_per_entry": {
+          "type": "array"
+        },
+        "human_disposition_sla_hours": {
+          "type": "integer"
+        },
+        "sla_breach_incident": {
+          "type": "string"
+        },
+        "audit_log_required": {
+          "type": "boolean"
+        },
+        "auto_resubmit_permitted": {
+          "type": "boolean"
+        }
+      }
+    },
+    "market_data_errors": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "stale_tick": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "staleness_thresholds_source": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            },
+            "auto_unblock_on_resolution_ms": {
+              "type": "integer"
+            },
+            "escalation_threshold_seconds": {
+              "type": "integer"
+            },
+            "escalation_incident": {
+              "type": "string"
+            }
+          }
+        },
+        "venue_disconnect": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            },
+            "backup_feed_required": {
+              "type": "boolean"
+            },
+            "backup_feed_unavailable_action": {
+              "type": "string"
+            },
+            "backup_feed_unavailable_incident": {
+              "type": "string"
+            },
+            "requires_human": {
+              "type": "boolean"
+            }
+          }
+        },
+        "gap_in_sequence": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            },
+            "retransmission_timeout_seconds": {
+              "type": "integer"
+            },
+            "retransmission_timeout_incident": {
+              "type": "string"
+            },
+            "feed_types_covered": {
+              "type": "array"
+            }
+          }
+        },
+        "nbbo_stale": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "nbbo_required_source": {
+              "type": "string"
+            },
+            "stale_threshold_ms": {
+              "type": "integer"
+            },
+            "stale_action": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

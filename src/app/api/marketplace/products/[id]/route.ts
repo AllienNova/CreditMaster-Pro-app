@@ -6,12 +6,19 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { marketplaceService } from "@/lib/marketplace";
+import {
+  enforcePublicCatalogRateLimit,
+  methodNotAllowed,
+} from "@/lib/api/public-route-guard";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const rateLimit = await enforcePublicCatalogRateLimit(request);
+  if (!rateLimit.allowed) return rateLimit.response;
+
   try {
     const { id } = await params;
 
@@ -37,10 +44,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: product,
-    });
+    return rateLimit.withHeaders(
+      NextResponse.json({
+        success: true,
+        data: product,
+      }),
+    );
   } catch (error) {
     console.error("Error fetching product:", error);
     return NextResponse.json(
@@ -53,3 +62,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     );
   }
 }
+
+export const POST = methodNotAllowed;
+export const PUT = methodNotAllowed;
+export const PATCH = methodNotAllowed;
+export const DELETE = methodNotAllowed;

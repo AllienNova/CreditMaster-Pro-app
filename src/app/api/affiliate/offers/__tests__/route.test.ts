@@ -1,11 +1,16 @@
 import type { NextRequest } from "next/server";
-import { GET, POST } from "../route";
 
-// Mock dependencies
+// Route wrapped in withPermission("financial:read") (TASK-AUTH-03f); the guard
+// resolves auth via jwtValidation.validateFromHeaders + resolveRoleFromDb, then
+// checks rbac.hasPermission against the DB-resolved role.
 jest.mock("@/lib/auth/jwt-validation", () => ({
   jwtValidation: {
     validateFromHeaders: jest.fn(),
   },
+}));
+
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn(),
 }));
 
 jest.mock("@/lib/auth/rbac", () => ({
@@ -51,7 +56,9 @@ jest.mock("@/lib/affiliate/compliance-checker", () => ({
   },
 }));
 
+import { GET, POST } from "../route";
 import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { resolveRoleFromDb } from "@/lib/auth/resolve-role";
 import { rbac } from "@/lib/auth/rbac";
 import { creditCardMatcher } from "@/lib/affiliate/credit-card-matcher";
 import { insuranceMatcher } from "@/lib/affiliate/insurance-matcher";
@@ -60,6 +67,7 @@ import { productMatcher } from "@/lib/affiliate/product-matcher";
 import { moneyLionClient } from "@/lib/affiliate/moneylion-client";
 
 const mockJwt = jwtValidation.validateFromHeaders as jest.Mock;
+const mockResolveRole = resolveRoleFromDb as jest.Mock;
 const mockRbac = rbac.hasPermission as jest.Mock;
 
 function createMockRequest(
@@ -85,29 +93,36 @@ describe("GET /api/affiliate/offers", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockJwt.mockResolvedValue(validUser);
+    mockResolveRole.mockResolvedValue("premium");
     mockRbac.mockReturnValue(true);
   });
 
-  it("returns 401 when not authenticated", async () => {
-    mockJwt.mockResolvedValue({ valid: false, user: null });
+  describe("negative-auth", () => {
+    it("returns 401 when not authenticated", async () => {
+      mockJwt.mockResolvedValue({ valid: false, user: null });
 
-    const req = createMockRequest("http://localhost:3000/api/affiliate/offers");
-    const res = await GET(req);
-    const json = await res.json();
+      const req = createMockRequest(
+        "http://localhost:3000/api/affiliate/offers",
+      );
+      const res = await GET(req);
+      const json = await res.json();
 
-    expect(res.status).toBe(401);
-    expect(json.error).toBe("Unauthorized");
-  });
+      expect(res.status).toBe(401);
+      expect(json.error).toBe("Unauthorized");
+    });
 
-  it("returns 403 when missing financial:read permission", async () => {
-    mockRbac.mockReturnValue(false);
+    it("returns 403 when missing financial:read permission", async () => {
+      mockRbac.mockReturnValue(false);
 
-    const req = createMockRequest("http://localhost:3000/api/affiliate/offers");
-    const res = await GET(req);
-    const json = await res.json();
+      const req = createMockRequest(
+        "http://localhost:3000/api/affiliate/offers",
+      );
+      const res = await GET(req);
+      const json = await res.json();
 
-    expect(res.status).toBe(403);
-    expect(json.error).toBe("Forbidden");
+      expect(res.status).toBe(403);
+      expect(json.error).toBe("Forbidden");
+    });
   });
 
   it("returns all categories by default", async () => {
@@ -266,36 +281,45 @@ describe("POST /api/affiliate/offers", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockJwt.mockResolvedValue(validUser);
+    mockResolveRole.mockResolvedValue("premium");
     mockRbac.mockReturnValue(true);
     // resetMocks: true in jest.config clears mock implementations — re-set them
     (moneyLionClient.trackClick as jest.Mock).mockResolvedValue({ clickId: "click-123" });
     (moneyLionClient.getProductCatalog as jest.Mock).mockResolvedValue([]);
   });
 
-  it("returns 401 when not authenticated", async () => {
-    mockJwt.mockResolvedValue({ valid: false, user: null });
+  describe("negative-auth", () => {
+    it("returns 401 when not authenticated", async () => {
+      mockJwt.mockResolvedValue({ valid: false, user: null });
 
-    const req = createMockRequest("http://localhost:3000/api/affiliate/offers", {
-      method: "POST",
-      body: { productId: "p-1", partnerId: "partner-1" },
+      const req = createMockRequest(
+        "http://localhost:3000/api/affiliate/offers",
+        {
+          method: "POST",
+          body: { productId: "p-1", partnerId: "partner-1" },
+        },
+      );
+      const res = await POST(req);
+      const json = await res.json();
+
+      expect(res.status).toBe(401);
+      expect(json.error).toBe("Unauthorized");
     });
-    const res = await POST(req);
-    const json = await res.json();
 
-    expect(res.status).toBe(401);
-    expect(json.error).toBe("Unauthorized");
-  });
+    it("returns 403 when missing permission", async () => {
+      mockRbac.mockReturnValue(false);
 
-  it("returns 403 when missing permission", async () => {
-    mockRbac.mockReturnValue(false);
+      const req = createMockRequest(
+        "http://localhost:3000/api/affiliate/offers",
+        {
+          method: "POST",
+          body: { productId: "p-1", partnerId: "partner-1" },
+        },
+      );
+      const res = await POST(req);
 
-    const req = createMockRequest("http://localhost:3000/api/affiliate/offers", {
-      method: "POST",
-      body: { productId: "p-1", partnerId: "partner-1" },
+      expect(res.status).toBe(403);
     });
-    const res = await POST(req);
-
-    expect(res.status).toBe(403);
   });
 
   it("returns 400 when productId is missing", async () => {

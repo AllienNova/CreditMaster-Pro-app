@@ -1,0 +1,244 @@
+# =============================================================================
+# Strativion Trading Agent - PCTT Parameters
+# Pivot-Constrained Trendline Trading System
+# Source: PCTT Mathematical Framework v4.0 (Production-Grade)
+#         RG Structure Trading Strategy Paper v3.0
+#         PCTT Regime Detection Slope Zigzag v2
+# Author: Kimal Honour Djam
+# All values are exact - do not use ranges
+# =============================================================================
+
+pctt_version: "4.0"
+
+# ---------------------------------------------------------------------------
+# Pivot Detection (v3.0 Section 4; Pine Script reference: ta.pivotlow/high)
+# Confirmed fractals with k-bar delay. Non-repainting by construction.
+# ---------------------------------------------------------------------------
+pivot_detection:
+  lookback_bars: 200                   # Rolling window N for pivot collection
+  left_bars: 2                         # k parameter: bars to left of pivot
+  right_bars: 2                        # k parameter: bars to right (confirmation delay)
+  atr_period: 14                       # Wilder ATR period for all normalization
+  max_pivots_tracked: 12               # Cap K for Pine complexity (v3.0 Section 14.2)
+
+# ---------------------------------------------------------------------------
+# Candidate Line Generation (v3.0 Section 5.1)
+# Discrete pivot-pair family with objective scoring
+# ---------------------------------------------------------------------------
+candidate_lines:
+  min_touches: 2                       # Minimum pivot touches to form a line
+  min_span_bars: 20                    # Minimum time span between defining pivots (Section 3.3)
+  touch_tolerance_atr: 0.20           # alpha: ATR multiplier for touch detection band
+  max_violation_atr: 0.50             # Maximum penetration before line disqualified
+  max_violations_allowed: 3            # k_max: hard constraint variant (v3.0 Section 5.4)
+
+# ---------------------------------------------------------------------------
+# Objective Scoring Function (v3.0 Section 5.3)
+# Score(l) = touch_reward + persistence - violation_penalty - instability
+# ---------------------------------------------------------------------------
+scoring:
+  touch_reward_weight: 1.0             # Weight on sum of touch scores
+  span_reward_weight: 0.5              # omega_s: persistence reward (ln(1 + span))
+  violation_penalty_weight: 2.0        # lambda: violation penalty multiplier
+  regularization_weight: 0.1           # eta: instability penalty (optional)
+
+# ---------------------------------------------------------------------------
+# Quality Index / Q-Score (v3.0 Section 6; v4.0 Section 4)
+# Q = sigmoid(Score). NOT a probability unless calibrated.
+# ---------------------------------------------------------------------------
+q_score:
+  sigmoid_center: 0.0                  # Sigmoid shift parameter
+  a_grade_threshold: 0.70             # Q_A: minimum Q for A-grade setup (3+ touches)
+  b_grade_threshold: 0.60             # Q_B: minimum Q for B-grade setup (2-touch)
+  min_tradeable: 0.55                  # Below this, skip the trade entirely
+
+  # v4.0 Calibration (Section 4.1-4.2)
+  calibration_method: "isotonic"       # isotonic regression (mandatory in v4.0)
+  calibration_window_trades: 500       # Rolling recalibration every 500 trades
+  brier_score_alert_threshold: 0.25    # Alert if calibration degrades beyond this
+
+# ---------------------------------------------------------------------------
+# Robust Boundary Estimation (v4.0 Section 3)
+# Upgraded from least squares to Huber + Elastic Net + RANSAC
+# ---------------------------------------------------------------------------
+boundary_estimation:
+  method: "huber"                      # Primary: huber. Alternatives: ransac, elastic_net
+
+  # Huber loss (v4.0 Section 3.1)
+  huber_delta_sigma: 1.5               # delta = 1.5 * ATR (transition between L2 and L1)
+
+  # RANSAC consensus validation (v4.0 Section 3.2)
+  ransac_min_samples: 3                # Minimum pivots per random subset
+  ransac_residual_threshold_atr: 0.30  # Inlier threshold in ATR units
+  ransac_min_inlier_touches: 3         # Minimum inliers for valid consensus (Section 3.3)
+
+  # Elastic Net regularization on slope (v4.0 Section 3.1)
+  elastic_net_alpha: 0.001             # Overall regularization strength
+  elastic_net_l1_ratio: 0.50           # rho: L1 vs L2 balance (0.5 = equal)
+
+  # Minimum sample size requirements (v4.0 Section 3.3)
+  min_bars_in_lookback: 50             # n >= 50 bars
+  min_confirmed_pivots: 5              # k >= 5 pivots
+  min_pivot_time_span: 20              # delta_t >= 20 bars between first and last pivot
+
+# ---------------------------------------------------------------------------
+# Regime Detection (v3.0 Section 7; Slope Zigzag v2 Sections 2-5)
+# Efficiency Ratio + Crossing Count + optional Kalman/HMM
+# ---------------------------------------------------------------------------
+regime_detection:
+  # Efficiency Ratio (v3.0 Section 7.1)
+  er_period: 20                        # Window W for ER calculation
+  er_trending_threshold: 0.40          # theta_ER_trend: above = trending
+  er_mean_reverting_threshold: 0.25    # theta_ER_range: below = ranging
+
+  # Crossing Count / Chop Detector (v3.0 Section 7.2)
+  crossing_count_period: 20            # n: lookback for midline crossings
+  crossing_count_choppy: 8             # theta_cross_min: above this = range/chop
+
+  # Slope Zigzag v2 enhancements
+  hurst_period: 100                    # Lookback for Hurst exponent estimation
+  slope_window: 20                     # W: local polynomial regression window
+  slope_polynomial_order: 2            # k: polynomial order for Savitzky-Golay
+  ewma_lambda: 0.94                    # lambda for EWMA volatility estimation
+
+  # Optional Kalman state-space smoother (Slope Zigzag v2 Section 1.3)
+  kalman_process_noise: 0.01           # eta_t variance (latent slope noise)
+  kalman_measurement_noise: 0.10       # epsilon_t variance (observation noise)
+
+  # Regime rule (v3.0 Section 7.3)
+  # Trend: ER >= er_trending AND crossings <= crossing_max
+  # Range: ER <= er_mean_reverting OR crossings >= crossing_choppy
+  # Transition: otherwise
+  strategy_activation: "trend_or_transition"  # Allow break-retest only in Trend/Transition
+
+# ---------------------------------------------------------------------------
+# Break Detection (v3.0 Section 10.2)
+# Two-stage: wick penetration + close confirmation
+# Uses past-only boundary evaluation (Theorem 10.1)
+# ---------------------------------------------------------------------------
+break_detection:
+  penetration_buffer_atr: 0.10         # beta_p: wick must exceed boundary by this
+  confirmation_buffer_atr: 0.15        # beta_c: close must exceed boundary by this
+  min_break_volume_ratio: 1.2          # Volume vs 20-bar average on break bar
+  volume_average_period: 20            # Period for volume moving average
+
+# ---------------------------------------------------------------------------
+# Retest Detection (v3.0 Section 10.4-10.5)
+# Time-bounded return to frozen Action Line with rejection scoring
+# ---------------------------------------------------------------------------
+retest:
+  max_window_bars: 12                  # M: maximum bars after break for valid retest
+  retest_buffer_atr: 0.20             # gamma: proximity tolerance to Action Line
+
+  # Robust rejection scoring (v3.0 Section 10.5)
+  # Require 3 of 4 features for valid rejection
+  min_rejection_score: 3               # Minimum features satisfied (out of 4)
+  clv_threshold: 0.30                  # Close Location Value: |CLV| > 0.3
+  wick_body_ratio_min: 1.5             # Wick must be > 1.5x body size
+  # Feature 3: candle direction (bearish for short, bullish for long)
+  # Feature 4: close position vs Action line
+
+# ---------------------------------------------------------------------------
+# Risk Geometry Filter (v3.0 Section 8)
+# Critical "hidden risk" filter: reject trades where stop is too far/close
+# ---------------------------------------------------------------------------
+risk_geometry:
+  max_dgeom_atr: 2.5                   # d_max: |entry - safety| / ATR upper limit
+  min_dgeom_atr: 0.5                   # Lower limit: too tight = likely noise
+
+# ---------------------------------------------------------------------------
+# Position Sizing (v3.0 Section 11.2; v4.0 Section 6)
+# Fixed fractional: Size = (Equity * r%) / |Entry - Stop|
+# ---------------------------------------------------------------------------
+position_sizing:
+  a_grade_risk_pct: 0.01               # 1.0% of equity for A-grade setups
+  b_grade_risk_pct: 0.005              # 0.5% of equity for B-grade setups
+
+  # Kelly Criterion (v4.0 Section 6.2)
+  kelly_fraction: 0.25                 # Conservative fraction of full Kelly
+  kelly_min_trades: 200                # Minimum trades before Kelly sizing allowed
+
+  # Liquidity constraint (v4.0 Section 5.2)
+  max_position_adv_pct: 0.01           # Max 1% of Average Daily Volume
+
+# ---------------------------------------------------------------------------
+# Hybrid Trailing Stop System (v3.0 Section 11.3)
+# Monotonic: stops never loosen. Five-phase progression.
+# ---------------------------------------------------------------------------
+trailing_stop:
+  # Phase 1: Structural stop at Safety Line
+  phase_1_structural: true
+  phase_1_buffer_atr: 0.10             # epsilon: buffer beyond Safety Line
+
+  # Phase 2: Break-even lock
+  phase_2_breakeven_trigger_r: 0.8     # Lock BE at +0.8R
+  phase_2_buffer_atr: 0.05             # epsilon_BE: small buffer beyond entry
+
+  # Phase 3: Partial profit taking
+  phase_3_partial_trigger_r: 1.0       # Take partial at +1.0R
+  phase_3_partial_close_pct: 0.60      # Close 60% of position (v3.0: 50-70% range)
+
+  # Phase 4: Structure trailing (pivot-based)
+  phase_4_pivot_trail: true
+  phase_4_trail_buffer_atr: 0.20       # epsilon_trail: buffer behind pivot
+
+  # Phase 5: Time stop
+  phase_5_time_stop_bars: 20           # T_max: exit if no progress
+  time_stop_min_profit_r: 0.0          # Exit at breakeven if time expires
+
+# ---------------------------------------------------------------------------
+# Failure Detection (v3.0 Section 10.6)
+# Trade invalidation when price reclaims Action Line
+# ---------------------------------------------------------------------------
+failure_detection:
+  failure_buffer_atr: 0.15             # delta: close must exceed Action + delta*ATR
+
+# ---------------------------------------------------------------------------
+# Market Structure Shift / CHOCH (v3.0 Section 9)
+# Pivot-based turnaround confirmation
+# ---------------------------------------------------------------------------
+market_structure_shift:
+  enabled: true
+  use_as: "filter"                     # "filter" or "confirmation"
+  # MSS_up: close breaks above last pivot high
+  # MSS_down: close breaks below last pivot low
+
+# ---------------------------------------------------------------------------
+# Multi-Horizon Structure Stack (v3.0 Section 12)
+# Macro/Meso/Micro alignment for trade gating
+# ---------------------------------------------------------------------------
+multi_horizon:
+  macro_timeframe: "1D"                # Daily/Weekly: directional bias
+  meso_timeframe: "4H"                 # 4-hour: primary structure for entries
+  micro_timeframe: "1H"                # 1-hour: precision entry timing
+  require_macro_alignment: true        # Gate: only trade when macro aligns with meso break
+
+# ---------------------------------------------------------------------------
+# Trade Limits and Circuit Breakers (v3.0 Section 11.4)
+# ---------------------------------------------------------------------------
+trade_limits:
+  max_concurrent_pctt_trades: 3
+  max_daily_pctt_signals: 5
+  one_break_one_trade: true            # Skip new breaks while in position
+  max_consecutive_losses: 5            # Reduce size by 50% after 5 losses
+  daily_loss_cap_pct: 0.03             # 3% equity: halt trading for day
+
+# ---------------------------------------------------------------------------
+# Execution Realism (v4.0 Section 7; v3.0 Section 13.3)
+# Dynamic slippage, partial fills, gap risk modeling
+# ---------------------------------------------------------------------------
+execution_realism:
+  commission_pct: 0.05                 # 0.05% per trade (one way)
+  base_slippage_pct: 0.05             # Base slippage estimate
+  gap_risk_distribution: "student_t"   # Fat-tailed gap modeling (v4.0 Section 7.3)
+  partial_fill_modeling: true          # Model limit order fill probability
+
+# ---------------------------------------------------------------------------
+# Validation Protocol (v4.0 Section 2; v3.0 Section 13)
+# ---------------------------------------------------------------------------
+validation:
+  walk_forward_train_pct: 0.70         # 70% train, 30% test
+  permutation_test_iterations: 10000   # Monte Carlo permutations for significance
+  permutation_p_value_threshold: 0.05  # Reject null if p < 0.05
+  bootstrap_iterations: 10000          # Bootstrap resampling for confidence intervals
+  bootstrap_confidence_level: 0.95     # 95% CI for all metrics

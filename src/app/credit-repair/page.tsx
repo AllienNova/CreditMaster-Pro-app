@@ -13,7 +13,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@/lib/supabase/client";
 import CreditRepairDashboard from "@/components/credit-repair/CreditRepairDashboard";
 import AICreditRepairStrategy from "@/components/credit-repair/AICreditRepairStrategy";
 import Link from "next/link";
@@ -33,10 +33,7 @@ export default function CreditRepairPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
+  const supabase = createClient();
 
   useEffect(() => {
     const getUser = async () => {
@@ -278,9 +275,9 @@ export default function CreditRepairPage() {
 
         {/* Info Section */}
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-blue-900 mb-2">
+          <h2 className="text-lg font-bold text-blue-900 mb-2">
             AI-Powered Credit Repair
-          </h3>
+          </h2>
           <p className="text-sm text-blue-800 mb-4">
             Our system uses advanced AI to analyze your credit report and
             provide personalized strategies that are 3-5x faster than

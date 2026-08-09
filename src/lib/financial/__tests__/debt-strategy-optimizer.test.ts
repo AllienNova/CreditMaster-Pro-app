@@ -7,10 +7,10 @@
 
 import {
   DebtStrategyOptimizer,
-  setAIMLService,
-  getAIMLService,
+  setModelRouter,
+  getModelRouterInstance,
 } from "../debt-strategy-optimizer";
-import { AIMLService } from "../../aiml-service";
+import { ModelRouter, TaskType } from "../../model-router";
 import { financialContextEngine } from "../financial-context-engine";
 import { Debt } from "../types/debt-payoff.types";
 import { PayoffMethod, DebtType } from "../types/debt-strategy.types";
@@ -21,7 +21,7 @@ import { FinancialContext } from "../types/financial-context.types";
 // ============================================================================
 
 jest.mock("../financial-context-engine");
-jest.mock("../../aiml-service");
+jest.mock("../../model-router");
 
 // ============================================================================
 // TEST DATA
@@ -219,18 +219,18 @@ const mockAIResponse = {
 
 describe("DebtStrategyOptimizer", () => {
   let optimizer: DebtStrategyOptimizer;
-  let mockAIMLInstance: jest.Mocked<AIMLService>;
+  let mockModelRouter: jest.Mocked<ModelRouter>;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Create mock AIML instance
-    mockAIMLInstance = {
-      chat: jest.fn().mockResolvedValue(mockAIResponse),
-    } as any;
+    // Create mock ModelRouter instance
+    mockModelRouter = {
+      complete: jest.fn().mockResolvedValue(mockAIResponse),
+    } as unknown as jest.Mocked<ModelRouter>;
 
-    // Set the mock AI service
-    setAIMLService(mockAIMLInstance);
+    // Set the mock router
+    setModelRouter(mockModelRouter);
 
     // Mock financial context
     (financialContextEngine.getFinancialContext as jest.Mock).mockResolvedValue(
@@ -414,9 +414,9 @@ describe("DebtStrategyOptimizer", () => {
     it("should integrate with AI service", async () => {
       await optimizer.calculateAIOptimized(mockDebts, mockFinancialContext);
 
-      expect(mockAIMLInstance.chat).toHaveBeenCalled();
-      expect(mockAIMLInstance.chat).toHaveBeenCalledWith(
-        "anthropic/claude-4.5-sonnet",
+      expect(mockModelRouter.complete).toHaveBeenCalled();
+      expect(mockModelRouter.complete).toHaveBeenCalledWith(
+        TaskType.FINANCIAL_ADVICE,
         expect.any(Array),
         expect.objectContaining({ temperature: 0.3 }),
       );
@@ -444,7 +444,7 @@ describe("DebtStrategyOptimizer", () => {
     });
 
     it("should provide fallback insights when AI fails", async () => {
-      mockAIMLInstance.chat.mockRejectedValueOnce(
+      mockModelRouter.complete.mockRejectedValueOnce(
         new Error("AI service unavailable"),
       );
 

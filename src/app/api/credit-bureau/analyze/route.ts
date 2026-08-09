@@ -5,31 +5,17 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { CreditBureauService } from "@/lib/credit-bureau/credit-bureau-service";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 
-export async function POST(request: NextRequest) {
-  try {
-    // 1. Authenticate user
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
-    // 2. Check permission
-    if (!rbac.hasPermission(user, "credit:analyze")) {
-      return NextResponse.json(
-        { error: "Forbidden - Insufficient permissions" },
-        { status: 403 },
-      );
-    }
-
+export const POST = withPermission(
+  "credit:analyze",
+  async (request: NextRequest, user: AuthedUser) => {
+    try {
     // 3. Parse request body
     const body = await request.json();
     const { reportId } = body;
@@ -65,17 +51,18 @@ export async function POST(request: NextRequest) {
       success: true,
       data: analysis,
     });
-  } catch (_error) {
-    // Error logged
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          _error instanceof Error
-            ? _error.message
-            : "Failed to analyze credit report",
-      },
-      { status: 500 },
-    );
-  }
-}
+    } catch (_error) {
+      // Error logged
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            _error instanceof Error
+              ? _error.message
+              : "Failed to analyze credit report",
+        },
+        { status: 500 },
+      );
+    }
+  },
+);

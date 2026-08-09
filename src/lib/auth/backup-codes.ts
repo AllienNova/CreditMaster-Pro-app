@@ -8,9 +8,25 @@
  * - Track used codes
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
-const supabase = getSupabase();
+/**
+ * Browser client, NOT the anon-keyed getSupabase() singleton this used to hold.
+ *
+ * getSupabase() builds a raw createClient(url, ANON_KEY), which stores its
+ * session in localStorage. The app signs in through useAuth -> createClient()
+ * -> @supabase/ssr's createBrowserClient, which stores its session in COOKIES.
+ * Two different stores: the raw client never saw the session the app actually
+ * established, so auth.uid() was NULL here and every RLS policy of the form
+ * (auth.uid() = user_id) matched nothing — zero rows, no error.
+ *
+ * These modules are called at runtime from "use client" components, so they
+ * must NOT use the service role (that key is server-only). createBrowserClient
+ * returns a cached singleton in the browser (@supabase/ssr 0.7.0,
+ * createBrowserClient.js:8-14,46), so this is the same client useAuth holds,
+ * and RLS correctly enforces ownership under the user's own identity.
+ */
+const supabase = createClient();
 import crypto from "crypto";
 
 export interface BackupCode {
@@ -79,6 +95,10 @@ class BackupCodesService {
 
   /**
    * Verify a backup code
+   *
+   * Redemption goes through the atomic `redeem_backup_code` RPC, which takes
+   * a FOR UPDATE row lock so a code cannot be consumed twice by concurrent
+   * requests (FND-010). The previous check-then-update pair had a TOCTOU race.
    */
   async verifyBackupCode(
     userId: string,
@@ -87,35 +107,27 @@ class BackupCodesService {
     try {
       const hashedCode = this.hashCode(code);
 
-      // Find unused backup code
-      const { data, error } = await supabase
-        .from("backup_codes")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("code", hashedCode)
-        .eq("used", false)
-        .single();
+      const { data, error } = await supabase.rpc("redeem_backup_code", {
+        p_user_id: userId,
+        p_code_hash: hashedCode,
+      });
 
-      if (error || !data) {
+      if (error) {
         return {
           success: false,
-          error: "Invalid or already used backup code",
+          error: error.message,
         };
       }
 
-      // Mark code as used
-      const { error: updateError } = await supabase
-        .from("backup_codes")
-        .update({
-          used: true,
-          used_at: new Date().toISOString(),
-        })
-        .eq("id", data.id);
+      // The RPC returns a single row { redeemed: boolean }.
+      const redeemed = Array.isArray(data)
+        ? data[0]?.redeemed === true
+        : (data as { redeemed?: boolean } | null)?.redeemed === true;
 
-      if (updateError) {
+      if (!redeemed) {
         return {
           success: false,
-          error: updateError.message,
+          error: "Invalid or already used backup code",
         };
       }
 

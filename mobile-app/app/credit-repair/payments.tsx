@@ -1,9 +1,23 @@
 /**
- * Fynvita Payment History Screen
- * Track payment patterns
+ * Fynvita Payments (Bills) Screen
+ *
+ * Real-data wiring (PARITY-P2): renders the user's real recurring bills from
+ * GET /api/financial/bills (withPermission "financial:read") via billsApi.getBills,
+ * adapted web -> mobile by mapWebBill. Fetch on mount with honest inline
+ * loading / error / empty states, a retry, and pull-to-refresh.
+ *
+ * The former hardcoded PAYMENTS array, the local Payment interface, the fake
+ * setTimeout load, and the fabricated "next payment due in 3 days" calendar card
+ * were removed. The screen previously computed an on-time %, showed paid/late/missed
+ * per-bill statuses, and a "late" count — all of which describe PAYMENT HISTORY
+ * (BillPayment.isLate). No HTTP route exposes payment history
+ * (billDetectionService.getPaymentHistory is unwired), so those metrics have no
+ * honest source and are OMITTED rather than fabricated. Only the fields the bills
+ * endpoint truly provides are shown; the two summary stats (bill count, autopay
+ * count) are computed from the real bills.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,114 +25,91 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { billsApi } from "../../src/services/api/financial";
+import type { BillItem } from "../../src/services/api/financial";
 
-interface Payment {
-  id: string;
-  account: string;
-  amount: number;
-  dueDate: string;
-  status: "paid" | "upcoming" | "late" | "missed";
+// dueDate arrives as an ISO string; render a compact locale date.
+function formatDate(iso?: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString();
 }
 
-const PAYMENTS: Payment[] = [
-  {
-    id: "1",
-    account: "Chase Credit Card",
-    amount: 250,
-    dueDate: "2024-12-15",
-    status: "upcoming",
-  },
-  {
-    id: "2",
-    account: "Capital One",
-    amount: 150,
-    dueDate: "2024-12-10",
-    status: "upcoming",
-  },
-  {
-    id: "3",
-    account: "Discover",
-    amount: 100,
-    dueDate: "2024-12-01",
-    status: "paid",
-  },
-  {
-    id: "4",
-    account: "Bank of America",
-    amount: 200,
-    dueDate: "2024-11-25",
-    status: "paid",
-  },
-  {
-    id: "5",
-    account: "Citi",
-    amount: 175,
-    dueDate: "2024-11-20",
-    status: "late",
-  },
-  {
-    id: "6",
-    account: "Wells Fargo",
-    amount: 300,
-    dueDate: "2024-11-15",
-    status: "paid",
-  },
-];
+// category is a snake_case enum from the web (credit_card, ...); show it with
+// spaces. This only reformats the real value — it never invents one.
+function formatCategory(category: string): string {
+  return category.replace(/_/g, " ");
+}
 
 export default function PaymentsScreen() {
+  const [bills, setBills] = useState<BillItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 600);
+  const fetchBills = useCallback(async () => {
+    const res = await billsApi.getBills();
+    if (res.success && res.data) {
+      setBills(res.data.bills);
+      setError(null);
+    } else {
+      setError(res.error?.message ?? "Unable to load bills.");
+    }
   }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "paid":
-        return theme.colors.success;
-      case "upcoming":
-        return theme.colors.primary;
-      case "late":
-        return theme.colors.warning;
-      case "missed":
-        return theme.colors.error;
-      default:
-        return theme.colors.textSecondary;
-    }
+  const load = useCallback(async () => {
+    setLoading(true);
+    await fetchBills();
+    setLoading(false);
+  }, [fetchBills]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchBills();
+    setRefreshing(false);
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "paid":
-        return "checkmark-circle";
-      case "upcoming":
-        return "time";
-      case "late":
-        return "alert-circle";
-      case "missed":
-        return "close-circle";
-      default:
-        return "ellipse";
-    }
-  };
+  // Summary — computed from the real bills. An on-time % and a "late" count are
+  // intentionally absent: they need payment history, which no endpoint exposes.
+  const totalBills = bills.length;
+  const autopayCount = bills.filter((b) => b.isAutoPay).length;
 
-  const onTimeRate = Math.round(
-    (PAYMENTS.filter((p) => p.status === "paid").length /
-      PAYMENTS.filter((p) => p.status !== "upcoming").length) *
-      100,
-  );
-
-  if (loading) {
+  if (loading && bills.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered} testID="credit-repair-payments-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.stateText}>Loading bills...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && bills.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="credit-repair-payments-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={load}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -129,6 +120,13 @@ export default function PaymentsScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+          />
+        }
       >
         <View style={styles.header}>
           <TouchableOpacity
@@ -138,91 +136,76 @@ export default function PaymentsScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={styles.title}>Payment History</Text>
-            <Text style={styles.subtitle}>Track your payments</Text>
+            <Text style={styles.title}>Bills</Text>
+            <Text style={styles.subtitle}>Your upcoming bills</Text>
           </View>
         </View>
 
-        {/* Stats */}
+        {/* Stats — computed from real bills */}
         <Card style={styles.statsCard}>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.colors.success }]}>
-                {onTimeRate}%
-              </Text>
-              <Text style={styles.statLabel}>On-Time Rate</Text>
+              <Text style={styles.statValue}>{totalBills}</Text>
+              <Text style={styles.statLabel}>Total</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {PAYMENTS.filter((p) => p.status === "upcoming").length}
+              <Text style={[styles.statValue, { color: theme.colors.primary }]}>
+                {autopayCount}
               </Text>
-              <Text style={styles.statLabel}>Upcoming</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.colors.warning }]}>
-                {PAYMENTS.filter((p) => p.status === "late").length}
-              </Text>
-              <Text style={styles.statLabel}>Late</Text>
+              <Text style={styles.statLabel}>On Autopay</Text>
             </View>
           </View>
         </Card>
 
-        {/* Calendar Hint */}
-        <Card style={styles.calendarCard}>
-          <View style={styles.calendarHeader}>
-            <Ionicons name="calendar" size={20} color={theme.colors.primary} />
-            <Text style={styles.calendarTitle}> Payment Calendar</Text>
-          </View>
-          <Text style={styles.calendarText}>
-            Next payment due in 3 days: Chase Credit Card - $250
-          </Text>
-          <TouchableOpacity style={styles.calendarButton}>
-            <Text style={styles.calendarButtonText}>Set Reminders</Text>
-          </TouchableOpacity>
-        </Card>
-
-        {/* Payments List */}
-        <View style={styles.paymentsList}>
-          <Text style={styles.sectionTitle}>Recent Payments</Text>
-          {PAYMENTS.map((payment) => (
-            <Card key={payment.id} style={styles.paymentCard}>
-              <View style={styles.paymentRow}>
-                <View
-                  style={[
-                    styles.statusIcon,
-                    { backgroundColor: `${getStatusColor(payment.status)}15` },
-                  ]}
-                >
-                  <Ionicons
-                    name={
-                      getStatusIcon(
-                        payment.status,
-                      ) as keyof typeof Ionicons.glyphMap
-                    }
-                    size={20}
-                    color={getStatusColor(payment.status)}
-                  />
+        {/* Bills List */}
+        <View style={styles.billsList}>
+          <Text style={styles.sectionTitle}>Your Bills</Text>
+          {bills.length === 0 ? (
+            <View style={styles.emptyCard} testID="credit-repair-payments-empty">
+              <Ionicons
+                name="receipt-outline"
+                size={40}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.emptyTitle}>No bills yet</Text>
+              <Text style={styles.emptyText}>
+                Bills you add or that Fynvita detects from your linked accounts
+                will show here with their amounts and due dates.
+              </Text>
+            </View>
+          ) : (
+            bills.map((bill) => (
+              <Card key={bill.id} style={styles.billCard}>
+                <View style={styles.billRow}>
+                  <View style={styles.billIcon}>
+                    <Ionicons
+                      name="receipt-outline"
+                      size={20}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <View style={styles.billInfo}>
+                    <Text style={styles.billMerchant}>{bill.merchant}</Text>
+                    <Text style={styles.billMeta}>
+                      {formatDate(bill.dueDate) !== ""
+                        ? `Due ${formatDate(bill.dueDate)}`
+                        : "No due date"}
+                      {bill.category ? ` · ${formatCategory(bill.category)}` : ""}
+                    </Text>
+                  </View>
+                  <View style={styles.billRight}>
+                    <Text style={styles.billAmount}>
+                      ${bill.amount.toLocaleString()}
+                    </Text>
+                    {bill.isAutoPay && (
+                      <Text style={styles.autopayTag}>Autopay</Text>
+                    )}
+                  </View>
                 </View>
-                <View style={styles.paymentInfo}>
-                  <Text style={styles.paymentAccount}>{payment.account}</Text>
-                  <Text style={styles.paymentDate}>Due: {payment.dueDate}</Text>
-                </View>
-                <View style={styles.paymentRight}>
-                  <Text style={styles.paymentAmount}>${payment.amount}</Text>
-                  <Text
-                    style={[
-                      styles.paymentStatus,
-                      { color: getStatusColor(payment.status) },
-                    ]}
-                  >
-                    {payment.status}
-                  </Text>
-                </View>
-              </View>
-            </Card>
-          ))}
+              </Card>
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -232,7 +215,25 @@ export default function PaymentsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
+  },
+  stateText: {
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -252,30 +253,7 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 22, fontWeight: "700", color: theme.colors.text },
   statLabel: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 4 },
   statDivider: { width: 1, height: 36, backgroundColor: theme.colors.border },
-  calendarCard: {
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-    padding: theme.spacing.md,
-  },
-  calendarHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  calendarTitle: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
-  calendarText: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    marginBottom: 12,
-  },
-  calendarButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  calendarButtonText: { fontSize: 13, fontWeight: "600", color: "#fff" },
-  paymentsList: {
+  billsList: {
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.xl,
   },
@@ -285,28 +263,43 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginBottom: 12,
   },
-  paymentCard: { marginBottom: theme.spacing.sm, padding: theme.spacing.md },
-  paymentRow: { flexDirection: "row", alignItems: "center" },
-  statusIcon: {
+  billCard: { marginBottom: theme.spacing.sm, padding: theme.spacing.md },
+  billRow: { flexDirection: "row", alignItems: "center" },
+  billIcon: {
     width: 40,
     height: 40,
     borderRadius: 10,
+    backgroundColor: `${theme.colors.primary}15`,
     justifyContent: "center",
     alignItems: "center",
   },
-  paymentInfo: { flex: 1, marginLeft: 12 },
-  paymentAccount: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
-  paymentDate: {
+  billInfo: { flex: 1, marginLeft: 12 },
+  billMerchant: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
+  billMeta: {
     fontSize: 12,
     color: theme.colors.textSecondary,
     marginTop: 2,
+    textTransform: "capitalize",
   },
-  paymentRight: { alignItems: "flex-end" },
-  paymentAmount: { fontSize: 16, fontWeight: "700", color: theme.colors.text },
-  paymentStatus: {
+  billRight: { alignItems: "flex-end" },
+  billAmount: { fontSize: 16, fontWeight: "700", color: theme.colors.text },
+  autopayTag: {
     fontSize: 11,
     fontWeight: "600",
-    textTransform: "capitalize",
+    color: theme.colors.primary,
     marginTop: 2,
+  },
+  emptyCard: { padding: theme.spacing.xl, alignItems: "center" },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
   },
 });

@@ -482,7 +482,27 @@ Limits enforced per-IP and per-user with sliding window:
 
 ## 5. Security Architecture
 
-### 5.1 Defense-in-Depth Model (5 Layers)
+> ## ⚠ Known Deviations from Documented Model (VERSION-013, 2026-05-03)
+>
+> The 9-domain audit (2026-05-01..03) found that the 5-layer model below describes the **intended** architecture. Actual implementation has **structural bypasses** at multiple layers. These are tracked as Wave 7 task closures; **trust the table below until Wave 7 closes, not the diagram**.
+>
+> | Layer | Intended | Actual (pre-Wave-7) | Closing task |
+> |-------|----------|---------------------|--------------|
+> | 1 — Middleware | All routes pass through middleware auth | `src/middleware.ts:162-169` whitelists ALL `/api/*` paths; only 4 of 118 routes use `withAuth`. **Bypassable.** | TASK-AUTH-04 |
+> | 2 — Input validation | Server-authoritative on every field | `payment/checkout/route.ts:30` accepts `successUrl`/`cancelUrl`/`priceId`/`trialDays` from client. `admin/disputes/route.ts:175` mass-assigns raw body. **Bypassable.** | TASK-WBH-06, TASK-IDR-05 |
+> | 3 — Auth + RBAC | `app_metadata.role` server-side only | `rbac.ts:322` reads `user_metadata.role` (user-writable in Supabase). `admin/auth/route.ts:17-21` hardcodes admin emails. Enterprise tier = admin grant. **Bypassable.** | TASK-AUTH-01, TASK-AUTH-02 |
+> | 4 — Output validation | PII never leaves boundary | `pii-protection.ts` exists but is **never called** in 14 AI call sites; SSN/cards/DOBs forwarded to AIML in cleartext. **Not enforced.** | TASK-CMP-05 |
+> | 5 — Audit logging | All admin mutations logged | `admin/audit/route.ts:95` has zero auth (POST). Mutation routes don't write to `audit_logs`. **Inconsistent.** | TASK-ADM-01 |
+>
+> Additional structural deviations:
+> - **Two role enumerations** disagree: `withRole` accepts `enterprise`; `rbac.ts` does not. Same token gets different decisions from different guards. (TASK-AUTH-12)
+> - **Three rate-limiter implementations** coexist; public re-export points at the in-memory one (broken on serverless). (TASK-AUTH-06)
+> - **In-memory session Map** in `auth-middleware.ts:376` does not survive cold starts. (TASK-AUTH-07)
+> - **`AIML_API_KEY` reused as inbound-auth secret** — anyone with the outbound vendor key gets `enterprise`. (TASK-AUTH-05)
+>
+> See `docs/ssot/gap_analysis.md` for the full register.
+
+### 5.1 Defense-in-Depth Model (5 Layers — INTENDED)
 
 ```
 ┌───────────────────────────────────────────────────────┐

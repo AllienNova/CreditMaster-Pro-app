@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { billDetectionService } from "@/lib/financial/bill-detection-service";
 import type { BillDetectionOptions } from "@/lib/financial/types/bill.types";
 
@@ -8,20 +8,11 @@ import type { BillDetectionOptions } from "@/lib/financial/types/bill.types";
  * POST /api/financial/bills/detect
  * Detect recurring bills from transactions
  */
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "financial:read",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT and get user
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:read")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
 
     // Parse request body
     const body = await request.json();
@@ -73,4 +64,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

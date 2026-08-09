@@ -10,7 +10,7 @@
  * Integrates with existing DebtPayoffService and DebtStrategyEngine
  */
 
-import { AIMLService } from "../aiml-service";
+import { ModelRouter, getModelRouter, TaskType } from "../model-router";
 import { financialContextEngine } from "./financial-context-engine";
 import { DebtPayoffService } from "./debt-payoff-service";
 import {
@@ -40,23 +40,21 @@ import { FinancialContext } from "./types/financial-context.types";
 // CONSTANTS
 // ============================================================================
 
-const AI_MODEL = "anthropic/claude-4.5-sonnet";
-
 // ============================================================================
-// AIML SERVICE SINGLETON
+// MODEL ROUTER SINGLETON (allows injection in tests)
 // ============================================================================
 
-let aiServiceInstance: AIMLService | null = null;
+let modelRouterInstance: ModelRouter | null = null;
 
-export function getAIMLService(): AIMLService {
-  if (!aiServiceInstance) {
-    aiServiceInstance = new AIMLService();
+export function getModelRouterInstance(): ModelRouter {
+  if (!modelRouterInstance) {
+    modelRouterInstance = getModelRouter();
   }
-  return aiServiceInstance;
+  return modelRouterInstance;
 }
 
-export function setAIMLService(service: AIMLService): void {
-  aiServiceInstance = service;
+export function setModelRouter(router: ModelRouter): void {
+  modelRouterInstance = router;
 }
 
 // ============================================================================
@@ -65,10 +63,6 @@ export function setAIMLService(service: AIMLService): void {
 
 export class DebtStrategyOptimizer {
   private debtPayoffService: DebtPayoffService;
-
-  private get aiService(): AIMLService {
-    return getAIMLService();
-  }
 
   constructor() {
     this.debtPayoffService = new DebtPayoffService();
@@ -305,8 +299,8 @@ export class DebtStrategyOptimizer {
   }> {
     try {
       const prompt = this.buildAIOptimizationPrompt(debts, context);
-      const response = await this.aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouterInstance().complete(
+        TaskType.FINANCIAL_ADVICE,
         [
           {
             role: "system",

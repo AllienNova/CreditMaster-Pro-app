@@ -7,9 +7,14 @@
  * - Update progress
  * - Predict timelines
  * - Store outcomes
+ *
+ * All resource-keyed methods (getDispute, sendDispute, updateDisputeStatus,
+ * resolveDispute, deleteDispute, addNote, addEvidence) require an explicit
+ * userId parameter and apply .eq("user_id", userId) so that no authenticated
+ * caller can act on another user's dispute (IDOR defence, TASK-CRD-3).
  */
 
-import { getSupabase } from "../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Database } from "../supabase/types";
 
 // Type helpers for Supabase operations
@@ -18,7 +23,7 @@ type DisputeInsert = Database["public"]["Tables"]["disputes"]["Insert"];
 type DisputeUpdate = Database["public"]["Tables"]["disputes"]["Update"];
 
 // Helper to get typed table reference
-const disputes = () => getSupabase().from("disputes");
+const disputes = () => getServiceRoleClient().from("disputes");
 
 export type DisputeStatus =
   | "draft"
@@ -44,6 +49,7 @@ export interface Dispute {
   sentAt?: Date;
   resolvedAt?: Date;
   letterContent: string;
+  notes: string | null;
 }
 
 export interface DisputeStats {
@@ -85,7 +91,6 @@ class DisputeServiceDB {
       .single();
 
     if (error) {
-      // DisputeServiceDB error: Failed to create dispute
       throw new Error(`Failed to create dispute: ${error.message}`);
     }
 
@@ -93,20 +98,19 @@ class DisputeServiceDB {
   }
 
   /**
-   * Get dispute by ID
+   * Get dispute by ID — scoped to userId (IDOR defence)
    */
-  async getDispute(disputeId: string): Promise<Dispute | null> {
+  async getDispute(disputeId: string, userId: string): Promise<Dispute | null> {
     const { data, error } = await disputes()
       .select("*")
       .eq("id", disputeId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
       if (error.code === "PGRST116") {
-        // Not found
         return null;
       }
-      // DisputeServiceDB error: Failed to fetch dispute
       throw new Error(`Failed to fetch dispute: ${error.message}`);
     }
 
@@ -132,7 +136,6 @@ class DisputeServiceDB {
     const { data, error } = await query;
 
     if (error) {
-      // DisputeServiceDB error: Failed to fetch user disputes
       throw new Error(`Failed to fetch user disputes: ${error.message}`);
     }
 
@@ -140,9 +143,9 @@ class DisputeServiceDB {
   }
 
   /**
-   * Send dispute to bureau
+   * Send dispute to bureau — scoped to userId (IDOR defence)
    */
-  async sendDispute(disputeId: string): Promise<Dispute> {
+  async sendDispute(disputeId: string, userId: string): Promise<Dispute> {
     const now = new Date().toISOString();
 
     const updateData: DisputeUpdate = {
@@ -150,27 +153,26 @@ class DisputeServiceDB {
       sent_at: now,
     };
 
-    const query = disputes();
-    const { data, error } = await query
-      // @ts-ignore - Supabase types issue with update operations
-      .update(updateData)
+    const { data, error } = await (disputes() as ReturnType<typeof disputes>)
+      .update(updateData as DisputeUpdate)
       .eq("id", disputeId)
+      .eq("user_id", userId)
       .select()
       .single();
 
     if (error) {
-      // DisputeServiceDB error: Failed to send dispute
       throw new Error(`Failed to send dispute: ${error.message}`);
     }
 
-    return this.mapToDispute(data);
+    return this.mapToDispute(data as DisputeRow);
   }
 
   /**
-   * Update dispute status
+   * Update dispute status — scoped to userId (IDOR defence)
    */
   async updateDisputeStatus(
     disputeId: string,
+    userId: string,
     status: DisputeStatus,
   ): Promise<Dispute> {
     const updates: DisputeUpdate = { status };
@@ -179,27 +181,26 @@ class DisputeServiceDB {
       updates.resolved_at = new Date().toISOString();
     }
 
-    const query2 = disputes();
-    const { data, error } = await query2
-      // @ts-ignore - Supabase types issue with update operations
-      .update(updates)
+    const { data, error } = await (disputes() as ReturnType<typeof disputes>)
+      .update(updates as DisputeUpdate)
       .eq("id", disputeId)
+      .eq("user_id", userId)
       .select()
       .single();
 
     if (error) {
-      // DisputeServiceDB error: Failed to update dispute status
       throw new Error(`Failed to update dispute status: ${error.message}`);
     }
 
-    return this.mapToDispute(data);
+    return this.mapToDispute(data as DisputeRow);
   }
 
   /**
-   * Resolve dispute with outcome
+   * Resolve dispute with outcome — scoped to userId (IDOR defence)
    */
   async resolveDispute(
     disputeId: string,
+    userId: string,
     outcome: DisputeOutcome,
   ): Promise<Dispute> {
     const updateData: DisputeUpdate = {
@@ -208,28 +209,76 @@ class DisputeServiceDB {
       resolved_at: new Date().toISOString(),
     };
 
-    const query3 = disputes();
-    const { data, error } = await query3
-      // @ts-ignore - Supabase types issue with update operations
-      .update(updateData)
+    const { data, error } = await (disputes() as ReturnType<typeof disputes>)
+      .update(updateData as DisputeUpdate)
       .eq("id", disputeId)
+      .eq("user_id", userId)
       .select()
       .single();
 
     if (error) {
-      // DisputeServiceDB error: Failed to resolve dispute
       throw new Error(`Failed to resolve dispute: ${error.message}`);
+    }
+
+    return this.mapToDispute(data as DisputeRow);
+  }
+
+  /**
+   * Add a note to a dispute — scoped to userId (IDOR defence).
+   * Reads the current notes (user-scoped, so ownership is verified), appends
+   * the new note with a double-newline separator, then writes back.
+   * Notes are separated by double newlines.
+   */
+  async addNote(
+    disputeId: string,
+    userId: string,
+    note: string,
+  ): Promise<Dispute> {
+    // Read current state — this also enforces ownership (returns null for wrong user).
+    const existing = await this.getDispute(disputeId, userId);
+    if (!existing) {
+      throw new Error("Dispute not found");
+    }
+
+    const appended = existing.notes
+      ? `${existing.notes}\n\n${note}`
+      : note;
+
+    const updateData: DisputeUpdate = { notes: appended };
+
+    const { data, error } = await (disputes() as ReturnType<typeof disputes>)
+      .update(updateData)
+      .eq("id", disputeId)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to add note: ${error.message}`);
     }
 
     return this.mapToDispute(data);
   }
 
   /**
+   * Add evidence URL to a dispute — scoped to userId (IDOR defence).
+   * Evidence URLs are appended to `notes` as structured text since the
+   * `disputes` table has no dedicated evidence column.
+   */
+  async addEvidence(
+    disputeId: string,
+    userId: string,
+    evidenceUrl: string,
+  ): Promise<Dispute> {
+    return this.addNote(disputeId, userId, `[evidence] ${evidenceUrl}`);
+  }
+
+  /**
    * Get dispute statistics
    */
   async getUserDisputeStats(userId: string): Promise<DisputeStats> {
-    const disputes = await this.getUserDisputes(userId);
-    const resolved = disputes.filter((d) => d.status === "resolved");
+    const userDisputes = await this.getUserDisputes(userId);
+    const resolved = userDisputes.filter((d) => d.status === "resolved");
     const successful = resolved.filter(
       (d) => d.outcome === "removed" || d.outcome === "updated",
     );
@@ -249,8 +298,8 @@ class DisputeServiceDB {
         : 0;
 
     return {
-      total: disputes.length,
-      active: disputes.filter(
+      total: userDisputes.length,
+      active: userDisputes.filter(
         (d) => d.status === "sent" || d.status === "under_review",
       ).length,
       resolved: resolved.length,
@@ -274,7 +323,6 @@ class DisputeServiceDB {
       .order("created_at", { ascending: false });
 
     if (error) {
-      // DisputeServiceDB error: Failed to fetch disputes by bureau
       throw new Error(`Failed to fetch disputes by bureau: ${error.message}`);
     }
 
@@ -282,13 +330,16 @@ class DisputeServiceDB {
   }
 
   /**
-   * Delete dispute
+   * Delete dispute — scoped to userId (IDOR defence).
+   * Returns false when the dispute does not exist or belongs to another user.
    */
-  async deleteDispute(disputeId: string): Promise<boolean> {
-    const { error } = await disputes().delete().eq("id", disputeId);
+  async deleteDispute(disputeId: string, userId: string): Promise<boolean> {
+    const { error } = await disputes()
+      .delete()
+      .eq("id", disputeId)
+      .eq("user_id", userId);
 
     if (error) {
-      // DisputeServiceDB error: Failed to delete dispute
       return false;
     }
 
@@ -314,6 +365,7 @@ class DisputeServiceDB {
       createdAt: new Date(row.created_at),
       sentAt: row.sent_at ? new Date(row.sent_at) : undefined,
       resolvedAt: row.resolved_at ? new Date(row.resolved_at) : undefined,
+      notes: row.notes,
     };
   }
 }

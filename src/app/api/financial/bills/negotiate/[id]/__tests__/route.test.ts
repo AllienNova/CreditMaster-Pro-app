@@ -11,6 +11,9 @@
 import { NextRequest } from "next/server";
 
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("user"),
+}));
 jest.mock("@/lib/financial/bill-negotiation-service");
 
 import { GET, PATCH, POST } from "../route";
@@ -53,7 +56,7 @@ describe("GET /api/financial/bills/negotiate/[id]", () => {
 
   it("should return a negotiation by ID", async () => {
     const req = createMockRequest("http://localhost:3000/api/financial/bills/negotiate/neg-1");
-    const res = await GET(req, mockParams);
+    const res = await GET(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
@@ -64,7 +67,7 @@ describe("GET /api/financial/bills/negotiate/[id]", () => {
   it("should return 404 when negotiation not found", async () => {
     (billNegotiationService.getNegotiation as jest.Mock).mockResolvedValue(null);
     const req = createMockRequest("http://localhost:3000/api/financial/bills/negotiate/neg-999");
-    const res = await GET(req, mockParams);
+    const res = await GET(req);
     const data = await res.json();
 
     expect(res.status).toBe(404);
@@ -74,14 +77,14 @@ describe("GET /api/financial/bills/negotiate/[id]", () => {
   it("should return 401 for unauthenticated request", async () => {
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
     const req = createMockRequest("http://localhost:3000/api/financial/bills/negotiate/neg-1");
-    const res = await GET(req, mockParams);
+    const res = await GET(req);
     expect(res.status).toBe(401);
   });
 
   it("should return 500 on service error", async () => {
     (billNegotiationService.getNegotiation as jest.Mock).mockRejectedValue(new Error("DB error"));
     const req = createMockRequest("http://localhost:3000/api/financial/bills/negotiate/neg-1");
-    const res = await GET(req, mockParams);
+    const res = await GET(req);
     const data = await res.json();
 
     expect(res.status).toBe(500);
@@ -108,7 +111,7 @@ describe("PATCH /api/financial/bills/negotiate/[id]", () => {
       method: "PATCH",
       body: { status: "completed", outcome: "success", actualSavings: 30 },
     });
-    const res = await PATCH(req, mockParams);
+    const res = await PATCH(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
@@ -126,7 +129,7 @@ describe("PATCH /api/financial/bills/negotiate/[id]", () => {
       method: "PATCH",
       body: { status: "completed" },
     });
-    const res = await PATCH(req, mockParams);
+    const res = await PATCH(req);
     expect(res.status).toBe(401);
   });
 
@@ -136,7 +139,7 @@ describe("PATCH /api/financial/bills/negotiate/[id]", () => {
       method: "PATCH",
       body: { status: "completed" },
     });
-    const res = await PATCH(req, mockParams);
+    const res = await PATCH(req);
     const data = await res.json();
 
     expect(res.status).toBe(500);
@@ -163,7 +166,7 @@ describe("POST /api/financial/bills/negotiate/[id]", () => {
       method: "POST",
       body: { method: "phone", outcome: "success", offeredAmount: 69.99 },
     });
-    const res = await POST(req, mockParams);
+    const res = await POST(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
@@ -180,7 +183,7 @@ describe("POST /api/financial/bills/negotiate/[id]", () => {
       method: "POST",
       body: { method: "phone" },
     });
-    const res = await POST(req, mockParams);
+    const res = await POST(req);
     const data = await res.json();
 
     expect(res.status).toBe(400);
@@ -193,7 +196,7 @@ describe("POST /api/financial/bills/negotiate/[id]", () => {
       method: "POST",
       body: { method: "phone", outcome: "success" },
     });
-    const res = await POST(req, mockParams);
+    const res = await POST(req);
     expect(res.status).toBe(401);
   });
 
@@ -203,10 +206,34 @@ describe("POST /api/financial/bills/negotiate/[id]", () => {
       method: "POST",
       body: { method: "phone", outcome: "success" },
     });
-    const res = await POST(req, mockParams);
+    const res = await POST(req);
     const data = await res.json();
 
     expect(res.status).toBe(500);
     expect(data.error).toBe("Failed to add attempt");
+  });
+});
+
+describe("negative-auth – /api/financial/bills/negotiate/neg-1", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("GET returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+    const res = await GET(createMockRequest("http://localhost:3000/api/financial/bills/negotiate/neg-1"));
+    expect(res.status).toBe(401);
+  });
+
+  it("PATCH returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+    const res = await PATCH(createMockRequest("http://localhost:3000/api/financial/bills/negotiate/neg-1", { method: "PATCH" }));
+    expect(res.status).toBe(401);
+  });
+
+  it("POST returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: false, user: null });
+    const res = await POST(createMockRequest("http://localhost:3000/api/financial/bills/negotiate/neg-1", { method: "POST" }));
+    expect(res.status).toBe(401);
   });
 });

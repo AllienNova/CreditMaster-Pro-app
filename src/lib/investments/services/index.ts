@@ -7,7 +7,6 @@
 // Market Data
 export {
   MarketDataService,
-  type MarketDataProvider,
   type RealtimeUpdate,
 } from "./MarketDataService";
 
@@ -79,31 +78,9 @@ export {
   getSentimentAnalysisService,
 } from "./SentimentAnalysisService";
 
-// Portfolio Rebalancing
-export {
-  PortfolioRebalanceService,
-  getPortfolioRebalanceService,
-  PORTFOLIO_MODELS,
-  type Portfolio,
-  type TargetAllocation,
-  type CurrentAllocation,
-  type RebalanceAlert,
-  type RebalanceHistory,
-  type RebalanceStrategy,
-} from "./PortfolioRebalanceService";
-
-// Auto-Rebalance Scheduler
-export {
-  AutoRebalanceScheduler,
-  getAutoRebalanceScheduler,
-  createAutoRebalanceScheduler,
-  DEFAULT_SCHEDULE_CONFIG,
-  type RebalanceScheduleConfig,
-  type PendingRebalance,
-  type RebalanceApprovalStatus,
-  type RebalanceExecutionResult,
-  type ScheduleFrequency,
-  type TriggerType,
-  type RebalanceEvent,
-  type SchedulerStatus,
-} from "./AutoRebalanceScheduler";
+// Portfolio Rebalancing and Auto-Rebalance Scheduler: deleted (Wave 7
+// remediation, trading/assets cluster). Both queried phantom tables
+// (portfolios, rebalance_alerts, rebalance_history — never migrated) and
+// had zero importers of this barrel from outside src/lib/investments/services
+// itself, confirmed via repo-wide grep before deletion. See
+// docs/qa/triage-trading.md for the full reachability trace.

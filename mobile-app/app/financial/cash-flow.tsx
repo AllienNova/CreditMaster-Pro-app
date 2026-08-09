@@ -1,6 +1,19 @@
 /**
  * Fynvita Cash Flow Analysis Screen
- * Analyze income vs expenses and cash flow trends with real charts
+ *
+ * Real-data wiring (PARITY-P2): renders 6 months of the user's real income vs
+ * expenses from GET /api/financial/spending/cashflow (withAuth) via
+ * financialOverviewApi.getCashFlowAnalysis, adapted web -> mobile by mapWebCashFlow
+ * (CashFlowMonthPoint: month / income / expenses). Each month is derived server-side
+ * from the user's real Plaid transactions. Fetch on mount with honest inline
+ * loading / error+retry / empty states and pull-to-refresh.
+ *
+ * The former hardcoded MOCK_DATA array and its silent catch-fallback were removed:
+ * on a failed fetch the screen shows an honest error + retry, never fabricated
+ * figures. The hardcoded "Cash Flow Tips" (which asserted "Your savings rate is
+ * healthy" regardless of the data) were replaced with the route's real
+ * `recommendations`; when the source returns none, the tips card is omitted rather
+ * than invented.
  */
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -19,7 +32,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-import { LineChart, BarChart } from "../../src/components/charts";
+import { LineChart } from "../../src/components/charts";
 import { financialOverviewApi } from "../../src/services/api/financial";
 
 interface CashFlowData {
@@ -28,44 +41,32 @@ interface CashFlowData {
   expenses: number;
 }
 
-const MOCK_DATA: CashFlowData[] = [
-  { month: "Jul", income: 5200, expenses: 4100 },
-  { month: "Aug", income: 5200, expenses: 4350 },
-  { month: "Sep", income: 5450, expenses: 4200 },
-  { month: "Oct", income: 5600, expenses: 4500 },
-  { month: "Nov", income: 5800, expenses: 4600 },
-  { month: "Dec", income: 6100, expenses: 5200 },
-];
-
 const { width: screenWidth } = Dimensions.get("window");
 
 export default function CashFlowScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<CashFlowData[]>([]);
+  const [recommendations, setRecommendations] = useState<string[]>([]);
   const [chartType, setChartType] = useState<"line" | "bar">("line");
 
-  const loadCashFlowData = useCallback(async () => {
-    try {
-      const response = await financialOverviewApi.getCashFlow(6);
-      if (response.success && response.data) {
-        const { income, expenses } = response.data;
-        const mergedData = income.map((inc, i) => ({
-          month: inc.month,
-          income: inc.amount,
-          expenses: expenses[i]?.amount || 0,
-        }));
-        setData(mergedData.length > 0 ? mergedData : MOCK_DATA);
-      } else {
-        setData(MOCK_DATA);
-      }
-    } catch (err) {
-      // Fallback to mock data silently in production
-      setData(MOCK_DATA);
-    } finally {
-      setLoading(false);
+  const fetchCashFlow = useCallback(async () => {
+    const response = await financialOverviewApi.getCashFlowAnalysis(6);
+    if (response.success && response.data) {
+      setData(response.data.months);
+      setRecommendations(response.data.recommendations);
+      setError(null);
+    } else {
+      setError(response.error?.message ?? "Unable to load cash flow.");
     }
   }, []);
+
+  const loadCashFlowData = useCallback(async () => {
+    setLoading(true);
+    await fetchCashFlow();
+    setLoading(false);
+  }, [fetchCashFlow]);
 
   useEffect(() => {
     loadCashFlowData();
@@ -73,7 +74,7 @@ export default function CashFlowScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadCashFlowData();
+    await fetchCashFlow();
     setRefreshing(false);
   };
 
@@ -94,17 +95,40 @@ export default function CashFlowScreen() {
     value: d.expenses,
     label: d.month,
   }));
-  const netChartData = data.map((d) => ({
-    value: d.income - d.expenses,
-    label: d.month,
-  }));
+  // Scale the manual bars by the actual largest monthly flow (the old hardcoded
+  // 6500 divisor assumed mock magnitudes and clipped real income/expenses).
+  const maxFlow = Math.max(
+    1,
+    ...data.map((d) => Math.max(d.income, d.expenses)),
+  );
 
-  if (loading) {
+  if (loading && data.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered} testID="financial-cash-flow-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Analyzing cash flow...</Text>
+          <Text style={styles.stateText}>Analyzing cash flow...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && data.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="financial-cash-flow-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={loadCashFlowData}
+          >
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -137,6 +161,21 @@ export default function CashFlowScreen() {
           </View>
         </View>
 
+        {data.length === 0 ? (
+          <View style={styles.emptyCard} testID="financial-cash-flow-empty">
+            <Ionicons
+              name="bar-chart-outline"
+              size={40}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.emptyTitle}>No cash flow yet</Text>
+            <Text style={styles.emptyText}>
+              Once Fynvita has income and spending from your linked accounts,
+              your monthly cash flow will show here.
+            </Text>
+          </View>
+        ) : (
+          <>
         {/* Summary Stats */}
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, { backgroundColor: "#22C55E10" }]}>
@@ -180,6 +219,7 @@ export default function CashFlowScreen() {
         {/* Chart Type Toggle */}
         <View style={styles.chartToggle}>
           <TouchableOpacity
+            testID="cash-flow-toggle-line"
             style={[
               styles.toggleButton,
               chartType === "line" && styles.toggleButtonActive,
@@ -201,6 +241,7 @@ export default function CashFlowScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
+            testID="cash-flow-toggle-bar"
             style={[
               styles.toggleButton,
               chartType === "bar" && styles.toggleButtonActive,
@@ -259,7 +300,7 @@ export default function CashFlowScreen() {
                         style={[
                           styles.bar,
                           styles.incomeBar,
-                          { width: `${(item.income / 6500) * 100}%` },
+                          { width: `${(item.income / maxFlow) * 100}%` },
                         ]}
                       />
                     </View>
@@ -268,7 +309,7 @@ export default function CashFlowScreen() {
                         style={[
                           styles.bar,
                           styles.expenseBar,
-                          { width: `${(item.expenses / 6500) * 100}%` },
+                          { width: `${(item.expenses / maxFlow) * 100}%` },
                         ]}
                       />
                     </View>
@@ -313,22 +354,22 @@ export default function CashFlowScreen() {
           </View>
         </Card>
 
-        {/* Tips */}
-        <Card style={styles.tipsCard}>
-          <View style={styles.tipsHeader}>
-            <Ionicons name="bulb" size={20} color={theme.colors.warning} />
-            <Text style={styles.sectionTitle}> Cash Flow Tips</Text>
-          </View>
-          <Text style={styles.tipText}>
-            • Your savings rate is healthy. Keep it above 20%.
-          </Text>
-          <Text style={styles.tipText}>
-            • Consider automating savings transfers.
-          </Text>
-          <Text style={styles.tipText}>
-            • Review recurring subscriptions quarterly.
-          </Text>
-        </Card>
+        {/* Tips — the endpoint's real recommendations; omitted when it returns none */}
+        {recommendations.length > 0 && (
+          <Card style={styles.tipsCard}>
+            <View style={styles.tipsHeader}>
+              <Ionicons name="bulb" size={20} color={theme.colors.warning} />
+              <Text style={styles.sectionTitle}> Cash Flow Tips</Text>
+            </View>
+            {recommendations.map((tip, i) => (
+              <Text key={i} style={styles.tipText}>
+                • {tip}
+              </Text>
+            ))}
+          </Card>
+        )}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -337,10 +378,41 @@ export default function CashFlowScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: {
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
+  },
+  stateText: {
     marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
     color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
+  emptyCard: {
+    alignItems: "center",
+    padding: theme.spacing.xl,
+    marginTop: theme.spacing.xl,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
   },
   header: {
     flexDirection: "row",

@@ -16,6 +16,7 @@ import {
   ChartDrawing,
   DrawingToolType,
 } from "@/lib/investments/types/charting.types";
+import { CHART_COLORS } from "@/lib/design-tokens/chart-colors";
 
 // ============================================================================
 // TYPES
@@ -53,7 +54,7 @@ export interface PriceLineOptions {
 // ============================================================================
 
 const DEFAULT_LINE_STYLE: DrawingStyle = {
-  color: "#2962FF",
+  color: CHART_COLORS.deepBlue,
   lineWidth: 2,
   lineStyle: "solid",
   showLabels: true,

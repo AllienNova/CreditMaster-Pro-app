@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlienNova Agent Framework Doctrine — Compliance Scorecard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface-alt: #1a2332;
+    --border: #1e293b;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --accent: #818cf8;
+    --accent-dim: #6366f1;
+    --green: #34d399;
+    --green-bg: rgba(52, 211, 153, 0.12);
+    --yellow: #fbbf24;
+    --yellow-bg: rgba(251, 191, 36, 0.12);
+    --red: #f87171;
+    --red-bg: rgba(248, 113, 113, 0.12);
+    --blue: #60a5fa;
+    --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+  }
+  .container { max-width: 1280px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding: 2.5rem 2rem;
+    background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(129,140,248,0.05));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+  }
+  .header .subtitle {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+  }
+  .header .meta {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+  .header .meta span { display: flex; align-items: center; gap: 0.4rem; }
+
+  /* Summary Cards */
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+  }
+  .project-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .project-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .project-card.romas::before { background: var(--green); }
+  .project-card.aideon::before { background: var(--accent); }
+  .project-card.fynvita::before { background: var(--yellow); }
+  .project-card .name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+  .project-card .stack {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+  .score-ring {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.75rem;
+    font-size: 1.6rem;
+    font-weight: 700;
+  }
+  .score-ring.high { background: var(--green-bg); color: var(--green); border: 3px solid var(--green); }
+  .score-ring.mid { background: rgba(129,140,248,0.12); color: var(--accent); border: 3px solid var(--accent); }
+  .score-ring.low { background: var(--yellow-bg); color: var(--yellow); border: 3px solid var(--yellow); }
+  .project-card .grade {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.2rem 0.75rem;
+    border-radius: 20px;
+    display: inline-block;
+  }
+  .grade.a { background: var(--green-bg); color: var(--green); }
+  .grade.b { background: rgba(129,140,248,0.12); color: var(--accent); }
+  .grade.c { background: var(--yellow-bg); color: var(--yellow); }
+  .grade.d { background: var(--red-bg); color: var(--red); }
+
+  /* Chart Section */
+  .chart-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin-bottom: 2.5rem;
+  }
+  .chart-section h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+  .chart-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Detailed Table */
+  .table-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin-bottom: 2.5rem;
+    overflow-x: auto;
+  }
+  .table-section h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background: var(--surface-alt);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  .std-name { font-weight: 600; white-space: nowrap; }
+  .score-cell {
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-align: center;
+    min-width: 50px;
+  }
+  .score-cell.s10, .score-cell.s9, .score-cell.s8 { color: var(--green); }
+  .score-cell.s7, .score-cell.s6 { color: var(--accent); }
+  .score-cell.s5, .score-cell.s4 { color: var(--yellow); }
+  .score-cell.s3, .score-cell.s2, .score-cell.s1, .score-cell.s0 { color: var(--red); }
+  .evidence {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    max-width: 220px;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-right: 0.25rem;
+  }
+  .tag.pass { background: var(--green-bg); color: var(--green); }
+  .tag.partial { background: var(--yellow-bg); color: var(--yellow); }
+  .tag.fail { background: var(--red-bg); color: var(--red); }
+
+  /* Remediation */
+  .remediation {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin-bottom: 2.5rem;
+  }
+  .remediation h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+  }
+  .project-remediation {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .project-remediation:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .project-remediation h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot.green { background: var(--green); }
+  .dot.purple { background: var(--accent); }
+  .dot.yellow { background: var(--yellow); }
+  .fix-list { list-style: none; }
+  .fix-list li {
+    padding: 0.5rem 0;
+    padding-left: 1.5rem;
+    position: relative;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .fix-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.85rem;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+  .fix-list.critical li::before { background: var(--red); }
+  .fix-list.high li::before { background: var(--yellow); }
+  .fix-list.medium li::before { background: var(--blue); }
+  .priority-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  .priority-label.crit { color: var(--red); }
+  .priority-label.high { color: var(--yellow); }
+  .priority-label.med { color: var(--blue); }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 1.5rem;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .summary-row { grid-template-columns: 1fr; }
+    .header .meta { flex-direction: column; gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>AlienNova Agent Framework Doctrine — Compliance Scorecard</h1>
+    <div class="subtitle">Evaluation of ROMAS, Fynvita, and Aideon AI against Doctrine v3.1 §20.2 Mandatory Standards</div>
+    <div class="meta">
+      <span>Doctrine Version: v3.1</span>
+      <span>Assessment Date: 2026-03-19</span>
+      <span>Standards Evaluated: 14</span>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-row">
+    <div class="project-card romas">
+      <div class="name">ROMAS</div>
+      <div class="stack">Python · FastAPI · 9 Microservices · Clinical-Grade</div>
+      <div class="score-ring high">82%</div>
+      <div><span class="grade a">A — Strong Compliance</span></div>
+    </div>
+    <div class="project-card aideon">
+      <div class="name">Aideon AI</div>
+      <div class="stack">JavaScript · Electron · Custom Tentacle Architecture · Desktop Agent</div>
+      <div class="score-ring high">80%</div>
+      <div><span class="grade a">A — Strong Compliance</span></div>
+    </div>
+    <div class="project-card fynvita">
+      <div class="name">Fynvita</div>
+      <div class="stack">TypeScript · Next.js · 7-Agent Trading Pipeline</div>
+      <div class="score-ring low">44%</div>
+      <div><span class="grade c">C — Needs Remediation</span></div>
+    </div>
+  </div>
+
+  <!-- Radar Chart -->
+  <div class="chart-section">
+    <h2>Comparative Compliance Radar</h2>
+    <div class="chart-container">
+      <canvas id="radarChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Detailed Scoring Table -->
+  <div class="table-section">
+    <h2>Detailed Scoring by Mandatory Standard (§20.2)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Standard</th>
+          <th style="text-align:center">ROMAS</th>
+          <th>Evidence (ROMAS)</th>
+          <th style="text-align:center">Aideon</th>
+          <th>Evidence (Aideon)</th>
+          <th style="text-align:center">Fynvita</th>
+          <th>Evidence (Fynvita)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="std-name">1. Protocol<br><span class="tag partial">§5.4</span></td>
+          <td class="score-cell s7">7</td>
+          <td class="evidence">A2A via AgentCoordinator with typed AgentMessage. AsyncAPI event contracts. REST inter-service. No MCP servers.</td>
+          <td class="score-cell s7">7</td>
+          <td class="evidence">CompositeToolProvider (NativeTentacle + MCP). A2A agent card at .well-known/agent-card.json. Typed tool schemas.</td>
+          <td class="score-cell s1">1</td>
+          <td class="evidence">No MCP, no A2A. Loose JSON coupling via REST routes. No typed handoff protocol.</td>
+        </tr>
+        <tr>
+          <td class="std-name">2. Type Safety<br><span class="tag pass">Mandatory</span></td>
+          <td class="score-cell s10">10</td>
+          <td class="evidence">Pydantic v2 frozen models throughout. CompletionRequest/Response, AgentResponse, 13 memory schemas. mypy strict.</td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">Pydantic BaseModel for Chat, QuestionAnalysisResult. TypeScript frontend. field_validator decorators.</td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">Zod for env validation. 200+ TypeScript interfaces for chat types. AI output schemas compile-time only (no runtime Zod).</td>
+        </tr>
+        <tr>
+          <td class="std-name">3. Guardrails<br><span class="tag pass">3-Layer</span></td>
+          <td class="score-cell s10">10</td>
+          <td class="evidence">Input: injection_detector (15 patterns). Process: 7-stage LLM Safety Gateway. Output: 10-point OutputGate (PHI, dose bounds, citations).</td>
+          <td class="score-cell s9">9</td>
+          <td class="evidence">ADR-003 TentacleBase triple-gate: HITL risk → capability enforce → value alignment. Formalized in architecture docs.</td>
+          <td class="score-cell s7">7</td>
+          <td class="evidence">Input: 16 injection patterns + PII detection. Output: harmful content + PII redaction. Not systematically applied on all routes.</td>
+        </tr>
+        <tr>
+          <td class="std-name">4. Observability<br><span class="tag partial">OTel</span></td>
+          <td class="score-cell s7">7</td>
+          <td class="evidence">OpenTelemetry spans on LLM calls (optional import). Structlog JSON everywhere. No tool/handoff spans. OTel not enforced.</td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">OpenTelemetry tracer (local JSONL). Spans on LLM calls, tool calls, tentacle invocations. RedactingSpanProcessor. ADR-019.</td>
+          <td class="score-cell s4">4</td>
+          <td class="evidence">Custom JSON logger + metrics collector to Supabase. No OpenTelemetry. No trace context propagation. Sentry stub only.</td>
+        </tr>
+        <tr>
+          <td class="std-name">5. Memory Spec<br><span class="tag pass">Documented</span></td>
+          <td class="score-cell s10">10</td>
+          <td class="evidence">5-tier: Session → Active → Archived. pgvector search. 6-step consolidation pipeline. Trust decay. Hash-chained audit.</td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">ADR-001 bounded collections. Episodic + Semantic + Procedural tiers. BoundedMap/Set with eviction. No formal SSOT doc.</td>
+          <td class="score-cell s6">6</td>
+          <td class="evidence">3 tiers: conversation (Supabase), financial snapshot, context compression. No TTL policy. No eviction. Stores indefinitely.</td>
+        </tr>
+        <tr>
+          <td class="std-name">6. Evaluation<br><span class="tag partial">Evals</span></td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">eval_harness.py with suite registration + scoring rubrics. 3,720 tests. 13 E2E suites. No explicit baseline thresholds in code.</td>
+          <td class="score-cell s7">7</td>
+          <td class="evidence">100 eval cases across 4 JSONL datasets. 4 rubrics (accuracy, safety, efficiency, completeness). Baselines gate releases. ADR-021.</td>
+          <td class="score-cell s2">2</td>
+          <td class="evidence">3,287 Jest tests + Cypress/Playwright E2E. 80% coverage threshold. Zero eval datasets or model quality baselines.</td>
+        </tr>
+        <tr>
+          <td class="std-name">7. Risk-Tiered Approval<br><span class="tag pass">§9.4</span></td>
+          <td class="score-cell s10">10</td>
+          <td class="evidence">5-tier RiskTier enum (CRITICAL→INFO). ManagerVerifier HITL for CRITICAL/HIGH. Per-tier confidence thresholds. ApprovalStatus tracking.</td>
+          <td class="score-cell s9">9</td>
+          <td class="evidence">ADR-004: 4-tier T1–T4 classification. HITLInterruptManager with checkpoints. 5-min timeout + escalation. 10K audit log.</td>
+          <td class="score-cell s3">3</td>
+          <td class="evidence">IntentType switch with no risk classification. No HITL gates. Chat-only confirmation. No audit of approvals.</td>
+        </tr>
+        <tr>
+          <td class="std-name">8. Error Handling<br><span class="tag pass">Cascade</span></td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">Self-correct (parse/repair loop). Retry (tenacity, exponential backoff). Fallback (multi-provider, circuit breaker). Escalate (STOP_THE_LINE).</td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">Retry + replan strategies. Task decomposition fallback. 60-min timeout with graceful shutdown. Escalation to frontend.</td>
+          <td class="score-cell s5">5</td>
+          <td class="evidence">Catch-all error handling. Model router fallback chains. No self-correct or LLM retry. Errors surface directly to user.</td>
+        </tr>
+        <tr>
+          <td class="std-name">9. Cost Control<br><span class="tag partial">Budget</span></td>
+          <td class="score-cell s7">7</td>
+          <td class="evidence">Per-model cost_per_request(). prefer_cost_optimization routing. max_cost soft limit. No global auto-stop enforcement.</td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">CostTracker per-agent/task/session. BudgetEnforcer (3 scopes). 80% warning + HITL override. pricing.json config-driven. ADR-022.</td>
+          <td class="score-cell s4">4</td>
+          <td class="evidence">Token tracking per call. Rate limiting (20 req/min). Cost-aware model selection. No budget enforcement or auto-stop.</td>
+        </tr>
+        <tr>
+          <td class="std-name">10. Security<br><span class="tag pass">Critical</span></td>
+          <td class="score-cell s10">10</td>
+          <td class="evidence">Tenant isolation (facility_id). 6-role RBAC. SecretStr fields. .env.example. HMAC prompt signing. Whitelisted tool routes.</td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">ADR-009 zero trust. RSA-2048 identity. 6 access levels. CapabilityManager. env() for secrets. Boolean secret logging.</td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">4-role RBAC. 100+ granular permissions. Supabase RLS. Zod env validation. No hardcoded secrets. Input sanitization.</td>
+        </tr>
+        <tr>
+          <td class="std-name">11. Side-Effect Semantics<br><span class="tag partial">§11.4</span></td>
+          <td class="score-cell s5">5</td>
+          <td class="evidence">Plan via research planner. Manager verification. Tool validation pre-exec. No explicit dry-run/commit/rollback pattern.</td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">5-stage lifecycle (plan/preview/execute/verify/rollback). Idempotency keys. Blast radius × risk tier matrix. ADR-019.</td>
+          <td class="score-cell s0">0</td>
+          <td class="evidence">Direct execution on all actions. No plan/dry-run/commit/verify/rollback. Financial actions cannot be undone.</td>
+        </tr>
+        <tr>
+          <td class="std-name">12. Release Manifest<br><span class="tag fail">§19.5</span></td>
+          <td class="score-cell s5">5</td>
+          <td class="evidence">Prompt registry with SHA256 content_hash. HMAC signing (5 fields). No comprehensive manifest binding model + tools.</td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">Immutable YAML manifests. 29 prompt hashes + tool schema hash + HMAC signing. Generated at build time. ADR-018.</td>
+          <td class="score-cell s0">0</td>
+          <td class="evidence">No release manifest. Prompts hardcoded. Models in env vars. No reproducibility of past deployments.</td>
+        </tr>
+        <tr>
+          <td class="std-name">13. Trace Content Policy<br><span class="tag partial">§10.4</span></td>
+          <td class="score-cell s9">9</td>
+          <td class="evidence">PHI redactor (MRN, SSN, DOB patterns). PHIGate fail-closed. Audit ledger with tokenized refs. phi_context flag on requests.</td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">PII detector (email, phone, SSN, CC, file paths, IP). 4 trace modes (metadata/redacted/hashed/full). 30-day retention. ADR-020.</td>
+          <td class="score-cell s5">5</td>
+          <td class="evidence">redactPII() for SSN, CC, email, phone. Output validation with PII filtering. No trace classification or retention policy.</td>
+        </tr>
+        <tr>
+          <td class="std-name">14. Test Coverage<br><span class="tag pass">CI/CD</span></td>
+          <td class="score-cell s10">10</td>
+          <td class="evidence">3,720 tests, 0 failures. 10 services covered. 13 E2E suites. pytest-cov, factories, assertion helpers.</td>
+          <td class="score-cell s8">8</td>
+          <td class="evidence">1,580+ Jest + 5,711 lines pytest. Multi-mode (fast/full/LLM). CI: ESLint 0-warnings + npm audit. No public coverage %.</td>
+          <td class="score-cell s7">7</td>
+          <td class="evidence">3,287 Jest tests. 80% threshold. 21 Cypress + 16 Playwright E2E. 129 failing tests (component gaps).</td>
+        </tr>
+        <tr style="background: var(--surface-alt); font-weight: 700;">
+          <td class="std-name" style="font-size: 0.95rem;">TOTAL (out of 140)</td>
+          <td class="score-cell s8" style="font-size: 1.1rem;">116</td>
+          <td class="evidence" style="font-weight: 600; color: var(--green);">82.9% — Grade A</td>
+          <td class="score-cell s8" style="font-size: 1.1rem;">112</td>
+          <td class="evidence" style="font-weight: 600; color: var(--green);">80.0% — Grade A</td>
+          <td class="score-cell s4" style="font-size: 1.1rem;">60</td>
+          <td class="evidence" style="font-weight: 600; color: var(--yellow);">42.9% — Grade C</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Strengths & Gaps Bar Chart -->
+  <div class="chart-section">
+    <h2>Score Distribution by Standard</h2>
+    <div style="max-width:900px; margin:0 auto;">
+      <canvas id="barChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Remediation Roadmap -->
+  <div class="remediation">
+    <h2>Remediation Roadmap</h2>
+
+    <div class="project-remediation">
+      <h3><span class="dot green"></span> ROMAS — 82.9% (5 gaps to close)</h3>
+      <span class="priority-label high">High Priority (Move to 90%+)</span>
+      <ul class="fix-list high">
+        <li><strong>Side-Effect Semantics (5→8):</strong> Wrap tool executor in plan→dry-run→commit→verify→rollback lifecycle. Add Saga coordinator for multi-service operations. Implement idempotency keys on all write operations.</li>
+        <li><strong>Release Manifest (5→9):</strong> Generate immutable YAML manifests binding prompt content_hash + model version + tool schema hash + eval bundle hash. Store in artifact registry alongside each deployment.</li>
+        <li><strong>Observability (7→9):</strong> Make OpenTelemetry a hard dependency (not optional import). Add spans to tool_executor calls and agent handoffs. Enforce trace propagation across all 9 microservices.</li>
+        <li><strong>Cost Control (7→9):</strong> Enforce max_daily_cost as a hard stop (not just a config field). Add per-tenant budget tracking with automatic circuit-break on breach.</li>
+        <li><strong>Protocol (7→9):</strong> Expose high-reuse tools (radiobiology calc, constraint checker) as MCP servers for cross-project consumption. Document boundary rules per §5.4.</li>
+      </ul>
+    </div>
+
+    <div class="project-remediation">
+      <h3><span class="dot green"></span> Aideon AI — 80.0% (UPGRADED — 7 gaps closed)</h3>
+      <span class="priority-label med">Completed 2026-03-19 — All 7 gaps resolved</span>
+      <ul class="fix-list medium">
+        <li><strong>Release Manifest (3→8): DONE.</strong> Immutable YAML manifests with 29 prompt hashes + tool schema hash + HMAC signing. Generated at build time via scripts/generate-release-manifest.js.</li>
+        <li><strong>Trace Content Policy (3→8): DONE.</strong> PII detector (email, phone, SSN, CC, file paths, IP), RedactingSpanProcessor with 4 modes, 30-day data retention with user clear-all.</li>
+        <li><strong>Evaluation (4→7): DONE.</strong> 100 eval cases across 4 JSONL datasets (file ops, web research, code gen, multi-step). 4 rubrics (accuracy, safety, efficiency, completeness). Baselines gate releases.</li>
+        <li><strong>Observability (6→8): DONE.</strong> OpenTelemetry tracer with local JSONL exporter. Spans on all LLM calls, tool calls, tentacle invocations. Trace context propagation.</li>
+        <li><strong>Cost Control (5→8): DONE.</strong> CostTracker with per-agent/task/session accumulation. BudgetEnforcer with 3-scope limits (session/task/model). 80% warning + HITL override on breach.</li>
+        <li><strong>Side-Effect Semantics (5→8): DONE.</strong> 5-stage lifecycle (plan/preview/execute/verify/rollback). Idempotency keys. Blast radius × risk tier matrix. Zero overhead on read-only calls.</li>
+        <li><strong>Protocol (5→7): DONE.</strong> CompositeToolProvider unifying NativeTentacleProvider + MCPToolProvider. A2A agent card at .well-known/agent-card.json.</li>
+      </ul>
+    </div>
+
+    <div class="project-remediation">
+      <h3><span class="dot yellow"></span> Fynvita — 42.9% (10 gaps to close)</h3>
+      <span class="priority-label crit">Critical (Must-fix before any production deployment)</span>
+      <ul class="fix-list critical">
+        <li><strong>Side-Effect Semantics (0→7):</strong> Financial actions (create budget, dispute, payment) MUST implement plan→confirm→commit→verify→rollback. This is non-negotiable for a financial platform. Add transaction staging table.</li>
+        <li><strong>Release Manifest (0→7):</strong> Generate manifest on each deploy binding prompt hashes + model router config + tool definitions. Store in Supabase as immutable audit record.</li>
+        <li><strong>Evaluation (2→7):</strong> Build golden datasets for financial advice quality, dispute generation accuracy, and trading signal correctness. Define scoring rubrics. Gate deployments.</li>
+        <li><strong>Risk-Tiered Approval (3→8):</strong> Add risk tier enum to all IntentTypes. Implement HITL gate for high-risk actions (trading, dispute filing, payment execution). Add approval audit trail.</li>
+        <li><strong>Protocol (1→6):</strong> Wrap action executor as MCP tool provider. Define typed schemas for all agent handoffs. Consider A2A for the 7-agent trading consensus pipeline.</li>
+      </ul>
+      <span class="priority-label high">High Priority</span>
+      <ul class="fix-list high">
+        <li><strong>Observability (4→7):</strong> Add OpenTelemetry with Jaeger. Instrument all LLM calls, action executions, and model router decisions. Link traces to user sessions.</li>
+        <li><strong>Cost Control (4→7):</strong> Add per-user token budgets by subscription tier. Implement auto-stop when budget exhausted. Track cost per trading agent run.</li>
+        <li><strong>Error Handling (5→8):</strong> Add LLM self-correct retry (reformat prompt on parse failure). Implement graceful degradation to cached responses. Add escalation path to human support.</li>
+        <li><strong>Trace Content Policy (5→7):</strong> Classify traces by sensitivity. Add data retention policy. Redact financial account numbers in all logs.</li>
+        <li><strong>Memory Spec (6→8):</strong> Define TTL policies per memory tier. Implement eviction for old snapshots. Document memory architecture in agent spec before expanding.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    AlienNova Agent Framework Doctrine v3.1 — Compliance Scorecard — Generated 2026-03-19
+  </div>
+
+</div>
+
+<script>
+// Radar Chart
+const radarCtx = document.getElementById('radarChart').getContext('2d');
+const labels = [
+  'Protocol', 'Type Safety', 'Guardrails', 'Observability', 'Memory',
+  'Evaluation', 'Risk-Tiered', 'Error Handling', 'Cost Control',
+  'Security', 'Side-Effects', 'Release Manifest', 'Trace Policy', 'Testing'
+];
+const romas =   [7, 10, 10, 7, 10, 8, 10, 8, 7, 10, 5, 5, 9, 10];
+const aideon =  [7,  8,  9, 8,  8, 7,  9, 8, 8,  8, 8, 8, 8,  8];
+const fynvita = [1,  8,  7, 4,  6, 2,  3, 5, 4,  8, 0, 0, 5,  7];
+
+new Chart(radarCtx, {
+  type: 'radar',
+  data: {
+    labels: labels,
+    datasets: [
+      {
+        label: 'ROMAS',
+        data: romas,
+        borderColor: '#34d399',
+        backgroundColor: 'rgba(52, 211, 153, 0.1)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#34d399',
+      },
+      {
+        label: 'Aideon AI',
+        data: aideon,
+        borderColor: '#818cf8',
+        backgroundColor: 'rgba(129, 140, 248, 0.1)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#818cf8',
+      },
+      {
+        label: 'Fynvita',
+        data: fynvita,
+        borderColor: '#fbbf24',
+        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#fbbf24',
+      },
+    ]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      r: {
+        beginAtZero: true,
+        max: 10,
+        ticks: {
+          stepSize: 2,
+          color: '#64748b',
+          backdropColor: 'transparent',
+          font: { size: 10 }
+        },
+        grid: { color: 'rgba(148, 163, 184, 0.15)' },
+        angleLines: { color: 'rgba(148, 163, 184, 0.15)' },
+        pointLabels: {
+          color: '#94a3b8',
+          font: { size: 11, weight: '500' }
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: '#e2e8f0',
+          padding: 20,
+          usePointStyle: true,
+          pointStyleWidth: 12,
+          font: { size: 12 }
+        }
+      }
+    }
+  }
+});
+
+// Bar Chart
+const barCtx = document.getElementById('barChart').getContext('2d');
+new Chart(barCtx, {
+  type: 'bar',
+  data: {
+    labels: labels,
+    datasets: [
+      {
+        label: 'ROMAS',
+        data: romas,
+        backgroundColor: 'rgba(52, 211, 153, 0.7)',
+        borderColor: '#34d399',
+        borderWidth: 1,
+        borderRadius: 3,
+      },
+      {
+        label: 'Aideon AI',
+        data: aideon,
+        backgroundColor: 'rgba(129, 140, 248, 0.7)',
+        borderColor: '#818cf8',
+        borderWidth: 1,
+        borderRadius: 3,
+      },
+      {
+        label: 'Fynvita',
+        data: fynvita,
+        backgroundColor: 'rgba(251, 191, 36, 0.7)',
+        borderColor: '#fbbf24',
+        borderWidth: 1,
+        borderRadius: 3,
+      },
+    ]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      x: {
+        ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45, minRotation: 45 },
+        grid: { display: false }
+      },
+      y: {
+        beginAtZero: true,
+        max: 10,
+        ticks: { color: '#64748b', stepSize: 2 },
+        grid: { color: 'rgba(148, 163, 184, 0.1)' }
+      }
+    },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: '#e2e8f0',
+          padding: 20,
+          usePointStyle: true,
+          pointStyleWidth: 12,
+          font: { size: 12 }
+        }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>

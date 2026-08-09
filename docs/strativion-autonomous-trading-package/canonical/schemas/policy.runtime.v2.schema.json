@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/policy.runtime.v2.schema.json",
+  "title": "policy.runtime",
+  "description": "Schema for policy.runtime.yaml. Covers R-01 through R-13 (risk/capital controls) and M-01 (active operating mode). All _pct fields are decimal fractions (0.01 = 1%). All _bps fields are integer basis points. Percent-floats (>1 in a _pct field) are hard-rejected. Cross-field invariants are enforced via allOf/if-then-else. CANONICAL-FIELD-INDEX \u00a71.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta",
+    "mode",
+    "risk"
+  ],
+  "properties": {
+    "meta": {
+      "description": "File identity block required by VERSIONING.md \u00a72.2.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_role",
+        "schema_version",
+        "file_version",
+        "canonical_package_version"
+      ],
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "const": "policy"
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "file_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "canonical_package_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        }
+      }
+    },
+    "mode": {
+      "description": "M-01: Active operating mode. Enum per policy.promotion.yaml stages. Requires dual-control (\u26d4) to modify.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "active"
+      ],
+      "properties": {
+        "active": {
+          "type": "string",
+          "enum": [
+            "research",
+            "replay",
+            "shadow",
+            "paper",
+            "supervised_live",
+            "autonomous_live"
+          ],
+          "description": "M-01 canonical owner. Enum values are the promotion stage identifiers from policy.promotion.yaml."
+        }
+      }
+    },
+    "risk": {
+      "description": "Risk and capital controls R-01 through R-13.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "per_trade",
+        "cluster",
+        "portfolio",
+        "kill_switch",
+        "margin"
+      ],
+      "properties": {
+        "per_trade": {
+          "description": "Per-trade risk controls.",
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "hard_max_pct",
+            "default_pct"
+          ],
+          "properties": {
+            "hard_max_pct": {
+              "description": "R-01: Per-trade maximum risk. Absolute ceiling; all workflow references must resolve to \u2264 this. Override: \u2b07.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "exclusiveMinimum": 0
+            },
+            "default_pct": {
+              "description": "R-02: Per-trade default risk. Used when a setup does not explicitly name a risk bucket. Override: \u2b07.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "cluster": {
+          "description": "Cluster concentration caps.",
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "per_symbol_max_pct",
+            "per_sector_max_pct",
+            "per_corr_cluster_max_pct"
+          ],
+          "properties": {
+            "per_symbol_max_pct": {
+              "description": "R-03: Per-symbol cluster cap. Sum of open risk on one underlying. Override: \u2b07.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "exclusiveMinimum": 0
+            },
+            "per_sector_max_pct": {
+              "description": "R-04: Per-sector cluster cap (GICS sector rollup). Override: \u2b07.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "exclusiveMinimum": 0
+            },
+            "per_corr_cluster_max_pct": {
+              "description": "R-05: Per-correlation-cluster cap. Clusters defined in policy.correlations.yaml. Override: \u2b07.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "portfolio": {
+          "description": "Portfolio heat limits across regimes.",
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "heat_normal_max_pct",
+            "heat_shock_max_pct",
+            "heat_crisis_max_pct"
+          ],
+          "properties": {
+            "heat_normal_max_pct": {
+              "description": "R-06: Portfolio heat \u2014 normal regime. Override: \u2b07.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "exclusiveMinimum": 0
+            },
+            "heat_shock_max_pct": {
+              "description": "R-07: Portfolio heat \u2014 shock regime. Must satisfy R-07 < R-06. Override: \u2b07.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "exclusiveMinimum": 0
+            },
+            "heat_crisis_max_pct": {
+              "description": "R-08: Portfolio heat \u2014 crisis regime. Must satisfy R-08 < R-07. Override: \u2b07.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "kill_switch": {
+          "description": "Kill-switch thresholds that trip flat-to-cash per policy.dr.yaml.",
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "daily_loss_pct",
+            "weekly_loss_pct",
+            "drawdown_pct"
+          ],
+          "properties": {
+            "daily_loss_pct": {
+              "description": "R-09: Daily loss kill-switch threshold. Override: \u2b07.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "exclusiveMinimum": 0
+            },
+            "weekly_loss_pct": {
+              "description": "R-10: Weekly loss kill-switch threshold. Override: \u2b07.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "exclusiveMinimum": 0
+            },
+            "drawdown_pct": {
+              "description": "R-11: Peak-to-trough max drawdown. Measured on equity curve, not P&L. Override: \u2b07.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "margin": {
+          "description": "Margin and leverage controls.",
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "utilization_max_pct",
+            "leverage_max"
+          ],
+          "properties": {
+            "utilization_max_pct": {
+              "description": "R-12: Margin utilization hard cap. Broker-reported maintenance margin / equity. Override: \u2b07.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "exclusiveMinimum": 0
+            },
+            "leverage_max": {
+              "description": "R-13: Leverage ceiling. Gross exposure / equity. Unitless scalar. Override: \u2b07.",
+              "type": "number",
+              "minimum": 1,
+              "maximum": 20
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -5,7 +5,14 @@ import DisputeStatusEmail from "@/emails/DisputeStatusEmail";
 import ScoreChangeEmail from "@/emails/ScoreChangeEmail";
 import PaymentReceiptEmail from "@/emails/PaymentReceiptEmail";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+const resend = new Proxy({} as Resend, {
+  get(_t, prop, recv) {
+    if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+    const v = Reflect.get(_resend, prop, recv);
+    return typeof v === "function" ? v.bind(_resend) : v;
+  },
+});
 
 const FROM_EMAIL = process.env.FROM_EMAIL || "Fynvita <noreply@fynvita.com>";
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fynvita.com";

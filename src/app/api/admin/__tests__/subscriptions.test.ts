@@ -4,11 +4,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
-const mockRequireRole = jest.fn();
-const mockCreateAuthResponse = jest.fn();
-jest.mock("@/lib/security/auth-middleware", () => ({
-  requireRole: mockRequireRole,
-  createAuthResponse: mockCreateAuthResponse,
+// Routes wrapped in withRole("admin") (TASK-AUTH-03a); guard resolves auth via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: any[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: any[]) => mockResolveRole(...args),
 }));
 
 const mockFrom = jest.fn();
@@ -53,24 +59,27 @@ function makeRequest(
 function makeDeleteRequest(body: Record<string, unknown>) {
   return {
     json: jest.fn().mockResolvedValue(body),
-  } as unknown as Request;
+  } as unknown as NextRequest;
 }
 
 function authenticatedAdmin() {
-  mockRequireRole.mockResolvedValue({
-    authenticated: true,
-    user: { id: "admin-1", email: "admin@fynvita.com", role: "admin" },
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "admin-1", email: "admin@fynvita.com" },
   });
+  mockResolveRole.mockResolvedValue("admin");
 }
 
-function unauthenticated(errorMsg = "Not authenticated") {
-  mockRequireRole.mockResolvedValue({
-    authenticated: false,
-    error: errorMsg,
+function unauthenticated() {
+  mockValidate.mockResolvedValue({ valid: false, user: null });
+}
+
+function authenticatedNonAdmin() {
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "user-1", email: "user@example.com" },
   });
-  mockCreateAuthResponse.mockReturnValue(
-    new Response(JSON.stringify({ error: errorMsg }), { status: 401 }),
-  );
+  mockResolveRole.mockResolvedValue("user");
 }
 
 // ── Setup / Teardown ─────────────────────────────────────────────────────────
@@ -88,22 +97,20 @@ describe("Admin Subscriptions API – GET /api/admin/subscriptions", () => {
       const res = await GET(
         makeRequest("http://localhost:3000/api/admin/subscriptions"),
       );
-      expect(mockRequireRole).toHaveBeenCalled();
-      expect(mockCreateAuthResponse).toHaveBeenCalled();
+      expect(mockValidate).toHaveBeenCalled();
       expect(res.status).toBe(401);
     });
 
-    it("should call requireRole with 'admin'", async () => {
-      unauthenticated();
-      const req = makeRequest(
-        "http://localhost:3000/api/admin/subscriptions",
+    it("should return 403 when authenticated user is not admin", async () => {
+      authenticatedNonAdmin();
+      const res = await GET(
+        makeRequest("http://localhost:3000/api/admin/subscriptions"),
       );
-      await GET(req);
-      expect(mockRequireRole).toHaveBeenCalledWith(req, "admin");
+      expect(res.status).toBe(403);
     });
   });
 
-  describe("Mock data fallback (no env vars)", () => {
+  describe("Database not configured (honest 503, never mock)", () => {
     beforeEach(() => {
       authenticatedAdmin();
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -115,47 +122,15 @@ describe("Admin Subscriptions API – GET /api/admin/subscriptions", () => {
       process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
     });
 
-    it("should return mock subscriptions when Supabase is not configured", async () => {
+    it("returns 503 with no fabricated subscriptions when Supabase is not configured", async () => {
       const res = await GET(
         makeRequest("http://localhost:3000/api/admin/subscriptions"),
       );
       const body = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(body.subscriptions).toHaveLength(5);
-      expect(body.total).toBe(5);
-    });
-
-    it("should include expected fields in mock subscriptions", async () => {
-      const res = await GET(
-        makeRequest("http://localhost:3000/api/admin/subscriptions"),
-      );
-      const body = await res.json();
-      const first = body.subscriptions[0];
-
-      expect(first).toHaveProperty("id");
-      expect(first).toHaveProperty("user_id");
-      expect(first).toHaveProperty("user_email");
-      expect(first).toHaveProperty("stripe_subscription_id");
-      expect(first).toHaveProperty("stripe_price_id");
-      expect(first).toHaveProperty("status");
-      expect(first).toHaveProperty("current_period_start");
-      expect(first).toHaveProperty("current_period_end");
-      expect(first).toHaveProperty("cancel_at_period_end");
-    });
-
-    it("should include various statuses in mock data", async () => {
-      const res = await GET(
-        makeRequest("http://localhost:3000/api/admin/subscriptions"),
-      );
-      const body = await res.json();
-      const statuses = body.subscriptions.map(
-        (s: { status: string }) => s.status,
-      );
-
-      expect(statuses).toContain("active");
-      expect(statuses).toContain("past_due");
-      expect(statuses).toContain("canceled");
+      expect(res.status).toBe(503);
+      expect(body.error).toMatch(/database not configured/i);
+      expect(body.subscriptions).toBeUndefined();
     });
   });
 
@@ -301,6 +276,27 @@ describe("Admin Subscriptions API – GET /api/admin/subscriptions", () => {
 //  DELETE /api/admin/subscriptions
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Admin Subscriptions API – DELETE /api/admin/subscriptions", () => {
+  // DELETE is wrapped in withRole("admin") (TASK-AUTH-03a, FND-050).
+  beforeEach(() => {
+    authenticatedAdmin();
+  });
+
+  describe("Authentication", () => {
+    it("should return 401 when user is not authenticated", async () => {
+      unauthenticated();
+      const req = makeDeleteRequest({ subscriptionId: "sub_1234" });
+      const res = await DELETE(req);
+      expect(res.status).toBe(401);
+    });
+
+    it("should return 403 when authenticated user is not admin", async () => {
+      authenticatedNonAdmin();
+      const req = makeDeleteRequest({ subscriptionId: "sub_1234" });
+      const res = await DELETE(req);
+      expect(res.status).toBe(403);
+    });
+  });
+
   describe("Validation", () => {
     it("should return 400 when subscriptionId is missing", async () => {
       const req = makeDeleteRequest({});
@@ -321,7 +317,7 @@ describe("Admin Subscriptions API – DELETE /api/admin/subscriptions", () => {
     });
   });
 
-  describe("Mock cancellation (no env vars)", () => {
+  describe("Cancellation with no DB configured (honest 503, never mock)", () => {
     beforeEach(() => {
       delete process.env.NEXT_PUBLIC_SUPABASE_URL;
       delete process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -332,14 +328,14 @@ describe("Admin Subscriptions API – DELETE /api/admin/subscriptions", () => {
       process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
     });
 
-    it("should return mock success when Supabase is not configured", async () => {
+    it("returns 503 (never a fabricated success) when Supabase is not configured", async () => {
       const req = makeDeleteRequest({ subscriptionId: "sub_1234" });
       const res = await DELETE(req);
       const body = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(body.success).toBe(true);
-      expect(body.message).toBe("Mock cancellation successful");
+      expect(res.status).toBe(503);
+      expect(body.error).toMatch(/database not configured/i);
+      expect(body.success).toBeUndefined();
     });
   });
 
@@ -408,7 +404,7 @@ describe("Admin Subscriptions API – DELETE /api/admin/subscriptions", () => {
     it("should return 500 when request.json() throws", async () => {
       const req = {
         json: jest.fn().mockRejectedValue(new Error("Parse error")),
-      } as unknown as Request;
+      } as unknown as NextRequest;
 
       const res = await DELETE(req);
       const body = await res.json();

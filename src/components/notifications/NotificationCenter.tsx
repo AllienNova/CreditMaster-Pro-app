@@ -6,6 +6,7 @@ import {
   NotificationType,
 } from "@/lib/notifications/notification-service";
 import NotificationItem from "./NotificationItem";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/hooks/useAuth";
 
 type FilterType = "all" | "unread" | NotificationType;
@@ -151,9 +152,9 @@ export default function NotificationCenter() {
   const filterOptions: { value: FilterType; label: string }[] = [
     { value: "all", label: "All Notifications" },
     { value: "unread", label: "Unread" },
-    { value: "dispute_created", label: "Disputes" },
-    { value: "credit_score_changed", label: "Credit Score" },
-    { value: "payment_successful", label: "Payments" },
+    { value: "dispute_update", label: "Disputes" },
+    { value: "score_reminder", label: "Credit Score" },
+    { value: "payment_success", label: "Payments" },
     { value: "document_uploaded", label: "Documents" },
   ];
 
@@ -248,19 +249,19 @@ export default function NotificationCenter() {
       {/* Notifications List */}
       <div>
         {filteredNotifications.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-400 dark:text-slate-500 text-6xl mb-4"></div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              {filter === "unread"
+          <EmptyState
+            type="no-alerts"
+            title={
+              filter === "unread"
                 ? "No unread notifications"
-                : "No notifications yet"}
-            </h3>
-            <p className="text-gray-600 dark:text-slate-300">
-              {filter === "unread"
+                : "No notifications yet"
+            }
+            description={
+              filter === "unread"
                 ? "You're all caught up!"
-                : "We'll notify you when something important happens"}
-            </p>
-          </div>
+                : "We'll notify you when something important happens"
+            }
+          />
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-slate-700">
             {filteredNotifications.map((notification) => (

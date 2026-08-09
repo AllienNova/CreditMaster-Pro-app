@@ -6,26 +6,18 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { getSupabase } from "@/lib/supabase/client";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import type {
   Holding,
   HoldingCreateInput,
 } from "@/lib/investments/types/portfolio.types";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
     const searchParams = request.nextUrl.searchParams;
     const sortBy = searchParams.get("sortBy") || "symbol";
     const sortDir = searchParams.get("sortDir") || "asc";
@@ -93,19 +85,11 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
     const body: HoldingCreateInput = await request.json();
 
     // Validate required fields
@@ -117,26 +101,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if holding already exists for this symbol
+    // Real columns are `quantity` and `average_cost`; `shares` and
+    // `average_cost_basis` exist nowhere on investment_holdings. Naming them
+    // errored the whole SELECT, so `existing` was always undefined and this
+    // route ALWAYS took the insert branch — silently creating a duplicate
+    // holding row per POST instead of averaging into the existing one, and
+    // never updating a position. The API's own request field names
+    // (body.shares / body.averageCostBasis) are unchanged; only the column
+    // names are corrected.
     const { data: existing } = await supabase
       .from("investment_holdings")
-      .select("id, shares, average_cost_basis")
+      .select("id, quantity, average_cost")
       .eq("user_id", userId)
       .eq("symbol", body.symbol.toUpperCase())
       .single();
 
     if (existing) {
       // Update existing holding with new average cost basis
-      const newTotalShares = existing.shares + body.shares;
+      const newTotalShares = existing.quantity + body.shares;
       const newTotalCost =
-        existing.shares * existing.average_cost_basis +
+        existing.quantity * existing.average_cost +
         body.shares * body.averageCostBasis;
       const newAvgCost = newTotalCost / newTotalShares;
 
       const { data, error } = await supabase
+        // idor-audit: pk-owner-checked — existing.id came from the
+        // select above, which filters .eq("user_id", userId).
         .from("investment_holdings")
         .update({
-          shares: newTotalShares,
-          average_cost_basis: newAvgCost,
+          quantity: newTotalShares,
+          average_cost: newAvgCost,
           updated_at: new Date().toISOString(),
         })
         .eq("id", existing.id)
@@ -159,8 +153,8 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         symbol: body.symbol.toUpperCase(),
         name: body.name || body.symbol.toUpperCase(),
-        shares: body.shares,
-        average_cost_basis: body.averageCostBasis,
+        quantity: body.shares,
+        average_cost: body.averageCostBasis,
         current_price: body.averageCostBasis,
         asset_type: body.assetType || "stock",
         sector: body.sector,
@@ -184,11 +178,16 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 function transformHolding(h: Record<string, unknown>): Holding {
-  const shares = h.shares as number;
-  const avgCost = h.average_cost_basis as number;
+  // Reads off a `select("*")`, so these never errored — they just came back
+  // undefined, and every derived figure below (value, gainLoss, gainLossPercent)
+  // resolved to NaN. This is the phantom-column case a query-level audit cannot
+  // see: the column list is a wildcard, and the mismatch only appears where the
+  // row is destructured. Real columns are `quantity` and `average_cost`.
+  const shares = h.quantity as number;
+  const avgCost = h.average_cost as number;
   const currentPrice = (h.current_price as number) || avgCost;
   return {
     id: h.id as string,

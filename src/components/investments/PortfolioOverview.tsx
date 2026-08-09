@@ -8,10 +8,12 @@ import {
   AreaChartComponent,
   ChartContainer,
 } from "@/components/charts";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type {
   Portfolio,
   Holding,
 } from "@/lib/investments/types/portfolio.types";
+import { CHART_COLORS } from "@/lib/design-tokens/chart-colors";
 
 type DateRange = "1M" | "3M" | "6M" | "1Y" | "ALL";
 
@@ -87,9 +89,17 @@ export default function PortfolioOverview() {
 
   if (!portfolio) {
     return (
-      <EmptyPortfolio
-        onAddHolding={() => router.push("/investments/holdings")}
-      />
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+        <EmptyState
+          type="no-investments"
+          title="No portfolio data"
+          description="Start building your investment portfolio by adding your first holding"
+          primaryAction={{
+            label: "Add Your First Holding",
+            onClick: () => router.push("/investments/holdings"),
+          }}
+        />
+      </div>
     );
   }
 
@@ -181,7 +191,7 @@ export default function PortfolioOverview() {
                 value: p.value,
               }))}
               areas={[
-                { dataKey: "value", name: "Portfolio Value", color: "#3B82F6" },
+                { dataKey: "value", name: "Portfolio Value", color: CHART_COLORS.blue },
               ]}
               height={280}
               currency
@@ -428,27 +438,6 @@ function HoldingsTable({ holdings, onAnalyze }: HoldingsTableProps) {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function EmptyPortfolio({ onAddHolding }: { onAddHolding: () => void }) {
-  return (
-    <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-lg shadow">
-      <span className="text-6xl"></span>
-      <h3 className="mt-4 text-xl font-semibold text-gray-900 dark:text-white">
-        No Portfolio Data
-      </h3>
-      <p className="mt-2 text-gray-500 dark:text-slate-400 max-w-md mx-auto">
-        Start building your investment portfolio by adding your first holding.
-      </p>
-      <button
-        type="button"
-        onClick={onAddHolding}
-        className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-      >
-        Add Your First Holding
-      </button>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import DisputeGenerator from "@/components/aiml/DisputeGenerator";
 import CreditAnalyzer from "@/components/aiml/CreditAnalyzer";
 import LoanStrategyCalculator from "@/components/aiml/LoanStrategyCalculator";
 import AIChat from "@/components/aiml/AIChat";
-import { TaskType } from "@/lib/model-router";
+import { TaskType } from "@/lib/model-router-types";
 
 type ActiveTool = "dispute" | "analyzer" | "loan" | "chat";
 

@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "strativion-python-formulas"
+version = "2.5.0rc1"
+description = "Reference Python implementations of trading-law formulas (position sizing, risk of ruin, expectancy, drawdown recovery, regime detection, statistical significance). Non-binding — canonical thresholds live in the Strativion canonical/ layer."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "../../LICENSE" }
+authors = [{ name = "Kimal Honour Djam", email = "president@aliennova.com" }]
+keywords = ["trading", "kelly", "risk-of-ruin", "expectancy", "strativion"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial",
+]
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8.0", "hypothesis>=6.100"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = "-q --import-mode=importlib"
+testpaths = ["tests"]

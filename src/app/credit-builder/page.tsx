@@ -7,10 +7,11 @@
  */
 
 import Link from "next/link";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { redirect } from "next/navigation";
 import AICreditRoadmap from "@/components/credit-builder/AICreditRoadmap";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { ScrollReveal, StaggerList } from "@/components/ui/animations";
 
 // Force dynamic rendering to prevent build-time prerendering (requires auth)
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export const metadata = {
 };
 
 export default async function CreditBuilderDashboard() {
-  const supabase = getSupabase();
+  const supabase = getServiceRoleClient();
   const {
     data: { user },
     error,
@@ -60,6 +61,7 @@ export default async function CreditBuilderDashboard() {
         {/* AI Credit Building Roadmap */}
         <AICreditRoadmap />
         {/* Credit Builder Score Section */}
+        <ScrollReveal>
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -166,8 +168,10 @@ export default async function CreditBuilderDashboard() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Quick Wins Section */}
+        <ScrollReveal delay={0.1}>
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-sm p-8 mb-8 text-white">
           <h2 className="text-2xl font-bold mb-4">Quick Wins</h2>
           <p className="text-blue-100 mb-6">
@@ -222,8 +226,10 @@ export default async function CreditBuilderDashboard() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Progress Section */}
+        <ScrollReveal delay={0.1}>
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Your Progress
@@ -280,6 +286,7 @@ export default async function CreditBuilderDashboard() {
             </p>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Credit Building Tools Grid */}
         <div className="mb-8">
@@ -287,7 +294,7 @@ export default async function CreditBuilderDashboard() {
             Credit Building Tools
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StaggerList stagger={0.08} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Credit Builder Loan */}
             <Link
               href="/credit-builder/loan"
@@ -638,10 +645,11 @@ export default async function CreditBuilderDashboard() {
                 </span>
               </div>
             </Link>
-          </div>
+          </StaggerList>
         </div>
 
         {/* Success Stories */}
+        <ScrollReveal delay={0.1}>
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Success Timeline
@@ -716,6 +724,7 @@ export default async function CreditBuilderDashboard() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </div>
     </div>
   );

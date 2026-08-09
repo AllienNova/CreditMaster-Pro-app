@@ -14,10 +14,37 @@
  * - LIABILITIES: DEFAULT_UPDATE
  */
 
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import * as jose from "jose";
+import {
+  createClient as createSupabaseClient,
+  SupabaseClient,
+} from "@supabase/supabase-js";
 import { getPlaidClient } from "@/lib/financial/plaid-client";
 import { plaidService } from "@/lib/financial/plaid-service";
-import { getSupabase } from "@/lib/supabase/client";
+import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
+
+// ---------------------------------------------------------------------------
+// Service-role Supabase client
+// ---------------------------------------------------------------------------
+//
+// Webhook handlers run with no user session at all — Plaid calls this
+// endpoint server-to-server, so there is never a JWT to forward. The
+// anon-keyed getSupabase() singleton this file used to import from
+// @/lib/supabase/client can therefore never work here: auth.uid() is
+// always NULL for it, and plaid_items/transactions gate writes behind
+// auth.uid() = user_id RLS policies an anonymous session can never satisfy.
+// Every write in this file already targets a specific row via an explicit
+// .eq("item_id", ...) / .in("transaction_id", ...) filter, so moving to a
+// service-role client (which bypasses RLS but not those filters) is safe —
+// it does not widen which rows a given webhook call can touch.
+//
+// Mirrors plaid-service.ts's getServiceRoleClient(): untyped, because
+// plaid_items and transactions sit outside the generated Database type in
+// src/lib/supabase/types.ts, and lazily constructed (not a module-scope
+// createClient() call) because next build's page-data-collection phase
+// imports every route module with no runtime env — an eager call would
+// abort the build with "supabaseUrl is required".
 
 // ---------------------------------------------------------------------------
 // Types
@@ -234,7 +261,7 @@ class PlaidWebhookService {
       }
 
       const bodyHash = await this.sha256(body);
-      return bodyHash === requestBodyHash;
+      return timingSafeEqual(bodyHash, requestBodyHash);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`[PlaidWebhook] Signature verification failed: ${message}`);
@@ -335,8 +362,7 @@ class PlaidWebhookService {
       `[PlaidWebhook] Removing ${removedIds.length} transactions for item_id=${event.item_id}`,
     );
 
-    const supabase = getSupabase();
-    const { error } = await supabase
+    const { error } = await getServiceRoleClient()
       .from("transactions")
       .delete()
       .in("transaction_id", removedIds);
@@ -361,15 +387,19 @@ class PlaidWebhookService {
         `message=${errorInfo?.error_message ?? "unknown"}`,
     );
 
-    const supabase = getSupabase();
-    const { error } = await supabase
-      .from("plaid_items")
+    const { error } = await getServiceRoleClient()
+      .from("bank_connections")
       .update({
         error_type: errorInfo?.error_type ?? null,
         error_code: errorInfo?.error_code ?? null,
         error_message: errorInfo?.error_message ?? null,
         updated_at: new Date().toISOString(),
       })
+      // item_id is unique only WITHIN a provider (UNIQUE (provider, item_id)
+      // in 20260801000020), so every lookup must name the provider too —
+      // otherwise a TrueLayer connection sharing an id string could be
+      // updated by a Plaid webhook.
+      .eq("provider", "plaid")
       .eq("item_id", event.item_id);
 
     if (error) {
@@ -391,13 +421,17 @@ class PlaidWebhookService {
         `expires=${event.consent_expiration_time ?? "unknown"}`,
     );
 
-    const supabase = getSupabase();
-    const { error } = await supabase
-      .from("plaid_items")
+    const { error } = await getServiceRoleClient()
+      .from("bank_connections")
       .update({
         consent_expiration_time: event.consent_expiration_time ?? null,
         updated_at: new Date().toISOString(),
       })
+      // item_id is unique only WITHIN a provider (UNIQUE (provider, item_id)
+      // in 20260801000020), so every lookup must name the provider too —
+      // otherwise a TrueLayer connection sharing an id string could be
+      // updated by a Plaid webhook.
+      .eq("provider", "plaid")
       .eq("item_id", event.item_id);
 
     if (error) {
@@ -415,10 +449,10 @@ class PlaidWebhookService {
    * Look up the user_id that owns a given item_id.
    */
   private async getUserIdForItem(itemId: string): Promise<string | null> {
-    const supabase = getSupabase();
-    const { data, error } = await supabase
-      .from("plaid_items")
+    const { data, error } = await getServiceRoleClient()
+      .from("bank_connections")
       .select("user_id")
+      .eq("provider", "plaid")
       .eq("item_id", itemId)
       .single();
 

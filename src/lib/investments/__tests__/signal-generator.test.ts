@@ -114,6 +114,31 @@ const mockQuote = {
   timestamp: new Date(),
 };
 
+// Bars in the shape `UnifiedMarketDataService.getHistory` really returns
+// (`{ data: bars }`, each bar keyed `timestamp`) — see MarketDataService
+// .getHistoricalData.
+//
+// `calculateTechnicalIndicators` requires >= 200 candles. Before DEFAB-1 the
+// service silently substituted Math.random() candles whenever the provider
+// call failed, so this suite's technical analysis ran on fabricated prices,
+// not on any fixture. With that fallback deleted the suite needs a real
+// fixture of sufficient length — DETERMINISTIC (no Math.random), so runs are
+// reproducible and assertions mean something.
+const HISTORY_BAR_COUNT = 220;
+const mockHistoryBars = Array.from({ length: HISTORY_BAR_COUNT }, (_, i) => {
+  // Gentle deterministic oscillation around a 170 base with a slight uptrend.
+  const close = 170 + Math.sin(i / 7) * 4 + i * 0.05;
+  const open = 170 + Math.sin((i - 1) / 7) * 4 + (i - 1) * 0.05;
+  return {
+    timestamp: new Date(2024, 0, 1 + i),
+    open,
+    high: Math.max(open, close) + 1.5,
+    low: Math.min(open, close) - 1.5,
+    close,
+    volume: 45_000_000 + (i % 10) * 500_000,
+  };
+});
+
 const mockHistoricalData = [
   {
     date: new Date("2024-01-01"),
@@ -252,9 +277,17 @@ describe("SignalGenerator", () => {
     };
     (getAIMLService as jest.Mock).mockReturnValue(mockAIML);
 
-    // Setup Market Data mock
+    // Setup Market Data mock.
+    //
+    // `getHistory` is the method MarketDataService actually calls. It was
+    // missing here: the resulting TypeError used to be swallowed by a
+    // try/catch that returned Math.random() synthetic candles, so these tests
+    // silently asserted against fabricated data instead of this fixture. The
+    // fabrication was deleted (DEFAB-1), which surfaced the incomplete mock —
+    // so the mock now mirrors the real `{ data: bars }` contract.
     mockMarketData = {
       getQuote: jest.fn().mockResolvedValue(mockQuote),
+      getHistory: jest.fn().mockResolvedValue({ data: mockHistoryBars }),
       getHistoricalData: jest.fn().mockResolvedValue(mockHistoricalData),
       getTechnicalIndicators: jest
         .fn()

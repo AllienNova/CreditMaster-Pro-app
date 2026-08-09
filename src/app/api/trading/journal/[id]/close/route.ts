@@ -5,29 +5,18 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getTradingJournalService } from "@/lib/trading/services/TradingJournalService";
 
 // ============================================================================
 // POST - Close Trade
 // ============================================================================
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { id } = await params;
+    // Path is .../journal/[id]/close — the trade id is the segment before "close".
+    const segments = request.nextUrl.pathname.split("/");
+    const id = segments[segments.length - 2] ?? "";
     const body = await request.json();
 
     if (!body.exitPrice || !body.exitQuantity || !body.exitReason) {
@@ -73,4 +62,4 @@ export async function POST(
       { status: 500 },
     );
   }
-}
+});

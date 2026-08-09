@@ -17,14 +17,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../src/hooks/useTheme";
 import { Card } from "../../src/components/Card";
-import { useFinancialStore } from "../../src/store/financialStore";
+import { useDashboardStore } from "../../src/store/dashboardStore";
+import { useAccountStore } from "../../src/store/accountStore";
 
 export default function FinancialScreen() {
   const { colors, spacing, borderRadius, fontSize, fontWeight, withOpacity } =
     useTheme();
   const [refreshing, setRefreshing] = useState(false);
-  const { dashboard, accounts, fetchDashboard, fetchAccounts, isLoading } =
-    useFinancialStore();
+  const { dashboard, fetchDashboard, isLoadingDashboard } = useDashboardStore();
+  const { accounts, fetchAccounts, isLoadingAccounts } = useAccountStore();
+  const isLoading = isLoadingDashboard || isLoadingAccounts;
 
   useEffect(() => {
     fetchDashboard();

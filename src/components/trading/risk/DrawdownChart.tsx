@@ -9,6 +9,7 @@
  */
 
 import React, { useMemo } from "react";
+import { CHART_COLORS } from "@/lib/design-tokens/chart-colors";
 
 // ============================================================================
 // TYPES
@@ -157,19 +158,19 @@ export function DrawdownChart({
       {
         level: thresholds.level1,
         y: (thresholds.level1 / maxDD) * (chartHeight - 20) + 10,
-        color: "#EAB308",
+        color: CHART_COLORS.yellow,
         label: `L1 (${formatPercent(thresholds.level1)})`,
       },
       {
         level: thresholds.level2,
         y: (thresholds.level2 / maxDD) * (chartHeight - 20) + 10,
-        color: "#F97316",
+        color: CHART_COLORS.orange,
         label: `L2 (${formatPercent(thresholds.level2)})`,
       },
       {
         level: thresholds.killLevel,
         y: (thresholds.killLevel / maxDD) * (chartHeight - 20) + 10,
-        color: "#EF4444",
+        color: CHART_COLORS.red,
         label: `Kill (${formatPercent(thresholds.killLevel)})`,
       },
     ];
@@ -252,7 +253,7 @@ export function DrawdownChart({
             <path
               d={svgPath}
               fill="none"
-              stroke={severity === "critical" ? "#EF4444" : severity === "danger" ? "#F97316" : severity === "warning" ? "#EAB308" : "#22C55E"}
+              stroke={severity === "critical" ? CHART_COLORS.red : severity === "danger" ? CHART_COLORS.orange : severity === "warning" ? CHART_COLORS.yellow : "#22C55E"}
               strokeWidth="0.8"
             />
 
@@ -265,8 +266,8 @@ export function DrawdownChart({
                 x2="0"
                 y2="1"
               >
-                <stop offset="0%" stopColor="#EF4444" stopOpacity="0.1" />
-                <stop offset="100%" stopColor="#EF4444" stopOpacity="0.4" />
+                <stop offset="0%" stopColor={CHART_COLORS.red} stopOpacity="0.1" />
+                <stop offset="100%" stopColor={CHART_COLORS.red} stopOpacity="0.4" />
               </linearGradient>
             </defs>
           </svg>

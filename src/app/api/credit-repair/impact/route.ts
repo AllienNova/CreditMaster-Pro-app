@@ -12,7 +12,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { creditRepairService } from "@/lib/credit-repair";
 import { auditLogger } from "@/lib/security/audit-logging";
 import type { OpportunityType } from "@/lib/credit-repair";
@@ -21,16 +22,8 @@ import type { OpportunityType } from "@/lib/credit-repair";
  * POST /api/credit-repair/impact
  * Calculate estimated impact of an action
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
     // 2. Parse and validate input
     const body = await request.json();
     const { action, data } = body;
@@ -106,7 +99,7 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * Get impact description based on estimated points

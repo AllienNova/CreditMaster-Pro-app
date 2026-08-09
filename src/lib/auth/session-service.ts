@@ -8,9 +8,25 @@
  * - Session timeout management
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
-const supabase = getSupabase();
+/**
+ * Browser client, NOT the anon-keyed getSupabase() singleton this used to hold.
+ *
+ * getSupabase() builds a raw createClient(url, ANON_KEY), which stores its
+ * session in localStorage. The app signs in through useAuth -> createClient()
+ * -> @supabase/ssr's createBrowserClient, which stores its session in COOKIES.
+ * Two different stores: the raw client never saw the session the app actually
+ * established, so auth.uid() was NULL here and every RLS policy of the form
+ * (auth.uid() = user_id) matched nothing — zero rows, no error.
+ *
+ * These modules are called at runtime from "use client" components, so they
+ * must NOT use the service role (that key is server-only). createBrowserClient
+ * returns a cached singleton in the browser (@supabase/ssr 0.7.0,
+ * createBrowserClient.js:8-14,46), so this is the same client useAuth holds,
+ * and RLS correctly enforces ownership under the user's own identity.
+ */
+const supabase = createClient();
 
 export interface Session {
   id: string;
@@ -136,7 +152,10 @@ class SessionService {
       const { error } = await supabase
         .from("sessions")
         .update({
-          last_active_at: new Date().toISOString(),
+          // Real column is `last_activity`; `last_active_at` exists nowhere on
+          // public.sessions, so every session-activity update failed and
+          // updateSessionActivity always returned success:false.
+          last_activity: new Date().toISOString(),
         })
         .eq("id", sessionId);
 

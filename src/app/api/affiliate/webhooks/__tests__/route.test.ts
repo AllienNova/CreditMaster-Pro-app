@@ -14,11 +14,19 @@ if (!globalThis.crypto?.subtle) {
 // Mock revenue tracker
 jest.mock("@/lib/affiliate/revenue-tracker", () => ({
   revenueTracker: {
-    trackEvent: jest.fn(),
+    trackEvent: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
+// Mock commission calculator — server recomputes commission, never trusts inbound value
+jest.mock("@/lib/commerce/affiliate", () => ({
+  commissionCalculator: {
+    calculateCommission: jest.fn().mockResolvedValue(12.0),
   },
 }));
 
 import { revenueTracker } from "@/lib/affiliate/revenue-tracker";
+import { commissionCalculator } from "@/lib/commerce/affiliate";
 
 const WEBHOOK_SECRET = "test-webhook-secret-key";
 
@@ -51,6 +59,9 @@ describe("POST /api/affiliate/webhooks", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env = { ...originalEnv, MONEYLION_WEBHOOK_SECRET: WEBHOOK_SECRET };
+    // Default: server recomputes commission as 12.0; override per-test with mockResolvedValueOnce
+    (commissionCalculator.calculateCommission as jest.Mock).mockResolvedValue(12.0);
+    (revenueTracker.trackEvent as jest.Mock).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -205,7 +216,9 @@ describe("POST /api/affiliate/webhooks", () => {
     );
   });
 
-  it("processes approval.granted event with commission", async () => {
+  it("processes approval.granted event — persists SERVER-recomputed commission, ignores inbound value", async () => {
+    // Mock returns 12.0 by default; inbound commission is 25.5 (inflated/different).
+    // The persisted value must be 12.0, not 25.5.
     const timestamp = String(Math.floor(Date.now() / 1000));
     const payload = {
       event: "approval.granted",
@@ -214,7 +227,8 @@ describe("POST /api/affiliate/webhooks", () => {
         productId: "prod-3",
         partnerId: "partner-3",
         userId: "user-3",
-        commission: 25.5,
+        amount: 100,
+        commission: 25.5, // inflated inbound value — must be IGNORED
       },
     };
     const body = JSON.stringify(payload);
@@ -227,10 +241,15 @@ describe("POST /api/affiliate/webhooks", () => {
     const res = await POST(req);
 
     expect(res.status).toBe(200);
+    expect(commissionCalculator.calculateCommission).toHaveBeenCalledWith(
+      "partner-3",
+      "approval",
+      100,
+    );
     expect(revenueTracker.trackEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         eventType: "approval",
-        commissionAmount: 25.5,
+        commissionAmount: 12.0, // server-recomputed, NOT the inbound 25.5
       }),
     );
   });
@@ -261,7 +280,10 @@ describe("POST /api/affiliate/webhooks", () => {
     expect(res.status).toBe(200);
     expect(json.event).toBe("conversion.completed");
     expect(revenueTracker.trackEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: "conversion" }),
+      expect.objectContaining({
+        eventType: "conversion",
+        commissionAmount: 12.0,
+      }),
     );
   });
 
@@ -310,5 +332,97 @@ describe("POST /api/affiliate/webhooks", () => {
     expect(revenueTracker.trackEvent).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "anonymous" }),
     );
+  });
+
+  it("ignores inflated inbound commission and persists server-recomputed value for conversion.completed", async () => {
+    // Server computes 12.0; inbound commission is 999 (inflated).
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const payload = {
+      event: "conversion.completed",
+      data: {
+        clickId: "clk-infl",
+        productId: "prod-infl",
+        partnerId: "partner-infl",
+        userId: "user-infl",
+        amount: 250,
+        commission: 999, // malicious/buggy partner value — must NOT reach DB
+      },
+    };
+    const body = JSON.stringify(payload);
+    const sig = await computeHmac(timestamp, body);
+
+    const req = createMockWebhookRequest(body, {
+      "x-moneylion-signature": sig,
+      "x-moneylion-timestamp": timestamp,
+    });
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    // calculateCommission called with amount (not the inbound commission)
+    expect(commissionCalculator.calculateCommission).toHaveBeenCalledWith(
+      "partner-infl",
+      "purchase",
+      250,
+    );
+    // persisted commission is 12.0 (server value), not 999 (inbound)
+    expect(revenueTracker.trackEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ commissionAmount: 12.0 }),
+    );
+  });
+
+  it("unknown partner yields commission 0 (calculateCommission returns 0 for missing partner)", async () => {
+    (commissionCalculator.calculateCommission as jest.Mock).mockResolvedValueOnce(0);
+
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const payload = {
+      event: "conversion.completed",
+      data: {
+        clickId: "clk-unk",
+        productId: "prod-unk",
+        partnerId: "partner-unknown-xyz",
+        userId: "user-unk",
+        amount: 100,
+        commission: 50, // inbound value for a partner not in our DB
+      },
+    };
+    const body = JSON.stringify(payload);
+    const sig = await computeHmac(timestamp, body);
+
+    const req = createMockWebhookRequest(body, {
+      "x-moneylion-signature": sig,
+      "x-moneylion-timestamp": timestamp,
+    });
+    const res = await POST(req);
+
+    // Must not throw — calculateCommission returns 0 for unknown partner
+    expect(res.status).toBe(200);
+    expect(revenueTracker.trackEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ commissionAmount: 0 }),
+    );
+  });
+
+  it("returns 500 when trackEvent throws (surfaces DB insert errors to MoneyLion for retry)", async () => {
+    (revenueTracker.trackEvent as jest.Mock).mockRejectedValueOnce(
+      new Error("revenue_events insert failed: connection timeout"),
+    );
+
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const payload = {
+      event: "click.created",
+      data: { clickId: "clk-err", productId: "prod-1", partnerId: "p-1", userId: "u-1" },
+    };
+    const body = JSON.stringify(payload);
+    const sig = await computeHmac(timestamp, body);
+
+    const req = createMockWebhookRequest(body, {
+      "x-moneylion-signature": sig,
+      "x-moneylion-timestamp": timestamp,
+    });
+    const res = await POST(req);
+    const json = await res.json();
+
+    // A non-200 response tells MoneyLion to retry — critical for FND-025 durability.
+    expect(res.status).toBe(500);
+    expect(json.error).toBe("Webhook processing failed");
   });
 });

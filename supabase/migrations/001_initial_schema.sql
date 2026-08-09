@@ -104,58 +104,71 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 CREATE POLICY "Users can view own profile"
   ON profiles FOR SELECT
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 CREATE POLICY "Users can insert own profile"
   ON profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
 -- Disputes policies
+DROP POLICY IF EXISTS "Users can view own disputes" ON disputes;
 CREATE POLICY "Users can view own disputes"
   ON disputes FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create own disputes" ON disputes;
 CREATE POLICY "Users can create own disputes"
   ON disputes FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own disputes" ON disputes;
 CREATE POLICY "Users can update own disputes"
   ON disputes FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own disputes" ON disputes;
 CREATE POLICY "Users can delete own disputes"
   ON disputes FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Documents policies
+DROP POLICY IF EXISTS "Users can view own documents" ON documents;
 CREATE POLICY "Users can view own documents"
   ON documents FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can upload own documents" ON documents;
 CREATE POLICY "Users can upload own documents"
   ON documents FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own documents" ON documents;
 CREATE POLICY "Users can delete own documents"
   ON documents FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Notifications policies
+DROP POLICY IF EXISTS "Users can view own notifications" ON notifications;
 CREATE POLICY "Users can view own notifications"
   ON notifications FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
 CREATE POLICY "Users can update own notifications"
   ON notifications FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Subscriptions policies
+DROP POLICY IF EXISTS "Users can view own subscriptions" ON subscriptions;
 CREATE POLICY "Users can view own subscriptions"
   ON subscriptions FOR SELECT
   USING (auth.uid() = user_id);

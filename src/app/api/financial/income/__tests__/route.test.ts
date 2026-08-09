@@ -13,8 +13,19 @@
 
 import { NextRequest } from "next/server";
 
+const mockValidateFromHeaders = jest.fn();
 jest.mock("@/lib/supabase/server");
 jest.mock("@/lib/financial/income-tracking-service");
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 
 import { GET, POST, PUT, DELETE } from "../route";
 import { createClient } from "@/lib/supabase/server";
@@ -54,6 +65,10 @@ const mockCountdown = { nextPayday: "2025-01-15", daysUntil: 5 };
 describe("GET /api/financial/income", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -65,7 +80,7 @@ describe("GET /api/financial/income", () => {
   });
 
   it("should return income sources, stats, and countdown", async () => {
-    const response = await GET();
+    const response = await GET(createMockRequest("http://localhost:3000/api/financial/income"));
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -77,17 +92,16 @@ describe("GET /api/financial/income", () => {
     expect(incomeTrackingService.getPaydayCountdown).toHaveBeenCalledWith("user-123");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+
+      const response = await GET(createMockRequest("http://localhost:3000/api/financial/income"));
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
-
-    const response = await GET();
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 500 on service error", async () => {
@@ -95,7 +109,7 @@ describe("GET /api/financial/income", () => {
       new Error("DB error"),
     );
 
-    const response = await GET();
+    const response = await GET(createMockRequest("http://localhost:3000/api/financial/income"));
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -106,6 +120,10 @@ describe("GET /api/financial/income", () => {
 describe("POST /api/financial/income", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -204,29 +222,28 @@ describe("POST /api/financial/income", () => {
     expect(data.error).toContain("Amount must be a positive number");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
-    });
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/income",
-      {
-        method: "POST",
-        body: {
-          name: "Job",
-          amount: 3000,
-          frequency: "monthly",
-          nextPayDate: "2025-02-01",
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/income",
+        {
+          method: "POST",
+          body: {
+            name: "Job",
+            amount: 3000,
+            frequency: "monthly",
+            nextPayDate: "2025-02-01",
+          },
         },
-      },
-    );
-    const response = await POST(request);
-    const data = await response.json();
+      );
+      const response = await POST(request);
+      const data = await response.json();
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
   });
 
   it("should return 500 on service error", async () => {
@@ -257,6 +274,10 @@ describe("POST /api/financial/income", () => {
 describe("PUT /api/financial/income", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -342,24 +363,23 @@ describe("PUT /api/financial/income", () => {
     expect(data.error).toContain("Amount must be a positive number");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/income",
+        {
+          method: "PUT",
+          body: { id: "src-1", name: "Test" },
+        },
+      );
+      const response = await PUT(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/income",
-      {
-        method: "PUT",
-        body: { id: "src-1", name: "Test" },
-      },
-    );
-    const response = await PUT(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 500 on service error", async () => {
@@ -385,6 +405,10 @@ describe("PUT /api/financial/income", () => {
 describe("DELETE /api/financial/income", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -419,20 +443,19 @@ describe("DELETE /api/financial/income", () => {
     expect(data.error).toContain("Missing required parameter: id");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/income?id=src-1",
+      );
+      const response = await DELETE(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/income?id=src-1",
-    );
-    const response = await DELETE(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 500 on service error", async () => {

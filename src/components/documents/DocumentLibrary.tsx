@@ -5,6 +5,7 @@ import { Document, DocumentType } from "@/lib/documents/document-service";
 import DocumentCard from "./DocumentCard";
 import DocumentUpload from "./DocumentUpload";
 import DocumentShareModal from "./DocumentShareModal";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/hooks/useAuth";
 
 type ViewMode = "grid" | "list";
@@ -251,26 +252,23 @@ export default function DocumentLibrary() {
         {/* Documents */}
         <div className="p-6">
           {filteredDocuments.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-gray-400 dark:text-slate-500 text-6xl mb-4"></div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                {searchTerm || typeFilter !== "all"
-                  ? "No documents found"
-                  : "No documents yet"}
-              </h3>
-              <p className="text-gray-600 dark:text-slate-300 mb-6">
-                {searchTerm || typeFilter !== "all"
-                  ? "Try adjusting your filters"
-                  : "Upload your first document to get started"}
-              </p>
-              {!searchTerm && typeFilter === "all" && (
-                <button
-                  type="button"
-                  onClick={() => setShowUploadModal(true)}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Upload Document
-                </button>
+            <div>
+              {searchTerm || typeFilter !== "all" ? (
+                <EmptyState
+                  type="search-empty"
+                  title="No documents found"
+                  description="Try adjusting your search or filter criteria"
+                />
+              ) : (
+                <EmptyState
+                  type="no-data"
+                  title="No documents yet"
+                  description="Upload your first document to get started"
+                  primaryAction={{
+                    label: "Upload Document",
+                    onClick: () => setShowUploadModal(true),
+                  }}
+                />
               )}
             </div>
           ) : (

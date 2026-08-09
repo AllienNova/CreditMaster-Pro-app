@@ -1,9 +1,19 @@
 /**
  * Fynvita Invoices Screen
- * View all billing invoices
+ *
+ * Real-data wiring (PARITY-P2): the full billing history is fetched from the real
+ * Stripe-backed web route GET /api/payment/billing (withPermission("billing:read"))
+ * via subscriptionApi.getInvoices, adapted web -> mobile by mapWebInvoices.
+ *
+ * The former hardcoded INVOICES array (INV-001..007, with fabricated "Pro Plan -
+ * December 2024" descriptions) and its fake setTimeout load were removed. Invoice
+ * ids, amounts, dates, and statuses now come from real Stripe invoices; the status
+ * is remapped to paid | pending | failed. When an invoice carries a real PDF link,
+ * a "View PDF" action opens it through the scheme-allowlisted opener (FND-070);
+ * invoices without a PDF show no action. No card data is rendered on this screen.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,106 +21,82 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { subscriptionApi } from "../../src/services/api/user";
+import type { InvoiceStatus, InvoiceView } from "../../src/services/api/user";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
-interface Invoice {
-  id: string;
-  date: string;
-  amount: number;
-  status: "paid" | "pending" | "failed";
-  description: string;
-}
-
-const INVOICES: Invoice[] = [
-  {
-    id: "INV-001",
-    date: "2024-12-15",
-    amount: 29.99,
-    status: "pending",
-    description: "Pro Plan - December 2024",
-  },
-  {
-    id: "INV-002",
-    date: "2024-11-15",
-    amount: 29.99,
-    status: "paid",
-    description: "Pro Plan - November 2024",
-  },
-  {
-    id: "INV-003",
-    date: "2024-10-15",
-    amount: 29.99,
-    status: "paid",
-    description: "Pro Plan - October 2024",
-  },
-  {
-    id: "INV-004",
-    date: "2024-09-15",
-    amount: 29.99,
-    status: "paid",
-    description: "Pro Plan - September 2024",
-  },
-  {
-    id: "INV-005",
-    date: "2024-08-15",
-    amount: 29.99,
-    status: "paid",
-    description: "Pro Plan - August 2024",
-  },
-  {
-    id: "INV-006",
-    date: "2024-07-15",
-    amount: 9.99,
-    status: "paid",
-    description: "Basic Plan - July 2024",
-  },
-  {
-    id: "INV-007",
-    date: "2024-06-15",
-    amount: 9.99,
-    status: "paid",
-    description: "Basic Plan - June 2024",
-  },
+const FILTERS: { key: InvoiceStatus | null; label: string }[] = [
+  { key: null, label: "All" },
+  { key: "paid", label: "Paid" },
+  { key: "pending", label: "Pending" },
+  { key: "failed", label: "Failed" },
 ];
+
+function getStatusColor(status: InvoiceStatus): string {
+  switch (status) {
+    case "paid":
+      return theme.colors.success;
+    case "pending":
+      return theme.colors.warning;
+    case "failed":
+      return theme.colors.error;
+    default:
+      return theme.colors.textSecondary;
+  }
+}
 
 export default function InvoicesScreen() {
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [invoices, setInvoices] = useState<InvoiceView[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<InvoiceStatus | null>(null);
 
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 800);
+  const loadInvoices = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const res = await subscriptionApi.getInvoices();
+    if (res.success && res.data) {
+      setInvoices(res.data);
+    } else {
+      setError(res.error?.message ?? "Unable to load your invoices right now.");
+    }
+    setLoading(false);
   }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "paid":
-        return theme.colors.success;
-      case "pending":
-        return theme.colors.warning;
-      case "failed":
-        return theme.colors.error;
-      default:
-        return theme.colors.textSecondary;
-    }
+  useEffect(() => {
+    loadInvoices();
+  }, [loadInvoices]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadInvoices();
+    setRefreshing(false);
   };
 
-  const filteredInvoices = filter
-    ? INVOICES.filter((i) => i.status === filter)
-    : INVOICES;
-  const totalPaid = INVOICES.filter((i) => i.status === "paid").reduce(
-    (sum, i) => sum + i.amount,
-    0,
+  const header = (
+    <View style={styles.header}>
+      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+      </TouchableOpacity>
+      <View style={styles.headerContent}>
+        <Text style={styles.title}>Invoices</Text>
+        <Text style={styles.subtitle}>Billing history</Text>
+      </View>
+    </View>
   );
 
-  if (loading) {
+  if (loading && !invoices) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.loadingContainer} testID="billing-invoices-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading invoices...</Text>
         </View>
@@ -118,132 +104,168 @@ export default function InvoicesScreen() {
     );
   }
 
+  if (error && !invoices) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        {header}
+        <View style={styles.stateBlock} testID="billing-invoices-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadInvoices}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const list = invoices ?? [];
+  const hasInvoices = list.length > 0;
+  const filteredInvoices = filter
+    ? list.filter((i) => i.status === filter)
+    : list;
+  const totalPaid = list
+    .filter((i) => i.status === "paid")
+    .reduce((sum, i) => sum + i.amount, 0);
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
+          />
+        }
       >
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <Text style={styles.title}>Invoices</Text>
-            <Text style={styles.subtitle}>Billing history</Text>
-          </View>
-          <TouchableOpacity style={styles.exportButton}>
+        {header}
+
+        {!hasInvoices && (
+          <View style={styles.stateBlock} testID="billing-invoices-empty">
             <Ionicons
-              name="download-outline"
-              size={22}
-              color={theme.colors.primary}
+              name="receipt-outline"
+              size={48}
+              color={theme.colors.textSecondary}
             />
-          </TouchableOpacity>
-        </View>
-
-        {/* Summary */}
-        <Card style={styles.summaryCard}>
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{INVOICES.length}</Text>
-              <Text style={styles.summaryLabel}>Total Invoices</Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryItem}>
-              <Text
-                style={[styles.summaryValue, { color: theme.colors.success }]}
-              >
-                ${totalPaid.toFixed(2)}
-              </Text>
-              <Text style={styles.summaryLabel}>Total Paid</Text>
-            </View>
+            <Text style={styles.stateText}>No invoices yet.</Text>
           </View>
-        </Card>
+        )}
 
-        {/* Filters */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterRow}
-        >
-          {["All", "paid", "pending", "failed"].map((status) => (
-            <TouchableOpacity
-              key={status}
-              style={[
-                styles.filterChip,
-                (filter === status || (status === "All" && !filter)) &&
-                  styles.filterChipActive,
-              ]}
-              onPress={() => setFilter(status === "All" ? null : status)}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  (filter === status || (status === "All" && !filter)) &&
-                    styles.filterTextActive,
-                ]}
-              >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Invoices List */}
-        <View style={styles.invoicesList}>
-          {filteredInvoices.map((invoice) => (
-            <Card key={invoice.id} style={styles.invoiceCard}>
-              <View style={styles.invoiceHeader}>
-                <View style={styles.invoiceIdBadge}>
-                  <Text style={styles.invoiceId}>{invoice.id}</Text>
+        {hasInvoices && (
+          <>
+            {/* Summary */}
+            <Card style={styles.summaryCard}>
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryValue}>{list.length}</Text>
+                  <Text style={styles.summaryLabel}>Total Invoices</Text>
                 </View>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: `${getStatusColor(invoice.status)}15` },
-                  ]}
-                >
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryItem}>
                   <Text
                     style={[
-                      styles.statusText,
-                      { color: getStatusColor(invoice.status) },
+                      styles.summaryValue,
+                      { color: theme.colors.success },
                     ]}
                   >
-                    {invoice.status}
+                    ${totalPaid.toFixed(2)}
                   </Text>
+                  <Text style={styles.summaryLabel}>Total Paid</Text>
                 </View>
               </View>
-              <Text style={styles.invoiceDesc}>{invoice.description}</Text>
-              <View style={styles.invoiceFooter}>
-                <Text style={styles.invoiceDate}>{invoice.date}</Text>
-                <Text style={styles.invoiceAmount}>
-                  ${invoice.amount.toFixed(2)}
-                </Text>
-              </View>
-              <View style={styles.invoiceActions}>
-                <TouchableOpacity style={styles.invoiceAction}>
-                  <Ionicons
-                    name="eye-outline"
-                    size={18}
-                    color={theme.colors.primary}
-                  />
-                  <Text style={styles.actionText}>View</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.invoiceAction}>
-                  <Ionicons
-                    name="download-outline"
-                    size={18}
-                    color={theme.colors.primary}
-                  />
-                  <Text style={styles.actionText}>Download</Text>
-                </TouchableOpacity>
-              </View>
             </Card>
-          ))}
-        </View>
+
+            {/* Filters */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterRow}
+            >
+              {FILTERS.map(({ key, label }) => {
+                const active = filter === key;
+                return (
+                  <TouchableOpacity
+                    key={label}
+                    style={[
+                      styles.filterChip,
+                      active && styles.filterChipActive,
+                    ]}
+                    onPress={() => setFilter(key)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterText,
+                        active && styles.filterTextActive,
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* Invoices List */}
+            <View style={styles.invoicesList}>
+              {filteredInvoices.map((invoice) => {
+                const statusColor = getStatusColor(invoice.status);
+                const pdfUrl = invoice.pdfUrl;
+                return (
+                  <Card key={invoice.id} style={styles.invoiceCard}>
+                    <View style={styles.invoiceHeader}>
+                      <View style={styles.invoiceIdBadge}>
+                        <Text style={styles.invoiceId} numberOfLines={1}>
+                          {invoice.id}
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: `${statusColor}15` },
+                        ]}
+                      >
+                        <Text style={[styles.statusText, { color: statusColor }]}>
+                          {invoice.status}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.invoiceFooter}>
+                      <Text style={styles.invoiceDate}>
+                        {invoice.date || "—"}
+                      </Text>
+                      <Text style={styles.invoiceAmount}>
+                        ${invoice.amount.toFixed(2)}
+                      </Text>
+                    </View>
+                    {pdfUrl ? (
+                      <View style={styles.invoiceActions}>
+                        <TouchableOpacity
+                          style={styles.invoiceAction}
+                          onPress={() => openExternalUrl(pdfUrl)}
+                          testID={`billing-invoice-pdf-${invoice.id}`}
+                        >
+                          <Ionicons
+                            name="download-outline"
+                            size={18}
+                            color={theme.colors.primary}
+                          />
+                          <Text style={styles.actionText}>View PDF</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
+                  </Card>
+                );
+              })}
+            </View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -266,7 +288,22 @@ const styles = StyleSheet.create({
   headerContent: { flex: 1, marginLeft: theme.spacing.sm },
   title: { fontSize: 24, fontWeight: "700", color: theme.colors.text },
   subtitle: { fontSize: 14, color: theme.colors.textSecondary },
-  exportButton: { padding: theme.spacing.sm },
+  stateBlock: { alignItems: "center", paddingVertical: 40 },
+  stateText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    textAlign: "center",
+    paddingHorizontal: theme.spacing.lg,
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
   summaryCard: {
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
@@ -311,10 +348,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   invoiceIdBadge: {
+    flex: 1,
+    marginRight: 8,
     backgroundColor: theme.colors.background,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
+    alignSelf: "flex-start",
   },
   invoiceId: {
     fontSize: 11,
@@ -323,7 +363,6 @@ const styles = StyleSheet.create({
   },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 10, fontWeight: "600", textTransform: "capitalize" },
-  invoiceDesc: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
   invoiceFooter: {
     flexDirection: "row",
     justifyContent: "space-between",

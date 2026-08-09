@@ -1,11 +1,41 @@
 /**
  * @jest-environment node
+ *
+ * Covers /api/notifications/preferences (TASK-AUTH-03b, FND-041..044).
+ * Handlers are wrapped in withAuth. The preferences owner is the authenticated
+ * user (`user.id`); the previously trusted `x-user-id` header is gone, so a
+ * caller cannot read or mutate another user's preferences.
+ *
+ * NTF-4: preferences are now persisted via Supabase (notification_preferences
+ * table) — not a module-level Record. POST is removed; subscribe/unsubscribe
+ * lives in /api/notifications/push/subscribe.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+// ── Mocks ────────────────────────────────────────────────────────────────────
+
+const mockCreateClient = jest.fn();
+const mockFrom = jest.fn();
+
+jest.mock("@supabase/supabase-js", () => ({
+  createClient: mockCreateClient,
+}));
+
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRole(...args),
+}));
+
 // Import AFTER mocks
-import { GET, PUT, POST } from "../../notifications/preferences/route";
+import { GET, PUT } from "../../notifications/preferences/route";
 import { NextRequest } from "next/server";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -35,20 +65,131 @@ function makeRequest(
   return new NextRequest(absoluteUrl, init as never);
 }
 
+function authenticate(id: string) {
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id, email: `${id}@example.com` },
+  });
+  mockResolveRole.mockResolvedValue("user");
+}
+
+// ── Supabase chain helper ─────────────────────────────────────────────────────
+
+function createChain(resolvedValue: { data: unknown; error: unknown }) {
+  const chain: any = {};
+  chain.select = jest.fn().mockReturnValue(chain);
+  chain.eq = jest.fn().mockReturnValue(chain);
+  chain.upsert = jest.fn().mockReturnValue(chain);
+  chain.maybeSingle = jest.fn().mockReturnValue(chain);
+  chain.then = (resolve: any, reject: any) =>
+    Promise.resolve(resolvedValue).then(resolve, reject);
+  return chain;
+}
+
 // ── Setup ────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockCreateClient.mockReturnValue({ from: mockFrom });
+  // Default: no existing row in DB
+  mockFrom.mockReturnValue(createChain({ data: null, error: null }));
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// negative-auth — 401 for anonymous callers
+// ═══════════════════════════════════════════════════════════════════════════════
+describe("Notification Preferences API – negative-auth", () => {
+  beforeEach(() => {
+    mockValidate.mockResolvedValue({ valid: false, user: null });
+  });
+
+  it("GET returns 401 when not authenticated", async () => {
+    const res = await GET(makeRequest("/api/notifications/preferences"));
+    expect(res.status).toBe(401);
+  });
+
+  it("PUT returns 401 when not authenticated", async () => {
+    const res = await PUT(
+      makeRequest("/api/notifications/preferences", {
+        method: "PUT",
+        body: { smsEnabled: true },
+      }),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  // POST was removed (NTF-4) — subscribe/unsubscribe lives in
+  // /api/notifications/push/subscribe/route.ts
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ownership — preferences are scoped to the authed user, not x-user-id
+// ═══════════════════════════════════════════════════════════════════════════════
+describe("Notification Preferences API – ownership scoping", () => {
+  it("GET scopes to the authed user and ignores an x-user-id header", async () => {
+    authenticate("owner-user");
+
+    const res = await GET(
+      makeRequest("/api/notifications/preferences", {
+        headers: { "x-user-id": "victim-user" },
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.preferences.userId).toBe("owner-user");
+  });
+
+  it("PUT writes preferences for the authed user, ignoring x-user-id and body userId", async () => {
+    authenticate("writer-user");
+
+    const req = makeRequest("/api/notifications/preferences", {
+      method: "PUT",
+      body: { userId: "victim-user", smsEnabled: true },
+      headers: { "x-user-id": "victim-user" },
+    });
+    req.json = jest
+      .fn()
+      .mockResolvedValue({ userId: "victim-user", smsEnabled: true });
+
+    const res = await PUT(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.preferences.userId).toBe("writer-user");
+    expect(body.preferences.smsEnabled).toBe(true);
+  });
+
+  it("a second user cannot read the first user's stored preferences", async () => {
+    // user-a: PUT with emailEnabled:false. mockFrom returns no-row for the
+    // existing-check and then accepts the upsert (all via default null chain).
+    authenticate("user-a");
+    const putReq = makeRequest("/api/notifications/preferences", {
+      method: "PUT",
+      body: { emailEnabled: false },
+    });
+    putReq.json = jest.fn().mockResolvedValue({ emailEnabled: false });
+    await PUT(putReq);
+
+    // user-b: GET returns no stored row → default preferences (emailEnabled=true).
+    // mockFrom is still returning { data: null, error: null } from beforeEach default.
+    authenticate("user-b");
+    const res = await GET(makeRequest("/api/notifications/preferences"));
+    const body = await res.json();
+
+    expect(body.preferences.userId).toBe("user-b");
+    expect(body.preferences.emailEnabled).toBe(true);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GET /api/notifications/preferences
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Notification Preferences API – GET", () => {
+  beforeEach(() => authenticate("get-user"));
+
   it("should return default preferences when none are stored", async () => {
-    const res = await GET(
-      makeRequest("http://localhost:3000/api/notifications/preferences"),
-    );
+    const res = await GET(makeRequest("/api/notifications/preferences"));
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -59,9 +200,7 @@ describe("Notification Preferences API – GET", () => {
   });
 
   it("should return default channel settings", async () => {
-    const res = await GET(
-      makeRequest("http://localhost:3000/api/notifications/preferences"),
-    );
+    const res = await GET(makeRequest("/api/notifications/preferences"));
     const body = await res.json();
 
     expect(body.preferences.channels.dispute_update).toBe(true);
@@ -74,9 +213,7 @@ describe("Notification Preferences API – GET", () => {
   });
 
   it("should return default quiet hours settings", async () => {
-    const res = await GET(
-      makeRequest("http://localhost:3000/api/notifications/preferences"),
-    );
+    const res = await GET(makeRequest("/api/notifications/preferences"));
     const body = await res.json();
 
     expect(body.preferences.quietHours.enabled).toBe(false);
@@ -84,21 +221,9 @@ describe("Notification Preferences API – GET", () => {
     expect(body.preferences.quietHours.end).toBe("08:00");
   });
 
-  it("should use demo-user when x-user-id header is missing", async () => {
-    const res = await GET(
-      makeRequest("http://localhost:3000/api/notifications/preferences"),
-    );
-    const body = await res.json();
-
-    expect(body.preferences.userId).toBe("demo-user");
-  });
-
-  it("should use the provided x-user-id header", async () => {
-    const res = await GET(
-      makeRequest("http://localhost:3000/api/notifications/preferences", {
-        headers: { "x-user-id": "custom-user-42" },
-      }),
-    );
+  it("should key preferences off the authenticated user id", async () => {
+    authenticate("custom-user-42");
+    const res = await GET(makeRequest("/api/notifications/preferences"));
     const body = await res.json();
 
     expect(body.preferences.userId).toBe("custom-user-42");
@@ -110,14 +235,11 @@ describe("Notification Preferences API – GET", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Notification Preferences API – PUT", () => {
   it("should update top-level preference fields", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/preferences",
-      {
-        method: "PUT",
-        body: { smsEnabled: true },
-        headers: { "x-user-id": "put-user-1" },
-      },
-    );
+    authenticate("put-user-1");
+    const req = makeRequest("/api/notifications/preferences", {
+      method: "PUT",
+      body: { smsEnabled: true },
+    });
     req.json = jest.fn().mockResolvedValue({ smsEnabled: true });
 
     const res = await PUT(req);
@@ -126,42 +248,32 @@ describe("Notification Preferences API – PUT", () => {
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.preferences.smsEnabled).toBe(true);
-    // Other defaults should still be present
     expect(body.preferences.pushEnabled).toBe(true);
     expect(body.preferences.emailEnabled).toBe(true);
   });
 
   it("should deep-merge channel updates", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/preferences",
-      {
-        method: "PUT",
-        body: { channels: { promotion: true } },
-        headers: { "x-user-id": "put-user-2" },
-      },
-    );
-    req.json = jest
-      .fn()
-      .mockResolvedValue({ channels: { promotion: true } });
+    authenticate("put-user-2");
+    const req = makeRequest("/api/notifications/preferences", {
+      method: "PUT",
+      body: { channels: { promotion: true } },
+    });
+    req.json = jest.fn().mockResolvedValue({ channels: { promotion: true } });
 
     const res = await PUT(req);
     const body = await res.json();
 
     expect(body.preferences.channels.promotion).toBe(true);
-    // Other channel defaults should be preserved
     expect(body.preferences.channels.dispute_update).toBe(true);
     expect(body.preferences.channels.system).toBe(true);
   });
 
   it("should deep-merge quietHours updates", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/preferences",
-      {
-        method: "PUT",
-        body: { quietHours: { enabled: true } },
-        headers: { "x-user-id": "put-user-3" },
-      },
-    );
+    authenticate("put-user-3");
+    const req = makeRequest("/api/notifications/preferences", {
+      method: "PUT",
+      body: { quietHours: { enabled: true } },
+    });
     req.json = jest
       .fn()
       .mockResolvedValue({ quietHours: { enabled: true } });
@@ -170,61 +282,70 @@ describe("Notification Preferences API – PUT", () => {
     const body = await res.json();
 
     expect(body.preferences.quietHours.enabled).toBe(true);
-    // Defaults should be preserved
     expect(body.preferences.quietHours.start).toBe("22:00");
     expect(body.preferences.quietHours.end).toBe("08:00");
   });
 
-  it("should prevent userId from being overridden", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/preferences",
-      {
-        method: "PUT",
-        body: { userId: "hacker-user" },
-        headers: { "x-user-id": "put-user-4" },
-      },
-    );
+  it("should prevent userId from being overridden by the request body", async () => {
+    authenticate("put-user-4");
+    const req = makeRequest("/api/notifications/preferences", {
+      method: "PUT",
+      body: { userId: "hacker-user" },
+    });
     req.json = jest.fn().mockResolvedValue({ userId: "hacker-user" });
 
     const res = await PUT(req);
     const body = await res.json();
 
-    // userId should remain the one from the header, not from the body
     expect(body.preferences.userId).toBe("put-user-4");
   });
 
-  it("should persist preferences across requests", async () => {
-    const userId = "persist-user";
+  it("should persist preferences across requests for the same user", async () => {
+    authenticate("persist-user");
 
-    // First PUT to set preferences
-    const req1 = makeRequest(
-      "http://localhost:3000/api/notifications/preferences",
-      {
-        method: "PUT",
-        body: { emailEnabled: false },
-        headers: { "x-user-id": userId },
-      },
-    );
+    // PUT: existing=null → merges defaults → upserts
+    const req1 = makeRequest("/api/notifications/preferences", {
+      method: "PUT",
+      body: { emailEnabled: false },
+    });
     req1.json = jest.fn().mockResolvedValue({ emailEnabled: false });
     await PUT(req1);
 
-    // GET to read back
-    const res = await GET(
-      makeRequest("http://localhost:3000/api/notifications/preferences", {
-        headers: { "x-user-id": userId },
+    // After PUT, simulate the DB now having the stored row
+    mockFrom.mockReturnValue(
+      createChain({
+        data: {
+          user_id: "persist-user",
+          push_enabled: true,
+          email_enabled: false,
+          sms_enabled: false,
+          channels: {
+            dispute_update: true,
+            score_change: true,
+            payment_reminder: true,
+            document_processed: true,
+            recommendation: true,
+            system: true,
+            promotion: false,
+          },
+          quiet_hours: { enabled: false, start: "22:00", end: "08:00" },
+        },
+        error: null,
       }),
     );
+
+    const res = await GET(makeRequest("/api/notifications/preferences"));
     const body = await res.json();
 
     expect(body.preferences.emailEnabled).toBe(false);
-    expect(body.preferences.userId).toBe(userId);
+    expect(body.preferences.userId).toBe("persist-user");
   });
 
   it("should return 500 when request.json() throws", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/preferences",
-      { method: "PUT" },
-    );
+    authenticate("put-user-err");
+    const req = makeRequest("/api/notifications/preferences", {
+      method: "PUT",
+    });
     req.json = jest.fn().mockRejectedValue(new Error("Invalid JSON"));
 
     const res = await PUT(req);
@@ -235,102 +356,6 @@ describe("Notification Preferences API – PUT", () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// POST /api/notifications/preferences (subscribe/unsubscribe)
-// ═══════════════════════════════════════════════════════════════════════════════
-describe("Notification Preferences API – POST", () => {
-  it("should handle subscribe action with subscription data", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/preferences",
-      {
-        method: "POST",
-        body: {
-          action: "subscribe",
-          subscription: { endpoint: "https://push.example.com" },
-        },
-        headers: { "x-user-id": "post-user-1" },
-      },
-    );
-    req.json = jest.fn().mockResolvedValue({
-      action: "subscribe",
-      subscription: { endpoint: "https://push.example.com" },
-    });
-
-    const res = await POST(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.message).toBe("Subscribed to push notifications");
-  });
-
-  it("should handle unsubscribe action", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/preferences",
-      {
-        method: "POST",
-        body: { action: "unsubscribe" },
-        headers: { "x-user-id": "post-user-2" },
-      },
-    );
-    req.json = jest.fn().mockResolvedValue({ action: "unsubscribe" });
-
-    const res = await POST(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.message).toBe("Unsubscribed from push notifications");
-  });
-
-  it("should return 400 for invalid action", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/preferences",
-      {
-        method: "POST",
-        body: { action: "unknown_action" },
-        headers: { "x-user-id": "post-user-3" },
-      },
-    );
-    req.json = jest.fn().mockResolvedValue({ action: "unknown_action" });
-
-    const res = await POST(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("Invalid action");
-  });
-
-  it("should return 400 for subscribe without subscription data", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/preferences",
-      {
-        method: "POST",
-        body: { action: "subscribe" },
-        headers: { "x-user-id": "post-user-4" },
-      },
-    );
-    req.json = jest.fn().mockResolvedValue({ action: "subscribe" });
-
-    const res = await POST(req);
-    const body = await res.json();
-
-    // Subscribe without subscription object falls through to invalid action
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("Invalid action");
-  });
-
-  it("should return 500 when request.json() throws", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/preferences",
-      { method: "POST" },
-    );
-    req.json = jest.fn().mockRejectedValue(new Error("Parse error"));
-
-    const res = await POST(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(500);
-    expect(body.error).toBe("Failed to process request");
-  });
-});
+// NTF-4: POST (/subscribe/unsubscribe) was removed from this route.
+// Real push subscribe/unsubscribe lives in /api/notifications/push/subscribe/route.ts.
+// POST tests are covered there; see push-routes.test.ts.

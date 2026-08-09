@@ -66,7 +66,7 @@ import { affiliateService } from "../affiliate-service";
 // ---------------------------------------------------------------------------
 
 const now = new Date("2026-02-23T12:00:00Z");
-const future = new Date("2026-04-23T12:00:00Z");
+const future = new Date("2027-12-31T12:00:00Z");
 const past = new Date("2025-12-01T12:00:00Z");
 
 function makePartnerRow(overrides: Record<string, unknown> = {}) {
@@ -145,7 +145,6 @@ beforeEach(() => {
   });
 
   // Make mockBuilder properly thenable: await resolves with {data, error}
-  // This is NOT a jest.fn — we define it directly so it behaves like a real thenable
   (mockBuilder as any).then = (
     onFulfilled?: (v: any) => any,
     onRejected?: (e: any) => any,
@@ -646,7 +645,7 @@ describe("AffiliateService", () => {
   describe("validateReferralCode", () => {
     it("should return valid for an active, non-expired code with uses remaining", async () => {
       const row = makeReferralCodeRow();
-      mockBuilder.single.mockResolvedValue({ data: row, error: null });
+      mockBuilder.data = row;
 
       const result = await affiliateService.validateReferralCode("abcd1234");
 
@@ -713,7 +712,8 @@ describe("AffiliateService", () => {
 
     it("should return invalid when max uses reached", async () => {
       const row = makeReferralCodeRow({ uses_count: 100, max_uses: 100 });
-      mockBuilder.single.mockResolvedValue({ data: row, error: null });
+      mockBuilder.data = row;
+      mockBuilder.error = null;
 
       const result = await affiliateService.validateReferralCode("ABCD1234");
 
@@ -723,7 +723,8 @@ describe("AffiliateService", () => {
 
     it("should be valid when max_uses is null (unlimited)", async () => {
       const row = makeReferralCodeRow({ max_uses: null, uses_count: 999 });
-      mockBuilder.single.mockResolvedValue({ data: row, error: null });
+      mockBuilder.data = row;
+      mockBuilder.error = null;
 
       const result = await affiliateService.validateReferralCode("ABCD1234");
 
@@ -732,7 +733,8 @@ describe("AffiliateService", () => {
 
     it("should be valid when expires_at is null (no expiration)", async () => {
       const row = makeReferralCodeRow({ expires_at: null });
-      mockBuilder.single.mockResolvedValue({ data: row, error: null });
+      mockBuilder.data = row;
+      mockBuilder.error = null;
 
       const result = await affiliateService.validateReferralCode("ABCD1234");
 
@@ -745,31 +747,31 @@ describe("AffiliateService", () => {
   // =========================================================================
 
   describe("applyReferralCode", () => {
-    it("should increment uses and create attribution for valid code", async () => {
-      // validateReferralCode: from("referral_codes").select().eq().single()
-      const codeRow = makeReferralCodeRow({ uses_count: 5 });
-      mockBuilder.single
-        .mockResolvedValueOnce({ data: codeRow, error: null })
-        // createAttribution: from("user_attributions").upsert().select().single()
-        .mockResolvedValueOnce({
-          data: makeAttributionRow({ user_id: "new-user" }),
-          error: null,
-        });
-
-      // update uses_count: from("referral_codes").update().eq()
-      // await resolves to mockBuilder since eq() returns mockBuilder (no then)
-      // The destructured {data, error} comes from mockBuilder.data / mockBuilder.error
+    it("should call increment_referral_use RPC and create attribution for valid code", async () => {
+      const codeRow = makeReferralCodeRow({ uses_count: 5, user_id: "owner-1" });
+      // validateReferralCode → .single()
+      mockBuilder.single.mockResolvedValueOnce({ data: codeRow, error: null });
+      // increment_referral_use RPC → applied
+      mockSupabase.rpc.mockResolvedValue({ data: "applied", error: null });
+      // createAttribution → .single()
+      mockBuilder.single.mockResolvedValueOnce({ data: makeAttributionRow({ user_id: "new-user" }), error: null });
 
       await affiliateService.applyReferralCode("new-user", "abcd1234");
 
-      // Verify update was called with incremented count
-      expect(mockBuilder.update).toHaveBeenCalledWith({ uses_count: 6 });
+      // Verify RPC called with correct args (atomic increment — no .update({ uses_count }))
+      expect(mockSupabase.rpc).toHaveBeenCalledWith(
+        "increment_referral_use",
+        { p_code: "ABCD1234", p_user_id: "new-user" },
+      );
+      expect(mockBuilder.update).not.toHaveBeenCalledWith(
+        expect.objectContaining({ uses_count: expect.anything() }),
+      );
       // Verify upsert was called for attribution
       expect(mockBuilder.upsert).toHaveBeenCalled();
       const upsertArg = mockBuilder.upsert.mock.calls[0][0];
       expect(upsertArg.user_id).toBe("new-user");
       expect(upsertArg.referral_code).toBe("ABCD1234");
-      expect(upsertArg.referrer_id).toBe("user-1");
+      expect(upsertArg.referrer_id).toBe("owner-1");
       expect(upsertArg.partner_id).toBe("partner-1");
       expect(upsertArg.campaign_id).toBe("campaign-1");
     });
@@ -792,6 +794,50 @@ describe("AffiliateService", () => {
       await expect(
         affiliateService.applyReferralCode("user-2", "ABCD1234"),
       ).rejects.toThrow("Referral code has expired");
+    });
+
+    // MNY-3: self-referral guard
+    it("should reject self-referral at the service layer", async () => {
+      // code owner is "user-1"; caller is also "user-1"
+      const row = makeReferralCodeRow({ user_id: "user-1" });
+      mockBuilder.single.mockResolvedValueOnce({ data: row, error: null });
+
+      await expect(
+        affiliateService.applyReferralCode("user-1", "ABCD1234"),
+      ).rejects.toThrow("Cannot apply your own referral code");
+    });
+
+    // MNY-3: null-cap code must succeed (guards NULL-comparison regression)
+    it("should apply a code with null max_uses (unlimited cap)", async () => {
+      // max_uses null means unlimited — must not be rejected as cap_reached
+      const row = makeReferralCodeRow({ max_uses: null, uses_count: 999, user_id: "owner-1" });
+      // validateReferralCode → .single() first call
+      mockBuilder.single.mockResolvedValueOnce({ data: row, error: null });
+      // createAttribution → .single() second call
+      mockBuilder.single.mockResolvedValueOnce({ data: makeAttributionRow({ user_id: "user-2" }), error: null });
+      // increment_referral_use RPC → returns "applied"
+      mockSupabase.rpc.mockResolvedValue({ data: "applied", error: null });
+
+      await expect(
+        affiliateService.applyReferralCode("user-2", "ABCD1234"),
+      ).resolves.toBeUndefined();
+
+      expect(mockSupabase.rpc).toHaveBeenCalledWith(
+        "increment_referral_use",
+        { p_code: "ABCD1234", p_user_id: "user-2" },
+      );
+    });
+
+    // MNY-3: concurrent cap enforcement — RPC returning cap_reached must throw
+    it("should throw when RPC returns cap_reached (concurrent exhaustion)", async () => {
+      const row = makeReferralCodeRow({ max_uses: 1, uses_count: 0, user_id: "owner-1" });
+      // validateReferralCode passes (uses_count=0 < max_uses=1), but RPC then reports cap_reached
+      mockBuilder.single.mockResolvedValueOnce({ data: row, error: null });
+      mockSupabase.rpc.mockResolvedValue({ data: "cap_reached", error: null });
+
+      await expect(
+        affiliateService.applyReferralCode("user-2", "ABCD1234"),
+      ).rejects.toThrow("Referral code has reached maximum uses");
     });
   });
 
@@ -950,7 +996,8 @@ describe("AffiliateService", () => {
   describe("getUserAttribution", () => {
     it("should return a mapped attribution", async () => {
       const row = makeAttributionRow();
-      mockBuilder.single.mockResolvedValue({ data: row, error: null });
+      mockBuilder.data = row;
+      mockBuilder.error = null;
 
       const result = await affiliateService.getUserAttribution("user-2");
 
@@ -1039,7 +1086,8 @@ describe("AffiliateService", () => {
   describe("getReferrer", () => {
     it("should return the referrerId from user attribution", async () => {
       const row = makeAttributionRow({ referrer_id: "referrer-abc" });
-      mockBuilder.single.mockResolvedValue({ data: row, error: null });
+      mockBuilder.data = row;
+      mockBuilder.error = null;
 
       const result = await affiliateService.getReferrer("user-2");
 

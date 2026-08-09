@@ -5,9 +5,9 @@
  * automated contributions, allocations, and progress tracking.
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 
 // ============================================================================
 // TYPES
@@ -45,30 +45,6 @@ export interface FinancialGoal {
   color?: string;
 }
 
-export interface GoalInvestmentLink {
-  id: string;
-  goalId: string;
-  investmentAccountId: string;
-  allocationPercent: number;
-  isActive: boolean;
-  createdAt: Date;
-}
-
-export interface ContributionSchedule {
-  id: string;
-  goalId: string;
-  amount: number;
-  frequency: ContributionFrequency;
-  nextContributionDate: Date;
-  sourceAccountId: string;
-  isActive: boolean;
-  autoIncrease?: {
-    enabled: boolean;
-    percent: number;
-    frequency: "annually" | "quarterly";
-  };
-}
-
 export interface GoalAllocation {
   assetClass: string;
   targetPercent: number;
@@ -91,24 +67,6 @@ export interface GoalProjection {
     expected: number;
     optimistic: number;
   };
-}
-
-export interface GoalProgress {
-  goalId: string;
-  percentComplete: number;
-  totalContributed: number;
-  totalGrowth: number;
-  monthsRemaining: number;
-  isOnTrack: boolean;
-  projectedCompletion: Date | null;
-  milestones: GoalMilestone[];
-}
-
-export interface GoalMilestone {
-  percent: number;
-  amount: number;
-  reachedAt?: Date;
-  isReached: boolean;
 }
 
 export interface RecommendedAllocation {
@@ -222,8 +180,6 @@ const RISK_ALLOCATIONS: Record<RiskTolerance, RecommendedAllocation[]> = {
   ],
 };
 
-const MILESTONES = [10, 25, 50, 75, 90, 100];
-
 // ============================================================================
 // SERVICE
 // ============================================================================
@@ -310,268 +266,27 @@ export class GoalInvestmentService {
    */
   async updateGoalProgress(
     goalId: string,
+    userId: string,
     currentAmount: number,
   ): Promise<boolean> {
     try {
+      // The user_id filter is load-bearing: this runs on the service role,
+      // which bypasses RLS. Without it this writes an arbitrary amount onto
+      // any user's goal. Scoped now rather than annotated because nothing
+      // calls it yet, so adding the parameter costs nothing.
       const { error } = await supabase
         .from("financial_goals")
         .update({
           current_amount: currentAmount,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", goalId);
+        .eq("id", goalId)
+        .eq("user_id", userId);
 
       return !error;
     } catch {
       return false;
     }
-  }
-
-  // ==========================================================================
-  // INVESTMENT LINKING
-  // ==========================================================================
-
-  /**
-   * Link a goal to an investment account
-   */
-  async linkGoalToInvestment(
-    goalId: string,
-    investmentAccountId: string,
-    allocationPercent: number,
-  ): Promise<GoalInvestmentLink | null> {
-    try {
-      const { data, error } = await supabase
-        .from("goal_investment_links")
-        .insert({
-          goal_id: goalId,
-          investment_account_id: investmentAccountId,
-          allocation_percent: allocationPercent,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (error) {
-        // GoalInvestmentService error: Failed to link goal
-        return null;
-      }
-
-      return {
-        id: data.id,
-        goalId: data.goal_id,
-        investmentAccountId: data.investment_account_id,
-        allocationPercent: data.allocation_percent,
-        isActive: data.is_active,
-        createdAt: new Date(data.created_at),
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Get linked investments for a goal
-   */
-  async getLinkedInvestments(goalId: string): Promise<GoalInvestmentLink[]> {
-    try {
-      const { data, error } = await supabase
-        .from("goal_investment_links")
-        .select("*")
-        .eq("goal_id", goalId)
-        .eq("is_active", true);
-
-      if (error) return [];
-
-      return (data || []).map((row) => ({
-        id: row.id,
-        goalId: row.goal_id,
-        investmentAccountId: row.investment_account_id,
-        allocationPercent: row.allocation_percent,
-        isActive: row.is_active,
-        createdAt: new Date(row.created_at),
-      }));
-    } catch {
-      return [];
-    }
-  }
-
-  // ==========================================================================
-  // CONTRIBUTION SCHEDULING
-  // ==========================================================================
-
-  /**
-   * Set up automatic contributions for a goal
-   */
-  async setupContributionSchedule(
-    goalId: string,
-    data: {
-      amount: number;
-      frequency: ContributionFrequency;
-      sourceAccountId: string;
-      startDate?: Date;
-      autoIncrease?: {
-        enabled: boolean;
-        percent: number;
-        frequency: "annually" | "quarterly";
-      };
-    },
-  ): Promise<ContributionSchedule | null> {
-    try {
-      const nextDate =
-        data.startDate ||
-        this.calculateNextContributionDate(new Date(), data.frequency);
-
-      const { data: result, error } = await supabase
-        .from("contribution_schedules")
-        .insert({
-          goal_id: goalId,
-          amount: data.amount,
-          frequency: data.frequency,
-          next_contribution_date: nextDate.toISOString(),
-          source_account_id: data.sourceAccountId,
-          is_active: true,
-          auto_increase: data.autoIncrease,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (error) {
-        // GoalInvestmentService error: Failed to setup schedule
-        return null;
-      }
-
-      return {
-        id: result.id,
-        goalId: result.goal_id,
-        amount: result.amount,
-        frequency: result.frequency,
-        nextContributionDate: new Date(result.next_contribution_date),
-        sourceAccountId: result.source_account_id,
-        isActive: result.is_active,
-        autoIncrease: result.auto_increase,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Get contribution schedule for a goal
-   */
-  async getContributionSchedule(
-    goalId: string,
-  ): Promise<ContributionSchedule | null> {
-    try {
-      const { data, error } = await supabase
-        .from("contribution_schedules")
-        .select("*")
-        .eq("goal_id", goalId)
-        .eq("is_active", true)
-        .single();
-
-      if (error || !data) return null;
-
-      return {
-        id: data.id,
-        goalId: data.goal_id,
-        amount: data.amount,
-        frequency: data.frequency,
-        nextContributionDate: new Date(data.next_contribution_date),
-        sourceAccountId: data.source_account_id,
-        isActive: data.is_active,
-        autoIncrease: data.auto_increase,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Process a contribution
-   */
-  async processContribution(scheduleId: string): Promise<boolean> {
-    try {
-      const { data: schedule, error: fetchError } = await supabase
-        .from("contribution_schedules")
-        .select("*")
-        .eq("id", scheduleId)
-        .single();
-
-      if (fetchError || !schedule) return false;
-
-      // Record the contribution
-      const { error: contribError } = await supabase
-        .from("goal_contributions")
-        .insert({
-          goal_id: schedule.goal_id,
-          amount: schedule.amount,
-          source_account_id: schedule.source_account_id,
-          contributed_at: new Date().toISOString(),
-        });
-
-      if (contribError) return false;
-
-      // Update goal current amount
-      const { data: goal } = await supabase
-        .from("financial_goals")
-        .select("current_amount")
-        .eq("id", schedule.goal_id)
-        .single();
-
-      if (goal) {
-        await supabase
-          .from("financial_goals")
-          .update({
-            current_amount: goal.current_amount + schedule.amount,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", schedule.goal_id);
-      }
-
-      // Update next contribution date
-      const nextDate = this.calculateNextContributionDate(
-        new Date(schedule.next_contribution_date),
-        schedule.frequency,
-      );
-
-      await supabase
-        .from("contribution_schedules")
-        .update({
-          next_contribution_date: nextDate.toISOString(),
-          last_contribution_date: new Date().toISOString(),
-        })
-        .eq("id", scheduleId);
-
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  private calculateNextContributionDate(
-    from: Date,
-    frequency: ContributionFrequency,
-  ): Date {
-    const next = new Date(from);
-
-    switch (frequency) {
-      case "weekly":
-        next.setDate(next.getDate() + 7);
-        break;
-      case "biweekly":
-        next.setDate(next.getDate() + 14);
-        break;
-      case "monthly":
-        next.setMonth(next.getMonth() + 1);
-        break;
-      case "quarterly":
-        next.setMonth(next.getMonth() + 3);
-        break;
-    }
-
-    return next;
   }
 
   // ==========================================================================
@@ -770,91 +485,6 @@ export class GoalInvestmentService {
     const annuityFactor = (compoundFactor - 1) / r;
 
     return (fv - pv * compoundFactor) / annuityFactor;
-  }
-
-  /**
-   * Get detailed progress for a goal
-   */
-  async getGoalProgress(goalId: string): Promise<GoalProgress | null> {
-    try {
-      const { data: goal, error } = await supabase
-        .from("financial_goals")
-        .select("*")
-        .eq("id", goalId)
-        .single();
-
-      if (error || !goal) return null;
-
-      const { data: contributions } = await supabase
-        .from("goal_contributions")
-        .select("amount")
-        .eq("goal_id", goalId);
-
-      const totalContributed = (contributions || []).reduce(
-        (sum, c) => sum + c.amount,
-        0,
-      );
-
-      const targetDate = new Date(goal.target_date);
-      const now = new Date();
-      const monthsRemaining = Math.max(
-        0,
-        (targetDate.getFullYear() - now.getFullYear()) * 12 +
-          (targetDate.getMonth() - now.getMonth()),
-      );
-
-      const percentComplete = Math.min(
-        100,
-        (goal.current_amount / goal.target_amount) * 100,
-      );
-
-      const totalGrowth = goal.current_amount - totalContributed;
-
-      // Calculate if on track
-      const expectedProgress =
-        ((now.getTime() - new Date(goal.created_at).getTime()) /
-          (targetDate.getTime() - new Date(goal.created_at).getTime())) *
-        100;
-      const isOnTrack = percentComplete >= expectedProgress * 0.9;
-
-      // Calculate projected completion
-      let projectedCompletion: Date | null = null;
-      if (totalContributed > 0 && goal.current_amount < goal.target_amount) {
-        const contributionHistory = contributions?.length || 0;
-        const avgMonthlyContribution =
-          contributionHistory > 0 ? totalContributed / contributionHistory : 0;
-
-        if (avgMonthlyContribution > 0) {
-          const remainingAmount = goal.target_amount - goal.current_amount;
-          const monthsToComplete = remainingAmount / avgMonthlyContribution;
-          projectedCompletion = new Date();
-          projectedCompletion.setMonth(
-            projectedCompletion.getMonth() + Math.ceil(monthsToComplete),
-          );
-        }
-      }
-
-      // Generate milestones
-      const milestones: GoalMilestone[] = MILESTONES.map((percent) => ({
-        percent,
-        amount: (goal.target_amount * percent) / 100,
-        isReached: percentComplete >= percent,
-        reachedAt: percentComplete >= percent ? new Date() : undefined,
-      }));
-
-      return {
-        goalId,
-        percentComplete: Math.round(percentComplete * 10) / 10,
-        totalContributed,
-        totalGrowth,
-        monthsRemaining,
-        isOnTrack,
-        projectedCompletion,
-        milestones,
-      };
-    } catch {
-      return null;
-    }
   }
 
   // ==========================================================================

@@ -1,0 +1,484 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/audit-entry.v1.schema.json",
+  "title": "audit-entry",
+  "description": "Schema for an order audit entry. This is the irrevocable legal record binding a specific trade to the exact canonical package, tenant overrides, mode, and policy checks in effect at signal time. Every field is required. additionalProperties is false everywhere. The canonical_hash, tenant_override_hash, and account_override_hash establish the provenance chain per VERSIONING.md \u00a72.3 and OVERRIDE-SCHEMA.md \u00a78.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "audit_id",
+    "timestamp_ns",
+    "canonical_hash",
+    "tenant_override_hash",
+    "account_override_hash",
+    "tenant_id",
+    "account_id",
+    "strategy_id",
+    "mode",
+    "signal",
+    "order",
+    "risk_check",
+    "compliance_check",
+    "data_quality_snapshot",
+    "lifecycle",
+    "fills",
+    "final_state",
+    "operator_kill_state_snapshot"
+  ],
+  "properties": {
+    "audit_id": {
+      "description": "Globally unique audit entry identifier. UUID v4.",
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp_ns": {
+      "description": "Unix epoch timestamp in nanoseconds when the audit entry was created (signal reception time).",
+      "type": "integer",
+      "minimum": 0
+    },
+    "canonical_hash": {
+      "description": "SHA-256 hash of the canonical policy package in effect at signal time. Format: sha256:<hex>. Per VERSIONING.md \u00a72.3: no order may be emitted without this field.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "tenant_override_hash": {
+      "description": "SHA-256 hash of the tenant override file applied, or null if no tenant override was active. Per OVERRIDE-SCHEMA.md \u00a78.",
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "account_override_hash": {
+      "description": "SHA-256 hash of the account-level override file applied, or null if no account override was active. Per OVERRIDE-SCHEMA.md \u00a78.",
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tenant_id": {
+      "description": "Tenant identifier. Must match a tenant_id in policy.tenancy.yaml#tenants.",
+      "type": "string",
+      "minLength": 1
+    },
+    "account_id": {
+      "description": "Account identifier within the tenant.",
+      "type": "string",
+      "minLength": 1
+    },
+    "strategy_id": {
+      "description": "Strategy identifier that generated the signal.",
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "description": "Active operating mode at signal time. Enum from promotion stages (M-01). Must match policy.runtime.yaml#mode.active at signal time.",
+      "type": "string",
+      "enum": [
+        "research",
+        "replay",
+        "shadow",
+        "paper",
+        "supervised_live",
+        "autonomous_live"
+      ]
+    },
+    "signal": {
+      "description": "The trading signal that initiated this order.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "symbol",
+        "side",
+        "intent_quantity",
+        "intent_price",
+        "rationale_ref"
+      ],
+      "properties": {
+        "symbol": {
+          "description": "Instrument symbol (ticker or normalized identifier).",
+          "type": "string",
+          "minLength": 1
+        },
+        "side": {
+          "description": "Trade direction.",
+          "type": "string",
+          "enum": [
+            "BUY",
+            "SELL",
+            "SELL_SHORT",
+            "BUY_TO_COVER"
+          ]
+        },
+        "intent_quantity": {
+          "description": "Intended quantity at signal time (before sizing adjustments).",
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMinimum": 0
+        },
+        "intent_price": {
+          "description": "Intended entry price at signal time.",
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMinimum": 0
+        },
+        "rationale_ref": {
+          "description": "Reference to the signal rationale document, strategy run ID, or replay identifier.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "order": {
+      "description": "The order as constructed and submitted.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "cl_ord_id",
+        "venue",
+        "ord_type",
+        "tif",
+        "quantity",
+        "price"
+      ],
+      "properties": {
+        "cl_ord_id": {
+          "description": "Client order identifier. Globally unique within tenant.",
+          "type": "string",
+          "minLength": 1
+        },
+        "venue": {
+          "description": "Trading venue the order was routed to.",
+          "type": "string",
+          "minLength": 1
+        },
+        "ord_type": {
+          "description": "FIX OrdType equivalent.",
+          "type": "string",
+          "enum": [
+            "MARKET",
+            "LIMIT",
+            "STOP",
+            "STOP_LIMIT",
+            "MARKETABLE_LIMIT"
+          ]
+        },
+        "tif": {
+          "description": "FIX TimeInForce equivalent.",
+          "type": "string",
+          "enum": [
+            "DAY",
+            "GTC",
+            "IOC",
+            "FOK"
+          ]
+        },
+        "quantity": {
+          "description": "Order quantity after sizing engine adjustments.",
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMinimum": 0
+        },
+        "price": {
+          "description": "Limit price for LIMIT/STOP_LIMIT/MARKETABLE_LIMIT orders. 0 for MARKET orders.",
+          "type": "number",
+          "minimum": 0
+        },
+        "stop_price": {
+          "description": "Stop price for STOP or STOP_LIMIT orders. Omitted for other order types.",
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "risk_check": {
+      "description": "Snapshot of risk check inputs and verdict at order submission time.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "heat_before_pct",
+        "heat_after_pct",
+        "cluster_before_pct",
+        "cluster_after_pct",
+        "verdict"
+      ],
+      "properties": {
+        "heat_before_pct": {
+          "description": "Portfolio heat as decimal fraction immediately before this order.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "heat_after_pct": {
+          "description": "Projected portfolio heat as decimal fraction after this order fills.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "cluster_before_pct": {
+          "description": "Symbol cluster concentration as decimal fraction before this order.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "cluster_after_pct": {
+          "description": "Projected symbol cluster concentration as decimal fraction after this order fills.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "verdict": {
+          "description": "Risk engine verdict for this order.",
+          "type": "string",
+          "enum": [
+            "allow",
+            "deny",
+            "modify"
+          ]
+        },
+        "modification_applied": {
+          "description": "Description of any size or price modification applied on verdict=modify.",
+          "type": "string"
+        }
+      }
+    },
+    "compliance_check": {
+      "description": "Snapshot of compliance check results at order submission time.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "pdt_ok",
+        "reg_sho_ok",
+        "restricted_list_ok",
+        "mwcb_state",
+        "luld_state"
+      ],
+      "properties": {
+        "pdt_ok": {
+          "description": "PDT rule check passed.",
+          "type": "boolean"
+        },
+        "reg_sho_ok": {
+          "description": "Reg SHO locate check passed (or not applicable).",
+          "type": "boolean"
+        },
+        "restricted_list_ok": {
+          "description": "Symbol was not on restricted list at check time.",
+          "type": "boolean"
+        },
+        "mwcb_state": {
+          "description": "Active MWCB level at order time, or null if no MWCB halt was active.",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "L1",
+                "L2",
+                "L3"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "luld_state": {
+          "description": "Active LULD state at order time: 'halt' if in LULD band halt, 'limit_up', 'limit_down', or 'none'.",
+          "type": "string",
+          "enum": [
+            "none",
+            "limit_up",
+            "limit_down",
+            "halt"
+          ]
+        }
+      }
+    },
+    "data_quality_snapshot": {
+      "description": "Snapshot of data quality metrics at order submission time.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "feed_age_ms",
+        "cross_venue_spread_bps",
+        "nbbo_available"
+      ],
+      "properties": {
+        "feed_age_ms": {
+          "description": "Age of the primary data feed in milliseconds at order time.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "cross_venue_spread_bps": {
+          "description": "Cross-venue price disagreement in basis points at order time.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "nbbo_available": {
+          "description": "Whether valid NBBO data was available at order time.",
+          "type": "boolean"
+        }
+      }
+    },
+    "lifecycle": {
+      "description": "Ordered array of order state transitions with timestamps.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "from_state",
+          "to_state",
+          "trigger",
+          "timestamp_ns"
+        ],
+        "properties": {
+          "from_state": {
+            "type": "string",
+            "enum": [
+              "PENDING_NEW",
+              "NEW",
+              "PARTIALLY_FILLED",
+              "FILLED",
+              "DONE_FOR_DAY",
+              "CANCELLED",
+              "REPLACED",
+              "PENDING_CANCEL",
+              "PENDING_REPLACE",
+              "STOPPED",
+              "REJECTED",
+              "SUSPENDED",
+              "EXPIRED"
+            ]
+          },
+          "to_state": {
+            "type": "string",
+            "enum": [
+              "PENDING_NEW",
+              "NEW",
+              "PARTIALLY_FILLED",
+              "FILLED",
+              "DONE_FOR_DAY",
+              "CANCELLED",
+              "REPLACED",
+              "PENDING_CANCEL",
+              "PENDING_REPLACE",
+              "STOPPED",
+              "REJECTED",
+              "SUSPENDED",
+              "EXPIRED"
+            ]
+          },
+          "trigger": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timestamp_ns": {
+            "description": "Unix epoch nanoseconds of this state transition.",
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "fills": {
+      "description": "Array of fill (execution) records. Empty array if order was cancelled/rejected before any fill.",
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "exec_id",
+          "quantity",
+          "price",
+          "timestamp_ns",
+          "venue"
+        ],
+        "properties": {
+          "exec_id": {
+            "description": "Exchange/broker-assigned execution identifier (FIX ExecID tag 17).",
+            "type": "string",
+            "minLength": 1
+          },
+          "quantity": {
+            "description": "Filled quantity in this leg.",
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": 0
+          },
+          "price": {
+            "description": "Execution price for this fill leg.",
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": 0
+          },
+          "timestamp_ns": {
+            "description": "Unix epoch nanoseconds of this fill (exchange time if available, else system time).",
+            "type": "integer",
+            "minimum": 0
+          },
+          "venue": {
+            "description": "Venue where this fill occurred.",
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "final_state": {
+      "description": "Terminal order state. Must be one of the terminal states from policy.order-lifecycle.yaml#states.",
+      "type": "string",
+      "enum": [
+        "FILLED",
+        "DONE_FOR_DAY",
+        "CANCELLED",
+        "REPLACED",
+        "STOPPED",
+        "REJECTED",
+        "SUSPENDED",
+        "EXPIRED"
+      ]
+    },
+    "operator_kill_state_snapshot": {
+      "description": "Snapshot of the operator kill-switch state at order submission time. Per OVERRIDE-SCHEMA.md \u00a77.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "trading_paused",
+        "flattening_mode",
+        "per_tenant_paused"
+      ],
+      "properties": {
+        "trading_paused": {
+          "description": "Whether global trading was paused at order time.",
+          "type": "boolean"
+        },
+        "flattening_mode": {
+          "description": "Active flattening mode at order time.",
+          "type": "string",
+          "enum": [
+            "none",
+            "cancel_working",
+            "flatten_to_cash"
+          ]
+        },
+        "per_tenant_paused": {
+          "description": "Whether this specific tenant's trading was paused at order time.",
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

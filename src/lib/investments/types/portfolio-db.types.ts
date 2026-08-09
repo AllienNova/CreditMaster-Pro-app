@@ -231,7 +231,7 @@ export const PortfolioCreateSchema = z.object({
   portfolio_type: PortfolioTypeSchema.default("manual"),
   linked_account_id: z.string().optional(),
   risk_level: RiskLevelSchema.optional(),
-  target_allocation: z.record(z.number()).optional(),
+  target_allocation: z.record(z.string(), z.number()).optional(),
   rebalance_threshold: z.number().min(0).max(100).default(5),
 });
 
@@ -239,7 +239,7 @@ export const PortfolioUpdateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional(),
   risk_level: RiskLevelSchema.optional(),
-  target_allocation: z.record(z.number()).optional(),
+  target_allocation: z.record(z.string(), z.number()).optional(),
   rebalance_threshold: z.number().min(0).max(100).optional(),
 });
 

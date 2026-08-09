@@ -8,8 +8,8 @@
  * Phase 2.4: Bill Negotiation Assistant
  */
 
-import { getSupabase } from "@/lib/supabase/client";
-import { getAIMLService, type AIMLService } from "@/lib/aiml-service";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import type {
   NegotiableBill,
   BillType,
@@ -62,7 +62,6 @@ interface BillNegotiationOutcomeRow {
  */
 export class BillNegotiator {
   private static instance: BillNegotiator;
-  private aimlService: AIMLService;
   private marketDataCache: Map<
     string,
     { data: MarketAnalysis; expiresAt: Date }
@@ -73,7 +72,6 @@ export class BillNegotiator {
   >;
 
   private constructor() {
-    this.aimlService = getAIMLService();
     this.marketDataCache = new Map();
     this.scriptCache = new Map();
   }
@@ -243,8 +241,8 @@ export class BillNegotiator {
 
     let aiResponse: string;
     try {
-      const response = await this.aimlService.chat(
-        "anthropic/claude-4.5-sonnet",
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [{ role: "user", content: prompt }],
         {
           max_tokens: 2000,
@@ -274,7 +272,7 @@ export class BillNegotiator {
     billId: string,
     outcome: NegotiationOutcomeData,
   ): Promise<void> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
 
     // Store outcome in database
     const { error } = await (
@@ -314,7 +312,7 @@ export class BillNegotiator {
   public async getBillNegotiationHistory(
     userId: string,
   ): Promise<NegotiationHistory[]> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
 
     const { data: outcomes, error } = await supabase
       .from("bill_negotiation_outcomes")
@@ -418,7 +416,7 @@ export class BillNegotiator {
   private async fetchRecurringTransactions(
     userId: string,
   ): Promise<Transaction[]> {
-    const supabase = getSupabase();
+    const supabase = getServiceRoleClient();
 
     const { data, error } = await supabase
       .from("transactions")

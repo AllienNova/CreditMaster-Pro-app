@@ -14,9 +14,12 @@
  */
 
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
+import { FadeIn, StaggerList, ScrollReveal, AnimatedNumber } from "@/components/ui/animations";
+import { LaptopFrame, PhoneFrame, LaptopScreenMockup, MobileScreenMockup } from "@/components/ui/DeviceMockup";
 
 export const metadata: Metadata = {
   title:
@@ -203,21 +206,29 @@ export default function LandingPage() {
       <Header variant="landing" showAuth={true} />
 
       {/* Hero - Industry Leader Positioning */}
-      <section className="pt-32 pb-16 px-6">
-        <div className="max-w-[1200px] mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-blue-50 dark:from-emerald-900/30 dark:to-blue-900/30 text-gray-700 dark:text-slate-200 px-5 py-2.5 rounded-full text-sm font-semibold mb-8 shadow-sm border border-emerald-100 dark:border-emerald-800/50">
+      <section className="relative pt-32 pb-20 px-6 overflow-hidden">
+        {/* Subtle gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white via-emerald-50/30 to-blue-50/20 dark:from-gray-950 dark:via-emerald-950/10 dark:to-blue-950/10" />
+
+        <div className="relative max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Text content */}
+            <div className="text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-gray-700 dark:text-slate-200 px-5 py-2.5 rounded-full text-sm font-semibold mb-8 shadow-sm border border-emerald-100 dark:border-emerald-800/50">
               <span className="text-lg"></span>
               <span>The Premier Financial Wellness Platform</span>
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-5xl font-bold text-gray-900 dark:text-white tracking-tight leading-[1.08] mb-6">
+            <FadeIn>
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white tracking-tight leading-[1.08] mb-6">
               The Only Platform That
               <br />
               <span className="bg-gradient-to-r from-emerald-500 to-blue-500 bg-clip-text text-transparent">
                 Unifies Your Financial Life.
               </span>
             </h1>
-            <p className="mt-6 text-xl sm:text-2xl text-gray-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
+            </FadeIn>
+            <FadeIn delay={0.1}>
+            <p className="mt-6 text-xl sm:text-2xl text-gray-600 dark:text-slate-300 max-w-3xl lg:max-w-none leading-relaxed">
               Industry-leading AI combines{" "}
               <strong className="text-emerald-600 dark:text-emerald-400">
                 credit optimization
@@ -232,20 +243,37 @@ export default function LandingPage() {
               </strong>{" "}
               into one holistic platform that competitors can&apos;t match.
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+            </FadeIn>
+            <FadeIn delay={0.2}>
+            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link
                 href="/auth/signup"
-                className="inline-flex items-center justify-center px-8 py-4 rounded-lg bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-base font-semibold hover:from-emerald-600 hover:to-blue-600 transition-all duration-150 shadow-md hover:shadow-lg"
+                className="inline-flex items-center justify-center px-8 py-4 rounded-lg bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-base font-semibold hover:from-emerald-600 hover:to-blue-600 transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-emerald-500/25"
               >
                 Start Free Trial
               </Link>
               <Link
                 href="#features"
-                className="inline-flex items-center justify-center px-8 py-4 rounded-lg bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 text-base font-semibold hover:border-emerald-500 hover:text-emerald-600 dark:hover:border-emerald-400 dark:hover:text-emerald-400 transition-all duration-150 shadow-sm"
+                className="inline-flex items-center justify-center px-8 py-4 rounded-lg bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 text-base font-semibold hover:border-emerald-500 hover:text-emerald-600 dark:hover:border-emerald-400 dark:hover:text-emerald-400 transition-all duration-200 shadow-sm"
               >
                 See How It Works
               </Link>
             </div>
+            </FadeIn>
+            </div>
+
+            {/* Right: Device mockups */}
+            <div className="relative hidden lg:block animate-float-slow">
+              <Image
+                src="/mockups/hero-devices.png"
+                alt="Fynvita dashboard on MacBook Pro and iPhone showing credit score analytics, AI recommendations, and financial insights"
+                width={1536}
+                height={1024}
+                className="w-full h-auto rounded-lg"
+                priority
+              />
+            </div>
+          </div>
 
             {/* Trust Indicators - Enhanced */}
             <div className="mt-16 flex flex-wrap justify-center items-center gap-x-12 gap-y-6 text-sm">
@@ -335,14 +363,14 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-          </div>
 
           {/* Performance Metrics Banner */}
+          <ScrollReveal>
           <div className="mt-16 bg-gradient-to-br from-gray-900 to-slate-800 rounded-xl p-8 sm:p-12 shadow-lg">
             <div className="grid sm:grid-cols-4 gap-8 text-center">
               <div>
                 <p className="text-4xl sm:text-5xl font-bold text-emerald-400">
-                  +127
+                  <AnimatedNumber value={127} prefix="+" className="text-4xl sm:text-5xl font-bold text-emerald-400" />
                 </p>
                 <p className="text-gray-300 text-sm mt-2 font-medium">
                   Avg. Credit Score Increase
@@ -364,7 +392,7 @@ export default function LandingPage() {
               </div>
               <div>
                 <p className="text-4xl sm:text-5xl font-bold text-emerald-400">
-                  94%
+                  <AnimatedNumber value={94} suffix="%" className="text-4xl sm:text-5xl font-bold text-emerald-400" />
                 </p>
                 <p className="text-gray-300 text-sm mt-2 font-medium">
                   Success Rate
@@ -386,6 +414,27 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* See It In Action — Product Showcase */}
+      <section className="py-24 bg-gray-50 dark:bg-gray-900/50 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <ScrollReveal>
+          <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-gray-900 dark:text-white mb-4">
+            Beautiful on every device.
+          </h2>
+          <p className="text-xl text-gray-600 dark:text-gray-400 mb-16 max-w-2xl mx-auto">
+            Access your complete financial picture from anywhere — web, mobile, or tablet.
+          </p>
+          </ScrollReveal>
+
+          <div className="relative max-w-[900px] mx-auto">
+            <LaptopFrame>
+              <LaptopScreenMockup />
+            </LaptopFrame>
+          </div>
         </div>
       </section>
 
@@ -393,10 +442,10 @@ export default function LandingPage() {
       <section id="features" className="py-24 px-6 bg-white dark:bg-slate-900">
         <div className="max-w-[1200px] mx-auto">
           <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-flex items-center gap-2 backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-emerald-700 dark:text-emerald-300 px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-emerald-100 dark:border-emerald-800/50">
               <span>Comprehensive Features</span>
             </div>
-            <h2 className="text-2xl sm:text-2xl lg:text-2xl font-bold text-gray-900 dark:text-white tracking-tight mb-6">
+            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-6">
               Everything you need.
               <br />
               <span className="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
@@ -411,7 +460,7 @@ export default function LandingPage() {
           </div>
 
           {/* Feature Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+          <StaggerList stagger={0.08} className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
             {/* Credit Optimization */}
             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-8 border border-emerald-100 dark:border-emerald-800/40 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center mb-4">
@@ -831,12 +880,12 @@ export default function LandingPage() {
                 </li>
               </ul>
             </div>
-          </div>
+          </StaggerList>
         </div>
       </section>
 
       {/* Product Grid - Apple Card Style */}
-      <section className="py-4 px-6 bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-800">
+      <section className="py-24 px-6 bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:to-slate-800">
         <div className="max-w-[1200px] mx-auto">
           <div className="grid md:grid-cols-2 gap-4">
             {products.map((product) => (
@@ -879,7 +928,7 @@ export default function LandingPage() {
       <section id="credit" className="py-24 px-6 bg-white dark:bg-slate-900">
         <div className="max-w-[980px] mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-full text-sm font-medium mb-4 border border-emerald-100 dark:border-emerald-800/50">
               <span>Credit Health</span>
             </div>
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white tracking-tight">
@@ -895,7 +944,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StaggerList stagger={0.1} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.credit.map((feature) => (
               <div key={feature.title} className="text-center p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -906,7 +955,7 @@ export default function LandingPage() {
                 </p>
               </div>
             ))}
-          </div>
+          </StaggerList>
 
           {/* Score Display Mock */}
           <div className="mt-16 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-8 sm:p-12 border border-emerald-100 dark:border-emerald-800/40">
@@ -971,7 +1020,7 @@ export default function LandingPage() {
       >
         <div className="max-w-[980px] mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-blue-700 dark:text-blue-400 px-4 py-2 rounded-full text-sm font-medium mb-4 border border-blue-100 dark:border-blue-800/50">
               <span>Financial Wellness</span>
             </div>
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white tracking-tight">
@@ -987,7 +1036,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StaggerList stagger={0.1} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.financial.map((feature) => (
               <div key={feature.title} className="text-center p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -998,7 +1047,7 @@ export default function LandingPage() {
                 </p>
               </div>
             ))}
-          </div>
+          </StaggerList>
 
           {/* Budget Display Mock */}
           <div className="mt-16 bg-gradient-to-br from-blue-50 to-blue-50 dark:from-blue-950/30 dark:to-blue-950/30 rounded-xl p-8 sm:p-12 border border-blue-100 dark:border-blue-800/40">
@@ -1060,7 +1109,7 @@ export default function LandingPage() {
       <section id="invest" className="py-24 px-6 bg-white dark:bg-slate-900">
         <div className="max-w-[980px] mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-blue-700 dark:text-blue-400 px-4 py-2 rounded-full text-sm font-medium mb-4 border border-blue-100 dark:border-blue-800/50">
               <span>Investment Intelligence</span>
             </div>
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white tracking-tight">
@@ -1128,7 +1177,7 @@ export default function LandingPage() {
       <section className="py-24 px-6 bg-gradient-to-b from-gray-50 to-white dark:from-slate-800 dark:to-slate-900">
         <div className="max-w-[1200px] mx-auto">
           <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-blue-50 dark:from-emerald-950/40 dark:to-blue-950/40 text-gray-700 dark:text-slate-300 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-flex items-center gap-2 backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-gray-700 dark:text-slate-300 px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-emerald-100/50 dark:border-emerald-800/50">
               <span>Success Stories</span>
             </div>
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-6">
@@ -1145,7 +1194,7 @@ export default function LandingPage() {
           </div>
 
           {/* Before/After Showcase */}
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
+          <StaggerList stagger={0.1} className="grid md:grid-cols-3 gap-8 mb-16">
             <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg border border-gray-100 dark:border-slate-700">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-2xl">
@@ -1153,7 +1202,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    Sarah Johnson
+                    Sarah
                   </p>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
                     Small Business Owner
@@ -1201,7 +1250,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    Michael Chen
+                    Michael
                   </p>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
                     Software Engineer
@@ -1249,7 +1298,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    Emily Rodriguez
+                    Emily
                   </p>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
                     Teacher
@@ -1289,9 +1338,10 @@ export default function LandingPage() {
                 ))}
               </div>
             </div>
-          </div>
+          </StaggerList>
 
           {/* Testimonials Grid */}
+          <ScrollReveal>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-950/30 dark:to-blue-950/30 rounded-xl p-8 border border-emerald-100 dark:border-emerald-800/40">
               <div className="flex gap-1 mb-4">
@@ -1317,7 +1367,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    David Martinez
+                    David
                   </p>
                   <p className="text-sm text-gray-600 dark:text-slate-400">
                     Real Estate Investor
@@ -1350,7 +1400,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    Lisa Thompson
+                    Lisa
                   </p>
                   <p className="text-sm text-gray-600 dark:text-slate-400">
                     Marketing Director
@@ -1383,7 +1433,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    James Kim
+                    James
                   </p>
                   <p className="text-sm text-gray-600 dark:text-slate-400">
                     Financial Analyst
@@ -1416,7 +1466,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    Amanda Patel
+                    Amanda
                   </p>
                   <p className="text-sm text-gray-600 dark:text-slate-400">
                     CFP®, Financial Advisor
@@ -1425,6 +1475,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -1458,7 +1509,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div className="bg-white backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white dark:bg-slate-800/15 transition-all">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white/15 transition-all">
               <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-blue-400 flex items-center justify-center mb-4">
                 <svg
                   className="w-7 h-7 text-white"
@@ -1478,7 +1529,7 @@ export default function LandingPage() {
               <p className="text-white/80 font-medium">AI Models</p>
               <p className="text-white/60 text-sm mt-2">Intelligent routing</p>
             </div>
-            <div className="bg-white backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white dark:bg-slate-800/15 transition-all">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white/15 transition-all">
               <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center mb-4">
                 <svg
                   className="w-7 h-7 text-white"
@@ -1498,7 +1549,7 @@ export default function LandingPage() {
               <p className="text-white/80 font-medium">AI Coach</p>
               <p className="text-white/60 text-sm mt-2">Always available</p>
             </div>
-            <div className="bg-white backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white dark:bg-slate-800/15 transition-all">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white/15 transition-all">
               <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center mb-4">
                 <svg
                   className="w-7 h-7 text-white"
@@ -1518,7 +1569,7 @@ export default function LandingPage() {
               <p className="text-white/80 font-medium">Response Time</p>
               <p className="text-white/60 text-sm mt-2">Real-time insights</p>
             </div>
-            <div className="bg-white backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white dark:bg-slate-800/15 transition-all">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white/15 transition-all">
               <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-emerald-400 flex items-center justify-center mb-4">
                 <svg
                   className="w-7 h-7 text-white"
@@ -1542,7 +1593,7 @@ export default function LandingPage() {
 
           {/* AI Capabilities */}
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-white dark:bg-slate-800/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10">
               <h3 className="text-lg font-bold text-white mb-3">
                 Predictive Analytics
               </h3>
@@ -1552,7 +1603,7 @@ export default function LandingPage() {
                 outcomes with unprecedented accuracy.
               </p>
             </div>
-            <div className="bg-white dark:bg-slate-800/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10">
               <h3 className="text-lg font-bold text-white mb-3">
                 Natural Language Processing
               </h3>
@@ -1562,7 +1613,7 @@ export default function LandingPage() {
                 jargon required.
               </p>
             </div>
-            <div className="bg-white dark:bg-slate-800/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10">
               <h3 className="text-lg font-bold text-white mb-3">
                 Continuous Learning
               </h3>
@@ -1581,7 +1632,7 @@ export default function LandingPage() {
         <div className="max-w-[980px] mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-blue-50 text-gray-700 dark:text-slate-200 px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <div className="inline-flex items-center gap-2 backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-gray-700 dark:text-slate-200 px-4 py-2 rounded-full text-sm font-medium mb-4 border border-emerald-100 dark:border-emerald-800/50">
                 <span></span>
                 <span>Mobile App</span>
               </div>
@@ -1633,55 +1684,9 @@ export default function LandingPage() {
 
             {/* Phone Mockup */}
             <div className="flex justify-center">
-              <div className="relative w-64 h-[520px] bg-gray-900 rounded-[3rem] p-3 shadow-xl">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-2xl"></div>
-                <div className="w-full h-full bg-gradient-to-b from-emerald-500 to-blue-600 rounded-[2.25rem] overflow-hidden">
-                  <div className="p-6 pt-10">
-                    <p className="text-white/80 text-xs">Good morning </p>
-                    <p className="text-white text-xl font-semibold mt-1">
-                      Your Financial Health
-                    </p>
-                    <p className="text-white text-6xl font-bold mt-4">742</p>
-                    <p className="text-emerald-200 text-sm mt-2 flex items-center gap-1">
-                      <svg
-                        className="w-3 h-3"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      12 pts this month
-                    </p>
-
-                    <div className="mt-8 space-y-3">
-                      <div className="bg-white dark:bg-slate-800/10 backdrop-blur rounded-xl p-4">
-                        <div className="flex justify-between">
-                          <span className="text-white/80 text-xs">
-                            Wellness Score
-                          </span>
-                          <span className="text-white text-sm font-medium">
-                            $124,350
-                          </span>
-                        </div>
-                      </div>
-                      <div className="bg-white dark:bg-slate-800/10 backdrop-blur rounded-xl p-4">
-                        <div className="flex justify-between">
-                          <span className="text-white/80 text-xs">
-                            This Month
-                          </span>
-                          <span className="text-emerald-200 text-sm font-medium">
-                            +$2,430
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <PhoneFrame className="w-64">
+                <MobileScreenMockup />
+              </PhoneFrame>
             </div>
           </div>
         </div>
@@ -1691,7 +1696,7 @@ export default function LandingPage() {
       <section className="py-24 px-6 bg-white dark:bg-slate-900">
         <div className="max-w-[1200px] mx-auto">
           <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-blue-50 dark:from-emerald-950/40 dark:to-blue-950/40 text-gray-700 dark:text-slate-300 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-flex items-center gap-2 backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-gray-700 dark:text-slate-300 px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-emerald-100/50 dark:border-emerald-800/50">
               <span>Why Fynvita Leads</span>
             </div>
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-6">
@@ -2011,7 +2016,7 @@ export default function LandingPage() {
       >
         <div className="max-w-[980px] mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-full text-sm font-medium mb-4 border border-emerald-100 dark:border-emerald-800/50">
               <span>Pricing</span>
             </div>
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white tracking-tight">
@@ -2026,7 +2031,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <StaggerList stagger={0.07} className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {pricing.map((plan) => (
               <div
                 key={plan.name}
@@ -2105,7 +2110,7 @@ export default function LandingPage() {
                 </Link>
               </div>
             ))}
-          </div>
+          </StaggerList>
         </div>
       </section>
 
@@ -2131,7 +2136,7 @@ export default function LandingPage() {
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/auth/signup"
-              className="inline-flex items-center justify-center px-8 py-4 rounded-lg bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-base font-semibold hover:from-emerald-600 hover:to-blue-600 transition-all"
+              className="inline-flex items-center justify-center px-8 py-4 rounded-lg bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-base font-semibold hover:from-emerald-600 hover:to-blue-600 transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-emerald-500/25"
             >
               Start Your Journey
             </Link>

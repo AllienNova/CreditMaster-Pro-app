@@ -12,7 +12,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 export interface CreditFactorResponse {
   id: string;
@@ -40,14 +41,9 @@ export interface CreditFactorResponse {
  * GET /api/credit/factors
  * Get credit score factors analysis
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (_request: NextRequest, _user: AuthedUser) => {
   try {
-    // Authentication - uncomment for production deployment:
-    // const validation = await jwtValidation.validateFromHeaders(request);
-    // if (!validation.valid || !validation.user) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
-
     // Credit factors data - fetches from database when user is authenticated
     // Returns curated data structure matching mobile app requirements
     const factors: CreditFactorResponse[] = [
@@ -128,4 +124,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

@@ -42,3 +42,8 @@ export {
   buildAgentVotes,
   CONSENSUS_ARBITER_CONFIG,
 } from "./consensus-arbiter-agent";
+export {
+  NewsImpactAgent,
+  createNewsImpactAgent,
+  NEWS_IMPACT_AGENT_CONFIG,
+} from "./news-impact-agent";

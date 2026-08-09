@@ -10,6 +10,14 @@ import {
   getFundamentalAnalysisService,
 } from "../FundamentalAnalysisService";
 
+// Mock AlphaVantageClient to prevent real network calls in unit tests.
+jest.mock("@/lib/integrations/alpha-vantage", () => ({
+  AlphaVantageClient: jest.fn().mockImplementation(() => ({
+    getCompanyOverview: jest.fn().mockRejectedValue(new Error("no API key in test")),
+    getOverviewRaw: jest.fn().mockRejectedValue(new Error("no API key in test")),
+  })),
+}));
+
 describe("FundamentalAnalysisService", () => {
   let service: FundamentalAnalysisService;
 

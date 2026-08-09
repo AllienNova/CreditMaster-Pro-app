@@ -6,52 +6,21 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 
 const RP_NAME = "Fynvita";
 const RP_ID = process.env.NEXT_PUBLIC_APP_URL
   ? new URL(process.env.NEXT_PUBLIC_APP_URL).hostname
   : "localhost";
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const cookieStore = await cookies();
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 },
-      );
-    }
-
-    // Get access token from cookies
-    const accessToken = cookieStore.get("sb-access-token")?.value;
-
-    if (!accessToken) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    });
-
-    // Get current user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser(accessToken);
-
-    if (userError || !user) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
-    }
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
 
     // Parse request body for optional parameters
     const body = await request.json().catch(() => ({}));
@@ -114,7 +83,7 @@ export async function POST(request: NextRequest) {
       user: {
         id: Buffer.from(user.id).toString("base64url"),
         name: user.email || user.id,
-        displayName: user.user_metadata?.name || user.email || "User",
+        displayName: user.email || "User",
       },
       pubKeyCredParams: [
         { alg: -7, type: "public-key" }, // ES256 (ECDSA with P-256)
@@ -138,4 +107,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

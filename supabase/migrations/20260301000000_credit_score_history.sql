@@ -26,10 +26,12 @@ CREATE INDEX idx_credit_score_history_user_bureau_date ON credit_score_history(u
 -- RLS policies for credit_score_history
 ALTER TABLE credit_score_history ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own score history" ON credit_score_history;
 CREATE POLICY "Users can view their own score history"
   ON credit_score_history FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own score history" ON credit_score_history;
 CREATE POLICY "Users can insert their own score history"
   ON credit_score_history FOR INSERT
   WITH CHECK (auth.uid() = user_id);
@@ -57,14 +59,17 @@ CREATE INDEX idx_bureau_connections_bureau ON bureau_connections(bureau);
 -- RLS policies for bureau_connections
 ALTER TABLE bureau_connections ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own bureau connections" ON bureau_connections;
 CREATE POLICY "Users can view their own bureau connections"
   ON bureau_connections FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own bureau connections" ON bureau_connections;
 CREATE POLICY "Users can insert their own bureau connections"
   ON bureau_connections FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own bureau connections" ON bureau_connections;
 CREATE POLICY "Users can update their own bureau connections"
   ON bureau_connections FOR UPDATE
   USING (auth.uid() = user_id);

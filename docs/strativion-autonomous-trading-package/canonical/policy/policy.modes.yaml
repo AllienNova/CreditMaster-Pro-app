@@ -1,0 +1,109 @@
+meta:
+  document_role: policy
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  purpose: "Operating-mode capability table and transition rules. The currently-active mode lives in policy.runtime.yaml#mode.active (M-01)."
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_rights:
+    modes: locked
+    transitions: locked
+    flap_protection: locked
+    audit: locked
+
+# ---------------------------------------------------------------------------
+# MODE CAPABILITIES
+# ---------------------------------------------------------------------------
+
+modes:
+
+  autonomous_normal:
+    description: Standard machine-driven operation in stable conditions.
+    allows:
+      - machine_enforceable_controls
+      - predefined_strategy_execution
+      - hard_stop_management
+      - portfolio_allocation_controls
+    forbids:
+      - discretionary_crisis_playbooks
+      - autonomous_flatten_on_untrusted_state
+      - stop_cancellation_for_alerts
+      - human_state_assumptions
+
+  autonomous_restricted:
+    description: Machine-driven operation with reduced size and tighter entry conditions.
+    allows:
+      - machine_enforceable_controls
+      - reduced_position_sizing
+      - restricted_new_entries
+      - automatic_escalation
+    forbids:
+      - discretionary_crisis_playbooks
+      - autonomous_flatten_on_untrusted_state
+      - manual_fair_value_logic
+      - human_only_checklist_actions
+
+  supervised_crisis:
+    description: Machine assists, human supervises, selective crisis playbooks available.
+    allows:
+      - machine_enforceable_controls
+      - human_approved_crisis_actions
+      - manual_position_override
+      - manual_execution_controls
+    requires:
+      - operator_acknowledgement
+      - audit_logging
+
+  manual_only:
+    description: No autonomous order submission. Monitoring, analytics, and manual support only.
+    allows:
+      - monitoring
+      - analytics
+      - reporting
+      - manual_order_support
+    forbids:
+      - autonomous_order_submission
+      - autonomous_strategy_activation
+
+# ---------------------------------------------------------------------------
+# MODE TRANSITIONS (automatic, runtime-driven)
+# ---------------------------------------------------------------------------
+
+transitions:
+
+  to_autonomous_restricted:
+    triggers:
+      - elevated_volatility
+      - drawdown_warning
+      - data_quality_degradation
+
+  to_supervised_crisis:
+    triggers:
+      - crisis_regime_detected
+      - correlation_spike
+      - liquidity_crisis
+      - broker_or_exchange_instability
+
+  to_manual_only:
+    triggers:
+      - system_integrity_failure
+      - operator_emergency_stop
+      - drawdown_full_stop
+
+  # Demotions are automatic; promotions require operator acknowledgement.
+  demotion_confirmation_window_seconds: 0
+  promotion_confirmation_window_seconds: 300
+  promotion_requires_operator_ack_from:
+    - supervised_crisis
+    - manual_only
+
+  flap_protection:
+    max_transitions_per_hour: 4
+    on_flap_threshold_breach: force_supervised_crisis_until_operator_clear
+
+audit:
+  record_actor: true
+  record_reason: true
+  record_canonical_version_and_hash: true

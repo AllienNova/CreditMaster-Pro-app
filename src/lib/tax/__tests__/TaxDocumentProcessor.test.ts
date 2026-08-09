@@ -19,8 +19,8 @@ const mockSupabaseFrom = jest.fn().mockReturnValue({
   insert: mockSupabaseInsert,
 });
 
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: () => ({
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: () => ({
     from: mockSupabaseFrom,
   }),
 }));

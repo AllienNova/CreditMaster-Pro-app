@@ -6,10 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import {
-  requireRole,
-  createAuthResponse,
-} from "@/lib/security/auth-middleware";
+import { withRole } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 // In production, these would be stored in database or environment
 let settings = {
@@ -22,40 +20,35 @@ let settings = {
   stripeTestMode: true,
 };
 
-export async function GET(request: NextRequest) {
-  // SECURITY: Require admin role for settings
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
-  return NextResponse.json(settings);
-}
+export const GET = withRole(
+  "admin",
+  async (_request: NextRequest, _user: AuthedUser) => {
+    return NextResponse.json(settings);
+  },
+);
 
-export async function POST(request: NextRequest) {
-  // SECURITY: Require admin role for modifying settings
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
+export const POST = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
+    try {
+      const body = await request.json();
 
-  try {
-    const body = await request.json();
+      // Validate and update settings
+      settings = {
+        ...settings,
+        ...body,
+      };
 
-    // Validate and update settings
-    settings = {
-      ...settings,
-      ...body,
-    };
+      // In production, save to database
+      // await db.settings.update(settings);
 
-    // In production, save to database
-    // await db.settings.update(settings);
-
-    return NextResponse.json({ success: true, settings });
-  } catch (_error) {
-    // Error silently caught
-    return NextResponse.json(
-      { error: "Failed to save settings" },
-      { status: 500 },
-    );
-  }
-}
+      return NextResponse.json({ success: true, settings });
+    } catch (_error) {
+      // Error silently caught
+      return NextResponse.json(
+        { error: "Failed to save settings" },
+        { status: 500 },
+      );
+    }
+  },
+);

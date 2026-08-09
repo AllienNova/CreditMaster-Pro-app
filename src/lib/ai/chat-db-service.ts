@@ -5,9 +5,9 @@
  * Integrates with Supabase tables: financial_chat_sessions and financial_chat_messages
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import type {
   ChatSession,
   ChatMessage,
@@ -597,6 +597,8 @@ class ChatDatabaseService {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
+    // idor-audit: cross-user — retention sweep over every user's soft-deleted
+    // sessions; a user_id filter would defeat its purpose. No caller today.
     const { data, error } = await supabase
       .from("financial_chat_sessions")
       .delete()

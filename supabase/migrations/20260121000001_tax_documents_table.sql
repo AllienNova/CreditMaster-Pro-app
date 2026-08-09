@@ -68,19 +68,23 @@ CREATE INDEX idx_tax_documents_user_year ON tax_documents(user_id, tax_year);
 ALTER TABLE tax_documents ENABLE ROW LEVEL SECURITY;
 
 -- Users can only access their own documents
+DROP POLICY IF EXISTS "Users can view own tax documents" ON tax_documents;
 CREATE POLICY "Users can view own tax documents"
   ON tax_documents FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own tax documents" ON tax_documents;
 CREATE POLICY "Users can insert own tax documents"
   ON tax_documents FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own tax documents" ON tax_documents;
 CREATE POLICY "Users can update own tax documents"
   ON tax_documents FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own tax documents" ON tax_documents;
 CREATE POLICY "Users can delete own tax documents"
   ON tax_documents FOR DELETE
   USING (auth.uid() = user_id);
@@ -117,6 +121,7 @@ CREATE INDEX idx_doc_processing_log_user ON tax_document_processing_log(user_id)
 -- RLS for processing log
 ALTER TABLE tax_document_processing_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own processing logs" ON tax_document_processing_log;
 CREATE POLICY "Users can view own processing logs"
   ON tax_document_processing_log FOR SELECT
   USING (auth.uid() = user_id);

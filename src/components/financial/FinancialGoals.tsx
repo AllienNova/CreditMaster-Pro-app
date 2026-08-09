@@ -2,7 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { EmptyState } from "@/components/ui/EmptyState";
 import AIGoalsOptimizer from "./AIGoalsOptimizer";
+import GoalInvestmentDashboard, {
+  type GoalSummary,
+  type GoalProjectionData,
+  type AllocationSummary,
+  type GoalStatus as InvestmentGoalStatus,
+  type GoalType as InvestmentGoalType,
+} from "@/components/goals/GoalInvestmentDashboard";
 
 interface FinancialGoal {
   id: string;
@@ -21,6 +29,10 @@ export default function FinancialGoals() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showInvestmentView, setShowInvestmentView] = useState(false);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>();
+  const [investmentProjection, setInvestmentProjection] = useState<GoalProjectionData | undefined>();
+  const [investmentAllocations, setInvestmentAllocations] = useState<AllocationSummary[] | undefined>();
   const [newGoal, setNewGoal] = useState({
     type: "savings" as FinancialGoal["type"],
     name: "",
@@ -47,6 +59,47 @@ export default function FinancialGoals() {
       setLoading(false);
     }
   }, [user]);
+
+  const fetchGoalInvestmentData = useCallback(async (goalId: string) => {
+    try {
+      const response = await fetch(`/api/financial/goals/${goalId}/investment`);
+      if (!response.ok) return;
+      const data = await response.json();
+      if (!data.success) return;
+
+      const inv = data.data;
+      setInvestmentProjection({
+        goalId,
+        currentAmount: inv.currentAmount,
+        targetAmount: inv.targetAmount,
+        projectedAmount: inv.projection.projectedAmount,
+        scenarios: inv.projection.scenarios,
+        monthlyDataPoints: inv.projection.monthlyDataPoints,
+        requiredMonthlyContribution: inv.projection.requiredMonthlyContribution,
+        shortfall: inv.projection.shortfall,
+      });
+
+      setInvestmentAllocations(
+        inv.allocation.map((a: { assetClass: string; label: string; percent: number; value: number; color: string }) => ({
+          assetClass: a.assetClass,
+          label: a.label,
+          percent: a.percent,
+          value: a.value,
+          color: a.color,
+        })),
+      );
+    } catch {
+      // Investment data is supplementary; silently ignore fetch failures
+    }
+  }, []);
+
+  const handleSelectGoal = useCallback(
+    (goalId: string) => {
+      setSelectedGoalId(goalId);
+      void fetchGoalInvestmentData(goalId);
+    },
+    [fetchGoalInvestmentData],
+  );
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -252,8 +305,21 @@ export default function FinancialGoals() {
         </div>
       </div>
 
-      {/* Create Goal Button */}
-      <div className="flex justify-end">
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-3">
+        {goals.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowInvestmentView(!showInvestmentView)}
+            className={`px-6 py-3 rounded-lg transition-colors font-semibold ${
+              showInvestmentView
+                ? "bg-purple-600 text-white hover:bg-purple-700"
+                : "border border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+            }`}
+          >
+            {showInvestmentView ? "Hide Investment View" : "Investment View"}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setShowCreateModal(true)}
@@ -266,23 +332,16 @@ export default function FinancialGoals() {
 
       {/* Goals List */}
       {goals.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12">
-          <div className="text-center max-w-md mx-auto">
-            <div className="text-6xl mb-6"></div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              No Goals Yet
-            </h3>
-            <p className="text-gray-600 dark:text-slate-300 mb-8">
-              Set your first financial goal and start working towards it.
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-            >
-              Create Your First Goal
-            </button>
-          </div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+          <EmptyState
+            type="no-goals"
+            title="No goals yet"
+            description="Set your first financial goal and start working towards it"
+            primaryAction={{
+              label: "Create Your First Goal",
+              onClick: () => setShowCreateModal(true),
+            }}
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -383,6 +442,51 @@ export default function FinancialGoals() {
             );
           })}
         </div>
+      )}
+
+      {/* Goal Investment Dashboard */}
+      {showInvestmentView && goals.length > 0 && (
+        <GoalInvestmentDashboard
+          goals={goals.map((g): GoalSummary => {
+            const progress = getProgress(g.currentAmount, g.targetAmount);
+            const isOnTrack = getDaysRemaining(g.targetDate) > 0 && progress >= 25;
+            const goalTypeMap: Record<string, InvestmentGoalType> = {
+              emergency_fund: "emergency",
+              debt_payoff: "custom",
+              savings: "custom",
+              investment: "custom",
+              custom: "custom",
+            };
+            const statusMap: Record<string, InvestmentGoalStatus> = {
+              active: isOnTrack ? "on_track" : "behind",
+              completed: "ahead",
+              paused: "at_risk",
+            };
+            return {
+              id: g.id,
+              name: g.name,
+              type: goalTypeMap[g.type] || "custom",
+              color: g.type === "investment" ? "#8B5CF6" : g.type === "savings" ? "#3B82F6" : g.type === "emergency_fund" ? "#22C55E" : g.type === "debt_payoff" ? "#EF4444" : "#6B7280",
+              targetAmount: g.targetAmount,
+              currentAmount: g.currentAmount,
+              targetDate: g.targetDate,
+              percentComplete: progress,
+              status: statusMap[g.status] || "on_track",
+              monthlyContribution: 0,
+              projectedAmount: g.currentAmount,
+              isOnTrack,
+            };
+          })}
+          totalInvested={totalCurrent}
+          totalProjected={totalCurrent}
+          projectionData={investmentProjection}
+          allocations={investmentAllocations}
+          selectedGoalId={selectedGoalId}
+          onSelectGoal={handleSelectGoal}
+          onAddGoal={() => setShowCreateModal(true)}
+          onEditGoal={() => {}}
+          onViewDetails={(goalId) => handleSelectGoal(goalId)}
+        />
       )}
 
       {/* Create Goal Modal */}

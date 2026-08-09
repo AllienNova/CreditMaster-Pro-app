@@ -10,7 +10,7 @@
  * - Payoff timeline projections
  */
 
-import { AIMLService } from "@/lib/aiml-service";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import { financialContextEngine } from "./financial-context-engine";
 import { FinancialContext, DebtSummary } from "./types/financial-context.types";
 import {
@@ -25,8 +25,6 @@ import {
 // CONSTANTS
 // ============================================================================
 
-const AI_MODEL = "anthropic/claude-4.5-sonnet";
-
 // Current average rates for refinancing comparison
 const REFINANCING_RATES = {
   personal_loan: { excellent: 0.08, good: 0.12, fair: 0.18 },
@@ -39,19 +37,6 @@ const REFINANCING_RATES = {
 // ============================================================================
 
 class DebtStrategyEngine {
-  private aimlService: AIMLService | null = null;
-
-  private getAIService(): AIMLService | null {
-    if (!this.aimlService && process.env.AIML_API_KEY) {
-      try {
-        this.aimlService = new AIMLService();
-      } catch {
-        // AIML service initialization failed
-      }
-    }
-    return this.aimlService;
-  }
-
   /**
    * Analyze debt and generate strategy recommendations
    */
@@ -362,13 +347,10 @@ class DebtStrategyEngine {
     strategies: DebtStrategyPlan[],
     refinancing: RefinancingOpportunity[],
   ): Promise<string[]> {
-    const aiService = this.getAIService();
-    if (!aiService) return this.getDefaultInsights(context.debts);
-
     try {
       const prompt = `Give 3 brief debt payoff tips for: $${context.debts.totalDebt} total debt, ${context.debts.debts.length} accounts, ${context.debts.averageInterestRate.toFixed(1)}% avg rate`;
-      const response = await aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [
           {
             role: "system",

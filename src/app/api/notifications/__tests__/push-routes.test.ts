@@ -1,5 +1,15 @@
 /**
  * @jest-environment node
+ *
+ * Covers the push notification routes (TASK-AUTH-03b, FND-041..044):
+ *  - /api/notifications/push/vapid-key (PUBLIC — genuinely no auth)
+ *  - /api/notifications/push/subscribe (withAuth — scoped to user.id)
+ *  - /api/notifications/push/send     (withAuth — scoped to user.id)
+ *
+ * subscribe/send no longer accept a client-supplied `userId`/`userIds`; the
+ * owning user is always the authenticated user. Tests that previously asserted
+ * the unauthenticated client-userId behavior were updated to the secure model
+ * (they encoded the FND-041..044 IDOR vulnerability).
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -30,6 +40,18 @@ jest.mock("@/lib/notifications/web-push-service", () => ({
   },
 }));
 
+// Mock the auth guard dependencies
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRole(...args),
+}));
+
 // Import AFTER mocks
 import { GET as getVapidKey } from "../../notifications/push/vapid-key/route";
 import {
@@ -41,6 +63,8 @@ import { POST as postSend } from "../../notifications/push/send/route";
 import { NextRequest } from "next/server";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+const AUTH_USER_ID = "auth-user-1";
 
 function makeRequest(
   url: string,
@@ -59,6 +83,14 @@ function makeRequest(
     init.headers = { "Content-Type": "application/json" };
   }
   return new NextRequest(absoluteUrl, init as never);
+}
+
+function authenticate(id: string = AUTH_USER_ID) {
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id, email: `${id}@example.com` },
+  });
+  mockResolveRole.mockResolvedValue("user");
 }
 
 // Builds a chainable Supabase mock that resolves with the given result
@@ -86,10 +118,63 @@ beforeEach(() => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// GET /api/notifications/push/vapid-key
+// negative-auth — 401 for anonymous callers on guarded routes
+// ═══════════════════════════════════════════════════════════════════════════════
+describe("Push Routes – negative-auth", () => {
+  beforeEach(() => {
+    mockValidate.mockResolvedValue({ valid: false, user: null });
+  });
+
+  it("POST /push/subscribe returns 401 when not authenticated", async () => {
+    const req = makeRequest("/api/notifications/push/subscribe", {
+      body: {
+        subscription: {
+          endpoint: "https://push.example.com",
+          keys: { p256dh: "k1", auth: "k2" },
+        },
+      },
+    });
+    req.json = jest.fn().mockResolvedValue({
+      subscription: {
+        endpoint: "https://push.example.com",
+        keys: { p256dh: "k1", auth: "k2" },
+      },
+    });
+    const res = await postSubscribe(req);
+    expect(res.status).toBe(401);
+  });
+
+  it("DELETE /push/subscribe returns 401 when not authenticated", async () => {
+    const res = await deleteSubscribe(
+      makeRequest("/api/notifications/push/subscribe", { method: "DELETE" }),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("GET /push/subscribe returns 401 when not authenticated", async () => {
+    const res = await getSubscriptions(
+      makeRequest("/api/notifications/push/subscribe"),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /push/send returns 401 when not authenticated", async () => {
+    const req = makeRequest("/api/notifications/push/send", {
+      body: { notification: { title: "Test", body: "body" } },
+    });
+    req.json = jest
+      .fn()
+      .mockResolvedValue({ notification: { title: "Test", body: "body" } });
+    const res = await postSend(req);
+    expect(res.status).toBe(401);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GET /api/notifications/push/vapid-key  (PUBLIC)
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Push Routes – GET /api/notifications/push/vapid-key", () => {
-  it("should return the VAPID public key", async () => {
+  it("should return the VAPID public key without authentication", async () => {
     const res = await getVapidKey();
     const body = await res.json();
 
@@ -115,38 +200,13 @@ describe("Push Routes – GET /api/notifications/push/vapid-key", () => {
 // POST /api/notifications/push/subscribe
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Push Routes – POST /api/notifications/push/subscribe", () => {
-  it("should return 400 when userId is missing", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/subscribe",
-      {
-        body: {
-          subscription: {
-            endpoint: "https://push.example.com",
-            keys: { p256dh: "key1", auth: "key2" },
-          },
-        },
-      },
-    );
-    req.json = jest.fn().mockResolvedValue({
-      subscription: {
-        endpoint: "https://push.example.com",
-        keys: { p256dh: "key1", auth: "key2" },
-      },
-    });
-
-    const res = await postSubscribe(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(400);
-    expect(body.error).toContain("Missing required fields");
-  });
+  beforeEach(() => authenticate());
 
   it("should return 400 when subscription is missing", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/subscribe",
-      { body: { userId: "user-1" } },
-    );
-    req.json = jest.fn().mockResolvedValue({ userId: "user-1" });
+    const req = makeRequest("/api/notifications/push/subscribe", {
+      body: {},
+    });
+    req.json = jest.fn().mockResolvedValue({});
 
     const res = await postSubscribe(req);
     const body = await res.json();
@@ -156,17 +216,10 @@ describe("Push Routes – POST /api/notifications/push/subscribe", () => {
   });
 
   it("should return 400 when subscription is invalid (no endpoint)", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/subscribe",
-      {
-        body: {
-          userId: "user-1",
-          subscription: { keys: { p256dh: "key1", auth: "key2" } },
-        },
-      },
-    );
+    const req = makeRequest("/api/notifications/push/subscribe", {
+      body: { subscription: { keys: { p256dh: "key1", auth: "key2" } } },
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       subscription: { keys: { p256dh: "key1", auth: "key2" } },
     });
 
@@ -177,10 +230,8 @@ describe("Push Routes – POST /api/notifications/push/subscribe", () => {
     expect(body.error).toBe("Invalid subscription object");
   });
 
-  it("should create a new subscription when none exists", async () => {
-    // First query: check existing - returns null
+  it("should create a new subscription owned by the authenticated user", async () => {
     const checkChain = createSupabaseChain({ data: null, error: null });
-    // Second query: insert - returns new subscription
     const insertChain = createSupabaseChain({
       data: { id: "sub-1" },
       error: null,
@@ -192,21 +243,16 @@ describe("Push Routes – POST /api/notifications/push/subscribe", () => {
       return callCount === 1 ? checkChain : insertChain;
     });
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/subscribe",
-      {
-        body: {
-          userId: "user-1",
-          subscription: {
-            endpoint: "https://push.example.com",
-            keys: { p256dh: "key1", auth: "key2" },
-          },
-          userAgent: "TestBrowser/1.0",
+    const req = makeRequest("/api/notifications/push/subscribe", {
+      body: {
+        subscription: {
+          endpoint: "https://push.example.com",
+          keys: { p256dh: "key1", auth: "key2" },
         },
+        userAgent: "TestBrowser/1.0",
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       subscription: {
         endpoint: "https://push.example.com",
         keys: { p256dh: "key1", auth: "key2" },
@@ -221,15 +267,102 @@ describe("Push Routes – POST /api/notifications/push/subscribe", () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe("Subscription created");
     expect(body.subscriptionId).toBe("sub-1");
+    // The insert is scoped to the authenticated user, not a client userId.
+    expect(insertChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: AUTH_USER_ID }),
+    );
+  });
+
+  it("ignores a client-supplied userId and uses the authenticated user", async () => {
+    const checkChain = createSupabaseChain({ data: null, error: null });
+    const insertChain = createSupabaseChain({
+      data: { id: "sub-1" },
+      error: null,
+    });
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      return callCount === 1 ? checkChain : insertChain;
+    });
+
+    const req = makeRequest("/api/notifications/push/subscribe", {
+      body: {
+        userId: "victim-user",
+        subscription: {
+          endpoint: "https://push.example.com",
+          keys: { p256dh: "key1", auth: "key2" },
+        },
+      },
+    });
+    req.json = jest.fn().mockResolvedValue({
+      userId: "victim-user",
+      subscription: {
+        endpoint: "https://push.example.com",
+        keys: { p256dh: "key1", auth: "key2" },
+      },
+    });
+
+    await postSubscribe(req);
+
+    expect(insertChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: AUTH_USER_ID }),
+    );
+    expect(insertChain.insert).not.toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: "victim-user" }),
+    );
+  });
+
+  it("cannot hijack another user's subscription by reusing their endpoint", async () => {
+    // The existence-check is scoped to (endpoint, user.id). For an endpoint the
+    // attacker does not own, that scoped query finds no row — so the update
+    // branch (which would reassign user_id) is never reached. The code falls
+    // through to INSERT, which the UNIQUE index on `endpoint` rejects (23505)
+    // → a clean 409, NOT a takeover.
+    const checkChain = createSupabaseChain({ data: null, error: null });
+    const insertChain = createSupabaseChain({
+      data: null,
+      error: { code: "23505", message: "duplicate key value" },
+    });
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      return callCount === 1 ? checkChain : insertChain;
+    });
+
+    const req = makeRequest("/api/notifications/push/subscribe", {
+      body: {
+        subscription: {
+          endpoint: "https://push.example.com/victim-endpoint",
+          keys: { p256dh: "attacker-key", auth: "attacker-auth" },
+        },
+      },
+    });
+    req.json = jest.fn().mockResolvedValue({
+      subscription: {
+        endpoint: "https://push.example.com/victim-endpoint",
+        keys: { p256dh: "attacker-key", auth: "attacker-auth" },
+      },
+    });
+
+    const res = await postSubscribe(req);
+    const body = await res.json();
+
+    // No takeover: the update branch is not reached for a foreign endpoint.
+    expect(insertChain.update).not.toHaveBeenCalled();
+    // The existence check was scoped to the authenticated user.
+    expect(checkChain.eq).toHaveBeenCalledWith("user_id", AUTH_USER_ID);
+    // UNIQUE-index rejection surfaces as a clean 409, not a 500.
+    expect(res.status).toBe(409);
+    expect(body.error).toBe("Subscription endpoint already registered");
   });
 
   it("should update an existing subscription", async () => {
-    // First query: check existing - returns existing sub
     const checkChain = createSupabaseChain({
       data: { id: "existing-sub" },
       error: null,
     });
-    // Second query: update - returns updated sub
     const updateChain = createSupabaseChain({
       data: { id: "existing-sub" },
       error: null,
@@ -241,20 +374,15 @@ describe("Push Routes – POST /api/notifications/push/subscribe", () => {
       return callCount === 1 ? checkChain : updateChain;
     });
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/subscribe",
-      {
-        body: {
-          userId: "user-1",
-          subscription: {
-            endpoint: "https://push.example.com",
-            keys: { p256dh: "newkey1", auth: "newkey2" },
-          },
+    const req = makeRequest("/api/notifications/push/subscribe", {
+      body: {
+        subscription: {
+          endpoint: "https://push.example.com",
+          keys: { p256dh: "newkey1", auth: "newkey2" },
         },
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       subscription: {
         endpoint: "https://push.example.com",
         keys: { p256dh: "newkey1", auth: "newkey2" },
@@ -268,10 +396,17 @@ describe("Push Routes – POST /api/notifications/push/subscribe", () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe("Subscription updated");
     expect(body.subscriptionId).toBe("existing-sub");
+    // The matched row is already proven to belong to the caller (the
+    // existence check is scoped to user.id), and the update is re-scoped via
+    // .eq("user_id", ...). The update no longer rewrites `user_id` — doing so
+    // was the reassignment vector for the endpoint-hijack IDOR.
+    expect(updateChain.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: expect.anything() }),
+    );
+    expect(updateChain.eq).toHaveBeenCalledWith("user_id", AUTH_USER_ID);
   });
 
   it("should return 500 when Supabase insert throws", async () => {
-    // Check existing returns null, insert throws
     const checkChain = createSupabaseChain({ data: null, error: null });
     const insertChain = createSupabaseChain({
       data: null,
@@ -284,20 +419,15 @@ describe("Push Routes – POST /api/notifications/push/subscribe", () => {
       return callCount === 1 ? checkChain : insertChain;
     });
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/subscribe",
-      {
-        body: {
-          userId: "user-1",
-          subscription: {
-            endpoint: "https://push.example.com",
-            keys: { p256dh: "key1", auth: "key2" },
-          },
+    const req = makeRequest("/api/notifications/push/subscribe", {
+      body: {
+        subscription: {
+          endpoint: "https://push.example.com",
+          keys: { p256dh: "key1", auth: "key2" },
         },
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       subscription: {
         endpoint: "https://push.example.com",
         keys: { p256dh: "key1", auth: "key2" },
@@ -316,26 +446,15 @@ describe("Push Routes – POST /api/notifications/push/subscribe", () => {
 // DELETE /api/notifications/push/subscribe
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Push Routes – DELETE /api/notifications/push/subscribe", () => {
-  it("should return 400 when userId is missing", async () => {
-    const res = await deleteSubscribe(
-      makeRequest(
-        "http://localhost:3000/api/notifications/push/subscribe",
-        { method: "DELETE" },
-      ),
-    );
-    const body = await res.json();
+  beforeEach(() => authenticate());
 
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("Missing userId parameter");
-  });
-
-  it("should delete a specific subscription by endpoint", async () => {
+  it("should delete a specific subscription by endpoint scoped to the authed user", async () => {
     const chain = createSupabaseChain({ error: null });
     mockFrom.mockReturnValue(chain);
 
     const res = await deleteSubscribe(
       makeRequest(
-        "http://localhost:3000/api/notifications/push/subscribe?userId=user-1&endpoint=https://push.example.com",
+        "/api/notifications/push/subscribe?endpoint=https://push.example.com",
         { method: "DELETE" },
       ),
     );
@@ -345,6 +464,22 @@ describe("Push Routes – DELETE /api/notifications/push/subscribe", () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe("Subscription removed");
     expect(chain.delete).toHaveBeenCalled();
+    expect(chain.eq).toHaveBeenCalledWith("user_id", AUTH_USER_ID);
+  });
+
+  it("ignores a client-supplied userId in the query and scopes to the authed user", async () => {
+    const chain = createSupabaseChain({ error: null });
+    mockFrom.mockReturnValue(chain);
+
+    await deleteSubscribe(
+      makeRequest(
+        "/api/notifications/push/subscribe?userId=victim-user",
+        { method: "DELETE" },
+      ),
+    );
+
+    expect(chain.eq).toHaveBeenCalledWith("user_id", AUTH_USER_ID);
+    expect(chain.eq).not.toHaveBeenCalledWith("user_id", "victim-user");
   });
 
   it("should delete all subscriptions when no endpoint is specified", async () => {
@@ -352,10 +487,7 @@ describe("Push Routes – DELETE /api/notifications/push/subscribe", () => {
     mockFrom.mockReturnValue(chain);
 
     const res = await deleteSubscribe(
-      makeRequest(
-        "http://localhost:3000/api/notifications/push/subscribe?userId=user-1",
-        { method: "DELETE" },
-      ),
+      makeRequest("/api/notifications/push/subscribe", { method: "DELETE" }),
     );
     const body = await res.json();
 
@@ -371,10 +503,7 @@ describe("Push Routes – DELETE /api/notifications/push/subscribe", () => {
     mockFrom.mockReturnValue(chain);
 
     const res = await deleteSubscribe(
-      makeRequest(
-        "http://localhost:3000/api/notifications/push/subscribe?userId=user-1",
-        { method: "DELETE" },
-      ),
+      makeRequest("/api/notifications/push/subscribe", { method: "DELETE" }),
     );
     const body = await res.json();
 
@@ -387,19 +516,9 @@ describe("Push Routes – DELETE /api/notifications/push/subscribe", () => {
 // GET /api/notifications/push/subscribe
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Push Routes – GET /api/notifications/push/subscribe", () => {
-  it("should return 400 when userId is missing", async () => {
-    const res = await getSubscriptions(
-      makeRequest(
-        "http://localhost:3000/api/notifications/push/subscribe",
-      ),
-    );
-    const body = await res.json();
+  beforeEach(() => authenticate());
 
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("Missing userId parameter");
-  });
-
-  it("should return active subscriptions for a user", async () => {
+  it("should return active subscriptions for the authenticated user", async () => {
     const fakeSubs = [
       {
         id: "sub-1",
@@ -414,15 +533,26 @@ describe("Push Routes – GET /api/notifications/push/subscribe", () => {
     mockFrom.mockReturnValue(chain);
 
     const res = await getSubscriptions(
-      makeRequest(
-        "http://localhost:3000/api/notifications/push/subscribe?userId=user-1",
-      ),
+      makeRequest("/api/notifications/push/subscribe"),
     );
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.subscriptions).toEqual(fakeSubs);
     expect(body.count).toBe(1);
+    expect(chain.eq).toHaveBeenCalledWith("user_id", AUTH_USER_ID);
+  });
+
+  it("ignores a client-supplied userId in the query", async () => {
+    const chain = createSupabaseChain({ data: [], error: null });
+    mockFrom.mockReturnValue(chain);
+
+    await getSubscriptions(
+      makeRequest("/api/notifications/push/subscribe?userId=victim-user"),
+    );
+
+    expect(chain.eq).toHaveBeenCalledWith("user_id", AUTH_USER_ID);
+    expect(chain.eq).not.toHaveBeenCalledWith("user_id", "victim-user");
   });
 
   it("should return empty array when no subscriptions found", async () => {
@@ -430,9 +560,7 @@ describe("Push Routes – GET /api/notifications/push/subscribe", () => {
     mockFrom.mockReturnValue(chain);
 
     const res = await getSubscriptions(
-      makeRequest(
-        "http://localhost:3000/api/notifications/push/subscribe?userId=user-1",
-      ),
+      makeRequest("/api/notifications/push/subscribe"),
     );
     const body = await res.json();
 
@@ -445,9 +573,7 @@ describe("Push Routes – GET /api/notifications/push/subscribe", () => {
     mockFrom.mockReturnValue(chain);
 
     const res = await getSubscriptions(
-      makeRequest(
-        "http://localhost:3000/api/notifications/push/subscribe?userId=user-1",
-      ),
+      makeRequest("/api/notifications/push/subscribe"),
     );
     const body = await res.json();
 
@@ -462,9 +588,7 @@ describe("Push Routes – GET /api/notifications/push/subscribe", () => {
     mockFrom.mockReturnValue(chain);
 
     const res = await getSubscriptions(
-      makeRequest(
-        "http://localhost:3000/api/notifications/push/subscribe?userId=user-1",
-      ),
+      makeRequest("/api/notifications/push/subscribe"),
     );
     const body = await res.json();
 
@@ -477,20 +601,15 @@ describe("Push Routes – GET /api/notifications/push/subscribe", () => {
 // POST /api/notifications/push/send
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Push Routes – POST /api/notifications/push/send", () => {
+  beforeEach(() => authenticate());
+
   it("should return 400 when notification title is missing", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/send",
-      {
-        body: {
-          userId: "user-1",
-          notification: { body: "test body" },
-        },
-      },
-    );
-    req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
-      notification: { body: "test body" },
+    const req = makeRequest("/api/notifications/push/send", {
+      body: { notification: { body: "test body" } },
     });
+    req.json = jest
+      .fn()
+      .mockResolvedValue({ notification: { body: "test body" } });
 
     const res = await postSend(req);
     const body = await res.json();
@@ -499,42 +618,15 @@ describe("Push Routes – POST /api/notifications/push/send", () => {
     expect(body.error).toContain("Missing required notification fields");
   });
 
-  it("should return 400 when neither userId nor userIds is provided", async () => {
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/send",
-      {
-        body: {
-          notification: { title: "Test", body: "body" },
-        },
-      },
-    );
-    req.json = jest.fn().mockResolvedValue({
-      notification: { title: "Test", body: "body" },
-    });
-
-    const res = await postSend(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(400);
-    expect(body.error).toContain("Missing userId or userIds");
-  });
-
   it("should return 503 when web push is not enabled", async () => {
     mockIsEnabled.mockReturnValue(false);
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/send",
-      {
-        body: {
-          userId: "user-1",
-          notification: { title: "Test", body: "body" },
-        },
-      },
-    );
-    req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
-      notification: { title: "Test", body: "body" },
+    const req = makeRequest("/api/notifications/push/send", {
+      body: { notification: { title: "Test", body: "body" } },
     });
+    req.json = jest
+      .fn()
+      .mockResolvedValue({ notification: { title: "Test", body: "body" } });
 
     const res = await postSend(req);
     const body = await res.json();
@@ -549,19 +641,12 @@ describe("Push Routes – POST /api/notifications/push/send", () => {
     const chain = createSupabaseChain({ data: [], error: null });
     mockFrom.mockReturnValue(chain);
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/send",
-      {
-        body: {
-          userId: "user-1",
-          notification: { title: "Test", body: "body" },
-        },
-      },
-    );
-    req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
-      notification: { title: "Test", body: "body" },
+    const req = makeRequest("/api/notifications/push/send", {
+      body: { notification: { title: "Test", body: "body" } },
     });
+    req.json = jest
+      .fn()
+      .mockResolvedValue({ notification: { title: "Test", body: "body" } });
 
     const res = await postSend(req);
     const body = await res.json();
@@ -572,13 +657,59 @@ describe("Push Routes – POST /api/notifications/push/send", () => {
     expect(body.message).toBe("No active subscriptions found");
   });
 
+  it("targets only the authenticated user's subscriptions", async () => {
+    mockIsEnabled.mockReturnValue(true);
+
+    const chain = createSupabaseChain({ data: [], error: null });
+    mockFrom.mockReturnValue(chain);
+
+    const req = makeRequest("/api/notifications/push/send", {
+      body: { notification: { title: "Test", body: "body" } },
+    });
+    req.json = jest
+      .fn()
+      .mockResolvedValue({ notification: { title: "Test", body: "body" } });
+
+    await postSend(req);
+
+    // The send is scoped via eq("user_id", authedUser), not an `in()` over a
+    // client-supplied list — a caller cannot push to other users.
+    expect(chain.eq).toHaveBeenCalledWith("user_id", AUTH_USER_ID);
+  });
+
+  it("ignores a client-supplied userId and scopes the send to the authed user", async () => {
+    mockIsEnabled.mockReturnValue(true);
+
+    const chain = createSupabaseChain({ data: [], error: null });
+    mockFrom.mockReturnValue(chain);
+
+    const req = makeRequest("/api/notifications/push/send", {
+      body: {
+        userId: "victim-user",
+        userIds: ["victim-a", "victim-b"],
+        notification: { title: "Test", body: "body" },
+      },
+    });
+    req.json = jest.fn().mockResolvedValue({
+      userId: "victim-user",
+      userIds: ["victim-a", "victim-b"],
+      notification: { title: "Test", body: "body" },
+    });
+
+    await postSend(req);
+
+    expect(chain.eq).toHaveBeenCalledWith("user_id", AUTH_USER_ID);
+    expect(chain.eq).not.toHaveBeenCalledWith("user_id", "victim-user");
+    expect(chain.in).not.toHaveBeenCalled();
+  });
+
   it("should send notifications to active subscriptions and return results", async () => {
     mockIsEnabled.mockReturnValue(true);
 
     const dbSubs = [
       {
         id: "sub-1",
-        user_id: "user-1",
+        user_id: AUTH_USER_ID,
         endpoint: "https://push.example.com/sub1",
         keys_p256dh: "p256dh-key-1",
         keys_auth: "auth-key-1",
@@ -589,7 +720,7 @@ describe("Push Routes – POST /api/notifications/push/send", () => {
       },
       {
         id: "sub-2",
-        user_id: "user-1",
+        user_id: AUTH_USER_ID,
         endpoint: "https://push.example.com/sub2",
         keys_p256dh: "p256dh-key-2",
         keys_auth: "auth-key-2",
@@ -600,7 +731,6 @@ describe("Push Routes – POST /api/notifications/push/send", () => {
       },
     ];
 
-    // First call: select subscriptions, subsequent calls: updates
     const selectChain = createSupabaseChain({ data: dbSubs, error: null });
     const updateChain = createSupabaseChain({ error: null });
 
@@ -615,17 +745,12 @@ describe("Push Routes – POST /api/notifications/push/send", () => {
       { success: true, subscriptionId: "sub-2" },
     ]);
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/send",
-      {
-        body: {
-          userId: "user-1",
-          notification: { title: "Test", body: "body", type: "general" },
-        },
+    const req = makeRequest("/api/notifications/push/send", {
+      body: {
+        notification: { title: "Test", body: "body", type: "general" },
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       notification: { title: "Test", body: "body", type: "general" },
     });
 
@@ -646,7 +771,7 @@ describe("Push Routes – POST /api/notifications/push/send", () => {
     const dbSubs = [
       {
         id: "sub-1",
-        user_id: "user-1",
+        user_id: AUTH_USER_ID,
         endpoint: "https://push.example.com/sub1",
         keys_p256dh: "k1",
         keys_auth: "a1",
@@ -657,7 +782,7 @@ describe("Push Routes – POST /api/notifications/push/send", () => {
       },
       {
         id: "sub-2",
-        user_id: "user-1",
+        user_id: AUTH_USER_ID,
         endpoint: "https://push.example.com/sub2",
         keys_p256dh: "k2",
         keys_auth: "a2",
@@ -686,17 +811,12 @@ describe("Push Routes – POST /api/notifications/push/send", () => {
       },
     ]);
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/send",
-      {
-        body: {
-          userId: "user-1",
-          notification: { title: "Test", body: "body", type: "general" },
-        },
+    const req = makeRequest("/api/notifications/push/send", {
+      body: {
+        notification: { title: "Test", body: "body", type: "general" },
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       notification: { title: "Test", body: "body", type: "general" },
     });
 
@@ -708,39 +828,6 @@ describe("Push Routes – POST /api/notifications/push/send", () => {
     expect(body.expiredSubscriptions).toBe(1);
   });
 
-  it("should support userIds array", async () => {
-    mockIsEnabled.mockReturnValue(true);
-
-    const selectChain = createSupabaseChain({ data: [], error: null });
-    mockFrom.mockReturnValue(selectChain);
-
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/send",
-      {
-        body: {
-          userIds: ["user-1", "user-2"],
-          notification: { title: "Broadcast", body: "body", type: "general" },
-        },
-      },
-    );
-    req.json = jest.fn().mockResolvedValue({
-      userIds: ["user-1", "user-2"],
-      notification: { title: "Broadcast", body: "body", type: "general" },
-    });
-
-    const res = await postSend(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.sent).toBe(0);
-    expect(body.message).toBe("No active subscriptions found");
-    // Verify the .in() call was made with both user IDs
-    expect(selectChain.in).toHaveBeenCalledWith(
-      "user_id",
-      ["user-1", "user-2"],
-    );
-  });
-
   it("should return 500 when Supabase throws", async () => {
     mockIsEnabled.mockReturnValue(true);
 
@@ -748,17 +835,12 @@ describe("Push Routes – POST /api/notifications/push/send", () => {
       throw new Error("Supabase connection failed");
     });
 
-    const req = makeRequest(
-      "http://localhost:3000/api/notifications/push/send",
-      {
-        body: {
-          userId: "user-1",
-          notification: { title: "Test", body: "body", type: "general" },
-        },
+    const req = makeRequest("/api/notifications/push/send", {
+      body: {
+        notification: { title: "Test", body: "body", type: "general" },
       },
-    );
+    });
     req.json = jest.fn().mockResolvedValue({
-      userId: "user-1",
       notification: { title: "Test", body: "body", type: "general" },
     });
 

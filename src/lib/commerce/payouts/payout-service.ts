@@ -3,10 +3,19 @@
  *
  * Manages payouts to affiliates, partners, and users.
  * Supports multiple payout methods and automated scheduling.
+ *
+ * Fail-LOUD contract for money-amount computations: getPendingEarnings and
+ * the due-schedule lookup in processScheduledPayouts both throw on a query
+ * error rather than defaulting to "$0 pending" / "nothing due." A wrong
+ * balance must never be computed as if it were a real one — the query
+ * currently errors on every call (affiliate_conversions and
+ * payout_schedules do not exist yet), and silently treating that as zero
+ * would starve every recipient's payout with no visible failure.
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { cents, fromDollars, toDollars, toStripeAmount, type Cents } from "@/lib/money";
 import {
   TrueLayerPaymentsConnector,
   createTrueLayerPaymentsConnector,
@@ -19,10 +28,24 @@ import {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Lazily constructed so `next build` page-data-collection (no runtime env)
+// does not abort on createClient's "supabaseUrl is required".
+let _supabase: SupabaseClient | null = null;
+const supabase = new Proxy({} as SupabaseClient, {
+  get(_t, prop, recv) {
+    if (!_supabase) _supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const v = Reflect.get(_supabase, prop, recv);
+    return typeof v === "function" ? v.bind(_supabase) : v;
+  },
+});
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-09-30.clover",
+let _stripe: Stripe | null = null;
+const stripe = new Proxy({} as Stripe, {
+  get(_t, prop, recv) {
+    if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-09-30.clover" });
+    const v = Reflect.get(_stripe, prop, recv);
+    return typeof v === "function" ? v.bind(_stripe) : v;
+  },
 });
 
 // =============================================================================
@@ -230,7 +253,7 @@ export class PayoutService {
     }
 
     // Update with provider ID
-    await supabase
+    const { error: inTransitError } = await supabase
       .from("payouts")
       .update({
         provider_payout_id: providerPayoutId,
@@ -238,6 +261,16 @@ export class PayoutService {
         processed_at: new Date().toISOString(),
       })
       .eq("id", payout.id);
+
+    // The provider has ALREADY been told to send money at this point. If the
+    // row does not record "in_transit" with the provider's id, reconciliation
+    // cannot match the outbound transfer to this payout, and a retry would
+    // send it again.
+    if (inTransitError) {
+      throw new Error(
+        `Payout ${payout.id} was sent to the provider but could not be marked in_transit: ${inTransitError.message}`,
+      );
+    }
 
     return {
       ...payout,
@@ -259,17 +292,22 @@ export class PayoutService {
     }
 
     // Create transfer to connected account
-    const transfer = await stripe.transfers.create({
-      amount: payout.netAmount,
-      currency: payout.currency.toLowerCase(),
-      destination: recipient.stripeAccountId,
-      description: payout.description,
-      metadata: {
-        payout_id: payout.id,
-        type: payout.type,
-        ...payout.metadata,
+    const transfer = await stripe.transfers.create(
+      {
+        // Stripe amount is integer cents; netAmount is dollars — convert via Cents type
+        amount: toStripeAmount(fromDollars(payout.netAmount)),
+        currency: payout.currency.toLowerCase(),
+        destination: recipient.stripeAccountId,
+        description: payout.description,
+        metadata: {
+          payout_id: payout.id,
+          type: payout.type,
+          ...payout.metadata,
+        },
       },
-    });
+      // Idempotency key derived from stable payout row id — prevents double-pay on retry (FND-026)
+      { idempotencyKey: `transfer-${payout.id}` },
+    );
 
     return transfer.id;
   }
@@ -302,7 +340,8 @@ export class PayoutService {
 
       const tlPayout = await this.truelayerConnector.createPayout(
         sourceAccount.id,
-        { currency: payout.currency, value: payout.netAmount },
+        // TrueLayer PaymentAmount.value is in minor units (pence/cents) — convert via Cents type (FND-024)
+        { currency: payout.currency, value: toStripeAmount(fromDollars(payout.netAmount)) },
         {
           type: "external_account",
           accountHolderName: recipient.bankDetails.accountHolderName,
@@ -337,7 +376,8 @@ export class PayoutService {
       // Create payout
       const payout_ = await stripe.payouts.create(
         {
-          amount: payout.netAmount,
+          // Stripe amount is integer cents; netAmount is dollars — convert via Cents type
+          amount: toStripeAmount(fromDollars(payout.netAmount)),
           currency: payout.currency.toLowerCase(),
           destination: bankToken.id,
           description: payout.description,
@@ -346,7 +386,11 @@ export class PayoutService {
             type: payout.type,
           },
         },
-        { stripeAccount: process.env.STRIPE_PLATFORM_ACCOUNT_ID },
+        {
+          stripeAccount: process.env.STRIPE_PLATFORM_ACCOUNT_ID,
+          // Idempotency key derived from stable payout row id — prevents double-pay on retry (FND-026)
+          idempotencyKey: `payout-${payout.id}`,
+        },
       );
 
       return payout_.id;
@@ -393,18 +437,32 @@ export class PayoutService {
   ): Promise<string> {
     const reference = this.generateReference();
 
-    await supabase.from("manual_payout_queue").insert({
+    const { error: queueError } = await supabase
+      .from("manual_payout_queue")
+      .insert({
       payout_id: payout.id,
       reference,
       recipient_name: recipient.name,
       recipient_email: recipient.email,
       method: payout.method,
-      amount: payout.netAmount,
+      // Store as integer cents — manual_payout_queue.amount is in minor units (FND-024)
+      amount: toStripeAmount(fromDollars(payout.netAmount)),
       currency: payout.currency,
       bank_details: recipient.bankDetails,
       paypal_email: recipient.paypalEmail,
       created_at: new Date().toISOString(),
     });
+
+    // This is the FALLBACK rail — it runs when an automated payout could not be
+    // sent. A fire-and-forget insert meant the queue entry could vanish while
+    // the caller still marked the payout "in_transit", producing a payout that
+    // is owed, believed to be moving, and recorded nowhere. Fail loudly: an
+    // unqueued manual payout must not look like a queued one.
+    if (queueError) {
+      throw new Error(
+        `Failed to queue manual payout ${payout.id} (ref ${reference}): ${queueError.message}`,
+      );
+    }
 
     return reference;
   }
@@ -422,7 +480,7 @@ export class PayoutService {
     const totalAmount = requests.reduce((sum, r) => sum + r.amount, 0);
 
     // Create batch record
-    await supabase.from("payout_batches").insert({
+    const { error: batchError } = await supabase.from("payout_batches").insert({
       id: batchId,
       status: "pending",
       total_amount: totalAmount,
@@ -432,6 +490,14 @@ export class PayoutService {
       failure_count: 0,
       created_at: new Date().toISOString(),
     });
+
+    // Without the batch row the individual payouts still process but are
+    // unreconcilable — there is no record of what was meant to go out together.
+    if (batchError) {
+      throw new Error(
+        `Failed to create payout batch ${batchId}: ${batchError.message}`,
+      );
+    }
 
     // Process payouts
     const payouts: Payout[] = [];
@@ -458,7 +524,7 @@ export class PayoutService {
           ? "failed"
           : "partial";
 
-    await supabase
+    const { error: batchUpdateError } = await supabase
       .from("payout_batches")
       .update({
         status,
@@ -467,6 +533,14 @@ export class PayoutService {
         completed_at: new Date().toISOString(),
       })
       .eq("id", batchId);
+
+    // A batch stuck at "pending" after its payouts finished is indistinguishable
+    // from one that never ran.
+    if (batchUpdateError) {
+      throw new Error(
+        `Failed to finalise payout batch ${batchId}: ${batchUpdateError.message}`,
+      );
+    }
 
     return {
       id: batchId,
@@ -532,11 +606,21 @@ export class PayoutService {
     const now = new Date();
 
     // Get due schedules
-    const { data: schedules } = await supabase
+    const { data: schedules, error: schedulesError } = await supabase
       .from("payout_schedules")
       .select()
       .eq("is_active", true)
       .lte("next_payout_date", now.toISOString());
+
+    // Fail LOUD: a query error must never be indistinguishable from "no
+    // schedules are due" — that silent conflation is what would let this
+    // entry point become a no-op that pays nobody, with nothing in the
+    // logs to explain why.
+    if (schedulesError) {
+      throw new Error(
+        `Failed to fetch due payout schedules: ${schedulesError.message}`,
+      );
+    }
 
     if (!schedules || schedules.length === 0) {
       return null;
@@ -566,13 +650,22 @@ export class PayoutService {
           schedule.day_of_month,
         );
 
-        await supabase
+        const { error: scheduleError } = await supabase
           .from("payout_schedules")
           .update({
             last_payout_date: now.toISOString(),
             next_payout_date: nextPayoutDate.toISOString(),
           })
           .eq("id", schedule.id);
+
+        // If the schedule's cursor does not advance, the next run treats this
+        // schedule as still due and pays it again. Losing this write is a
+        // duplicate-payout bug, not a bookkeeping nit.
+        if (scheduleError) {
+          throw new Error(
+            `Failed to advance payout schedule ${schedule.id}: ${scheduleError.message}`,
+          );
+        }
       }
     }
 
@@ -597,7 +690,14 @@ export class PayoutService {
       .eq("id", payoutId)
       .single();
 
-    if (error) return null;
+    // PGRST116 is a genuine "no such payout". Any other error means the payout
+    // may well exist and we simply could not read it — returning null there
+    // reports "no payout" for what is actually a failed lookup.
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      throw new Error(`Failed to load payout ${payoutId}: ${error.message}`);
+    }
+    if (!data) return null;
     return this.mapPayout(data);
   }
 
@@ -738,40 +838,60 @@ export class PayoutService {
 
   private async getPendingEarnings(recipientId: string): Promise<number> {
     // Get confirmed but unpaid conversions
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("affiliate_conversions")
       .select("commission_earned")
       .eq("partner_id", recipientId)
       .in("status", ["confirmed", "qualified"]);
 
+    // Fail LOUD: a query error must never be read as "$0 pending" — that
+    // silent default is what let a batch/schedule run believe every
+    // recipient has nothing owed, starving real payouts with no error.
+    if (error) {
+      throw new Error(
+        `Failed to compute pending earnings for ${recipientId}: ${error.message}`,
+      );
+    }
+
     return (data || []).reduce((sum, c) => sum + (c.commission_earned || 0), 0);
   }
 
+  /**
+   * amount/fee/net are all dollars at this function's boundary (payouts.amount,
+   * .fee, .net_amount are dollar-denominated columns — createPayoutRecord writes
+   * request.amount straight through unconverted). Fee arithmetic itself runs in
+   * integer cents via the Money module so flat-cent fees (50 = $0.50, etc.) never
+   * get summed against a dollar-scaled amount (that mismatch was the bug: a $50
+   * bank_transfer netted $50 - 50 = $0.00 instead of $49.50).
+   */
   private calculateFees(
     amount: number,
     method: PayoutMethod,
   ): { fee: number; net: number } {
-    let fee = 0;
+    const amountCents = fromDollars(amount);
+    let feeCents: Cents = cents(0);
 
     switch (method) {
       case "stripe_connect":
-        fee = Math.ceil(amount * 0.0025); // 0.25%
+        feeCents = cents(Math.ceil(amountCents * 0.0025)); // 0.25%
         break;
       case "bank_transfer":
       case "open_banking":
-        fee = 50; // $0.50 flat
+        feeCents = cents(50); // $0.50 flat
         break;
       case "paypal":
-        fee = Math.ceil(amount * 0.02) + 25; // 2% + $0.25
+        feeCents = cents(Math.ceil(amountCents * 0.02) + 25); // 2% + $0.25
         break;
       case "check":
-        fee = 100; // $1.00 for printing/mailing
+        feeCents = cents(100); // $1.00 for printing/mailing
         break;
     }
 
+    const netCents = cents(amountCents - feeCents);
+
     return {
-      fee,
-      net: amount - fee,
+      fee: toDollars(feeCents),
+      net: toDollars(netCents),
     };
   }
 
@@ -820,7 +940,20 @@ export class PayoutService {
       updateData.failure_reason = failureReason;
     }
 
-    await supabase.from("payouts").update(updateData).eq("id", payoutId);
+    const { error: statusError } = await supabase
+      .from("payouts")
+      .update(updateData)
+      .eq("id", payoutId);
+
+    // The single most dangerous silent failure in this file: this is what
+    // records that a payout reached "paid" or "failed". Losing it leaves the
+    // row stuck at its previous status, so a reconciliation or retry job would
+    // treat an already-sent payout as unsent. Money can go out twice.
+    if (statusError) {
+      throw new Error(
+        `Failed to update payout ${payoutId} to status ${status}: ${statusError.message}`,
+      );
+    }
   }
 
   private calculateNextPayoutDate(

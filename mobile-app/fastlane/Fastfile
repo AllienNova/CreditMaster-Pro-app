@@ -1,0 +1,25 @@
+default_platform(:ios)
+OUT = "/Users/kimalhonourdjam/Documents/Projects/Github Projects/Fynvita/mobile-app/credentials/fynvita_appstore.mobileprovision"
+platform :ios do
+  lane :setup_profile do
+    Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+      key_id: ENV.fetch("ASC_KEY_ID"), issuer_id: ENV.fetch("ASC_ISSUER_ID"), filepath: ENV.fetch("ASC_KEY_PATH"))
+    bid = "com.fynvita.app"
+    bundle = Spaceship::ConnectAPI::BundleId.all.find { |b| b.identifier == bid }
+    UI.success("BUNDLE #{bundle.id}")
+    certs = Spaceship::ConnectAPI::Certificate.all.select { |c| %w[DISTRIBUTION IOS_DISTRIBUTION].include?(c.certificate_type) }
+    cert = certs.find { |c| c.id == "KRQF6JUSQL" } || certs.first
+    UI.success("CERT #{cert.id}")
+    name = "Fynvita AppStore"
+    Spaceship::ConnectAPI::Profile.all.select { |p| p.name == name }.each { |p| (p.delete! rescue nil) }
+    profile = Spaceship::ConnectAPI::Profile.create(name: name, profile_type: "IOS_APP_STORE", bundle_id_id: bundle.id, certificate_ids: [cert.id])
+    content = profile.profile_content
+    if content.nil?
+      fetched = Spaceship::ConnectAPI::Profile.all.find { |p| p.name == name }
+      content = fetched.profile_content
+      UI.message("refetched content present=#{!content.nil?}")
+    end
+    File.binwrite(OUT, Base64.decode64(content))
+    UI.success("PROFILE_OK #{profile.id} bytes=#{File.size(OUT)}")
+  end
+end

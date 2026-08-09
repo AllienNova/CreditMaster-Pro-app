@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import {
   createRankingService,
   createRotationService,
@@ -19,14 +19,8 @@ const riskGating = createISERiskGating(rotationService, rankingService);
  * GET /api/trading/ise
  * Get current ISE state: rankings, active set, recent events
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const action = searchParams.get("action") || "status";
     const assetClass = searchParams.get("assetClass") as AssetClass | null;
@@ -86,20 +80,14 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/trading/ise
  * Trigger ranking, rotation, or manual overrides
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { action } = body;
 
@@ -185,4 +173,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

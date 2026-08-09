@@ -5,10 +5,11 @@
  * spending tracking, alerts, and intelligent recommendations.
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
-const supabase = getSupabase();
+// Lazy: the service-role key is not required at import time.
+const supabase = () => getServiceRoleClient();
 import {
   Budget,
   BudgetPeriod,
@@ -233,29 +234,43 @@ export function determineBudgetStatus(
 
 /**
  * Map database row to Budget object
+ *
+ * The live `budgets` table has no `name` column (see `BudgetRow` in
+ * budget.types.ts) — `name` is synthesized from `category` on every read.
+ * User-supplied names from `CreateBudgetInput`/`UpdateBudgetInput` are NOT
+ * currently persisted anywhere; see `createBudget`/`updateBudget` below.
+ * This is a flagged interim decision, not a permanent design: the correct
+ * fix is a schema migration adding a real `name` column, which needs
+ * product/db-architect sign-off rather than a unilateral change here.
+ *
+ * `isActive` is derived from the DB's `status` enum ('active' | 'completed'
+ * | 'overbudget') — only 'active' counts as active. This is a different
+ * axis from the computed `status` field below (spend-health, not lifecycle).
  */
 function mapRowToBudget(row: BudgetRow): Budget {
-  const spentAmount = row.spent_amount || 0;
-  const budgetedAmount = row.budgeted_amount || 0;
+  const spentAmount = row.spent || 0;
+  const budgetedAmount = row.amount || 0;
   const percentUsed =
     budgetedAmount > 0 ? (spentAmount / budgetedAmount) * 100 : 0;
 
   return {
     id: row.id,
     userId: row.user_id,
-    name: row.name,
+    name:
+      CATEGORY_DISPLAY_NAMES[row.category as BudgetCategoryValue] ||
+      row.category,
     category: row.category as BudgetCategoryValue,
     budgetedAmount: budgetedAmount,
     spentAmount: spentAmount,
     remainingAmount: Math.max(0, budgetedAmount - spentAmount),
     period: row.period as BudgetPeriod,
-    periodStart: new Date(row.period_start),
-    periodEnd: new Date(row.period_end),
+    periodStart: new Date(row.start_date),
+    periodEnd: new Date(row.end_date),
     status: determineBudgetStatus(percentUsed, row.alert_threshold),
     percentUsed: Math.round(percentUsed * 100) / 100,
     rolloverEnabled: row.rollover_enabled,
     rolloverAmount: row.rollover_amount || 0,
-    isActive: row.is_active,
+    isActive: row.status === "active",
     alertThreshold: row.alert_threshold,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
@@ -292,25 +307,28 @@ export class BudgetService {
 
   /**
    * Create a new budget
+   *
+   * `input.name` is intentionally NOT sent to the DB — `budgets` has no
+   * `name` column (would fail with PGRST204 "column not found"). See
+   * `mapRowToBudget` for the synthesized-name decision and rationale.
    */
   async createBudget(input: CreateBudgetInput): Promise<Budget> {
     const { start, end } = calculatePeriodDates(input.period);
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budgets")
       .insert({
         user_id: input.userId,
-        name: input.name,
         category: input.category,
-        budgeted_amount: input.budgetedAmount,
-        spent_amount: 0,
+        amount: input.budgetedAmount,
+        spent: 0,
         period: input.period,
-        period_start: start.toISOString(),
-        period_end: end.toISOString(),
+        start_date: start.toISOString(),
+        end_date: end.toISOString(),
         rollover_enabled: input.rolloverEnabled ?? false,
         rollover_amount: 0,
         alert_threshold: input.alertThreshold ?? 80,
-        is_active: true,
+        status: "active",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -326,19 +344,30 @@ export class BudgetService {
 
   /**
    * Get budget by ID
+   *
+   * PGRST116 ("no rows returned") is the legitimate not-found signal for a
+   * `.single()` query and maps to `null`. Any other error (permission,
+   * connection, etc.) is a real failure and must throw — silently
+   * returning `null` for those would misreport an infra/auth problem as
+   * "budget not found". Matches the PGRST116 convention already used
+   * elsewhere in this codebase (e.g. `src/lib/commerce/offers/offer-service.ts`).
    */
   async getBudgetById(
     budgetId: string,
     userId: string,
   ): Promise<Budget | null> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budgets")
       .select("*")
       .eq("id", budgetId)
       .eq("user_id", userId)
       .single();
 
-    if (error || !data) {
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      throw new Error(`Failed to fetch budget: ${error.message}`);
+    }
+    if (!data) {
       return null;
     }
 
@@ -352,10 +381,10 @@ export class BudgetService {
     userId: string,
     options?: { activeOnly?: boolean; category?: BudgetCategoryValue },
   ): Promise<Budget[]> {
-    let query = supabase.from("budgets").select("*").eq("user_id", userId);
+    let query = supabase().from("budgets").select("*").eq("user_id", userId);
 
     if (options?.activeOnly) {
-      query = query.eq("is_active", true);
+      query = query.eq("status", "active");
     }
 
     if (options?.category) {
@@ -375,6 +404,19 @@ export class BudgetService {
 
   /**
    * Update a budget
+   *
+   * `updates.name` is accepted for API stability but intentionally not
+   * persisted — see `mapRowToBudget` for why `budgets` has no `name` column.
+   *
+   * `updates.isActive` maps onto the DB's `status` enum ('active' |
+   * 'completed' | 'overbudget') since there is no boolean column:
+   *   - true  -> 'active'
+   *   - false -> 'completed' (the only non-active value representing a
+   *     deliberate deactivation rather than a spend outcome; 'overbudget'
+   *     is never written by this service and would misrepresent *why* the
+   *     budget stopped being active). Leaving `status` untouched on
+   *     `isActive: false` was considered and rejected — it would silently
+   *     no-op an explicit user request while still returning 200.
    */
   async updateBudget(
     budgetId: string,
@@ -385,24 +427,25 @@ export class BudgetService {
       updated_at: new Date().toISOString(),
     };
 
-    if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.budgetedAmount !== undefined)
-      updateData.budgeted_amount = updates.budgetedAmount;
+      updateData.amount = updates.budgetedAmount;
     if (updates.rolloverEnabled !== undefined)
       updateData.rollover_enabled = updates.rolloverEnabled;
     if (updates.alertThreshold !== undefined)
       updateData.alert_threshold = updates.alertThreshold;
-    if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
+    if (updates.isActive !== undefined) {
+      updateData.status = updates.isActive ? "active" : "completed";
+    }
 
     // If period changes, recalculate dates
     if (updates.period !== undefined) {
       const { start, end } = calculatePeriodDates(updates.period);
       updateData.period = updates.period;
-      updateData.period_start = start.toISOString();
-      updateData.period_end = end.toISOString();
+      updateData.start_date = start.toISOString();
+      updateData.end_date = end.toISOString();
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budgets")
       .update(updateData)
       .eq("id", budgetId)
@@ -421,7 +464,7 @@ export class BudgetService {
    * Delete a budget
    */
   async deleteBudget(budgetId: string, userId: string): Promise<boolean> {
-    const { error } = await supabase
+    const { error } = await supabase()
       .from("budgets")
       .delete()
       .eq("id", budgetId)
@@ -450,10 +493,10 @@ export class BudgetService {
 
     const newSpentAmount = current.spentAmount + amount;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budgets")
       .update({
-        spent_amount: newSpentAmount,
+        spent: newSpentAmount,
         updated_at: new Date().toISOString(),
       })
       .eq("id", budgetId)
@@ -493,13 +536,13 @@ export class BudgetService {
       rolloverAmount = current.remainingAmount;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budgets")
       .update({
-        spent_amount: 0,
+        spent: 0,
         rollover_amount: rolloverAmount,
-        period_start: start.toISOString(),
-        period_end: end.toISOString(),
+        start_date: start.toISOString(),
+        end_date: end.toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", budgetId)
@@ -619,7 +662,7 @@ export class BudgetService {
       throw new Error("Rollover amount cannot be negative");
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budgets")
       .update({
         rollover_amount: newRolloverAmount,
@@ -831,7 +874,7 @@ export class BudgetService {
    * Create a budget alert
    */
   async createAlert(input: CreateBudgetAlertInput): Promise<BudgetAlert> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from("budget_alerts")
       .insert({
         user_id: input.userId,
@@ -862,7 +905,7 @@ export class BudgetService {
     userId: string,
     options?: { unreadOnly?: boolean; limit?: number },
   ): Promise<BudgetAlert[]> {
-    let query = supabase
+    let query = supabase()
       .from("budget_alerts")
       .select("*")
       .eq("user_id", userId)
@@ -887,7 +930,7 @@ export class BudgetService {
    * Mark alert as read
    */
   async markAlertAsRead(alertId: string, userId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabase()
       .from("budget_alerts")
       .update({ read: true })
       .eq("id", alertId)
@@ -902,7 +945,7 @@ export class BudgetService {
    * Dismiss alert
    */
   async dismissAlert(alertId: string, userId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabase()
       .from("budget_alerts")
       .update({ dismissed: true })
       .eq("id", alertId)
@@ -1190,7 +1233,9 @@ export class BudgetService {
       if (!ownerRow) continue;
 
       // Fetch the budget data — use the owner's userId so the query works
-      const { data: budgetData, error: budgetError } = await supabase
+      const { data: budgetData, error: budgetError } = await supabase()
+        // idor-audit: pk-owner-checked — budgetIds come from shared_budget_members
+        // filtered .eq("member_user_id", userId).
         .from("budgets")
         .select("*")
         .eq("id", budgetId)
@@ -1360,7 +1405,9 @@ export class BudgetService {
     >();
 
     for (const entry of uniqueBudgetEntries) {
-      const { data: budgetData } = await supabase
+      const { data: budgetData } = await supabase()
+        // idor-audit: pk-owner-checked — entries come from shared_budget_members
+        // filtered to this user (member_user_id) or owned by them (owner_user_id).
         .from("budgets")
         .select("*")
         .eq("id", entry.budget_id)
@@ -1511,7 +1558,9 @@ export class BudgetService {
     userId: string,
   ): Promise<SharedBudget> {
     // Fetch the base budget
-    const { data: budgetData, error: budgetError } = await supabase
+    const { data: budgetData, error: budgetError } = await supabase()
+      // idor-audit: pk-owner-checked — reached only via shareBudget(), which
+      // calls getBudgetById(budgetId, ownerUserId) and throws unless owned.
       .from("budgets")
       .select("*")
       .eq("id", budgetId)
@@ -1674,7 +1723,10 @@ export class BudgetService {
     };
 
     // Check if user is the budget owner
-    const { data: budgetData } = await supabase
+    const { data: budgetData } = await supabase()
+      // idor-audit: pk-owner-checked — selects user_id precisely to compare it
+      // against the caller — this query IS the ownership check, and returns a
+      // boolean, never row data.
       .from("budgets")
       .select("user_id")
       .eq("id", budgetId)
@@ -1732,7 +1784,9 @@ export class BudgetService {
 
     const sharedBudgets: SharedBudget[] = [];
     for (const row of pendingRows as SharedBudgetMemberRow[]) {
-      const { data: budgetData } = await supabase
+      const { data: budgetData } = await supabase()
+        // idor-audit: pk-owner-checked — pendingRows come from shared_budget_members
+        // filtered .eq("member_user_id", userId).
         .from("budgets")
         .select("*")
         .eq("id", row.budget_id)

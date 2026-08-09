@@ -3,10 +3,37 @@
  *
  * Unified payment routing that selects the best payment provider
  * based on region, currency, and payment type.
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ *  NOT YET WIRED — DO NOT ROUTE LIVE MONEY THROUGH THIS CLASS
+ *
+ *  The table-name collision is resolved (ADR-0011): `payments` is now the
+ *  provider-agnostic attempts table this router owns
+ *  (20260801000010_payments_provider_agnostic.sql), and the Stripe invoice
+ *  ledger it used to collide with became `subscription_invoices`.
+ *
+ *  What remains before anything may route through here:
+ *    - NO IDEMPOTENCY on pay-in. The only idempotency keys in
+ *      src/lib/commerce are the two in payout-service. A retried webhook or a
+ *      re-driven attempt can charge twice. TASK-PAY-04.
+ *    - No TrueLayer webhook route (TASK-PAY-05), no reconciliation against
+ *      the provider (TASK-PAY-06).
+ *    - No provider sandbox integration test has ever exercised this code.
+ *      Mocked-SDK unit tests are explicitly NOT sufficient evidence here:
+ *      that standard is what let FND-024 (dollars sent as cents, paying 1% of
+ *      the intended amount) and B1 (a $50 payout netting $0) reach main with
+ *      a green suite. TASK-PAY-07.
+ *    - Operator preconditions unmet: TrueLayer + Stripe licence
+ *      confirmations, seven TRUELAYER_* secrets incl. the JWS signing key.
+ *      LAUNCH_CHECKLIST Gate D.
+ *
+ *  Its only importer today is the barrel in ./index.ts.
+ * ─────────────────────────────────────────────────────────────────────────
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { cents, type Cents } from "@/lib/money";
 import {
   TrueLayerPaymentsConnector,
   createTrueLayerPaymentsConnector,
@@ -23,10 +50,27 @@ import {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Lazily constructed so `next build` page-data-collection (no runtime env)
+// does not abort on createClient's "supabaseUrl is required".
+let _supabase: SupabaseClient | null = null;
+const supabase = new Proxy({} as SupabaseClient, {
+  get(_t, prop, recv) {
+    if (!_supabase) _supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const v = Reflect.get(_supabase, prop, recv);
+    return typeof v === "function" ? v.bind(_supabase) : v;
+  },
+});
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-09-30.clover",
+let _stripe: Stripe | null = null;
+const stripe = new Proxy({} as Stripe, {
+  get(_t, prop, recv) {
+    if (!_stripe)
+      _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: "2025-09-30.clover",
+      });
+    const v = Reflect.get(_stripe, prop, recv);
+    return typeof v === "function" ? v.bind(_stripe) : v;
+  },
 });
 
 // =============================================================================
@@ -43,7 +87,13 @@ export type PaymentMethodType =
   | "open_banking";
 
 export interface UnifiedPaymentRequest {
-  amount: number; // In minor units (cents)
+  /**
+   * Integer minor units. `Cents` rather than `number` so the unit cannot be
+   * lost at a call site: FND-024 sent dollars where Stripe expected cents and
+   * paid 1% of the intended amount, and B1 netted a $50 payout to $0. A
+   * comment saying "in minor units" did not prevent either.
+   */
+  amount: Cents;
   currency: string;
   type: PaymentType;
   method?: PaymentMethodType;
@@ -71,7 +121,8 @@ export interface UnifiedPayment {
   provider: PaymentProvider;
   providerPaymentId: string;
   status: "pending" | "processing" | "succeeded" | "failed" | "canceled";
-  amount: number;
+  /** Integer minor units — see UnifiedPaymentRequest.amount. */
+  amount: Cents;
   currency: string;
   type: PaymentType;
   method: PaymentMethodType;
@@ -535,11 +586,19 @@ export class PaymentRouter {
     provider: PaymentProvider,
     providerPaymentId: string,
   ): Promise<void> {
-    await supabase
+    const { error } = await supabase
       .from("payments")
       .update({ status: "succeeded", updated_at: new Date().toISOString() })
       .eq("provider", provider)
       .eq("provider_payment_id", providerPaymentId);
+
+    // Money state. A swallowed failure here leaves a settled payment recorded
+    // as pending forever, with nothing anywhere saying so.
+    if (error) {
+      throw new Error(
+        `Failed to mark payment succeeded (${provider}/${providerPaymentId}): ${error.message}`,
+      );
+    }
   }
 
   private async handlePaymentFailure(
@@ -547,7 +606,7 @@ export class PaymentRouter {
     providerPaymentId: string,
     error?: string,
   ): Promise<void> {
-    await supabase
+    const { error: updateError } = await supabase
       .from("payments")
       .update({
         status: "failed",
@@ -556,6 +615,14 @@ export class PaymentRouter {
       })
       .eq("provider", provider)
       .eq("provider_payment_id", providerPaymentId);
+
+    // A payment that failed at the provider but still reads as pending here is
+    // the worst of both: no retry, no refund path, no record of why.
+    if (updateError) {
+      throw new Error(
+        `Failed to mark payment failed (${provider}/${providerPaymentId}): ${updateError.message}`,
+      );
+    }
   }
 
   // ===========================================================================
@@ -635,7 +702,8 @@ export class PaymentRouter {
       .insert({
         user_id: request.userId,
         provider,
-        amount: request.amount,
+        // Column is amount_cents; request.amount is already Cents.
+        amount_cents: request.amount,
         currency: request.currency,
         type: request.type,
         method: request.method || "card",
@@ -658,7 +726,7 @@ export class PaymentRouter {
     id: string,
     payment: Partial<UnifiedPayment>,
   ): Promise<void> {
-    await supabase
+    const { error } = await supabase
       .from("payments")
       .update({
         provider_payment_id: payment.providerPaymentId,
@@ -667,6 +735,12 @@ export class PaymentRouter {
         metadata: payment.metadata,
       })
       .eq("id", id);
+
+    if (error) {
+      throw new Error(
+        `Failed to update payment record ${id}: ${error.message}`,
+      );
+    }
   }
 
   private mapStripeStatus(status: string): UnifiedPayment["status"] {
@@ -722,7 +796,11 @@ export class PaymentRouter {
       provider: row.provider as PaymentProvider,
       providerPaymentId: row.provider_payment_id as string,
       status: row.status as UnifiedPayment["status"],
-      amount: row.amount as number,
+      // Column is amount_cents. This read said `row.amount`, which no table
+      // has ever had — a phantom column the audit script structurally cannot
+      // see, because it reads a row field after a select("*") rather than
+      // naming a column. The Cents brand caught it.
+      amount: cents(row.amount_cents as number),
       currency: row.currency as string,
       type: row.type as PaymentType,
       method: row.method as PaymentMethodType,

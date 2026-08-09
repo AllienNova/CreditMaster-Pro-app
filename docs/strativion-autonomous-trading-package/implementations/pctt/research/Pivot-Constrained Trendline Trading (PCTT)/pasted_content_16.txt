@@ -1,0 +1,216 @@
+Got it — **pivot**. Here are the indicators (and *price-action signals*) that most reliably change around pivots, split into “early warnings” vs “confirmed turns,” plus how to use them with your trendline/structure module.
+
+---
+
+## 1) Confirmed pivot indicators (best for automation, but delayed)
+
+These *literally define pivots*.
+
+### A) Fractal pivots (Pivot High / Pivot Low)
+
+* TradingView: `ta.pivothigh(high, left, right)` and `ta.pivotlow(low, left, right)`
+* **What it tells you:** “A swing high/low has formed.”
+* **Why it’s great:** once confirmed, it doesn’t repaint.
+* **Weakness:** confirmation delay = `right` bars.
+
+**Best uses**
+
+* trailing stops (trail behind new pivot lows for longs / pivot highs for shorts)
+* structure detection (HH/HL vs LH/LL)
+* break-of-structure confirmation
+
+---
+
+### B) ZigZag (pivot map)
+
+* Shows the swing skeleton.
+* **Caution:** many ZigZag implementations repaint while the swing is forming.
+
+**Use it for**
+
+* visualization and structure labeling
+* not for strict backtests unless it’s a confirmed version
+
+---
+
+## 2) “Pivot-likely” early warning indicators (faster, but can false signal)
+
+These are the ones that hint a pivot is coming *before* it’s confirmed.
+
+### A) Momentum divergence (RSI or MACD)
+
+* **Bullish divergence:** price makes lower low, RSI makes higher low → pivot risk upward
+* **Bearish divergence:** price makes higher high, RSI makes lower high → pivot risk downward
+
+**Strength:** often shows up near turning points
+**Weakness:** can persist (multiple divergences before the actual turn)
+
+**Best use:** add confidence to pivots/structure shifts, not as a standalone entry.
+
+---
+
+### B) Momentum “failure swing” (RSI-based)
+
+More reliable than generic divergence:
+
+* RSI breaks above 50 then fails back (bearish risk), or
+* RSI breaks below 50 then reclaims (bullish risk)
+
+**Best use:** pivot confirmation *after* first bounce.
+
+---
+
+### C) Volatility compression → expansion (Bollinger Bandwidth / ATR squeeze)
+
+* Many pivots happen after compression breaks.
+* A squeeze ending + expansion candle at a key level often precedes a pivot.
+
+**Best use:** timing tool for pivots and breakouts.
+
+---
+
+## 3) The best trend + turnaround signals around pivots (price-action “indicators”)
+
+Since you’re structure-based, these matter most.
+
+### A) Change of Character (CHOCH) / Market Structure Shift (MSS)
+
+This is the most “real” pivot detector.
+
+* In an uptrend, a pivot/turn is likely when:
+
+  1. price fails to make a new HH, and
+  2. breaks the last HL (or breaks your Action Line support)
+
+* In a downtrend, a pivot/turn is likely when:
+
+  1. price fails to make a new LL, and
+  2. breaks the last LH (or breaks your Action Line resistance)
+
+**This fits your system perfectly** because your Action/Safety trendlines already encode structure.
+
+---
+
+### B) Break + Retest (your core pivot engine)
+
+A pivot turn is “confirmed” when:
+
+* the trendline breaks (close + buffer), then
+* price retests the broken line and rejects
+
+This is a stronger “pivot confirmation” than divergence.
+
+---
+
+## 4) What indicators best indicate “market trend” (context for pivots)
+
+Pivots mean different things in trends vs ranges.
+
+### A) Efficiency Ratio (ER) — best regime detector
+
+* High ER = trending → pivots are pullbacks, not reversals
+* Low ER = range → pivots often reverse hard
+
+### B) ADX — trend strength
+
+* Rising ADX = trend strengthening
+* Falling ADX after high values can signal trend exhaustion (pivot risk)
+
+### C) MA slope (EMA 50 or 200) — coarse trend filter
+
+* Simple and robust
+* Use it to avoid fighting HTF flow
+
+---
+
+## 5) The most robust “pivot framework” (recommended)
+
+If you want a system that’s hard to fool:
+
+### Pivot Tier 1 (confirmed)
+
+* `ta.pivotlow/high` + structure labeling (HH/HL/LH/LL)
+
+### Pivot Tier 2 (context)
+
+* ER (trend vs range) OR ADX
+
+### Pivot Tier 3 (turn confirmation)
+
+* CHOCH/MSS (break of prior swing) OR your Action line break+retest
+
+### Optional (early warning)
+
+* RSI/MACD divergence
+* volatility expansion after squeeze
+
+That combination is strong and non-gimmicky.
+
+---
+
+## 6) Quick Pine snippets (pivot + trend + turnaround)
+
+### A) Confirmed pivots
+
+```pine
+pl = ta.pivotlow(low, 2, 2)
+ph = ta.pivothigh(high, 2, 2)
+
+plotshape(not na(pl), style=shape.triangleup, location=location.belowbar, text="PL")
+plotshape(not na(ph), style=shape.triangledown, location=location.abovebar, text="PH")
+```
+
+### B) Structure shift (simple CHOCH using pivots)
+
+Store last confirmed pivot low/high and detect breaks:
+
+```pine
+var float lastPL = na
+var float lastPH = na
+
+if not na(pl)
+    lastPL := pl
+if not na(ph)
+    lastPH := ph
+
+chochDown = not na(lastPL) and close < lastPL  // breaks last swing low
+chochUp   = not na(lastPH) and close > lastPH  // breaks last swing high
+```
+
+### C) Efficiency Ratio (trend vs chop)
+
+```pine
+f_er(src, n) =>
+    net = math.abs(src - src[n])
+    sum = ta.sum(math.abs(src - src[1]), n)
+    sum > 0 ? net / sum : 0.0
+
+er = f_er(hlc3, 150)
+trendRegime = er > 0.35
+rangeRegime = er < 0.20
+```
+
+---
+
+## What I’d recommend for *your* strategy specifically
+
+If your strategy is break→retest using Action/Safety lines:
+
+**Use pivots for:**
+
+* trailing stops (best pivot-based trail)
+* confirming the retest rejection (pivot forms at the retest)
+* detecting CHOCH as an additional confirmation layer
+
+**Use ER/ADX for:**
+
+* skipping trades in chop
+* labeling “transition regime,” where your break+retest is strongest
+
+---
+
+If you tell me your main timeframe (e.g., 15m vs 1H vs 4H), I’ll give you **best pivot settings** (`left/right`) and how to tune:
+
+* sensitivity (more pivots vs fewer)
+* trailing tightness
+* retest window length

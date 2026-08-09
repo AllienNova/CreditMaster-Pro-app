@@ -1,0 +1,547 @@
+# ============================================================================
+# PCTT ENTRY RULES: Complete Decision Pipeline
+# Each stage must pass before proceeding to the next
+# Source: PCTT Mathematical Framework v4.0 + Strategy Paper v3.0
+# Mapped to: The 30 Indisputable Laws of Trading - 30 Laws of Trading
+# Generated: 2026-02-22
+# ============================================================================
+
+pipeline_version: "4.0"
+source_documents:
+  - "A Production-Grade Mathematical Framework for Pivot-Constrained Trendline Trading (v4.0)"
+  - "A Robust Mathematical Framework for Pivot-Constrained Trendline Trading Across Asset Classes (v3.0)"
+  - "PCTT Regime Detection Slope Zigzag v2"
+  - "RG_Structure_Strategy_v4.pine (reference implementation)"
+
+# ============================================================================
+# STAGE 1: REGIME GATE
+# The market must be in a tradeable regime before any setup is considered.
+# ============================================================================
+
+regime_gate:
+  stage: 1
+  description: >
+    Only trade PCTT in favorable regimes. The Efficiency Ratio measures
+    directional persistence. Crossing Count detects chop. Together they
+    classify the market into Trend, Range, or Transition states.
+  inputs:
+    er_period: 20
+    cross_count_period: 20
+    midline: "EMA(close, 20) or midpoint of Structure boundaries"
+  formulas:
+    efficiency_ratio: "ER_t = |P_t - P_{t-n}| / sum(|P_{t-i+1} - P_{t-i}|, i=1..n)"
+    crossing_count: "Cross_t = sum(1[(P_{t-i} - mu_{t-i})(P_{t-i+1} - mu_{t-i+1}) < 0], i=1..n)"
+  pass_conditions:
+    trending:
+      er_min: 0.45
+      crossing_count_max: 4
+      allowed_setups: ["breakout", "trend_continuation", "break_retest"]
+      description: "Strong directional persistence with few midline crosses"
+    range:
+      er_max: 0.25
+      crossing_count_min: 6
+      allowed_setups: ["mean_reversion_boundary"]
+      description: "Low directional persistence, frequent midline crosses"
+  block_conditions:
+    transition:
+      er_range: [0.25, 0.45]
+      crossing_count_range: [4, 6]
+      action: "no_new_entries"
+      description: >
+        Ambiguous regime. ER and crossing count fall between thresholds.
+        Wait for regime to resolve. Existing positions may be held but
+        no new break-retest setups should be initiated.
+  regime_formula: >
+    R_t = TREND if ER_t >= 0.45 AND Cross_t <= 4;
+    R_t = RANGE if ER_t <= 0.25 OR Cross_t >= 6;
+    R_t = TRANSITION otherwise.
+  strategy_activation: "Allow break-retest logic only in TREND or TRANSITION."
+  law_references:
+    - law: 8
+      name: "Market Regimes"
+      application: "Filter out choppy regimes that destroy break-retest edge"
+    - law: 19
+      name: "Edge and Pattern Decay"
+      application: "Regime awareness prevents trading a stale edge"
+
+# ============================================================================
+# STAGE 2: LINE QUALITY GATE
+# Only trade trendlines with sufficient structural evidence.
+# ============================================================================
+
+line_quality_gate:
+  stage: 2
+  description: >
+    The Q-Score is a monotone quality index (sigmoid of boundary score)
+    measuring touch evidence, violation severity, and persistence.
+    Only lines meeting minimum thresholds are tradeable.
+  q_score_formula: "Q = sigmoid(Score) = 1 / (1 + exp(-Score))"
+  score_components:
+    touch_reward: "sum(w_k * Touch(t_k)) where w_k = 1 - (PL_k - line(t_k)) / tau_k"
+    violation_penalty: "lambda * sum(V_u) over lookback window"
+    persistence_reward: "omega_s * ln(1 + span)"
+    stability_penalty: "eta * Instability (optional)"
+  score_parameters:
+    touch_tolerance_atr: 0.30
+    violation_penalty_lambda: 2.0
+    persistence_weight_omega: 0.20
+  minimum_requirements:
+    total_bars_lookback: 50
+    confirmed_pivots: 5
+    time_span_bars: 20
+    ransac_inlier_touches: 3
+  grading:
+    a_grade:
+      q_score_min: 0.70
+      touches_min: 3
+      risk_allocation: "full (1.0% equity)"
+      description: "High quality line with strong structural evidence"
+    b_grade:
+      q_score_min: 0.55
+      touches_min: 2
+      risk_allocation: "half (0.5% equity)"
+      description: "Acceptable quality with adequate structural evidence"
+    skip:
+      q_score_below: 0.55
+      action: "no_trade"
+      description: "Insufficient evidence. Line may be spurious."
+  boundary_estimation:
+    method: "Regularized robust regression (Huber loss + Elastic Net)"
+    huber_delta: "1.5 * ATR"
+    elastic_net_rho: 0.50
+    ransac_consensus: true
+    max_slope_atr_per_bar: 0.02
+    max_pivots_tracked: 12
+    pivot_confirmation_bars: 2
+  calibration:
+    method: "Isotonic regression (v4.0 mandatory)"
+    window: "Rolling 500 trades"
+    monitoring: "Brier score degradation triggers alert"
+    note: >
+      Raw Q-Score is NOT a probability unless calibrated. Use calibrated
+      P(success) for probabilistic position sizing.
+  law_references:
+    - law: 17
+      name: "Statistical Significance"
+      application: "Q-Score thresholds enforce minimum statistical evidence"
+    - law: 15
+      name: "Signal Filtration"
+      application: "Grading filters noise from genuine structural setups"
+    - law: 20
+      name: "Backtest Illusion"
+      application: "Calibration prevents overfitting to historical Q-Score patterns"
+
+# ============================================================================
+# STAGE 3: BREAK DETECTION
+# Two-stage break confirmation using past-only boundary evaluation.
+# ============================================================================
+
+break_detection:
+  stage: 3
+  description: >
+    Two-stage break confirmation ensures both wick penetration and close
+    confirmation occur. Critical: boundaries used for detection at time t
+    are estimated from data available at t-1 only (non-repainting guarantee).
+  non_repainting_rule: >
+    Break detection at time t uses boundary estimated from information set
+    at t-1: L_hat_{t-1}(t) = b_{t-1} + m_{t-1} * (t - t_anchor).
+    This prevents the boundary from moving because of the break candle itself.
+  stage_1_penetration:
+    description: "Wick must breach boundary by penetration buffer"
+    long:
+      condition: "high > U_hat_{t-1}(t) + beta_p * ATR_t"
+      english: "Bar high exceeds resistance boundary plus penetration buffer"
+    short:
+      condition: "low < L_hat_{t-1}(t) - beta_p * ATR_t"
+      english: "Bar low drops below support boundary minus penetration buffer"
+    beta_p_atr: 0.20
+  stage_2_confirmation:
+    description: "Close must confirm beyond boundary by confirmation buffer"
+    long:
+      condition: "close > U_hat_{t-1}(t) + beta_c * ATR_t"
+      english: "Bar close exceeds resistance boundary plus confirmation buffer"
+    short:
+      condition: "close < L_hat_{t-1}(t) - beta_c * ATR_t"
+      english: "Bar close drops below support boundary minus confirmation buffer"
+    beta_c_atr: 0.40
+    use_previous_bar_boundary: true
+    note: "Uses t-1 boundary value, not current. This is the non-repainting guarantee."
+  on_break_confirmed:
+    actions:
+      - action: "freeze_action_line"
+        description: >
+          Store the broken boundary value and slope at break time t_0.
+          Project forward: Action(t) = A_0 + m_A * (t - t_0).
+          This is the level price must retest.
+      - action: "freeze_safety_line"
+        description: >
+          Store the opposing boundary value and slope at break time t_0.
+          Project forward: Safety(t) = S_0 + m_S * (t - t_0).
+          This becomes the initial stop-loss reference.
+      - action: "transition_fsm"
+        from: "IDLE"
+        to: "WAIT_RETEST"
+    freeze_protocol: >
+      At break time t_0, both Action and Safety lines are frozen at their
+      current intercept and slope, then projected forward. This eliminates
+      moving goalposts and makes retests meaningful.
+  law_references:
+    - law: 1
+      name: "Market Inertia"
+      application: "Break signals continuation of directional force"
+    - law: 13
+      name: "Momentum"
+      application: "Two-stage confirmation validates momentum is genuine"
+    - law: 3
+      name: "Volatility Compression"
+      application: "ATR-scaled buffers adapt to current volatility regime"
+
+# ============================================================================
+# STAGE 4: RETEST DETECTION
+# Price must return to test the broken level within a time window.
+# ============================================================================
+
+retest_detection:
+  stage: 4
+  description: >
+    After a confirmed break, price must return to the broken boundary
+    (now the Action Line) within a specified window. This retest validates
+    that the breakout level has flipped from support to resistance (or
+    vice versa), a classical polarity principle.
+  window_bars: 12
+  proximity:
+    long:
+      condition: "low <= Action(t) + gamma * ATR_t"
+      english: "Price pulls back to within retest tolerance of the Action Line"
+    short:
+      condition: "high >= Action(t) - gamma * ATR_t"
+      english: "Price rallies back to within retest tolerance of the Action Line"
+    gamma_atr: 0.40
+  timeout:
+    bars: 12
+    action: "cancel_setup"
+    fsm_transition:
+      from: "WAIT_RETEST"
+      to: "TIMEOUT -> IDLE"
+    description: >
+      If no retest occurs within 12 bars, the setup expires. Price has
+      moved too far from the Action Line for a meaningful retest. The
+      information embedded in the original break has decayed.
+  law_references:
+    - law: 5
+      name: "Mean Reversion"
+      application: "Retests exploit the tendency for price to revisit breakout levels"
+    - law: 9
+      name: "Information Decay"
+      application: "12-bar timeout reflects decay of the break signal's edge"
+
+# ============================================================================
+# STAGE 5: REJECTION CONFIRMATION
+# Multi-feature rejection scoring validates the retest held.
+# ============================================================================
+
+rejection_confirmation:
+  stage: 5
+  description: >
+    Single-candle rejection is too weak. A 4-feature scoring system
+    requires at least 3 of 4 conditions to confirm genuine rejection
+    at the retested level. This reduces false entries from random
+    price touches that lack real buying/selling conviction.
+  features:
+    clv:
+      name: "Close Location Value"
+      long:
+        condition: "CLV = (2*close - high - low) / (high - low) > 0.30"
+        english: "Close is in the upper 65% of the bar range (bullish positioning)"
+      short:
+        condition: "CLV = (2*close - high - low) / (high - low) < -0.30"
+        english: "Close is in the lower 65% of the bar range (bearish positioning)"
+      weight: 1
+    wick_body_ratio:
+      name: "Rejection Wick vs Body"
+      long:
+        condition: "lower_wick / body > 1.5"
+        english: "Lower wick (rejection tail) is 1.5x larger than the candle body"
+      short:
+        condition: "upper_wick / body > 1.5"
+        english: "Upper wick (rejection tail) is 1.5x larger than the candle body"
+      weight: 1
+      note: "body = abs(close - open). If body is zero, this feature scores 0."
+    candle_direction:
+      name: "Candle Polarity"
+      long:
+        condition: "close > open"
+        english: "Bullish candle (close above open)"
+      short:
+        condition: "close < open"
+        english: "Bearish candle (close below open)"
+      weight: 1
+    position_vs_action_line:
+      name: "Close Relative to Action Line"
+      long:
+        condition: "close > Action(t)"
+        english: "Close finishes above the retested Action Line"
+      short:
+        condition: "close < Action(t)"
+        english: "Close finishes below the retested Action Line"
+      weight: 1
+  scoring:
+    max_score: 4
+    min_score_required: 3
+    description: "At least 3 of 4 features must confirm rejection"
+  on_rejection_confirmed:
+    fsm_transition:
+      from: "WAIT_RETEST"
+      to: "REJECTION (entry signal)"
+    action: "Proceed to Risk Geometry Filter (Stage 6)"
+  on_rejection_failed:
+    fsm_transition:
+      from: "WAIT_RETEST"
+      to: "FAILURE -> IDLE"
+    failure_condition:
+      long: "close < Action(t) - delta * ATR_t"
+      short: "close > Action(t) + delta * ATR_t"
+      description: "Price closes decisively on the wrong side of the Action Line"
+  law_references:
+    - law: 18
+      name: "Confirmation and Confluence"
+      application: "Multi-feature scoring requires confluence of rejection evidence"
+    - law: 15
+      name: "Signal Filtration"
+      application: "3-of-4 threshold filters weak rejection signals"
+
+# ============================================================================
+# STAGE 6: RISK GEOMETRY FILTER
+# Geometric distance check prevents hidden high-risk entries.
+# ============================================================================
+
+risk_geometry:
+  stage: 6
+  description: >
+    The distance from entry to the Safety Line (initial stop) must fall
+    within acceptable bounds. Too wide means poor reward-to-risk and
+    oversized dollar risk. Too tight means the stop is within normal
+    volatility noise and will get hit by random fluctuations.
+  formula: "d_geom = |entry_price - Safety(t_entry)| / ATR_{t_entry}"
+  thresholds:
+    max_d_geom: 2.5
+    min_d_geom: 0.5
+  outcomes:
+    pass: "Proceed to Position Sizing (Stage 7)"
+    fail_too_wide:
+      condition: "d_geom > 2.5"
+      action: "skip_trade"
+      reason: "Stop too far. Dollar risk too large for acceptable R:R."
+    fail_too_tight:
+      condition: "d_geom < 0.5"
+      action: "skip_trade"
+      reason: "Stop too close. Within noise range. High probability of premature stop-out."
+  notes: >
+    This single filter removes many bad trades where the Safety Line is too
+    far away, preventing hidden high-risk entries that appear small on a
+    percentage basis but represent outsized ATR-normalized risk.
+  law_references:
+    - law: 21
+      name: "Position Sizing"
+      application: "Risk geometry constrains the denominator of the position sizing formula"
+    - law: 22
+      name: "Invalidation"
+      application: "Safety Line is the structural invalidation level"
+    - law: 23
+      name: "Asymmetric Damage"
+      application: "Rejecting too-wide stops prevents asymmetric capital damage"
+
+# ============================================================================
+# STAGE 7: POSITION SIZING
+# Calculate position size based on grade, risk geometry, and portfolio state.
+# ============================================================================
+
+position_sizing:
+  stage: 7
+  description: >
+    Fixed fractional position sizing modulated by setup grade, drawdown
+    scaling, and portfolio heat constraints. The Kelly Criterion provides
+    the theoretical optimal but a conservative fraction is used in practice.
+  formula: "shares = (equity * risk_pct) / |entry_price - stop_price|"
+  risk_by_grade:
+    a_grade:
+      base_risk_pct: 1.0
+      description: "Full risk allocation for high-quality setups"
+    b_grade:
+      base_risk_pct: 0.5
+      description: "Half risk allocation for acceptable-quality setups"
+  stop_placement:
+    long: "Safety(t_entry) - stop_buffer * ATR"
+    short: "Safety(t_entry) + stop_buffer * ATR"
+    stop_buffer_atr: 0.20
+    note: "Safety Line continues at frozen slope from break bar, plus buffer"
+  drawdown_scaling:
+    enabled: true
+    description: >
+      Dynamically reduce position size during drawdowns to preserve capital.
+      Scaling multiplies the base risk_pct by a fraction.
+    thresholds:
+      - dd_pct: 5.0
+        scale_factor: 0.75
+      - dd_pct: 10.0
+        scale_factor: 0.50
+      - dd_pct: 15.0
+        scale_factor: 0.25
+    formula: >
+      S(DD) = risk_pct * scale_factor where scale_factor is determined
+      by the current drawdown bracket.
+  portfolio_constraints:
+    max_portfolio_heat_pct: 6.0
+    heat_formula: "H = sum(|w_i * Risk_i|) for all active positions"
+    heat_rule: "No new trade if adding it would push H above 6%"
+    max_correlated_exposure_pct: 3.0
+    description: "Correlation-adjusted sizing prevents concentrated bets"
+  kelly_criterion:
+    formula: "f_trade = fraction * (p(b+1) - 1) / b"
+    fraction: 0.25
+    note: >
+      p = calibrated win probability from Q-Score; b = win/loss ratio.
+      Conservative quarter-Kelly used to avoid over-betting.
+  liquidity_constraint:
+    max_position_vs_adv_pct: 1.0
+    description: "Position size capped at 1% of average daily volume to limit market impact"
+  market_impact_model:
+    formula: "Impact = sigma * sqrt(S / V_ADV)"
+    description: "Square-root law for adverse price movement caused by the trade"
+  circuit_breakers:
+    max_daily_loss_pct: 3.0
+    daily_loss_action: "Halt trading for day"
+    max_consecutive_losses: 4
+    consecutive_loss_action: "Reduce size by 50%"
+    one_break_one_trade: true
+    one_break_description: "If already in a PCTT position, skip new breaks"
+  law_references:
+    - law: 21
+      name: "Position Sizing"
+      application: "Fixed fractional sizing with grade modulation"
+    - law: 29
+      name: "Probability of Ruin"
+      application: "Portfolio heat cap and drawdown scaling prevent ruin"
+    - law: 24
+      name: "Systemic Correlation"
+      application: "Correlated exposure limit prevents concentrated bets"
+    - law: 30
+      name: "Survival"
+      application: "Circuit breakers ensure survival through losing streaks"
+
+# ============================================================================
+# STAGE 8: MULTI-TIMEFRAME ALIGNMENT (Optional Enhancement)
+# Stack gating across timeframes for higher probability entries.
+# ============================================================================
+
+multi_timeframe:
+  stage: 8
+  optional: true
+  description: >
+    Layer the Structure API across three timeframes. The macro timeframe
+    sets directional bias. The meso timeframe provides the primary setup
+    context. The micro timeframe times the precise entry. Trade only
+    when macro direction aligns with the break direction.
+  levels:
+    macro:
+      timeframe: "daily or weekly"
+      role: "directional_bias_filter"
+      output: "Trend direction and regime state"
+    meso:
+      timeframe: "4h"
+      role: "primary_setup_context"
+      output: "Break-retest events and Q-Score"
+    micro:
+      timeframe: "1h or 15m"
+      role: "entry_timing"
+      output: "Precise rejection and entry bar"
+  gating_rule: >
+    Trade only when: Bias_macro aligns with Break_meso.
+    Example: Only take short breaks on meso if macro structure is bearish
+    (price below macro support boundary).
+  mss_choch_integration:
+    description: >
+      Market Structure Shift (CHOCH) can serve as an additional filter
+      or confirmation. CHOCH_Up = close breaks above last pivot high.
+      CHOCH_Down = close breaks below last pivot low.
+    use_as: "filter (require MSS alignment) or confirmation (entry after MSS)"
+  law_references:
+    - law: 12
+      name: "Multi-Timeframe Alignment"
+      application: "Constructive interference across timeframes boosts probability"
+    - law: 6
+      name: "Fractal Structure"
+      application: "Same structural patterns repeat across timeframes"
+
+# ============================================================================
+# FSM STATE MACHINE SUMMARY
+# ============================================================================
+
+state_machine:
+  description: >
+    The Finite State Machine (FSM) governs the signal lifecycle. Each
+    state transition is deterministic and non-repainting by construction.
+  states:
+    - name: "IDLE"
+      description: "No active setup. Monitoring for break."
+    - name: "WAIT_RETEST"
+      description: "Break confirmed. Waiting for price to return to Action Line."
+    - name: "REJECTION"
+      description: "Retest occurred with valid rejection. Entry signal generated."
+    - name: "TIMEOUT"
+      description: "Retest window expired. Return to IDLE."
+    - name: "FAILURE"
+      description: "Price closed decisively against the break direction. Return to IDLE."
+  transitions:
+    - from: "IDLE"
+      to: "WAIT_RETEST"
+      trigger: "Two-stage break confirmed (Stage 3)"
+    - from: "WAIT_RETEST"
+      to: "REJECTION"
+      trigger: "Retest proximity met AND rejection score >= 3 (Stages 4+5)"
+    - from: "WAIT_RETEST"
+      to: "TIMEOUT"
+      trigger: "12 bars elapsed without retest"
+    - from: "WAIT_RETEST"
+      to: "FAILURE"
+      trigger: "Price closes beyond Action Line in wrong direction"
+    - from: "REJECTION"
+      to: "IDLE"
+      trigger: "Trade executed or risk geometry/sizing filter rejects"
+    - from: "TIMEOUT"
+      to: "IDLE"
+      trigger: "Automatic reset"
+    - from: "FAILURE"
+      to: "IDLE"
+      trigger: "Automatic reset"
+
+# ============================================================================
+# ASSET-SPECIFIC PARAMETER ADJUSTMENTS
+# ============================================================================
+
+asset_adjustments:
+  stocks:
+    notes: "Gaps (overnight, earnings), session filters"
+    adjustments:
+      - "Increase break confirmation buffer for gap tolerance"
+      - "Use session filters to avoid pre/post market noise"
+  futures:
+    notes: "Roll dates, margin, overnight gaps"
+    adjustments:
+      - "Account for contract rolls in pivot tracking"
+      - "Use continuous contracts for boundary estimation"
+  forex:
+    notes: "24/5 market, spreads widen at session changes"
+    adjustments:
+      - "Tighter spreads during London/NY overlap"
+      - "Widen retest tolerance during Asia session"
+  crypto:
+    notes: "24/7, high volatility, funding rates"
+    adjustments:
+      - "Wider ATR buffers across all stages"
+      - "Account for funding rates in long positions"
+  options:
+    notes: "Theta decay, gamma risk"
+    adjustments:
+      - "Use structure for directional bias only"
+      - "Do not apply break-retest as direct options entry"

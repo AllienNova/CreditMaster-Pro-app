@@ -6,25 +6,15 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getPaperTradingEngine } from "@/lib/trading/paper/PaperTradingEngine";
 
 // ============================================================================
 // GET - Get Account
 // ============================================================================
 
-export async function GET() {
+export const GET = withAuth(async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const engine = getPaperTradingEngine();
     const account = await engine.getAccount(user.id);
 
@@ -42,24 +32,14 @@ export async function GET() {
       { status: 500 },
     );
   }
-}
+});
 
 // ============================================================================
 // POST - Create Account
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const name = body.name || "Paper Trading Account";
     const initialBalance = body.initialBalance;
@@ -85,4 +65,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

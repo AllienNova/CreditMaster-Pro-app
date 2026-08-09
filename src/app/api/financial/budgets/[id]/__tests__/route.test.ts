@@ -15,6 +15,9 @@ import { NextRequest } from "next/server";
 
 // Mock dependencies BEFORE importing modules that use them
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 jest.mock("@/lib/financial/budget-service");
 jest.mock("@/lib/auth/rbac");
 
@@ -70,6 +73,7 @@ const mockParams = Promise.resolve({ id: "budget-123" });
 describe("GET /api/financial/budgets/[id]", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
   });
 
   it("should return budget by ID", async () => {
@@ -83,7 +87,7 @@ describe("GET /api/financial/budgets/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/budgets/budget-123",
     );
-    const response = await GET(request, { params: mockParams });
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -106,52 +110,53 @@ describe("GET /api/financial/budgets/[id]", () => {
     const request = createMockRequest(
       "http://localhost:3000/api/financial/budgets/non-existent",
     );
-    const response = await GET(request, {
-      params: Promise.resolve({ id: "non-existent" }),
-    });
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(404);
     expect(data.error).toBe("Budget not found");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/budgets/budget-123",
+      );
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/budgets/budget-123",
-    );
-    const response = await GET(request, { params: mockParams });
-    const data = await response.json();
+    it("should return 403 for user without permission", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: true,
+        user: mockUser,
+      });
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
-  });
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/budgets/budget-123",
+      );
+      const response = await GET(request);
+      const data = await response.json();
 
-  it("should return 403 for user without permission", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: true,
-      user: mockUser,
+      expect(response.status).toBe(403);
+      expect(data.error).toContain("Forbidden");
     });
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/budgets/budget-123",
-    );
-    const response = await GET(request, { params: mockParams });
-    const data = await response.json();
-
-    expect(response.status).toBe(403);
-    expect(data.error).toContain("Forbidden");
   });
 });
 
 describe("PATCH /api/financial/budgets/[id]", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
   });
 
   it("should update budget successfully", async () => {
@@ -178,7 +183,7 @@ describe("PATCH /api/financial/budgets/[id]", () => {
         body: updates,
       },
     );
-    const response = await PATCH(request, { params: mockParams });
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -207,9 +212,7 @@ describe("PATCH /api/financial/budgets/[id]", () => {
         body: { name: "Updated" },
       },
     );
-    const response = await PATCH(request, {
-      params: Promise.resolve({ id: "non-existent" }),
-    });
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(404);
@@ -230,7 +233,7 @@ describe("PATCH /api/financial/budgets/[id]", () => {
         body: { period: "invalid_period" },
       },
     );
-    const response = await PATCH(request, { params: mockParams });
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(400);
@@ -251,7 +254,7 @@ describe("PATCH /api/financial/budgets/[id]", () => {
         body: { budgetedAmount: -100 },
       },
     );
-    const response = await PATCH(request, { params: mockParams });
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(400);
@@ -272,7 +275,7 @@ describe("PATCH /api/financial/budgets/[id]", () => {
         body: { alertThreshold: 150 },
       },
     );
-    const response = await PATCH(request, { params: mockParams });
+    const response = await PATCH(request);
     const data = await response.json();
 
     expect(response.status).toBe(400);
@@ -283,6 +286,7 @@ describe("PATCH /api/financial/budgets/[id]", () => {
 describe("DELETE /api/financial/budgets/[id]", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
   });
 
   it("should delete budget successfully", async () => {
@@ -299,7 +303,7 @@ describe("DELETE /api/financial/budgets/[id]", () => {
         method: "DELETE",
       },
     );
-    const response = await DELETE(request, { params: mockParams });
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -325,51 +329,51 @@ describe("DELETE /api/financial/budgets/[id]", () => {
         method: "DELETE",
       },
     );
-    const response = await DELETE(request, {
-      params: Promise.resolve({ id: "non-existent" }),
-    });
+    const response = await DELETE(request);
     const data = await response.json();
 
     expect(response.status).toBe(404);
     expect(data.error).toBe("Budget not found");
   });
 
-  it("should return 401 for unauthenticated request", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: false,
-      user: null,
+  describe("negative-auth", () => {
+    it("should return 401 for unauthenticated request", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/budgets/budget-123",
+        {
+          method: "DELETE",
+        },
+      );
+      const response = await DELETE(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
     });
 
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/budgets/budget-123",
-      {
-        method: "DELETE",
-      },
-    );
-    const response = await DELETE(request, { params: mockParams });
-    const data = await response.json();
+    it("should return 403 for user without permission", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: true,
+        user: mockUser,
+      });
+      (rbac.hasPermission as jest.Mock).mockReturnValue(false);
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
-  });
+      const request = createMockRequest(
+        "http://localhost:3000/api/financial/budgets/budget-123",
+        {
+          method: "DELETE",
+        },
+      );
+      const response = await DELETE(request);
+      const data = await response.json();
 
-  it("should return 403 for user without permission", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
-      valid: true,
-      user: mockUser,
+      expect(response.status).toBe(403);
+      expect(data.error).toContain("Forbidden");
     });
-    (rbac.hasPermission as jest.Mock).mockReturnValue(false);
-
-    const request = createMockRequest(
-      "http://localhost:3000/api/financial/budgets/budget-123",
-      {
-        method: "DELETE",
-      },
-    );
-    const response = await DELETE(request, { params: mockParams });
-    const data = await response.json();
-
-    expect(response.status).toBe(403);
-    expect(data.error).toContain("Forbidden");
   });
 });

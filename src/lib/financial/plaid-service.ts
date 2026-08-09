@@ -6,9 +6,43 @@
 
 import { CountryCode, Products } from "plaid";
 import { getPlaidClient } from "@/lib/financial/plaid-client";
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+/**
+ * Service-role client for plaid_items/financial_accounts.
+ *
+ * Both tables are service-role-only (see
+ * 20260731000006_plaid_items_accounts.sql): the access token is a live bank
+ * credential. The anon-keyed getSupabase() singleton carries no session, so
+ * auth.uid() is NULL and it could never satisfy that RLS design anyway — it
+ * returned zero rows with no error.
+ *
+ * This file previously hand-rolled its own lazy service-role client. That
+ * duplicate is gone: the shared helper is Proxy-backed, so it is safe to call
+ * at module scope, whereas the local version guarded a `let` and threw
+ * "Cannot access '_supabaseServiceRole' before initialization" the moment a
+ * module-scope caller was introduced above it.
+ */
+const supabase = getServiceRoleClient();
+
+/**
+ * The key that encrypts bank credentials at rest (20260801000020).
+ *
+ * Read per call rather than cached at module scope so a missing key surfaces
+ * as a loud failure at the point of use, not as an import-time crash during
+ * `next build`'s page-data collection. Length is checked here as well as in
+ * the SQL function: a short key would look like encryption while being
+ * trivially breakable.
+ */
+function requireTokenEncryptionKey(): string {
+  const key = process.env.BANK_TOKEN_ENCRYPTION_KEY;
+  if (!key || key.length < 32) {
+    throw new Error(
+      "BANK_TOKEN_ENCRYPTION_KEY must be set and at least 32 characters",
+    );
+  }
+  return key;
+}
 
 // Types
 export interface PlaidLinkToken {
@@ -160,40 +194,110 @@ class PlaidService {
     itemId: string,
     accessToken: string,
   ): Promise<void> {
-    const { error } = await supabase.from("plaid_items").insert({
-      user_id: userId,
-      item_id: itemId,
-      access_token: accessToken,
-      created_at: new Date().toISOString(),
-    });
+    // bank_connections is service-role-only (RLS enabled with ZERO policies
+    // for anon/authenticated — see 20260801000020): the access token is a live
+    // bank credential, so this must use getServiceRoleClient(), never the
+    // anon-keyed singleton.
+    //
+    // The token is NOT written as a column. It is inserted as a row first,
+    // then encrypted in place by set_bank_connection_token() — the plaintext
+    // column no longer exists (20260801000020 step 4).
+    const client = getServiceRoleClient();
 
-    if (error) {
-      throw new Error("Failed to store access token");
+    const { data, error } = await client
+      .from("bank_connections")
+      .insert({
+        user_id: userId,
+        provider: "plaid",
+        item_id: itemId,
+        created_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (error || !data) {
+      throw new Error("Failed to store bank connection");
+    }
+
+    const { error: tokenError } = await client.rpc(
+      "set_bank_connection_token",
+      {
+        p_connection_id: data.id,
+        p_token: accessToken,
+        p_key: requireTokenEncryptionKey(),
+      },
+    );
+
+    if (tokenError) {
+      // The connection row exists but holds no usable credential. Leaving it
+      // would look like a linked bank that silently never syncs, so remove it
+      // and surface the failure.
+      // idor-audit: pk-owner-checked — data.id is the row this call just
+      // inserted with user_id = userId, three statements above.
+      await client.from("bank_connections").delete().eq("id", data.id);
+      throw new Error(
+        `Failed to encrypt bank credential: ${tokenError.message}`,
+      );
     }
   }
 
   /**
-   * Get access token for item
+   * Public accessor for the Plaid access token scoped to the authenticated user.
+   * Used by routes that need the token server-side (e.g. income route — FND-038).
+   * Never expose this value to the client.
    */
-  private async getAccessToken(itemId: string): Promise<string> {
-    const { data, error } = await supabase
-      .from("plaid_items")
-      .select("access_token")
+  async getAccessTokenForUser(itemId: string, userId: string): Promise<string> {
+    return this.getAccessToken(itemId, userId);
+  }
+
+  /**
+   * Get access token for item — scoped to userId to prevent IDOR (FND-037)
+   */
+  private async getAccessToken(itemId: string, userId: string): Promise<string> {
+    // The credential is encrypted at rest and has no readable column. Resolve
+    // the connection first — still scoped by user_id, which remains
+    // load-bearing because the service role bypasses RLS (FND-037) — then
+    // decrypt through the accessor.
+    const client = getServiceRoleClient();
+
+    const { data, error } = await client
+      .from("bank_connections")
+      .select("id")
+      .eq("provider", "plaid")
       .eq("item_id", itemId)
+      .eq("user_id", userId)
       .single();
 
     if (error || !data) {
       throw new Error("Access token not found");
     }
 
-    return data.access_token;
+    const { data: token, error: tokenError } = await client.rpc(
+      "get_bank_connection_token",
+      { p_connection_id: data.id, p_key: requireTokenEncryptionKey() },
+    );
+
+    if (tokenError || !token) {
+      throw new Error(
+        `Failed to decrypt bank credential: ${tokenError?.message ?? "empty"}`,
+      );
+    }
+
+    return token as string;
   }
 
   /**
    * Get accounts for user
    */
   async getAccounts(userId: string): Promise<PlaidAccount[]> {
-    const { data, error } = await supabase
+    // getServiceRoleClient(): financial_accounts has no authenticated grant
+    // (20260731000009 revoked it — see that migration for why), so the
+    // anon-keyed getSupabase() singleton would get a 42501 permission-denied
+    // error on every call, never real rows. This route-level call is already
+    // user-scoped by the explicit .eq("user_id", userId) filter below (same
+    // IDOR-safe pattern as getAccessToken/getTransactions in this file), so
+    // using the service-role client here is safe and necessary.
+    const { data, error } = await getServiceRoleClient()
       .from("financial_accounts")
       .select("*")
       .eq("user_id", userId)
@@ -212,7 +316,7 @@ class PlaidService {
    */
   async syncAccounts(itemId: string, userId: string): Promise<PlaidAccount[]> {
     try {
-      const accessToken = await this.getAccessToken(itemId);
+      const accessToken = await this.getAccessToken(itemId, userId);
       const client = getPlaidClient();
 
       const response = await client.accountsGet({
@@ -255,7 +359,11 @@ class PlaidService {
    * Store account in database
    */
   private async storeAccount(account: PlaidAccount): Promise<void> {
-    const { error } = await supabase.from("financial_accounts").upsert({
+    // getServiceRoleClient() — see getAccounts above; financial_accounts
+    // writes are service-role-only (sync-derived, never user-editable via RLS).
+    const { error } = await getServiceRoleClient()
+      .from("financial_accounts")
+      .upsert({
       id: account.id,
       item_id: account.itemId,
       user_id: account.userId,
@@ -273,23 +381,60 @@ class PlaidService {
       created_at: account.createdAt.toISOString(),
     });
 
+    // Previously an empty comment (no-op): a failed upsert reported success
+    // to syncAccounts()'s caller while persisting nothing. Throw, matching
+    // storeAccessToken's sibling pattern in this file — syncAccounts()
+    // already wraps its loop in try/catch and rethrows, so this correctly
+    // aborts the sync instead of silently dropping the account.
     if (error) {
-      // PlaidService error: Error storing account
+      throw new Error("Failed to store account");
     }
   }
 
   /**
-   * Get transactions for account
+   * Get transactions for account — scoped to userId to prevent IDOR (FND-036)
    */
   async getTransactions(
     accountId: string,
     startDate: Date,
     endDate: Date,
+    userId: string,
   ): Promise<PlaidTransaction[]> {
     const { data, error } = await supabase
       .from("transactions")
       .select("*")
       .eq("account_id", accountId)
+      .eq("user_id", userId)
+      .gte("date", startDate.toISOString())
+      .lte("date", endDate.toISOString())
+      .order("date", { ascending: false });
+
+    if (error) {
+      throw new Error("Failed to fetch transactions");
+    }
+
+    const rows = (data ?? []) as PlaidTransactionRow[];
+    return rows.map((row) => this.mapDatabaseToTransaction(row));
+  }
+
+  /**
+   * Fetch transactions for multiple accounts in a single DB round-trip (FND-040).
+   * Replaces the per-account serial loop pattern in financial-service.ts.
+   * Preserves the user_id scoping established by FIN-2 (FND-036).
+   */
+  async getTransactionsForAccounts(
+    accountIds: string[],
+    startDate: Date,
+    endDate: Date,
+    userId: string,
+  ): Promise<PlaidTransaction[]> {
+    if (accountIds.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("*")
+      .in("account_id", accountIds)
+      .eq("user_id", userId)
       .gte("date", startDate.toISOString())
       .lte("date", endDate.toISOString())
       .order("date", { ascending: false });
@@ -311,7 +456,7 @@ class PlaidService {
     days: number = 30,
   ): Promise<PlaidTransaction[]> {
     try {
-      const accessToken = await this.getAccessToken(itemId);
+      const accessToken = await this.getAccessToken(itemId, userId);
       const client = getPlaidClient();
 
       const startDate = new Date();
@@ -376,7 +521,10 @@ class PlaidService {
       name: transaction.name,
       merchant_name: transaction.merchantName,
       category: transaction.category,
-      pending: transaction.pending,
+      // Column is `is_pending` (it pairs with `is_recurring`, which the
+      // spending analyzer reads). This wrote `pending`, a column that does not
+      // exist on the transactions table.
+      is_pending: transaction.pending,
       payment_channel: transaction.paymentChannel,
       location: transaction.location,
       created_at: transaction.createdAt.toISOString(),

@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { api } from "../services/api/client";
 
 // ============================================================================
 // TYPES
@@ -80,20 +81,18 @@ export function usePositions(config: UsePositionsConfig = {}) {
   // Fetch positions
   const fetchPositions = useCallback(async () => {
     try {
-      const response = await fetch("/api/trading/positions");
+      const res = await api.get<{
+        positions: Position[];
+        openPositions: Position[];
+        summary: PositionSummary | null;
+      }>("/trading/positions");
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch positions");
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
+      if (res.success) {
         setState((prev) => ({
           ...prev,
-          positions: data.data.positions || [],
-          openPositions: data.data.openPositions || [],
-          summary: data.data.summary || null,
+          positions: res.data?.positions || [],
+          openPositions: res.data?.openPositions || [],
+          summary: res.data?.summary || null,
           isLoading: false,
           error: null,
         }));
@@ -114,21 +113,18 @@ export function usePositions(config: UsePositionsConfig = {}) {
       closePrice?: number,
     ): Promise<{ success: boolean; realizedPL?: number; error?: string }> => {
       try {
-        const response = await fetch("/api/trading/positions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        const res = await api.post<{ position: Position; realizedPL: number }>(
+          "/trading/positions",
+          {
             action: "close",
             positionId,
             closePrice,
             reason: "manual",
-          }),
-        });
+          },
+        );
 
-        const data = await response.json();
-
-        if (data.success) {
-          const { position, realizedPL } = data.data;
+        if (res.success) {
+          const { position, realizedPL } = res.data!;
 
           // Update local state
           setState((prev) => ({
@@ -148,7 +144,7 @@ export function usePositions(config: UsePositionsConfig = {}) {
 
         return {
           success: false,
-          error: data.error || "Failed to close position",
+          error: res.message || "Failed to close position",
         };
       } catch (error) {
         return {
@@ -167,15 +163,12 @@ export function usePositions(config: UsePositionsConfig = {}) {
     totalRealizedPL: number;
   }> => {
     try {
-      const response = await fetch("/api/trading/positions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "closeAll" }),
-      });
+      const res = await api.post<{
+        closedCount: number;
+        totalRealizedPL: number;
+      }>("/trading/positions", { action: "closeAll" });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (res.success) {
         setState((prev) => ({
           ...prev,
           openPositions: [],
@@ -187,8 +180,8 @@ export function usePositions(config: UsePositionsConfig = {}) {
 
         return {
           success: true,
-          closedCount: data.data.closedCount,
-          totalRealizedPL: data.data.totalRealizedPL,
+          closedCount: res.data?.closedCount ?? 0,
+          totalRealizedPL: res.data?.totalRealizedPL ?? 0,
         };
       }
 

@@ -1,0 +1,51 @@
+/**
+ * Negative-auth tests for /api/marketplace/reviews/review-1/helpful (TASK-AUTH-03f)
+ */
+
+import { NextRequest } from "next/server";
+
+const mockValidateFromHeaders = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) => mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
+}));
+jest.mock("@/lib/marketplace", () => ({ reviewService: { markHelpful: jest.fn() } }));
+
+import { POST } from "../route";
+
+function createMockRequest(method = "POST"): NextRequest {
+  const url = "http://localhost:3000/api/marketplace/reviews/review-1/helpful";
+  return {
+    url,
+    method,
+    json: jest.fn().mockResolvedValue({}),
+    formData: jest.fn().mockResolvedValue(new Map()),
+    headers: new Headers(),
+    nextUrl: new URL(url),
+    signal: { addEventListener: jest.fn() },
+  } as unknown as NextRequest;
+}
+
+describe("negative-auth – /api/marketplace/reviews/review-1/helpful", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-1", email: "user@example.com" },
+    });
+    mockResolveRoleFromDb.mockResolvedValue("user");
+  });
+
+  it("POST returns 401 when not authenticated", async () => {
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+    const res = await POST(createMockRequest("POST"));
+    expect(res.status).toBe(401);
+  });
+
+});

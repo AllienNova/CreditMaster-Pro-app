@@ -8,8 +8,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CoinGeckoClient } from "@/lib/integrations/coingecko";
 import { cryptoAnalyst } from "@/lib/investments/crypto-analyst";
-import { getUser } from "@/lib/auth/session";
-import { rateLimit } from "@/lib/rate-limit";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
+import { rateLimit } from "@/lib/security/redis-rate-limiting";
 import { z } from "zod";
 import { CryptoCategory } from "@/lib/investments/types/crypto-analysis.types";
 
@@ -25,20 +25,8 @@ const TrendingQuerySchema = z.object({
   category: z.nativeEnum(CryptoCategory).optional(),
 });
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authentication
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        {
-          error:
-            "Unauthorized. Please log in to access trending cryptocurrencies.",
-        },
-        { status: 401 },
-      );
-    }
-
     // Rate limiting
     try {
       await limiter.check(100, user.id);
@@ -63,7 +51,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Invalid query parameters",
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 },
       );
@@ -160,4 +148,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

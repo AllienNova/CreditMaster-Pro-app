@@ -113,7 +113,7 @@ describe("Notification Store", () => {
     it("should fetch and store notifications successfully", async () => {
       mockGetAll.mockResolvedValue({
         success: true,
-        data: { items: mockNotifications, total: 3 },
+        data: { notifications: mockNotifications, unreadCount: 2 },
       });
 
       await act(async () => {
@@ -141,7 +141,10 @@ describe("Notification Store", () => {
       expect(useNotificationStore.getState().isLoading).toBe(true);
 
       await act(async () => {
-        resolvePromise!({ success: true, data: { items: [], total: 0 } });
+        resolvePromise!({
+          success: true,
+          data: { notifications: [], unreadCount: 0 },
+        });
         await fetchPromise;
       });
 
@@ -151,7 +154,7 @@ describe("Notification Store", () => {
     it("should pass params to API call", async () => {
       mockGetAll.mockResolvedValue({
         success: true,
-        data: { items: [], total: 0 },
+        data: { notifications: [], unreadCount: 0 },
       });
 
       await act(async () => {

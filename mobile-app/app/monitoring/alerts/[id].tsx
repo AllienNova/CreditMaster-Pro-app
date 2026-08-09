@@ -75,7 +75,7 @@ const getRecommendedActions = (type: string, severity: string) => {
       icon: "document-text",
       title: "Review Account",
       description: "Verify this account belongs to you",
-      route: "/disputes/new",
+      route: "/dispute/new",
     });
     if (severity === "high") {
       actions.push({
@@ -97,7 +97,7 @@ const getRecommendedActions = (type: string, severity: string) => {
         icon: "alert-circle",
         title: "Dispute Inquiry",
         description: "Challenge unauthorized inquiries",
-        route: "/disputes/new",
+        route: "/dispute/new",
       });
     }
   }

@@ -383,6 +383,7 @@ export class RentReportingIntegrationService {
 
   async updateAccount(
     accountId: string,
+    userId: string,
     updates: Partial<RentReportingAccount>,
   ): Promise<RentReportingAccount> {
     const { data, error } = await this.supabase
@@ -392,6 +393,7 @@ export class RentReportingIntegrationService {
         updated_at: new Date().toISOString(),
       })
       .eq("id", accountId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -445,11 +447,15 @@ export class RentReportingIntegrationService {
     return this.paymentFromDb(data);
   }
 
-  async getPaymentHistory(accountId: string): Promise<RentPayment[]> {
+  async getPaymentHistory(
+    accountId: string,
+    userId: string,
+  ): Promise<RentPayment[]> {
     const { data, error } = await this.supabase
       .from("rent_payments")
       .select("*")
       .eq("account_id", accountId)
+      .eq("user_id", userId)
       .order("due_date", { ascending: false });
 
     if (error) throw error;

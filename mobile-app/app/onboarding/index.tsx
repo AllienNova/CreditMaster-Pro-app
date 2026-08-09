@@ -223,6 +223,11 @@ export default function OnboardingScreen() {
         data={ONBOARDING_SLIDES}
         renderItem={renderSlide}
         keyExtractor={(item) => item.id}
+        getItemLayout={(_, index) => ({
+          length: width,
+          offset: width * index,
+          index,
+        })}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}

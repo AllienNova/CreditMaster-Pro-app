@@ -1,0 +1,73 @@
+name = "empty-states"
+wave = 2
+model = "gemini-2.5-flash-image"
+resolution = "1024x1024"
+out_dir = "assets/raw/empty-states"
+count = 15
+preamble = true
+
+shared_prompt = """
+Fynvita illustration, Tier A soft-organic blob style: rounded blob shapes, flat vector, NO gradients, NO shadows, NO 3D, NO photorealism, NO thin lines. Palette: Vital Green #10B981, Trust Blue #3B82F6, Deep Navy #1E40AF, Emerald #059669, Energy Gold #F59E0B, cream/white #F3F4F6 backgrounds. Blob characters have small dot eyes and tiny smile. Warm, friendly. 1024x1024 square, centered, generous breathing room. EMPTY STATE — mood is calm, inviting, encouraging action (NOT sad, NOT disappointed).
+"""
+
+negative = ["gradients", "shadows", "3D", "photography", "thin lines", "realistic", "sad", "negative", "dark"]
+
+[[variants]]
+id = "empty-transactions"
+prompt = "A small green blob sits peacefully next to an open empty wallet (cream). A tiny gold coin floats nearby, about to enter. Calm — no transactions yet."
+
+[[variants]]
+id = "empty-notifications"
+prompt = "A small Trust Blue blob sleeps next to a large bell (cream/gold outline). Tiny Zzzs float from the bell. Peaceful, quiet — no notifications."
+
+[[variants]]
+id = "empty-bills"
+prompt = "A clean flat cream-colored desk surface. A small round emerald pen holder with two blue pens sits on the left. A tiny happy green blob character stands on the right side of the desk, holding a small feather duster. A tiny round green plant pot in one corner. Pure cream background. Completely flat vector, no perspective distortion, NO text."
+
+[[variants]]
+id = "empty-goals"
+prompt = "A gentle soft green rounded hill in the center. A blank cream-colored flat rectangular signpost stands on the hill. A small round green blob character with dot eyes and smile stands beside the signpost, looking up hopefully. Two small cream puffy cloud shapes float above. Pure cream/white background — NO blue sky, NO sky color at all. NO text."
+
+[[variants]]
+id = "empty-investments"
+prompt = "A rounded terracotta-orange pot filled with dark soil sits centered. A tiny bright green seedling sprouts from the soil — the seedling leaf has small dot eyes and a tiny smile making it the character. A small gold watering can sits beside the pot. Pure cream background. Flat vector only, NO brand text, NO company name, NO words."
+
+[[variants]]
+id = "empty-savings"
+prompt = "A large friendly round green blob shaped like a piggy bank — same soft organic blob shape as all characters, with a round coin slot on top, small dot eyes, tiny smile, and four small stubby legs. A thought bubble above contains a single gold coin. Pure cream background. Fully flat vector, NO shading, NO 3D pig snout, NO text."
+
+[[variants]]
+id = "empty-credit"
+prompt = "An open Deep Navy safe (round door, clean inside) with a green blob peeking inside curiously. A gold key floats nearby. Add your first credit account."
+
+[[variants]]
+id = "empty-disputes"
+prompt = "Neat stack of empty cream folders tied with an Emerald ribbon. A happy green blob sits next to them giving thumbs-up. No disputes — everything is good."
+
+[[variants]]
+id = "empty-documents"
+prompt = "An open cream drawer, empty inside. A Trust Blue blob holds a single paper, about to place it in. Upload your first document."
+
+[[variants]]
+id = "empty-messages"
+prompt = "A flat Trust Blue rectangular mailbox with a rounded door, sitting on a small patch of flat Vital Green ground. The mailbox door is open showing empty inside. A small Energy Gold butterfly shape perches on top of the mailbox. Pure cream/white background. Flat vector, NO texture, NO face on the mailbox itself, NO text."
+
+[[variants]]
+id = "empty-search"
+prompt = "A large magnifying glass (Trust Blue rim) with an Energy Gold question mark floating inside. A tiny green blob holds it, looking curious. No results found."
+
+[[variants]]
+id = "empty-contacts"
+prompt = "An open cream-colored address book with an Emerald green spine lies flat and open, showing two blank cream pages. A small round green blob character with dot eyes and smile sits on the right page edge, waving one arm. Small gold four-pointed star shapes float above the open pages. Pure cream background, NO speech bubbles, NO text inside the book, NO words."
+
+[[variants]]
+id = "empty-history"
+prompt = "A clean cream calendar (Trust Blue header) with blank dates. A green blob flips through empty pages. An Emerald clock nearby. No activity yet."
+
+[[variants]]
+id = "empty-favorites"
+prompt = "A large unfilled Vital Green heart outline floats center. Small gold star sparkles surround it. A tiny green blob reaches up toward the heart. Save your first favorite."
+
+[[variants]]
+id = "empty-offers"
+prompt = "A cream gift box with Emerald ribbon bow, unopened. Gold sparkles hint at something inside. A green blob sits next to it, excited. No offers yet — check back soon."

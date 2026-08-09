@@ -5,25 +5,29 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { createClient } from "@supabase/supabase-js";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+let _supabase: SupabaseClient | null = null;
+const supabase = new Proxy({} as SupabaseClient, {
+  get(_t, prop, recv) {
+    if (!_supabase)
+      _supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      );
+    const v = Reflect.get(_supabase, prop, recv);
+    return typeof v === "function" ? v.bind(_supabase) : v;
+  },
+});
 
 // ============================================================================
 // GET - List user alerts
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const userId = validation.user.id;
+    const userId = user.id;
 
     const { searchParams } = new URL(request.url);
     const symbol = searchParams.get("symbol");
@@ -67,19 +71,15 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 // ============================================================================
 // POST - Create new alert
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const userId = validation.user.id;
+    const userId = user.id;
 
     const body = await request.json();
     const {
@@ -155,19 +155,16 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 // ============================================================================
 // DELETE - Delete alert(s)
 // ============================================================================
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const userId = validation.user.id;
+    const userId = user.id;
 
     const { searchParams } = new URL(request.url);
     const alertId = searchParams.get("id");
@@ -199,4 +196,5 @@ export async function DELETE(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);

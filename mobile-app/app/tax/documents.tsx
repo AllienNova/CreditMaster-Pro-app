@@ -22,7 +22,6 @@ import {
   Alert,
   StyleSheet,
   Modal,
-  Linking,
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -32,6 +31,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { api } from "../../src/services/api";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 // Types
 interface TaxDocument {
@@ -360,10 +360,10 @@ export default function TaxDocumentsScreen() {
               throw new Error("Download failed");
             }
           } else {
-            await Linking.openURL(response.data.url);
+            await openExternalUrl(response.data.url);
           }
         } else {
-          await Linking.openURL(response.data.url);
+          await openExternalUrl(response.data.url);
         }
       } else {
         // Fallback: open mock URL or show message

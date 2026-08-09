@@ -1,0 +1,483 @@
+# ============================================================================
+# EXIT RULES PLAYBOOK (REFERENCE ONLY, NON-BINDING)
+#
+# Source: The 30 Indisputable Laws of Trading by Kimal Honour Djam
+# Generated: 2026-02-22
+#
+# STATUS: reference
+# AUTHORITY: NONE. This file contains textbook stop-management, profit-taking,
+#            pyramiding, and weekend-risk patterns. It is NOT canonical policy.
+#
+# IMPORTANT:
+#   - Any `daily_risk_limits`, `max_portfolio_heat_pct`, or per-trade risk
+#     values inside this file are LEGACY PROSE and are overridden by canonical.
+#   - Daily/weekly/monthly loss limits, portfolio heat, per-trade risk, and
+#     drawdown protocol ALWAYS come from:
+#       canonical/policy/policy.runtime.yaml
+#       canonical/policy/policy.risk.yaml
+#   - Unit convention in this file is percent-float. Canonical uses decimal
+#     fractions. Never merge the two encodings.
+#   - Human-directive phrasing ("Say or write...", "Commit...", "If you feel
+#     the urge...") has NO binding effect on autonomous systems.
+# ============================================================================
+
+meta:
+  document_role: "reference_non_binding"
+  status: "reference"
+  source: "textbook_law22_ch59_ch60"
+  binding: false
+  unit_convention: "percent_float"
+  notes:
+    - "Do not consume as machine policy."
+    - "Risk and heat values are legacy and overridden by canonical policy."
+
+
+# ============================================================================
+# STRUCTURAL INVALIDATION (Law 22)
+# ============================================================================
+
+invalidation_rules:
+
+  principle: >
+    Every trade is a hypothesis. Every hypothesis must have a falsification
+    condition. Without it, a small loss becomes a large loss, a large loss
+    becomes a catastrophic loss.
+
+  pre_trade_checklist:
+    step_1:
+      action: "Define the thesis"
+      time_seconds: 15
+      description: >
+        Write one sentence: "I am [buying/selling] [instrument] because
+        [structural reason]." If you cannot complete it, do not trade.
+    step_2:
+      action: "Define the invalidation point"
+      time_seconds: 15
+      description: >
+        Ask: At what price level is my thesis structurally invalid?
+        If you cannot identify one, do not trade.
+    step_3:
+      action: "Enter hard stop into platform"
+      time_seconds: 10
+      description: >
+        Enter the stop-loss order immediately. Not a mental stop.
+        A live order in the market.
+    step_4:
+      action: "Calculate position size"
+      time_seconds: 10
+      formula: "Position Size = (Account Risk $) / (Distance to Invalidation)"
+      note: "Never tighten the stop to increase position size."
+    step_5:
+      action: "Commit"
+      time_seconds: 10
+      description: >
+        Say or write: "If [instrument] reaches [level], my thesis is wrong
+        and the stop closes my position. I will not move this stop."
+
+  methods:
+    swing_structure:
+      id: "invalidation_swing"
+      description: >
+        Place stop below most recent swing low (longs) or above most recent
+        swing high (shorts), plus a buffer of 0.5-1.0 ATR.
+      logic: >
+        If the swing low breaks, the trend definition (HH/HL) is violated.
+        The thesis is structurally invalid.
+      buffer_atr: 0.5
+      backtest_performance:
+        win_rate: 0.448
+        avg_winner_r: 2.6
+        avg_loser_r: -1.05
+        expectancy_r: 0.42
+        max_drawdown_pct: 14.1
+        profit_factor: 1.78
+        sharpe_ratio: 1.31
+        premature_stopouts_pct: 18.6
+
+    supply_demand_zone:
+      id: "invalidation_zone"
+      description: >
+        Place stop at the opposite end of the demand zone (longs) or supply
+        zone (shorts). If price penetrates through the entire zone, the
+        institutional buying/selling is overwhelmed.
+      backtest_performance:
+        win_rate: 0.431
+        avg_winner_r: 2.4
+        avg_loser_r: -1.08
+        expectancy_r: 0.35
+        max_drawdown_pct: 15.7
+        profit_factor: 1.62
+        sharpe_ratio: 1.18
+        premature_stopouts_pct: 20.9
+
+    atr_volatility:
+      id: "invalidation_atr"
+      description: >
+        Place stop at 1.5-2.0x ATR below entry (longs) or above entry
+        (shorts). Use when swing structure is unclear.
+      atr_multiple: 1.5
+      atr_period: 14
+      note: "Weakest method. Not based on structure. Use as fallback only."
+      backtest_performance:
+        win_rate: 0.414
+        avg_winner_r: 2.2
+        avg_loser_r: -1.02
+        expectancy_r: 0.29
+        max_drawdown_pct: 17.3
+        profit_factor: 1.51
+        sharpe_ratio: 1.05
+        premature_stopouts_pct: 24.1
+
+  # Comparison: arbitrary stops are inferior
+  arbitrary_stops_comparison:
+    fixed_2_pct:
+      win_rate: 0.382
+      expectancy_r: 0.18
+      max_drawdown_pct: 22.4
+      premature_stopouts_pct: 31.4
+    fixed_dollar:
+      win_rate: 0.356
+      expectancy_r: 0.06
+      max_drawdown_pct: 26.8
+      premature_stopouts_pct: 36.2
+
+  bos_choch_framework:
+    description: >
+      A decision tree for monitoring invalidation in real-time.
+    steps:
+      - step: 1
+        action: "Identify current market structure (HH/HL or LH/LL)"
+      - step: 2
+        action: "Mark most recent structural swing defining the trend"
+      - step: 3
+        action: "Place invalidation beyond structural level plus buffer"
+      - step: 4
+        action: "Monitor for Break of Structure (BOS)"
+        definition: >
+          Price breaks structural level BUT does not establish opposite
+          direction swing. Tighten stops but do not exit.
+      - step: 5
+        action: "Monitor for Change of Character (CHoCH)"
+        definition: >
+          Price breaks structure AND establishes opposite direction swing.
+          Definitive invalidation. EXIT IMMEDIATELY.
+
+  absolute_rules:
+    - "Stops can ONLY move toward entry (reducing risk). NEVER away."
+    - "Hard stops beat mental stops by a factor of 10."
+    - "A stop-loss is not a failure. It is data."
+    - "Mental stops are honored only 30-40% of the time."
+    - "If you feel the urge to widen a stop, close the trade immediately."
+
+# ============================================================================
+# ATR TRAILING STOP
+# ============================================================================
+
+trailing_stops:
+
+  atr_trail:
+    id: "trail_atr"
+    description: >
+      Set stop at highest high since entry minus 3x ATR(14). The chandelier
+      stop hangs from the ceiling and never moves down.
+    formula: "Stop = Highest High Since Entry - (3 x ATR(14))"
+    atr_period: 14
+    atr_multiple: 3.0
+    direction: "Only ratchets higher (longs) or lower (shorts). Never reverses."
+    best_for:
+      - "Stocks with high ATR values"
+      - "Earnings winners with choppy consolidation"
+      - "Sector leaders alternating surges and pauses"
+
+  ema_trail:
+    id: "trail_10ema"
+    description: >
+      Exit when stock closes below the 10-day exponential moving average.
+      Default trailing stop for fast-moving momentum stocks.
+    exit_trigger: "Daily close below 10-day EMA"
+    typical_distance_pct: "2-4% below price in strong uptrend"
+    best_for:
+      - "Gapping stocks with accelerating volume"
+      - "Steep uptrend channels"
+      - "Final runner third of a scaled exit"
+
+# ============================================================================
+# R-MULTIPLE TARGETS (Profit Taking)
+# ============================================================================
+
+r_multiple_targets:
+
+  scale_out_thirds:
+    id: "profit_thirds"
+    description: >
+      Scale out of positions in three tranches to balance profit capture
+      with trend riding.
+    tranches:
+      - tranche: 1
+        size_pct: 33
+        target: "+1R"
+        stop_action: "Move stop to breakeven on remaining position"
+        rationale: "Locks in partial profit. Guarantees trade cannot become a loss."
+      - tranche: 2
+        size_pct: 33
+        target: "+2R"
+        stop_action: "Move stop to +1R level to protect accumulated profits"
+        rationale: "Captures the expected move."
+      - tranche: 3
+        size_pct: 34
+        target: "Trail with 10-EMA or Chandelier stop"
+        stop_action: "Trailing stop only"
+        rationale: >
+          The runner. Captures occasional 5R-8R outlier wins that transform
+          a break-even system into a profitable one.
+
+  swing_trade_example:
+    entry: 100
+    stop: 93
+    risk_per_share: 7
+    target_1r: 107
+    target_2r: 114
+    runner_exit: "Close below 10-day EMA"
+
+# ============================================================================
+# TIME STOPS
+# ============================================================================
+
+time_stops:
+
+  two_minute_rule:
+    id: "time_2min"
+    description: >
+      If trade is red within 120 seconds of entry, exit immediately.
+      Good trades work almost immediately. 73% of eventual winners show
+      positive P&L within the first 90 seconds.
+    trigger: "Trade negative after 120 seconds"
+    action: "Exit at market immediately"
+    rationale: >
+      The setup was wrong. A 2-point loss is better than a 22-point loss.
+    applies_to: "Day trades only"
+
+  three_candle_rule:
+    id: "time_3candle"
+    description: >
+      On a 5-minute chart, if 3 consecutive candles close against your
+      position, exit. After 3 adverse candles, the probability of price
+      returning to entry within 15 minutes drops below 35%.
+    trigger: "3 consecutive 5-minute candles closing against position"
+    action: "Exit at market"
+    applies_to: "Day trades"
+
+  five_candle_stall:
+    id: "time_5candle"
+    description: >
+      If the trade has not moved +1R within 5 trading candles of entry,
+      the setup failed. Dead money kills opportunity cost.
+    trigger: "No +1R progress after 5 candles on entry timeframe"
+    action: "Exit at market"
+    applies_to: "Day trades and swing trades"
+
+  daily_time_stop:
+    id: "time_daily_swing"
+    description: >
+      If a swing trade has not reached +1R within 5 trading days,
+      exit at market. Capital tied up in dead trades cannot be deployed
+      in live ones.
+    trigger: "No +1R progress after 5 trading days"
+    action: "Exit at market"
+    applies_to: "Swing trades"
+
+  noon_stall:
+    id: "time_noon"
+    description: >
+      If a day trade is at breakeven at 11:00 AM, move stop to breakeven
+      minus 2 ticks. If still at breakeven by noon, exit.
+    trigger: "Breakeven at noon after entering in morning"
+    action: "Exit at market"
+    applies_to: "Day trades"
+
+# ============================================================================
+# PYRAMIDING RULES (When to Add)
+# ============================================================================
+
+pyramiding:
+
+  five_rules:
+    - rule: 1
+      statement: "Never add to a losing position"
+      detail: >
+        No exceptions. A losing position means the thesis is at minimum
+        early. Adding capital to an early thesis is mathematically equivalent
+        to doubling down at a casino.
+      exceptions: "None"
+
+    - rule: 2
+      statement: "Add only after the trade proves itself"
+      detail: >
+        First addition comes after price moves 1R in your favor. The
+        trade must earn the right to receive more capital.
+      trigger: "+1R profit from entry"
+
+    - rule: 3
+      statement: "Each addition must be smaller than the previous one"
+      detail: >
+        Creates the pyramid shape. Entry: 3 contracts. First add: 2.
+        Second add: 1. Largest position at best price. Inverted pyramids
+        blow up on reversals.
+      structure:
+        entry: 3
+        add_1: 2
+        add_2: 1
+
+    - rule: 4
+      statement: "Move stop to breakeven after first add"
+      detail: >
+        Worst outcome is scratch on original plus small loss on addition.
+        Converts speculative position into a free trade.
+      trigger: "After first add executed"
+
+    - rule: 5
+      statement: "Maximum 3 entries per trade"
+      detail: >
+        Entry plus two additions. Beyond three, position becomes unwieldy
+        and emotional attachment grows.
+      max_entries: 3
+
+  example:
+    instrument: "ES E-mini futures"
+    entry:
+      contracts: 3
+      price: 4381
+      stop: 4368
+      risk_per_contract: "$65"
+      total_risk: "$195"
+    add_1:
+      trigger: "+1R (4394)"
+      contracts: 2
+      price: 4394
+      new_stop: 4381
+    add_2:
+      trigger: "+2R (4410)"
+      contracts: 1
+      price: 4410
+      new_stop: 4394
+    exit:
+      price: 4425
+      total_profit: "$1,045"
+      r_multiple: 5.4
+      without_pyramiding: "$660 (3.4R)"
+      pyramiding_bonus: "$385 (+58%)"
+
+# ============================================================================
+# PARTIAL PROFIT RULES
+# ============================================================================
+
+partial_profit:
+
+  standard_protocol:
+    - at_1r:
+        action: "Sell 33% of position"
+        stop_action: "Move stop to breakeven"
+        rationale: "Lock in partial profit, create free trade"
+    - at_2r:
+        action: "Sell 33% of position"
+        stop_action: "Move stop to +1R level"
+        rationale: "Capture expected move"
+    - runner:
+        action: "Trail final 34% with 10-EMA or Chandelier stop"
+        rationale: "Ride outlier gains that transform system profitability"
+
+  special_cases:
+    approaching_lunch:
+      condition: "Trade profitable, approaching 11:30 AM"
+      action: "Take partial profits before lunch hour volume drop"
+
+    approaching_major_level:
+      condition: "Price nearing major structural level or round number"
+      action: "Take partial profits. Do not assume breakout."
+
+    fomc_day:
+      condition: "Open profit before 2:00 PM FOMC announcement"
+      action: "Consider closing or taking heavy partials before announcement"
+
+    up_2r_at_11am:
+      condition: "+2R at 11:00 AM"
+      action: "Sell 50%, move stop to +1R on remainder"
+
+    earnings_gap_while_holding:
+      condition: "Stock gaps 10%+ on earnings during a swing hold"
+      action: "Sell half immediately at open. Trail rest with 10-EMA."
+
+# ============================================================================
+# DAILY RISK LIMITS
+# ============================================================================
+
+daily_risk_limits:
+
+  max_trades_per_day: 3
+  max_daily_loss_pct: 2.0
+  consecutive_losses_before_break: 2
+  break_duration_minutes: 30
+  afternoon_consecutive_loss_rule: >
+    Two losses in a row after 2:00 PM = stop for the day.
+  no_trades_first_5_minutes: true
+  no_trades_lunch_hour: true
+  lunch_hour_start: "11:30 AM ET"
+  lunch_hour_end: "1:30 PM ET"
+  max_risk_per_trade_pct: 1.0
+  max_portfolio_heat_pct: 6.0
+
+# ============================================================================
+# STOP MANAGEMENT PROTOCOL
+# ============================================================================
+
+stop_management:
+
+  rule_1:
+    name: "Trail to Structural Levels"
+    description: >
+      As trade creates new structural swings, move stop to just beyond
+      the new swing point. In uptrend, move below each new higher low.
+
+  rule_2:
+    name: "Break-Even at 1R"
+    description: >
+      Once trade moves 1R in your favor, consider moving stop to breakeven.
+      Creates a free trade. Caution: too aggressive can cause premature exits.
+    trigger: "+1R profit"
+    guideline: true
+    rigid_rule: false
+
+  rule_3:
+    name: "Never Widen a Stop"
+    description: >
+      If you feel the urge to move your stop further from entry, recognize
+      you are entering a hope trade. Close immediately at current price.
+    action_on_urge: "Close trade immediately"
+    exceptions: "None"
+
+# ============================================================================
+# WEEKEND RISK RULES (Swing Trading)
+# ============================================================================
+
+weekend_rules:
+
+  flatten_when:
+    - "VIX is above 25"
+    - "Geopolitical tensions are elevated"
+    - "Holding stocks reporting earnings Monday pre-market"
+    - "Portfolio at or near maximum heat (all 5 positions active)"
+    - "Multiple positions at breakeven or slightly negative"
+
+  hold_when:
+    - "VIX is below 18"
+    - "All positions in profit with stops at breakeven or better"
+    - "No known catalysts scheduled over weekend"
+    - "Weekly trend supports your direction"
+
+  default: "When in doubt, flatten. Re-entry cost is trivial vs. gap risk."
+
+  gap_statistics:
+    avg_weekend_gap_spy_pct: 0.4
+    std_dev_weekend_gap_pct: 0.9
+    individual_stock_multiplier: 1.8
+    range_95_pct: "-1.4% to +2.2%"

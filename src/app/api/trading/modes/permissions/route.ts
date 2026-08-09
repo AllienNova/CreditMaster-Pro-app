@@ -5,25 +5,12 @@
  * Returns what actions are allowed in the user's current operating mode.
  */
 
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { createOperatingModeManager } from "@/lib/trading/modes/operating-mode-manager";
 
-export async function GET() {
+export const GET = withAuth(async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
     const manager = createOperatingModeManager(user.id);
     const result = await manager.getModePermissions();
 
@@ -46,4 +33,4 @@ export async function GET() {
       { status: 500 },
     );
   }
-}
+});

@@ -17,6 +17,7 @@ import {
 import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme } from "../../src/constants/theme";
+import { EmptyState } from "../../src/components/EmptyState";
 import { useTradingStore } from "../../src/store/tradingStore";
 import type { Position } from "../../src/services/api/trading";
 
@@ -358,17 +359,13 @@ export default function PositionsScreen() {
             <Text style={styles.loadingText}>Loading positions...</Text>
           </View>
         ) : openPositions.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="analytics-outline"
-              size={64}
-              color={theme.colors.textSecondary}
-            />
-            <Text style={styles.emptyStateTitle}>No Open Positions</Text>
-            <Text style={styles.emptyStateText}>
-              Place an order to open a position
-            </Text>
-          </View>
+          <EmptyState
+            icon="analytics-outline"
+            title="No open positions"
+            description="Place an order to open your first trading position"
+            actionLabel="Explore Strategies"
+            onAction={() => router.push("/trading/strategies" as never)}
+          />
         ) : (
           <View style={styles.positionsList}>
             <Text style={styles.sectionTitle}>

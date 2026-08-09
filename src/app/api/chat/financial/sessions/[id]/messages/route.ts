@@ -6,38 +6,26 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { createClient } from "@/lib/supabase/server";
 import { FinancialChatEngine } from "@/lib/ai/financial-chat-engine";
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * GET /api/chat/financial/sessions/[id]/messages
  * Get session message history
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Authenticate user
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized", message: "Authentication required" },
-        { status: 401 },
-      );
-    }
-
-    const { id: sessionId } = await params;
+    // The guard does not forward Next's route `params`; the path ends in
+    // /sessions/[id]/messages, so the id is the second-to-last segment.
+    const segments = request.nextUrl.pathname.split("/");
+    const sessionId = segments[segments.length - 2];
 
     // Validate session ID format (UUID)
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(sessionId)) {
+    if (!UUID_REGEX.test(sessionId)) {
       return NextResponse.json(
         { error: "Validation error", message: "Invalid session ID format" },
         { status: 400 },
@@ -68,7 +56,8 @@ export async function GET(
       );
     }
 
-    // Verify session exists and belongs to user
+    // Verify session exists and belongs to user (ownership check preserved)
+    const supabase = await createClient();
     const { data: session, error: sessionError } = await supabase
       .from("chat_sessions")
       .select("user_id")
@@ -142,4 +131,4 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+});

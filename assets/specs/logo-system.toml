@@ -1,0 +1,52 @@
+name = "logo-system"
+wave = 1
+model = "gemini-3-pro-image-preview"
+resolution = "2K"
+out_dir = "assets/raw/logo-system"
+count = 7
+preamble = true
+
+shared_prompt = """
+Production logo asset for 'Fynvita', a financial wellness platform.
+
+MARK DESCRIPTION (IDENTICAL ACROSS ALL VARIANTS): The Fynvita mark is a FILLED Vital Green (#10B981) heart silhouette with a WHITE negative-space heartbeat/pulse line carved through it. The pulse starts flat-left, spikes up in two small peaks (like an ECG waveform), then resolves into an upward-RIGHT pointing arrow that exits the heart's top-right quadrant. The arrow tip crosses slightly OUTSIDE the heart's upper-right edge. Single rounded, organic heart shape — NOT angular, NOT fragmented. The pulse line is bold (not thin). Exactly this mark across all variants, just recomposed.
+
+STRICT CONSTRAINTS:
+- Mark fill: Vital Green #10B981, solid (NO gradients, NO shadows, NO 3D, NO outlines, NO glows)
+- Wordmark (if present): 'Fynvita' in Inter Bold, Deep Navy #1E40AF, tight letterspacing, exactly spelled F-y-n-v-i-t-a (capital F only)
+- Background: pure white #FFFFFF UNLESS specified otherwise
+- NO card frame, NO border, NO drop-shadow on the canvas — just the logo on a clean background
+- No tagline, no extra text beyond 'Fynvita' itself
+
+QUALITY: production logo file. Flat, vector-style, sharp edges. Must look like an Adobe Illustrator export at 2048x2048.
+"""
+
+negative = ["gradients", "shadows", "3D", "glow", "outline", "border", "card frame", "tagline", "extra text", "photography", "textures"]
+
+[[variants]]
+id = "v1-horizontal-lockup"
+prompt = "HORIZONTAL LOCKUP: the mark on the LEFT, 'Fynvita' wordmark on the RIGHT. Mark occupies ~25% of width, wordmark ~60%, with tight optical padding between. Vertically center-aligned. Generous clear space around the entire composition. White background. This is the PRIMARY Fynvita logo for web headers and email."
+
+[[variants]]
+id = "v2-vertical-lockup"
+prompt = "VERTICAL LOCKUP: the mark centered on top, 'Fynvita' wordmark centered below with modest padding between (about 0.3× mark height). Symmetric, balanced composition. White background. Used for social avatars, splash screens, marketing posters."
+
+[[variants]]
+id = "v3-mark-only"
+prompt = "MARK ONLY. NO wordmark, NO text whatsoever. The filled green heart with white pulse-arrow carved through, centered on the canvas with even padding around it. Perfect square framing. This is the standalone icon for favicons, app tiles, and small-space use."
+
+[[variants]]
+id = "v4-mark-mono-navy"
+prompt = "MARK ONLY in MONOCHROME DEEP NAVY #1E40AF (not green). Same exact mark silhouette: filled navy heart with white pulse-arrow carved through. No text. Used for print, single-color contexts, watermarks. White background."
+
+[[variants]]
+id = "v5-reversed-dark"
+prompt = "REVERSED VARIANT. Background is SOLID VITAL GREEN #10B981 filling the entire canvas. The mark and 'Fynvita' wordmark are both rendered in WHITE #FFFFFF. Horizontal lockup layout. Used for dark UI, promotional banners on green, app store feature graphics."
+
+[[variants]]
+id = "v6-wordmark-only"
+prompt = "WORDMARK ONLY. Just the word 'Fynvita' in Inter Bold, Deep Navy #1E40AF, perfectly centered on a pure white background. NO mark, NO symbol, NO decoration — just the typography. Exactly spelled F-y-n-v-i-t-a (capital F, lowercase everything else). Used for letterhead headers, legal documents, minimalist contexts."
+
+[[variants]]
+id = "v7-app-icon-tile"
+prompt = "APP ICON TILE. 1024x1024 square format. Background: SOLID VITAL GREEN #10B981 filling the entire square (corner-to-corner, edge-to-edge). The mark rendered in WHITE #FFFFFF (heart with pulse-arrow cutout reversed). The white mark occupies about 60% of the canvas, perfectly centered. NO wordmark, NO text. NO rounded corners on the tile itself (iOS/Android will apply system rounding). This is the direct iOS/Android app icon source."

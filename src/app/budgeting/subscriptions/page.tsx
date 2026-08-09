@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CreditCard,
@@ -19,30 +19,31 @@ import {
   ExternalLink,
   Trash2,
   Eye,
-  EyeOff,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import type {
+  RecurringCharge,
+  SubscriptionRecommendation,
+} from "@/lib/financial/types/savings.types";
 
 interface Subscription {
   id: string;
   name: string;
   merchantName: string;
   amount: number;
-  frequency: "weekly" | "monthly" | "quarterly" | "yearly";
+  frequency: "weekly" | "biweekly" | "monthly" | "quarterly" | "annually";
   category: string;
   status: "active" | "paused" | "cancelled";
   nextBillingDate: Date;
   logoUrl?: string;
-  autopay: boolean;
 }
 
 interface SubscriptionInsight {
   id: string;
-  type: "duplicate" | "unused" | "price_increase" | "free_alternative";
   title: string;
   description: string;
   potentialSavings: number;
   priority: "low" | "medium" | "high";
-  subscriptionIds: string[];
 }
 
 interface DetectedSubscription {
@@ -54,133 +55,207 @@ interface DetectedSubscription {
   category: string;
 }
 
-const MOCK_SUBSCRIPTIONS: Subscription[] = [
-  {
-    id: "1",
-    name: "Netflix",
-    merchantName: "Netflix",
-    amount: 15.99,
-    frequency: "monthly",
-    category: "streaming",
-    status: "active",
-    nextBillingDate: new Date(2026, 1, 15),
-    autopay: true,
-  },
-  {
-    id: "2",
-    name: "Spotify",
-    merchantName: "Spotify",
-    amount: 10.99,
-    frequency: "monthly",
-    category: "music",
-    status: "active",
-    nextBillingDate: new Date(2026, 1, 20),
-    autopay: true,
-  },
-  {
-    id: "3",
-    name: "Disney+",
-    merchantName: "Disney Plus",
-    amount: 13.99,
-    frequency: "monthly",
-    category: "streaming",
-    status: "active",
-    nextBillingDate: new Date(2026, 1, 10),
-    autopay: true,
-  },
-  {
-    id: "4",
-    name: "Gym Membership",
-    merchantName: "Planet Fitness",
-    amount: 24.99,
-    frequency: "monthly",
-    category: "fitness",
-    status: "active",
-    nextBillingDate: new Date(2026, 1, 1),
-    autopay: true,
-  },
-  {
-    id: "5",
-    name: "iCloud Storage",
-    merchantName: "Apple",
-    amount: 2.99,
-    frequency: "monthly",
-    category: "cloud_storage",
-    status: "active",
-    nextBillingDate: new Date(2026, 1, 25),
-    autopay: true,
-  },
-  {
-    id: "6",
-    name: "Adobe Creative Cloud",
-    merchantName: "Adobe",
-    amount: 54.99,
-    frequency: "monthly",
-    category: "software",
-    status: "active",
-    nextBillingDate: new Date(2026, 1, 5),
-    autopay: true,
-  },
-];
+/**
+ * Shape of GET /api/financial/savings/subscriptions
+ * (withPermission("financial:read"), Bearer-authenticated). Verified against
+ * `src/app/api/financial/savings/subscriptions/route.ts` — the route returns
+ * `{ success, data: { recurringCharges, subscriptions, recommendations,
+ * summary } }`. All three arrays are auto-detected from the user's transaction
+ * history by `SavingsOptimizer`; there is no user-managed subscription table.
+ * Fields are declared optional here purely as defensive parsing (the route
+ * always includes them on success).
+ */
+interface SubscriptionsApiResponse {
+  success?: boolean;
+  data?: {
+    recurringCharges?: RecurringCharge[];
+    subscriptions?: RecurringCharge[];
+    recommendations?: SubscriptionRecommendation[];
+  };
+}
 
-const MOCK_INSIGHTS: SubscriptionInsight[] = [
-  {
-    id: "1",
-    type: "duplicate",
-    title: "Multiple streaming services detected",
-    description:
-      "You have 2 video streaming services (Netflix, Disney+) totaling $29.98/month",
-    potentialSavings: 13.99,
-    priority: "medium",
-    subscriptionIds: ["1", "3"],
-  },
-  {
-    id: "2",
-    type: "free_alternative",
-    title: "Free alternative available",
-    description: "Consider using free cloud storage options instead of iCloud",
-    potentialSavings: 2.99,
-    priority: "low",
-    subscriptionIds: ["5"],
-  },
-  {
-    id: "3",
-    type: "unused",
-    title: "Potentially unused subscription",
-    description: "Your gym membership shows no activity in the last 60 days",
-    potentialSavings: 24.99,
-    priority: "high",
-    subscriptionIds: ["4"],
-  },
-];
+/** Recommendation action → human-readable insight title verb. */
+const RECOMMENDATION_ACTION_LABEL: Record<
+  SubscriptionRecommendation["type"],
+  string
+> = {
+  cancel: "Cancel",
+  downgrade: "Downgrade",
+  consolidate: "Consolidate",
+  negotiate: "Negotiate",
+};
 
-const MOCK_DETECTED: DetectedSubscription[] = [
-  {
-    merchantName: "HBO Max",
-    amount: 15.99,
-    frequency: "monthly",
-    confidence: 92,
-    chargeCount: 4,
-    category: "streaming",
-  },
-  {
-    merchantName: "Hulu",
-    amount: 17.99,
-    frequency: "monthly",
-    confidence: 88,
-    chargeCount: 3,
-    category: "streaming",
-  },
-];
+/** Recommendation importance → the page's insight priority. */
+const IMPORTANCE_PRIORITY: Record<
+  SubscriptionRecommendation["importance"],
+  SubscriptionInsight["priority"]
+> = {
+  unnecessary: "high",
+  optional: "medium",
+  useful: "low",
+  essential: "low",
+};
+
+/**
+ * Per-frequency multiplier that normalizes a charge to its monthly-equivalent
+ * amount. Mirrors the factors the API route uses to compute
+ * `summary.totalMonthlySubscriptionSpending`, so the client total matches the
+ * server total (weekly ×4.33, biweekly ×2.17, quarterly ÷3, annually ÷12).
+ */
+const MONTHLY_EQUIVALENT_FACTOR: Record<Subscription["frequency"], number> = {
+  weekly: 4.33,
+  biweekly: 2.17,
+  monthly: 1,
+  quarterly: 1 / 3,
+  annually: 1 / 12,
+};
+
+/**
+ * Map a detected recurring charge to the page's Subscription shape. Field
+ * provenance (verified against `savings.types.ts` `RecurringCharge`):
+ * - `name`/`merchantName` ← `merchantName` (detection keys on a single merchant).
+ * - `frequency`/`amount`/`category` map 1:1.
+ * - `nextBillingDate` ← `new Date(nextExpectedAt ?? lastChargeAt)` (dates arrive
+ *   as ISO strings over JSON; `nextExpectedAt` is optional, `lastChargeAt` is
+ *   always present as the fallback).
+ * - `status`: `RecurringCharge` carries no lifecycle status. Every charge here
+ *   is, by construction, an active recurring charge (it has recent transactions
+ *   and a computed next-expected date), so `"active"` is entailed, not
+ *   fabricated. The API exposes no paused/cancelled state on this path.
+ * - There is NO autopay signal in the API, so the page renders no autopay badge
+ *   (the former hardcoded `autopay` field was removed rather than faked).
+ */
+function mapRecurringChargeToSubscription(rc: RecurringCharge): Subscription {
+  return {
+    id: rc.id,
+    name: rc.merchantName,
+    merchantName: rc.merchantName,
+    amount: rc.amount,
+    frequency: rc.frequency,
+    category: rc.category,
+    status: "active",
+    nextBillingDate: new Date(rc.nextExpectedAt ?? rc.lastChargeAt),
+  };
+}
+
+/**
+ * Map a real cancellation/optimization recommendation to the "AI Insights"
+ * card. Title is composed from the action verb + merchant (e.g. "Cancel
+ * Netflix"); `description` ← `reason`; savings ← `potentialMonthlySavings`;
+ * priority ← `importance`.
+ */
+function mapRecommendationToInsight(
+  rec: SubscriptionRecommendation,
+): SubscriptionInsight {
+  return {
+    id: rec.id,
+    title: `${RECOMMENDATION_ACTION_LABEL[rec.type]} ${rec.merchantName}`,
+    description: rec.reason,
+    potentialSavings: rec.potentialMonthlySavings,
+    priority: IMPORTANCE_PRIORITY[rec.importance],
+  };
+}
+
+/**
+ * Map a detected recurring charge to the "Detected Subscriptions" modal row.
+ * `chargeCount` ← `transactionCount`; all other fields map 1:1. The modal shows
+ * the full detection result (every recurring charge found in transaction
+ * history), which is exactly what a "detect subscriptions" scan surfaces.
+ */
+function mapRecurringChargeToDetected(
+  rc: RecurringCharge,
+): DetectedSubscription {
+  return {
+    merchantName: rc.merchantName,
+    amount: rc.amount,
+    frequency: rc.frequency,
+    confidence: rc.confidence,
+    chargeCount: rc.transactionCount,
+    category: rc.category,
+  };
+}
+
+interface SubscriptionsView {
+  subscriptions: Subscription[];
+  insights: SubscriptionInsight[];
+  detected: DetectedSubscription[];
+}
+
+/**
+ * Session-guarded fetch of the subscription audit. Returns `null` when the user
+ * is not signed in (so the caller can render an honest sign-in prompt), throws
+ * on a non-ok response or network failure (no mock fallback).
+ */
+async function fetchSubscriptionsView(): Promise<SubscriptionsView | null> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return null;
+  }
+
+  const res = await fetch("/api/financial/savings/subscriptions", {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to load subscriptions (${res.status})`);
+  }
+
+  const body = (await res.json()) as SubscriptionsApiResponse;
+  const data = body.data;
+
+  return {
+    subscriptions: (data?.subscriptions ?? []).map(
+      mapRecurringChargeToSubscription,
+    ),
+    insights: (data?.recommendations ?? []).map(mapRecommendationToInsight),
+    detected: (data?.recurringCharges ?? []).map(mapRecurringChargeToDetected),
+  };
+}
 
 export default function SubscriptionTrackerPage() {
-  const [subscriptions] = useState<Subscription[]>(MOCK_SUBSCRIPTIONS);
-  const [insights] = useState<SubscriptionInsight[]>(MOCK_INSIGHTS);
-  const [detectedSubs] = useState<DetectedSubscription[]>(MOCK_DETECTED);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [insights, setInsights] = useState<SubscriptionInsight[]>([]);
+  const [detectedSubs, setDetectedSubs] = useState<DetectedSubscription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showDetectedModal, setShowDetectedModal] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+
+  const loadSubscriptions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const view = await fetchSubscriptionsView();
+      if (!view) {
+        setSubscriptions([]);
+        setInsights([]);
+        setDetectedSubs([]);
+        setError("Sign in to view your subscriptions.");
+        return;
+      }
+      setSubscriptions(view.subscriptions);
+      setInsights(view.insights);
+      setDetectedSubs(view.detected);
+    } catch (err) {
+      setSubscriptions([]);
+      setInsights([]);
+      setDetectedSubs([]);
+      setError(
+        err instanceof Error ? err.message : "Failed to load subscriptions.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSubscriptions();
+  }, [loadSubscriptions]);
 
   const filteredSubscriptions = subscriptions.filter((sub) => {
     const matchesSearch = sub.name
@@ -193,20 +268,10 @@ export default function SubscriptionTrackerPage() {
 
   const totalMonthly = subscriptions
     .filter((s) => s.status === "active")
-    .reduce((sum, s) => {
-      switch (s.frequency) {
-        case "weekly":
-          return sum + s.amount * 4.33;
-        case "monthly":
-          return sum + s.amount;
-        case "quarterly":
-          return sum + s.amount / 3;
-        case "yearly":
-          return sum + s.amount / 12;
-        default:
-          return sum;
-      }
-    }, 0);
+    .reduce(
+      (sum, s) => sum + s.amount * MONTHLY_EQUIVALENT_FACTOR[s.frequency],
+      0,
+    );
 
   const totalAnnual = totalMonthly * 12;
   const potentialSavings = insights.reduce(
@@ -231,6 +296,11 @@ export default function SubscriptionTrackerPage() {
       fitness: "Fitness",
       cloud_storage: "Cloud Storage",
       software: "Software",
+      entertainment: "Entertainment",
+      health: "Health",
+      insurance: "Insurance",
+      professional: "Professional",
+      other: "Other",
     };
     return labels[category] || category;
   };
@@ -250,10 +320,61 @@ export default function SubscriptionTrackerPage() {
 
   const scanForSubscriptions = async () => {
     setIsScanning(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsScanning(false);
-    setShowDetectedModal(true);
+    try {
+      const view = await fetchSubscriptionsView();
+      if (!view) {
+        setError("Sign in to scan for subscriptions.");
+        return;
+      }
+      setSubscriptions(view.subscriptions);
+      setInsights(view.insights);
+      setDetectedSubs(view.detected);
+      setShowDetectedModal(true);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to scan for subscriptions.",
+      );
+    } finally {
+      setIsScanning(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-slate-400">
+            Loading your subscriptions...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-8 max-w-md w-full text-center">
+          <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full w-fit mx-auto mb-4">
+            <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Couldn&apos;t load your subscriptions
+          </h2>
+          <p className="text-gray-600 dark:text-slate-400 mb-6">{error}</p>
+          <button
+            onClick={loadSubscriptions}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
@@ -398,71 +519,82 @@ export default function SubscriptionTrackerPage() {
             </div>
 
             {/* Subscription Cards */}
-            <div className="space-y-3">
-              {filteredSubscriptions.map((sub) => (
-                <motion.div
-                  key={sub.id}
-                  layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gray-100 dark:bg-slate-700 rounded-xl flex items-center justify-center">
-                        <CreditCard className="w-6 h-6 text-gray-500 dark:text-slate-400" />
+            {subscriptions.length === 0 ? (
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-12 text-center">
+                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full w-fit mx-auto mb-4">
+                  <CreditCard className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  No subscriptions detected
+                </h3>
+                <p className="text-gray-600 dark:text-slate-400">
+                  We didn&apos;t find any recurring subscriptions in your recent
+                  transactions. Connect more accounts or check back after your
+                  next billing cycle.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredSubscriptions.map((sub) => (
+                  <motion.div
+                    key={sub.id}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gray-100 dark:bg-slate-700 rounded-xl flex items-center justify-center">
+                          <CreditCard className="w-6 h-6 text-gray-500 dark:text-slate-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                            {sub.name}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-slate-400">
+                            {sub.merchantName} • Next:{" "}
+                            {sub.nextBillingDate.toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">
-                          {sub.name}
-                        </h3>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">
+                          {formatCurrency(sub.amount)}
+                        </p>
                         <p className="text-sm text-gray-500 dark:text-slate-400">
-                          {sub.merchantName} • Next:{" "}
-                          {sub.nextBillingDate.toLocaleDateString()}
+                          /{sub.frequency}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-gray-900 dark:text-white">
-                        {formatCurrency(sub.amount)}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-slate-400">
-                        /{sub.frequency}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${sub.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300"}`}
-                      >
-                        {sub.status}
-                      </span>
-                      {sub.autopay && (
-                        <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                          Autopay
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${sub.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300"}`}
+                        >
+                          {sub.status}
                         </span>
-                      )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="p-2 text-gray-400 hover:text-gray-600 dark:text-slate-300 dark:hover:text-gray-300 transition-colors"
+                          aria-label="View details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="p-2 text-gray-400 dark:text-slate-500 hover:text-red-600 transition-colors"
+                          aria-label="Cancel subscription"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="p-2 text-gray-400 hover:text-gray-600 dark:text-slate-300 dark:hover:text-gray-300 transition-colors"
-                        aria-label="View details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="p-2 text-gray-400 dark:text-slate-500 hover:text-red-600 transition-colors"
-                        aria-label="Cancel subscription"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Sidebar - Insights */}
@@ -477,32 +609,39 @@ export default function SubscriptionTrackerPage() {
               </div>
 
               <div className="space-y-3">
-                {insights.map((insight) => (
-                  <div
-                    key={insight.id}
-                    className="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-medium ${getPriorityColor(insight.priority)}`}
-                      >
-                        {insight.priority}
-                      </span>
-                      <span className="text-sm font-semibold text-green-600">
-                        Save {formatCurrency(insight.potentialSavings)}/mo
-                      </span>
+                {insights.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    No savings opportunities found yet. We&apos;ll surface
+                    optimizations here as we learn your spending.
+                  </p>
+                ) : (
+                  insights.map((insight) => (
+                    <div
+                      key={insight.id}
+                      className="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium ${getPriorityColor(insight.priority)}`}
+                        >
+                          {insight.priority}
+                        </span>
+                        <span className="text-sm font-semibold text-green-600">
+                          Save {formatCurrency(insight.potentialSavings)}/mo
+                        </span>
+                      </div>
+                      <h4 className="font-medium text-gray-900 dark:text-white text-sm">
+                        {insight.title}
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                        {insight.description}
+                      </p>
+                      <button className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline">
+                        Take Action →
+                      </button>
                     </div>
-                    <h4 className="font-medium text-gray-900 dark:text-white text-sm">
-                      {insight.title}
-                    </h4>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-                      {insight.description}
-                    </p>
-                    <button className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline">
-                      Take Action →
-                    </button>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -613,42 +752,52 @@ export default function SubscriptionTrackerPage() {
                 </button>
               </div>
 
-              <p className="text-gray-600 dark:text-slate-400 mb-4">
-                We found {detectedSubs.length} potential subscriptions in your
-                transaction history:
-              </p>
+              {detectedSubs.length === 0 ? (
+                <p className="text-gray-600 dark:text-slate-400 mb-6">
+                  We didn&apos;t detect any recurring charges in your transaction
+                  history yet.
+                </p>
+              ) : (
+                <>
+                  <p className="text-gray-600 dark:text-slate-400 mb-4">
+                    We found {detectedSubs.length} recurring charge
+                    {detectedSubs.length === 1 ? "" : "s"} in your transaction
+                    history:
+                  </p>
 
-              <div className="space-y-3 mb-6">
-                {detectedSubs.map((sub, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                        <CreditCard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <div className="space-y-3 mb-6">
+                    {detectedSubs.map((sub, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                            <CreditCard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-gray-900 dark:text-white">
+                              {sub.merchantName}
+                            </h4>
+                            <p className="text-sm text-gray-500 dark:text-slate-400">
+                              {sub.chargeCount} charges • {sub.confidence}%
+                              confidence
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900 dark:text-white">
+                            {formatCurrency(sub.amount)}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">
+                            /{sub.frequency}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">
-                          {sub.merchantName}
-                        </h4>
-                        <p className="text-sm text-gray-500 dark:text-slate-400">
-                          {sub.chargeCount} charges • {sub.confidence}%
-                          confidence
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        {formatCurrency(sub.amount)}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-slate-400">
-                        /{sub.frequency}
-                      </p>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
 
               <div className="flex gap-3">
                 <button

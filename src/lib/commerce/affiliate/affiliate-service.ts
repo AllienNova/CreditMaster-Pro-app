@@ -4,7 +4,7 @@
  * Manages affiliate partners, referral codes, and user attribution.
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   Partner,
   CreatePartnerInput,
@@ -22,8 +22,18 @@ import {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-// Use service role for admin operations
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Use service role for admin operations.
+// Lazily constructed: `next build`'s page-data-collection imports route
+// modules with no runtime env, and a module-scope createClient throws
+// "supabaseUrl is required". The Proxy defers construction to first use.
+let _supabase: SupabaseClient | null = null;
+const supabase = new Proxy({} as SupabaseClient, {
+  get(_t, prop, recv) {
+    if (!_supabase) _supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const v = Reflect.get(_supabase, prop, recv);
+    return typeof v === "function" ? v.bind(_supabase) : v;
+  },
+});
 
 // Referral code expiration (30 days default)
 const DEFAULT_REFERRAL_EXPIRATION_DAYS = 30;
@@ -286,7 +296,7 @@ class AffiliateService {
   }
 
   /**
-   * Apply a referral code (increment usage)
+   * Apply a referral code (atomic increment via RPC)
    */
   async applyReferralCode(userId: string, code: string): Promise<void> {
     const validation = await this.validateReferralCode(code);
@@ -295,13 +305,37 @@ class AffiliateService {
       throw new Error(validation.error);
     }
 
-    // Increment usage count
-    await supabase
-      .from("referral_codes")
-      .update({ uses_count: (validation.code!.usesCount || 0) + 1 })
-      .eq("code", code.toUpperCase());
+    // Service-layer self-referral guard (fast-fail before RPC round-trip).
+    // The RPC also enforces this; both guards must agree on the rejection signal.
+    if (validation.code!.userId === userId) {
+      throw new Error("Cannot apply your own referral code");
+    }
 
-    // Create attribution record
+    // Atomic increment via Postgres RPC — replaces the non-atomic read-modify-write.
+    // The RPC row-locks the referral_codes row, classifies the request, and only
+    // increments uses_count when the status is 'applied'.
+    const { data: status, error: rpcError } = await supabase.rpc(
+      "increment_referral_use",
+      { p_code: code.toUpperCase(), p_user_id: userId },
+    );
+
+    if (rpcError) {
+      throw new Error(`Failed to apply referral code: ${rpcError.message}`);
+    }
+
+    if (status === "self_referral") {
+      throw new Error("Cannot apply your own referral code");
+    }
+
+    if (status === "cap_reached") {
+      throw new Error("Referral code has reached maximum uses");
+    }
+
+    if (status === "invalid") {
+      throw new Error("Invalid or expired referral code");
+    }
+
+    // status === 'applied' — create attribution record
     await this.createAttribution({
       userId,
       referralCode: code.toUpperCase(),

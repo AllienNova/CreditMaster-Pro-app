@@ -1,32 +1,88 @@
 # Health Metrics — Quality Scorecard
 
-> DICE v3.3 Step 9 Output
-> Generated: 2026-02-25
-> Source: Live codebase verification (`npm test`, `tsc --noEmit`, `next lint`, `next build`, `npm audit`)
+> **VERSION-015 — TASK-PRE-01 HONEST RE-BASELINE 2026-05-16**
+>
+> Re-ran lint, type-check, tests, build, and `npm audit` in the `remediation/wave-7-foundation` worktree @ `900d286`. The static metrics in §1–§5 below have been updated with actual results.
+>
+> **Correction to VERSION-014:** the "35 PCTT failures" reported in VERSION-014 were a date-dependent test artifact — two PCTT suites used `new Date()` and failed when the suite ran on a weekend. That bug was fixed earlier today in commit `900d286` (`test(pctt): freeze clock to a weekday in PCTT trading tests`). The current re-run shows **0 failures**. VERSION-014's failure count is superseded; it was a flaky-test artifact, not a code regression.
+>
+> | Gate | VERSION-014 (claimed) | VERSION-015 (re-baselined) | Result |
+> |------|----------------------|----------------------------|--------|
+> | Tests | 547/549 suites · 14,587 cases · **35 failures** | 561 of 563 suites executed (2 skipped) · 14,986 cases · 14,967 pass · 19 skip · **0 failures** | **PASS** |
+> | Type Safety | 0 errors | **0 errors** | **PASS** |
+> | Build | SUCCESS, 560 kB | **Compiles successfully** (`✓ Compiled successfully in 23.6s`); page-data collection step requires live `AIML_API_KEY`/Stripe/Supabase env — not configured in this worktree | PASS (compile) / env-blocked (page-data) |
+> | Lint | 15 errors · 2,858 warnings | **15 errors · 3,193 warnings** (all 15 errors pre-existing legacy, not introduced by Wave 7 — see § 4) | non-blocking (exit 1; build not gated) |
+> | npm audit (all) | 14 (1 high · 11 mod · 2 low) | **14 (6 high · 5 moderate · 3 low)** | unchanged total |
+> | npm audit (prod) | 9 moderate | see § 5 — re-measured | re-measured |
+>
+> Web tests and type-check PASS. Lint exits 1 with **15 pre-existing legacy errors** (`react/display-name`, `prefer-const`, `no-unsafe-function-type`) and 3,193 warnings — none introduced by Wave 7, non-blocking for the build, scheduled for cleanup under TASK-PRE-05. The **9/9-domain audit (§0) is the authoritative quality signal** and remains FAIL — 33 CRITICAL findings open. **Ship: BLOCKED** until Wave 7 closes. Passing tests/types does NOT clear the audit findings; the 13,585→14,967 test growth detected none of the 33 CRITICALs (happy-path against mocked dependencies).
+>
+> See `docs/ssot/gap_analysis.md` for the 71-finding register and `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7 for remediation.
+>
+> ---
+>
+> **VERSION-013 — STATUS FLIPPED TO RED 2026-05-03**
+>
+> A 9-domain comprehensive code review (27 reviewer agents) opened **33 CRITICAL** + 38 HIGH findings. Web overall + mobile both **FAIL**. The metrics below have now been re-baselined (VERSION-014); the per-domain audit results in §0 are the authoritative quality signal until Wave 7 closes.
+>
+> See `docs/ssot/gap_analysis.md` for the 71-finding register and `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7 for the remediation roadmap.
 
 ---
 
-## 1. Test Suite
+## 0. Per-Domain Audit Scorecard (VERSION-013, 2026-05-03)
+
+| Domain | Security | Architecture | Code Quality | Worst Severity |
+|--------|---------|--------------|--------------|---------------:|
+| Auth + middleware | **FAIL** (4 H) | COND. PASS (2 C, 3 H) | **FAIL** (4 H) | 2 CRITICAL |
+| Payments + Subs | **FAIL** (3 H) | **FAIL** (2 C, 2 H) | **FAIL** (2 C, 5 H) | 4 CRITICAL |
+| Commerce | **FAIL** (2 H) | **FAIL** (2 C, 4 H) | **FAIL** (1 C, 3 H) | 3 CRITICAL |
+| Financial services | **FAIL** (3 H) | **FAIL** (1 C, 3 H) | **FAIL** (2 H) | 1 CRITICAL |
+| Investments | **FAIL** (1 C, 2 H) | **FAIL** (1 C, 2 H) | **FAIL** (4 H) | 2 CRITICAL |
+| Notifications | **FAIL** (4 C, 4 H) | **FAIL** (2 C, 3 H) | **FAIL** (2 C, 4 H) | **8 CRITICAL** |
+| Admin | **FAIL** (2 C, 5 H) | **FAIL** (2 C, 3 H) | **FAIL** (3 C, 5 H) | **7 CRITICAL** |
+| AI + Compliance | **FAIL** (3 H) | **FAIL** (2 C, 3 H) | CHANGES (2 H) | 2 CRITICAL |
+| Mobile app | **FAIL** (2 C, 3 H) | **FAIL** (2 C, 3 H) | CHANGES (5 H) | 2 CRITICAL |
+| Credit repair (already remediated where possible — see commit `d64e8d5`) | PASS (post-fix) | COND. PASS | PASS | (closed) |
+| Trading (separate review session) | FAIL (3 C, 4 H) | FAIL (3 C, 4 H) | FAIL (3 C, 4 H) | 3 CRITICAL |
+| **TOTALS** | — | — | — | **33 CRITICAL across 9 domains** |
+
+**Overall verdict**: **RED (web + mobile)**. **Ship: BLOCKED until Wave 7 exit gates pass.**
+
+---
+
+> DICE v3.3 Step 9 Output (original)
+> Generated: 2026-02-25 | **Re-baselined: 2026-05-16 (VERSION-015, TASK-PRE-01)**
+> Source: Live codebase verification (`npm run lint`, `npm run type-check`, `npx jest`, `npm run build`, `npm audit`)
+>
+> The numerical metrics in §1-§5 reflect the TASK-PRE-01 re-run in the `remediation/wave-7-foundation` worktree @ `900d286`. Test pass count is **necessary but not sufficient** — the audit found 33 CRITICAL bugs the suite passes through. Tests/types/lint passing does NOT clear those findings; § 0 is the authoritative quality signal.
+
+---
+
+## 1. Test Suite (Re-baselined 2026-05-16)
 
 | Metric | Value |
 |--------|-------|
-| **Test Suites** | 504 passed, 2 skipped, 506 total |
-| **Test Cases** | 13,585 passed, 19 skipped, 13,604 total |
-| **Execution Time** | ~15s |
-| **Pass Rate** | 99.86% (13,558 / 13,577) |
-| **Suite Pass Rate** | 99.60% (501 / 503) |
-| **Failures** | 0 |
+| **Test Suites** | 561 passed, 0 failed, 2 skipped, 563 total |
+| **Test Cases** | 14,967 passed, 0 failed, 19 skipped, 14,986 total |
+| **Execution Time** | ~16s (`npx jest --silent --maxWorkers=75%`) |
+| **Pass Rate** | 100.0% of executed (14,967 / 14,967) |
+| **Suite Pass Rate** | 100.0% of executed (561 / 561) |
+| **Failures** | **0** |
 
-### Growth Since VERSION-001
+### PCTT Suite — Prior "35 Failures" Resolved
 
-| Metric | VERSION-001 (2026-02-24) | Current (2026-02-25) | Delta |
-|--------|--------------------------|----------------------|-------|
-| Test Files | 234 | 356 suites | +122 suites |
-| Test Cases | 3,287 | 7,279 | +3,992 (+121%) |
+VERSION-014 reported 35 failures across `pctt-trading-service.test.ts` and `pctt-mode-integration.test.ts`. Root cause: both suites called `new Date()` for trading-day logic and failed when the suite ran on a weekend (a date-dependent test artifact, not a code defect). Fixed earlier today in commit `900d286` (`test(pctt): freeze clock to a weekday in PCTT trading tests`). This re-run confirms both suites now pass; the 35-failure figure is superseded.
 
 ### Skipped Tests (19)
 
-All skips are intentional — environment-dependent tests that require live API keys or external services. Zero skips due to flakiness or known failures.
+All 19 skips are intentional — environment-dependent tests that require live API keys or external services. Zero skips due to flakiness or known failures.
+
+### Growth Since VERSION-001
+
+| Metric | VERSION-001 (2026-02-24) | VERSION-015 (2026-05-16) | Delta |
+|--------|--------------------------|--------------------------|-------|
+| Test Suites | ~100 | 563 | +463 |
+| Test Cases | 3,287 | 14,986 | +11,699 (+356%) |
 
 ---
 
@@ -47,91 +103,92 @@ All skips are intentional — environment-dependent tests that require live API 
 
 ---
 
-## 3. Build
+## 3. Build (Re-baselined 2026-05-16)
 
 | Metric | Value |
 |--------|-------|
 | **Build Tool** | Next.js 15.5.6 |
-| **Build Status** | SUCCESS |
-| **Build Warnings** | 0 blocking |
-| **First Load JS (shared)** | 538 kB |
-| **Route Count** | 248 API routes + 182 pages |
-| **Static Routes** | Generated successfully |
-| **Dynamic Routes** | Generated successfully |
+| **Compilation** | SUCCESS — `✓ Compiled successfully in 23.6s` |
+| **Build Warnings** | 0 blocking (1 informational workspace-root warning — multiple lockfiles) |
+| **Page-data collection** | Env-blocked in this worktree — `Failed to collect page data for /api/ai/chat/message`; requires live `AIML_API_KEY`, Supabase, and Stripe env vars (not configured in `.worktrees/wave-7-foundation`). This is an environment-config gap, not a code defect — webpack compilation completes cleanly. |
+
+> **Note**: A full build pass (compile + page-data + static generation) requires the production env file. The TASK-PRE-01 re-run confirms the codebase **compiles** without error; full `npm run build` should be re-verified in an environment with the secrets populated before any ship gate.
 
 ---
 
-## 4. Lint
+## 4. Lint (Re-baselined 2026-05-16 — corrected)
 
 | Metric | Value |
 |--------|-------|
-| **Linter** | ESLint via `next lint` |
-| **Errors** | 7 (non-blocking — build succeeds) |
-| **Warnings** | 841 |
-| **Total Violations** | 848 |
+| **Linter** | ESLint via `next lint` (deprecated — migrate to ESLint CLI before Next.js 16) |
+| **Errors** | **15** — all pre-existing legacy issues, **not introduced by Wave 7** |
+| **Warnings** | **3,193** — overwhelmingly `@typescript-eslint/no-explicit-any` and `no-unused-vars` in legacy code |
+| **Exit Code** | 1 |
 
-### Warning Categories
+### Error breakdown (all 15 pre-existing)
 
-| Category | Severity | Notes |
-|----------|----------|-------|
-| `@typescript-eslint/no-explicit-any` | Warning | Legacy code — tracked as tech debt |
-| `@typescript-eslint/no-unused-vars` | Warning | Unused parameters in interfaces/callbacks |
-| `react/display-name` | Warning | Anonymous function components |
+| Rule | Count | Notes |
+|------|------:|-------|
+| `react/display-name` | 7 | Anonymous function components in legacy UI code |
+| `prefer-const` | 6 | `let` declarations never reassigned (legacy) |
+| `@typescript-eslint/no-unsafe-function-type` | 2 | Bare `Function` type in legacy code |
 
-**Assessment**: 7 error-level violations and 841 warnings. None are build-blocking. Errors and warnings are concentrated in legacy code and do not affect build or runtime. Tracked in §15 Known Issues for incremental cleanup.
+**Assessment**: `npm run lint` exits **1** with **15 errors and 3,193 warnings**. All 15 errors are pre-existing legacy violations — the `remediation/wave-7-foundation` branch to date has only touched docs and one PCTT test file, so none of the 15 are introduced by Wave 7. They are non-blocking for the build (`eslint-config-next` does not fail the build on them) but should be cleaned as part of Wave 7 lint-hygiene work (TASK-PRE-05).
+
+> **Correction note (2026-05-16):** An earlier VERSION-015 draft of this section recorded "0 errors / 1 warning". That figure was wrong — it came from a lint run made before the ESLint config-cascade conflict was resolved (the nested worktree was loading the parent repo's `.eslintrc`, which suppressed the real rule set). With the config resolving correctly, the true counts are 15 errors / 3,193 warnings, as recorded above.
 
 ---
 
-## 5. Security Audit
+## 5. Security Audit (Re-baselined 2026-05-16)
 
 | Metric | Value |
 |--------|-------|
-| **Tool** | `npm audit` |
-| **Total Vulnerabilities** | 2 |
+| **Tool** | `npm audit` (`npm audit --json` for exact counts) |
+| **Total Vulnerabilities** | **14** |
 | **Critical** | 0 |
-| **High** | 0 |
-| **Moderate** | 0 |
-| **Low** | 2 |
+| **High** | **6** |
+| **Moderate** | **5** |
+| **Low** | **3** |
 
-### Vulnerability Details
+### Production-Only (`npm audit --omit=dev --json`): **8 total** (3 high · 4 moderate · 1 low)
 
-| Package | Severity | Issue | Impact |
-|---------|----------|-------|--------|
-| `cookie <0.7.0` (via `msw`) | Low | Out-of-bounds chars in cookie name/path/domain | Test-only (Mock Service Worker) |
-| `msw <=0.0.1 \|\| 0.13.0-1.3.5` | Low | Depends on vulnerable `cookie` | Test-only |
+Production-affecting packages (all have non-breaking `npm audit fix` available except `nodemailer`):
 
-### Resolved (2026-02-25)
+| Package | Severity | Advisory | Impact |
+|---------|----------|----------|--------|
+| `axios 1.0.0–1.15.1` | High | Transitive — fix via `npm audit fix` | Production: HTTP client |
+| `fast-xml-parser <5.7.0` (via `@aws-sdk/xml-builder`) | High | GHSA-gh4j-gqv2-49f6 — XML comment/CDATA injection via unescaped delimiters | Production: AWS SDK / S3 |
+| `fast-xml-builder <=1.1.6` | High | GHSA-5wm8-gmm8-39j9 — attribute-value quote bypass | Production: AWS SDK |
+| `postcss <8.5.10` (via `next`) | Moderate | GHSA-qx2v-qp2m-jg93 — XSS via unescaped `</style>` in CSS stringify | Production: SSR/build CSS pipeline |
+| `nodemailer <=8.0.4` (via `next-auth`) | Moderate | Fix requires `npm audit fix --force` (breaking) | Production: auth email |
+| `next` (chain) | Moderate | Transitive | Production: framework |
+| `next-auth` | Moderate | Transitive — depends on vulnerable `nodemailer` | Production: auth |
 
-| Package | Resolution |
-|---------|-----------|
-| `systeminformation <=5.30.7` (Critical + 3 High) | Fixed via `npm audit fix` — Cypress 15.10.0 + updated transitive deps |
-| `minimatch` (3 High) | Fixed via `npm audit fix` |
+### Dev-Only Vulnerabilities (6 of 14)
 
-**Assessment**: Zero critical/high vulnerabilities. 2 low-severity issues in `msw` (test mock library) — not in production bundle. Requires breaking change to `msw@2.12.10` to resolve; deferred as non-blocking.
+The remaining 6 (3 high + 1 moderate + 2 low) are in dev/test-only chains (`cypress`/`@cypress/request`, `msw`/`cookie`) and are not in the production bundle.
+
+### Fixes Available
+
+- `npm audit fix` — addresses the non-breaking subset (`axios`, `fast-xml-parser`, `fast-xml-builder`, `postcss`).
+- `npm audit fix --force` — installs breaking versions of `next-auth`/`nodemailer`/`next`; do NOT run blindly.
+
+**Assessment**: 14 total vulns (0 critical), 8 production-affecting. The non-breaking subset should land via `npm audit fix`; the `next-auth`/`nodemailer` chain needs a coordinated upgrade plan, not blanket `--force`. Track production dependency upgrade as a Wave 7 task.
 
 ---
 
-## 6. Codebase Metrics (Verified 2026-03-02)
+## 6. Codebase Metrics (Re-baselined 2026-05-03)
 
-| Metric | Value | Source |
-|--------|-------|--------|
-| Total Files (src/) | 1,833 | `find src/ -name "*.ts" -o -name "*.tsx"` |
-| Source Files (excl. tests) | 1,325 | src/ total minus test files |
-| Test Files (Jest web) | 508 | `find src/ -name "*.test.ts" -o -name "*.test.tsx"` |
-| Test Files (all frameworks) | 576 | Jest web 508 + mobile 31 + Cypress 21 + Playwright 16 |
-| Lines of Code | 846,417 | `wc -l` across all src/ + mobile-app/ .ts/.tsx |
-| API Routes | 284 | `find src/app/api/ -name route.ts` |
-| API Domains | 42 | `find src/app/api/ -mindepth 1 -maxdepth 1 -type d` |
-| Pages | 199 | `find src/app/ -name page.tsx` |
-| Components | 309 | `find src/components/ -name "*.tsx"` |
-| Layouts | 11 | `find src/app/ -name layout.tsx` |
-| Library Dirs | 55 | `find src/lib/ -mindepth 1 -maxdepth 1 -type d` |
-| Custom Hooks | 29 | `find src/hooks/ -type f` |
-| DB Migrations | 30 | `ls supabase/migrations/` |
-| Mobile App Source | 141 | .ts/.tsx under mobile-app/src/ |
-| Mobile App Routes | 257 | .tsx under mobile-app/app/ |
-| Mobile Route Groups | 37 | Top-level dirs in mobile-app/app/ |
-| Documentation Files | 134 | `find docs/ -name "*.md"` |
+| Metric | VERSION-013 (2026-03-02) | VERSION-014 (2026-05-03) | Source |
+|--------|-------------------------:|-------------------------:|--------|
+| Test Files (Jest web) | 508 | **551** | `find src -name "*.test.ts" -o -name "*.test.tsx"` |
+| API Routes | 284 | **294** | `find src/app/api -name route.ts` |
+| Pages | 199 | **204** | `find src/app -name page.tsx` |
+| Components | 309 | **344** | `find src/components -name "*.tsx"` |
+| DB Migrations | 30 | **39** | `git ls-files supabase/migrations` |
+| Mobile App Test Files | 31 | **43** | `find mobile-app -name "*.test.ts" -o -name "*.test.tsx"` |
+
+> Other counts in the prior table (Total Files, LOC, Layouts, Library Dirs, Custom Hooks, Mobile App Source/Routes, Documentation Files) were not re-measured during TASK-PRE-01 — that audit focused on quality gates, not codebase shape. Re-measure if you need a current count for any of those rows.
 
 ---
 
@@ -166,35 +223,35 @@ Based on test suite distribution and DICE v3.3 gap analysis:
 
 ---
 
-## 8. Quality Scorecard Summary
+## 8. Quality Scorecard Summary (Re-baselined 2026-05-16)
 
 | Gate | Check | Result | Status |
 |------|-------|--------|--------|
-| 1 | Tests Pass | 13,558/13,558 (0 failures) | PASS |
+| 1 | Tests Pass | 14,967 passed / 0 failed / 19 skipped of 14,986 | PASS |
 | 2 | Type Safety | 0 errors (production + test) | PASS |
-| 3 | Build Succeeds | Next.js build complete | PASS |
-| 4 | Lint Clean | 0 blocking errors | PASS |
-| 5 | Security Audit | 0 production vulnerabilities | PASS |
-| 6 | Coverage >= 80% (overall) | Estimated >= 80% | PASS |
-| 7 | Coverage >= 80% (per-domain) | 3 domains below threshold | WARN |
-| 8 | Mobile Coverage | 0% | FAIL |
+| 3 | Build Succeeds | Compiles cleanly; page-data collection env-blocked in worktree | PASS (compile) — re-verify full build with secrets |
+| 4 | Lint Clean | 15 errors (all pre-existing legacy), 3,193 warnings | NON-BLOCKING — build not gated; cleanup under TASK-PRE-05 |
+| 5 | Security Audit (prod) | 8 production vulns (3 high · 4 mod · 1 low), 0 critical | PROVISIONAL — non-breaking subset fixable via `npm audit fix` |
+| 6 | Coverage >= 80% (overall) | Per-suite numbers stale until coverage re-run | PROVISIONAL |
+| 7 | Coverage >= 80% (per-domain) | Stale until coverage re-run | PROVISIONAL |
+| 8 | Mobile Coverage | 0% (mobile test files exist but no Jest config wired) | FAIL |
+| 9 | Per-domain audit (VERSION-013) | **9/9 domains FAIL, 33 CRITICAL open** | **FAIL** |
 
-### Overall Health: **GREEN** (production web app) / **RED** (mobile app)
+### Overall Health: **RED (audit-blocked)**
 
-The web application passes all quality gates. The mobile app (Expo/React Native) has no test coverage and is tracked as TASK-MOB-01 in Wave 4.
+Tests and type-check PASS. Lint exits 1 with 15 pre-existing legacy errors (non-blocking for the build) and 3,193 warnings — none introduced by Wave 7. **The §0 nine-domain audit remains the authoritative quality signal: 9/9 domains FAIL with 33 CRITICAL findings open.** Passing tests/types does NOT clear those findings — the 14,967-test suite is structurally happy-path and detected none of the 33 CRITICALs. **Ship: BLOCKED** until Wave 7 (Security & Correctness Remediation) closes. Mobile coverage remains 0%.
 
 ---
 
-## 8.5. Task Completion Status (Updated 2026-03-01)
+## 8.5. Task Completion Status (Re-baselined 2026-05-03, VERSION-013)
 
-Full audit of all 125 tasks in MASTER-IMPLEMENTATION-PLAN.md (112 original + 13 Wave 6):
+> The 9-domain audit invalidated the prior "125 DONE / 100%" claim. All 125 originals are NEEDS_VERIFICATION pending TASK-PRE-01; some explicitly REOPENED. Wave 7 adds 59 remediation tasks.
 
-| Status | Count | % |
-|--------|-------|---|
-| **DONE** | 125 | 100% |
-| **IN_PROGRESS** | 0 | 0.0% |
-| **NOT_STARTED** | 0 | 0.0% |
-| **Total** | 125 | 100% |
+| Wave | Status | Count |
+|------|--------|------:|
+| 0-6 (originals) | NEEDS_VERIFICATION (some REOPENED) | 125 |
+| 7 (Security & Correctness Remediation) | NOT_STARTED | 59 |
+| **Total** | **mixed** | **184** |
 
 ### Batch Completion Log
 
@@ -279,3 +336,7 @@ _Updated 2026-03-01: TASK-DOC-03 (Developer Documentation Portal) completed. Ope
 _Updated 2026-03-01: VERSION-008 — Final reconciliation. All 112 tasks confirmed DONE (100%). 6 previously listed IN_PROGRESS tasks (CRD-04, AIM-01, AIM-02, AIM-03, GMF-03, INV-04) verified complete — individual task cards already showed DONE with all acceptance criteria met; summary tables were stale. Quality gates: 12,468 tests (0 failures), 0 type errors, build SUCCESS, 0 high/critical vulns._
 _Updated 2026-03-01: VERSION-009 — Added 13 Wave 6 tasks (Plaid, DriveWealth, Affiliate). Total tasks: 112 → 125 (112 DONE + 13 NOT_STARTED). Quality gates unchanged (12,468 tests, 0 type errors, build SUCCESS). New domains: PLD (Plaid, 5 tasks), AFF (Affiliate, 4 tasks), TRD extended (+4 tasks)._
 _Updated 2026-03-01: VERSION-010 — Wave 6 complete. All 125 tasks DONE (100%). 13 Wave 6 tasks (PLD-01–05, TRD-15–18, AFF-01–04) completed. Test suite: 13,558 tests (+1,090), 501 suites (+28), 0 failures. Quality gates: all PASS._
+_Updated 2026-05-03: VERSION-013 — 9-domain audit (27 reviewer agents) opened 33 CRITICAL + 38 HIGH findings. Status FLIPPED TO RED. All prior "DONE / 100%" claims invalidated; Wave 7 (Security & Correctness Remediation, 59 tasks across 8 phases) opened. Static metrics not yet re-run._
+_Updated 2026-05-03: **VERSION-014 — TASK-PRE-01 honest re-baseline executed on `feat/asset-system-regen` @ `2877317`.** Live re-run results: tests 14,533 / 35 fail / 19 skip / 14,587 (REGRESSION — 35 PCTT trading-service failures); types 0 errors (PASS); lint 15 errors / 2,858 warnings (REGRESSION from 7 / 841); build SUCCESS, 560 kB shared, 294 API routes / 204 pages; npm audit 14 total (1 high dev / 11 mod / 2 low), prod-only 9 moderate (REGRESSION from 0). Five gates regressed; the prior commit-message "14,568/14,587 baseline still valid" claim was incorrect. Breadcrumb: `.claude/last-verification.json` (verdict: FAIL). Ship: BLOCKED._
+_Updated 2026-05-16: **VERSION-015 — TASK-PRE-01 honest re-baseline re-run in `remediation/wave-7-foundation` worktree @ `900d286`.** Live re-run results: tests 14,967 pass / 0 fail / 19 skip / 14,986 (561 of 563 suites; PASS); types 0 errors (PASS); build compiles cleanly (`✓ Compiled successfully in 23.6s`), full page-data step env-blocked in worktree; npm audit 14 total (0 critical / 6 high / 5 mod / 3 low), prod-only 8 (3 high / 4 mod / 1 low). The VERSION-014 "35 PCTT failures" were a date-dependent weekend test artifact, fixed in commit `900d286`. § 0 nine-domain audit (33 CRITICAL) remains FAIL and is the authoritative signal. Reconciled the Wave 7 Exit-Criterion-1 CRITICAL list: removed mis-severitied FND-018/FND-027 (both High), added omitted FND-065/066/067 (Critical) — explicit list now matches the 33-CRITICAL register. Ship: BLOCKED (audit)._
+_Corrected 2026-05-16: **VERSION-015 lint figure corrected.** The initial VERSION-015 entry recorded "lint 0 errors / 0 warnings" — that was wrong, produced by a lint run made before the ESLint config-cascade conflict was resolved (the nested worktree loaded the parent repo's `.eslintrc`, suppressing the real rule set). True figures: **`npm run lint` exits 1 with 15 errors and 3,193 warnings**. All 15 errors are pre-existing legacy issues (7 `react/display-name`, 6 `prefer-const`, 2 `no-unsafe-function-type`) — none introduced by Wave 7; non-blocking for the build; scheduled for cleanup under TASK-PRE-05._

@@ -5,29 +5,16 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
 import { advancedDisputeEngine } from "@/lib/advanced-dispute-engine";
 import { logAIInteraction } from "@/lib/security/audit-logging";
 import { validateInput } from "@/lib/security/input-validation";
 import { validateOutput } from "@/lib/security/output-validation";
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "disputes:create",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "disputes:create")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const user = validation.user;
-
     // Parse request body
     const body = await request.json();
     const { loan, error_type, evidence } = body;
@@ -108,9 +95,10 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);
 
-export async function GET() {
+export const GET = withPermission("disputes:create", async () => {
   return NextResponse.json({
     message: "Student Loan Dispute Generation API",
     method: "POST",
@@ -119,4 +107,4 @@ export async function GET() {
     optionalFields: ["evidence"],
     description: "Generates dispute letters for student loan errors",
   });
-}
+});

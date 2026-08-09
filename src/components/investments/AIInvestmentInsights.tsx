@@ -153,6 +153,7 @@ export default function AIInvestmentInsights() {
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="p-2 hover:bg-white dark:bg-slate-800/10 rounded-lg transition-colors"
+          aria-label={isExpanded ? "Collapse insights" : "Expand insights"}
         >
           {isExpanded ? (
             <svg

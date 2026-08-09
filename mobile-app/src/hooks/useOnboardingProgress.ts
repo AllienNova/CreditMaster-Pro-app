@@ -11,6 +11,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
+import { api } from "../services/api/client";
 
 export interface OnboardingProgress {
   current_step: number;
@@ -21,7 +22,6 @@ export interface OnboardingProgress {
 
 const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 const STORAGE_KEY = "@onboarding_progress";
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
 export function useOnboardingProgress() {
   const [progress, setProgress] = useState<OnboardingProgress>({
@@ -61,13 +61,12 @@ export function useOnboardingProgress() {
 
         // If online, fetch from server
         if (isOnline) {
-          const response = await fetch(`${API_URL}/api/onboarding/progress`);
+          const res = await api.get<OnboardingProgress>("/onboarding/progress");
 
-          if (response.ok) {
-            const serverData = await response.json();
-            setProgress(serverData);
+          if (res.success && res.data) {
+            setProgress(res.data);
             // Update local storage
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(serverData));
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(res.data));
           }
         }
       } catch (err) {
@@ -93,15 +92,9 @@ export function useOnboardingProgress() {
 
         // Sync with server if online
         if (isOnline) {
-          const response = await fetch(`${API_URL}/api/onboarding/progress`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(progressToSave),
-          });
+          const res = await api.post("/onboarding/progress", progressToSave);
 
-          if (!response.ok) {
+          if (!res.success) {
             throw new Error("Failed to sync with server");
           }
         }

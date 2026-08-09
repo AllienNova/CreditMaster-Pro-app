@@ -130,7 +130,7 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section className="py-12">
         <div className="max-w-[1600px] mx-auto px-6">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 xl:gap-3">
             {pricingTiers.map((tier) => {
               const displayPrice =
                 billingCycle === "monthly"
@@ -142,7 +142,7 @@ export default function PricingPage() {
               return (
                 <div
                   key={tier.id}
-                  className={`relative rounded-xl p-8 flex flex-col ${
+                  className={`relative rounded-xl p-6 xl:p-4 2xl:p-8 flex flex-col min-w-0 ${
                     isPopular
                       ? "bg-gradient-to-br from-gray-900 to-slate-800 text-white scale-[1.02] shadow-xl ring-2 ring-emerald-500/30 lg:-mt-4 lg:mb-4"
                       : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all hover:border-emerald-200 dark:hover:border-emerald-700"
@@ -164,7 +164,7 @@ export default function PricingPage() {
 
                   <div className="mb-6">
                     <h3
-                      className={`text-2xl font-bold mb-1 ${isPopular ? "text-white" : "text-gray-900 dark:text-white"}`}
+                      className={`text-2xl xl:text-lg 2xl:text-2xl font-bold mb-1 ${isPopular ? "text-white" : "text-gray-900 dark:text-white"}`}
                     >
                       {tier.name}
                     </h3>
@@ -176,17 +176,17 @@ export default function PricingPage() {
                   </div>
 
                   <div className="mb-6">
-                    <div className="flex items-baseline mb-1">
+                    <div className="flex items-baseline mb-1 min-w-0">
                       {isFree ? (
                         <span
-                          className={`text-5xl font-bold tracking-tight ${isPopular ? "text-white" : "text-gray-900 dark:text-white"}`}
+                          className={`text-4xl xl:text-2xl 2xl:text-4xl font-bold tracking-tight ${isPopular ? "text-white" : "text-gray-900 dark:text-white"}`}
                         >
-                          Free
+                          $0
                         </span>
                       ) : (
                         <>
                           <span
-                            className={`text-5xl font-bold tracking-tight ${isPopular ? "text-white" : "text-gray-900 dark:text-white"}`}
+                            className={`text-4xl xl:text-2xl 2xl:text-4xl font-bold tracking-tight ${isPopular ? "text-white" : "text-gray-900 dark:text-white"}`}
                           >
                             $
                             {billingCycle === "monthly"
@@ -209,6 +209,14 @@ export default function PricingPage() {
                         {(tier.priceNumber * 12 - tier.annualPrice).toFixed(0)})
                       </p>
                     )}
+                    <div className={`mt-2 flex items-center gap-1.5 ${isPopular ? "text-emerald-300" : "text-emerald-600 dark:text-emerald-400"}`}>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                      </svg>
+                      <span className="text-sm font-bold">
+                        {tier.creditsPerMonth.toLocaleString()} credits/mo
+                      </span>
+                    </div>
                   </div>
 
                   <ul className="space-y-3 mb-8 flex-grow">
@@ -448,6 +456,28 @@ export default function PricingPage() {
                   <td className="py-4 px-6 text-center text-amber-400">
                     35-60% of savings
                   </td>
+                </tr>
+                <tr className="border-b border-gray-700/50">
+                  <td className="py-4 pr-4 text-gray-300">Subscription Cancellation</td>
+                  <td className="py-4 px-6 text-center">
+                    <span className="text-emerald-400 font-bold">
+                      AI-Assisted
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 text-center text-red-400">None</td>
+                  <td className="py-4 px-6 text-center text-amber-400">
+                    Manual assist
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-700/50">
+                  <td className="py-4 pr-4 text-gray-300">Auto Loan Comparison</td>
+                  <td className="py-4 px-6 text-center">
+                    <span className="text-emerald-400 font-bold">
+                      Pre-Approval Odds
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 text-center text-emerald-400">Basic offers</td>
+                  <td className="py-4 px-6 text-center text-red-400">None</td>
                 </tr>
                 <tr className="border-b border-gray-700/50">
                   <td className="py-4 pr-4 text-gray-300">Investment Tools</td>

@@ -1,0 +1,199 @@
+{
+  "generated_at": "2026-04-16T13:36:17.848Z",
+  "source_spec": "assets/specs/app-icons-source.toml",
+  "source_model": "gemini-3-pro-image-preview",
+  "files": [
+    {
+      "path": "assets/production/app-icons/web/favicon-16.png",
+      "dimensions": "16x16",
+      "bytes": 459,
+      "usage": "web favicon 16px"
+    },
+    {
+      "path": "assets/production/app-icons/web/favicon-32.png",
+      "dimensions": "32x32",
+      "bytes": 1041,
+      "usage": "web favicon 32px"
+    },
+    {
+      "path": "assets/production/app-icons/web/favicon-48.png",
+      "dimensions": "48x48",
+      "bytes": 1790,
+      "usage": "web favicon 48px"
+    },
+    {
+      "path": "assets/production/app-icons/web/favicon.ico",
+      "dimensions": "16/32/48",
+      "bytes": 15086,
+      "usage": "web favicon multi-res .ico (16/32/48)"
+    },
+    {
+      "path": "assets/production/app-icons/web/apple-touch-icon.png",
+      "dimensions": "180x180",
+      "bytes": 24470,
+      "usage": "apple-touch-icon for Safari/iOS homescreen"
+    },
+    {
+      "path": "assets/production/app-icons/web/pwa-192.png",
+      "dimensions": "192x192",
+      "bytes": 27779,
+      "usage": "PWA manifest icon 192x192"
+    },
+    {
+      "path": "assets/production/app-icons/web/pwa-512.png",
+      "dimensions": "512x512",
+      "bytes": 197779,
+      "usage": "PWA manifest icon 512x512"
+    },
+    {
+      "path": "assets/production/app-icons/web/pwa-maskable-192.png",
+      "dimensions": "192x192",
+      "bytes": 20164,
+      "usage": "PWA maskable icon 192x192 (safe-zone padded)"
+    },
+    {
+      "path": "assets/production/app-icons/web/pwa-maskable-512.png",
+      "dimensions": "512x512",
+      "bytes": 138333,
+      "usage": "PWA maskable icon 512x512 (safe-zone padded)"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-20.png",
+      "dimensions": "20x20",
+      "bytes": 820,
+      "usage": "iOS Light app icon 20x20"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-29.png",
+      "dimensions": "29x29",
+      "bytes": 1371,
+      "usage": "iOS Light app icon 29x29"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-40.png",
+      "dimensions": "40x40",
+      "bytes": 2176,
+      "usage": "iOS Light app icon 40x40"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-58.png",
+      "dimensions": "58x58",
+      "bytes": 3770,
+      "usage": "iOS Light app icon 58x58"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-60.png",
+      "dimensions": "60x60",
+      "bytes": 4040,
+      "usage": "iOS Light app icon 60x60"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-76.png",
+      "dimensions": "76x76",
+      "bytes": 5565,
+      "usage": "iOS Light app icon 76x76"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-80.png",
+      "dimensions": "80x80",
+      "bytes": 6070,
+      "usage": "iOS Light app icon 80x80"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-87.png",
+      "dimensions": "87x87",
+      "bytes": 6920,
+      "usage": "iOS Light app icon 87x87"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-120.png",
+      "dimensions": "120x120",
+      "bytes": 11649,
+      "usage": "iOS Light app icon 120x120"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-152.png",
+      "dimensions": "152x152",
+      "bytes": 17971,
+      "usage": "iOS Light app icon 152x152"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-167.png",
+      "dimensions": "167x167",
+      "bytes": 21373,
+      "usage": "iOS Light app icon 167x167"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-180.png",
+      "dimensions": "180x180",
+      "bytes": 24470,
+      "usage": "iOS Light app icon 180x180"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Light-1024.png",
+      "dimensions": "1024x1024",
+      "bytes": 794495,
+      "usage": "iOS Light app icon 1024x1024"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Dark-1024.png",
+      "dimensions": "1024x1024",
+      "bytes": 773657,
+      "usage": "iOS Dark app icon 1024x1024 (iOS 18+ dark appearance)"
+    },
+    {
+      "path": "assets/production/app-icons/ios/AppIcon-Tinted-1024.png",
+      "dimensions": "1024x1024",
+      "bytes": 232328,
+      "usage": "iOS Tinted app icon 1024x1024 (iOS 18+ tinted appearance)"
+    },
+    {
+      "path": "assets/production/app-icons/android/ic_launcher_foreground.png",
+      "dimensions": "432x432",
+      "bytes": 14219,
+      "usage": "Android adaptive icon foreground 432x432 (transparent background)"
+    },
+    {
+      "path": "assets/production/app-icons/android/ic_launcher_background.png",
+      "dimensions": "432x432",
+      "bytes": 1195,
+      "usage": "Android adaptive icon background 432x432 (Vital Green #10B981)"
+    },
+    {
+      "path": "assets/production/app-icons/android/ic_launcher_monochrome.png",
+      "dimensions": "432x432",
+      "bytes": 23752,
+      "usage": "Android themed icon monochrome 432x432 (Android 13+)"
+    },
+    {
+      "path": "assets/production/app-icons/android/mipmap/mdpi-48.png",
+      "dimensions": "48x48",
+      "bytes": 1483,
+      "usage": "Android mipmap mdpi ic_launcher 48x48"
+    },
+    {
+      "path": "assets/production/app-icons/android/mipmap/hdpi-72.png",
+      "dimensions": "72x72",
+      "bytes": 2216,
+      "usage": "Android mipmap hdpi ic_launcher 72x72"
+    },
+    {
+      "path": "assets/production/app-icons/android/mipmap/xhdpi-96.png",
+      "dimensions": "96x96",
+      "bytes": 2835,
+      "usage": "Android mipmap xhdpi ic_launcher 96x96"
+    },
+    {
+      "path": "assets/production/app-icons/android/mipmap/xxhdpi-144.png",
+      "dimensions": "144x144",
+      "bytes": 4267,
+      "usage": "Android mipmap xxhdpi ic_launcher 144x144"
+    },
+    {
+      "path": "assets/production/app-icons/android/mipmap/xxxhdpi-192.png",
+      "dimensions": "192x192",
+      "bytes": 5800,
+      "usage": "Android mipmap xxxhdpi ic_launcher 192x192"
+    }
+  ]
+}

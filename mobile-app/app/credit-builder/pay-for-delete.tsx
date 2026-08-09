@@ -213,7 +213,7 @@ export default function PayForDeleteScreen() {
                       />
                       <TouchableOpacity
                         style={styles.generateButton}
-                        onPress={() => router.push("/disputes/new")}
+                        onPress={() => router.push("/dispute/new")}
                       >
                         <Ionicons name="document-text" size={18} color="#fff" />
                         <Text style={styles.generateButtonText}>

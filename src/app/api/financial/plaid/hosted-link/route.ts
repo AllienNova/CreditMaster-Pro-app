@@ -12,24 +12,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CountryCode, Products } from "plaid";
 import { getPlaidClient } from "@/lib/financial/plaid-client";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 const DEFAULT_REDIRECT_URI = "fynvita://plaid-callback";
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "financial:link_accounts",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
 
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!rbac.hasPermission(validation.user, "financial:link_accounts")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const body = await request.json();
     const { userId, redirectUri } = body as {
@@ -45,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the requesting user matches the userId or is an admin
-    if (validation.user.id !== userId && validation.user.role !== "admin" && validation.user.role !== "super_admin") {
+    if (user.id !== userId && user.role !== "admin" && user.role !== "super_admin") {
       return NextResponse.json(
         { error: "Forbidden: userId does not match authenticated user" },
         { status: 403 },
@@ -93,4 +85,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

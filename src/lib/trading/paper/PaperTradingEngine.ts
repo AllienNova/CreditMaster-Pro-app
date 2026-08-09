@@ -8,6 +8,16 @@
  * - Track performance in a sandbox environment
  *
  * Security: All paper trades are clearly marked and isolated from real trading.
+ *
+ * Persistence: paper_accounts/paper_orders/paper_positions/paper_fills/
+ * paper_trades (20260731000030_paper_trading_tables.sql) use the repo's
+ * standard snake_case columns, so every read/write here goes through a
+ * mapDbToX() or an explicit snake_case payload — the class's own public
+ * types (PaperAccount, PaperPosition, PaperTrade) stay camelCase and never
+ * change shape for callers. Every mutation checks `{ error }` and throws
+ * instead of discarding it: a silently-dropped paper_fills/paper_trades
+ * insert would otherwise let trackTradeForGraduation() count a trade toward
+ * WATCH->GUIDED graduation that was never actually recorded.
  */
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
@@ -126,6 +136,111 @@ const DEFAULT_CONFIG: PaperTradingConfig = {
 };
 
 // ============================================================================
+// DB ROW <-> DOMAIN MAPPING
+// ============================================================================
+// Mirrors the mapDbToOrder/mapDbToPosition convention already established in
+// src/lib/trading/orders/order-manager.ts and
+// src/lib/trading/positions/position-manager.ts.
+
+function mapDbToAccount(data: Record<string, unknown>): PaperAccount {
+  return {
+    id: data.id as string,
+    userId: data.user_id as string,
+    name: data.name as string,
+    initialBalance: Number(data.initial_balance),
+    cashBalance: Number(data.cash_balance),
+    buyingPower: Number(data.buying_power),
+    portfolioValue: Number(data.portfolio_value),
+    totalValue: Number(data.total_value),
+    dayTradeCount: Number(data.day_trade_count),
+    isPDTRestricted: Boolean(data.is_pdt_restricted),
+    createdAt: new Date(data.created_at as string),
+    updatedAt: new Date(data.updated_at as string),
+  };
+}
+
+function mapDbToPosition(data: Record<string, unknown>): PaperPosition {
+  return {
+    id: data.id as string,
+    accountId: data.account_id as string,
+    symbol: data.symbol as string,
+    quantity: Number(data.quantity),
+    avgEntryPrice: Number(data.avg_entry_price),
+    currentPrice: Number(data.current_price),
+    marketValue: Number(data.market_value),
+    unrealizedPL: Number(data.unrealized_pl),
+    unrealizedPLPercent: Number(data.unrealized_pl_percent),
+    realizedPL: Number(data.realized_pl),
+    costBasis: Number(data.cost_basis),
+    side: data.side as PaperPosition["side"],
+    createdAt: new Date(data.created_at as string),
+    updatedAt: new Date(data.updated_at as string),
+  };
+}
+
+function mapDbToPaperOrder(data: Record<string, unknown>): Order {
+  return {
+    id: data.id as string,
+    userId: data.user_id as string,
+    accountId: data.account_id as string,
+    symbol: data.symbol as string,
+    side: data.side as OrderSide,
+    quantity: Number(data.quantity),
+    type: data.type as OrderType,
+    limitPrice: data.limit_price != null ? Number(data.limit_price) : undefined,
+    stopPrice: data.stop_price != null ? Number(data.stop_price) : undefined,
+    trailPercent:
+      data.trail_percent != null ? Number(data.trail_percent) : undefined,
+    trailAmount:
+      data.trail_amount != null ? Number(data.trail_amount) : undefined,
+    timeInForce: data.time_in_force as TimeInForce,
+    extendedHours: data.extended_hours as boolean | undefined,
+    orderClass: data.order_class as Order["orderClass"],
+    takeProfitPrice:
+      data.take_profit_price != null ? Number(data.take_profit_price) : undefined,
+    stopLossPrice:
+      data.stop_loss_price != null ? Number(data.stop_loss_price) : undefined,
+    stopLossLimitPrice:
+      data.stop_loss_limit_price != null
+        ? Number(data.stop_loss_limit_price)
+        : undefined,
+    clientOrderId: data.client_order_id as string | undefined,
+    signalId: data.signal_id as string | undefined,
+    strategyId: data.strategy_id as string | undefined,
+    notes: data.notes as string | undefined,
+    status: data.status as OrderStatus,
+    filledQty: Number(data.filled_qty),
+    filledAvgPrice:
+      data.filled_avg_price != null ? Number(data.filled_avg_price) : undefined,
+    commission: data.commission != null ? Number(data.commission) : undefined,
+    estimatedValue: Number(data.estimated_value),
+    createdAt: new Date(data.created_at as string),
+    filledAt: data.filled_at ? new Date(data.filled_at as string) : undefined,
+    cancelledAt: data.cancelled_at
+      ? new Date(data.cancelled_at as string)
+      : undefined,
+    updatedAt: new Date(data.updated_at as string),
+  };
+}
+
+function mapDbToTrade(data: Record<string, unknown>): PaperTrade {
+  return {
+    id: data.id as string,
+    accountId: data.account_id as string,
+    orderId: data.order_id as string,
+    symbol: data.symbol as string,
+    side: data.side as OrderSide,
+    quantity: Number(data.quantity),
+    price: Number(data.price),
+    totalValue: Number(data.total_value),
+    commission: Number(data.commission),
+    fees: Number(data.fees),
+    realizedPL: data.realized_pl != null ? Number(data.realized_pl) : undefined,
+    executedAt: new Date(data.executed_at as string),
+  };
+}
+
+// ============================================================================
 // PAPER TRADING ENGINE
 // ============================================================================
 
@@ -156,42 +271,62 @@ export class PaperTradingEngine {
   ): Promise<PaperAccount> {
     const balance = initialBalance ?? this.config.initialBalance;
 
-    const account: Omit<PaperAccount, "id"> = {
-      userId,
-      name,
-      initialBalance: balance,
-      cashBalance: balance,
-      buyingPower: balance,
-      portfolioValue: 0,
-      totalValue: balance,
-      dayTradeCount: 0,
-      isPDTRestricted: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
     const { data, error } = await this.supabase
       .from("paper_accounts")
-      .insert(account)
+      .insert({
+        user_id: userId,
+        name,
+        initial_balance: balance,
+        cash_balance: balance,
+        buying_power: balance,
+        portfolio_value: 0,
+        total_value: balance,
+        day_trade_count: 0,
+        is_pdt_restricted: false,
+      })
       .select()
       .single();
 
     if (error)
       throw new Error(`Failed to create paper account: ${error.message}`);
-    return data;
+    return mapDbToAccount(data);
   }
 
   async getAccount(userId: string): Promise<PaperAccount | null> {
     const { data, error } = await this.supabase
       .from("paper_accounts")
       .select("*")
-      .eq("userId", userId)
+      .eq("user_id", userId)
       .single();
 
     if (error && error.code !== "PGRST116") {
       throw new Error(`Failed to get paper account: ${error.message}`);
     }
 
+    return data ? mapDbToAccount(data) : null;
+  }
+
+  /**
+   * Fetch the raw paper_accounts row by id. Unlike getAccount(userId), a
+   * missing row here is always an unexpected error (every caller already
+   * holds an accountId obtained moments earlier from getAccount/getPositions),
+   * so this throws on any error including "not found" — matching the
+   * pre-existing behavior of resetAccount/updateAccountBalance/getPerformance.
+   */
+  private async getAccountRowById(
+    accountId: string,
+  ): Promise<Record<string, unknown>> {
+    const { data, error } = await this.supabase
+      .from("paper_accounts")
+      .select("*")
+      .eq("id", accountId)
+      .single();
+
+    if (error || !data) {
+      throw new Error(
+        `Failed to fetch account: ${error?.message ?? "not found"}`,
+      );
+    }
     return data;
   }
 
@@ -199,49 +334,57 @@ export class PaperTradingEngine {
     // Get account to get initial balance
     const { data: account, error: fetchError } = await this.supabase
       .from("paper_accounts")
-      .select("initialBalance")
+      .select("initial_balance")
       .eq("id", accountId)
       .single();
 
     if (fetchError)
       throw new Error(`Failed to fetch account: ${fetchError.message}`);
 
-    // Delete all positions
-    await this.supabase
+    // Delete all positions, orders and trades. Checked (not fire-and-forget):
+    // if any delete fails, continuing to reset the balance would leave a
+    // "reset" account showing a fresh cash balance next to stale positions/
+    // orders/trade history — a worse, harder-to-notice inconsistency than
+    // surfacing the failure to the caller.
+    const { error: posError } = await this.supabase
       .from("paper_positions")
       .delete()
-      .eq("accountId", accountId);
+      .eq("account_id", accountId);
+    if (posError)
+      throw new Error(`Failed to reset positions: ${posError.message}`);
 
-    // Delete all orders
-    await this.supabase
+    const { error: ordError } = await this.supabase
       .from("paper_orders")
       .delete()
-      .eq("accountId", accountId);
+      .eq("account_id", accountId);
+    if (ordError)
+      throw new Error(`Failed to reset orders: ${ordError.message}`);
 
-    // Delete all trades
-    await this.supabase
+    const { error: tradeError } = await this.supabase
       .from("paper_trades")
       .delete()
-      .eq("accountId", accountId);
+      .eq("account_id", accountId);
+    if (tradeError)
+      throw new Error(`Failed to reset trades: ${tradeError.message}`);
 
     // Reset account balances
     const { data, error } = await this.supabase
       .from("paper_accounts")
       .update({
-        cashBalance: account.initialBalance,
-        buyingPower: account.initialBalance,
-        portfolioValue: 0,
-        totalValue: account.initialBalance,
-        dayTradeCount: 0,
-        isPDTRestricted: false,
-        updatedAt: new Date(),
+        cash_balance: account.initial_balance,
+        buying_power: account.initial_balance,
+        portfolio_value: 0,
+        total_value: account.initial_balance,
+        day_trade_count: 0,
+        is_pdt_restricted: false,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", accountId)
       .select()
       .single();
 
     if (error) throw new Error(`Failed to reset account: ${error.message}`);
-    return data;
+    return mapDbToAccount(data);
   }
 
   // ==========================================================================
@@ -250,7 +393,10 @@ export class PaperTradingEngine {
 
   async placeOrder(accountId: string, request: OrderRequest): Promise<Order> {
     // Validate order
-    const validation = await this.validateOrder(accountId, request);
+    const { result: validation, account } = await this.validateOrder(
+      accountId,
+      request,
+    );
     if (!validation.isValid) {
       throw new Error(
         `Order validation failed: ${validation.errors.map((e) => e.message).join(", ")}`,
@@ -268,21 +414,36 @@ export class PaperTradingEngine {
       request.limitPrice,
     );
 
-    // Create order
-    const order: Omit<Order, "id"> = {
-      ...request,
-      userId: "", // Will be filled from account
-      accountId,
-      status: "pending",
-      filledQty: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      estimatedValue: request.quantity * executionPrice,
-    };
-
+    // Create order. account is guaranteed non-null here: validation.isValid
+    // is only true when validateOrder found the account (see ACCOUNT_NOT_FOUND
+    // check below).
     const { data: createdOrder, error } = await this.supabase
       .from("paper_orders")
-      .insert(order)
+      .insert({
+        user_id: account!.user_id,
+        account_id: accountId,
+        symbol: request.symbol,
+        side: request.side,
+        quantity: request.quantity,
+        type: request.type,
+        limit_price: request.limitPrice,
+        stop_price: request.stopPrice,
+        trail_percent: request.trailPercent,
+        trail_amount: request.trailAmount,
+        time_in_force: request.timeInForce,
+        extended_hours: request.extendedHours,
+        order_class: request.orderClass,
+        take_profit_price: request.takeProfitPrice,
+        stop_loss_price: request.stopLossPrice,
+        stop_loss_limit_price: request.stopLossLimitPrice,
+        client_order_id: request.clientOrderId,
+        signal_id: request.signalId,
+        strategy_id: request.strategyId,
+        notes: request.notes,
+        status: "pending",
+        filled_qty: 0,
+        estimated_value: request.quantity * executionPrice,
+      })
       .select()
       .single();
 
@@ -294,7 +455,10 @@ export class PaperTradingEngine {
     }
 
     // Execute the order
-    const executedOrder = await this.executeOrder(createdOrder, executionPrice);
+    const executedOrder = await this.executeOrder(
+      mapDbToPaperOrder(createdOrder),
+      executionPrice,
+    );
 
     return executedOrder;
   }
@@ -316,23 +480,23 @@ export class PaperTradingEngine {
       .from("paper_orders")
       .update({
         status: "cancelled",
-        cancelledAt: new Date(),
-        updatedAt: new Date(),
+        cancelled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq("id", orderId)
       .select()
       .single();
 
     if (error) throw new Error(`Failed to cancel order: ${error.message}`);
-    return data;
+    return mapDbToPaperOrder(data);
   }
 
   async getOrders(accountId: string, filter?: OrderFilter): Promise<Order[]> {
     let query = this.supabase
       .from("paper_orders")
       .select("*")
-      .eq("accountId", accountId)
-      .order("createdAt", { ascending: false });
+      .eq("account_id", accountId)
+      .order("created_at", { ascending: false });
 
     if (filter?.status && filter.status.length > 0) {
       query = query.in("status", filter.status);
@@ -344,10 +508,10 @@ export class PaperTradingEngine {
       query = query.eq("symbol", filter.symbol);
     }
     if (filter?.startDate) {
-      query = query.gte("createdAt", filter.startDate.toISOString());
+      query = query.gte("created_at", filter.startDate.toISOString());
     }
     if (filter?.endDate) {
-      query = query.lte("createdAt", filter.endDate.toISOString());
+      query = query.lte("created_at", filter.endDate.toISOString());
     }
     if (filter?.limit) {
       query = query.limit(filter.limit);
@@ -356,7 +520,7 @@ export class PaperTradingEngine {
     const { data, error } = await query;
 
     if (error) throw new Error(`Failed to get orders: ${error.message}`);
-    return data || [];
+    return (data || []).map(mapDbToPaperOrder);
   }
 
   async getOrderBlotter(accountId: string): Promise<OrderBlotter> {
@@ -397,14 +561,15 @@ export class PaperTradingEngine {
     const { data, error } = await this.supabase
       .from("paper_positions")
       .select("*")
-      .eq("accountId", accountId)
+      .eq("account_id", accountId)
       .gt("quantity", 0);
 
     if (error) throw new Error(`Failed to get positions: ${error.message}`);
 
     // Update current prices
     const updatedPositions = await Promise.all(
-      (data || []).map(async (pos) => {
+      (data || []).map(async (row) => {
+        const pos = mapDbToPosition(row);
         const currentPrice = await this.getCurrentPrice(pos.symbol);
         const marketValue = pos.quantity * currentPrice;
         const unrealizedPL = marketValue - pos.costBasis;
@@ -430,7 +595,7 @@ export class PaperTradingEngine {
     const { data, error } = await this.supabase
       .from("paper_positions")
       .select("*")
-      .eq("accountId", accountId)
+      .eq("account_id", accountId)
       .eq("symbol", symbol)
       .single();
 
@@ -440,16 +605,17 @@ export class PaperTradingEngine {
 
     if (!data) return null;
 
-    const currentPrice = await this.getCurrentPrice(data.symbol);
-    const marketValue = data.quantity * currentPrice;
-    const unrealizedPL = marketValue - data.costBasis;
+    const position = mapDbToPosition(data);
+    const currentPrice = await this.getCurrentPrice(position.symbol);
+    const marketValue = position.quantity * currentPrice;
+    const unrealizedPL = marketValue - position.costBasis;
 
     return {
-      ...data,
+      ...position,
       currentPrice,
       marketValue,
       unrealizedPL,
-      unrealizedPLPercent: (unrealizedPL / data.costBasis) * 100,
+      unrealizedPLPercent: (unrealizedPL / position.costBasis) * 100,
     };
   }
 
@@ -466,21 +632,21 @@ export class PaperTradingEngine {
     let query = this.supabase
       .from("paper_trades")
       .select("*")
-      .eq("accountId", accountId)
-      .order("executedAt", { ascending: false })
+      .eq("account_id", accountId)
+      .order("executed_at", { ascending: false })
       .limit(limit);
 
     if (startDate) {
-      query = query.gte("executedAt", startDate.toISOString());
+      query = query.gte("executed_at", startDate.toISOString());
     }
     if (endDate) {
-      query = query.lte("executedAt", endDate.toISOString());
+      query = query.lte("executed_at", endDate.toISOString());
     }
 
     const { data, error } = await query;
 
     if (error) throw new Error(`Failed to get trades: ${error.message}`);
-    return data || [];
+    return (data || []).map(mapDbToTrade);
   }
 
   // ==========================================================================
@@ -520,15 +686,17 @@ export class PaperTradingEngine {
       losingTrades.reduce((sum, t) => sum + (t.realizedPL || 0), 0),
     );
 
-    const netPL = account.totalValue - account.initialBalance;
-    const netPLPercent = (netPL / account.initialBalance) * 100;
+    const totalValue = Number(account.total_value);
+    const initialBalance = Number(account.initial_balance);
+    const netPL = totalValue - initialBalance;
+    const netPLPercent = (netPL / initialBalance) * 100;
 
     return {
       accountId,
       startDate: start,
       endDate: end,
-      startingValue: account.initialBalance,
-      endingValue: account.totalValue,
+      startingValue: initialBalance,
+      endingValue: totalValue,
       netPL,
       netPLPercent,
       totalTrades: trades.length,
@@ -581,17 +749,26 @@ export class PaperTradingEngine {
   private async validateOrder(
     accountId: string,
     request: OrderRequest,
-  ): Promise<OrderValidationResult> {
+  ): Promise<{
+    result: OrderValidationResult;
+    account: Record<string, unknown> | null;
+  }> {
     const errors: { field: string; message: string; code: string }[] = [];
     const warnings: { field: string; message: string; suggestion?: string }[] =
       [];
 
-    // Get account
-    const { data: account } = await this.supabase
+    // Get account. A genuine query error (not "no rows") must not be
+    // misreported as a business validation failure — that would tell the
+    // caller "create an account first" when the real problem is a DB outage.
+    const { data: account, error: accountError } = await this.supabase
       .from("paper_accounts")
       .select("*")
       .eq("id", accountId)
       .single();
+
+    if (accountError && accountError.code !== "PGRST116") {
+      throw new Error(`Failed to validate order: ${accountError.message}`);
+    }
 
     if (!account) {
       errors.push({
@@ -599,7 +776,7 @@ export class PaperTradingEngine {
         message: "Account not found",
         code: "ACCOUNT_NOT_FOUND",
       });
-      return { isValid: false, errors, warnings };
+      return { result: { isValid: false, errors, warnings }, account: null };
     }
 
     // Validate symbol
@@ -624,11 +801,12 @@ export class PaperTradingEngine {
     if (request.side === "buy") {
       const currentPrice = await this.getCurrentPrice(request.symbol);
       const estimatedCost = request.quantity * currentPrice;
+      const buyingPower = Number(account.buying_power);
 
-      if (estimatedCost > account.buyingPower) {
+      if (estimatedCost > buyingPower) {
         errors.push({
           field: "quantity",
-          message: `Insufficient buying power. Required: $${estimatedCost.toFixed(2)}, Available: $${account.buyingPower.toFixed(2)}`,
+          message: `Insufficient buying power. Required: $${estimatedCost.toFixed(2)}, Available: $${buyingPower.toFixed(2)}`,
           code: "INSUFFICIENT_BUYING_POWER",
         });
       }
@@ -674,9 +852,8 @@ export class PaperTradingEngine {
     }
 
     return {
-      isValid: errors.length === 0,
-      errors,
-      warnings,
+      result: { isValid: errors.length === 0, errors, warnings },
+      account,
     };
   }
 
@@ -688,19 +865,21 @@ export class PaperTradingEngine {
     const totalValue = fillQuantity * executionPrice;
     const commission = this.config.commissionPerTrade;
 
-    // Create fill record
-    const fill: Omit<Fill, "id"> = {
-      orderId: order.id,
+    // Create fill record. Checked: a fill is the execution audit record —
+    // silently dropping it must not let the rest of executeOrder proceed as
+    // if the trade were real.
+    const { error: fillError } = await this.supabase.from("paper_fills").insert({
+      account_id: order.accountId,
+      order_id: order.id,
       symbol: order.symbol,
       side: order.side,
       quantity: fillQuantity,
       price: executionPrice,
-      timestamp: new Date(),
       commission,
       fees: 0,
-    };
-
-    await this.supabase.from("paper_fills").insert(fill);
+    });
+    if (fillError)
+      throw new Error(`Failed to record fill: ${fillError.message}`);
 
     // Compute realized P&L for graduation tracking before position update
     const realizedPL = await this.computeRealizedPL(
@@ -728,27 +907,36 @@ export class PaperTradingEngine {
       commission,
     );
 
-    // Create trade record
-    const trade: Omit<PaperTrade, "id"> = {
-      accountId: order.accountId,
-      orderId: order.id,
+    // Create trade record. Checked, and deliberately BEFORE graduation
+    // tracking below: if this insert fails, the throw aborts executeOrder
+    // before trackTradeForGraduation() is ever reached, so a trade that
+    // wasn't actually recorded to paper_trades can never increment the
+    // WATCH->GUIDED graduation counter. This is the fail-closed guarantee
+    // the phantom-table version of this code had only by accident (nothing
+    // could ever reach this line); it now holds for a real, deliberate
+    // reason. No .select().single() here — graduation tracking only needs
+    // realizedPL, which is already a local variable from computeRealizedPL()
+    // above, so re-reading the inserted row would be a pure round-trip.
+    const { error: tradeError } = await this.supabase.from("paper_trades").insert({
+      account_id: order.accountId,
+      order_id: order.id,
       symbol: order.symbol,
       side: order.side,
       quantity: fillQuantity,
       price: executionPrice,
-      totalValue,
+      total_value: totalValue,
       commission,
       fees: 0,
-      realizedPL: realizedPL !== 0 ? realizedPL : undefined,
-      executedAt: new Date(),
-    };
+      realized_pl: realizedPL !== 0 ? realizedPL : null,
+    });
 
-    await this.supabase.from("paper_trades").insert(trade);
+    if (tradeError)
+      throw new Error(`Failed to record trade: ${tradeError.message}`);
 
     // Track trade for graduation (fire-and-forget — never blocks execution)
     const userId = await this.getUserIdForAccount(order.accountId);
     if (userId) {
-      this.trackTradeForGraduation(userId, trade).catch(() => {
+      this.trackTradeForGraduation(userId, { realizedPL }).catch(() => {
         // Swallowed intentionally: graduation tracking must not affect trade execution
       });
 
@@ -770,10 +958,10 @@ export class PaperTradingEngine {
       .from("paper_orders")
       .update({
         status: "filled",
-        filledQty: fillQuantity,
-        filledAvgPrice: executionPrice,
-        filledAt: new Date(),
-        updatedAt: new Date(),
+        filled_qty: fillQuantity,
+        filled_avg_price: executionPrice,
+        filled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         commission,
       })
       .eq("id", order.id)
@@ -781,7 +969,7 @@ export class PaperTradingEngine {
       .single();
 
     if (error) throw new Error(`Failed to update order: ${error.message}`);
-    return updatedOrder;
+    return mapDbToPaperOrder(updatedOrder);
   }
 
   private async updatePosition(
@@ -795,23 +983,21 @@ export class PaperTradingEngine {
 
     if (!existing) {
       // Create new position
-      const position: Omit<PaperPosition, "id"> = {
-        accountId,
+      const { error } = await this.supabase.from("paper_positions").insert({
+        account_id: accountId,
         symbol,
         quantity: side === "buy" ? quantity : -quantity,
-        avgEntryPrice: price,
-        currentPrice: price,
-        marketValue: quantity * price,
-        unrealizedPL: 0,
-        unrealizedPLPercent: 0,
-        realizedPL: 0,
-        costBasis: quantity * price,
+        avg_entry_price: price,
+        current_price: price,
+        market_value: quantity * price,
+        unrealized_pl: 0,
+        unrealized_pl_percent: 0,
+        realized_pl: 0,
+        cost_basis: quantity * price,
         side: side === "buy" ? "long" : "short",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await this.supabase.from("paper_positions").insert(position);
+      });
+      if (error)
+        throw new Error(`Failed to create position: ${error.message}`);
     } else {
       // Update existing position
       let newQuantity: number;
@@ -851,22 +1037,26 @@ export class PaperTradingEngine {
 
       if (newQuantity === 0) {
         // Close position
-        await this.supabase
+        const { error } = await this.supabase
           .from("paper_positions")
           .delete()
           .eq("id", existing.id);
+        if (error)
+          throw new Error(`Failed to close position: ${error.message}`);
       } else {
-        await this.supabase
+        const { error } = await this.supabase
           .from("paper_positions")
           .update({
             quantity: newQuantity,
-            avgEntryPrice: newAvgPrice,
-            costBasis: Math.abs(newQuantity) * newAvgPrice,
-            realizedPL,
+            avg_entry_price: newAvgPrice,
+            cost_basis: Math.abs(newQuantity) * newAvgPrice,
+            realized_pl: realizedPL,
             side: newQuantity > 0 ? "long" : "short",
-            updatedAt: new Date(),
+            updated_at: new Date().toISOString(),
           })
           .eq("id", existing.id);
+        if (error)
+          throw new Error(`Failed to update position: ${error.message}`);
       }
     }
   }
@@ -877,36 +1067,33 @@ export class PaperTradingEngine {
     totalValue: number,
     commission: number,
   ): Promise<void> {
-    const { data: account, error: fetchError } = await this.supabase
-      .from("paper_accounts")
-      .select("*")
-      .eq("id", accountId)
-      .single();
-
-    if (fetchError)
-      throw new Error(`Failed to fetch account: ${fetchError.message}`);
+    const account = await this.getAccountRowById(accountId);
+    const cashBalance = Number(account.cash_balance);
 
     let newCashBalance: number;
     if (side === "buy") {
-      newCashBalance = account.cashBalance - totalValue - commission;
+      newCashBalance = cashBalance - totalValue - commission;
     } else {
-      newCashBalance = account.cashBalance + totalValue - commission;
+      newCashBalance = cashBalance + totalValue - commission;
     }
 
     // Calculate portfolio value
     const positions = await this.getPositions(accountId);
     const portfolioValue = positions.reduce((sum, p) => sum + p.marketValue, 0);
 
-    await this.supabase
+    const { error } = await this.supabase
       .from("paper_accounts")
       .update({
-        cashBalance: newCashBalance,
-        buyingPower: newCashBalance, // Simplified - could include margin
-        portfolioValue,
-        totalValue: newCashBalance + portfolioValue,
-        updatedAt: new Date(),
+        cash_balance: newCashBalance,
+        buying_power: newCashBalance, // Simplified - could include margin
+        portfolio_value: portfolioValue,
+        total_value: newCashBalance + portfolioValue,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", accountId);
+
+    if (error)
+      throw new Error(`Failed to update account balance: ${error.message}`);
   }
 
   private calculateExecutionPrice(
@@ -1019,7 +1206,7 @@ export class PaperTradingEngine {
     // Simplified - would query actual daily snapshots
     const { data: account } = await this.supabase
       .from("paper_accounts")
-      .select("initialBalance, totalValue")
+      .select("initial_balance, total_value")
       .eq("id", accountId)
       .single();
 
@@ -1027,7 +1214,7 @@ export class PaperTradingEngine {
 
     // Generate mock daily returns for now
     const days: { date: string; value: number; return: number }[] = [];
-    let currentValue = account.initialBalance;
+    let currentValue = Number(account.initial_balance);
     const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
@@ -1087,12 +1274,12 @@ export class PaperTradingEngine {
     try {
       const { data, error } = await this.supabase
         .from("paper_accounts")
-        .select("userId")
+        .select("user_id")
         .eq("id", accountId)
         .single();
 
       if (error || !data) return null;
-      return data.userId;
+      return data.user_id;
     } catch {
       return null;
     }
@@ -1108,7 +1295,7 @@ export class PaperTradingEngine {
    */
   private async trackTradeForGraduation(
     userId: string,
-    trade: Omit<PaperTrade, "id">,
+    trade: Pick<PaperTrade, "realizedPL">,
   ): Promise<void> {
     try {
       const modeManager = createOperatingModeManager(userId);

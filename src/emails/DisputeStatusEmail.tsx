@@ -1,4 +1,6 @@
 import * as React from "react";
+import { EMAIL_COLORS } from "./email-colors";
+import { EmailFooter } from "./components/EmailFooter";
 
 interface DisputeStatusEmailProps {
   name: string;
@@ -10,10 +12,10 @@ interface DisputeStatusEmailProps {
 }
 
 const statusConfig = {
-  submitted: { color: "#3b82f6", label: "Submitted", emoji: "" },
-  in_review: { color: "#f59e0b", label: "Under Review", emoji: "" },
-  resolved: { color: "#10b981", label: "Resolved", emoji: "" },
-  rejected: { color: "#ef4444", label: "Rejected", emoji: "" },
+  submitted: { color: EMAIL_COLORS.brandBlue, label: "Submitted", emoji: "" },
+  in_review: { color: EMAIL_COLORS.warningBright, label: "Under Review", emoji: "" },
+  resolved: { color: EMAIL_COLORS.brand, label: "Resolved", emoji: "" },
+  rejected: { color: EMAIL_COLORS.danger, label: "Rejected", emoji: "" },
 };
 
 export default function DisputeStatusEmail({
@@ -36,7 +38,7 @@ export default function DisputeStatusEmail({
     >
       <div
         style={{
-          background: "linear-gradient(135deg, #10b981, #3b82f6)",
+          background: EMAIL_COLORS.brandGradient,
           padding: "30px 20px",
           textAlign: "center" as const,
         }}
@@ -46,22 +48,22 @@ export default function DisputeStatusEmail({
         </h1>
       </div>
 
-      <div style={{ padding: "40px 20px", backgroundColor: "#ffffff" }}>
-        <p style={{ fontSize: "18px", color: "#374151", marginBottom: "20px" }}>
+      <div style={{ padding: "40px 20px", backgroundColor: EMAIL_COLORS.bgWhite }}>
+        <p style={{ fontSize: "18px", color: EMAIL_COLORS.textPrimary, marginBottom: "20px" }}>
           Hi {name},
         </p>
 
-        <p style={{ fontSize: "16px", color: "#6b7280", lineHeight: "1.6" }}>
+        <p style={{ fontSize: "16px", color: EMAIL_COLORS.textSecondary, lineHeight: "1.6" }}>
           Your dispute has been updated. Here are the details:
         </p>
 
         <div
           style={{
-            background: "#f9fafb",
+            background: EMAIL_COLORS.bgLight,
             borderRadius: "12px",
             padding: "24px",
             margin: "24px 0",
-            border: "1px solid #e5e7eb",
+            border: `1px solid ${EMAIL_COLORS.border}`,
           }}
         >
           <div
@@ -96,7 +98,7 @@ export default function DisputeStatusEmail({
                 <td
                   style={{
                     padding: "8px 0",
-                    color: "#6b7280",
+                    color: EMAIL_COLORS.textSecondary,
                     fontSize: "14px",
                   }}
                 >
@@ -105,7 +107,7 @@ export default function DisputeStatusEmail({
                 <td
                   style={{
                     padding: "8px 0",
-                    color: "#374151",
+                    color: EMAIL_COLORS.textPrimary,
                     fontWeight: "bold",
                     fontSize: "14px",
                   }}
@@ -117,7 +119,7 @@ export default function DisputeStatusEmail({
                 <td
                   style={{
                     padding: "8px 0",
-                    color: "#6b7280",
+                    color: EMAIL_COLORS.textSecondary,
                     fontSize: "14px",
                   }}
                 >
@@ -126,7 +128,7 @@ export default function DisputeStatusEmail({
                 <td
                   style={{
                     padding: "8px 0",
-                    color: "#374151",
+                    color: EMAIL_COLORS.textPrimary,
                     fontWeight: "bold",
                     fontSize: "14px",
                   }}
@@ -138,7 +140,7 @@ export default function DisputeStatusEmail({
                 <td
                   style={{
                     padding: "8px 0",
-                    color: "#6b7280",
+                    color: EMAIL_COLORS.textSecondary,
                     fontSize: "14px",
                   }}
                 >
@@ -147,7 +149,7 @@ export default function DisputeStatusEmail({
                 <td
                   style={{
                     padding: "8px 0",
-                    color: "#374151",
+                    color: EMAIL_COLORS.textPrimary,
                     fontWeight: "bold",
                     fontSize: "14px",
                   }}
@@ -162,14 +164,14 @@ export default function DisputeStatusEmail({
         {status === "resolved" && (
           <div
             style={{
-              background: "#ecfdf5",
-              border: "1px solid #10b981",
+              background: EMAIL_COLORS.successBg,
+              border: `1px solid ${EMAIL_COLORS.brand}`,
               borderRadius: "8px",
               padding: "16px",
               marginBottom: "20px",
             }}
           >
-            <p style={{ color: "#065f46", margin: 0, fontSize: "14px" }}>
+            <p style={{ color: EMAIL_COLORS.success, margin: 0, fontSize: "14px" }}>
               Great news! The item has been successfully removed or corrected on
               your credit report.
             </p>
@@ -181,7 +183,7 @@ export default function DisputeStatusEmail({
             href={dashboardUrl}
             style={{
               display: "inline-block",
-              background: "linear-gradient(135deg, #10b981, #3b82f6)",
+              background: EMAIL_COLORS.brandGradient,
               color: "white",
               padding: "14px 40px",
               borderRadius: "8px",
@@ -195,18 +197,7 @@ export default function DisputeStatusEmail({
         </div>
       </div>
 
-      <div
-        style={{
-          background: "#f9fafb",
-          padding: "20px",
-          textAlign: "center" as const,
-          borderTop: "1px solid #e5e7eb",
-        }}
-      >
-        <p style={{ color: "#6b7280", fontSize: "12px", margin: 0 }}>
-          © {new Date().getFullYear()} Fynvita. All rights reserved.
-        </p>
-      </div>
+      <EmailFooter emailType="disputes" />
     </div>
   );
 }

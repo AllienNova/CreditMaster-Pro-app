@@ -5,7 +5,7 @@
  * Extracts amounts, dates, categories, percentages, and other financial data
  */
 
-import { AIMLService } from "@/lib/aiml-service";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import type {
   ExtractedEntities,
   MoneyAmount,
@@ -16,8 +16,6 @@ import type {
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
-
-const ENTITY_MODEL = "openai/gpt-4o-mini";
 
 const ENTITY_SYSTEM_PROMPT = `You are an entity extraction expert for financial chat messages.
 
@@ -151,11 +149,9 @@ const ENTITY_EXAMPLES = [
 // ============================================================================
 
 export class EntityExtractor {
-  private aimlService: AIMLService;
   private cache: Map<string, ExtractedEntities>;
 
   constructor() {
-    this.aimlService = new AIMLService();
     this.cache = new Map();
   }
 
@@ -224,10 +220,14 @@ export class EntityExtractor {
   ): Promise<ExtractedEntities | null> {
     const messages = this.buildEntityPrompt(userMessage, intent);
 
-    const response = await this.aimlService.chat(ENTITY_MODEL, messages, {
-      temperature: 0.1, // Very low temperature for consistent extraction
-      max_tokens: 500,
-    });
+    const response = await getModelRouter().complete(
+      TaskType.QUICK_RESPONSE,
+      messages,
+      {
+        temperature: 0.1, // Very low temperature for consistent extraction
+        max_tokens: 500,
+      },
+    );
 
     const content = response.choices[0]?.message?.content || "";
 

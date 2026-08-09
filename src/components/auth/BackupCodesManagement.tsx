@@ -88,34 +88,57 @@ export default function BackupCodesManagement() {
 
   const handlePrint = () => {
     const printWindow = window.open("", "", "width=600,height=400");
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Fynvita - Backup Codes</title>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 20px; }
-              h1 { color: #667eea; }
-              .codes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 20px 0; }
-              .code { background: #f3f4f6; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 14px; }
-              .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; }
-            </style>
-          </head>
-          <body>
-            <h1>Fynvita - Backup Codes</h1>
-            <p>Generated: ${new Date().toLocaleString()}</p>
-            <div class="warning">
-              <strong>Important:</strong> Store these codes in a secure place. Each code can only be used once.
-            </div>
-            <div class="codes">
-              ${backupCodes.map((code) => `<div class="code">${code}</div>`).join("")}
-            </div>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
+    if (!printWindow) return;
+
+    const doc = printWindow.document;
+
+    // Build the document with DOM APIs so backup-code strings never flow
+    // through innerHTML or raw HTML interpolation (defence-in-depth against
+    // stored XSS if code generation ever accepts user-influenced values).
+    doc.title = "Fynvita - Backup Codes";
+
+    const style = doc.createElement("style");
+    style.textContent = `
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      h1 { color: #667eea; }
+      .codes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 20px 0; }
+      .code { background: #f3f4f6; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 14px; }
+      .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; }
+    `;
+    doc.head.appendChild(style);
+
+    const heading = doc.createElement("h1");
+    heading.textContent = "Fynvita - Backup Codes";
+    doc.body.appendChild(heading);
+
+    const generated = doc.createElement("p");
+    generated.textContent = `Generated: ${new Date().toLocaleString()}`;
+    doc.body.appendChild(generated);
+
+    const warning = doc.createElement("div");
+    warning.className = "warning";
+    const warningStrong = doc.createElement("strong");
+    warningStrong.textContent = "Important:";
+    warning.appendChild(warningStrong);
+    warning.appendChild(
+      doc.createTextNode(
+        " Store these codes in a secure place. Each code can only be used once.",
+      ),
+    );
+    doc.body.appendChild(warning);
+
+    const grid = doc.createElement("div");
+    grid.className = "codes";
+    for (const code of backupCodes) {
+      const cell = doc.createElement("div");
+      cell.className = "code";
+      cell.textContent = code;
+      grid.appendChild(cell);
     }
+    doc.body.appendChild(grid);
+
+    doc.close();
+    printWindow.print();
   };
 
   if (!user) {

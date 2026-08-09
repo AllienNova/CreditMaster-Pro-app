@@ -6,12 +6,23 @@
  * - POST endpoint (forecast summary)
  * - Query parameter validation
  * - Error handling
- * Note: This route has NO authentication
+ * - negative-auth: 401 for unauthenticated requests (route is withAuth-wrapped)
  */
 
 import { NextRequest } from "next/server";
 
+const mockValidateFromHeaders = jest.fn();
 jest.mock("@/lib/financial/spending-forecast-service");
+// TASK-AUTH-03c: route is now wrapped in withAuth.
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+}));
 
 import { GET, POST } from "../route";
 import { spendingForecastService } from "@/lib/financial/spending-forecast-service";
@@ -48,6 +59,10 @@ const mockSummary = {
 describe("GET /api/financial/spending/forecast", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (spendingForecastService.generateForecast as jest.Mock).mockResolvedValue(mockForecast);
   });
 
@@ -62,7 +77,7 @@ describe("GET /api/financial/spending/forecast", () => {
     expect(data.generatedAt).toBeDefined();
     expect(data.forecastPeriod).toBeDefined();
     expect(spendingForecastService.generateForecast).toHaveBeenCalledWith(
-      "demo-user",
+      "user-123",
       expect.objectContaining({
         months: 3,
         includeCategories: true,
@@ -80,7 +95,7 @@ describe("GET /api/financial/spending/forecast", () => {
     await GET(request);
 
     expect(spendingForecastService.generateForecast).toHaveBeenCalledWith(
-      "demo-user",
+      "user-123",
       expect.objectContaining({
         months: 6,
         confidenceLevel: 0.8,
@@ -141,6 +156,10 @@ describe("GET /api/financial/spending/forecast", () => {
 describe("POST /api/financial/spending/forecast", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (spendingForecastService.getForecastSummary as jest.Mock).mockResolvedValue(mockSummary);
   });
 
@@ -154,7 +173,7 @@ describe("POST /api/financial/spending/forecast", () => {
 
     expect(response.status).toBe(200);
     expect(data).toEqual(mockSummary);
-    expect(spendingForecastService.getForecastSummary).toHaveBeenCalledWith("demo-user");
+    expect(spendingForecastService.getForecastSummary).toHaveBeenCalledWith("user-123");
   });
 
   it("should return 400 for invalid action", async () => {
@@ -183,5 +202,30 @@ describe("POST /api/financial/spending/forecast", () => {
 
     expect(response.status).toBe(500);
     expect(data.error).toBe("Failed to process forecast request");
+  });
+});
+
+describe("negative-auth", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("GET returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+    const request = createMockRequest(
+      "http://localhost:3000/api/financial/spending/forecast",
+    );
+    const response = await GET(request);
+    expect(response.status).toBe(401);
+  });
+
+  it("POST returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+    const request = createMockRequest(
+      "http://localhost:3000/api/financial/spending/forecast",
+      { method: "POST", body: { action: "summary" } },
+    );
+    const response = await POST(request);
+    expect(response.status).toBe(401);
   });
 });

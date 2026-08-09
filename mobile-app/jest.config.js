@@ -49,10 +49,10 @@ module.exports = {
   ],
   coverageThreshold: {
     global: {
-      branches: 10,
-      functions: 10,
-      lines: 14,
-      statements: 14,
+      branches: 60,
+      functions: 60,
+      lines: 80,
+      statements: 80,
     },
     // Enforce high coverage on files that have dedicated test suites
     "./src/store/dashboardStore.ts": {

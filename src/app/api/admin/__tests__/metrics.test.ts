@@ -3,12 +3,17 @@
  */
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
-// Mock the auth-middleware module used by the metrics route
-const mockRequireRole = jest.fn();
-const mockCreateAuthResponse = jest.fn();
-jest.mock("@/lib/security/auth-middleware", () => ({
-  requireRole: mockRequireRole,
-  createAuthResponse: mockCreateAuthResponse,
+// Route wrapped in withRole("admin") (TASK-AUTH-03a); guard resolves auth via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRole(...args),
 }));
 
 // Mock @supabase/supabase-js – the metrics route creates its own client
@@ -21,6 +26,8 @@ jest.mock("@supabase/supabase-js", () => ({
 // Import AFTER mocks are registered
 import { GET } from "../metrics/route";
 import { NextRequest } from "next/server";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function makeRequest(url = "http://localhost:3000/api/admin/metrics") {
@@ -28,21 +35,15 @@ function makeRequest(url = "http://localhost:3000/api/admin/metrics") {
 }
 
 function authenticatedAdmin() {
-  mockRequireRole.mockResolvedValue({
-    authenticated: true,
-    user: { id: "admin-1", email: "admin@fynvita.com", role: "admin" },
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "admin-1", email: "admin@fynvita.com" },
   });
+  mockResolveRole.mockResolvedValue("admin");
 }
 
-function unauthenticated(errorMsg = "Not authenticated") {
-  mockRequireRole.mockResolvedValue({
-    authenticated: false,
-    error: errorMsg,
-  });
-  mockCreateAuthResponse.mockReturnValue({
-    status: 401,
-    json: async () => ({ error: errorMsg }),
-  });
+function unauthenticated() {
+  mockValidate.mockResolvedValue({ valid: false, user: null });
 }
 
 // ── Setup / Teardown ─────────────────────────────────────────────────────────
@@ -65,16 +66,18 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
     it("should return 401 when the user is not authenticated", async () => {
       unauthenticated();
       const res = await GET(makeRequest());
-      expect(mockRequireRole).toHaveBeenCalled();
-      expect(mockCreateAuthResponse).toHaveBeenCalled();
+      expect(mockValidate).toHaveBeenCalled();
       expect(res.status).toBe(401);
     });
 
-    it("should call requireRole with 'admin'", async () => {
-      unauthenticated();
-      const req = makeRequest();
-      await GET(req);
-      expect(mockRequireRole).toHaveBeenCalledWith(req, "admin");
+    it("should return 403 when authenticated user is not admin", async () => {
+      mockValidate.mockResolvedValue({
+        valid: true,
+        user: { id: "user-1", email: "user@example.com" },
+      });
+      mockResolveRole.mockResolvedValue("user");
+      const res = await GET(makeRequest());
+      expect(res.status).toBe(403);
     });
   });
 
@@ -94,9 +97,14 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
       { id: "s2", plan: "basic", status: "active", amount: 29 },
       { id: "s3", plan: "premium", status: "canceled", amount: 79 },
     ];
+    // The subscription_invoices ledger stores INTEGER MINOR UNITS in amount_cents, and the
+    // period column is paid_at. This fixture previously used `amount` and
+    // `created_at` — neither of which exists on the table
+    // (20260731000020_payments_revenue_ledger.sql). 7900 + 2900 cents = $108,
+    // preserving this suite's original expectation.
     const paymentsData = [
-      { amount: 79, created_at: new Date().toISOString() },
-      { amount: 29, created_at: new Date().toISOString() },
+      { amount_cents: 7900, paid_at: new Date().toISOString() },
+      { amount_cents: 2900, paid_at: new Date().toISOString() },
     ];
 
     beforeEach(() => {
@@ -130,7 +138,7 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
             return { select: selectForDisputes };
           case "subscriptions":
             return { select: selectForSubscriptions };
-          case "payments":
+          case "subscription_invoices":
             return { select: selectForPayments };
           default:
             return { select: jest.fn().mockResolvedValue({ data: [], count: 0 }) };
@@ -203,6 +211,61 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
       expect(body.metrics.revenue).toBe(108);
     });
 
+    it("does not select `plan`, which does not exist on subscriptions", () => {
+      // `plan` is not a column on subscriptions, and this route never read it —
+      // but naming it errored the ENTIRE query, so activeSubscriptions and mrr
+      // were both structurally zero, exactly as revenue was.
+      //
+      // This asserts against the route SOURCE rather than through the mock on
+      // purpose: a mocked client happily returns any column you ask for, so
+      // every existing assertion in this suite about those two numbers passed
+      // while the real database would have rejected the query outright. That
+      // blind spot is why scripts/audit-phantom-columns.js exists; this test is
+      // the narrow, CI-visible guard for the one route.
+      const routeSrc = readFileSync(
+        join(process.cwd(), "src/app/api/admin/metrics/route.ts"),
+        "utf8",
+      );
+      const afterFrom = routeSrc.split('.from("subscriptions")')[1] ?? "";
+      // Match the .select() STRING ARGUMENT only. Matching raw source would
+      // also catch the explanatory comment above the call, which names the bad
+      // column on purpose — it did exactly that on the first attempt.
+      const selectArg = afterFrom.match(/\.select\(\s*"([^"]*)"/)?.[1];
+
+      expect(selectArg).toBeDefined();
+      expect(selectArg!.split(",").map((c) => c.trim())).not.toContain("plan");
+    });
+
+    it("returns 500 on a payments query error rather than reporting $0 revenue", async () => {
+      // Before 20260731000020 this route queried a `payments` table that no
+      // migration created. PostgREST RESOLVES an {error} rather than throwing,
+      // and the route collapsed it with `|| 0` — so the admin dashboard showed
+      // a confident "$0 revenue" that was structurally incapable of being
+      // anything else. A broken query and a genuinely empty period must not be
+      // indistinguishable to an operator.
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "subscription_invoices") {
+          return {
+            select: jest.fn().mockReturnValue({
+              gte: jest.fn().mockResolvedValue({
+                data: null,
+                error: { message: "permission denied for table payments" },
+              }),
+            }),
+          };
+        }
+        return {
+          select: jest.fn().mockResolvedValue({ data: [], count: 0 }),
+        };
+      });
+
+      const res = await GET(makeRequest());
+      expect(res.status).toBe(500);
+
+      const body = await res.json();
+      expect(body.metrics?.revenue).toBeUndefined();
+    });
+
     it("should include the requested period in the response", async () => {
       const res = await GET(
         makeRequest("http://localhost:3000/api/admin/metrics?period=7d"),
@@ -254,7 +317,7 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
       // For profiles/disputes/subscriptions that don't chain .gte
       const directSelectMock = jest.fn().mockResolvedValue(resolvedValue);
       mockFrom.mockImplementation((table: string) => {
-        if (table === "payments") {
+        if (table === "subscription_invoices") {
           return { select: selectMock };
         }
         return { select: directSelectMock };
@@ -339,7 +402,7 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
     it("should handle zero disputes correctly (disputeSuccessRate is 0)", async () => {
       const emptyResult = { data: [], count: 0 };
       mockFrom.mockImplementation((table: string) => {
-        if (table === "payments") {
+        if (table === "subscription_invoices") {
           return {
             select: jest.fn().mockReturnValue({
               gte: jest.fn().mockResolvedValue(emptyResult),
@@ -360,7 +423,7 @@ describe("Admin Metrics API – GET /api/admin/metrics", () => {
     it("should handle null data arrays gracefully", async () => {
       const nullDataResult = { data: null, count: 0 };
       mockFrom.mockImplementation((table: string) => {
-        if (table === "payments") {
+        if (table === "subscription_invoices") {
           return {
             select: jest.fn().mockReturnValue({
               gte: jest.fn().mockResolvedValue(nullDataResult),

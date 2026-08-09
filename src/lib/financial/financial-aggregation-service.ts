@@ -5,9 +5,12 @@
  * into a single comprehensive profile. Implements caching with 15-minute TTL.
  */
 
-import { getSupabase } from "@/lib/supabase/client";
-
-const supabase = getSupabase();
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import {
+  createClient as createSupabaseClient,
+  SupabaseClient,
+} from "@supabase/supabase-js";
+import { logger } from "@/lib/monitoring/logger";
 import { budgetService } from "./budget-service";
 import { spendingAnalysisService } from "./spending-analysis-service";
 import { billDetectionService } from "./bill-detection-service";
@@ -51,6 +54,51 @@ import {
 } from "./types/financial-context.types";
 import { Budget, BudgetCategoryValue } from "./types/budget.types";
 import { Debt, DebtOverview } from "./types/debt-payoff.types";
+
+/**
+ * Service-role client for every table this file reads.
+ *
+ * Was the anon-keyed getSupabase() singleton (@/lib/supabase/client) — no
+ * per-request session, so auth.uid() is always NULL. Every table here is
+ * either service-role-only (financial_accounts, per 20260731000009's
+ * REVOKE) or RLS-protected with auth.uid() = user_id (profiles,
+ * debt_accounts, credit_scores, investment_portfolios, financial_goals,
+ * debt_history, financial_health_scores, monthly_summaries) — so the anon
+ * client could only ever read rows for an authenticated caller it can never
+ * be, making every real call a 42501 permission-denied that this file's own
+ * fetch* methods degrade into an empty/zero result. Net worth (and every
+ * sibling metric fetched here) read as $0/empty for every user regardless
+ * of real data. Fixed by moving every query in this file onto a
+ * service-role client instead — matches plaid-service.ts's
+ * getServiceRoleClient(), the established pattern for tables outside the
+ * generated Database type (src/lib/supabase/types.ts covers ~27 of 40+
+ * real tables; every table this file touches is missing from it). Untyped
+ * for the same reason plaid-service.ts's is: the typed shared
+ * `supabaseAdmin` (@/lib/supabase/admin) would reject `.from()` for these
+ * tables at compile time.
+ *
+ * Every query below already carries an explicit .eq("user_id"/"id", userId)
+ * filter (verified per-method) — required here specifically because a
+ * service-role client bypasses RLS entirely, so an accidentally-dropped
+ * filter would be a cross-user IDOR, not merely an RLS-policy no-op.
+ *
+ * Lazily constructed (not a module-scope `createClient` call), matching
+ * getServiceRoleClient()'s own documented rationale and plaid-service.ts's identical
+ * pattern: `next build`'s page-data-collection phase imports every route
+ * module with no runtime env, and an eager `createClient()` would abort the
+ * build with "supabaseUrl is required".
+ */
+
+// This mirrors the row shape verified live against `public.credit_scores`
+// (`\d+ credit_scores`) — id, user_id, bureau, score, score_date, created_at.
+interface CreditScoreQueryRow {
+  id: string;
+  user_id: string;
+  bureau: string;
+  score: number;
+  score_date: string;
+  created_at: string;
+}
 
 // ============================================================================
 // CACHE CONFIGURATION
@@ -339,7 +387,7 @@ export class FinancialAggregationService {
   // ==========================================================================
 
   private async fetchUserProfile(userId: string): Promise<UserProfile> {
-    const { data, error } = await supabase
+    const { data, error } = await getServiceRoleClient()
       .from("profiles")
       .select("*")
       .eq("id", userId)
@@ -366,13 +414,55 @@ export class FinancialAggregationService {
     };
   }
 
+  /**
+   * `financial_accounts` — NOT `plaid_accounts` (that table has never
+   * existed in any migration; plaid-service.ts, the writer, has always used
+   * `financial_accounts` — see 20260731000006_plaid_items_accounts.sql for
+   * the consolidation rationale). PostgREST resolves an {error} for an
+   * unknown table instead of throwing, and this used to only check
+   * `error || !data` and silently map both into getEmptyAccounts() — so
+   * every user's net worth read $0 regardless of real linked-account
+   * balances. Verified against the live schema 2026-07-31.
+   *
+   * FIXED (this commit): this method — and every other fetch* method in this
+   * file — used to read via the anon-keyed getSupabase() singleton
+   * (module-level, no per-request session, so auth.uid() is always NULL),
+   * and financial_accounts has no authenticated grant (20260731000009
+   * revoked it deliberately). Every real call therefore got a genuine 42501
+   * permission-denied error, which the pre-fix code mapped into
+   * getEmptyAccounts() instead of surfacing — so every user's net worth
+   * read $0 regardless of real linked-account balances. Now reads via
+   * getServiceRoleClient() (defined above, mirrors plaid-service.ts's
+   * getAccounts() pattern for this same table) with the explicit
+   * `.eq("user_id", userId)` filter below unchanged — required because a
+   * service-role client bypasses RLS entirely, so that filter is the only
+   * thing preventing cross-user reads (see FND-030 for the failure mode
+   * when a filter like this is dropped instead of kept).
+   */
   private async fetchAccounts(userId: string): Promise<AggregatedAccounts> {
-    const { data, error } = await supabase
-      .from("plaid_accounts")
+    const { data, error } = await getServiceRoleClient()
+      .from("financial_accounts")
       .select("*")
       .eq("user_id", userId);
 
-    if (error || !data) {
+    if (error) {
+      // A failed account lookup must not silently read as "this user has no
+      // linked accounts" — that is exactly what masked the net-worth-is-
+      // always-zero bug above. Log it so it is observable/alertable, but
+      // still degrade to empty accounts rather than rethrowing: this
+      // fetcher is one of ~9 run in parallel via Promise.all in
+      // getAggregatedContext(), and throwing here would fail the user's
+      // entire dashboard over one section's transient error — matches the
+      // same resilience tradeoff fetchDebtData/fetchCreditData make below.
+      logger.error(
+        "Failed to fetch financial_accounts data",
+        error instanceof Error ? error : new Error(String(error)),
+        { userId },
+      );
+      return this.getEmptyAccounts();
+    }
+
+    if (!data) {
       return this.getEmptyAccounts();
     }
 
@@ -589,8 +679,14 @@ export class FinancialAggregationService {
     userId: string,
   ): Promise<AggregatedFinancialContext["debt"]> {
     try {
-      const { data, error } = await supabase
-        .from("debts")
+      // `debt_accounts` — NOT `debts` (that table has never existed).
+      // PostgREST resolves an {error} for an unknown table instead of
+      // throwing, and the catch below used to silently map that into
+      // "zero debt" — so debtToIncomeRatio read 0 for every user
+      // regardless of real debt. Verified against the live schema
+      // 2026-07-31 (see wellness-gate.ts for the same fix pattern).
+      const { data, error } = await getServiceRoleClient()
+        .from("debt_accounts")
         .select("*")
         .eq("user_id", userId)
         .eq("is_active", true);
@@ -629,7 +725,21 @@ export class FinancialAggregationService {
         totalDebt: overview.totalDebt,
         monthlyPayments: overview.totalMinimumPayments,
       };
-    } catch {
+    } catch (error) {
+      // A failed debt lookup must not silently read as "this user has no
+      // debt" — that is exactly what masked the debtToIncomeRatio-is-always-
+      // zero bug. Log it so it is observable/alertable, but still degrade to
+      // empty debt data rather than rethrowing: this fetcher is one of ~9
+      // run in parallel via Promise.all in getAggregatedContext(), and
+      // throwing here would fail the user's entire dashboard (budgets,
+      // spending, net worth, etc.) over one section's transient error — a
+      // disproportionate blast radius for a point-in-time snapshot
+      // aggregator whose sibling fetchers all degrade gracefully the same way.
+      logger.error(
+        "Failed to fetch debt_accounts data",
+        error instanceof Error ? error : new Error(String(error)),
+        { userId },
+      );
       return this.getEmptyDebtData();
     }
   }
@@ -640,7 +750,7 @@ export class FinancialAggregationService {
     const accounts = await this.fetchAccounts(userId);
 
     // Fetch historical net worth
-    const { data: history } = await supabase
+    const { data: history } = await getServiceRoleClient()
       .from("net_worth_history")
       .select("*")
       .eq("user_id", userId)
@@ -702,7 +812,7 @@ export class FinancialAggregationService {
     userId: string,
   ): Promise<AggregatedFinancialContext["investments"]> {
     // Fetch investment portfolio data
-    const { data } = await supabase
+    const { data } = await getServiceRoleClient()
       .from("investment_portfolios")
       .select("*")
       .eq("user_id", userId);
@@ -748,37 +858,78 @@ export class FinancialAggregationService {
     };
   }
 
+  /**
+   * `credit_scores` is the canonical credit-score table already read by
+   * every other consumer in this codebase (credit-monitoring-service,
+   * credit-repair-service, credit-builder-service, the /api/profile route).
+   * `credit_profiles` does not exist on the live schema, so this always
+   * silently fell back to a zero score for every user.
+   *
+   * `currentScore` is the single most-recently-recorded score across all
+   * bureaus (not a per-bureau breakdown) — the same "latest row wins"
+   * convention those other callers already use. `bureauScores` stays `[]`
+   * because nothing downstream of this aggregator reads it (verified: no
+   * consumer of `AggregatedFinancialContext.credit.bureauScores` exists).
+   *
+   * `scoreChange` diffs the latest row against the next-most-recent row
+   * regardless of bureau, matching the trend calculation already used in
+   * `credit-builder-service.ts`.
+   *
+   * `activeDisputes`/`resolvedDisputes` have no wired data source on this
+   * schema — `0` here is an explicit "not tracked yet" default, not a read
+   * of a real column (no such columns exist on `credit_scores`).
+   */
   private async fetchCreditData(userId: string): Promise<CreditSummary> {
-    const { data } = await supabase
-      .from("credit_profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
+    try {
+      const { data, error } = await getServiceRoleClient()
+        .from("credit_scores")
+        .select("*")
+        .eq("user_id", userId)
+        .order("score_date", { ascending: false })
+        .limit(2);
 
-    if (!data) {
+      if (error) throw error;
+
+      const rows = (data ?? []) as CreditScoreQueryRow[];
+      const [latest, previous] = rows;
+      if (!latest) {
+        return this.getEmptyCreditProfile();
+      }
+
+      const scoreChange = previous ? latest.score - previous.score : 0;
+
+      return {
+        currentScore: latest.score,
+        scoreChange,
+        scoreChangeDirection:
+          scoreChange > 0 ? "up" : scoreChange < 0 ? "down" : "stable",
+        lastUpdated: new Date(latest.score_date),
+        scoreHistory: [],
+        factors: [],
+        activeDisputes: 0,
+        resolvedDisputes: 0,
+        bureauScores: [],
+      };
+    } catch (error) {
+      // A failed lookup must not silently read as "this user has no credit
+      // score" — that is exactly what masked the currentScore-is-always-zero
+      // bug (see class-level doc comment above). Log it so it is
+      // observable/alertable, but still degrade to the empty profile rather
+      // than rethrowing: this fetcher is one of ~9 run in parallel via
+      // Promise.all in getAggregatedContext(), and throwing here would fail
+      // the user's entire dashboard over one section's transient error —
+      // matches the same resilience tradeoff fetchDebtData makes below.
+      logger.error(
+        "Failed to fetch credit score data",
+        error instanceof Error ? error : new Error(String(error)),
+        { userId },
+      );
       return this.getEmptyCreditProfile();
     }
-
-    return {
-      currentScore: data.score || 0,
-      scoreChange: data.score_change || 0,
-      scoreChangeDirection:
-        data.score_change > 0
-          ? "up"
-          : data.score_change < 0
-            ? "down"
-            : "stable",
-      lastUpdated: new Date(data.updated_at),
-      scoreHistory: [],
-      factors: [],
-      activeDisputes: data.active_disputes || 0,
-      resolvedDisputes: data.resolved_disputes || 0,
-      bureauScores: [],
-    };
   }
 
   private async fetchGoalsData(userId: string): Promise<FinancialGoal[]> {
-    const { data } = await supabase
+    const { data } = await getServiceRoleClient()
       .from("financial_goals")
       .select("*")
       .eq("user_id", userId)
@@ -814,7 +965,7 @@ export class FinancialAggregationService {
     startDate: Date,
     endDate: Date,
   ): Promise<TrendDataPoint[]> {
-    const { data } = await supabase
+    const { data } = await getServiceRoleClient()
       .from("net_worth_history")
       .select("date, net_worth")
       .eq("user_id", userId)
@@ -833,7 +984,7 @@ export class FinancialAggregationService {
     startDate: Date,
     endDate: Date,
   ): Promise<TrendDataPoint[]> {
-    const { data } = await supabase
+    const { data } = await getServiceRoleClient()
       .from("monthly_summaries")
       .select("month, total_income")
       .eq("user_id", userId)
@@ -852,7 +1003,7 @@ export class FinancialAggregationService {
     startDate: Date,
     endDate: Date,
   ): Promise<TrendDataPoint[]> {
-    const { data } = await supabase
+    const { data } = await getServiceRoleClient()
       .from("monthly_summaries")
       .select("month, total_expenses")
       .eq("user_id", userId)
@@ -871,7 +1022,7 @@ export class FinancialAggregationService {
     startDate: Date,
     endDate: Date,
   ): Promise<TrendDataPoint[]> {
-    const { data } = await supabase
+    const { data } = await getServiceRoleClient()
       .from("savings_history")
       .select("date, total_saved")
       .eq("user_id", userId)
@@ -890,13 +1041,21 @@ export class FinancialAggregationService {
     startDate: Date,
     endDate: Date,
   ): Promise<TrendDataPoint[]> {
-    const { data } = await supabase
+    const { data, error } = await getServiceRoleClient()
       .from("debt_history")
       .select("date, total_debt")
       .eq("user_id", userId)
       .gte("date", startDate.toISOString())
       .lte("date", endDate.toISOString())
       .order("date", { ascending: true });
+
+    if (error) {
+      // A query failure must not read as "no debt history" — log it so a
+      // broken trend fetch is diagnosable, but don't reject the wider
+      // Promise.all in getFinancialTrends() over one sub-fetch.
+      console.error("fetchDebtHistory failed", { userId, error: error.message });
+      return [];
+    }
 
     return (data || []).map((d) => ({
       date: new Date(d.date),
@@ -909,7 +1068,7 @@ export class FinancialAggregationService {
     startDate: Date,
     endDate: Date,
   ): Promise<TrendDataPoint[]> {
-    const { data } = await supabase
+    const { data, error } = await getServiceRoleClient()
       .from("investment_history")
       .select("date, total_value")
       .eq("user_id", userId)
@@ -917,30 +1076,82 @@ export class FinancialAggregationService {
       .lte("date", endDate.toISOString())
       .order("date", { ascending: true });
 
+    if (error) {
+      // A query failure must not read as "no investment history" — log it
+      // so a broken trend fetch is diagnosable, but don't reject the wider
+      // Promise.all in getFinancialTrends() over one sub-fetch.
+      // investment_history is still an unbuilt table today (no producer
+      // anywhere in the repo) — see docs/qa/triage-trading.md. It was
+      // originally grouped with three siblings in the same gap; all three
+      // have since been resolved and are NOT unbuilt anymore: net_worth_
+      // history and savings_history are real tables as of
+      // 20260731000080_networth_savings_history.sql (fetchNetWorthData()/
+      // fetchNetWorthHistory()/fetchSavingsHistory() above), debt_history is
+      // a real table (fetchDebtHistory() above), and health_score_history
+      // was a rename target — see fetchHealthScoreHistory() below, which now
+      // reads financial_health_scores.
+      console.error("fetchInvestmentHistory failed", {
+        userId,
+        error: error.message,
+      });
+      return [];
+    }
+
     return (data || []).map((d) => ({
       date: new Date(d.date),
       value: d.total_value || 0,
     }));
   }
 
+  /**
+   * `health_score_history` — NOT `financial_health_scores` — has never
+   * existed on the live schema (verified 2026-08-01). The real table is
+   * already actively written by health-score-calculator.ts/-v2.ts's
+   * saveScore() on every health-score calculation, so unlike this
+   * aggregator's other empty trend tables (net_worth_history,
+   * savings_history — no producer exists for either), this rename
+   * restores genuinely growing history, not just an honest-empty result.
+   * Column mapping: `date`->`calculated_at`, `score`->`overall_score`;
+   * `grade` has no column anywhere on this table and must be derived —
+   * same 90/80/70/60 letter thresholds as HealthScoreCalculator.getGrade()
+   * (health-score-calculator.ts:374), duplicated here since that method is
+   * private to its class.
+   */
   private async fetchHealthScoreHistory(
     userId: string,
     startDate: Date,
     endDate: Date,
   ): Promise<HealthScoreHistoryPoint[]> {
-    const { data } = await supabase
-      .from("health_score_history")
-      .select("date, score, grade")
+    const { data, error } = await getServiceRoleClient()
+      .from("financial_health_scores")
+      .select("calculated_at, overall_score")
       .eq("user_id", userId)
-      .gte("date", startDate.toISOString())
-      .lte("date", endDate.toISOString())
-      .order("date", { ascending: true });
+      .gte("calculated_at", startDate.toISOString())
+      .lte("calculated_at", endDate.toISOString())
+      .order("calculated_at", { ascending: true });
+
+    if (error) {
+      logger.error(
+        "Failed to fetch financial_health_scores history",
+        new Error(error.message),
+        { userId },
+      );
+      return [];
+    }
 
     return (data || []).map((d) => ({
-      date: new Date(d.date),
-      score: d.score,
-      grade: d.grade,
+      date: new Date(d.calculated_at),
+      score: d.overall_score,
+      grade: this.scoreToGrade(d.overall_score),
     }));
+  }
+
+  private scoreToGrade(score: number): "A" | "B" | "C" | "D" | "F" {
+    if (score >= 90) return "A";
+    if (score >= 80) return "B";
+    if (score >= 70) return "C";
+    if (score >= 60) return "D";
+    return "F";
   }
 
   // ==========================================================================
@@ -1463,10 +1674,14 @@ export class FinancialAggregationService {
       availableBalance: row.available_balance as number,
       creditLimit: row.credit_limit as number,
       interestRate: row.interest_rate as number,
-      lastFourDigits: row.last_four_digits as string,
+      // `mask`/`last_synced` are the real financial_accounts columns
+      // (plaid-service.ts storeAccount) — `last_four_digits`/`updated_at`
+      // don't exist on this table and previously read as undefined on every
+      // row.
+      lastFourDigits: row.mask as string,
       isLinked: true,
-      lastUpdatedAt: row.updated_at
-        ? new Date(row.updated_at as string)
+      lastUpdatedAt: row.last_synced
+        ? new Date(row.last_synced as string)
         : new Date(),
     };
   }

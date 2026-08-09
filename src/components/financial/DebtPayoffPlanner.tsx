@@ -20,6 +20,7 @@ import type {
   PayoffMilestone,
   PayoffInsight,
 } from "@/lib/financial/types/debt-payoff.types";
+import { CHART_COLORS } from "@/lib/design-tokens/chart-colors";
 
 type TabType = "overview" | "debts" | "strategies" | "timeline" | "milestones";
 
@@ -355,7 +356,7 @@ export default function DebtPayoffPlanner() {
                       {
                         dataKey: "balance",
                         name: "Remaining Balance",
-                        color: "#EF4444",
+                        color: CHART_COLORS.red,
                       },
                     ]}
                     height={256}

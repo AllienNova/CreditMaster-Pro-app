@@ -1,0 +1,98 @@
+openapi: 3.1.0
+info:
+  title: Crypto wallet API (FR-102)
+  version: 1.0.0
+  description: |
+    Owner: parity-backend
+    Auth: bearer JWT via withAuth — user_id from the guard, never the request body/query.
+    IDOR: crypto-wallet-service by-id methods MUST be owner-scoped before routing
+    (service-role key bypasses RLS). Every read/mutation filters user_id (wallets/alerts)
+    or wallet-ownership (holdings). Idempotency: POST create actions are not idempotent;
+    callers dedupe client-side. Honesty: realized P&L stays 0 until transaction history exists;
+    prices are stubbed (MOCK_PRICES) until a real feed — surfaced as such, never as live.
+servers:
+  - url: /api
+security:
+  - bearerAuth: []
+paths:
+  /financial/crypto:
+    get:
+      operationId: getCrypto
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema: { type: string, enum: [wallets, summary, alerts] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { const: true }
+                  data:
+                    oneOf:
+                      - type: array
+                        items: { $ref: '#/components/schemas/Wallet' }
+                      - { $ref: '#/components/schemas/PortfolioSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+    post:
+      operationId: mutateCrypto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [add_wallet, add_holding, sync, create_alert] }
+                payload: { type: object }
+      responses:
+        '200': { description: mutated }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: caller is not the owner of the referenced wallet/holding (IDOR guard)
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    Wallet:
+      type: object
+      required: [id, userId, name, network]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        name: { type: string }
+        network: { type: string }
+    PortfolioSummary:
+      type: object
+      required: [totalValue, realizedGainLoss]
+      properties:
+        totalValue: { type: number }
+        realizedGainLoss:
+          type: number
+          description: 0 until transaction history is persisted — documented stub, not fabricated.
+        allocationByAsset: { type: array, items: { type: object } }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        message: { type: string }
+  responses:
+    BadRequest:
+      description: invalid action/payload (Zod)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Unauthorized:
+      description: no/invalid JWT
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ServiceUnavailable:
+      description: role resolution failed — honest 503, never a mock fallback
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }

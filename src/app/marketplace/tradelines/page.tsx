@@ -37,65 +37,6 @@ interface TradelineFilters {
   bureaus?: string[];
 }
 
-// Fallback mock data for development/offline mode
-const mockTradelines: Tradeline[] = [
-  {
-    id: "1",
-    providerId: "p1",
-    creditLimit: 25000,
-    ageMonths: 84,
-    utilization: 5,
-    price: 850,
-    estimatedScoreImpact: 45,
-    bureausReporting: ["Experian", "Equifax", "TransUnion"],
-    available: true,
-  },
-  {
-    id: "2",
-    providerId: "p2",
-    creditLimit: 15000,
-    ageMonths: 60,
-    utilization: 8,
-    price: 550,
-    estimatedScoreImpact: 35,
-    bureausReporting: ["Experian", "TransUnion"],
-    available: true,
-  },
-  {
-    id: "3",
-    providerId: "p1",
-    creditLimit: 50000,
-    ageMonths: 120,
-    utilization: 3,
-    price: 1200,
-    estimatedScoreImpact: 60,
-    bureausReporting: ["Experian", "Equifax", "TransUnion"],
-    available: true,
-  },
-  {
-    id: "4",
-    providerId: "p3",
-    creditLimit: 10000,
-    ageMonths: 36,
-    utilization: 10,
-    price: 350,
-    estimatedScoreImpact: 25,
-    bureausReporting: ["Equifax"],
-    available: false,
-  },
-  {
-    id: "5",
-    providerId: "p4",
-    creditLimit: 35000,
-    ageMonths: 96,
-    utilization: 4,
-    price: 950,
-    estimatedScoreImpact: 50,
-    bureausReporting: ["Experian", "Equifax"],
-    available: true,
-  },
-];
-
 function TradelineCard({ tradeline }: { tradeline: Tradeline }) {
   const ageYears = Math.floor(tradeline.ageMonths / 12);
   const ageRemaining = tradeline.ageMonths % 12;
@@ -345,15 +286,13 @@ export default function TradelinesPage() {
       if (result.success && result.data) {
         setTradelines(result.data);
       } else {
-        // Fallback to mock data if API returns empty or error
-        console.warn("Using mock data:", result.error || "No data returned");
-        setTradelines(mockTradelines);
+        setTradelines([]);
+        setError("Couldn't load tradelines. Please try again.");
       }
     } catch (err) {
       console.error("Error fetching tradelines:", err);
-      // Use mock data as fallback
-      setTradelines(mockTradelines);
-      setError("Unable to load from server. Showing sample data.");
+      setTradelines([]);
+      setError("Couldn't load tradelines. Please try again.");
     } finally {
       setLoading(false);
     }

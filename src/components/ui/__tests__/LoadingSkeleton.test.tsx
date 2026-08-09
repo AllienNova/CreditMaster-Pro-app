@@ -1,9 +1,12 @@
 /**
- * Tests for LoadingSkeleton, PulseLoader, and Spinner Components
+ * Tests for LoadingSkeleton and PulseLoader components.
+ *
+ * Spinner was consolidated into Loading.tsx (ARCH C-1) and is re-exported from
+ * LoadingSkeleton.tsx for back-compat. Its tests now live in Loading.test.tsx.
  */
 
-import { render, screen } from "@testing-library/react";
-import LoadingSkeleton, { PulseLoader, Spinner } from "../LoadingSkeleton";
+import { render } from "@testing-library/react";
+import LoadingSkeleton, { PulseLoader } from "../LoadingSkeleton";
 
 describe("LoadingSkeleton", () => {
   it("should render text variant by default", () => {
@@ -109,37 +112,4 @@ describe("PulseLoader", () => {
   });
 });
 
-describe("Spinner (from LoadingSkeleton)", () => {
-  it("should render spinner with default medium size", () => {
-    const { container } = render(<Spinner />);
-    const spinner = container.querySelector(".animate-spin");
-    expect(spinner).toBeInTheDocument();
-    expect(spinner?.className).toContain("h-12");
-    expect(spinner?.className).toContain("w-12");
-  });
-
-  it("should render with small size", () => {
-    const { container } = render(<Spinner size="sm" />);
-    const spinner = container.querySelector(".animate-spin");
-    expect(spinner?.className).toContain("h-6");
-    expect(spinner?.className).toContain("w-6");
-  });
-
-  it("should render with large size", () => {
-    const { container } = render(<Spinner size="lg" />);
-    const spinner = container.querySelector(".animate-spin");
-    expect(spinner?.className).toContain("h-16");
-    expect(spinner?.className).toContain("w-16");
-  });
-
-  it("should render label when provided", () => {
-    render(<Spinner label="Loading data..." />);
-    expect(screen.getByText("Loading data...")).toBeInTheDocument();
-  });
-
-  it("should not render label when not provided", () => {
-    const { container } = render(<Spinner />);
-    const labels = container.querySelectorAll("p");
-    expect(labels).toHaveLength(0);
-  });
-});
+// Spinner tests moved to Loading.test.tsx (ARCH C-1 consolidation)

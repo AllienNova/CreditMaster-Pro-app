@@ -27,6 +27,21 @@ create policy "billing_profiles_owner_update"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+-- M0 fix: this migration referenced `trigger_set_timestamp()` without it ever
+-- being defined by an earlier migration, so provisioning aborted with
+-- `function trigger_set_timestamp() does not exist`. Defined here (idempotently)
+-- before first use. `CREATE OR REPLACE` keeps it safe if a later migration or a
+-- manually-provisioned database already declared an identical helper.
+create or replace function trigger_set_timestamp()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 create or replace trigger billing_profiles_set_timestamp
   before update on public.billing_profiles
   for each row

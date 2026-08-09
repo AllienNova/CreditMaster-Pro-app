@@ -4,7 +4,7 @@
  * Provider operations: getProviders, getProviderDetails, searchProviders
  */
 
-import { getSupabase } from "../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Database } from "../supabase/types";
 
 type ProviderRow = Database["public"]["Tables"]["marketplace_providers"]["Row"];
@@ -37,7 +37,7 @@ export interface ProviderFilters {
   search?: string;
 }
 
-const providers = () => getSupabase().from("marketplace_providers");
+const providers = () => getServiceRoleClient().from("marketplace_providers");
 
 class ProviderService {
   async getProviders(filters?: ProviderFilters): Promise<Provider[]> {

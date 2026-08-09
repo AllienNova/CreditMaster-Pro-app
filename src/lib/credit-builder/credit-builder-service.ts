@@ -19,6 +19,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { getAIOrchestrator } from "@/lib/ai-orchestrator";
+import { logger } from "@/lib/monitoring/logger";
 
 // ============================================================================
 // TYPES
@@ -479,6 +480,24 @@ class CreditBuilderService {
 
   /**
    * Get user's credit building progress
+   *
+   * `credit_builder_actions` and `user_profiles` do not exist on the live
+   * schema, and no table anywhere tracks a user-set `target_credit_score`
+   * (verified). Every field below that has no real backing data returns an
+   * explicit, honest zero rather than a plausible-looking invented number —
+   * a legitimately empty `[]`/`0` result must stay `0`, not get coerced back
+   * up to a fake constant, so falsy-coalescing (`||`) is avoided throughout.
+   *
+   * `daysActive` DOES have a real source: `profiles.created_at` (the user's
+   * actual signup date), so that one field is computed for real instead of
+   * defaulting to zero.
+   *
+   * Any genuine query failure is logged (not silently swallowed) and still
+   * degrades to the same honest empty state — this keeps the endpoint
+   * resilient rather than 500ing on a transient read failure. A thrown
+   * exception (as opposed to a resolved `{ error }`) is left to propagate to
+   * the route's existing catch block, which already returns a proper 500 —
+   * that is more honest than fabricating a full fake profile on failure.
    */
   async getProgress(userId: string): Promise<CreditBuilderProgress> {
     // Type definitions for database results
@@ -491,146 +510,156 @@ class CreditBuilderService {
       completed: boolean;
     }
     interface ProfileEntry {
-      target_credit_score?: number;
-      created_at?: string;
+      created_at: string;
     }
 
-    try {
-      // Fetch user's credit score history
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: scores } = (await (this.supabase as any)
-        .from("credit_scores")
-        .select("score, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: true })) as {
-        data: ScoreEntry[] | null;
-      };
-
-      // Fetch user's completed actions
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: actions } = (await (this.supabase as any)
-        .from("credit_builder_actions")
-        .select("id, completed")
-        .eq("user_id", userId)) as { data: ActionEntry[] | null };
-
-      // Fetch user profile for target score
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: profile } = (await (this.supabase as any)
-        .from("user_profiles")
-        .select("target_credit_score, created_at")
-        .eq("user_id", userId)
-        .single()) as { data: ProfileEntry | null };
-
-      const startScore = scores && scores.length > 0 ? scores[0].score : 580;
-      const currentScore =
-        scores && scores.length > 0 ? scores[scores.length - 1].score : 650;
-      const targetScore = profile?.target_credit_score || 720;
-      const pointsGained = currentScore - startScore;
-
-      const startDate = profile?.created_at
-        ? new Date(profile.created_at)
-        : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-      const daysActive = Math.floor(
-        (Date.now() - startDate.getTime()) / (24 * 60 * 60 * 1000),
+    // Fetch user's credit score history
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: scores, error: scoresError } = (await (this.supabase as any)
+      .from("credit_scores")
+      .select("score, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true })) as {
+      data: ScoreEntry[] | null;
+      error: { message?: string } | null;
+    };
+    if (scoresError) {
+      logger.error(
+        "getProgress: failed to fetch credit_scores",
+        scoresError instanceof Error
+          ? scoresError
+          : new Error(String(scoresError)),
+        { userId },
       );
-
-      const actionsCompleted =
-        actions?.filter((a: any) => a.completed).length || 8;
-      const actionsTotal = actions?.length || 12;
-
-      // Define standard milestones
-      const milestones = [
-        {
-          id: "m1",
-          title: "Fair Credit",
-          description: "Reached 600+ credit score",
-          targetScore: 600,
-          achieved: currentScore >= 600,
-          achievedAt:
-            currentScore >= 600
-              ? this.findMilestoneDate(scores, 600)
-              : undefined,
-        },
-        {
-          id: "m2",
-          title: "Good Credit",
-          description: "Reached 670+ credit score",
-          targetScore: 670,
-          achieved: currentScore >= 670,
-          achievedAt:
-            currentScore >= 670
-              ? this.findMilestoneDate(scores, 670)
-              : undefined,
-        },
-        {
-          id: "m3",
-          title: "Excellent Credit",
-          description: "Reached 740+ credit score",
-          targetScore: 740,
-          achieved: currentScore >= 740,
-          achievedAt:
-            currentScore >= 740
-              ? this.findMilestoneDate(scores, 740)
-              : undefined,
-        },
-      ];
-
-      const successRate =
-        actionsTotal > 0
-          ? Math.round((actionsCompleted / actionsTotal) * 100)
-          : 85;
-
-      return {
-        userId,
-        startScore,
-        currentScore,
-        targetScore,
-        pointsGained,
-        daysActive,
-        actionsCompleted,
-        actionsTotal,
-        milestones,
-        successRate,
-      };
-    } catch (error) {
-      // CreditBuilderService error: Error fetching progress
-      // Return default progress on error
-      return {
-        userId,
-        startScore: 580,
-        currentScore: 650,
-        targetScore: 720,
-        pointsGained: 70,
-        daysActive: 90,
-        actionsCompleted: 8,
-        actionsTotal: 12,
-        milestones: [
-          {
-            id: "m1",
-            title: "Fair Credit",
-            description: "Reached 600+ credit score",
-            targetScore: 600,
-            achieved: true,
-            achievedAt: new Date("2025-10-15"),
-          },
-          {
-            id: "m2",
-            title: "Good Credit",
-            description: "Reached 670+ credit score",
-            targetScore: 670,
-            achieved: false,
-          },
-          {
-            id: "m3",
-            title: "Excellent Credit",
-            description: "Reached 740+ credit score",
-            targetScore: 740,
-            achieved: false,
-          },
-        ],
-        successRate: 85,
-      };
     }
+
+    // Fetch user's completed actions. `credit_builder_actions` does not
+    // exist on the live schema yet, so this always resolves to "no actions
+    // tracked" until that table is created (tracked separately).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: actions, error: actionsError } = (await (
+      this.supabase as any
+    )
+      .from("credit_builder_actions")
+      .select("id, completed")
+      .eq("user_id", userId)) as {
+      data: ActionEntry[] | null;
+      error: { message?: string } | null;
+    };
+    if (actionsError) {
+      logger.error(
+        "getProgress: failed to fetch credit_builder_actions",
+        actionsError instanceof Error
+          ? actionsError
+          : new Error(String(actionsError)),
+        { userId },
+      );
+    }
+
+    // Fetch the user's real signup date as the tenure anchor for
+    // daysActive. PGRST116 ("no rows") would mean the auth/profile
+    // creation invariant was violated — still handled honestly (0 days)
+    // rather than thrown, since a missing progress-page profile row
+    // shouldn't itself 500 the whole response.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profile, error: profileError } = (await (
+      this.supabase as any
+    )
+      .from("profiles")
+      .select("created_at")
+      .eq("id", userId)
+      .single()) as {
+      data: ProfileEntry | null;
+      error: { code?: string; message?: string } | null;
+    };
+    if (profileError && profileError.code !== "PGRST116") {
+      logger.error(
+        "getProgress: failed to fetch profile",
+        profileError instanceof Error
+          ? profileError
+          : new Error(String(profileError)),
+        { userId },
+      );
+    }
+
+    const startScore = scores && scores.length > 0 ? scores[0].score : 0;
+    const currentScore =
+      scores && scores.length > 0 ? scores[scores.length - 1].score : 0;
+    // No table tracks a user-set target score (verified: target_credit_score
+    // exists on no live table) — 0 matches this codebase's existing "not
+    // available" sentinel for credit-score-shaped fields with no data (see
+    // health-score-calculator.ts's creditScore <= 0 branch).
+    const targetScore = 0;
+    const pointsGained = currentScore - startScore;
+
+    const daysActive = profile?.created_at
+      ? Math.floor(
+          (Date.now() - new Date(profile.created_at).getTime()) /
+            (24 * 60 * 60 * 1000),
+        )
+      : 0;
+
+    const actionsCompleted = actions
+      ? actions.filter((a) => a.completed).length
+      : 0;
+    const actionsTotal = actions ? actions.length : 0;
+
+    // Define standard milestones
+    const milestones = [
+      {
+        id: "m1",
+        title: "Fair Credit",
+        description: "Reached 600+ credit score",
+        targetScore: 600,
+        achieved: currentScore >= 600,
+        achievedAt:
+          currentScore >= 600
+            ? this.findMilestoneDate(scores, 600)
+            : undefined,
+      },
+      {
+        id: "m2",
+        title: "Good Credit",
+        description: "Reached 670+ credit score",
+        targetScore: 670,
+        achieved: currentScore >= 670,
+        achievedAt:
+          currentScore >= 670
+            ? this.findMilestoneDate(scores, 670)
+            : undefined,
+      },
+      {
+        id: "m3",
+        title: "Excellent Credit",
+        description: "Reached 740+ credit score",
+        targetScore: 740,
+        achieved: currentScore >= 740,
+        achievedAt:
+          currentScore >= 740
+            ? this.findMilestoneDate(scores, 740)
+            : undefined,
+      },
+    ];
+
+    // actionsTotal === 0 means "no actions tracked", not "0% success" —
+    // 0 is still the honest value here since the type requires a number.
+    const successRate =
+      actionsTotal > 0
+        ? Math.round((actionsCompleted / actionsTotal) * 100)
+        : 0;
+
+    return {
+      userId,
+      startScore,
+      currentScore,
+      targetScore,
+      pointsGained,
+      daysActive,
+      actionsCompleted,
+      actionsTotal,
+      milestones,
+      successRate,
+    };
   }
 
   /**
@@ -853,7 +882,7 @@ class CreditBuilderService {
    */
   async analyzeUtilization(
     userId: string,
-    cards: CardUtilization[],
+    cards: Omit<CardUtilization, "status">[],
   ): Promise<UtilizationAnalysis> {
     const totalBalance = cards.reduce((sum, card) => sum + card.balance, 0);
     const totalLimit = cards.reduce((sum, card) => sum + card.limit, 0);
@@ -1062,21 +1091,33 @@ class CreditBuilderService {
 
   /**
    * Analyze credit mix and provide recommendations
+   *
+   * `current` starts at all-zero — an honest "no accounts on file" default —
+   * rather than a plausible-looking invented mix. It is only overwritten
+   * once real account rows come back from the query below.
    */
   async analyzeCreditMix(userId: string): Promise<CreditMixAnalysis> {
     // Fetch user's accounts to analyze credit mix
     let current = {
-      installment: 1,
-      revolving: 2,
+      installment: 0,
+      revolving: 0,
       mortgage: 0,
       other: 0,
     };
 
     try {
-      const { data: accounts } = await this.supabase
+      const { data: accounts, error } = await this.supabase
         .from("financial_accounts")
         .select("account_type, account_subtype")
         .eq("user_id", userId);
+
+      if (error) {
+        logger.error(
+          "analyzeCreditMix: failed to fetch accounts",
+          error instanceof Error ? error : new Error(String(error)),
+          { userId },
+        );
+      }
 
       if (accounts && accounts.length > 0) {
         current = {
@@ -1113,7 +1154,11 @@ class CreditBuilderService {
         };
       }
     } catch (error) {
-      // CreditBuilderService error: Error fetching accounts for credit mix analysis
+      logger.error(
+        "analyzeCreditMix: unexpected error fetching accounts",
+        error instanceof Error ? error : new Error(String(error)),
+        { userId },
+      );
     }
 
     const ideal = {
@@ -1168,18 +1213,30 @@ class CreditBuilderService {
 
   /**
    * Analyze credit age and provide recommendations
+   *
+   * `averageAge`/`oldestAccount`/`newestAccount` start at an honest `0` —
+   * "no accounts on file" — rather than a plausible-looking invented age.
+   * They are only overwritten once real account rows come back below.
    */
   async analyzeCreditAge(userId: string): Promise<CreditAgeAnalysis> {
     // Fetch user's accounts to calculate credit age
-    let averageAge = 3.5;
-    let oldestAccount = 7;
-    let newestAccount = 0.5;
+    let averageAge = 0;
+    let oldestAccount = 0;
+    let newestAccount = 0;
 
     try {
-      const { data: accounts } = await this.supabase
+      const { data: accounts, error } = await this.supabase
         .from("financial_accounts")
         .select("opened_date, created_at")
         .eq("user_id", userId);
+
+      if (error) {
+        logger.error(
+          "analyzeCreditAge: failed to fetch accounts",
+          error instanceof Error ? error : new Error(String(error)),
+          { userId },
+        );
+      }
 
       if (accounts && accounts.length > 0) {
         const now = Date.now();
@@ -1202,7 +1259,11 @@ class CreditBuilderService {
         }
       }
     } catch (error) {
-      // CreditBuilderService error: Error fetching accounts for credit age analysis
+      logger.error(
+        "analyzeCreditAge: unexpected error fetching accounts",
+        error instanceof Error ? error : new Error(String(error)),
+        { userId },
+      );
     }
 
     const recommendations: CreditAgeRecommendation[] = [

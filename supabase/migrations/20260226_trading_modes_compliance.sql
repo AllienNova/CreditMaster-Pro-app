@@ -319,18 +319,22 @@ ALTER TABLE mode_transitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE circuit_breaker_events ENABLE ROW LEVEL SECURITY;
 
 -- Trading accounts: users can only access their own
+DROP POLICY IF EXISTS trading_accounts_user_policy ON trading_accounts;
 CREATE POLICY trading_accounts_user_policy ON trading_accounts
   FOR ALL USING (auth.uid() = user_id);
 
 -- Compliance scores: users can only access their own
+DROP POLICY IF EXISTS compliance_scores_user_policy ON compliance_scores;
 CREATE POLICY compliance_scores_user_policy ON compliance_scores
   FOR ALL USING (auth.uid() = user_id);
 
 -- Agent logs: users can only access their own
+DROP POLICY IF EXISTS agent_logs_user_policy ON trading_agent_logs;
 CREATE POLICY agent_logs_user_policy ON trading_agent_logs
   FOR ALL USING (auth.uid() = user_id);
 
 -- Strategy library: users see their own + system + public strategies
+DROP POLICY IF EXISTS strategy_library_read_policy ON strategy_library;
 CREATE POLICY strategy_library_read_policy ON strategy_library
   FOR SELECT USING (
     auth.uid() = user_id
@@ -338,19 +342,24 @@ CREATE POLICY strategy_library_read_policy ON strategy_library
     OR (is_public = true AND is_active = true)
   );
 
+DROP POLICY IF EXISTS strategy_library_write_policy ON strategy_library;
 CREATE POLICY strategy_library_write_policy ON strategy_library
   FOR INSERT WITH CHECK (auth.uid() = user_id AND is_system = false);
 
+DROP POLICY IF EXISTS strategy_library_update_policy ON strategy_library;
 CREATE POLICY strategy_library_update_policy ON strategy_library
   FOR UPDATE USING (auth.uid() = user_id AND is_system = false);
 
+DROP POLICY IF EXISTS strategy_library_delete_policy ON strategy_library;
 CREATE POLICY strategy_library_delete_policy ON strategy_library
   FOR DELETE USING (auth.uid() = user_id AND is_system = false);
 
 -- Mode transitions: users can only access their own
+DROP POLICY IF EXISTS mode_transitions_user_policy ON mode_transitions;
 CREATE POLICY mode_transitions_user_policy ON mode_transitions
   FOR ALL USING (auth.uid() = user_id);
 
 -- Circuit breaker events: users can only access their own
+DROP POLICY IF EXISTS circuit_breaker_events_user_policy ON circuit_breaker_events;
 CREATE POLICY circuit_breaker_events_user_policy ON circuit_breaker_events
   FOR ALL USING (auth.uid() = user_id);

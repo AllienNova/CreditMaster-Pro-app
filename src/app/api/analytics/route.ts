@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { rbac } from "@/lib/auth/rbac";
 import {
   AnalyticsEngine,
@@ -29,16 +29,9 @@ type AnalyticsResponse =
  * GET /api/analytics
  * Get analytics data
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
     const { searchParams } = new URL(request.url);
 
     const type = searchParams.get("type") || "user";
@@ -86,7 +79,7 @@ export async function GET(request: NextRequest) {
 
       case "system":
         // System-wide analytics require admin permission
-        if (!rbac.hasPermission(validation.user, "admin:analytics")) {
+        if (!rbac.hasPermission(user, "admin:analytics")) {
           return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
         data = {
@@ -119,9 +112,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data });
   } catch (_error) {
     // Error logged
+    void _error;
     return NextResponse.json(
       { error: "Failed to fetch analytics" },
       { status: 500 },
     );
   }
-}
+});

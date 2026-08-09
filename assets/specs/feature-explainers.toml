@@ -1,0 +1,36 @@
+name = "feature-explainers"
+wave = 2
+model = "gemini-2.5-flash-image"
+resolution = "1024x1024"
+out_dir = "assets/raw/feature-explainers"
+count = 6
+preamble = true
+
+shared_prompt = """
+Fynvita Tier B scene illustration: blob characters in rich environments, flat vector, NO gradients/shadows/3D/photorealism. Palette: Vital Green #10B981, Trust Blue #3B82F6, Deep Navy #1E40AF, Emerald #059669, Energy Gold #F59E0B, cream #F3F4F6 bg. FEATURE EXPLAINER — educational, showing what the feature does. 1024x1024.
+"""
+negative = ["gradients", "shadows", "3D", "photography", "realistic", "text"]
+
+[[variants]]
+id = "feature-credit-health"
+prompt = "A green blob stands next to a large circular credit score gauge (Emerald arc, gold numbers). Three bureau icons (small cream cards with colored dots: green, blue, navy) float above. A heartbeat pulse line (Vital Green) runs through the background. Credit health monitoring — all three bureaus in one place."
+
+[[variants]]
+id = "feature-financial-wellness"
+prompt = "A green blob sits at a cozy desk surrounded by organized financial tools: a pie chart (emerald/blue/gold segments), a small plant growing from a coin pot, and a neat budget book. Calm, organized atmosphere. Financial wellness dashboard — your money, organized."
+
+[[variants]]
+id = "feature-investment-intelligence"
+prompt = "A green blob looks through a telescope (Trust Blue) at a rising candlestick chart in the distance (Emerald rises, cream background). Gold sparkles around the telescope lens suggest AI insight. Small robot antenna on the blob. Investment intelligence — AI-powered analysis."
+
+[[variants]]
+id = "feature-ai-coach"
+prompt = "A large friendly Trust Blue blob (the AI coach, slightly bigger than the user blob) stands next to a smaller green blob (the user). The blue blob holds a clipboard and points at a whiteboard with simple charts. A gold lightbulb floats above. Personal AI coach — guidance when you need it."
+
+[[variants]]
+id = "feature-tax-optimization"
+prompt = "A green blob organizes cream tax documents into neat emerald filing boxes. A calculator (Trust Blue) sits on the desk. Gold coins flow from the organized stack into a piggy bank. Small checkmarks (Vital Green) appear above completed tasks. Tax optimization — maximize your returns."
+
+[[variants]]
+id = "feature-holistic-dashboard"
+prompt = "A bird's-eye view of a green blob's workspace: a large circular dashboard (cream center, colored segments around the edge: Vital Green for health, Trust Blue for investments, Emerald for savings, Energy Gold for goals). The blob sits at the center, surrounded by small icons representing each domain. Your complete financial picture."

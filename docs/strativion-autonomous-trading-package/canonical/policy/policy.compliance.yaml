@@ -1,0 +1,584 @@
+meta:
+  document_role: policy
+  schema_version: 1.0.0
+  file_version: 1.0.0
+  canonical_package_version: 2.5.0
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  override_rights:
+    # Fields marked locked cannot be overridden by any tenant.
+    # Fields marked narrow_only may only be made more restrictive by tenants.
+    pdt: locked
+    pre_trade_checks: locked
+    reg_sho: locked
+    mwcb: locked
+    luld: locked
+    auction_states: locked
+    options.exercise_assignment: locked
+    futures.rollover: narrow_only
+    crypto.venue_allowlist: narrow_only
+    corporate_actions: locked
+    restricted_list.source: narrow_only
+  jurisdiction: US
+  # Non-US jurisdictions (MiFID II, ASIC, SFC) are out of scope in v1.0.0.
+  # TODO:COMPLIANCE-JURISDICTION-01: add EU/APAC surface in v2.0.0.
+
+# ---------------------------------------------------------------------------
+# C-01 — PDT: US Pattern Day Trader Rule
+# Ref: FINRA Rule 4210; CANONICAL-FIELD-INDEX#C-01
+# ---------------------------------------------------------------------------
+pdt:
+  enabled: true
+  # Applies only to US equities margin accounts below the equity threshold.
+  equity_threshold_usd: 25000
+  day_trade_count_window_sessions: 5
+  day_trade_limit_in_window: 3
+  # A "round trip" (open + close same symbol, same day) counts as one day trade.
+  round_trip_definition: open_and_close_same_session_same_symbol
+  # Minimum margin account equity to avoid PDT restriction.
+  # Evaluated against broker-reported net liquidation value at session open.
+  equity_check_timing: pre_session_open
+  equity_check_source: broker_reported_net_liq
+  violation:
+    action: restrict_new_opening_trades
+    restriction_duration_calendar_days: 90
+    incident_code: INC_PDT_TRIP
+    requires_human: true
+    # Restriction is lifted only on explicit operator attestation after reset.
+    reset_conditions:
+      - broker_confirms_margin_equity_gte_threshold
+      - operator_dual_sign_lift
+      - min_restriction_days_elapsed: 90
+  # Cash accounts are not subject to PDT but are subject to T+1 free-riding.
+  # Cash-account free-riding policy is handled under corporate_actions.settlement.
+  cash_account_exempt: true
+  # Day-trade counter is maintained per account, per calendar day (ET).
+  counter_timezone: America/New_York
+  counter_reset: calendar_day_open
+  # If equity data is unavailable at session open, fail safe.
+  equity_data_unavailable_action: block_new_opening_trades
+  equity_data_unavailable_incident: INC_DATA_STALE_T1
+
+# ---------------------------------------------------------------------------
+# C-02 — SEC Rule 15c3-5 Pre-Trade Risk Checks (Market Access Rule)
+# Ref: 17 CFR 240.15c3-5; CANONICAL-FIELD-INDEX#C-02
+# All checks must pass before any order leaves the system boundary.
+# ---------------------------------------------------------------------------
+pre_trade_checks:
+  enabled: true
+  # Hard block on any single check failure — no partial-pass logic.
+  fail_behavior: block_order_and_emit_incident
+
+  credit_capital:
+    # Gross notional of pending + open orders must not exceed this multiple of
+    # broker-reported available buying power.
+    gross_notional_to_buying_power_max: 1.0
+    # Net liquidation value floor — system must hold this minimum equity.
+    net_liq_floor_usd: 5000
+    # If broker capital data is stale beyond this threshold, block orders.
+    capital_data_max_staleness_ms: 2000
+    capital_stale_incident: INC_DATA_STALE_T1
+
+  erroneous_order_filter:
+    # Reject orders whose limit price deviates from NBBO mid by more than this.
+    max_price_deviation_from_nbbo_mid_bps: 200
+    # Reject orders whose notional exceeds this absolute cap.
+    max_order_notional_usd: 500000
+    # Reject orders whose quantity exceeds this share/contract count.
+    max_order_quantity: 10000
+    nbbo_source_required: true
+    # NBBO staleness threshold — if stale, reject and emit incident.
+    nbbo_max_staleness_ms: 500
+    nbbo_stale_incident: INC_DATA_STALE_T1
+
+  regulatory_checks:
+    # All short orders must have a valid locate on file before submission.
+    # Locate validation is delegated to reg_sho block below.
+    reg_sho_locate_required_for_short: true
+    # PDT check must pass before order is admitted.
+    pdt_check_required: true
+    # Restricted-list check must pass before order is admitted.
+    restricted_list_check_required: true
+    # MWCB and LULD checks must pass before order is admitted.
+    mwcb_check_required: true
+    luld_check_required: true
+
+  duplicate_order_detection:
+    # A duplicate is defined as same (account, symbol, side, quantity, order_type)
+    # within the dedup window. Idempotency key from policy.order-lifecycle.yaml
+    # is the authoritative dedup handle.
+    window_seconds: 30
+    action: reject_with_code
+    incident_code: INC_DUPLICATE_ORDER
+    # Dedup cache TTL must be >= window_seconds + network_latency_budget_ms / 1000
+    dedup_cache_ttl_seconds: 60
+
+  fat_finger:
+    # Price deviation threshold in basis points from NBBO at order admission.
+    price_deviation_from_nbbo_bps: 200
+    # Notional value hard cap per single order.
+    single_order_notional_max_usd: 500000
+    # Quantity hard cap per single order (instrument-class agnostic).
+    single_order_quantity_max: 10000
+    action_on_breach: reject_and_emit_incident
+    incident_code: INC_FAT_FINGER
+
+# ---------------------------------------------------------------------------
+# C-03 — Reg SHO Short-Sale Locate Requirement
+# Ref: 17 CFR 242.203(b); CANONICAL-FIELD-INDEX#C-03
+# ---------------------------------------------------------------------------
+reg_sho:
+  enabled: true
+  # Locate must be obtained and recorded before any short-sale order is submitted.
+  locate_required: true
+  locate_acceptance_window_seconds: 60
+  # Source of locate records: prime broker API. Fallback is denied (no locate = no short).
+  locate_source: prime_broker_api
+  locate_source_fallback_behavior: deny_short_and_emit_incident
+  locate_source_fallback_incident: INC_LOCATE_UNAVAILABLE
+
+  threshold_securities:
+    # Threshold Securities List is the Reg SHO daily list published by each exchange.
+    # Source: FINRA published threshold-security list via API.
+    list_source_uri: https://api.finra.org/data/group/otcMarket/name/thresholdSecuritiesMOD
+    refresh_cadence_seconds: 3600
+    source_failure_behavior: use_last_known_list_and_emit_incident
+    source_failure_incident: INC_THRESHOLD_LIST_STALE
+    # Additional close-out obligation for threshold securities.
+    close_out_obligation_sessions: 13
+
+  short_sale_rule_ssr:
+    # SSR triggers when a security drops >= 10% from prior close (intraday).
+    trigger_pct_drop_from_prior_close: 0.10
+    rule_in_effect_sessions: 1
+    # Next-session uptick rule applies to all short orders on SSR-flagged securities.
+    uptick_required_on_ssr: true
+    ssr_list_source: exchange_feed
+    ssr_list_max_staleness_ms: 1000
+    ssr_stale_incident: INC_DATA_STALE_T1
+
+  buy_in:
+    # Broker-initiated buy-in on fail-to-deliver threshold securities.
+    fail_to_deliver_threshold_sessions: 13
+    buy_in_trigger: broker_notification
+    action: suspend_new_shorts_on_symbol_and_emit_incident
+    incident_code: INC_REG_SHO_BUY_IN
+
+# ---------------------------------------------------------------------------
+# C-04 — Market-Wide Circuit Breakers (MWCB)
+# Ref: SEC Rule 80B; CANONICAL-FIELD-INDEX#C-04
+# Levels are measured as percentage decline from prior calendar-day S&P 500 close.
+# ---------------------------------------------------------------------------
+mwcb:
+  reference_index: SP500
+  reference_index_feed_source: primary_market_data_feed
+  reference_index_max_staleness_ms: 1000
+  reference_index_stale_incident: INC_DATA_STALE_T1
+
+  levels:
+    level_1:
+      trigger_decline_pct: 0.07
+      # Trading halt duration depends on time of day.
+      halt_duration_before_1525_et_minutes: 15
+      halt_duration_at_or_after_1525_et: eod_close_no_resume
+      resume_condition: trading_resumes_after_halt_duration_or_end_of_day
+      incident_code: INC_MWCB_LEVEL1
+      action: halt_all_new_orders_and_cancel_working
+      # Level 1 can trigger only once per session.
+      max_triggers_per_session: 1
+
+    level_2:
+      trigger_decline_pct: 0.13
+      halt_duration_before_1525_et_minutes: 15
+      halt_duration_at_or_after_1525_et: eod_close_no_resume
+      resume_condition: trading_resumes_after_halt_duration_or_end_of_day
+      incident_code: INC_MWCB_LEVEL2
+      action: halt_all_new_orders_and_cancel_working
+      max_triggers_per_session: 1
+
+    level_3:
+      trigger_decline_pct: 0.20
+      halt_duration: remainder_of_session
+      resume_condition: none_session_closed
+      incident_code: INC_MWCB_LEVEL3
+      action: halt_all_new_orders_and_cancel_working_and_escalate
+      requires_human: true
+      max_triggers_per_session: 1
+
+  # System action on receiving MWCB halt notification from exchange feed.
+  on_halt_received:
+    - cancel_all_working_orders
+    - pause_new_order_submission
+    - emit_incident_with_level_and_timestamp
+    - await_resume_signal_from_exchange
+
+  # System action on resumption.
+  on_resume_received:
+    - verify_mwcb_level_still_cleared
+    - re_enable_order_submission
+    - emit_incident_code: INC_MWCB_RESUME
+
+# ---------------------------------------------------------------------------
+# C-05 — LULD: Limit Up / Limit Down
+# Ref: SEC Rule 201; FINRA LULD Plan; CANONICAL-FIELD-INDEX#C-05
+# ---------------------------------------------------------------------------
+luld:
+  enabled: true
+  reference_price_source: consolidated_last_sale_5_min_window
+  reference_price_max_staleness_ms: 500
+  reference_price_stale_incident: INC_DATA_STALE_T1
+
+  tier_1:
+    # Tier 1: NMS securities in S&P 500, Russell 1000, and select ETFs.
+    securities: S&P500_Russell1000_tier1_etf_list
+    # Price band: 5% for securities priced >= $3.00.
+    band_pct_price_gte_3_00: 0.05
+    # Doubled during first and last 25 minutes of regular session.
+    band_pct_opening_window: 0.10
+    band_pct_closing_window: 0.10
+    opening_window_et_start: "09:30:00"
+    opening_window_et_end: "09:45:00"
+    closing_window_et_start: "15:35:00"
+    closing_window_et_end: "16:00:00"
+    # Price band for securities priced $0.75 – $2.99.
+    band_pct_price_075_to_299: 0.20
+    # Price band for securities priced < $0.75.
+    band_pct_price_lt_075: 0.20
+
+  tier_2:
+    # Tier 2: all other NMS securities.
+    securities: all_other_nms
+    band_pct_price_gte_3_00: 0.10
+    band_pct_opening_window: 0.20
+    band_pct_closing_window: 0.20
+    opening_window_et_start: "09:30:00"
+    opening_window_et_end: "09:45:00"
+    closing_window_et_start: "15:35:00"
+    closing_window_et_end: "16:00:00"
+    band_pct_price_075_to_299: 0.20
+    band_pct_price_lt_075: 0.20
+
+  pause_behavior:
+    # If execution price is at or outside the band for 15 continuous seconds,
+    # the exchange declares a LULD pause.
+    trigger_continuous_seconds_at_band: 15
+    pause_duration_seconds: 300
+    # Extended pause for securities in continuous auction reopening.
+    extended_pause_duration_seconds: 600
+    on_pause_received:
+      - cancel_all_working_orders_on_symbol
+      - block_new_orders_on_symbol
+      - emit_incident_code: INC_LULD_PAUSE
+    on_resume_received:
+      - unblock_new_orders_on_symbol
+      - emit_incident_code: INC_LULD_RESUME
+
+  order_admission_during_luld:
+    # Do not admit new orders for a symbol that is paused per LULD.
+    block_orders_while_symbol_paused: true
+    # For orders already in flight at pause, route to cancel.
+    cancel_in_flight_on_pause: true
+
+# ---------------------------------------------------------------------------
+# C-06 — Auction States
+# Ref: Exchange rulebooks (NYSE, NASDAQ, CBOE); CANONICAL-FIELD-INDEX#C-06
+# ---------------------------------------------------------------------------
+auction_states:
+  # The system must recognize and respond to each auction state on every venue.
+  states:
+    opening_cross:
+      code: AUCTION_OPENING
+      # Accept only limit orders during pre-open imbalance window; no market orders.
+      order_types_permitted: [limit, market_on_open]
+      order_types_blocked: [market, stop, stop_limit]
+      pre_open_window_et_start: "04:00:00"
+      pre_open_window_et_end: "09:30:00"
+      # Imbalance feed must be consumed; large imbalances suppress aggressive orders.
+      imbalance_feed_required: true
+      large_imbalance_threshold_shares: 100000
+      large_imbalance_action: suppress_aggressive_new_orders
+      incident_on_missing_imbalance_feed: INC_DATA_STALE_T1
+
+    closing_cross:
+      code: AUCTION_CLOSING
+      order_types_permitted: [limit, market_on_close, limit_on_close]
+      order_types_blocked: [market, stop, stop_limit]
+      closing_auction_window_et_start: "15:45:00"
+      closing_auction_window_et_end: "16:00:00"
+      imbalance_feed_required: true
+      large_imbalance_threshold_shares: 100000
+      large_imbalance_action: suppress_aggressive_new_orders
+      incident_on_missing_imbalance_feed: INC_DATA_STALE_T1
+
+    ipo_opening_auction:
+      code: AUCTION_IPO
+      # No orders admitted until exchange confirms IPO opening cross price.
+      action: block_all_orders_until_cross_price_confirmed
+      cross_price_source: exchange_feed
+      cross_price_max_latency_ms: 2000
+      incident_on_delay: INC_AUCTION_IPO_DELAYED
+
+    reopening_auction:
+      code: AUCTION_REOPEN
+      # Issued after trading halt (MWCB, news, regulatory).
+      action: hold_pending_orders_until_reopen_confirmed
+      on_reopen_confirmed:
+        - resume_order_submission
+        - emit_incident_code: INC_AUCTION_REOPEN
+      # If reopen is not confirmed within this window, escalate.
+      reopen_timeout_minutes: 30
+      reopen_timeout_incident: INC_HALT_UNKNOWN
+
+    halt_auction:
+      code: AUCTION_HALT
+      # Security-specific halt (news, regulatory, exchange-imposed).
+      action: cancel_working_and_block_new_orders_on_symbol
+      incident_code: INC_HALT_SYMBOL
+      requires_human_to_resume: true
+
+    volatility_auction:
+      code: AUCTION_VOLATILITY
+      # Triggered by LULD or exchange volatility guard.
+      action: cancel_working_and_block_new_orders_on_symbol
+      incident_code: INC_LULD_PAUSE
+      auto_resume_after_auction: true
+      auto_resume_max_wait_seconds: 300
+
+  # Action when auction state is unknown or feed is unavailable.
+  unknown_state_action: block_new_orders_and_emit_incident
+  unknown_state_incident: INC_HALT_UNKNOWN
+
+# ---------------------------------------------------------------------------
+# C-07 — Options: Exercise and Assignment
+# Ref: OCC rules; exchange rulebooks; CANONICAL-FIELD-INDEX#C-07
+# ---------------------------------------------------------------------------
+options:
+  exercise_assignment:
+    # Auto-exercise threshold: OCC exercises options >= $0.01 ITM at expiry.
+    auto_exercise_threshold_usd: 0.01
+    # Broker-specific thresholds may differ; use the stricter of the two.
+    broker_threshold_source: broker_account_settings
+    # System must flag any short option position within this DTE window for review.
+    pin_risk_dte_window: 1
+    pin_risk_max_oi_strike_action: flag_for_human_review
+    pin_risk_incident: INC_OPTIONS_PIN_RISK
+
+    early_assignment:
+      # ITM short calls are at risk of early assignment on ex-dividend date.
+      ex_div_early_assignment_window_days: 2
+      # System suspends new short call positions on ex-div window unless confirmed safe.
+      action_on_ex_div_short_call: flag_and_require_human_confirmation
+      incident_code: INC_OPTIONS_EARLY_ASSIGN_RISK
+
+    assignment_notification:
+      # Broker sends assignment notifications; system must process by next session open.
+      max_processing_latency_hours: 2
+      late_notification_incident: INC_OPTIONS_ASSIGN_LATE
+
+    expiry_handling:
+      # Physically settled options (e.g., single-stock) — close or roll before expiry.
+      # Cash-settled options (e.g., SPX) — do not require physical delivery avoidance.
+      physically_settled_close_before_dte: 1
+      cash_settled_symbols: [SPX, XSP, VIX]
+      # Weekly, monthly, quarterly, and LEAP expiration schedules are maintained by
+      # the exchange calendar — consumed from policy.calendar.yaml#sessions.
+      expiry_calendar_source: "policy.calendar.yaml#sessions"
+
+# ---------------------------------------------------------------------------
+# C-08 — Futures: Contract Rollover
+# Ref: Exchange rulebooks; CANONICAL-FIELD-INDEX#C-08
+# ---------------------------------------------------------------------------
+futures:
+  rollover:
+    # Roll window opens N sessions before first notice date (for deliverable contracts)
+    # or N sessions before last trading day (for cash-settled contracts).
+    roll_open_sessions_before_first_notice: 5
+    roll_open_sessions_before_last_trade_day: 3
+    # Volume-weighted transition: roll when front-month open interest < back-month.
+    volume_transition_rule: roll_when_front_oi_lt_back_oi
+    # If volume signal is unavailable, fall back to calendar trigger.
+    volume_signal_fallback: calendar_trigger_at_roll_open
+    # SPAN margin changes must be checked and capital verified before roll.
+    margin_check_on_roll: true
+    insufficient_margin_action: close_position_and_emit_incident
+    insufficient_margin_incident: INC_FUTURES_MARGIN_INSUFFICIENT
+
+    physical_delivery:
+      # System must never hold a physically-deliverable futures contract into
+      # the first notice date.
+      close_before_first_notice: true
+      close_deadline_sessions_before_first_notice: 1
+      failure_to_close_incident: INC_FUTURES_DELIVERY_RISK
+      requires_human: true
+
+    overnight_and_sunday:
+      # System must track overnight session gaps and Sunday globex reopens.
+      overnight_gap_risk_acknowledged: true
+      sunday_reopen_session_start_et: "18:00:00"
+      # Sunday open liquidity is thin — reduce position size cap during this window.
+      sunday_open_size_cap_pct: 0.50
+
+    commodity_luld:
+      # Commodity futures have exchange-specific limit-up/limit-down rules
+      # separate from equity LULD. Limits are sourced from exchange rulebook feed.
+      enabled: true
+      limit_source: exchange_daily_limit_feed
+      limit_feed_max_staleness_ms: 5000
+      limit_stale_incident: INC_DATA_STALE_T1
+      at_limit_action: block_orders_in_limit_direction
+
+# ---------------------------------------------------------------------------
+# C-09 — Crypto: Venue Allowlist
+# Ref: CANONICAL-FIELD-INDEX#C-09
+# ---------------------------------------------------------------------------
+crypto:
+  venue_allowlist:
+    # Only venues on this list may receive crypto orders.
+    # Tenants may restrict to a subset; they may not add venues.
+    venues:
+      - venue_id: coinbase-prime
+        display_name: Coinbase Prime
+        venue_type: cex
+        risk_score: 1
+        # Risk score: 1 (lowest) to 5 (highest). Venues with score >= 4 are blocked.
+        max_risk_score_permitted: 3
+        maintenance_window_check_required: true
+        withdrawal_suspension_action: block_new_orders_and_emit_incident
+        withdrawal_suspension_incident: INC_CRYPTO_WITHDRAWAL_SUSPENDED
+
+      - venue_id: cumberland-otc
+        display_name: Cumberland OTC
+        venue_type: otc
+        risk_score: 2
+        max_risk_score_permitted: 3
+        maintenance_window_check_required: true
+        withdrawal_suspension_action: block_new_orders_and_emit_incident
+        withdrawal_suspension_incident: INC_CRYPTO_WITHDRAWAL_SUSPENDED
+
+    # Stablecoin depeg threshold — if a stablecoin used for settlement depegs
+    # beyond this from $1.00, suspend settlement via that stablecoin.
+    stablecoin_depeg_threshold_pct: 0.005
+    stablecoin_depeg_incident: INC_CRYPTO_STABLECOIN_DEPEG
+
+    # Chain reorganization — if a chain reorg beyond this depth is detected,
+    # suspend withdrawals and alert.
+    chain_reorg_depth_threshold_blocks: 3
+    chain_reorg_incident: INC_CRYPTO_CHAIN_REORG
+
+    # Funding rate regime for perpetual swaps — if funding rate exceeds this
+    # threshold, new positions in the funding-paying direction are blocked.
+    perp_funding_rate_max_pct: 0.001
+    perp_funding_rate_breach_action: block_new_positions_in_funding_paying_direction
+    perp_funding_rate_incident: INC_CRYPTO_FUNDING_RATE_HIGH
+
+    # Weekend thin-liquidity: reduce max order notional during this window.
+    weekend_thin_liquidity_max_notional_pct: 0.50
+    weekend_thin_liquidity_window:
+      start_day: saturday
+      start_time_utc: "00:00:00"
+      end_day: monday
+      end_time_utc: "00:00:00"
+
+# ---------------------------------------------------------------------------
+# C-10 — Corporate Actions
+# Ref: DTCC; Exchange rulebooks; CANONICAL-FIELD-INDEX#C-10
+# ---------------------------------------------------------------------------
+corporate_actions:
+  # Corporate action data source — primary is DTCC; fallback is manual upload.
+  data_source_primary: dtcc_corporate_actions_feed
+  data_source_fallback: manual_operator_upload
+  data_source_max_staleness_hours: 24
+  data_source_stale_incident: INC_CORP_ACTION_DATA_STALE
+
+  splits:
+    forward:
+      # Forward split: shares multiply, price divides. All open orders must be
+      # adjusted or canceled before ex-date open.
+      action_on_ex_date: adjust_or_cancel_open_orders_before_session_open
+      position_adjustment: automatic_ratio_application
+      incident_code: INC_CORP_ACTION_SPLIT_FORWARD
+
+    reverse:
+      # Reverse split: shares divide, price multiplies. Same handling.
+      action_on_ex_date: adjust_or_cancel_open_orders_before_session_open
+      position_adjustment: automatic_ratio_application
+      incident_code: INC_CORP_ACTION_SPLIT_REVERSE
+      # Reverse splits often precede delisting; flag for human review.
+      flag_for_human_review: true
+
+  mergers:
+    cash:
+      action: close_position_at_deal_price_on_deal_close_date
+      incident_code: INC_CORP_ACTION_MERGER_CASH
+
+    stock:
+      action: convert_position_to_acquirer_symbol_at_exchange_ratio
+      incident_code: INC_CORP_ACTION_MERGER_STOCK
+
+    mixed:
+      # Mixed consideration — cash + stock. Treat as cash for the cash leg,
+      # stock conversion for the stock leg. Reconcile with broker post-event.
+      action: split_and_process_each_leg
+      incident_code: INC_CORP_ACTION_MERGER_MIXED
+      requires_human_reconciliation: true
+
+  spin_offs:
+    # New symbol received via spin-off: block trading until symbol is mapped
+    # and position is confirmed by broker.
+    action: block_trading_on_new_symbol_until_confirmed
+    incident_code: INC_CORP_ACTION_SPINOFF
+    requires_human: true
+
+  symbol_changes:
+    # Ticker change: update symbol mapping, re-validate all open orders.
+    action: remap_symbol_and_revalidate_open_orders
+    incident_code: INC_CORP_ACTION_SYMBOL_CHANGE
+
+  dividends:
+    ex_date:
+      # Short positions owe the dividend on ex-date — flag ITM short calls
+      # and short equity positions for review before ex-date.
+      flag_short_positions_before_ex_date_days: 2
+      flag_incident: INC_CORP_ACTION_DIVIDEND_EX
+      # System does not auto-close; flags for human review only.
+      auto_close: false
+
+    special_dividend:
+      # Special dividends may cause exchange-adjusted strike prices on options.
+      action: flag_all_options_on_symbol_for_review
+      incident_code: INC_CORP_ACTION_SPECIAL_DIVIDEND
+      requires_human: true
+
+  settlement:
+    # T+1 settlement for US equities (effective May 2024 per SEC rule).
+    us_equities_settlement_days: 1
+    # Cash-account free-riding: if proceeds from sale are used to buy before
+    # settlement, that is a violation. System tracks unsettled cash.
+    cash_account_free_riding_check: true
+    free_riding_action: block_buy_exceeding_settled_cash
+    free_riding_incident: INC_PDT_FREE_RIDING
+
+# ---------------------------------------------------------------------------
+# C-11 — Restricted List Source
+# Ref: CANONICAL-FIELD-INDEX#C-11
+# ---------------------------------------------------------------------------
+restricted_list:
+  source:
+    uri: https://internal.strativion.io/api/restricted-list/current
+    format: json
+    refresh_cadence_seconds: 3600
+    # Restricted list check is a hard pre-trade gate.
+    check_required_for_all_orders: true
+    # On source failure, the system falls back to the last known list.
+    # If last known list is older than this threshold, block all orders.
+    source_failure_behavior: use_last_known_and_emit_incident
+    source_failure_incident: INC_RESTRICTED_LIST_STALE
+    last_known_list_max_age_hours: 24
+    last_known_list_expired_behavior: block_all_orders_and_escalate
+    last_known_list_expired_incident: INC_RESTRICTED_LIST_EXPIRED
+    requires_human: true
+    # Refresh is triggered on schedule AND on any corporate action event.
+    refresh_triggers:
+      - schedule
+      - corporate_action_event
+      - operator_manual_refresh

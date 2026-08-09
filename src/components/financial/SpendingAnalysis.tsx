@@ -10,6 +10,7 @@ import {
   ChartContainer,
 } from "@/components/charts";
 import AISpendingInsights from "./AISpendingInsights";
+import { CHART_COLORS } from "@/lib/design-tokens/chart-colors";
 
 interface CategorySpending {
   category: string;
@@ -285,7 +286,7 @@ export default function SpendingAnalysis() {
     })) || [];
 
   const lineConfig = [
-    { dataKey: "spending", name: "Spending", color: "#3B82F6", dot: true },
+    { dataKey: "spending", name: "Spending", color: CHART_COLORS.blue, dot: true },
   ];
 
   const barChartData =
@@ -304,11 +305,11 @@ export default function SpendingAnalysis() {
     })) || [];
 
   const cashFlowAreaConfig = [
-    { dataKey: "income", name: "Income", color: "#10B981", fillOpacity: 0.3 },
+    { dataKey: "income", name: "Income", color: CHART_COLORS.emerald, fillOpacity: 0.3 },
     {
       dataKey: "expenses",
       name: "Expenses",
-      color: "#EF4444",
+      color: CHART_COLORS.red,
       fillOpacity: 0.3,
     },
   ];
@@ -857,19 +858,19 @@ export default function SpendingAnalysis() {
                 {
                   dataKey: "predicted",
                   name: "Predicted",
-                  color: "#3B82F6",
+                  color: CHART_COLORS.blue,
                   fillOpacity: 0.3,
                 },
                 {
                   dataKey: "low",
                   name: "Lower Bound",
-                  color: "#93C5FD",
+                  color: CHART_COLORS.lightBlue,
                   fillOpacity: 0.1,
                 },
                 {
                   dataKey: "high",
                   name: "Upper Bound",
-                  color: "#93C5FD",
+                  color: CHART_COLORS.lightBlue,
                   fillOpacity: 0.1,
                 },
               ]}

@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { chatDbService } from "@/lib/ai/chat-db-service";
 import type {
   CreateSessionRequest,
@@ -17,25 +17,8 @@ import type {
 } from "@/lib/ai/types/chat.types";
 
 // List sessions
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // AUTHENTICATION CHECK - Required for all AI endpoints
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { code: "UNAUTHORIZED", message: "Authentication required" },
-        },
-        { status: 401 },
-      );
-    }
-
     const userId = user.id;
 
     // Parse query parameters
@@ -51,8 +34,7 @@ export async function GET(request: NextRequest) {
           | "createdAt"
           | "updatedAt"
           | "lastMessageAt") || "updatedAt",
-      sortOrder:
-        (searchParams.get("sortOrder") as "asc" | "desc") || "desc",
+      sortOrder: (searchParams.get("sortOrder") as "asc" | "desc") || "desc",
     };
 
     // Get sessions
@@ -71,34 +53,19 @@ export async function GET(request: NextRequest) {
         error: {
           code: "LIST_SESSIONS_ERROR",
           message:
-            _error instanceof Error ? _error.message : "Unknown error occurred",
+            _error instanceof Error
+              ? _error.message
+              : "Unknown error occurred",
         },
       },
       { status: 500 },
     );
   }
-}
+});
 
 // Create session
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // AUTHENTICATION CHECK - Required for all AI endpoints
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { code: "UNAUTHORIZED", message: "Authentication required" },
-        },
-        { status: 401 },
-      );
-    }
-
     const userId = user.id;
 
     // Parse request body
@@ -171,10 +138,12 @@ export async function POST(request: NextRequest) {
         error: {
           code: "CREATE_SESSION_ERROR",
           message:
-            _error instanceof Error ? _error.message : "Unknown error occurred",
+            _error instanceof Error
+              ? _error.message
+              : "Unknown error occurred",
         },
       },
       { status: 500 },
     );
   }
-}
+});

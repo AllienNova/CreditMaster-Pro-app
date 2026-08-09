@@ -18,6 +18,9 @@ import { auditLogger } from "@/lib/security/audit-logging";
 
 // Mock dependencies
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("user"),
+}));
 jest.mock("@/lib/credit-repair/db");
 jest.mock("@/lib/security/audit-logging");
 
@@ -64,7 +67,6 @@ describe("/api/credit-repair/disputes/[id]", () => {
     updatedAt: new Date(),
   };
 
-  const mockParams = Promise.resolve({ id: "dispute-123" });
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -88,7 +90,7 @@ describe("/api/credit-repair/disputes/[id]", () => {
       const request = new NextRequest(
         "http://localhost:3000/api/credit-repair/disputes/dispute-123",
       );
-      const response = await GET(request, { params: mockParams });
+      const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -114,7 +116,7 @@ describe("/api/credit-repair/disputes/[id]", () => {
       const request = new NextRequest(
         "http://localhost:3000/api/credit-repair/disputes/dispute-123",
       );
-      const response = await GET(request, { params: mockParams });
+      const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -131,7 +133,7 @@ describe("/api/credit-repair/disputes/[id]", () => {
       const request = new NextRequest(
         "http://localhost:3000/api/credit-repair/disputes/dispute-123",
       );
-      const response = await GET(request, { params: mockParams });
+      const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -165,7 +167,7 @@ describe("/api/credit-repair/disputes/[id]", () => {
           body: validUpdate,
         },
       );
-      const response = await PUT(request, { params: mockParams });
+      const response = await PUT(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -206,7 +208,7 @@ describe("/api/credit-repair/disputes/[id]", () => {
           body: updateWithLocking,
         },
       );
-      const response = await PUT(request, { params: mockParams });
+      const response = await PUT(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -237,7 +239,7 @@ describe("/api/credit-repair/disputes/[id]", () => {
           body: validUpdate,
         },
       );
-      const response = await PUT(request, { params: mockParams });
+      const response = await PUT(request);
       const data = await response.json();
 
       expect(response.status).toBe(409);
@@ -259,7 +261,7 @@ describe("/api/credit-repair/disputes/[id]", () => {
           body: invalidUpdate,
         },
       );
-      const response = await PUT(request, { params: mockParams });
+      const response = await PUT(request);
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -280,7 +282,7 @@ describe("/api/credit-repair/disputes/[id]", () => {
           body: validUpdate,
         },
       );
-      const response = await PUT(request, { params: mockParams });
+      const response = await PUT(request);
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -305,7 +307,7 @@ describe("/api/credit-repair/disputes/[id]", () => {
           method: "DELETE",
         },
       );
-      const response = await DELETE(request, { params: mockParams });
+      const response = await DELETE(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -333,7 +335,7 @@ describe("/api/credit-repair/disputes/[id]", () => {
           method: "DELETE",
         },
       );
-      const response = await DELETE(request, { params: mockParams });
+      const response = await DELETE(request);
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -353,11 +355,44 @@ describe("/api/credit-repair/disputes/[id]", () => {
           method: "DELETE",
         },
       );
-      const response = await DELETE(request, { params: mockParams });
+      const response = await DELETE(request);
       const data = await response.json();
 
       expect(response.status).toBe(401);
       expect(data.error).toBe("Unauthorized");
     });
   });
+});
+
+describe("negative-auth – /api/credit-repair/disputes/[id] (withAuth)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+    it("GET returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const res = await GET(createMockRequest("http://localhost:3000/api/credit-repair/disputes/dispute-123"));
+      expect(res.status).toBe(401);
+    });
+
+    it("PUT returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const res = await PUT(createMockRequest("http://localhost:3000/api/credit-repair/disputes/dispute-123", { method: "PUT" }));
+      expect(res.status).toBe(401);
+    });
+
+    it("DELETE returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const res = await DELETE(createMockRequest("http://localhost:3000/api/credit-repair/disputes/dispute-123", { method: "DELETE" }));
+      expect(res.status).toBe(401);
+    });
 });

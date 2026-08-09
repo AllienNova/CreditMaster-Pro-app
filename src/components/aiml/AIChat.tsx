@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { getModelRouter, TaskType } from "@/lib/model-router";
+import { TaskType } from "@/lib/model-router-types";
 
 interface Message {
   role: "user" | "assistant";
@@ -49,10 +49,6 @@ export default function AIChat({
     setError("");
 
     try {
-      // Get the appropriate model for the task
-      const router = getModelRouter();
-      const model = router.getModel(taskType);
-
       // Prepare messages for API
       const apiMessages = [
         ...(systemPrompt
@@ -62,14 +58,13 @@ export default function AIChat({
         { role: "user" as const, content: input },
       ];
 
-      // Call AIML API directly (we'll create a simple chat endpoint)
+      // Call AI chat endpoint — the server selects the model via ModelRouter
       const response = await fetch("/api/ai/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model,
           messages: apiMessages,
           taskType,
         }),

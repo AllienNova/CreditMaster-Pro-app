@@ -9,18 +9,37 @@ import { PortfolioService } from "./PortfolioService";
 import { PortfolioPerformance } from "../types/portfolio-db.types";
 
 /**
- * Benchmark comparison result
+ * Benchmark comparison result.
+ *
+ * `dataAvailable` is false when no historical S&P 500 series is reachable from
+ * this service. In that case all benchmark-derived fields are null. The
+ * portfolio's own return (computed from real holdings) is always populated.
+ *
+ * NOTE: never fabricate constants for beta/correlation/benchmark_return —
+ * that was the FND-032 bug. When data is absent, callers must render "—" or
+ * "benchmark data unavailable", not display null as a number.
  */
 export interface BenchmarkComparison {
+  /** Always populated from real holdings data. */
   portfolio_return: number;
+  /** Always populated from real holdings data. */
   portfolio_return_percent: number;
-  benchmark_return: number;
-  benchmark_return_percent: number;
-  alpha: number; // Excess return vs benchmark
-  beta: number; // Volatility relative to benchmark
-  correlation: number;
-  tracking_error: number;
-  information_ratio: number;
+  /** False when no S&P 500 historical series was available. */
+  dataAvailable: boolean;
+  /** null when dataAvailable is false. */
+  benchmark_return: number | null;
+  /** null when dataAvailable is false. */
+  benchmark_return_percent: number | null;
+  /** null when dataAvailable is false. */
+  alpha: number | null;
+  /** null when dataAvailable is false. */
+  beta: number | null;
+  /** null when dataAvailable is false. */
+  correlation: number | null;
+  /** null when dataAvailable is false. */
+  tracking_error: number | null;
+  /** null when dataAvailable is false. */
+  information_ratio: number | null;
 }
 
 /**
@@ -125,43 +144,59 @@ export class PerformanceCalculator {
   }
 
   /**
-   * Calculate portfolio volatility (standard deviation of returns)
+   * Calculate portfolio volatility (annualized standard deviation of returns).
+   *
+   * Real volatility requires a historical daily-return series for this portfolio.
+   * `PerformanceCalculator` only has access to `PortfolioService`, which exposes
+   * current holdings and portfolio snapshot — not a time-series of daily values.
+   * No real daily-return series is reachable from this class (the private
+   * return-series helpers live on the separate `PortfolioAnalytics` class).
+   *
+   * Honest output: returns `null` when no real series is available. Callers must
+   * render `null` as "n/a" or "data unavailable" — never display it as a number.
+   *
    * @param portfolioId Portfolio ID
-   * @param period Number of days to calculate over
-   * @returns Volatility as standard deviation percentage
+   * @param period Number of days (validated, but no series is currently reachable)
+   * @returns null — no real daily-return series is available from this class
    */
   async calculateVolatility(
     portfolioId: string,
     period: number = 30,
-  ): Promise<number> {
+  ): Promise<number | null> {
     if (period <= 1) {
       throw new Error("Period must be greater than 1");
     }
 
-    // For now, return a placeholder since we need historical price data
-    // In production, this would fetch daily portfolio values and calculate std dev
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
     }
 
-    // Placeholder: Use day_change_percent as a proxy for volatility
-    // In production, calculate from historical daily returns
-    const estimatedVolatility =
-      Math.abs(portfolio.day_change_percent || 0) * Math.sqrt(period);
-    return estimatedVolatility;
+    // No historical daily-return series is reachable from this class.
+    // Returning null is the honest signal — callers must treat this as
+    // "data unavailable", not as zero volatility or any fabricated estimate.
+    console.warn(
+      `[PerformanceCalculator] calculateVolatility: no historical daily-return series available for portfolio ${portfolioId}; returning null`,
+    );
+    return null;
   }
 
   /**
-   * Calculate Sharpe Ratio (risk-adjusted return)
+   * Calculate Sharpe Ratio (risk-adjusted return).
+   *
+   * Returns `null` when volatility is unavailable (`calculateVolatility` returns
+   * `null`). A null volatility would otherwise produce a NaN Sharpe ratio —
+   * recreating the FND-031 class of bug. Callers must treat `null` as
+   * "data unavailable".
+   *
    * @param portfolioId Portfolio ID
    * @param riskFreeRate Annual risk-free rate (e.g., 0.04 for 4%)
-   * @returns Sharpe ratio
+   * @returns Sharpe ratio, or null when volatility data is unavailable
    */
   async calculateSharpeRatio(
     portfolioId: string,
     riskFreeRate: number = 0.04,
-  ): Promise<number> {
+  ): Promise<number | null> {
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
@@ -173,11 +208,13 @@ export class PerformanceCalculator {
       1,
     );
 
-    // Calculate volatility (annualized)
+    // Calculate volatility (annualized). Returns null when no real series is available.
     const volatility = await this.calculateVolatility(portfolioId, 252); // 252 trading days
 
-    if (volatility === 0) {
-      return 0;
+    // Propagate null: a null volatility means Sharpe is undefined.
+    // Do not coerce to 0 (plausible wrong value) or allow null arithmetic (NaN).
+    if (volatility === null || volatility === 0) {
+      return null;
     }
 
     // Sharpe Ratio = (Portfolio Return - Risk Free Rate) / Volatility
@@ -262,11 +299,20 @@ export class PerformanceCalculator {
   }
 
   /**
-   * Benchmark portfolio performance against S&P 500
+   * Benchmark portfolio performance against S&P 500.
+   *
+   * Real beta/correlation/benchmark-return computation requires a historical
+   * S&P 500 daily-return series, which is not reachable from this class
+   * (MarketDataService is a separate service requiring API keys not injected
+   * here). The "data unavailable" pattern is applied: benchmark-derived fields
+   * are null and dataAvailable is false. The portfolio's own return, computed
+   * from real holdings, is always populated.
+   *
    * @param portfolioId Portfolio ID
    * @param startDate Start date for comparison
    * @param endDate End date for comparison
-   * @returns Benchmark comparison metrics
+   * @returns BenchmarkComparison with portfolio return populated; benchmark
+   *   fields null and dataAvailable false (no S&P series reachable).
    */
   async benchmarkAgainstSP500(
     portfolioId: string,
@@ -278,40 +324,20 @@ export class PerformanceCalculator {
       throw new Error(`Portfolio ${portfolioId} not found`);
     }
 
-    // Calculate portfolio return
     const { absolute: portfolioReturn, percentage: portfolioReturnPercent } =
       await this.calculateTotalReturn(portfolioId, startDate, endDate);
-
-    // Placeholder S&P 500 return (in production, fetch from market data API)
-    const benchmarkReturnPercent = 10; // Assume 10% annual return
-    const totalCost = portfolio.total_cost_basis;
-    const benchmarkReturn = (totalCost * benchmarkReturnPercent) / 100;
-
-    // Calculate alpha (excess return)
-    const alpha = portfolioReturnPercent - benchmarkReturnPercent;
-
-    // Calculate beta (placeholder - would need covariance calculation)
-    const beta = 1.0; // Market beta
-
-    // Calculate correlation (placeholder)
-    const correlation = 0.85;
-
-    // Calculate tracking error (std dev of difference in returns)
-    const trackingError = Math.abs(alpha) / 10; // Simplified
-
-    // Calculate information ratio (alpha / tracking error)
-    const informationRatio = trackingError > 0 ? alpha / trackingError : 0;
 
     return {
       portfolio_return: portfolioReturn,
       portfolio_return_percent: portfolioReturnPercent,
-      benchmark_return: benchmarkReturn,
-      benchmark_return_percent: benchmarkReturnPercent,
-      alpha,
-      beta,
-      correlation,
-      tracking_error: trackingError,
-      information_ratio: informationRatio,
+      dataAvailable: false,
+      benchmark_return: null,
+      benchmark_return_percent: null,
+      alpha: null,
+      beta: null,
+      correlation: null,
+      tracking_error: null,
+      information_ratio: null,
     };
   }
 }

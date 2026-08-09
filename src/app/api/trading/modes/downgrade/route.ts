@@ -6,24 +6,11 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { createOperatingModeManager } from "@/lib/trading/modes/operating-mode-manager";
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
     let body: { reason?: string };
     try {
       body = await request.json();
@@ -70,4 +57,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

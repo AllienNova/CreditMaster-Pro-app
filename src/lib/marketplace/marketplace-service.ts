@@ -4,7 +4,7 @@
  * Core marketplace operations: getProducts, getCategories, search, filter
  */
 
-import { getSupabase } from "../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { Database } from "../supabase/types";
 
 type ProductRow = Database["public"]["Tables"]["marketplace_products"]["Row"];
@@ -48,8 +48,8 @@ export interface ProductFilters {
   search?: string;
 }
 
-const products = () => getSupabase().from("marketplace_products");
-const providers = () => getSupabase().from("marketplace_providers");
+const products = () => getServiceRoleClient().from("marketplace_products");
+const providers = () => getServiceRoleClient().from("marketplace_providers");
 
 class MarketplaceService {
   async getProducts(filters?: ProductFilters): Promise<MarketplaceProduct[]> {

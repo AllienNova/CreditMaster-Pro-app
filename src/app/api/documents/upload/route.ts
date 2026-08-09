@@ -1,24 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { documentService } from "@/lib/documents/document-service";
-import type { DocumentType } from "@/lib/documents/document-service";
+import { documentServiceDB } from "@/lib/documents/document-service-db";
+import type { DocumentType } from "@/lib/documents/document-service-db";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File;
-    const userId = formData.get("userId") as string;
+    // userId is the authenticated user — never trust a client-supplied id (IDOR).
+    const userId = user.id;
     const documentType = formData.get("documentType") as string as DocumentType;
     const metadataStr = formData.get("metadata") as string;
 
-    if (!file || !userId || !documentType) {
+    if (!file || !documentType) {
       return NextResponse.json(
-        { error: "Missing required fields: file, userId, documentType" },
+        { error: "Missing required fields: file, documentType" },
         { status: 400 },
       );
     }
 
     // Validate file type
-    if (!documentService.validateFileType(file.type, documentType)) {
+    if (!documentServiceDB.validateFileType(file.type, documentType)) {
       return NextResponse.json(
         { error: `Invalid file type for ${documentType}` },
         { status: 400 },
@@ -26,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file size
-    if (!documentService.validateFileSize(file.size)) {
+    if (!documentServiceDB.validateFileSize(file.size)) {
       return NextResponse.json(
         { error: "File size exceeds 10MB limit" },
         { status: 400 },
@@ -36,17 +39,16 @@ export async function POST(request: NextRequest) {
     // Convert file to buffer
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Parse metadata if provided
-    const metadata = metadataStr ? JSON.parse(metadataStr) : undefined;
+    // Parse metadata if provided (ignored by DB service — no metadata column)
+    void metadataStr;
 
     // Upload document
-    const document = await documentService.uploadDocument(
+    const document = await documentServiceDB.uploadDocument(
       userId,
       buffer,
       file.name,
       file.type,
       documentType,
-      metadata,
     );
 
     return NextResponse.json({ document });
@@ -57,18 +59,19 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 // Generate presigned upload URL
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    // userId is the authenticated user — never trust a client-supplied id (IDOR).
+    const userId = user.id;
     const fileName = searchParams.get("fileName");
     const mimeType = searchParams.get("mimeType");
     const documentType = searchParams.get("documentType") as string as DocumentType;
 
-    if (!userId || !fileName || !mimeType || !documentType) {
+    if (!fileName || !mimeType || !documentType) {
       return NextResponse.json(
         { error: "Missing required parameters" },
         { status: 400 },
@@ -76,7 +79,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { uploadUrl, documentId, s3Key } =
-      await documentService.generateUploadUrl(
+      await documentServiceDB.generateUploadUrl(
         userId,
         fileName,
         mimeType,
@@ -91,4 +94,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

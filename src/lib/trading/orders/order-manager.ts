@@ -10,10 +10,13 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/monitoring/logger";
 import {
   Order,
   OrderRequest,
+  OrderSide,
   OrderStatus,
+  OrderType,
   OrderUpdate,
   OrderEvent,
   OrderFilter,
@@ -23,8 +26,55 @@ import {
   OrderValidationWarning,
   OrderManagerConfig,
   DEFAULT_ORDER_MANAGER_CONFIG,
+  TimeInForce,
   Fill,
 } from "./order-types";
+
+// ============================================================================
+// DB ROW TYPE (orders table — supabase/migrations/20260731000000_trading_orders_positions.sql)
+// ============================================================================
+//
+// src/lib/supabase/types.ts does not model the `orders` table: it omits the
+// `Relationships` field postgrest-js's GenericSchema requires, which widens
+// `.from()` to accept any string (see getOrders/loadOrderFromDb below — no
+// cast needed there) but degrades `.upsert()`'s argument type to `never`
+// (verified: `.upsert({...})` fails to compile with "not assignable to
+// parameter of type 'never'" once the table exists and this cast is removed).
+// types.ts is owned by a separate slice, so this narrows the query builder
+// locally instead. OrderRow mirrors the migration's columns exactly.
+interface OrderRow {
+  id: string;
+  broker_id?: string;
+  user_id: string;
+  account_id: string;
+  symbol: string;
+  side: OrderSide;
+  quantity: number;
+  type: OrderType;
+  limit_price?: number;
+  stop_price?: number;
+  time_in_force: TimeInForce;
+  status: OrderStatus;
+  filled_qty: number;
+  filled_avg_price?: number;
+  created_at: string;
+  submitted_at?: string;
+  filled_at?: string;
+  cancelled_at?: string;
+  updated_at: string;
+  error_message?: string;
+  reject_reason?: string;
+  estimated_value: number;
+  signal_id?: string;
+  strategy_id?: string;
+  notes?: string;
+}
+
+interface OrdersTableClient {
+  upsert(
+    row: OrderRow,
+  ): Promise<{ error: { message: string; code?: string } | null }>;
+}
 
 // ============================================================================
 // ORDER MANAGER CLASS
@@ -424,6 +474,10 @@ export class OrderManager {
       .select("*")
       .order("created_at", { ascending: false });
 
+    if (filter.userId) {
+      query = query.eq("user_id", filter.userId);
+    }
+
     if (filter.status && filter.status.length > 0) {
       query = query.in("status", filter.status);
     }
@@ -462,8 +516,15 @@ export class OrderManager {
     const { data, error } = await query;
 
     if (error) {
-      // OrderManager error: Error fetching orders
-      return [];
+      // Throw rather than return [] — a caller receiving an empty list on a
+      // DB error would read as "you have zero orders" when orders may exist
+      // and simply failed to load; that is actively misleading for a trading
+      // blotter. The route layer (orders/route.ts) already wraps this call
+      // in try/catch and returns a typed 500.
+      logger.error("Failed to fetch orders", new Error(error.message), {
+        userId: filter.userId,
+      });
+      throw new Error(`Failed to fetch orders: ${error.message}`);
     }
 
     return (data || []).map(this.mapDbToOrder);
@@ -628,47 +689,65 @@ export class OrderManager {
     });
   }
 
+  // Deliberately no try/catch here: a persist failure must surface to the
+  // caller (createOrder/submitOrder/handleOrderUpdate/cancelOrder), which
+  // ultimately propagates to the API route's own try/catch (every route in
+  // src/app/api/trading/{orders,positions}/route.ts already wraps its handler
+  // and returns a typed 5xx — see orders/route.ts:474). Swallowing here was
+  // the root cause of every order write silently no-op'ing: the upsert
+  // resolves with `{ error }` rather than throwing (postgrest-js only rejects
+  // on a network failure, never on a Postgrest-level error — confirmed via
+  // @supabase/postgrest-js/src/PostgrestBuilder.ts), and the old code never
+  // even read `error` off the result, so the try/catch had nothing to catch.
   private async persistOrder(order: Order): Promise<void> {
-    try {
-      const supabase = await createClient();
+    const supabase = await createClient();
 
-      // Using type assertion since 'orders' table schema not yet defined in Supabase types
-      await (
-        supabase.from("orders") as unknown as {
-          upsert: (data: Record<string, unknown>) => Promise<unknown>;
-        }
-      ).upsert({
-        id: order.id,
-        broker_id: order.brokerId,
-        user_id: order.userId,
-        account_id: order.accountId,
-        symbol: order.symbol,
-        side: order.side,
-        quantity: order.quantity,
-        type: order.type,
-        limit_price: order.limitPrice,
-        stop_price: order.stopPrice,
-        time_in_force: order.timeInForce,
-        status: order.status,
-        filled_qty: order.filledQty,
-        filled_avg_price: order.filledAvgPrice,
-        created_at: order.createdAt.toISOString(),
-        submitted_at: order.submittedAt?.toISOString(),
-        filled_at: order.filledAt?.toISOString(),
-        cancelled_at: order.cancelledAt?.toISOString(),
-        updated_at: order.updatedAt.toISOString(),
-        error_message: order.errorMessage,
-        reject_reason: order.rejectReason,
-        estimated_value: order.estimatedValue,
-        signal_id: order.signalId,
-        strategy_id: order.strategyId,
-        notes: order.notes,
+    const { error } = await (
+      supabase.from("orders") as unknown as OrdersTableClient
+    ).upsert({
+      id: order.id,
+      broker_id: order.brokerId,
+      user_id: order.userId,
+      account_id: order.accountId,
+      symbol: order.symbol,
+      side: order.side,
+      quantity: order.quantity,
+      type: order.type,
+      limit_price: order.limitPrice,
+      stop_price: order.stopPrice,
+      time_in_force: order.timeInForce,
+      status: order.status,
+      filled_qty: order.filledQty,
+      filled_avg_price: order.filledAvgPrice,
+      created_at: order.createdAt.toISOString(),
+      submitted_at: order.submittedAt?.toISOString(),
+      filled_at: order.filledAt?.toISOString(),
+      cancelled_at: order.cancelledAt?.toISOString(),
+      updated_at: order.updatedAt.toISOString(),
+      error_message: order.errorMessage,
+      reject_reason: order.rejectReason,
+      estimated_value: order.estimatedValue,
+      signal_id: order.signalId,
+      strategy_id: order.strategyId,
+      notes: order.notes,
+    });
+
+    if (error) {
+      logger.error(`Failed to persist order ${order.id}`, new Error(error.message), {
+        orderId: order.id,
+        userId: order.userId,
+        code: error.code,
       });
-    } catch (_error) {
-      // OrderManager error: Failed to persist order
+      throw new Error(`Failed to persist order ${order.id}: ${error.message}`);
     }
   }
 
+  // Returns null (not a throw) on a genuine "not found", matching the
+  // Order | null contract handleOrderUpdate already relies on. A query error
+  // is logged (previously invisible — the catch below had an empty body) but
+  // still folds into null, since this is a single-record lookup used as a
+  // fallback for an order missing from the in-memory Map; the caller already
+  // treats null as "order not found" and handles it accordingly.
   private async loadOrderFromDb(orderId: string): Promise<Order | null> {
     try {
       const supabase = await createClient();
@@ -678,10 +757,19 @@ export class OrderManager {
         .eq("id", orderId)
         .single();
 
-      if (error || !data) return null;
+      if (error) {
+        logger.error(`Failed to load order ${orderId}`, new Error(error.message), {
+          orderId,
+        });
+        return null;
+      }
+      if (!data) return null;
 
       return this.mapDbToOrder(data);
-    } catch {
+    } catch (err) {
+      logger.error(`Unexpected error loading order ${orderId}`, err as Error, {
+        orderId,
+      });
       return null;
     }
   }

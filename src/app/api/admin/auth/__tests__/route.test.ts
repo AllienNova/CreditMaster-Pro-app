@@ -6,25 +6,20 @@
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-const mockRequireRole = jest.fn();
-const mockCreateAuthResponse = jest.fn();
+// Route wrapped in withRole("admin") (TASK-AUTH-03a); guard resolves auth via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb. The handler trusts the
+// guard's AuthedUser and performs no second auth pass, so the guard mocks are
+// the only auth dependency.
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
 
-jest.mock("@/lib/security/auth-middleware", () => ({
-  requireRole: (...args: any[]) => mockRequireRole(...args),
-  createAuthResponse: (...args: any[]) => mockCreateAuthResponse(...args),
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: any[]) => mockValidate(...args),
+  },
 }));
-
-const mockCookies = jest.fn();
-jest.mock("next/headers", () => ({
-  cookies: () => mockCookies(),
-}));
-
-const mockGetUser = jest.fn();
-const mockFrom = jest.fn();
-const mockCreateClient = jest.fn();
-
-jest.mock("@supabase/supabase-js", () => ({
-  createClient: (...args: any[]) => mockCreateClient(...args),
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: any[]) => mockResolveRole(...args),
 }));
 
 // ── Import AFTER mocks ──────────────────────────────────────────────────────
@@ -41,156 +36,80 @@ function makeRequest(url?: string): NextRequest {
   );
 }
 
-const ENV_BACKUP = { ...process.env };
-
 // ── Setup ────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
   jest.clearAllMocks();
-  process.env = { ...ENV_BACKUP };
-  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
 
-  // Default: auth passes
-  mockRequireRole.mockResolvedValue({ authenticated: true, user: { role: "admin" } });
-
-  // Default: cookies return access token
-  mockCookies.mockReturnValue({
-    get: jest.fn((name: string) => {
-      if (name === "sb-access-token") return { value: "test-token" };
-      return undefined;
-    }),
+  // Default: auth passes (admin)
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "user-1", email: "admin@fynvita.com" },
   });
-
-  // Default: supabase client
-  mockGetUser.mockResolvedValue({
-    data: { user: { id: "user-1", email: "admin@fynvita.com" } },
-    error: null,
-  });
-
-  mockFrom.mockReturnValue({
-    select: jest.fn().mockReturnValue({
-      eq: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({
-          data: { subscription_tier: "admin" },
-          error: null,
-        }),
-      }),
-    }),
-  });
-
-  mockCreateClient.mockReturnValue({
-    auth: { getUser: mockGetUser },
-    from: mockFrom,
-  });
-});
-
-afterAll(() => {
-  process.env = ENV_BACKUP;
+  mockResolveRole.mockResolvedValue("admin");
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  GET /api/admin/auth
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Admin Auth API – GET /api/admin/auth", () => {
-  it("should return auth response when requireRole fails", async () => {
-    mockRequireRole.mockResolvedValue({
-      authenticated: false,
-      error: "Forbidden",
+  describe("negative-auth", () => {
+    it("should return 401 when the request is not authenticated", async () => {
+      mockValidate.mockResolvedValue({ valid: false, user: null });
+
+      const res = await GET(makeRequest());
+      expect(res.status).toBe(401);
     });
-    mockCreateAuthResponse.mockReturnValue(
-      new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 }),
-    );
+
+    it("should return 403 when the authenticated user is not an admin", async () => {
+      mockValidate.mockResolvedValue({
+        valid: true,
+        user: { id: "user-1", email: "user@example.com" },
+      });
+      mockResolveRole.mockResolvedValue("user");
+
+      const res = await GET(makeRequest());
+      expect(res.status).toBe(403);
+    });
+  });
+
+  it("should return isAdmin=true with the guard-resolved user for an admin", async () => {
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.isAdmin).toBe(true);
+    expect(body.user).toEqual({
+      id: "user-1",
+      email: "admin@fynvita.com",
+      role: "admin",
+    });
+  });
+
+  it("should return isAdmin=true for a super_admin", async () => {
+    mockResolveRole.mockResolvedValue("super_admin");
+
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.isAdmin).toBe(true);
+    expect(body.user.role).toBe("super_admin");
+  });
+
+  // FND-003 / FND-004: the role is sourced solely from resolveRoleFromDb
+  // (profiles.role). A formerly-whitelisted email or an enterprise
+  // subscription tier carries no authorization weight — the guard 403s any
+  // non-admin role before the handler runs, so admin status can never be
+  // manufactured from email or tier.
+  it("should 403 a formerly-whitelisted email whose DB role is not admin", async () => {
+    mockValidate.mockResolvedValue({
+      valid: true,
+      user: { id: "user-1", email: "khonour@yahoo.com" },
+    });
+    mockResolveRole.mockResolvedValue("user");
 
     const res = await GET(makeRequest());
     expect(res.status).toBe(403);
-    expect(mockCreateAuthResponse).toHaveBeenCalled();
-  });
-
-  it("should return 500 when env vars are missing", async () => {
-    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
-    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    const res = await GET(makeRequest());
-    const body = await res.json();
-
-    expect(res.status).toBe(500);
-    expect(body.error).toBeDefined();
-  });
-
-  it("should return 401 when no access token cookie", async () => {
-    mockCookies.mockReturnValue({
-      get: jest.fn(() => undefined),
-    });
-
-    const res = await GET(makeRequest());
-    expect(res.status).toBe(401);
-  });
-
-  it("should return 401 when supabase getUser fails", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Invalid token" },
-    });
-
-    const res = await GET(makeRequest());
-    expect(res.status).toBe(401);
-  });
-
-  it("should return isAdmin=true for whitelisted admin email", async () => {
-    const res = await GET(makeRequest());
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.isAdmin).toBe(true);
-    expect(body.user).toBeDefined();
-  });
-
-  it("should return isAdmin=false for non-admin email without admin tier", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { id: "user-1", email: "regular@example.com" } },
-      error: null,
-    });
-
-    mockFrom.mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({
-            data: { subscription_tier: "basic" },
-            error: null,
-          }),
-        }),
-      }),
-    });
-
-    const res = await GET(makeRequest());
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.isAdmin).toBe(false);
-  });
-
-  it("should return isAdmin=true for non-whitelisted email with enterprise tier", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { id: "user-1", email: "other@example.com" } },
-      error: null,
-    });
-
-    mockFrom.mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({
-            data: { subscription_tier: "enterprise" },
-            error: null,
-          }),
-        }),
-      }),
-    });
-
-    const res = await GET(makeRequest());
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.isAdmin).toBe(true);
   });
 });

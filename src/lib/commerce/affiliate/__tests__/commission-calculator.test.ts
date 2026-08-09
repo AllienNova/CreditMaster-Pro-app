@@ -1,7 +1,12 @@
 /**
  * Commission Calculator Service Tests
  *
- * Tests for commission calculation, payout processing, commission rules, and reporting.
+ * Tests for commission calculation, commission rules, and reporting.
+ *
+ * Payout EXECUTION (Stripe/bank transfers, scheduled runs) is NOT tested here —
+ * that logic lives exclusively in payout-service.test.ts. A second payout rail
+ * in this file (initiatePayout/processScheduledPayouts) was removed to close
+ * the FND-026 double-pay gap; do not reintroduce it.
  */
 
 // ---------------------------------------------------------------------------
@@ -48,22 +53,6 @@ const mockBuilder = {
 
 jest.mock("@supabase/supabase-js", () => ({
   createClient: (...args: any[]) => mockCreateClient(...args),
-}));
-
-const mockStripe = {
-  transfers: {
-    create: jest.fn<any, any[]>(),
-  },
-};
-
-const mockStripeConstructor = jest.fn<any, any[]>();
-
-jest.mock("stripe", () => ({
-  __esModule: true,
-  // Must be a regular function (not arrow) so `new stripe.default(...)` works
-  default: function StripeMock(...args: any[]) {
-    return mockStripeConstructor(...args);
-  },
 }));
 
 // Must configure mockCreateClient BEFORE import so module-level
@@ -138,9 +127,6 @@ beforeEach(() => {
   mockSupabase.from.mockReturnValue(mockBuilder);
   mockSupabase.rpc.mockReturnValue(mockBuilder);
   mockCreateClient.mockReturnValue(mockSupabase as any);
-
-  // Re-establish Stripe constructor mock (stripped by resetMocks)
-  mockStripeConstructor.mockReturnValue(mockStripe);
 });
 
 // ===========================================================================
@@ -260,19 +246,39 @@ describe("CommissionCalculatorService", () => {
       expect(result).toBe(20);
     });
 
-    it("should return 0 when partner not found", async () => {
+    it("should throw when partner not found (never silently record $0 commission)", async () => {
+      // FND: a missing/errored partner lookup previously fell through to
+      // `return 0`, which the affiliate webhook then persisted as a real
+      // revenue_events.commission_amount_cents value. A commission that
+      // cannot be resolved must fail loudly instead of recording a fake $0.
       mockBuilder.single.mockResolvedValueOnce({
         data: null,
-        error: { code: "PGRST116" },
+        error: { code: "PGRST116", message: "no rows" },
       });
 
-      const result = await commissionCalculator.calculateCommission(
-        "nonexistent",
-        "signup",
-        100,
-      );
+      await expect(
+        commissionCalculator.calculateCommission("nonexistent", "signup", 100),
+      ).rejects.toThrow(/partner/i);
+    });
 
-      expect(result).toBe(0);
+    it("should throw when the partner lookup errors for a reason other than not-found", async () => {
+      // A missing table (PostgREST "could not find the table in the schema
+      // cache") or any other DB error must never be silently treated the
+      // same as "not found" -> $0. This is the exact chain that produced the
+      // live bug: affiliate_partners didn't exist, every lookup errored, and
+      // the error was swallowed into a $0 commission.
+      mockBuilder.single.mockResolvedValueOnce({
+        data: null,
+        error: {
+          code: "PGRST205",
+          message:
+            "Could not find the table 'public.affiliate_partners' in the schema cache",
+        },
+      });
+
+      await expect(
+        commissionCalculator.calculateCommission("partner-1", "signup", 100),
+      ).rejects.toThrow(/partner/i);
     });
 
     it("should apply custom commission rule when available", async () => {
@@ -555,6 +561,30 @@ describe("CommissionCalculatorService", () => {
         commissionCalculator.getCommissionReport("partner-1", dateRange),
       ).rejects.toThrow("Failed to get commission report: report fail");
     });
+
+    it("FND-029: accumulates 1000 × $0.07 commissions with no float drift (exact total $70)", async () => {
+      // IEEE-754 proof: 0 + 0.07 repeated 1000× yields 69.9999...966, not 70.
+      // Integer-cents accumulation (7 cents × 1000 = 7000 cents = $70) is exact.
+      const conversions = Array.from({ length: 1000 }, (_, i) => ({
+        ...conversionRow,
+        id: `conv-drift-${i}`,
+        status: "pending",
+        commission_earned: 0.07, // $0.07 each
+      }));
+
+      mockBuilder.then.mockImplementationOnce((resolve: any) =>
+        resolve({ data: conversions, error: null }),
+      );
+
+      const result = await commissionCalculator.getCommissionReport(
+        "partner-1",
+        dateRange,
+      );
+
+      // Must be exactly 70, not 69.99999999999966
+      expect(result.pendingCommission).toBe(70);
+      expect(result.totalCommission).toBe(70);
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -710,359 +740,6 @@ describe("CommissionCalculatorService", () => {
   });
 
   // -------------------------------------------------------------------------
-  // initiatePayout
-  // -------------------------------------------------------------------------
-
-  describe("initiatePayout", () => {
-    const payoutRequest = {
-      partnerId: "partner-1",
-      amount: 55,
-      conversionIds: ["c1", "c2"],
-      paymentMethod: "stripe" as const,
-      stripeAccountId: "acct_stripe_1",
-    };
-
-    it("should create payout and process Stripe transfer", async () => {
-      // getPendingPayout -> conversions
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({
-          data: [
-            { id: "c1", commission_earned: 30 },
-            { id: "c2", commission_earned: 25 },
-          ],
-          error: null,
-        }),
-      );
-      // getPendingPayout -> getPartner
-      mockBuilder.single.mockResolvedValueOnce({
-        data: { ...partnerRow, min_payout: 50 },
-        error: null,
-      });
-      // Insert payout record
-      mockBuilder.single.mockResolvedValueOnce({
-        data: { id: "payout-1", partner_id: "partner-1", amount: 55, status: "pending" },
-        error: null,
-      });
-      // Stripe transfer
-      mockStripe.transfers.create.mockResolvedValueOnce({ id: "tr_abc123" });
-      // await supabase.from("affiliate_payouts").update(...).eq() — thenable
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({ data: null, error: null }),
-      );
-      // await supabase.from("affiliate_conversions").update(...).in() — thenable
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({ data: null, error: null }),
-      );
-
-      const result = await commissionCalculator.initiatePayout(payoutRequest);
-
-      expect(result.status).toBe("completed");
-      expect(result.transactionId).toBe("tr_abc123");
-      expect(mockStripe.transfers.create).toHaveBeenCalledWith({
-        amount: 5500, // 55 * 100 cents
-        currency: "usd",
-        destination: "acct_stripe_1",
-        description: "Fynvita affiliate commission payout",
-      });
-    });
-
-    it("should throw when not eligible for payout", async () => {
-      // getPendingPayout -> low amount
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({ data: [{ id: "c1", commission_earned: 10 }], error: null }),
-      );
-      mockBuilder.single.mockResolvedValueOnce({
-        data: { ...partnerRow, min_payout: 50 },
-        error: null,
-      });
-
-      await expect(
-        commissionCalculator.initiatePayout({ ...payoutRequest, amount: 10 }),
-      ).rejects.toThrow("Minimum payout of $50 not reached");
-    });
-
-    it("should throw when requested amount exceeds available", async () => {
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({
-          data: [{ id: "c1", commission_earned: 60 }],
-          error: null,
-        }),
-      );
-      mockBuilder.single.mockResolvedValueOnce({
-        data: { ...partnerRow, min_payout: 50 },
-        error: null,
-      });
-
-      await expect(
-        commissionCalculator.initiatePayout({ ...payoutRequest, amount: 100 }),
-      ).rejects.toThrow("Requested payout $100 exceeds available $60");
-    });
-
-    it("should mark payout as failed when Stripe transfer fails", async () => {
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({
-          data: [
-            { id: "c1", commission_earned: 30 },
-            { id: "c2", commission_earned: 25 },
-          ],
-          error: null,
-        }),
-      );
-      mockBuilder.single
-        .mockResolvedValueOnce({
-          data: { ...partnerRow, min_payout: 50 },
-          error: null,
-        })
-        .mockResolvedValueOnce({
-          data: { id: "payout-1", partner_id: "partner-1", amount: 55, status: "pending" },
-          error: null,
-        });
-
-      mockStripe.transfers.create.mockRejectedValueOnce(
-        new Error("Stripe transfer failed"),
-      );
-      // catch: await supabase.from("affiliate_payouts").update({status:"failed",...}).eq() — thenable
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({ data: null, error: null }),
-      );
-
-      const result = await commissionCalculator.initiatePayout(payoutRequest);
-
-      expect(result.status).toBe("failed");
-      expect(result.error).toBe("Stripe transfer failed");
-    });
-
-    it("should handle bank transfer payout method", async () => {
-      const bankRequest = {
-        partnerId: "partner-1",
-        amount: 55,
-        conversionIds: ["c1", "c2"],
-        paymentMethod: "bank_transfer" as const,
-        bankDetails: {
-          accountName: "John Doe",
-          accountNumber: "1234567890",
-          routingNumber: "021000021",
-          bankName: "Chase",
-        },
-      };
-
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({
-          data: [
-            { id: "c1", commission_earned: 30 },
-            { id: "c2", commission_earned: 25 },
-          ],
-          error: null,
-        }),
-      );
-      mockBuilder.single
-        .mockResolvedValueOnce({
-          data: { ...partnerRow, min_payout: 50 },
-          error: null,
-        })
-        .mockResolvedValueOnce({
-          data: { id: "payout-1", partner_id: "partner-1", amount: 55, status: "pending" },
-          error: null,
-        });
-      // processBankTransfer -> await supabase.from("pending_bank_transfers").insert() — thenable
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({ data: null, error: null }),
-      );
-      // await supabase.from("affiliate_payouts").update(...).eq() — thenable
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({ data: null, error: null }),
-      );
-      // await supabase.from("affiliate_conversions").update(...).in() — thenable
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({ data: null, error: null }),
-      );
-
-      const result = await commissionCalculator.initiatePayout(bankRequest);
-
-      expect(result.status).toBe("completed");
-      expect(result.transactionId).toBeDefined();
-      // Should have inserted a pending_bank_transfers record
-      expect(mockSupabase.from).toHaveBeenCalledWith("pending_bank_transfers");
-    });
-
-    it("should throw when payout record insert fails", async () => {
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({
-          data: [
-            { id: "c1", commission_earned: 30 },
-            { id: "c2", commission_earned: 25 },
-          ],
-          error: null,
-        }),
-      );
-      mockBuilder.single
-        .mockResolvedValueOnce({
-          data: { ...partnerRow, min_payout: 50 },
-          error: null,
-        })
-        .mockResolvedValueOnce({
-          data: null,
-          error: { message: "insert payout failed" },
-        });
-
-      await expect(
-        commissionCalculator.initiatePayout(payoutRequest),
-      ).rejects.toThrow("Failed to create payout: insert payout failed");
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // processScheduledPayouts
-  // -------------------------------------------------------------------------
-
-  describe("processScheduledPayouts", () => {
-    it("should process payouts for eligible partners", async () => {
-      // Get active partners
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({
-          data: [
-            {
-              id: "p1",
-              payout_frequency: "monthly",
-              payment_method: "stripe",
-              stripe_account_id: "acct_1",
-            },
-          ],
-          error: null,
-        }),
-      );
-      // isPayoutDue -> last payout
-      mockBuilder.single.mockResolvedValueOnce({
-        data: null,
-        error: { code: "PGRST116" },
-      });
-      // getPendingPayout -> conversions
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({
-          data: [{ id: "c1", commission_earned: 60 }],
-          error: null,
-        }),
-      );
-      // getPendingPayout -> getPartner
-      mockBuilder.single.mockResolvedValueOnce({
-        data: { ...partnerRow, min_payout: 50 },
-        error: null,
-      });
-      // Get eligible conversion IDs
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({ data: [{ id: "c1" }], error: null }),
-      );
-      // initiatePayout -> getPendingPayout (re-check) -> conversions
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({
-          data: [{ id: "c1", commission_earned: 60 }],
-          error: null,
-        }),
-      );
-      // initiatePayout -> getPendingPayout -> getPartner
-      mockBuilder.single.mockResolvedValueOnce({
-        data: { ...partnerRow, min_payout: 50 },
-        error: null,
-      });
-      // initiatePayout -> insert payout
-      mockBuilder.single.mockResolvedValueOnce({
-        data: { id: "payout-1", partner_id: "p1", amount: 60, status: "pending" },
-        error: null,
-      });
-      // Stripe transfer
-      mockStripe.transfers.create.mockResolvedValueOnce({ id: "tr_sched_1" });
-      // initiatePayout -> await supabase.from("affiliate_payouts").update(...).eq() — thenable
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({ data: null, error: null }),
-      );
-      // initiatePayout -> await supabase.from("affiliate_conversions").update(...).in() — thenable
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({ data: null, error: null }),
-      );
-
-      const results = await commissionCalculator.processScheduledPayouts();
-
-      expect(results).toHaveLength(1);
-      expect(results[0].status).toBe("completed");
-    });
-
-    it("should skip partners not due for payout", async () => {
-      const recentDate = new Date();
-      recentDate.setDate(recentDate.getDate() - 5); // 5 days ago
-
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({
-          data: [
-            {
-              id: "p1",
-              payout_frequency: "monthly",
-              payment_method: "stripe",
-              stripe_account_id: "acct_1",
-            },
-          ],
-          error: null,
-        }),
-      );
-      // isPayoutDue -> recent payout
-      mockBuilder.single.mockResolvedValueOnce({
-        data: { processed_at: recentDate.toISOString() },
-        error: null,
-      });
-
-      const results = await commissionCalculator.processScheduledPayouts();
-
-      expect(results).toHaveLength(0);
-    });
-
-    it("should throw on partner query error", async () => {
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({ data: null, error: { message: "partner fetch fail" } }),
-      );
-
-      await expect(
-        commissionCalculator.processScheduledPayouts(),
-      ).rejects.toThrow("Failed to get partners: partner fetch fail");
-    });
-
-    it("should skip partners below minimum payout", async () => {
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({
-          data: [
-            {
-              id: "p1",
-              payout_frequency: "monthly",
-              payment_method: "stripe",
-              stripe_account_id: "acct_1",
-            },
-          ],
-          error: null,
-        }),
-      );
-      // isPayoutDue -> never paid
-      mockBuilder.single.mockResolvedValueOnce({
-        data: null,
-        error: { code: "PGRST116" },
-      });
-      // getPendingPayout -> conversions (low amount)
-      mockBuilder.then.mockImplementationOnce((resolve: any) =>
-        resolve({
-          data: [{ id: "c1", commission_earned: 5 }],
-          error: null,
-        }),
-      );
-      // getPendingPayout -> getPartner
-      mockBuilder.single.mockResolvedValueOnce({
-        data: { ...partnerRow, min_payout: 50 },
-        error: null,
-      });
-
-      const results = await commissionCalculator.processScheduledPayouts();
-
-      expect(results).toHaveLength(0);
-    });
-  });
-
-  // -------------------------------------------------------------------------
   // Commission Rules
   // -------------------------------------------------------------------------
 
@@ -1155,19 +832,19 @@ describe("CommissionCalculatorService", () => {
       expect(result).toBeNull();
     });
 
-    it("should return null on unexpected error (graceful fallback)", async () => {
+    it("should throw on unexpected (non-PGRST116) error instead of silently returning null", async () => {
+      // A table-missing or connection error must not be indistinguishable
+      // from "no custom rule for this partner", which is a legitimate null.
+      // Pre-fix, this code path fell through to a bare `return null` for
+      // every error code, masking real failures as "no custom rule".
       mockBuilder.single.mockResolvedValueOnce({
         data: null,
         error: { code: "OTHER", message: "unexpected" },
       });
 
-      const result = await commissionCalculator.getCommissionRule(
-        "partner-1",
-        "purchase",
-        100,
-      );
-
-      expect(result).toBeNull();
+      await expect(
+        commissionCalculator.getCommissionRule("partner-1", "purchase", 100),
+      ).rejects.toThrow(/commission rule/i);
     });
   });
 });

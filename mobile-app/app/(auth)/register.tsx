@@ -13,6 +13,11 @@ import { Link, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "../../src/store/authStore";
 import { useTheme } from "../../src/hooks/useTheme";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
+
+const WEB_BASE = process.env.EXPO_PUBLIC_WEB_URL || "https://fynvita.com";
+const TERMS_URL = `${WEB_BASE}/terms`;
+const PRIVACY_URL = `${WEB_BASE}/privacy-policy`;
 
 export default function RegisterScreen() {
   const { colors, spacing, borderRadius, fontSize, fontWeight, withOpacity } =
@@ -97,7 +102,7 @@ export default function RegisterScreen() {
             Create Account
           </Text>
           <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary }}>
-            Start your credit repair journey
+            Start your financial wellness journey
           </Text>
         </View>
 
@@ -242,12 +247,16 @@ export default function RegisterScreen() {
             By creating an account, you agree to our{" "}
             <Text
               style={{ color: colors.primary, fontWeight: fontWeight.semibold }}
+              accessibilityRole="link"
+              onPress={() => openExternalUrl(TERMS_URL)}
             >
               Terms of Service
             </Text>{" "}
             and{" "}
             <Text
               style={{ color: colors.primary, fontWeight: fontWeight.semibold }}
+              accessibilityRole="link"
+              onPress={() => openExternalUrl(PRIVACY_URL)}
             >
               Privacy Policy
             </Text>

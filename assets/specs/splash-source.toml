@@ -1,0 +1,29 @@
+name = "splash-source"
+wave = 1
+model = "gemini-3-pro-image-preview"
+resolution = "2K"
+out_dir = "assets/raw/splash-source"
+count = 1
+preamble = true
+
+shared_prompt = """
+Production splash screen for 'Fynvita'.
+
+THE FYNVITA MARK: a heart silhouette with a white negative-space heartbeat/pulse line carved through it.
+The pulse starts flat-left, spikes up in two small peaks, then resolves into an upward-RIGHT pointing arrow
+exiting the heart's top-right quadrant. Rounded, organic heart shape.
+
+STRICT CONSTRAINTS:
+- Flat design, solid colors, NO gradients, NO shadows, NO 3D, NO glows, NO textures
+- Background: SOLID Vital Green #10B981 — perfectly uniform, no variation
+- The white mark occupies ~40% of canvas width, centered horizontally at 45% from top
+- Below the mark: wordmark "Fynvita" in clean sans-serif white, medium weight
+- Below the wordmark: tagline "Your Financial Vitality" in white, lighter weight, smaller size
+- Total text+mark composition centered vertically with slight upward bias (above center)
+- Portrait canvas 1284x2778, perfectly sharp edges, no anti-aliasing artifacts
+- NO rounded corners, NO device frames, NO status bars
+"""
+
+[[variants]]
+id = "portrait"
+prompt = "Portrait splash screen 1284x2778. The composition described above on solid Vital Green #10B981."

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/api-guard";
 
 interface DisputeTemplate {
   id: string;
@@ -142,7 +143,7 @@ Sincerely,
   },
 ];
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
 
@@ -161,9 +162,9 @@ export async function GET(request: NextRequest) {
     categories,
     total: filteredTemplates.length,
   });
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { templateId, variables } = body;
@@ -198,4 +199,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

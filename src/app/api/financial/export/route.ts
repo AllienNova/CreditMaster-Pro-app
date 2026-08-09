@@ -4,21 +4,18 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { budgetService } from "@/lib/financial/budget-service";
 import { billDetectionService } from "@/lib/financial/bill-detection-service";
 import { spendingAnalysisService } from "@/lib/financial/spending-analysis-service";
 import { FinancialExportService } from "@/lib/financial/export-service";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
+    const userId = user.id;
   try {
-    // Validate JWT
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    const userId = validation.user.id;
     const { searchParams } = new URL(request.url);
 
     // Get export type
@@ -127,4 +124,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

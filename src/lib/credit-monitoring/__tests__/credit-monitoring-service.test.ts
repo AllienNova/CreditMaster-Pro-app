@@ -31,8 +31,8 @@ const mockSupabase = {
   is: jest.fn().mockReturnThis(),
 };
 
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: jest.fn(() => mockSupabase),
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: jest.fn(() => mockSupabase),
 }));
 
 import { creditMonitoringService } from "../credit-monitoring-service";
@@ -56,9 +56,7 @@ function makeScoreRow(overrides: Record<string, any> = {}) {
     bureau: "bureau" in overrides ? overrides.bureau : "experian",
     score: "score" in overrides ? overrides.score : 720,
     score_date:
-      "score_date" in overrides
-        ? overrides.score_date
-        : "2026-01-15T00:00:00Z",
+      "score_date" in overrides ? overrides.score_date : "2026-01-15T00:00:00Z",
     factors:
       "factors" in overrides
         ? overrides.factors
@@ -70,9 +68,7 @@ function makeScoreRow(overrides: Record<string, any> = {}) {
             },
           ],
     created_at:
-      "created_at" in overrides
-        ? overrides.created_at
-        : "2026-01-15T00:00:00Z",
+      "created_at" in overrides ? overrides.created_at : "2026-01-15T00:00:00Z",
   };
 }
 
@@ -87,9 +83,7 @@ function makeAlertRow(overrides: Record<string, any> = {}) {
     severity: "severity" in overrides ? overrides.severity : "medium",
     read: "read" in overrides ? overrides.read : false,
     created_at:
-      "created_at" in overrides
-        ? overrides.created_at
-        : "2026-02-01T00:00:00Z",
+      "created_at" in overrides ? overrides.created_at : "2026-02-01T00:00:00Z",
     data: "data" in overrides ? overrides.data : null,
   };
 }
@@ -243,8 +237,7 @@ describe("CreditMonitoringService", () => {
         error: null,
       });
 
-      const result =
-        await creditMonitoringService.getCurrentScores("user-xyz");
+      const result = await creditMonitoringService.getCurrentScores("user-xyz");
 
       const eq = result.equifax!;
       expect(eq.id).toBe("id-abc");
@@ -475,9 +468,7 @@ describe("CreditMonitoringService", () => {
       expect(result!.score).toBe(725);
 
       // Verify createAlert was called (insert called for alert)
-      const fromCalls = mockSupabase.from.mock.calls.map(
-        (c: any[]) => c[0],
-      );
+      const fromCalls = mockSupabase.from.mock.calls.map((c: any[]) => c[0]);
       expect(fromCalls).toContain("credit_alerts");
     });
 
@@ -502,10 +493,12 @@ describe("CreditMonitoringService", () => {
         error: null,
       });
 
-      // getMonitoringSettings (default threshold 10 -- error path returns defaults)
+      // getMonitoringSettings: no settings row yet for this user (PGRST116
+      // — a genuine "no rows", not a failure) -- falls back to the default
+      // threshold of 10.
       mockSupabase.single.mockResolvedValueOnce({
         data: null,
-        error: { message: "Not found" },
+        error: { code: "PGRST116", message: "no rows returned" },
       });
 
       // createAlert
@@ -526,9 +519,7 @@ describe("CreditMonitoringService", () => {
       );
 
       expect(result).not.toBeNull();
-      const fromCalls = mockSupabase.from.mock.calls.map(
-        (c: any[]) => c[0],
-      );
+      const fromCalls = mockSupabase.from.mock.calls.map((c: any[]) => c[0]);
       expect(fromCalls).toContain("credit_alerts");
     });
 
@@ -567,9 +558,7 @@ describe("CreditMonitoringService", () => {
       );
 
       expect(result).not.toBeNull();
-      const fromCalls = mockSupabase.from.mock.calls.map(
-        (c: any[]) => c[0],
-      );
+      const fromCalls = mockSupabase.from.mock.calls.map((c: any[]) => c[0]);
       expect(fromCalls).not.toContain("credit_alerts");
     });
 
@@ -602,9 +591,7 @@ describe("CreditMonitoringService", () => {
       );
 
       expect(result).not.toBeNull();
-      const fromCalls = mockSupabase.from.mock.calls.map(
-        (c: any[]) => c[0],
-      );
+      const fromCalls = mockSupabase.from.mock.calls.map((c: any[]) => c[0]);
       expect(fromCalls).not.toContain("credit_monitoring_settings");
       expect(fromCalls).not.toContain("credit_alerts");
     });
@@ -630,6 +617,95 @@ describe("CreditMonitoringService", () => {
       );
 
       expect(result).toBeNull();
+    });
+
+    it("should still return the saved score when the score itself was saved but the follow-on alert fails to save (alert failure must not mask an already-successful score save)", async () => {
+      // getCurrentScores - previous score exists, well past threshold
+      mockSupabase.limit.mockResolvedValueOnce({
+        data: [makeScoreRow({ bureau: "experian", score: 700 })],
+        error: null,
+      });
+
+      // insert for new score succeeds -> .select().single()
+      mockSupabase.single.mockResolvedValueOnce({
+        data: {
+          id: "score-saved-alert-failed",
+          user_id: TEST_USER_ID,
+          bureau: "experian",
+          score: 725,
+          score_date: "2026-02-20T00:00:00Z",
+          factors,
+          created_at: "2026-02-20T00:00:00Z",
+        },
+        error: null,
+      });
+
+      // getMonitoringSettings -> .single()
+      mockSupabase.single.mockResolvedValueOnce({
+        data: makeSettingsRow({ score_change_threshold: 10 }),
+        error: null,
+      });
+
+      // createAlert's insert -> .select().single() FAILS
+      mockSupabase.single.mockResolvedValueOnce({
+        data: null,
+        error: { message: "credit_alerts insert failed" },
+      });
+
+      const result = await creditMonitoringService.addCreditScore(
+        TEST_USER_ID,
+        "experian",
+        725,
+        factors,
+      );
+
+      // The score row was already committed — its own save must be reported
+      // as a success regardless of the alert failure above.
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe("score-saved-alert-failed");
+      expect(result!.score).toBe(725);
+    });
+
+    it("should still return the saved score when getMonitoringSettings itself fails (a settings-fetch failure must not mask an already-successful score save)", async () => {
+      // getCurrentScores - previous score exists, well past threshold
+      mockSupabase.limit.mockResolvedValueOnce({
+        data: [makeScoreRow({ bureau: "experian", score: 700 })],
+        error: null,
+      });
+
+      // insert for new score succeeds -> .select().single()
+      mockSupabase.single.mockResolvedValueOnce({
+        data: {
+          id: "score-saved-settings-failed",
+          user_id: TEST_USER_ID,
+          bureau: "experian",
+          score: 725,
+          score_date: "2026-02-20T00:00:00Z",
+          factors,
+          created_at: "2026-02-20T00:00:00Z",
+        },
+        error: null,
+      });
+
+      // getMonitoringSettings -> .single() fails for a real reason (not
+      // PGRST116), so it throws instead of degrading to defaults.
+      mockSupabase.single.mockResolvedValueOnce({
+        data: null,
+        error: { code: "42501", message: "permission denied" },
+      });
+
+      const result = await creditMonitoringService.addCreditScore(
+        TEST_USER_ID,
+        "experian",
+        725,
+        factors,
+      );
+
+      // The score row was already committed — its own save must be reported
+      // as a success regardless of the settings-fetch failure above.
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe("score-saved-settings-failed");
+      expect(result!.score).toBe(725);
     });
 
     it("should set severity to high when change >= 20 points", async () => {
@@ -753,10 +829,10 @@ describe("CreditMonitoringService", () => {
       expect(result.alertPreferences.smsNotifications).toBe(false);
     });
 
-    it("should return default settings when database returns error", async () => {
+    it("should return default settings when no row exists yet (PGRST116 — first visit, not a failure)", async () => {
       mockSupabase.single.mockResolvedValueOnce({
         data: null,
-        error: { message: "PGRST116 not found" },
+        error: { code: "PGRST116", message: "no rows returned" },
       });
 
       const result =
@@ -774,6 +850,22 @@ describe("CreditMonitoringService", () => {
       expect(result.alertPreferences.fraudAlerts).toBe(true);
       expect(result.alertPreferences.emailNotifications).toBe(true);
       expect(result.alertPreferences.smsNotifications).toBe(false);
+    });
+
+    it("should throw (not silently return defaults) on a real query failure — collapsing a genuine error into 'first visit' defaults would mask the failure as a normal empty state", async () => {
+      mockSupabase.single.mockResolvedValueOnce({
+        data: null,
+        error: {
+          code: "42501",
+          message: "permission denied for table credit_monitoring_settings",
+        },
+      });
+
+      await expect(
+        creditMonitoringService.getMonitoringSettings(TEST_USER_ID),
+      ).rejects.toThrow(
+        "Failed to fetch monitoring settings: permission denied for table credit_monitoring_settings",
+      );
     });
 
     it("should use score_change_threshold from DB, defaulting to 10 if falsy", async () => {
@@ -1017,15 +1109,15 @@ describe("CreditMonitoringService", () => {
       expect(mockSupabase.limit).toHaveBeenCalledWith(10);
     });
 
-    it("should return empty array on error", async () => {
+    it("should throw (not silently return []) on a database error — a load failure must never render identically to a genuine empty alert list", async () => {
       mockSupabase.order.mockResolvedValueOnce({
         data: null,
         error: { message: "DB error" },
       });
 
-      const result = await creditMonitoringService.getAlerts(TEST_USER_ID);
-
-      expect(result).toEqual([]);
+      await expect(
+        creditMonitoringService.getAlerts(TEST_USER_ID),
+      ).rejects.toThrow("Failed to fetch credit alerts: DB error");
     });
 
     it("should map alert rows correctly including null bureau", async () => {
@@ -1124,36 +1216,36 @@ describe("CreditMonitoringService", () => {
       expect(insertArg.read).toBe(false);
     });
 
-    it("should return null on insert error", async () => {
+    it("should throw (not silently return null) on insert error — a save failure must never be discarded", async () => {
       mockSupabase.single.mockResolvedValueOnce({
         data: null,
         error: { message: "Insert error" },
       });
 
-      const result = await creditMonitoringService.createAlert(TEST_USER_ID, {
-        type: "new_account",
-        title: "New Account",
-        message: "A new account was opened",
-        severity: "low",
-      });
-
-      expect(result).toBeNull();
+      await expect(
+        creditMonitoringService.createAlert(TEST_USER_ID, {
+          type: "new_account",
+          title: "New Account",
+          message: "A new account was opened",
+          severity: "low",
+        }),
+      ).rejects.toThrow("Failed to create credit alert: Insert error");
     });
 
-    it("should return null when data is null from response", async () => {
+    it("should throw when no data is returned from a successful-looking response", async () => {
       mockSupabase.single.mockResolvedValueOnce({
         data: null,
         error: null,
       });
 
-      const result = await creditMonitoringService.createAlert(TEST_USER_ID, {
-        type: "identity_theft",
-        title: "Identity Theft",
-        message: "Possible identity theft detected",
-        severity: "critical",
-      });
-
-      expect(result).toBeNull();
+      await expect(
+        creditMonitoringService.createAlert(TEST_USER_ID, {
+          type: "identity_theft",
+          title: "Identity Theft",
+          message: "Possible identity theft detected",
+          severity: "critical",
+        }),
+      ).rejects.toThrow("Failed to create credit alert: no data returned");
     });
 
     it("should handle all 10 alert types", async () => {
@@ -1177,15 +1269,12 @@ describe("CreditMonitoringService", () => {
           error: null,
         });
 
-        const result = await creditMonitoringService.createAlert(
-          TEST_USER_ID,
-          {
-            type,
-            title: `Alert: ${type}`,
-            message: `Alert of type ${type}`,
-            severity: "medium",
-          },
-        );
+        const result = await creditMonitoringService.createAlert(TEST_USER_ID, {
+          type,
+          title: `Alert: ${type}`,
+          message: `Alert of type ${type}`,
+          severity: "medium",
+        });
 
         expect(result).not.toBeNull();
         expect(result!.type).toBe(type);
@@ -1199,28 +1288,37 @@ describe("CreditMonitoringService", () => {
 
   describe("markAlertAsRead", () => {
     it("should update the alert and return true on success", async () => {
-      // Chain: from().update({read: true}).eq("id", alertId)
-      // eq is the terminal
+      // Chain: from().update({read:true}).eq("id",alertId).eq("user_id",userId)
+      // The SECOND eq is the terminal now that the query is owner-scoped, so
+      // the first must keep returning the chain.
+      mockSupabase.eq.mockReturnValueOnce(mockSupabase);
       mockSupabase.eq.mockResolvedValueOnce({
         error: null,
       });
 
-      const result =
-        await creditMonitoringService.markAlertAsRead(TEST_ALERT_ID);
+      const result = await creditMonitoringService.markAlertAsRead(
+        TEST_ALERT_ID,
+        TEST_USER_ID,
+      );
 
       expect(result).toBe(true);
       expect(mockSupabase.from).toHaveBeenCalledWith("credit_alerts");
       expect(mockSupabase.update).toHaveBeenCalledWith({ read: true });
       expect(mockSupabase.eq).toHaveBeenCalledWith("id", TEST_ALERT_ID);
+      // The owner filter is what stops one user marking another's alert read.
+      expect(mockSupabase.eq).toHaveBeenCalledWith("user_id", TEST_USER_ID);
     });
 
     it("should return false on update error", async () => {
+      mockSupabase.eq.mockReturnValueOnce(mockSupabase);
       mockSupabase.eq.mockResolvedValueOnce({
         error: { message: "Update failed" },
       });
 
-      const result =
-        await creditMonitoringService.markAlertAsRead(TEST_ALERT_ID);
+      const result = await creditMonitoringService.markAlertAsRead(
+        TEST_ALERT_ID,
+        TEST_USER_ID,
+      );
 
       expect(result).toBe(false);
     });
@@ -1381,9 +1479,7 @@ describe("CreditMonitoringService", () => {
 
     it("should calculate score change correctly across bureaus", async () => {
       const now = new Date();
-      const twentyDaysAgo = new Date(
-        now.getTime() - 20 * 24 * 60 * 60 * 1000,
-      );
+      const twentyDaysAgo = new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000);
       const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
 
       const historyData = [

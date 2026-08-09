@@ -5,12 +5,11 @@
  * recurring transaction detection, and category spending analysis.
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import { PlaidTransaction } from "./plaid-service";
-import { AIMLService } from "@/lib/aiml-service";
-import { ModelRouter, TaskType } from "@/lib/model-router";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import {
   CategorizedTransaction as SmartCategorizedTransaction,
   CategoryCorrection,
@@ -124,8 +123,6 @@ const CATEGORY_ENHANCEMENTS: Record<
 // AI CONFIGURATION
 // ============================================================================
 
-const AI_MODEL =
-  process.env.AIML_DEFAULT_CHAT_MODEL || "anthropic/claude-4.5-sonnet";
 const AI_CATEGORIZATION_THRESHOLD = 80; // Use AI if confidence < 80%
 
 // Merchant category database (in-memory cache)
@@ -202,21 +199,6 @@ const MERCHANT_PATTERNS: Record<string, BudgetCategoryValue> = {
 // ============================================================================
 
 export class TransactionCategorizer {
-  private aiService: AIMLService | null = null;
-  private modelRouter: ModelRouter;
-
-  constructor() {
-    this.modelRouter = new ModelRouter();
-
-    // Initialize AI service if available
-    try {
-      if (process.env.AIML_API_KEY) {
-        this.aiService = new AIMLService();
-      }
-    } catch (error) {
-      // Transaction categorizer warning: AI service not available
-    }
-  }
   /**
    * Categorize a single transaction with enhanced categorization
    */
@@ -259,7 +241,7 @@ export class TransactionCategorizer {
 
     // Fetch transactions from database
     const { data: transactions } = await supabase
-      .from("plaid_transactions")
+      .from("transactions")
       .select("*")
       .eq("user_id", userId)
       .gte("date", startDate.toISOString())
@@ -345,7 +327,7 @@ export class TransactionCategorizer {
     startDate.setDate(startDate.getDate() - 90);
 
     const { data: transactions } = await supabase
-      .from("plaid_transactions")
+      .from("transactions")
       .select("*")
       .eq("user_id", userId)
       .gte("date", startDate.toISOString())
@@ -520,7 +502,7 @@ export class TransactionCategorizer {
     }
 
     // Second pass: Use AI for ambiguous transactions
-    if (ambiguousTransactions.length > 0 && this.aiService) {
+    if (ambiguousTransactions.length > 0) {
       try {
         const aiCategorized = await this.categorizeWithAI(
           ambiguousTransactions,
@@ -538,16 +520,6 @@ export class TransactionCategorizer {
             aiCategorized: false,
           });
         }
-      }
-    } else if (ambiguousTransactions.length > 0) {
-      // No AI available, use fallback
-      for (const transaction of ambiguousTransactions) {
-        categorized.push({
-          ...transaction,
-          category: "other",
-          categoryConfidence: 50,
-          aiCategorized: false,
-        });
       }
     }
 
@@ -582,18 +554,11 @@ export class TransactionCategorizer {
         });
       }
 
-      // Optionally: Store in database for persistence
-      try {
-        await supabase.from("merchant_categories").upsert({
-          merchant_name: merchantLower,
-          category: correction.correctedCategory,
-          confidence: newConfidence,
-          user_id: userId,
-          updated_at: new Date().toISOString(),
-        });
-      } catch (error) {
-        // Transaction categorizer warning: Failed to persist merchant category
-      }
+      // Persistence is in-memory only (merchantCategoryCache, process
+      // lifetime) — there is no "merchant_categories" table backing this,
+      // and this class has no production caller today (see
+      // docs/qa/phantom-table-inventory.md), so there is nothing wired to a
+      // real store to persist to.
     }
 
     // Transaction categorizer: Trained on user corrections
@@ -626,44 +591,16 @@ export class TransactionCategorizer {
       };
     }
 
-    // 3. Check database
+    // 3. Use AI (no "merchant_categories" table backs this class — see
+    // trainOnUserCorrections() above)
     try {
-      const { data } = await supabase
-        .from("merchant_categories")
-        .select("*")
-        .eq("merchant_name", merchantLower)
-        .order("confidence", { ascending: false })
-        .limit(3);
-
-      if (data && data.length > 0) {
-        const primary = data[0];
-        const alternatives = data.slice(1).map((d) => ({
-          category: d.category as BudgetCategoryValue,
-          confidence: d.confidence,
-        }));
-
-        return {
-          category: primary.category as BudgetCategoryValue,
-          confidence: primary.confidence,
-          alternativeCategories:
-            alternatives.length > 0 ? alternatives : undefined,
-        };
-      }
+      const aiSuggestion = await this.getAICategorySuggestion(merchant);
+      return aiSuggestion;
     } catch (error) {
-      // Transaction categorizer warning: Failed to fetch merchant category from database
+      // Transaction categorizer warning: AI category suggestion failed
     }
 
-    // 4. Use AI if available
-    if (this.aiService) {
-      try {
-        const aiSuggestion = await this.getAICategorySuggestion(merchant);
-        return aiSuggestion;
-      } catch (error) {
-        // Transaction categorizer warning: AI category suggestion failed
-      }
-    }
-
-    // 5. Fallback
+    // 4. Fallback
     return {
       category: "other",
       confidence: 50,
@@ -769,10 +706,6 @@ export class TransactionCategorizer {
       date: Date;
     }>,
   ): Promise<SmartCategorizedTransaction[]> {
-    if (!this.aiService) {
-      throw new Error("AI service not available");
-    }
-
     // Build prompt for batch categorization
     const transactionList = transactions
       .map(
@@ -803,8 +736,8 @@ Respond in JSON format:
 `.trim();
 
     try {
-      const response = await this.aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.QUICK_RESPONSE,
         [
           {
             role: "system",
@@ -865,10 +798,6 @@ Respond in JSON format:
   private async getAICategorySuggestion(
     merchant: string,
   ): Promise<CategorySuggestion> {
-    if (!this.aiService) {
-      throw new Error("AI service not available");
-    }
-
     const categories = Object.values(BUDGET_CATEGORIES).join(", ");
 
     const prompt = `
@@ -888,8 +817,8 @@ Respond in JSON format:
 `.trim();
 
     try {
-      const response = await this.aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.QUICK_RESPONSE,
         [
           {
             role: "system",
@@ -982,7 +911,7 @@ Respond in JSON format:
   ): Promise<boolean> {
     // Check if merchant has recurring pattern
     const { data } = await supabase
-      .from("plaid_transactions")
+      .from("transactions")
       .select("*")
       .eq("user_id", transaction.userId)
       .eq("merchant_name", transaction.merchantName)

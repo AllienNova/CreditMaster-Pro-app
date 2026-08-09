@@ -986,9 +986,19 @@ Format as a JSON array of strings.`;
     const ema26 = this.calculateEMA(closes, 26);
     const macdLine = ema12 - ema26;
 
-    // For simplicity, using SMA for signal line (should be EMA of MACD)
-    const macdValues = [macdLine]; // In production, calculate for multiple periods
-    const signalLine = macdLine; // Simplified
+    // Build MACD history for each bar starting at index 26, then compute
+    // the 9-period EMA of that history to get the signal line.
+    const macdHistory: number[] = [];
+    for (let i = 26; i < closes.length; i++) {
+      const e12 = this.calculateEMA(closes.slice(0, i + 1), 12);
+      const e26 = this.calculateEMA(closes.slice(0, i + 1), 26);
+      macdHistory.push(e12 - e26);
+    }
+
+    const signalLine =
+      macdHistory.length >= 9
+        ? this.calculateEMA(macdHistory, 9)
+        : macdLine;
 
     return {
       value: macdLine,
@@ -1060,9 +1070,68 @@ Format as a JSON array of strings.`;
     closes: number[],
     period: number,
   ): number {
-    // Simplified ADX calculation
-    // In production, implement full +DI, -DI, and ADX calculation
-    return 25; // Placeholder
+    if (highs.length < period + 1) return 25;
+
+    // Step 1: Compute raw +DM, -DM, and TR for each bar
+    const rawPlusDM: number[] = [];
+    const rawMinusDM: number[] = [];
+    const rawTR: number[] = [];
+
+    for (let i = 1; i < highs.length; i++) {
+      const upMove = highs[i] - highs[i - 1];
+      const downMove = lows[i - 1] - lows[i];
+      rawPlusDM.push(upMove > downMove && upMove > 0 ? upMove : 0);
+      rawMinusDM.push(downMove > upMove && downMove > 0 ? downMove : 0);
+      rawTR.push(
+        Math.max(
+          highs[i] - lows[i],
+          Math.abs(highs[i] - closes[i - 1]),
+          Math.abs(lows[i] - closes[i - 1]),
+        ),
+      );
+    }
+
+    if (rawTR.length < period) return 25;
+
+    // Step 2: Wilder's smoothing — seed with simple sum of first `period` values
+    let smoothTR = rawTR.slice(0, period).reduce((s, v) => s + v, 0);
+    let smoothPlusDM = rawPlusDM.slice(0, period).reduce((s, v) => s + v, 0);
+    let smoothMinusDM = rawMinusDM.slice(0, period).reduce((s, v) => s + v, 0);
+
+    // Step 3: Build DX series using Wilder's rolling smoothing
+    const dxValues: number[] = [];
+
+    const addDX = (tr: number, plusDM: number, minusDM: number): void => {
+      if (tr === 0) return;
+      const plusDI = (100 * plusDM) / tr;
+      const minusDI = (100 * minusDM) / tr;
+      const diSum = plusDI + minusDI;
+      if (diSum === 0) return;
+      dxValues.push((100 * Math.abs(plusDI - minusDI)) / diSum);
+    };
+
+    addDX(smoothTR, smoothPlusDM, smoothMinusDM);
+
+    for (let i = period; i < rawTR.length; i++) {
+      smoothTR = smoothTR - smoothTR / period + rawTR[i];
+      smoothPlusDM = smoothPlusDM - smoothPlusDM / period + rawPlusDM[i];
+      smoothMinusDM = smoothMinusDM - smoothMinusDM / period + rawMinusDM[i];
+      addDX(smoothTR, smoothPlusDM, smoothMinusDM);
+    }
+
+    if (dxValues.length === 0) return 25;
+
+    // Step 4: ADX = Wilder's smoothing of DX over `period`
+    if (dxValues.length < period) {
+      return dxValues.reduce((s, v) => s + v, 0) / dxValues.length;
+    }
+
+    let adx = dxValues.slice(0, period).reduce((s, v) => s + v, 0) / period;
+    for (let i = period; i < dxValues.length; i++) {
+      adx = (adx * (period - 1) + dxValues[i]) / period;
+    }
+
+    return adx;
   }
 
   private calculateStochastic(
@@ -1267,18 +1336,35 @@ Format as a JSON array of strings.`;
 
     // Update signal status
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    // Canonical columns. Three of the six names used before did not exist and
+    // had real equivalents (exit_price -> outcome_price, closed_at ->
+    // outcome_date, actual_return -> outcome_return_percent); `status` was
+    // redundant with `outcome`, set in the same statement, so closing the
+    // signal now clears `is_active` — the real column that expresses it.
+    // entry_price and executed_at are genuinely new (20260731000170): the table
+    // recorded how a signal ENDED but never how it BEGAN.
+    //
+    // The whole UPDATE failed on the first nonexistent name, so no signal
+    // outcome was ever persisted — trackSignalOutcome returned its result
+    // object to the caller while the row stayed untouched.
+    const { error: outcomeError } = await (supabase as any)
       .from("trading_signals")
       .update({
-        status: outcome.status,
+        is_active: false,
         entry_price: outcome.entryPrice,
-        exit_price: outcome.exitPrice,
+        outcome_price: outcome.exitPrice,
         executed_at: entryDate.toISOString(),
-        closed_at: exitDate?.toISOString(),
+        outcome_date: exitDate?.toISOString(),
         outcome: outcomeType,
-        actual_return: returnPercent,
+        outcome_return_percent: returnPercent,
       })
       .eq("id", signalId);
+
+    if (outcomeError) {
+      throw new Error(
+        `Failed to persist signal outcome for ${signalId}: ${outcomeError.message}`,
+      );
+    }
 
     return signalOutcome;
   }

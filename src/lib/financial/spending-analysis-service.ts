@@ -5,9 +5,9 @@
  * trend analysis, and AI-powered insights.
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
+const supabase = getServiceRoleClient();
 import { plaidService } from "./plaid-service";
 import {
   BudgetCategoryValue,
@@ -363,6 +363,7 @@ class SpendingAnalysisService {
           account.accountId,
           period.startDate,
           period.endDate,
+          userId,
         );
 
         for (const txn of transactions) {

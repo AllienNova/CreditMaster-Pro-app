@@ -6,6 +6,7 @@
 import { api } from "./client";
 import type {
   Dispute,
+  DisputeStatus,
   DisputeTemplate,
   DisputeStrategy,
   DisputeReason,
@@ -33,26 +34,114 @@ export interface DisputeUpdateInput {
   followUpDate?: string;
 }
 
+// --- Web -> mobile adapter ---------------------------------------------------
+// The web GET /api/disputes route (src/app/api/disputes/route.ts, backed by
+// disputeServiceDB.mapToDispute) returns items shaped with `itemDescription`
+// and `reason` and NO `updatedAt`, whereas the mobile Dispute type expects
+// `creditorName`, `disputeReason`, and a required `updatedAt`. Left unmapped
+// those fields are `undefined` at runtime — which is why the disputes list
+// renders an empty description. This adapter bridges the two shapes.
+
+const MOBILE_DISPUTE_STATUSES: readonly DisputeStatus[] = [
+  "draft",
+  "pending",
+  "in_progress",
+  "ready",
+  "sent",
+  "under_review",
+  "resolved",
+  "rejected",
+  "deleted",
+];
+
+/** Raw dispute item as returned by the web API (tolerant of both field names). */
+export interface WebDispute {
+  id: string;
+  userId?: string;
+  bureau: Dispute["bureau"];
+  status?: string;
+  itemType?: string;
+  itemDescription?: string;
+  creditorName?: string;
+  accountNumber?: string;
+  reason?: string;
+  disputeReason?: string;
+  letterContent?: string;
+  documents?: string[];
+  createdAt: string;
+  updatedAt?: string;
+  sentAt?: string;
+  resolvedAt?: string;
+  outcome?: Dispute["outcome"];
+  responseDetails?: string;
+  followUpDate?: string;
+}
+
+function normalizeDisputeStatus(status: string | undefined): DisputeStatus {
+  return status &&
+    (MOBILE_DISPUTE_STATUSES as readonly string[]).includes(status)
+    ? (status as DisputeStatus)
+    : "pending";
+}
+
+/**
+ * Map a web dispute payload onto the mobile Dispute shape. Web uses
+ * `itemDescription`/`reason` and omits `updatedAt`; mobile uses
+ * `creditorName`/`disputeReason` and requires `updatedAt` (fall back to
+ * `createdAt`, the best available timestamp). No values are fabricated —
+ * absent optional fields stay undefined.
+ */
+export function mapWebDispute(raw: WebDispute): Dispute {
+  return {
+    id: raw.id,
+    userId: raw.userId ?? "",
+    bureau: raw.bureau,
+    status: normalizeDisputeStatus(raw.status),
+    itemType: raw.itemType ?? "",
+    creditorName: raw.creditorName ?? raw.itemDescription ?? "",
+    accountNumber: raw.accountNumber,
+    disputeReason: raw.disputeReason ?? raw.reason ?? "",
+    letterContent: raw.letterContent,
+    documents: raw.documents,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt ?? raw.createdAt,
+    sentAt: raw.sentAt,
+    resolvedAt: raw.resolvedAt,
+    outcome: raw.outcome,
+    responseDetails: raw.responseDetails,
+    followUpDate: raw.followUpDate,
+  };
+}
+
 // Dispute CRUD Endpoints
 export const disputeApi = {
   /**
    * Get all disputes for current user
    */
-  getAll: (params?: {
+  getAll: async (params?: {
     page?: number;
     limit?: number;
     status?: string;
     bureau?: string;
-  }) => {
+  }): Promise<ApiResponse<PaginatedResponse<Dispute>>> => {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());
     if (params?.status) queryParams.append("status", params.status);
     if (params?.bureau) queryParams.append("bureau", params.bureau);
     const query = queryParams.toString();
-    return api.get<PaginatedResponse<Dispute>>(
+    const res = await api.get<PaginatedResponse<WebDispute>>(
       `/disputes${query ? `?${query}` : ""}`,
     );
+    // Adapt the web dispute items onto the mobile Dispute shape without
+    // fabricating anything; pass failures straight through.
+    if (res.success && res.data) {
+      const items = Array.isArray(res.data.items)
+        ? res.data.items.map(mapWebDispute)
+        : [];
+      return { success: true, data: { ...res.data, items } };
+    }
+    return { success: false, error: res.error };
   },
 
   /**

@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { api } from "../services/api/client";
 
 // ============================================================================
 // TYPES
@@ -59,7 +60,6 @@ export interface ISEConfig {
 }
 
 export interface UseISEOptions {
-  apiBaseUrl?: string;
   initialTier?: UserTier;
   initialMaxActiveSize?: number;
   autoRotate?: boolean;
@@ -85,8 +85,9 @@ export interface UseISEReturn {
 // HOOK IMPLEMENTATION
 // ============================================================================
 
+const ISE_BASE_URL = "/trading/ise";
+
 const DEFAULT_OPTIONS: Required<UseISEOptions> = {
-  apiBaseUrl: "/api/trading/ise",
   initialTier: "pro",
   initialMaxActiveSize: 5,
   autoRotate: true,
@@ -96,6 +97,7 @@ const DEFAULT_OPTIONS: Required<UseISEOptions> = {
 
 export function useISE(options: UseISEOptions = {}): UseISEReturn {
   const opts = { ...DEFAULT_OPTIONS, ...options };
+  const apiBaseUrl = ISE_BASE_URL;
 
   // State
   const [state, setState] = useState<ISEState>({
@@ -115,50 +117,40 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
   });
 
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Fetch rankings and state
   const fetchISEState = useCallback(async () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
-
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
       // Fetch rankings
-      const rankingsRes = await fetch(
-        `${opts.apiBaseUrl}?action=rankings&limit=50`,
-        { signal: abortControllerRef.current.signal },
+      const rankingsRes = await api.get<{ rankings: RankedInstrument[] }>(
+        `${apiBaseUrl}?action=rankings&limit=50`,
       );
 
-      if (!rankingsRes.ok) {
-        throw new Error(`Rankings fetch failed: ${rankingsRes.status}`);
+      if (!rankingsRes.success) {
+        throw new Error("Rankings fetch failed");
       }
 
-      const rankingsData = await rankingsRes.json();
-
       // Fetch active set
-      const activeRes = await fetch(`${opts.apiBaseUrl}?action=active`, {
-        signal: abortControllerRef.current.signal,
-      });
-
-      const activeData = activeRes.ok
-        ? await activeRes.json()
-        : { activeSymbols: [] };
-
-      // Fetch events
-      const eventsRes = await fetch(
-        `${opts.apiBaseUrl}?action=events&limit=10`,
-        { signal: abortControllerRef.current.signal },
+      const activeRes = await api.get<{ activeSymbols: string[] }>(
+        `${apiBaseUrl}?action=active`,
       );
 
-      const eventsData = eventsRes.ok ? await eventsRes.json() : { events: [] };
+      const activeSymbols = activeRes.success
+        ? (activeRes.data?.activeSymbols ?? [])
+        : [];
+
+      // Fetch events
+      const eventsRes = await api.get<{ events: RotationEvent[] }>(
+        `${apiBaseUrl}?action=events&limit=10`,
+      );
+
+      const events = eventsRes.success ? (eventsRes.data?.events ?? []) : [];
 
       // Merge active status into rankings
-      const activeSet = new Set(activeData.activeSymbols || []);
-      const rankings = (rankingsData.rankings || []).map(
+      const activeSet = new Set(activeSymbols);
+      const rankings = (rankingsRes.data?.rankings || []).map(
         (r: RankedInstrument) => ({
           ...r,
           isActive: activeSet.has(r.symbol),
@@ -167,22 +159,20 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
 
       setState({
         rankings,
-        activeSymbols: activeData.activeSymbols || [],
-        recentEvents: eventsData.events || [],
+        activeSymbols,
+        recentEvents: events,
         lastUpdate: new Date(),
         isLoading: false,
         error: null,
       });
     } catch (error) {
-      if ((error as Error).name === "AbortError") return;
-
       setState((prev) => ({
         ...prev,
         isLoading: false,
         error: (error as Error).message,
       }));
     }
-  }, [opts.apiBaseUrl]);
+  }, [apiBaseUrl]);
 
   // Start/stop polling
   useEffect(() => {
@@ -200,9 +190,6 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
       }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
     };
   }, [opts.enabled, config.pollingIntervalMs, fetchISEState]);
 
@@ -216,16 +203,15 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
       setConfig((prev) => ({ ...prev, maxActiveSize: size }));
 
       try {
-        await fetch(opts.apiBaseUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "updateConfig", maxActiveSize: size }),
+        await api.post(apiBaseUrl, {
+          action: "updateConfig",
+          maxActiveSize: size,
         });
       } catch (error) {
         console.error("Failed to update max active size:", error);
       }
     },
-    [opts.apiBaseUrl],
+    [apiBaseUrl],
   );
 
   const setAutoRotate = useCallback((enabled: boolean) => {
@@ -235,78 +221,87 @@ export function useISE(options: UseISEOptions = {}): UseISEReturn {
   const forceAddSymbol = useCallback(
     async (symbol: string): Promise<boolean> => {
       try {
-        const res = await fetch(opts.apiBaseUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "forceAdd", symbol }),
-        });
+        const res = await api.post<{ activeSymbols: string[] }>(
+          apiBaseUrl,
+          { action: "forceAdd", symbol },
+        );
 
-        const data = await res.json();
-
-        if (data.success) {
+        if (res.success) {
           setState((prev) => ({
             ...prev,
-            activeSymbols: data.activeSymbols,
+            activeSymbols: res.data?.activeSymbols ?? prev.activeSymbols,
             rankings: prev.rankings.map((r) => ({
               ...r,
-              isActive: data.activeSymbols.includes(r.symbol),
+              isActive: (res.data?.activeSymbols ?? []).includes(r.symbol),
             })),
           }));
         }
 
-        return data.success;
+        return res.success;
       } catch (error) {
         console.error("Force add failed:", error);
         return false;
       }
     },
-    [opts.apiBaseUrl],
+    [apiBaseUrl],
   );
 
   const forceRemoveSymbol = useCallback(
     async (symbol: string): Promise<boolean> => {
       try {
-        const res = await fetch(opts.apiBaseUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "forceRemove", symbol }),
-        });
+        const res = await api.post<{ activeSymbols: string[] }>(
+          apiBaseUrl,
+          { action: "forceRemove", symbol },
+        );
 
-        const data = await res.json();
-
-        if (data.success) {
+        if (res.success) {
           setState((prev) => ({
             ...prev,
-            activeSymbols: data.activeSymbols,
+            activeSymbols: res.data?.activeSymbols ?? prev.activeSymbols,
             rankings: prev.rankings.map((r) => ({
               ...r,
-              isActive: data.activeSymbols.includes(r.symbol),
+              isActive: (res.data?.activeSymbols ?? []).includes(r.symbol),
             })),
           }));
         }
 
-        return data.success;
+        return res.success;
       } catch (error) {
         console.error("Force remove failed:", error);
         return false;
       }
     },
-    [opts.apiBaseUrl],
+    [apiBaseUrl],
   );
 
   const canTrade = useCallback(
     async (symbol: string): Promise<{ allowed: boolean; reason: string }> => {
       try {
-        const res = await fetch(
-          `${opts.apiBaseUrl}?action=canTrade&symbol=${encodeURIComponent(symbol)}`,
+        const res = await api.get<{ allowed: boolean; reason: string }>(
+          `${apiBaseUrl}?action=canTrade&symbol=${encodeURIComponent(symbol)}`,
         );
-        const data = await res.json();
-        return { allowed: data.allowed, reason: data.reason };
+        if (!res.success) {
+          // Transient failure (e.g. 429/503) — log so it's diagnosable;
+          // do NOT silently return allowed:false as if trading is prohibited.
+          console.warn(
+            "[useISE.canTrade] API check failed (transient); defaulting to not-allowed.",
+            res.error?.message ?? res.message,
+          );
+          return {
+            allowed: false,
+            reason: "Trade permission check unavailable — please retry",
+          };
+        }
+        return {
+          allowed: res.data!.allowed,
+          reason: res.data!.reason,
+        };
       } catch (error) {
+        console.warn("[useISE.canTrade] Network error during permission check:", error);
         return { allowed: false, reason: "Failed to check trade permission" };
       }
     },
-    [opts.apiBaseUrl],
+    [apiBaseUrl],
   );
 
   const refresh = useCallback(async () => {

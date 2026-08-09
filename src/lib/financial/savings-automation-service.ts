@@ -9,15 +9,46 @@
  * - Goal-based automation
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import {
+  createClient as createSupabaseClient,
+  SupabaseClient,
+} from "@supabase/supabase-js";
 
-const supabase = getSupabase();
+/**
+ * `getServiceRoleClient()` (anon key, no forwarded JWT) cannot satisfy this table's
+ * `auth.uid() = user_id` RLS policies — auth.uid() evaluates to NULL for
+ * that client, and the underlying `anon`/`authenticated` Postgres roles hold
+ * no base SELECT/INSERT/UPDATE/DELETE grant on `financial_goals` or the
+ * `savings_*` tables either (verified live 2026-07-31 via
+ * information_schema.role_table_grants), so every call would fail closed
+ * with 42501 permission denied regardless of RLS. service_role is the
+ * established fix for this pattern in this session (wellness-gate.ts,
+ * plaid-service.ts) — this service already enforces per-user scoping
+ * itself via explicit `.eq("user_id", userId)` on every query below, so
+ * bypassing RLS here does not weaken authorization.
+ *
+ * The shared, typed `supabaseAdmin` (@/lib/supabase/admin) cannot be used
+ * directly: none of financial_goals' new columns or the three new
+ * savings_* tables are in the generated `Database` type (src/lib/supabase/
+ * types.ts covers ~27 of the 40+ real tables), so its `<Database>` generic
+ * infers `never` for every call here and rejects them at compile time. This
+ * mirrors plaid-service.ts's getServiceRoleClient() (same root cause,
+ * documented there in full) and the other ~20 call sites across this
+ * codebase that hit the same generated-type gap — untyped, service-role,
+ * lazily constructed so `next build`'s page-data-collection phase (which
+ * imports every route module with no runtime env) doesn't abort on an
+ * eager `createClient()` call.
+ */
+const supabaseAdmin = getServiceRoleClient();
+
 import {
   SavingsRule,
   SavingsRuleType,
   SavingsRuleStatus,
   SavingsGoal,
   SavingsGoalStatus,
+  SavingsGoalCategory,
   SavingsContribution,
   SavingsTransfer,
   SavingsSummary,
@@ -33,6 +64,35 @@ import {
 } from "./types/savings.types";
 
 /**
+ * `financial_goals.type` is a pre-existing NOT NULL column (with its own
+ * CHECK constraint) already populated by 13+ other reachable consumers
+ * (goal-planner.ts, GoalInvestmentService.ts, financial-chat-engine.ts,
+ * wellness-gate.ts, etc.) for general goal-tracking. This service's
+ * `SavingsGoal.category` is a separate, savings-specific vocabulary (see
+ * `savings.types.ts`) stored in a new, additive `category` column — it does
+ * NOT reuse `type`, so it can't corrupt the general goal-tracking feature's
+ * discriminator. But every INSERT into the shared table must still satisfy
+ * `type`'s NOT NULL + CHECK constraint, so this maps the savings category
+ * onto the closest existing `type` value. Categories with no direct
+ * equivalent in `type`'s vocabulary (vacation, major_purchase) fall back to
+ * "custom"; `home_down_payment` maps to the semantically closest
+ * "home_purchase".
+ */
+function mapCategoryToGoalType(category: SavingsGoalCategory): string {
+  const mapping: Record<SavingsGoalCategory, string> = {
+    emergency_fund: "emergency_fund",
+    debt_payoff: "debt_payoff",
+    retirement: "retirement",
+    education: "education",
+    custom: "custom",
+    vacation: "custom",
+    major_purchase: "custom",
+    home_down_payment: "home_purchase",
+  };
+  return mapping[category] ?? "custom";
+}
+
+/**
  * Savings Automation Service Class
  */
 class SavingsAutomationService {
@@ -44,7 +104,7 @@ class SavingsAutomationService {
    * Get all savings rules for a user
    */
   async getRules(userId: string): Promise<SavingsRule[]> {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("savings_rules")
       .select("*")
       .eq("user_id", userId)
@@ -62,7 +122,7 @@ class SavingsAutomationService {
    * Get a single savings rule by ID
    */
   async getRule(userId: string, ruleId: string): Promise<SavingsRule | null> {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("savings_rules")
       .select("*")
       .eq("id", ruleId)
@@ -83,7 +143,7 @@ class SavingsAutomationService {
     userId: string,
     input: CreateSavingsRuleInput,
   ): Promise<SavingsRule> {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("savings_rules")
       .insert({
         user_id: userId,
@@ -137,7 +197,7 @@ class SavingsAutomationService {
     if (input.destinationAccountId !== undefined)
       updateData.destination_account_id = input.destinationAccountId;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("savings_rules")
       .update(updateData)
       .eq("id", ruleId)
@@ -156,7 +216,7 @@ class SavingsAutomationService {
    * Delete a savings rule
    */
   async deleteRule(userId: string, ruleId: string): Promise<boolean> {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("savings_rules")
       .delete()
       .eq("id", ruleId)
@@ -187,8 +247,8 @@ class SavingsAutomationService {
    * Get all savings goals for a user
    */
   async getGoals(userId: string): Promise<SavingsGoal[]> {
-    const { data, error } = await supabase
-      .from("savings_goals")
+    const { data, error } = await supabaseAdmin
+      .from("financial_goals")
       .select("*")
       .eq("user_id", userId)
       .order("priority", { ascending: true });
@@ -202,7 +262,7 @@ class SavingsAutomationService {
 
     // Fetch contributions for each goal
     for (const goal of goals) {
-      goal.contributions = await this.getContributions(goal.id);
+      goal.contributions = await this.getContributions(goal.id, userId);
     }
 
     return goals;
@@ -212,8 +272,8 @@ class SavingsAutomationService {
    * Get a single savings goal by ID
    */
   async getGoal(userId: string, goalId: string): Promise<SavingsGoal | null> {
-    const { data, error } = await supabase
-      .from("savings_goals")
+    const { data, error } = await supabaseAdmin
+      .from("financial_goals")
       .select("*")
       .eq("id", goalId)
       .eq("user_id", userId)
@@ -224,7 +284,7 @@ class SavingsAutomationService {
     }
 
     const goal = this.mapGoalFromDb(data);
-    goal.contributions = await this.getContributions(goalId);
+    goal.contributions = await this.getContributions(goalId, userId);
     return goal;
   }
 
@@ -235,12 +295,14 @@ class SavingsAutomationService {
     userId: string,
     input: CreateSavingsGoalInput,
   ): Promise<SavingsGoal> {
-    const { data, error } = await supabase
-      .from("savings_goals")
+    const { data, error } = await supabaseAdmin
+      .from("financial_goals")
       .insert({
         user_id: userId,
         name: input.name,
         category: input.category,
+        // financial_goals.type is NOT NULL — see mapCategoryToGoalType doc.
+        type: mapCategoryToGoalType(input.category),
         status: "active",
         target_amount: input.targetAmount,
         current_amount: 0,
@@ -279,7 +341,13 @@ class SavingsAutomationService {
     };
 
     if (input.name !== undefined) updateData.name = input.name;
-    if (input.category !== undefined) updateData.category = input.category;
+    if (input.category !== undefined) {
+      updateData.category = input.category;
+      // Keep financial_goals.type (shared, NOT NULL) in sync so a stale
+      // value doesn't leak into the general goal-tracking feature's type
+      // filter — see mapCategoryToGoalType doc.
+      updateData.type = mapCategoryToGoalType(input.category);
+    }
     if (input.status !== undefined) updateData.status = input.status;
     if (input.targetAmount !== undefined)
       updateData.target_amount = input.targetAmount;
@@ -292,8 +360,8 @@ class SavingsAutomationService {
     if (input.color !== undefined) updateData.color = input.color;
     if (input.notes !== undefined) updateData.notes = input.notes;
 
-    const { data, error } = await supabase
-      .from("savings_goals")
+    const { data, error } = await supabaseAdmin
+      .from("financial_goals")
       .update(updateData)
       .eq("id", goalId)
       .eq("user_id", userId)
@@ -305,7 +373,7 @@ class SavingsAutomationService {
     }
 
     const goal = this.mapGoalFromDb(data);
-    goal.contributions = await this.getContributions(goalId);
+    goal.contributions = await this.getContributions(goalId, userId);
     return goal;
   }
 
@@ -313,8 +381,8 @@ class SavingsAutomationService {
    * Delete a savings goal
    */
   async deleteGoal(userId: string, goalId: string): Promise<boolean> {
-    const { error } = await supabase
-      .from("savings_goals")
+    const { error } = await supabaseAdmin
+      .from("financial_goals")
       .delete()
       .eq("id", goalId)
       .eq("user_id", userId);
@@ -330,9 +398,12 @@ class SavingsAutomationService {
     input: AddContributionInput,
   ): Promise<SavingsContribution> {
     // Create contribution record
-    const { data: contribution, error: contribError } = await supabase
+    const { data: contribution, error: contribError } = await supabaseAdmin
       .from("savings_contributions")
       .insert({
+        // user_id is required (NOT NULL, RLS-backing column) — the caller
+        // already has it; nothing upstream previously threaded it through.
+        user_id: userId,
         goal_id: input.goalId,
         amount: input.amount,
         source: input.source || "manual",
@@ -353,8 +424,8 @@ class SavingsAutomationService {
       const newStatus: SavingsGoalStatus =
         newAmount >= goal.targetAmount ? "completed" : goal.status;
 
-      await supabase
-        .from("savings_goals")
+      await supabaseAdmin
+        .from("financial_goals")
         .update({
           current_amount: newAmount,
           status: newStatus,
@@ -372,14 +443,37 @@ class SavingsAutomationService {
   /**
    * Get contributions for a goal
    */
-  async getContributions(goalId: string): Promise<SavingsContribution[]> {
-    const { data, error } = await supabase
+  /**
+   * Contributions for one goal.
+   *
+   * `userId` is required, not optional. This runs on the service role, which
+   * bypasses RLS, so scoping by `goal_id` alone was safe only because all
+   * three internal callers happened to resolve the goal through a
+   * `.eq("user_id", ...)` query first. That is safe by convention, and the
+   * method is public — the next caller to pass a goalId straight off a request
+   * path would have made it an IDOR with no code change here at all.
+   */
+  async getContributions(
+    goalId: string,
+    userId: string,
+  ): Promise<SavingsContribution[]> {
+    const { data, error } = await supabaseAdmin
       .from("savings_contributions")
       .select("*")
       .eq("goal_id", goalId)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
     if (error) {
+      // An empty list here is indistinguishable from "this goal has no
+      // contributions", which is how a broken query reads as a legitimate
+      // answer. Log it so the failure is observable, then degrade — the goal
+      // itself still renders.
+      console.error("getContributions failed", {
+        goalId,
+        userId,
+        error: error.message,
+      });
       return [];
     }
 
@@ -475,7 +569,7 @@ class SavingsAutomationService {
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const { data: monthTransfers } = await supabase
+    const { data: monthTransfers } = await supabaseAdmin
       .from("savings_transfers")
       .select("amount")
       .eq("user_id", userId)
@@ -492,7 +586,7 @@ class SavingsAutomationService {
     startOfYear.setMonth(0, 1);
     startOfYear.setHours(0, 0, 0, 0);
 
-    const { data: yearTransfers } = await supabase
+    const { data: yearTransfers } = await supabaseAdmin
       .from("savings_transfers")
       .select("amount")
       .eq("user_id", userId)
@@ -697,7 +791,7 @@ class SavingsAutomationService {
       triggerTransactionId?: string;
     },
   ): Promise<SavingsTransfer> {
-    const { data: transfer, error } = await supabase
+    const { data: transfer, error } = await supabaseAdmin
       .from("savings_transfers")
       .insert({
         user_id: userId,
@@ -742,7 +836,7 @@ class SavingsAutomationService {
     const rule = await this.getRule(userId, ruleId);
     if (!rule) return;
 
-    await supabase
+    await supabaseAdmin
       .from("savings_rules")
       .update({
         total_saved: rule.totalSaved + amount,

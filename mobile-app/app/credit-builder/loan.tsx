@@ -12,7 +12,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
-  Linking,
   ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
@@ -21,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { LineChart } from "../../src/components/charts";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 // Types
 interface CreditBuilderLoan {
@@ -719,7 +719,7 @@ export default function CreditBuilderLoanScreen() {
                 style={styles.applyButton}
                 onPress={() => {
                   if (selectedLoan?.website) {
-                    Linking.openURL(selectedLoan.website);
+                    openExternalUrl(selectedLoan.website);
                   }
                 }}
               >

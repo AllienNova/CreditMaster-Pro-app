@@ -1,6 +1,20 @@
 /**
- * Fynvita Debt Payoff Calculator
- * Snowball vs Avalanche comparison, payoff timeline visualization
+ * Fynvita Debt Payoff Screen
+ *
+ * Real-data wiring (PARITY): renders the user's real debts, a debt summary, and a real
+ * avalanche-vs-snowball payoff comparison from GET /api/financial/debt?compare=true
+ * (withAuth) via debtApi.getDebtPlan, adapted web -> mobile by mapWebDebtPlan. The
+ * summary (total debt, minimum payments, average APR, account count) comes from the
+ * route's `overview`; the two strategy cards' interest + months come from the route's
+ * real `comparison` (debtPayoffService), recomputed server-side for the selected extra
+ * monthly payment. Fetch on mount with honest inline loading / error+retry / empty
+ * states and pull-to-refresh.
+ *
+ * The former MOCK_DEBTS array, the fabricated STRATEGIES object (hardcoded
+ * totalInterest / payoffMonths), the invented "Save $X in interest" heuristic, and the
+ * silent catch-fallback were all removed: on a failed fetch the screen shows an honest
+ * error + retry, never fabricated balances or payoff figures. The interest-saved line
+ * now shows the route's real `interestSaved` for the chosen extra payment.
  */
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -18,156 +32,131 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-import { useFinancialStore } from "../../src/store/financialStore";
+import { debtApi } from "../../src/services/api/financial";
+import type {
+  DebtPlanData,
+  DebtAccountType,
+} from "../../src/services/api/financial";
 
-interface Debt {
-  id: string;
-  name: string;
-  balance: number;
-  apr: number;
-  minPayment: number;
-  type: "credit_card" | "loan" | "mortgage" | "student";
-}
+type StrategyKey = "avalanche" | "snowball";
 
-const MOCK_DEBTS: Debt[] = [
-  {
-    id: "1",
-    name: "Chase Sapphire",
-    balance: 4500,
-    apr: 24.99,
-    minPayment: 135,
-    type: "credit_card",
-  },
-  {
-    id: "2",
-    name: "Capital One",
-    balance: 2800,
-    apr: 22.99,
-    minPayment: 84,
-    type: "credit_card",
-  },
-  {
-    id: "3",
-    name: "Discover",
-    balance: 1200,
-    apr: 19.99,
-    minPayment: 36,
-    type: "credit_card",
-  },
-  {
-    id: "4",
-    name: "Car Loan",
-    balance: 12500,
-    apr: 6.5,
-    minPayment: 350,
-    type: "loan",
-  },
-  {
-    id: "5",
-    name: "Student Loan",
-    balance: 28000,
-    apr: 5.5,
-    minPayment: 280,
-    type: "student",
-  },
-];
-
-const STRATEGIES = {
+// Display-only labels and icons for each strategy. The financial numbers (interest,
+// months, savings) come from the route's real comparison — never invented here.
+const STRATEGY_META: Record<
+  StrategyKey,
+  { name: string; description: string; icon: keyof typeof Ionicons.glyphMap }
+> = {
   avalanche: {
     name: "Avalanche",
     description: "Pay highest interest first",
-    totalInterest: 4250,
-    payoffMonths: 36,
     icon: "trending-down",
   },
   snowball: {
     name: "Snowball",
     description: "Pay smallest balance first",
-    totalInterest: 4890,
-    payoffMonths: 38,
     icon: "snow",
   },
 };
 
+const EXTRA_PAYMENT_OPTIONS = [0, 100, 200, 300, 500];
+
+function getDebtIcon(type: DebtAccountType): keyof typeof Ionicons.glyphMap {
+  switch (type) {
+    case "credit_card":
+      return "card";
+    case "student_loan":
+      return "school";
+    case "auto_loan":
+      return "car";
+    case "mortgage":
+      return "home";
+    case "medical":
+      return "medkit";
+    case "personal_loan":
+      return "cash";
+    default:
+      return "wallet";
+  }
+}
+
 export default function DebtScreen() {
-  const [selectedStrategy, setSelectedStrategy] = useState<
-    "avalanche" | "snowball"
-  >("avalanche");
+  const [selectedStrategy, setSelectedStrategy] =
+    useState<StrategyKey>("avalanche");
   const [extraPayment, setExtraPayment] = useState(200);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [debts, setDebts] = useState<Debt[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<DebtPlanData | null>(null);
 
-  const { debtOverview, fetchDebtOverview, isLoadingDebt } =
-    useFinancialStore();
-
-  const loadDebts = useCallback(async () => {
-    try {
-      await fetchDebtOverview();
-      if (debtOverview?.debts && debtOverview.debts.length > 0) {
-        const transformedDebts = debtOverview.debts.map((d) => ({
-          id: d.id,
-          name: d.name,
-          balance: d.balance,
-          apr: d.interestRate,
-          minPayment: d.minimumPayment,
-          type: d.type as Debt["type"],
-        }));
-        setDebts(transformedDebts);
-      } else {
-        setDebts(MOCK_DEBTS);
-      }
-    } catch (err) {
-      // Fallback to mock data silently in production
-      setDebts(MOCK_DEBTS);
-    } finally {
-      setLoading(false);
+  const fetchPlan = useCallback(async () => {
+    const res = await debtApi.getDebtPlan(extraPayment);
+    if (res.success && res.data) {
+      setData(res.data);
+      setError(null);
+    } else {
+      setError(res.error?.message ?? "Unable to load your debt plan.");
     }
-  }, [fetchDebtOverview, debtOverview]);
+  }, [extraPayment]);
+
+  // Runs on mount and whenever the extra payment changes (the comparison's real
+  // interest/months/savings are recomputed server-side for that extra payment). Once
+  // data exists, the full-screen loader is suppressed so slider changes update in place.
+  const loadPlan = useCallback(async () => {
+    setLoading(true);
+    await fetchPlan();
+    setLoading(false);
+  }, [fetchPlan]);
 
   useEffect(() => {
-    loadDebts();
-  }, [loadDebts]);
+    loadPlan();
+  }, [loadPlan]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadDebts();
+    await fetchPlan();
     setRefreshing(false);
   };
 
-  const totalDebt = debts.reduce((sum, d) => sum + d.balance, 0);
-  const totalMinPayment = debts.reduce((sum, d) => sum + d.minPayment, 0);
-  const avgApr =
-    debts.length > 0
-      ? debts.reduce((sum, d) => sum + d.apr, 0) / debts.length
-      : 0;
+  const overview = data?.overview;
+  const debts = data?.debts ?? [];
+  const comparison = data?.comparison ?? null;
+
+  const totalDebt = overview?.totalDebt ?? 0;
+  const totalMinPayment = overview?.totalMinimumPayments ?? 0;
+  const avgApr = overview?.averageInterestRate ?? 0;
+  const accountCount = overview?.debtCount ?? debts.length;
 
   const sortedDebts =
     selectedStrategy === "avalanche"
-      ? [...debts].sort((a, b) => b.apr - a.apr)
+      ? [...debts].sort((a, b) => b.interestRate - a.interestRate)
       : [...debts].sort((a, b) => a.balance - b.balance);
 
-  const getDebtIcon = (type: string) => {
-    switch (type) {
-      case "credit_card":
-        return "card";
-      case "loan":
-        return "car";
-      case "mortgage":
-        return "home";
-      case "student":
-        return "school";
-      default:
-        return "cash";
-    }
-  };
+  const selectedMetrics = comparison ? comparison[selectedStrategy] : null;
 
-  if (loading || isLoadingDebt) {
+  if (loading && !data) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centered} testID="financial-debt-loading">
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading debt overview...</Text>
+          <Text style={styles.stateText}>Loading debt overview...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.centered} testID="financial-debt-error">
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.stateText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadPlan}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -195,7 +184,9 @@ export default function DebtScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Debt Payoff</Text>
-          <TouchableOpacity onPress={() => router.push("/financial/add-debt" as Href)}>
+          <TouchableOpacity
+            onPress={() => router.push("/financial/add-debt" as Href)}
+          >
             <Ionicons
               name="add-circle-outline"
               size={24}
@@ -204,182 +195,232 @@ export default function DebtScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Summary Card */}
-        <Card style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>Total Debt</Text>
-          <Text style={styles.summaryValue}>${totalDebt.toLocaleString()}</Text>
-          <View style={styles.summaryStats}>
-            <View style={styles.summaryStat}>
-              <Text style={styles.statLabel}>Min Payment</Text>
-              <Text style={styles.statValue}>${totalMinPayment}/mo</Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryStat}>
-              <Text style={styles.statLabel}>Avg APR</Text>
-              <Text style={styles.statValue}>{avgApr.toFixed(1)}%</Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryStat}>
-              <Text style={styles.statLabel}>Accounts</Text>
-              <Text style={styles.statValue}>{debts.length}</Text>
-            </View>
+        {debts.length === 0 ? (
+          <View style={styles.emptyCard} testID="financial-debt-empty">
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={40}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.emptyTitle}>No debts tracked yet</Text>
+            <Text style={styles.emptyText}>
+              Add a credit card, loan, or other debt to see your payoff plan and
+              compare avalanche vs snowball strategies.
+            </Text>
           </View>
-        </Card>
+        ) : (
+          <>
+            {/* Summary Card */}
+            <Card style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Total Debt</Text>
+              <Text style={styles.summaryValue}>
+                ${totalDebt.toLocaleString()}
+              </Text>
+              <View style={styles.summaryStats}>
+                <View style={styles.summaryStat}>
+                  <Text style={styles.statLabel}>Min Payment</Text>
+                  <Text style={styles.statValue}>
+                    ${totalMinPayment.toLocaleString()}/mo
+                  </Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryStat}>
+                  <Text style={styles.statLabel}>Avg APR</Text>
+                  <Text style={styles.statValue}>{avgApr.toFixed(1)}%</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryStat}>
+                  <Text style={styles.statLabel}>Accounts</Text>
+                  <Text style={styles.statValue}>{accountCount}</Text>
+                </View>
+              </View>
+            </Card>
 
-        {/* Strategy Selector */}
-        <Text style={styles.sectionTitle}>Payoff Strategy</Text>
-        <View style={styles.strategyContainer}>
-          {(Object.keys(STRATEGIES) as Array<"avalanche" | "snowball">).map(
-            (key) => {
-              const strategy = STRATEGIES[key];
-              const isSelected = selectedStrategy === key;
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={[
-                    styles.strategyCard,
-                    isSelected && styles.strategyCardActive,
-                  ]}
-                  onPress={() => setSelectedStrategy(key)}
-                >
+            {/* Strategy Selector */}
+            <Text style={styles.sectionTitle}>Payoff Strategy</Text>
+            {comparison ? (
+              <View style={styles.strategyContainer}>
+                {(["avalanche", "snowball"] as StrategyKey[]).map((key) => {
+                  const meta = STRATEGY_META[key];
+                  const metrics = comparison[key];
+                  const isSelected = selectedStrategy === key;
+                  return (
+                    <TouchableOpacity
+                      key={key}
+                      testID={`debt-strategy-${key}`}
+                      style={[
+                        styles.strategyCard,
+                        isSelected && styles.strategyCardActive,
+                      ]}
+                      onPress={() => setSelectedStrategy(key)}
+                    >
+                      <View
+                        style={[
+                          styles.strategyIcon,
+                          {
+                            backgroundColor: isSelected
+                              ? theme.colors.primary
+                              : theme.colors.surface,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={meta.icon}
+                          size={24}
+                          color={
+                            isSelected ? "#fff" : theme.colors.textSecondary
+                          }
+                        />
+                      </View>
+                      <Text
+                        style={[
+                          styles.strategyName,
+                          isSelected && styles.strategyNameActive,
+                        ]}
+                      >
+                        {meta.name}
+                      </Text>
+                      <Text style={styles.strategyDescription}>
+                        {meta.description}
+                      </Text>
+                      <View style={styles.strategyStats}>
+                        <View style={styles.strategyStat}>
+                          <Text style={styles.strategyStatLabel}>Interest</Text>
+                          <Text
+                            style={[
+                              styles.strategyStatValue,
+                              isSelected && { color: theme.colors.primary },
+                            ]}
+                          >
+                            $
+                            {Math.round(
+                              metrics.totalInterestPaid,
+                            ).toLocaleString()}
+                          </Text>
+                        </View>
+                        <View style={styles.strategyStat}>
+                          <Text style={styles.strategyStatLabel}>Payoff</Text>
+                          <Text
+                            style={[
+                              styles.strategyStatValue,
+                              isSelected && { color: theme.colors.primary },
+                            ]}
+                          >
+                            {metrics.totalMonths} mo
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : (
+              <View
+                style={styles.strategyUnavailableCard}
+                testID="financial-debt-strategy-unavailable"
+              >
+                <Ionicons
+                  name="analytics-outline"
+                  size={28}
+                  color={theme.colors.textSecondary}
+                />
+                <Text style={styles.strategyUnavailableText}>
+                  Strategy comparison isn&apos;t available right now. Pull to
+                  refresh to try again.
+                </Text>
+              </View>
+            )}
+
+            {/* Extra Payment Selector */}
+            <Card style={styles.extraPaymentCard}>
+              <View style={styles.extraPaymentHeader}>
+                <Text style={styles.extraPaymentLabel}>
+                  Extra Monthly Payment
+                </Text>
+                <Text style={styles.extraPaymentValue}>${extraPayment}</Text>
+              </View>
+              <View style={styles.sliderContainer}>
+                {EXTRA_PAYMENT_OPTIONS.map((amount) => (
+                  <TouchableOpacity
+                    key={amount}
+                    testID={`debt-extra-${amount}`}
+                    style={[
+                      styles.sliderOption,
+                      extraPayment === amount && styles.sliderOptionActive,
+                    ]}
+                    onPress={() => setExtraPayment(amount)}
+                  >
+                    <Text
+                      style={[
+                        styles.sliderOptionText,
+                        extraPayment === amount &&
+                          styles.sliderOptionTextActive,
+                      ]}
+                    >
+                      ${amount}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {selectedMetrics && selectedMetrics.interestSaved > 0 && (
+                <View style={styles.savingsRow}>
+                  <Ionicons name="trending-down" size={16} color="#22C55E" />
+                  <Text style={styles.savingsText}>
+                    {`Save $${Math.round(
+                      selectedMetrics.interestSaved,
+                    ).toLocaleString()} in interest`}
+                  </Text>
+                </View>
+              )}
+            </Card>
+
+            {/* Payoff Order */}
+            <Text style={styles.sectionTitle}>
+              Payoff Order (
+              {selectedStrategy === "avalanche"
+                ? "Highest APR First"
+                : "Smallest Balance First"}
+              )
+            </Text>
+            {sortedDebts.map((debt, idx) => (
+              <Card key={debt.id} style={styles.debtCard}>
+                <View style={styles.debtRow}>
+                  <View style={styles.debtOrder}>
+                    <Text style={styles.debtOrderText}>{idx + 1}</Text>
+                  </View>
                   <View
                     style={[
-                      styles.strategyIcon,
-                      {
-                        backgroundColor: isSelected
-                          ? theme.colors.primary
-                          : theme.colors.surface,
-                      },
+                      styles.debtIcon,
+                      { backgroundColor: idx === 0 ? "#DCFCE7" : "#F3F4F6" },
                     ]}
                   >
                     <Ionicons
-                      name={strategy.icon as keyof typeof Ionicons.glyphMap}
-                      size={24}
-                      color={isSelected ? "#fff" : theme.colors.textSecondary}
+                      name={getDebtIcon(debt.type)}
+                      size={20}
+                      color={idx === 0 ? "#22C55E" : theme.colors.textSecondary}
                     />
                   </View>
-                  <Text
-                    style={[
-                      styles.strategyName,
-                      isSelected && styles.strategyNameActive,
-                    ]}
-                  >
-                    {strategy.name}
-                  </Text>
-                  <Text style={styles.strategyDescription}>
-                    {strategy.description}
-                  </Text>
-                  <View style={styles.strategyStats}>
-                    <View style={styles.strategyStat}>
-                      <Text style={styles.strategyStatLabel}>Interest</Text>
-                      <Text
-                        style={[
-                          styles.strategyStatValue,
-                          isSelected && { color: theme.colors.primary },
-                        ]}
-                      >
-                        ${strategy.totalInterest.toLocaleString()}
-                      </Text>
-                    </View>
-                    <View style={styles.strategyStat}>
-                      <Text style={styles.strategyStatLabel}>Payoff</Text>
-                      <Text
-                        style={[
-                          styles.strategyStatValue,
-                          isSelected && { color: theme.colors.primary },
-                        ]}
-                      >
-                        {strategy.payoffMonths} mo
-                      </Text>
-                    </View>
+                  <View style={styles.debtInfo}>
+                    <Text style={styles.debtName}>{debt.name}</Text>
+                    <Text style={styles.debtMeta}>
+                      {debt.interestRate}% APR • $
+                      {debt.minimumPayment.toLocaleString()}/mo min
+                    </Text>
                   </View>
-                </TouchableOpacity>
-              );
-            },
-          )}
-        </View>
-
-        {/* Extra Payment Slider */}
-        <Card style={styles.extraPaymentCard}>
-          <View style={styles.extraPaymentHeader}>
-            <Text style={styles.extraPaymentLabel}>Extra Monthly Payment</Text>
-            <Text style={styles.extraPaymentValue}>${extraPayment}</Text>
-          </View>
-          <View style={styles.sliderContainer}>
-            {[0, 100, 200, 300, 500].map((amount) => (
-              <TouchableOpacity
-                key={amount}
-                style={[
-                  styles.sliderOption,
-                  extraPayment === amount && styles.sliderOptionActive,
-                ]}
-                onPress={() => setExtraPayment(amount)}
-              >
-                <Text
-                  style={[
-                    styles.sliderOptionText,
-                    extraPayment === amount && styles.sliderOptionTextActive,
-                  ]}
-                >
-                  ${amount}
-                </Text>
-              </TouchableOpacity>
+                  <Text style={styles.debtBalance}>
+                    ${debt.balance.toLocaleString()}
+                  </Text>
+                </View>
+                {idx === 0 && (
+                  <View style={styles.focusBadge}>
+                    <Ionicons name="star" size={12} color="#F59E0B" />
+                    <Text style={styles.focusText}>Focus Here</Text>
+                  </View>
+                )}
+              </Card>
             ))}
-          </View>
-          <View style={styles.savingsRow}>
-            <Ionicons name="trending-down" size={16} color="#22C55E" />
-            <Text style={styles.savingsText}>
-              Save ${Math.round(extraPayment * 12 * 0.15)} in interest
-            </Text>
-          </View>
-        </Card>
-
-        {/* Payoff Order */}
-        <Text style={styles.sectionTitle}>
-          Payoff Order (
-          {selectedStrategy === "avalanche"
-            ? "Highest APR First"
-            : "Smallest Balance First"}
-          )
-        </Text>
-        {sortedDebts.map((debt, idx) => (
-          <Card key={debt.id} style={styles.debtCard}>
-            <View style={styles.debtRow}>
-              <View style={styles.debtOrder}>
-                <Text style={styles.debtOrderText}>{idx + 1}</Text>
-              </View>
-              <View
-                style={[
-                  styles.debtIcon,
-                  { backgroundColor: idx === 0 ? "#DCFCE7" : "#F3F4F6" },
-                ]}
-              >
-                <Ionicons
-                  name={
-                    getDebtIcon(debt.type) as keyof typeof Ionicons.glyphMap
-                  }
-                  size={20}
-                  color={idx === 0 ? "#22C55E" : theme.colors.textSecondary}
-                />
-              </View>
-              <View style={styles.debtInfo}>
-                <Text style={styles.debtName}>{debt.name}</Text>
-                <Text style={styles.debtMeta}>
-                  {debt.apr}% APR • ${debt.minPayment}/mo min
-                </Text>
-              </View>
-              <Text style={styles.debtBalance}>
-                ${debt.balance.toLocaleString()}
-              </Text>
-            </View>
-            {idx === 0 && (
-              <View style={styles.focusBadge}>
-                <Ionicons name="star" size={12} color="#F59E0B" />
-                <Text style={styles.focusText}>Focus Here</Text>
-              </View>
-            )}
-          </Card>
-        ))}
+          </>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -390,6 +431,42 @@ export default function DebtScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing.xl,
+  },
+  stateText: {
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
+  emptyCard: {
+    alignItems: "center",
+    padding: theme.spacing.xl,
+    marginTop: theme.spacing.xl,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    textAlign: "center",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -398,11 +475,6 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4 },
   title: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: {
-    marginTop: theme.spacing.md,
-    color: theme.colors.textSecondary,
-  },
   summaryCard: { marginBottom: theme.spacing.lg, backgroundColor: "#EF4444" },
   summaryLabel: { fontSize: 14, color: "rgba(255,255,255,0.8)" },
   summaryValue: {
@@ -471,6 +543,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: theme.colors.text,
     marginTop: 2,
+  },
+  strategyUnavailableCard: {
+    alignItems: "center",
+    marginBottom: theme.spacing.lg,
+    padding: theme.spacing.lg,
+  },
+  strategyUnavailableText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    marginTop: theme.spacing.sm,
   },
   extraPaymentCard: { marginBottom: theme.spacing.lg },
   extraPaymentHeader: {

@@ -13,6 +13,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { isPublicApiRoute } from "@/lib/auth/PUBLIC_ROUTES";
+import { isFlagEnabledEdge } from "@/lib/flags/edge";
 
 // Define public routes that don't require authentication
 const publicRoutes = [
@@ -137,6 +139,30 @@ function handleCORS(
   return response;
 }
 
+/**
+ * Build an Edge-safe Supabase client scoped to the request's cookies.
+ *
+ * Uses `@supabase/ssr` `createServerClient` (Edge-safe, cookie-scoped) — never
+ * `@supabase/supabase-js` with the service-role key, which is not safe to
+ * bundle into the Edge runtime.
+ */
+function createEdgeSupabaseClient(request: NextRequest) {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll() {
+          // Cookie writes are handled on the response elsewhere.
+        },
+      },
+    },
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -156,15 +182,43 @@ export async function middleware(request: NextRequest) {
     return addSecurityHeaders(handleCORS(request, response));
   }
 
-  // Allow static files and API routes (they handle their own auth)
+  // Allow static files (they have no auth surface)
   if (
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
     pathname.startsWith("/static") ||
-    pathname.includes(".")
+    (pathname.includes(".") && !pathname.startsWith("/api"))
   ) {
-    // In development, API routes without auth headers are logged via middleware
-    // This helps catch accidentally unprotected API routes during development
+    const response = NextResponse.next();
+    return addSecurityHeaders(handleCORS(request, response));
+  }
+
+  // API routes: deny-by-default (FND-001 / AUTH-04).
+  // Public routes (the explicit PUBLIC_API_ROUTES allowlist) always pass
+  // through. Every other /api/* route requires a valid session at the
+  // middleware layer. Enforcement is gated behind the auth.deny_by_default
+  // feature flag so it ships dark and is flipped after the staging soak.
+  if (pathname.startsWith("/api")) {
+    if (isPublicApiRoute(pathname)) {
+      const response = NextResponse.next();
+      return addSecurityHeaders(handleCORS(request, response));
+    }
+
+    const enforce = await isFlagEnabledEdge("auth.deny_by_default");
+    if (enforce) {
+      const supabase = createEdgeSupabaseClient(request);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        const response = NextResponse.json(
+          { error: "Unauthorized" },
+          { status: 401 },
+        );
+        return addSecurityHeaders(handleCORS(request, response));
+      }
+    }
+
     const response = NextResponse.next();
     return addSecurityHeaders(handleCORS(request, response));
   }
@@ -182,24 +236,14 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // For admin routes, verify admin role
+    // For admin routes, verify admin role.
+    // FND-005: the role decision MUST come from the profiles table, never from
+    // a JWT/metadata claim (app_metadata / user_metadata) — those are forgeable
+    // and would let a user self-grant admin. The profiles.role query (via the
+    // Edge-safe @supabase/ssr cookie client) is the only source of truth.
     if (adminRoutes.some((route) => pathname.startsWith(route))) {
       try {
-        // Create Supabase client for role check
-        const supabase = createServerClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          {
-            cookies: {
-              getAll() {
-                return request.cookies.getAll();
-              },
-              setAll(cookiesToSet) {
-                // This is handled in the response
-              },
-            },
-          },
-        );
+        const supabase = createEdgeSupabaseClient(request);
 
         const {
           data: { user },
@@ -209,26 +253,19 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(new URL("/auth/login", request.url));
         }
 
-        // Check user role from app_metadata or profiles table
-        const userRole = user.app_metadata?.role || user.user_metadata?.role;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
 
-        // If role not in metadata, check profiles table
-        if (!userRole || (userRole !== "admin" && userRole !== "super_admin")) {
-          // Fetch role from profiles table
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
+        const role = profile?.role ?? "user";
 
-          const role = profile?.role || userRole || "user";
-
-          if (role !== "admin" && role !== "super_admin") {
-            // Redirect non-admins to dashboard
-            return NextResponse.redirect(
-              new URL("/dashboard?error=unauthorized", request.url),
-            );
-          }
+        if (role !== "admin" && role !== "super_admin") {
+          // Redirect non-admins to dashboard
+          return NextResponse.redirect(
+            new URL("/dashboard?error=unauthorized", request.url),
+          );
         }
       } catch {
         // Admin role check failed - redirect to dashboard

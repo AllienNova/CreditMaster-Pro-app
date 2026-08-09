@@ -9,7 +9,7 @@
  * - Benchmark comparisons
  */
 
-import { AIMLService } from "@/lib/aiml-service";
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import { financialContextEngine } from "./financial-context-engine";
 import { FinancialContext } from "./types/financial-context.types";
 import {
@@ -27,8 +27,6 @@ import {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-
-const AI_MODEL = "anthropic/claude-4.5-sonnet";
 
 // Budget benchmarks by category (percentage of income)
 const CATEGORY_BENCHMARKS: Record<
@@ -90,19 +88,6 @@ const BUDGET_TEMPLATES: BudgetTemplate[] = [
 // ============================================================================
 
 class BudgetOptimizer {
-  private aimlService: AIMLService | null = null;
-
-  private getAIService(): AIMLService | null {
-    if (!this.aimlService && process.env.AIML_API_KEY) {
-      try {
-        this.aimlService = new AIMLService();
-      } catch {
-        // AIML service initialization failed
-      }
-    }
-    return this.aimlService;
-  }
-
   /**
    * Generate comprehensive budget optimization analysis
    */
@@ -332,11 +317,9 @@ class BudgetOptimizer {
     categories: BudgetCategorySummary[],
     optimizations: BudgetOptimization[],
   ): Promise<string> {
-    const aiService = this.getAIService();
-    if (!aiService) return this.getDefaultAnalysis(optimizations);
     try {
-      const response = await aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [
           {
             role: "system",

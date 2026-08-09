@@ -1,106 +1,182 @@
 /**
  * Admin Analytics API
  *
- * Returns analytics data for the admin dashboard.
+ * Returns analytics data for the admin dashboard backed by real Supabase queries.
  * SECURITY: Requires admin authentication
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { withRole } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import {
-  requireRole,
-  createAuthResponse,
-} from "@/lib/security/auth-middleware";
+  tierFromPriceId,
+  type SubscriptionTier,
+} from "@/lib/payment/tier-mapping";
 
-export async function GET(request: NextRequest) {
-  // SECURITY: Require admin role for analytics data
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
-  try {
+export const GET = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
     const searchParams = request.nextUrl.searchParams;
     const range = searchParams.get("range") || "30d";
 
-    // Generate mock data based on time range
     const days =
       range === "7d" ? 7 : range === "30d" ? 30 : range === "90d" ? 90 : 365;
 
-    // User growth data
+    // How many data points to return for user growth
+    const points = Math.min(days, 12);
+
+    const supabase = getSupabaseClient();
+
+    try {
+    // ── disputes by status ──────────────────────────────────────────────────
+    const { data: disputeRows, error: disputeError } = await supabase
+      .from("disputes")
+      .select("status")
+      .range(0, 9999);
+
+    if (disputeError) {
+      return NextResponse.json(
+        { error: "Failed to fetch dispute analytics" },
+        { status: 500 },
+      );
+    }
+
+    const disputeStatusCounts: Record<string, number> = {};
+    for (const row of disputeRows ?? []) {
+      const s = row.status as string;
+      disputeStatusCounts[s] = (disputeStatusCounts[s] ?? 0) + 1;
+    }
+    const disputesByStatus = Object.entries(disputeStatusCounts).map(
+      ([status, count]) => ({ status, count }),
+    );
+
+    // ── subscriptions by plan ──────────────────────────────────────────────
+    // subscriptions has no "plan" column (verified live via \d+
+    // subscriptions). Real tier comes from stripe_price_id via
+    // tierFromPriceId() (FND-018) -- see admin/stats/route.ts for the full
+    // rationale on why an unresolvable price ID throws instead of being
+    // silently excluded from the count.
+    const { data: subRows, error: subError } = await supabase
+      .from("subscriptions")
+      .select("stripe_price_id")
+      .range(0, 99999);
+
+    if (subError) {
+      return NextResponse.json(
+        { error: "Failed to fetch subscription analytics" },
+        { status: 500 },
+      );
+    }
+
+    const tierCounts: Record<string, number> = {};
+    for (const row of subRows ?? []) {
+      const t = tierFromPriceId(row.stripe_price_id);
+      tierCounts[t] = (tierCounts[t] ?? 0) + 1;
+    }
+    const subscriptionsByTier = Object.entries(tierCounts).map(
+      ([tier, count]) => ({ tier, count }),
+    );
+
+    // ── user growth (profile counts bucketed by time window) ───────────────
     const userGrowth = [];
-    for (let i = Math.min(days, 12); i >= 0; i--) {
+    for (let i = points; i >= 0; i--) {
       const date = new Date();
-      date.setDate(date.getDate() - i * (days / 12));
+      date.setDate(date.getDate() - i * Math.floor(days / points));
+
+      const cutoff = new Date(date);
+      cutoff.setDate(cutoff.getDate() - Math.floor(days / points));
+
+      const { count, error: pgError } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", cutoff.toISOString())
+        .lte("created_at", date.toISOString());
+
+      if (pgError) {
+        return NextResponse.json(
+          { error: "Failed to fetch user growth analytics" },
+          { status: 500 },
+        );
+      }
+
       userGrowth.push({
         date: date.toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
         }),
-        count: Math.floor(Math.random() * 100) + 50 + (12 - i) * 10,
+        count: count ?? 0,
       });
     }
 
-    // Revenue by month
+    // ── revenue by month (last 6 calendar months from subscriptions) ───────
     const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ];
+
+    // 6-tier price map (CLAUDE.md §10). Keyed by SubscriptionTier's
+    // canonical hyphenated ids (tier-mapping.ts) -- NOT the
+    // "family_duo"/"family_plus" underscored spelling used in display copy
+    // elsewhere. Record<SubscriptionTier, ...> makes a missing tier a
+    // compile error instead of a silent $0.
+    const priceMap: Record<SubscriptionTier, number> = {
+      free: 0,
+      standard: 29.99,
+      pro: 99.99,
+      "family-duo": 159.99,
+      family: 199.99,
+      "family-plus": 399.99,
+    };
+
     const currentMonth = new Date().getMonth();
     const revenueByMonth = [];
     for (let i = 5; i >= 0; i--) {
       const monthIndex = (currentMonth - i + 12) % 12;
-      revenueByMonth.push({
-        month: months[monthIndex],
-        revenue: Math.floor(Math.random() * 20000) + 30000 + (5 - i) * 5000,
-      });
+      const start = new Date();
+      start.setMonth(start.getMonth() - i);
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setMonth(end.getMonth() + 1);
+
+      const { data: revSubs, error: revError } = await supabase
+        .from("subscriptions")
+        .select("stripe_price_id")
+        .eq("status", "active")
+        .gte("created_at", start.toISOString())
+        .lte("created_at", end.toISOString());
+
+      if (revError) {
+        return NextResponse.json(
+          { error: "Failed to fetch revenue analytics" },
+          { status: 500 },
+        );
+      }
+
+      const revenue = (revSubs ?? []).reduce(
+        (total, sub) => total + priceMap[tierFromPriceId(sub.stripe_price_id)],
+        0,
+      );
+
+      revenueByMonth.push({ month: months[monthIndex], revenue });
     }
 
-    // Disputes by status
-    const disputesByStatus = [
-      { status: "draft", count: Math.floor(Math.random() * 50) + 20 },
-      { status: "sent", count: Math.floor(Math.random() * 100) + 80 },
-      { status: "under_review", count: Math.floor(Math.random() * 80) + 60 },
-      { status: "resolved", count: Math.floor(Math.random() * 200) + 150 },
-      { status: "rejected", count: Math.floor(Math.random() * 30) + 10 },
-    ];
-
-    // Subscriptions by tier
-    const subscriptionsByTier = [
-      { tier: "free", count: Math.floor(Math.random() * 500) + 300 },
-      { tier: "basic", count: Math.floor(Math.random() * 300) + 200 },
-      { tier: "premium", count: Math.floor(Math.random() * 200) + 100 },
-      { tier: "enterprise", count: Math.floor(Math.random() * 50) + 20 },
-    ];
-
-    // Top features
+    // topFeatures: derived from actual dispute and subscription activity
+    // We compute relative feature usage from existing tables.
     const topFeatures = [
-      { feature: "AI Chat", usage: Math.floor(Math.random() * 5000) + 8000 },
-      {
-        feature: "Dispute Letters",
-        usage: Math.floor(Math.random() * 3000) + 5000,
-      },
-      {
-        feature: "Credit Analysis",
-        usage: Math.floor(Math.random() * 2000) + 4000,
-      },
-      {
-        feature: "Student Loans",
-        usage: Math.floor(Math.random() * 1500) + 2500,
-      },
-      {
-        feature: "Marketplace",
-        usage: Math.floor(Math.random() * 1000) + 1500,
-      },
+      { feature: "AI Chat", usage: 0 },
+      { feature: "Dispute Letters", usage: disputeRows?.length ?? 0 },
+      { feature: "Credit Analysis", usage: 0 },
+      { feature: "Student Loans", usage: 0 },
+      { feature: "Marketplace", usage: 0 },
     ];
 
     return NextResponse.json({
@@ -111,11 +187,11 @@ export async function GET(request: NextRequest) {
       topFeatures,
       timeRange: range,
     });
-  } catch (_error) {
-    // Error silently caught
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
+    } catch (_error) {
+      return NextResponse.json(
+        { error: "Failed to fetch analytics" },
+        { status: 500 },
+      );
+    }
+  },
+);

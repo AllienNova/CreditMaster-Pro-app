@@ -198,6 +198,7 @@ export function DriftAlertPanel({
             onClick={onRefresh}
             disabled={isLoading}
             className="p-2 text-gray-400 dark:text-slate-500 hover:text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+            aria-label="Refresh drift alerts"
           >
             <RefreshCw
               className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
@@ -205,6 +206,7 @@ export function DriftAlertPanel({
           </button>
           <button
             onClick={() => setShowSettings(!showSettings)}
+            aria-label="Drift alert settings"
             className={`p-2 rounded-lg transition-colors ${
               showSettings
                 ? "text-blue-400 bg-blue-500/10"

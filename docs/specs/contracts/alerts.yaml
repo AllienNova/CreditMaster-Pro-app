@@ -1,0 +1,78 @@
+openapi: 3.1.0
+info:
+  title: Alerts aggregation API (FR-302)
+  version: 1.0.0
+  description: |
+    Owner: parity-backend
+    Auth: bearer JWT via withPermission("financial:read") — user_id from the guard, never the request.
+    Rate limit: shared platform limiter.
+    Idempotency: n/a (read-only).
+    Union engine over 4 REAL signals — budget overspend (spending-limit-alerts + budget-service),
+    goal milestone (goal-tracker/goal-planner), low savings (financial dashboard savingsRate + rule),
+    upcoming bills (bill-calendar). No fabricated alerts; empty array when no signal fires.
+servers:
+  - url: /api
+security:
+  - bearerAuth: []
+paths:
+  /alerts:
+    get:
+      operationId: getAlerts
+      description: All active alerts for the authenticated user, newest first.
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [budget, goal, savings, bill]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data, count]
+                properties:
+                  success: { const: true }
+                  count: { type: integer, minimum: 0 }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Alert' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    Alert:
+      type: object
+      required: [id, category, severity, title, message, triggeredAt]
+      properties:
+        id: { type: string }
+        category: { type: string, enum: [budget, goal, savings, bill] }
+        severity: { type: string, enum: [info, warning, critical] }
+        title: { type: string }
+        message: { type: string }
+        triggeredAt: { type: string, format: date-time }
+        # Absent optional fields stay undefined; missing numerics are null, never coerced to 0.
+        amount: { type: [number, 'null'] }
+        dueDate: { type: [string, 'null'], format: date }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        message: { type: string }
+  responses:
+    Unauthorized:
+      description: no/invalid JWT
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: missing financial:read permission
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ServiceUnavailable:
+      description: role resolution or a signal source failed — honest 503, never a mock fallback
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }

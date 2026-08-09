@@ -40,18 +40,21 @@ CREATE INDEX IF NOT EXISTS idx_onboarding_progress_last_updated
 ALTER TABLE onboarding_progress ENABLE ROW LEVEL SECURITY;
 
 -- Users can only view their own onboarding progress
+DROP POLICY IF EXISTS "Users can view own onboarding progress" ON onboarding_progress;
 CREATE POLICY "Users can view own onboarding progress"
   ON onboarding_progress
   FOR SELECT
   USING (auth.uid() = user_id);
 
 -- Users can insert their own onboarding progress
+DROP POLICY IF EXISTS "Users can insert own onboarding progress" ON onboarding_progress;
 CREATE POLICY "Users can insert own onboarding progress"
   ON onboarding_progress
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Users can update their own onboarding progress
+DROP POLICY IF EXISTS "Users can update own onboarding progress" ON onboarding_progress;
 CREATE POLICY "Users can update own onboarding progress"
   ON onboarding_progress
   FOR UPDATE
@@ -59,6 +62,7 @@ CREATE POLICY "Users can update own onboarding progress"
   WITH CHECK (auth.uid() = user_id);
 
 -- Users can delete their own onboarding progress
+DROP POLICY IF EXISTS "Users can delete own onboarding progress" ON onboarding_progress;
 CREATE POLICY "Users can delete own onboarding progress"
   ON onboarding_progress
   FOR DELETE

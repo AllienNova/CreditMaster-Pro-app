@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon } from "@/components/ui/Icon";
+import { FadeIn, StaggerList, ScrollReveal } from "@/components/ui/animations";
 const overviewStats = [
   {
     label: "Current Credit Score",
@@ -84,12 +85,14 @@ export default function AnalyticsOverviewPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-        Analytics Overview
-      </h1>
+      <FadeIn>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          Analytics Overview
+        </h1>
+      </FadeIn>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {overviewStats.map((stat) => (
           <div
             key={stat.label}
@@ -109,8 +112,9 @@ export default function AnalyticsOverviewPage() {
             </p>
           </div>
         ))}
-      </div>
+      </StaggerList>
 
+      <ScrollReveal>
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Score Progress Chart */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
@@ -176,30 +180,33 @@ export default function AnalyticsOverviewPage() {
           </div>
         </div>
       </div>
+      </ScrollReveal>
 
       {/* Recent Activity */}
-      <div className="mt-8 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
-        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Recent Activity
-          </h2>
-        </div>
-        <div className="divide-y divide-gray-100 dark:divide-slate-700">
-          {recentActivity.map((activity, i) => (
-            <div key={i} className="p-4 flex items-center gap-4">
-              <Icon name={activity.icon} className="text-2xl inline-block" />
-              <div className="flex-1">
-                <p className="font-medium text-gray-900 dark:text-white">
-                  {activity.message}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-slate-400">
-                  {activity.date}
-                </p>
+      <ScrollReveal>
+        <div className="mt-8 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
+          <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Recent Activity
+            </h2>
+          </div>
+          <div className="divide-y divide-gray-100 dark:divide-slate-700">
+            {recentActivity.map((activity, i) => (
+              <div key={i} className="p-4 flex items-center gap-4">
+                <Icon name={activity.icon} className="text-2xl inline-block" />
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {activity.message}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    {activity.date}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      </ScrollReveal>
     </div>
   );
 }

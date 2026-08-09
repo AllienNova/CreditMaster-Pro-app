@@ -11,7 +11,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
   Alert,
   Modal,
   TextInput,
@@ -22,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { ProgressBar } from "../../src/components/ProgressBar";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 // Types
 interface RecoveryStep {
@@ -374,7 +374,7 @@ export default function IdentityTheftRecoveryScreen() {
   };
 
   const openUrl = (url: string) => {
-    Linking.openURL(url);
+    openExternalUrl(url);
   };
 
   const startRecovery = () => {
@@ -599,7 +599,7 @@ export default function IdentityTheftRecoveryScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.emergencyButtonOutline}
-              onPress={() => Linking.openURL("tel:1-877-438-4338")}
+              onPress={() => openExternalUrl("tel:1-877-438-4338")}
             >
               <Ionicons name="call" size={16} color="#fff" />
               <Text style={styles.emergencyButtonOutlineText}>Call Now</Text>
@@ -707,7 +707,7 @@ export default function IdentityTheftRecoveryScreen() {
             {IMPORTANT_CONTACTS.slice(0, 4).map((contact, idx) => (
               <TouchableOpacity
                 key={idx}
-                onPress={() => Linking.openURL(`tel:${contact.phone}`)}
+                onPress={() => openExternalUrl(`tel:${contact.phone}`)}
               >
                 <Card style={styles.contactCard}>
                   <View style={styles.contactRow}>
@@ -828,7 +828,7 @@ export default function IdentityTheftRecoveryScreen() {
                 <View style={styles.contactActions}>
                   <TouchableOpacity
                     style={styles.contactAction}
-                    onPress={() => Linking.openURL(`tel:${contact.phone}`)}
+                    onPress={() => openExternalUrl(`tel:${contact.phone}`)}
                   >
                     <Ionicons
                       name="call"

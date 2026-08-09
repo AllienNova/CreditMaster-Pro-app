@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useCallback } from "react";
+import { api } from "../../services/api/client";
 import {
   View,
   Text,
@@ -146,31 +147,34 @@ export function OrderEntrySheet({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/trading/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "create",
-          symbol: symbol.toUpperCase(),
-          side,
-          type: orderType,
-          quantity: qty,
-          limitPrice:
-            orderType === "limit" ? parseFloat(limitPrice) : undefined,
-          stopLossPrice: stopLoss ? parseFloat(stopLoss) : undefined,
-          takeProfitPrice: takeProfit ? parseFloat(takeProfit) : undefined,
-          timeInForce: "day",
-        }),
+      const res = await api.post<{ order: CreatedOrder }>("/trading/orders", {
+        action: "create",
+        symbol: symbol.toUpperCase(),
+        side,
+        type: orderType,
+        quantity: qty,
+        limitPrice: orderType === "limit" ? parseFloat(limitPrice) : undefined,
+        stopLossPrice: stopLoss ? parseFloat(stopLoss) : undefined,
+        takeProfitPrice: takeProfit ? parseFloat(takeProfit) : undefined,
+        timeInForce: "day",
       });
 
-      const data = await response.json();
-
-      if (data.success && data.data.order) {
-        onOrderCreated?.(data.data.order);
+      if (res.success && res.data?.order) {
+        onOrderCreated?.(res.data.order);
         onClose();
       } else {
+        // Surface specific validation message when backend returns
+        // { success: false, validation: { errors: [{message, ...}] } }.
+        // client.ts stashes the raw response body in error.details.
+        const validationErrors = (
+          res.error?.details as
+            | { validation?: { errors?: { message: string }[] } }
+            | undefined
+        )?.validation?.errors;
         setError(
-          data.validation?.errors?.[0]?.message || "Failed to create order",
+          validationErrors?.[0]?.message ??
+            res.message ??
+            "Failed to create order",
         );
       }
     } catch (err) {

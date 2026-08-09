@@ -35,43 +35,6 @@ export {
   type ChallengeTemplate,
 } from "./community-challenges-service";
 
-// Anonymous Leaderboards
-export {
-  AnonymousLeaderboardService,
-  getAnonymousLeaderboardService,
-  type LeaderboardCategory,
-  type TimeFrame,
-  type LeaderboardParticipation,
-  type LeaderboardStats,
-} from "./anonymous-leaderboard-service";
-
-// Accountability Partners
-export {
-  AccountabilityPartnersService,
-  getAccountabilityPartnersService,
-  type Partnership,
-  type PartnershipStatus,
-  type ShareLevel,
-  type NudgeType,
-  type PartnerProfile,
-  type SharedProgress,
-  type Nudge,
-  type PartnerInvitation,
-} from "./accountability-partners-service";
-
-// Commitment Devices
-export {
-  CommitmentDeviceService,
-  getCommitmentDeviceService,
-  type CommitmentContract,
-  type CommitmentType,
-  type CommitmentStatus,
-  type CheckIn,
-  type Charity,
-  type CommitmentTemplate,
-  type CommitmentStats,
-} from "./commitment-device-service";
-
 // Shared Family/Friend Goals
 export {
   SharedGoalsService,
@@ -87,50 +50,3 @@ export {
   SHARED_GOAL_TEMPLATES,
   RELATIONSHIP_TYPES,
 } from "./shared-goals-service";
-
-// Achievement System
-export {
-  AchievementService,
-  getAchievementService,
-  BUILT_IN_ACHIEVEMENTS,
-  TIER_CONFIG,
-  CATEGORY_CONFIG,
-  type AchievementCategory,
-  type BadgeTier,
-  type AchievementStatus,
-  type ConditionOperator,
-  type AchievementCondition,
-  type AchievementDefinition,
-  type UserAchievement,
-  type UserAchievementWithDefinition,
-  type AchievementCheckResult,
-  type AchievementAwardResult,
-  type AchievementProgressUpdate,
-  type AchievementStats,
-  type CategoryStats,
-  type TierStats,
-  type AchievementNotification,
-} from "./achievement-service";
-
-// Points & Rewards Engine
-export {
-  PointsRewardsService,
-  getPointsRewardsService,
-  TIER_CONFIGS,
-  DEFAULT_EARNING_RULES,
-  DEFAULT_REDEMPTION_OPTIONS,
-  STREAK_BONUSES,
-  DEFAULT_POINTS_TTL_DAYS,
-  type PointsTransactionType,
-  type RewardTier,
-  type EarningCategory,
-  type RedemptionCategory,
-  type PointsBalance,
-  type PointsTransaction,
-  type EarningRule,
-  type RedemptionOption,
-  type RedemptionRecord,
-  type StreakBonus,
-  type TierConfig,
-  type PointsStats,
-} from "./points-rewards-service";

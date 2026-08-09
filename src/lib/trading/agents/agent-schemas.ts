@@ -101,6 +101,23 @@ export const signalExplainerDecisionSchema = baseDecisionSchema.extend({
 });
 
 // ============================================================================
+// NEWS IMPACT AGENT
+// ============================================================================
+
+export const newsImpactDecisionSchema = baseDecisionSchema.extend({
+  agentType: z.literal("news_impact"),
+  impactScore: z.number().min(-1).max(1),
+  impactTimeframe: z.enum([
+    "immediate",
+    "short_term",
+    "medium_term",
+    "long_term",
+  ]),
+  catalysts: z.array(z.string()),
+  risks: z.array(z.string()),
+});
+
+// ============================================================================
 // RISK NARRATIVE AGENT
 // ============================================================================
 

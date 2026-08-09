@@ -5,11 +5,11 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
+import { openExternalUrl } from "../../src/utils/openExternalUrl";
 
 const FEDERAL_PROGRAMS = [
   {
@@ -101,7 +101,7 @@ export default function LoanProgramsScreen() {
       save: "https://studentaid.gov/announcements-events/save-plan",
       consolidation: "https://studentaid.gov/manage-loans/consolidation",
     };
-    Linking.openURL(urls[programId] || "https://studentaid.gov");
+    openExternalUrl(urls[programId] || "https://studentaid.gov");
   };
 
   return (

@@ -5,7 +5,7 @@
  * Integrates with Supabase for data persistence and market data service for real-time prices.
  */
 
-import { getSupabase } from "../../supabase/client";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   Portfolio,
@@ -30,7 +30,7 @@ export class PortfolioService {
   private userId: string;
 
   constructor(userId: string) {
-    this.supabase = getSupabase();
+    this.supabase = getServiceRoleClient();
     this.userId = userId;
   }
 

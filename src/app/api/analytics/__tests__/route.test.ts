@@ -1,6 +1,59 @@
 /**
  * @jest-environment node
+ *
+ * Includes data-shape checks plus negative-auth coverage for the
+ * withAuth-wrapped /api/analytics handler (TASK-AUTH-03f).
  */
+import { NextRequest } from "next/server";
+
+const mockValidateFromHeaders = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
+}));
+jest.mock("@/lib/auth/rbac", () => ({
+  rbac: { hasPermission: jest.fn(() => false) },
+}));
+jest.mock("@/lib/analytics", () => ({
+  AnalyticsEngine: {
+    getUserAnalytics: jest.fn(),
+    getDisputeAnalytics: jest.fn(),
+    getWorkflowAnalytics: jest.fn(),
+    getAIUsageAnalytics: jest.fn(),
+    getFinancialImpact: jest.fn(),
+    getDashboardMetrics: jest.fn(),
+  },
+}));
+
+import { GET } from "../route";
+
+describe("negative-auth – /api/analytics", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+  });
+
+  it("GET returns 401 when the request is not authenticated", async () => {
+    const url = "http://localhost:3000/api/analytics";
+    const req = {
+      url,
+      method: "GET",
+      headers: new Headers(),
+      nextUrl: new URL(url),
+      json: jest.fn().mockResolvedValue({}),
+    } as unknown as NextRequest;
+    const res = await GET(req);
+    expect(res.status).toBe(401);
+  });
+});
+
 describe("Analytics API Routes", () => {
   describe("Event Tracking", () => {
     it("should have all event types", () => {

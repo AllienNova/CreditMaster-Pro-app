@@ -127,6 +127,28 @@ import {
 } from "../pctt-trading-service";
 
 // ============================================================================
+// FROZEN CLOCK — the PCTT pre-market checklist's market_calendar check reads
+// the real date (pre-market-checklist.ts: `ctx.timestamp ?? new Date()`).
+// Without this, the weekend gate short-circuits executeTrade on Sat/Sun and
+// 35 tests fail. Freeze to a fixed weekday so the suite is deterministic.
+// ============================================================================
+
+beforeAll(() => {
+  jest.useFakeTimers({
+    doNotFake: [
+      "setTimeout", "clearTimeout", "setInterval", "clearInterval",
+      "setImmediate", "clearImmediate", "nextTick", "queueMicrotask",
+      "requestAnimationFrame", "cancelAnimationFrame",
+      "requestIdleCallback", "cancelIdleCallback", "hrtime", "performance",
+    ],
+    now: new Date("2026-05-13T15:00:00Z"), // Wednesday, US market hours
+  });
+});
+afterAll(() => {
+  jest.useRealTimers();
+});
+
+// ============================================================================
 // GLOBAL beforeEach — wire up mock chains every time (resetMocks clears them)
 // ============================================================================
 

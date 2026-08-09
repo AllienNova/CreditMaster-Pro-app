@@ -1,72 +1,56 @@
-"use client";
-
 /**
- * Score Simulator Page
+ * Score Simulator Page — de-fabricated (DEFAB-2 / ADR-0009).
  *
- * Interactive tool to simulate how different actions will affect credit score.
- * Users can select scenarios and see projected score changes.
+ * This page used to fabricate a projected credit score via ScoreSimulatorService:
+ * a table of invented per-scenario point impacts (SIMULATION_SCENARIOS —
+ * +15/+30/+50/-10 ...) and FICO-weighted math producing
+ * projectedScore = clamp(currentScore + totalImpact, 300, 850), rendered as a
+ * projected-score ring, a signed "+N points" delta, per-factor "+N" changes,
+ * per-scenario "+N pts" labels, and a month-by-month projection timeline.
+ * FICO/VantageScore impacts are individualized and not precisely predictable, so
+ * presenting invented point outcomes as a prediction is fabrication (FCRA/UDAAP
+ * exposure). All of that — and the score-simulator-service that computed it —
+ * was removed.
+ *
+ * In its place: an honest "estimate unavailable" state (no point numbers, no
+ * guarantee language) and number-free directional education — which habits
+ * generally help vs hurt credit — carrying no per-user promised magnitude. The
+ * per-user estimate is gated on the real-data rebuild (FR-605, ADR-0009 M6-5).
  */
 
-import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Icon } from "@/components/ui/Icon";
 import {
-  ScoreSimulatorService,
-  SIMULATION_SCENARIOS,
-  UserCreditProfile,
-  SimulationResult,
-} from "@/lib/credit-builder/score-simulator-service";
+  Clock,
+  TrendingUp,
+  TrendingDown,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 
-const simulatorService = new ScoreSimulatorService();
+const NOTICE_TITLE = "Score estimates are being updated";
+const NOTICE_BODY =
+  "We're rebuilding score-impact estimates to use your own credit data. Until then we can't show a projected point change — credit-score impacts are individual and can't be predicted precisely.";
+const DISCLAIMER =
+  "General education only — not a prediction of your credit score.";
 
-// Default profile - in production, this would come from user data
-const DEFAULT_PROFILE: UserCreditProfile = {
-  currentScore: 650,
-  utilization: 45,
-  accountAge: 36,
-  onTimePayments: 92,
-  totalAccounts: 5,
-  openAccounts: 4,
-  recentInquiries: 2,
-  negativeItems: 1,
-  installmentLoans: 1,
-  revolvingAccounts: 3,
-};
+// Number-free directional education: general direction only, never a per-user
+// point magnitude. Standard credit-education statements, not a prediction about
+// this user's score.
+const HABITS_THAT_HELP: string[] = [
+  "Paying down credit card balances",
+  "Making every payment on time",
+  "Keeping older accounts open",
+  "Applying for new credit only when needed",
+];
+
+const HABITS_THAT_HURT: string[] = [
+  "Missing or making late payments",
+  "Carrying balances close to your limits",
+  "Closing your oldest accounts",
+  "Opening several new accounts at once",
+];
 
 export default function ScoreSimulatorPage() {
-  const [profile, setProfile] = useState<UserCreditProfile>(DEFAULT_PROFILE);
-  const [selectedScenarios, setSelectedScenarios] = useState<string[]>([]);
-
-  const result = useMemo<SimulationResult | null>(() => {
-    if (selectedScenarios.length === 0) return null;
-    return simulatorService.simulateScenarios(profile, selectedScenarios);
-  }, [profile, selectedScenarios]);
-
-  const suggestions = useMemo(() => {
-    return simulatorService.getSuggestedScenarios(profile);
-  }, [profile]);
-
-  const toggleScenario = (id: string) => {
-    setSelectedScenarios((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
-    );
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 740) return "text-green-600";
-    if (score >= 670) return "text-blue-600";
-    if (score >= 580) return "text-yellow-600";
-    return "text-red-600";
-  };
-
-  const getScoreLabel = (score: number) => {
-    if (score >= 800) return "Exceptional";
-    if (score >= 740) return "Very Good";
-    if (score >= 670) return "Good";
-    if (score >= 580) return "Fair";
-    return "Poor";
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
@@ -78,7 +62,7 @@ export default function ScoreSimulatorPage() {
                 Score Simulator
               </h1>
               <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
-                See how different actions could impact your credit score
+                Learn which financial habits generally help or hurt your credit
               </p>
             </div>
             <Link
@@ -91,267 +75,73 @@ export default function ScoreSimulatorPage() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Score Display */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 sticky top-8">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-                Score Projection
-              </h2>
-
-              <div className="text-center mb-6">
-                <div className="relative inline-block">
-                  <div className="w-40 h-40 relative">
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle
-                        cx="80"
-                        cy="80"
-                        r="70"
-                        stroke="#e5e7eb"
-                        strokeWidth="10"
-                        fill="none"
-                      />
-                      <circle
-                        cx="80"
-                        cy="80"
-                        r="70"
-                        stroke={result ? "#22c55e" : "#3b82f6"}
-                        strokeWidth="10"
-                        fill="none"
-                        strokeDasharray={`${(((result?.projectedScore || profile.currentScore) - 300) / 550) * 440} 440`}
-                        strokeLinecap="round"
-                        className="transition-all duration-500"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span
-                        className={`text-4xl font-bold ${getScoreColor(result?.projectedScore || profile.currentScore)}`}
-                      >
-                        {result?.projectedScore || profile.currentScore}
-                      </span>
-                      <span className="text-sm text-gray-500 dark:text-slate-400">
-                        {getScoreLabel(
-                          result?.projectedScore || profile.currentScore,
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {result && (
-                <div className="space-y-4">
-                  <div
-                    className={`text-center p-3 rounded-lg ${result.scoreChange >= 0 ? "bg-green-50" : "bg-red-50"}`}
-                  >
-                    <span
-                      className={`text-2xl font-bold ${result.scoreChange >= 0 ? "text-green-600" : "text-red-600"}`}
-                    >
-                      {result.scoreChange >= 0 ? "+" : ""}
-                      {result.scoreChange} points
-                    </span>
-                    <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
-                      Projected change
-                    </p>
-                  </div>
-
-                  {result.factorChanges.length > 0 && (
-                    <div className="border-t pt-4">
-                      <h3 className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">
-                        Factor Changes
-                      </h3>
-                      {result.factorChanges.map((change) => (
-                        <div
-                          key={change.factor}
-                          className="flex justify-between text-sm mb-2"
-                        >
-                          <span className="text-gray-600 dark:text-slate-300 capitalize">
-                            {change.factor.replace(/([A-Z])/g, " $1")}
-                          </span>
-                          <span
-                            className={
-                              change.impact >= 0
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }
-                          >
-                            {change.impact >= 0 ? "+" : ""}
-                            {change.impact}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Honest unavailable state — replaces the fabricated projection */}
+        <div
+          data-testid="simulator-unavailable"
+          className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 mb-6"
+        >
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
-          </div>
-
-          {/* Scenarios */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Current Profile Summary */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Your Current Profile
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {NOTICE_TITLE}
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { label: "Current Score", value: profile.currentScore },
-                  { label: "Utilization", value: `${profile.utilization}%` },
-                  {
-                    label: "Account Age",
-                    value: `${Math.floor(profile.accountAge / 12)}y ${profile.accountAge % 12}m`,
-                  },
-                  {
-                    label: "On-Time Rate",
-                    value: `${profile.onTimePayments}%`,
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="text-center p-3 bg-gray-50 dark:bg-slate-900 rounded-lg"
-                  >
-                    <p className="text-xs text-gray-500 dark:text-slate-400">
-                      {item.label}
-                    </p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {item.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              <p className="mt-1 text-gray-600 dark:text-slate-300">
+                {NOTICE_BODY}
+              </p>
             </div>
-
-            {/* Suggested Scenarios */}
-            {suggestions.length > 0 && (
-              <div className="bg-gradient-to-r from-blue-50 to-blue-50 rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Suggested for You
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {suggestions.map((scenario) => (
-                    <button
-                      key={scenario.id}
-                      onClick={() => toggleScenario(scenario.id)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${selectedScenarios.includes(scenario.id) ? "bg-blue-600 text-white" : "bg-white text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800"}`}
-                    >
-                      <Icon
-                        name={scenario.icon}
-                        className="w-4 h-4 inline-block"
-                      />{" "}
-                      {scenario.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* All Scenarios */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                All Scenarios
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {SIMULATION_SCENARIOS.map((scenario) => (
-                  <button
-                    key={scenario.id}
-                    onClick={() => toggleScenario(scenario.id)}
-                    className={`p-4 rounded-lg border-2 text-left transition-all ${selectedScenarios.includes(scenario.id) ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 dark:border-slate-600"}`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <Icon
-                        name={scenario.icon}
-                        className="w-6 h-6 inline-block"
-                      />
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 dark:text-white">
-                          {scenario.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-                          {scenario.description}
-                        </p>
-                        <div className="flex items-center gap-4 mt-2 text-xs">
-                          <span
-                            className={`font-medium ${scenario.impact >= 0 ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {scenario.impact >= 0 ? "+" : ""}
-                            {scenario.impact} pts
-                          </span>
-                          <span className="text-gray-400 dark:text-slate-500 flex items-center gap-1">
-                            <Icon
-                              name="clock"
-                              className="w-3 h-3 inline-block"
-                            />{" "}
-                            {scenario.timeframe}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded ${
-                              scenario.difficulty === "easy"
-                                ? "bg-green-100 text-green-700"
-                                : scenario.difficulty === "medium"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {scenario.difficulty}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Recommendations */}
-            {result && result.recommendations.length > 0 && (
-              <div className="bg-amber-50 rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Recommendations
-                </h2>
-                <ul className="space-y-2">
-                  {result.recommendations.map((rec, i) => (
-                    <li
-                      key={i}
-                      className="flex items-start gap-2 text-sm text-gray-700 dark:text-slate-200"
-                    >
-                      <span className="text-amber-500 mt-0.5">•</span>
-                      {rec}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Timeline */}
-            {result && result.timeline.length > 1 && (
-              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Projected Timeline
-                </h2>
-                <div className="flex items-end gap-2 h-40">
-                  {result.timeline.map((point, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center">
-                      <span className="text-xs font-medium text-gray-700 dark:text-slate-200 mb-1">
-                        {point.score}
-                      </span>
-                      <div
-                        className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t transition-all"
-                        style={{
-                          height: `${((point.score - 300) / 550) * 100}%`,
-                        }}
-                      />
-                      <span className="text-xs text-gray-500 dark:text-slate-400 mt-2">
-                        {point.month === 0 ? "Now" : `+${point.month}mo`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Number-free directional education */}
+        <div
+          data-testid="simulator-education"
+          className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="w-5 h-5 text-green-500" />
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+              What generally helps
+            </h3>
+          </div>
+          <ul className="space-y-2">
+            {HABITS_THAT_HELP.map((item) => (
+              <li key={item} className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span className="text-gray-700 dark:text-slate-300">
+                  {item}
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="flex items-center gap-2 mt-6 mb-3">
+            <TrendingDown className="w-5 h-5 text-red-500" />
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+              What generally hurts
+            </h3>
+          </div>
+          <ul className="space-y-2">
+            {HABITS_THAT_HURT.map((item) => (
+              <li key={item} className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                <span className="text-gray-700 dark:text-slate-300">
+                  {item}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p
+          data-testid="simulator-disclaimer"
+          className="mt-6 text-sm italic text-gray-500 dark:text-slate-400"
+        >
+          {DISCLAIMER}
+        </p>
       </main>
     </div>
   );

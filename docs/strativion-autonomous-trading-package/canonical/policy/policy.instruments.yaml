@@ -1,0 +1,62 @@
+meta:
+  document_role: policy
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  purpose: "Instrument-class metadata requirements. Regulatory controls (PDT, 15c3-5, Reg SHO, MWCB, LULD, auctions, contract-lifecycle) live in policy.compliance.yaml."
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_rights:
+    instrument_classes: narrow_only
+    instrument_rules: locked
+
+instrument_classes:
+  equities:
+    requires_market_hours_check: true
+    requires_corporate_action_check: true
+    allows_fractional: false
+    supports_extended_hours: "consumer_specific"
+    requires_halt_and_luld_check: true
+    settlement_cycle_days: 1
+  etfs:
+    requires_market_hours_check: true
+    requires_corporate_action_check: true
+    allows_fractional: false
+    requires_halt_and_luld_check: true
+    settlement_cycle_days: 1
+  crypto:
+    requires_market_hours_check: false
+    requires_weekend_liquidity_check: true
+    allows_fractional: true
+    requires_exchange_venue_health_check: true
+    requires_stablecoin_depeg_check: true
+  options:
+    requires_expiry_check: true
+    requires_assignment_risk_check: true
+    requires_greeks_review: true
+    autonomous_live_default: false
+    requires_open_interest_and_spread_check: true
+    requires_early_exercise_event_check: true
+    requires_settlement_style_check: true
+    requires_exercise_by_exception_awareness: true
+    requires_pin_risk_check_near_expiry: true
+  futures:
+    requires_roll_schedule_check: true
+    requires_multiplier_check: true
+    requires_session_calendar_check: true
+    autonomous_live_default: false
+    requires_initial_and_maintenance_margin_check: true
+    requires_delivery_notice_check: true
+    requires_first_notice_date_awareness: true
+    requires_last_trade_date_awareness: true
+
+instrument_rules:
+  reject_if_tick_size_unknown: true
+  reject_if_multiplier_unknown: true
+  reject_if_session_calendar_unknown: true
+  reject_if_tradability_unknown: true
+  reject_if_expiry_or_roll_state_unknown: true
+  reject_if_assignment_or_delivery_risk_unknown: true
+  reject_if_settlement_cycle_unknown: true
+  reject_if_corporate_action_state_unknown: true

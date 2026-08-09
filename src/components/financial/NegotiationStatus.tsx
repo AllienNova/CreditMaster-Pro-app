@@ -132,6 +132,7 @@ export default function NegotiationStatus({
             <button
               onClick={onClose}
               className="p-2 text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 rounded-lg transition-colors"
+              aria-label="Close negotiation status"
             ></button>
           </div>
         </div>

@@ -7,6 +7,13 @@
  *
  * IMPORTANT: jest.config has resetMocks: true, which clears all jest.fn()
  * implementations before each test. We must re-establish all mocks in beforeEach.
+ *
+ * Mock DATA payloads use the real paper_accounts/paper_orders/paper_positions/
+ * paper_trades snake_case column names (20260731000030_paper_trading_tables.sql)
+ * — they represent raw DB rows fed through PaperTradingEngine's mapDbToX()
+ * functions. Assertions on the RETURNED domain objects stay camelCase
+ * (PaperAccount/PaperPosition/Order/PaperTrade), since mapDbToX() is what
+ * converts one to the other.
  */
 
 // ============================================================================
@@ -116,40 +123,42 @@ function sampleOrderRequest(
   };
 }
 
+/** Raw paper_accounts row shape (snake_case), as returned by Postgres/PostgREST. */
 function sampleAccount(overrides = {}) {
   return {
     id: "acct-1",
-    userId: "user-1",
+    user_id: "user-1",
     name: "Paper Trading Account",
-    initialBalance: 100000,
-    cashBalance: 100000,
-    buyingPower: 100000,
-    portfolioValue: 0,
-    totalValue: 100000,
-    dayTradeCount: 0,
-    isPDTRestricted: false,
-    createdAt: "2026-01-01T00:00:00.000Z",
-    updatedAt: "2026-01-01T00:00:00.000Z",
+    initial_balance: 100000,
+    cash_balance: 100000,
+    buying_power: 100000,
+    portfolio_value: 0,
+    total_value: 100000,
+    day_trade_count: 0,
+    is_pdt_restricted: false,
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
     ...overrides,
   };
 }
 
+/** Raw paper_positions row shape (snake_case). */
 function samplePosition(overrides = {}) {
   return {
     id: "pos-1",
-    accountId: "acct-1",
+    account_id: "acct-1",
     symbol: "AAPL",
     quantity: 10,
-    avgEntryPrice: 150,
-    currentPrice: 150,
-    marketValue: 1500,
-    unrealizedPL: 0,
-    unrealizedPLPercent: 0,
-    realizedPL: 0,
-    costBasis: 1500,
+    avg_entry_price: 150,
+    current_price: 150,
+    market_value: 1500,
+    unrealized_pl: 0,
+    unrealized_pl_percent: 0,
+    realized_pl: 0,
+    cost_basis: 1500,
     side: "long",
-    createdAt: "2026-01-01T00:00:00.000Z",
-    updatedAt: "2026-01-01T00:00:00.000Z",
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
     ...overrides,
   };
 }
@@ -254,7 +263,7 @@ describe("PaperTradingEngine", () => {
 
     it("should create an account with custom initial balance", async () => {
       mockSingle.mockResolvedValue({
-        data: sampleAccount({ initialBalance: 50000, cashBalance: 50000 }),
+        data: sampleAccount({ initial_balance: 50000, cash_balance: 50000 }),
         error: null,
       });
 
@@ -318,9 +327,9 @@ describe("PaperTradingEngine", () => {
 
   describe("resetAccount", () => {
     it("should reset account to initial state", async () => {
-      // Step 1: get account to fetch initialBalance via .single()
+      // Step 1: get account to fetch initial_balance via .single()
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000 },
+        data: { initial_balance: 100000 },
         error: null,
       });
       // Steps 2-4: three delete().eq() calls - these await the chainable
@@ -351,9 +360,9 @@ describe("PaperTradingEngine", () => {
     });
 
     it("should throw when account update fails", async () => {
-      // Fetch initialBalance
+      // Fetch initial_balance
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000 },
+        data: { initial_balance: 100000 },
         error: null,
       });
       // Three deletes complete (default chainable resolve is fine)
@@ -376,21 +385,23 @@ describe("PaperTradingEngine", () => {
   describe("placeOrder", () => {
     it("should place a market buy order", async () => {
       // validateOrder calls:
-      //   1. getAccount: from().select("*").eq().single()
+      //   1. getAccount-by-id: from().select("*").eq().single()
       //   2. getCurrentPrice for buying power check (fetch mock)
       // Then placeOrder:
       //   3. getCurrentPrice again (cached from step 2)
       //   4. insert order: from().insert().select().single()
       // Then executeOrder:
       //   5. insert fill: from().insert() (no single)
-      //   6. updatePosition -> getPosition: from().select().eq().eq().single()
+      //   6. computeRealizedPL -> getPosition: from().select().eq().eq().single()
+      //   7. updatePosition -> getPosition: from().select().eq().eq().single()
       //      (returns null/PGRST116 -> creates new position)
-      //   7. insert new position: from().insert() (no single)
-      //   8. updateAccountBalance: getAccount from().select().eq().single()
-      //   9. getPositions: from().select().eq().gt() -> await
-      //  10. update account: from().update().eq() -> await
-      //  11. insert trade: from().insert() (no single)
-      //  12. update order status: from().update().eq().select().single()
+      //   8. insert new position: from().insert() (no single)
+      //   9. updateAccountBalance -> getAccountRowById: from().select().eq().single()
+      //  10. getPositions: from().select().eq().gt() -> await
+      //  11. update account: from().update().eq() -> await
+      //  12. insert trade: from().insert() (no single)
+      //  13. getUserIdForAccount: from().select().eq().single()
+      //  14. update order status: from().update().eq().select().single()
 
       // mockSingle calls in order:
       // #1: validateOrder getAccount
@@ -406,8 +417,8 @@ describe("PaperTradingEngine", () => {
           side: "buy",
           quantity: 10,
           status: "pending",
-          accountId: "acct-1",
-          filledQty: 0,
+          account_id: "acct-1",
+          filled_qty: 0,
         },
         error: null,
       });
@@ -421,14 +432,14 @@ describe("PaperTradingEngine", () => {
         data: null,
         error: { code: "PGRST116", message: "Not found" },
       });
-      // #5: updateAccountBalance -> getAccount
+      // #5: updateAccountBalance -> getAccountRowById
       mockSingle.mockResolvedValueOnce({
         data: sampleAccount(),
         error: null,
       });
       // #6: getUserIdForAccount -> paper_accounts lookup
       mockSingle.mockResolvedValueOnce({
-        data: { userId: "user-1" },
+        data: { user_id: "user-1" },
         error: null,
       });
       // #7: update order status (final .single())
@@ -436,8 +447,8 @@ describe("PaperTradingEngine", () => {
         data: {
           id: "order-1",
           status: "filled",
-          filledQty: 10,
-          filledAvgPrice: 150.15,
+          filled_qty: 10,
+          filled_avg_price: 150.15,
         },
         error: null,
       });
@@ -491,7 +502,7 @@ describe("PaperTradingEngine", () => {
 
     it("should throw on validation failure (insufficient buying power)", async () => {
       mockSingle.mockResolvedValueOnce({
-        data: sampleAccount({ buyingPower: 100 }),
+        data: sampleAccount({ buying_power: 100 }),
         error: null,
       });
 
@@ -703,25 +714,25 @@ describe("PaperTradingEngine", () => {
         {
           id: "o1",
           status: "pending",
-          createdAt: new Date().toISOString(),
-          estimatedValue: 1000,
-          filledQty: 0,
+          created_at: new Date().toISOString(),
+          estimated_value: 1000,
+          filled_qty: 0,
         },
         {
           id: "o2",
           status: "filled",
-          createdAt: new Date().toISOString(),
-          filledAt: new Date().toISOString(),
-          estimatedValue: 2000,
-          filledQty: 10,
-          filledAvgPrice: 200,
+          created_at: new Date().toISOString(),
+          filled_at: new Date().toISOString(),
+          estimated_value: 2000,
+          filled_qty: 10,
+          filled_avg_price: 200,
         },
         {
           id: "o3",
           status: "cancelled",
-          createdAt: new Date().toISOString(),
-          estimatedValue: 500,
-          filledQty: 0,
+          created_at: new Date().toISOString(),
+          estimated_value: 500,
+          filled_qty: 0,
         },
       ];
       setChainResolve(orders, null);
@@ -778,7 +789,7 @@ describe("PaperTradingEngine", () => {
     it("should calculate unrealized P&L", async () => {
       // Override spy to return 160 for this test
       getCurrentPriceSpy.mockResolvedValueOnce(160);
-      setChainResolve([samplePosition({ costBasis: 1500 })], null);
+      setChainResolve([samplePosition({ cost_basis: 1500 })], null);
 
       const result = await engine.getPositions("acct-1");
       // marketValue = 10 * 160 = 1600, unrealizedPL = 1600 - 1500 = 100
@@ -795,7 +806,7 @@ describe("PaperTradingEngine", () => {
     it("should return a position with updated price", async () => {
       // getCurrentPrice spy returns 150 by default
       mockSingle.mockResolvedValueOnce({
-        data: samplePosition({ costBasis: 1500 }),
+        data: samplePosition({ cost_basis: 1500 }),
         error: null,
       });
 
@@ -882,41 +893,41 @@ describe("PaperTradingEngine", () => {
   describe("getPerformance", () => {
     it("should return performance metrics", async () => {
       // getPerformance calls:
-      //   1. getAccount: from().select("*").eq().single()
+      //   1. getAccount-by-id: from().select("*").eq().single()
       //   2. getTrades: from().select("*").eq().order().limit() -> await
-      //   3. calculateMaxDrawdown -> getDailyReturns -> getAccount .single()
-      //   4. calculateSharpeRatio -> getDailyReturns -> getAccount .single()
-      //   5. getDailyReturns -> getAccount .single()
+      //   3. calculateMaxDrawdown -> getDailyReturns -> account .single()
+      //   4. calculateSharpeRatio -> getDailyReturns -> account .single()
+      //   5. getDailyReturns -> account .single()
 
       // #1 getAccount
       mockSingle.mockResolvedValueOnce({
-        data: sampleAccount({ totalValue: 105000 }),
+        data: sampleAccount({ total_value: 105000 }),
         error: null,
       });
 
-      // #2 getTrades - uses the chainable thenable
+      // #2 getTrades - uses the chainable thenable (raw paper_trades rows)
       setChainResolve(
         [
-          { id: "t1", realizedPL: 3000 },
-          { id: "t2", realizedPL: -1000 },
-          { id: "t3", realizedPL: 500 },
+          { id: "t1", realized_pl: 3000 },
+          { id: "t2", realized_pl: -1000 },
+          { id: "t3", realized_pl: 500 },
         ],
         null,
       );
 
-      // #3 getDailyReturns (for maxDrawdown) getAccount
+      // #3 getDailyReturns (for maxDrawdown) account
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 105000 },
+        data: { initial_balance: 100000, total_value: 105000 },
         error: null,
       });
-      // #4 getDailyReturns (for sharpeRatio) getAccount
+      // #4 getDailyReturns (for sharpeRatio) account
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 105000 },
+        data: { initial_balance: 100000, total_value: 105000 },
         error: null,
       });
-      // #5 getDailyReturns (for dailyReturns) getAccount
+      // #5 getDailyReturns (for dailyReturns) account
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 105000 },
+        data: { initial_balance: 100000, total_value: 105000 },
         error: null,
       });
 
@@ -937,15 +948,15 @@ describe("PaperTradingEngine", () => {
       });
       setChainResolve([], null);
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 100000 },
+        data: { initial_balance: 100000, total_value: 100000 },
         error: null,
       });
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 100000 },
+        data: { initial_balance: 100000, total_value: 100000 },
         error: null,
       });
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 100000 },
+        data: { initial_balance: 100000, total_value: 100000 },
         error: null,
       });
 
@@ -968,28 +979,28 @@ describe("PaperTradingEngine", () => {
 
     it("should calculate win rate correctly", async () => {
       mockSingle.mockResolvedValueOnce({
-        data: sampleAccount({ totalValue: 102000 }),
+        data: sampleAccount({ total_value: 102000 }),
         error: null,
       });
       setChainResolve(
         [
-          { id: "t1", realizedPL: 1000 },
-          { id: "t2", realizedPL: -500 },
-          { id: "t3", realizedPL: 1500 },
-          { id: "t4", realizedPL: -200 },
+          { id: "t1", realized_pl: 1000 },
+          { id: "t2", realized_pl: -500 },
+          { id: "t3", realized_pl: 1500 },
+          { id: "t4", realized_pl: -200 },
         ],
         null,
       );
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 102000 },
+        data: { initial_balance: 100000, total_value: 102000 },
         error: null,
       });
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 102000 },
+        data: { initial_balance: 100000, total_value: 102000 },
         error: null,
       });
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 102000 },
+        data: { initial_balance: 100000, total_value: 102000 },
         error: null,
       });
 
@@ -999,26 +1010,26 @@ describe("PaperTradingEngine", () => {
 
     it("should calculate profit factor", async () => {
       mockSingle.mockResolvedValueOnce({
-        data: sampleAccount({ totalValue: 103000 }),
+        data: sampleAccount({ total_value: 103000 }),
         error: null,
       });
       setChainResolve(
         [
-          { id: "t1", realizedPL: 2000 },
-          { id: "t2", realizedPL: -1000 },
+          { id: "t1", realized_pl: 2000 },
+          { id: "t2", realized_pl: -1000 },
         ],
         null,
       );
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 103000 },
+        data: { initial_balance: 100000, total_value: 103000 },
         error: null,
       });
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 103000 },
+        data: { initial_balance: 100000, total_value: 103000 },
         error: null,
       });
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 103000 },
+        data: { initial_balance: 100000, total_value: 103000 },
         error: null,
       });
 
@@ -1028,20 +1039,20 @@ describe("PaperTradingEngine", () => {
 
     it("should return Infinity profit factor when no losses", async () => {
       mockSingle.mockResolvedValueOnce({
-        data: sampleAccount({ totalValue: 101000 }),
+        data: sampleAccount({ total_value: 101000 }),
         error: null,
       });
-      setChainResolve([{ id: "t1", realizedPL: 1000 }], null);
+      setChainResolve([{ id: "t1", realized_pl: 1000 }], null);
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 101000 },
-        error: null,
-      });
-      mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 101000 },
+        data: { initial_balance: 100000, total_value: 101000 },
         error: null,
       });
       mockSingle.mockResolvedValueOnce({
-        data: { initialBalance: 100000, totalValue: 101000 },
+        data: { initial_balance: 100000, total_value: 101000 },
+        error: null,
+      });
+      mockSingle.mockResolvedValueOnce({
+        data: { initial_balance: 100000, total_value: 101000 },
         error: null,
       });
 
@@ -1058,7 +1069,7 @@ describe("PaperTradingEngine", () => {
     it("should fetch price from API", async () => {
       // getCurrentPrice spy is already set up to return 150
       mockSingle.mockResolvedValueOnce({
-        data: samplePosition({ costBasis: 1500 }),
+        data: samplePosition({ cost_basis: 1500 }),
         error: null,
       });
 
@@ -1071,7 +1082,7 @@ describe("PaperTradingEngine", () => {
       // Override spy to simulate fetch failure → fallback price
       getCurrentPriceSpy.mockResolvedValueOnce(105);
       mockSingle.mockResolvedValueOnce({
-        data: samplePosition({ costBasis: 1500 }),
+        data: samplePosition({ cost_basis: 1500 }),
         error: null,
       });
 
@@ -1084,7 +1095,7 @@ describe("PaperTradingEngine", () => {
       // Override spy to simulate no results → fallback price
       getCurrentPriceSpy.mockResolvedValueOnce(120);
       mockSingle.mockResolvedValueOnce({
-        data: samplePosition({ costBasis: 1500 }),
+        data: samplePosition({ cost_basis: 1500 }),
         error: null,
       });
 
@@ -1114,8 +1125,8 @@ describe("PaperTradingEngine", () => {
           quantity: 10,
           type: "limit",
           status: "pending",
-          accountId: "acct-1",
-          filledQty: 0,
+          account_id: "acct-1",
+          filled_qty: 0,
         },
         error: null,
       });
@@ -1129,14 +1140,14 @@ describe("PaperTradingEngine", () => {
         data: null,
         error: { code: "PGRST116", message: "Not found" },
       });
-      // updateAccountBalance getAccount
+      // updateAccountBalance -> getAccountRowById
       mockSingle.mockResolvedValueOnce({
         data: sampleAccount(),
         error: null,
       });
       // getUserIdForAccount
       mockSingle.mockResolvedValueOnce({
-        data: { userId: "user-1" },
+        data: { user_id: "user-1" },
         error: null,
       });
       // update order status
@@ -1144,8 +1155,8 @@ describe("PaperTradingEngine", () => {
         data: {
           id: "order-1",
           status: "filled",
-          filledAvgPrice: 145,
-          filledQty: 10,
+          filled_avg_price: 145,
+          filled_qty: 10,
         },
         error: null,
       });
@@ -1178,8 +1189,8 @@ describe("PaperTradingEngine", () => {
           side: "buy",
           quantity: 10,
           status: "pending",
-          accountId: "acct-1",
-          filledQty: 0,
+          account_id: "acct-1",
+          filled_qty: 0,
         },
         error: null,
       });
@@ -1193,14 +1204,14 @@ describe("PaperTradingEngine", () => {
         data: null,
         error: { code: "PGRST116", message: "Not found" },
       });
-      // updateAccountBalance getAccount
+      // updateAccountBalance -> getAccountRowById
       mockSingle.mockResolvedValueOnce({
         data: sampleAccount(),
         error: null,
       });
       // getUserIdForAccount
       mockSingle.mockResolvedValueOnce({
-        data: { userId: "user-1" },
+        data: { user_id: "user-1" },
         error: null,
       });
       // update order status
@@ -1208,8 +1219,8 @@ describe("PaperTradingEngine", () => {
         data: {
           id: "order-1",
           status: "filled",
-          filledQty: 10,
-          filledAvgPrice: 150,
+          filled_qty: 10,
+          filled_avg_price: 150,
         },
         error: null,
       });

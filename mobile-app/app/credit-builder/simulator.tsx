@@ -1,172 +1,55 @@
 /**
- * Fynvita Score Simulator Screen
- * Scenario selection, impact visualization, combined calculations
+ * Fynvita Score Simulator Screen — de-fabricated (DEFAB-2 / ADR-0009).
+ *
+ * This screen used to fabricate a simulated credit score: a table of invented
+ * per-scenario point impacts (on-time +15, close-card -20, remove-negative +30,
+ * a pay-down slider worth up to +50, etc.) summed into
+ * simulatedScore = clamp(baseScore + Σimpact, 300, 850) and rendered as a
+ * specific "Simulated" number and "+N" per-scenario / total deltas. FICO and
+ * VantageScore impacts are individualized and not precisely predictable, so
+ * presenting invented point outcomes as a prediction is fabrication (FCRA/UDAAP
+ * exposure). The scenario impact table, the simulated-score math, the
+ * score-comparison card, the pay-down slider, and every per-scenario point label
+ * were removed.
+ *
+ * In its place: an honest "estimate unavailable" state (no point numbers, no
+ * guarantee language) and number-free directional education — which habits
+ * generally help vs hurt credit — carrying no per-user promised magnitude. The
+ * per-user estimate is gated on the real-data rebuild (FR-605, ADR-0009 M6-5).
  */
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  lightTheme as theme,
-  getScoreColor,
-  getScoreLabel,
-} from "../../src/constants/theme";
+import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-import { useCreditStore } from "../../src/store/creditStore";
-import Slider from "@react-native-community/slider";
 
-interface Scenario {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  impact: number;
-  enabled: boolean;
-  hasSlider?: boolean;
-  sliderValue?: number;
-  sliderMin?: number;
-  sliderMax?: number;
-  sliderLabel?: string;
-}
+// Number-free directional education: general direction only, never a per-user
+// point magnitude. These are standard credit-education statements, not a
+// prediction about this user's score.
+const HABITS_THAT_HELP: string[] = [
+  "Paying down credit card balances",
+  "Making every payment on time",
+  "Keeping older accounts open",
+  "Applying for new credit only when needed",
+];
 
-const INITIAL_SCENARIOS: Scenario[] = [
-  {
-    id: "pay_balance",
-    title: "Pay Down Credit Card Balance",
-    description: "Reduce your credit utilization",
-    icon: "card",
-    impact: 0,
-    enabled: false,
-    hasSlider: true,
-    sliderValue: 0,
-    sliderMin: 0,
-    sliderMax: 100,
-    sliderLabel: "Pay off %",
-  },
-  {
-    id: "on_time",
-    title: "Make On-Time Payments",
-    description: "Pay all bills on time for 6 months",
-    icon: "calendar-outline",
-    impact: 15,
-    enabled: false,
-  },
-  {
-    id: "new_card",
-    title: "Open New Credit Card",
-    description: "Apply for a new credit card",
-    icon: "add-circle",
-    impact: -5,
-    enabled: false,
-  },
-  {
-    id: "close_card",
-    title: "Close Old Credit Card",
-    description: "Close your oldest credit card",
-    icon: "close-circle",
-    impact: -20,
-    enabled: false,
-  },
-  {
-    id: "increase_limit",
-    title: "Request Credit Limit Increase",
-    description: "Increase limit on existing card",
-    icon: "trending-up",
-    impact: 10,
-    enabled: false,
-  },
-  {
-    id: "authorized_user",
-    title: "Become Authorized User",
-    description: "Get added to someone's card",
-    icon: "people",
-    impact: 25,
-    enabled: false,
-  },
-  {
-    id: "dispute_error",
-    title: "Remove Negative Item",
-    description: "Successfully dispute an error",
-    icon: "trash",
-    impact: 30,
-    enabled: false,
-  },
-  {
-    id: "collection_paid",
-    title: "Pay Off Collection",
-    description: "Pay a collection account",
-    icon: "cash",
-    impact: 5,
-    enabled: false,
-  },
-  {
-    id: "hard_inquiry",
-    title: "New Hard Inquiry",
-    description: "Apply for new credit",
-    icon: "search",
-    impact: -3,
-    enabled: false,
-  },
-  {
-    id: "credit_builder",
-    title: "Open Credit Builder Loan",
-    description: "Start a credit builder loan",
-    icon: "build",
-    impact: 15,
-    enabled: false,
-  },
+const HABITS_THAT_HURT: string[] = [
+  "Missing or making late payments",
+  "Carrying balances close to your limits",
+  "Closing your oldest accounts",
+  "Opening several new accounts at once",
 ];
 
 export default function ScoreSimulatorScreen() {
-  const { currentScore } = useCreditStore();
-  const [scenarios, setScenarios] = useState<Scenario[]>(INITIAL_SCENARIOS);
-  const [simulatedScore, setSimulatedScore] = useState(currentScore ?? 680);
-  const baseScore = currentScore ?? 680;
-
-  useEffect(() => {
-    calculateSimulatedScore();
-  }, [scenarios]);
-
-  const calculateSimulatedScore = () => {
-    let totalImpact = 0;
-    scenarios.forEach((scenario) => {
-      if (scenario.enabled) {
-        if (scenario.hasSlider && scenario.sliderValue) {
-          // Calculate impact based on slider value
-          const maxImpact = scenario.id === "pay_balance" ? 50 : 0;
-          totalImpact += Math.round((scenario.sliderValue / 100) * maxImpact);
-        } else {
-          totalImpact += scenario.impact;
-        }
-      }
-    });
-    setSimulatedScore(Math.min(850, Math.max(300, baseScore + totalImpact)));
-  };
-
-  const toggleScenario = (id: string) => {
-    setScenarios((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s)),
-    );
-  };
-
-  const updateSliderValue = (id: string, value: number) => {
-    setScenarios((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, sliderValue: value } : s)),
-    );
-  };
-
-  const scoreChange = simulatedScore - baseScore;
-  const enabledCount = scenarios.filter((s) => s.enabled).length;
-
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
@@ -182,150 +65,75 @@ export default function ScoreSimulatorScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Score Simulator</Text>
-          <TouchableOpacity onPress={() => setScenarios(INITIAL_SCENARIOS)}>
-            <Text style={styles.resetText}>Reset</Text>
-          </TouchableOpacity>
+          <View style={styles.backButton} />
         </View>
 
-        {/* Score Comparison Card */}
-        <Card style={styles.scoreCard}>
-          <View style={styles.scoreComparison}>
-            <View style={styles.scoreColumn}>
-              <Text style={styles.scoreLabel}>Current</Text>
-              <Text
-                style={[styles.scoreValue, { color: getScoreColor(baseScore) }]}
-              >
-                {baseScore}
-              </Text>
-              <Text style={styles.scoreRating}>{getScoreLabel(baseScore)}</Text>
-            </View>
-            <View style={styles.arrowContainer}>
+        {/* Honest unavailable state — replaces the fabricated simulation */}
+        <View testID="simulator-unavailable">
+          <Card style={styles.noticeCard}>
+            <View style={styles.noticeRow}>
               <Ionicons
-                name="arrow-forward"
-                size={32}
-                color={scoreChange >= 0 ? "#22C55E" : "#EF4444"}
+                name="construct-outline"
+                size={22}
+                color={theme.colors.primary}
               />
-              <Text
-                style={[
-                  styles.changeText,
-                  { color: scoreChange >= 0 ? "#22C55E" : "#EF4444" },
-                ]}
-              >
-                {scoreChange >= 0 ? "+" : ""}
-                {scoreChange}
+              <Text style={styles.noticeTitle}>
+                Score estimates are being updated
               </Text>
             </View>
-            <View style={styles.scoreColumn}>
-              <Text style={styles.scoreLabel}>Simulated</Text>
-              <Text
-                style={[
-                  styles.scoreValue,
-                  { color: getScoreColor(simulatedScore) },
-                ]}
-              >
-                {simulatedScore}
-              </Text>
-              <Text style={styles.scoreRating}>
-                {getScoreLabel(simulatedScore)}
-              </Text>
-            </View>
-          </View>
-          <Text style={styles.scenarioCount}>
-            {enabledCount} scenario{enabledCount !== 1 ? "s" : ""} selected
-          </Text>
-        </Card>
-
-        {/* Scenarios */}
-        <Text style={styles.sectionTitle}>What-If Scenarios</Text>
-        <Text style={styles.sectionSubtitle}>
-          Toggle scenarios to see how they might affect your score
-        </Text>
-
-        {scenarios.map((scenario) => (
-          <Card
-            key={scenario.id}
-            style={[
-              styles.scenarioCard,
-              scenario.enabled && styles.scenarioCardActive,
-            ]}
-          >
-            <View style={styles.scenarioRow}>
-              <View
-                style={[
-                  styles.scenarioIcon,
-                  {
-                    backgroundColor: scenario.enabled
-                      ? `${theme.colors.primary}20`
-                      : theme.colors.border,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={scenario.icon as keyof typeof Ionicons.glyphMap}
-                  size={20}
-                  color={
-                    scenario.enabled
-                      ? theme.colors.primary
-                      : theme.colors.textSecondary
-                  }
-                />
-              </View>
-              <View style={styles.scenarioContent}>
-                <Text style={styles.scenarioTitle}>{scenario.title}</Text>
-                <Text style={styles.scenarioDescription}>
-                  {scenario.description}
-                </Text>
-                {scenario.hasSlider && scenario.enabled && (
-                  <View style={styles.sliderContainer}>
-                    <Slider
-                      style={styles.slider}
-                      minimumValue={scenario.sliderMin || 0}
-                      maximumValue={scenario.sliderMax || 100}
-                      value={scenario.sliderValue || 0}
-                      onValueChange={(value) =>
-                        updateSliderValue(scenario.id, value)
-                      }
-                      minimumTrackTintColor={theme.colors.primary}
-                      maximumTrackTintColor={theme.colors.border}
-                      thumbTintColor={theme.colors.primary}
-                    />
-                    <Text style={styles.sliderValue}>
-                      {Math.round(scenario.sliderValue || 0)}%
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <View style={styles.scenarioRight}>
-                <Text
-                  style={[
-                    styles.impactText,
-                    { color: scenario.impact >= 0 ? "#22C55E" : "#EF4444" },
-                  ]}
-                >
-                  {scenario.hasSlider
-                    ? scenario.sliderValue
-                      ? `+${Math.round((scenario.sliderValue / 100) * 50)}`
-                      : "0"
-                    : scenario.impact >= 0
-                      ? "+"
-                      : ""}
-                  {!scenario.hasSlider && scenario.impact}
-                </Text>
-                <Switch
-                  value={scenario.enabled}
-                  onValueChange={() => toggleScenario(scenario.id)}
-                  trackColor={{
-                    false: theme.colors.border,
-                    true: `${theme.colors.primary}50`,
-                  }}
-                  thumbColor={
-                    scenario.enabled ? theme.colors.primary : "#f4f3f4"
-                  }
-                />
-              </View>
-            </View>
+            <Text style={styles.noticeBody}>
+              We&apos;re rebuilding what-if score estimates to use your own credit
+              data. Until then we can&apos;t show a simulated point change —
+              credit-score impacts are individual and can&apos;t be predicted
+              precisely.
+            </Text>
           </Card>
-        ))}
+        </View>
+
+        {/* Number-free directional education */}
+        <View testID="simulator-education">
+          <View style={styles.eduHeader}>
+            <Ionicons
+              name="trending-up"
+              size={20}
+              color={theme.colors.success}
+            />
+            <Text style={styles.sectionTitle}>What generally helps</Text>
+          </View>
+          {HABITS_THAT_HELP.map((item) => (
+            <View key={item} style={styles.eduRow}>
+              <Ionicons
+                name="checkmark-circle"
+                size={18}
+                color={theme.colors.success}
+              />
+              <Text style={styles.eduText}>{item}</Text>
+            </View>
+          ))}
+
+          <View style={[styles.eduHeader, styles.eduHeaderSpacer]}>
+            <Ionicons
+              name="trending-down"
+              size={20}
+              color={theme.colors.error}
+            />
+            <Text style={styles.sectionTitle}>What generally hurts</Text>
+          </View>
+          {HABITS_THAT_HURT.map((item) => (
+            <View key={item} style={styles.eduRow}>
+              <Ionicons
+                name="alert-circle"
+                size={18}
+                color={theme.colors.error}
+              />
+              <Text style={styles.eduText}>{item}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={styles.disclaimer} testID="simulator-disclaimer">
+          General education only — not a prediction of your credit score.
+        </Text>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -342,73 +150,49 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: theme.spacing.lg,
   },
-  backButton: { padding: 4 },
+  backButton: { padding: 4, width: 32 },
   title: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
-  resetText: { fontSize: 14, color: theme.colors.primary, fontWeight: "500" },
-  scoreCard: { marginBottom: theme.spacing.lg },
-  scoreComparison: {
+  noticeCard: { marginBottom: theme.spacing.lg },
+  noticeRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-around",
+    gap: 10,
+    marginBottom: theme.spacing.sm,
   },
-  scoreColumn: { alignItems: "center" },
-  scoreLabel: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginBottom: 4,
+  noticeTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "700",
+    color: theme.colors.text,
   },
-  scoreValue: { fontSize: 48, fontWeight: "700" },
-  scoreRating: {
+  noticeBody: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    marginTop: 4,
-  },
-  arrowContainer: { alignItems: "center" },
-  changeText: { fontSize: 18, fontWeight: "600", marginTop: 4 },
-  scenarioCount: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    textAlign: "center",
-    marginTop: theme.spacing.md,
+    lineHeight: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
     color: theme.colors.text,
-    marginBottom: 4,
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.md,
-  },
-  scenarioCard: { marginBottom: theme.spacing.sm },
-  scenarioCardActive: { borderColor: theme.colors.primary, borderWidth: 1 },
-  scenarioRow: { flexDirection: "row", alignItems: "flex-start" },
-  scenarioIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
+  eduHeader: {
+    flexDirection: "row",
     alignItems: "center",
-    marginRight: theme.spacing.md,
+    gap: 8,
+    marginBottom: theme.spacing.sm,
   },
-  scenarioContent: { flex: 1 },
-  scenarioTitle: { fontSize: 15, fontWeight: "600", color: theme.colors.text },
-  scenarioDescription: {
-    fontSize: 13,
+  eduHeaderSpacer: { marginTop: theme.spacing.lg },
+  eduRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 6,
+  },
+  eduText: { flex: 1, fontSize: 14, color: theme.colors.text },
+  disclaimer: {
+    fontSize: 12,
     color: theme.colors.textSecondary,
-    marginTop: 2,
+    fontStyle: "italic",
+    marginTop: theme.spacing.lg,
   },
-  sliderContainer: { flexDirection: "row", alignItems: "center", marginTop: 8 },
-  slider: { flex: 1, height: 40 },
-  sliderValue: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: theme.colors.primary,
-    width: 40,
-    textAlign: "right",
-  },
-  scenarioRight: { alignItems: "flex-end" },
-  impactText: { fontSize: 14, fontWeight: "600", marginBottom: 8 },
 });

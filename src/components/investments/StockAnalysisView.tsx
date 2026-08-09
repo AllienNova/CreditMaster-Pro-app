@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { LineChartComponent, ChartContainer } from "@/components/charts";
 import type { ComprehensiveStockAnalysis } from "@/lib/investments/types/stock-analysis.types";
+import { CHART_COLORS } from "@/lib/design-tokens/chart-colors";
 
 interface StockAnalysisViewProps {
   symbol: string;
@@ -154,7 +155,7 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
         <ChartContainer title="Price History" className="h-[350px]">
           <LineChartComponent
             data={generateMockPriceData(quote.price, 30)}
-            lines={[{ dataKey: "price", name: "Price", color: "#3B82F6" }]}
+            lines={[{ dataKey: "price", name: "Price", color: CHART_COLORS.blue }]}
             height={280}
             currency
           />

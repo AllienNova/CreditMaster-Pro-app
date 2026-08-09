@@ -7,7 +7,6 @@ import {
   getCurrentUser,
 } from "../services/supabase";
 import type { User } from "../types";
-import { seedUser } from "../data/dev-seed";
 
 interface AuthState {
   user: User | null;
@@ -41,17 +40,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   initialize: async () => {
     set({ isLoading: true });
 
-    // DEV-ONLY: bypass Supabase auth with a mock user for visual testing
-    if (__DEV__) {
-      set({
-        user: seedUser,
-        isAuthenticated: true,
-        isLoading: false,
-        onboardingCompleted: true,
-      });
-      return;
-    }
-
     try {
       const { user, error } = await getCurrentUser();
       if (error) throw error;
@@ -80,11 +68,22 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ user: null, isAuthenticated: false, isLoading: false });
       }
     } catch (error) {
+      // A missing session is the normal logged-out state on app start, not an
+      // error to surface — otherwise the login screen shows "Auth session
+      // missing!" to a user who simply hasn't signed in yet.
+      const isNoSession =
+        error instanceof Error &&
+        (error.name === "AuthSessionMissingError" ||
+          error.message === "Auth session missing!");
       set({
         user: null,
         isAuthenticated: false,
         isLoading: false,
-        error: error instanceof Error ? error.message : "Failed to initialize",
+        error: isNoSession
+          ? null
+          : error instanceof Error
+            ? error.message
+            : "Failed to initialize",
       });
     }
   },

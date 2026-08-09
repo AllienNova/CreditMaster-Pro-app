@@ -1,35 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
-import { billingProfileStore } from "@/lib/payment/billing-profile-store";
+import { withPermission, type AuthedUser } from "@/lib/auth/api-guard";
+import { subscriptionService } from "@/lib/subscriptions/subscription-service";
+import { stripeService, SUBSCRIPTION_PLANS } from "@/lib/payment/stripe-service";
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "billing:update",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { planId, cancelSubscription } = await request.json() as {
+      planId?: string;
+      cancelSubscription?: boolean;
+    };
+
+    // ── Cancel path ──────────────────────────────────────────────────────────
+    if (cancelSubscription || planId === "free") {
+      const subscription = await subscriptionService.cancelSubscription(user.id);
+      return NextResponse.json({ status: "updated", subscription });
     }
 
-    if (!rbac.hasPermission(validation.user, "billing:update")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // ── Validate planId ──────────────────────────────────────────────────────
+    const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId);
+    if (!plan) {
+      return NextResponse.json(
+        { error: "Invalid plan id" },
+        { status: 400 },
+      );
     }
 
-    const { planId, cancelSubscription } = await request.json();
+    // ── Check for existing subscription ──────────────────────────────────────
+    const existing = await subscriptionService.getUserSubscription(user.id);
 
-    const profile = cancelSubscription
-      ? await billingProfileStore.cancelSubscription(validation.user.id)
-      : await billingProfileStore.updatePlan(validation.user.id, planId);
+    if (existing) {
+      // Change plan on existing Stripe subscription
+      const subscription = await subscriptionService.changeSubscriptionPlan(
+        user.id,
+        plan.priceId,
+      );
+      return NextResponse.json({ status: "updated", subscription });
+    }
 
-    return NextResponse.json({
-      subscription: {
-        planId: profile.currentPlanId,
-        status: profile.status,
-        cancelAtPeriodEnd: profile.cancelAtPeriodEnd,
-        currentPeriodStart: profile.currentPeriodStart,
-        currentPeriodEnd: profile.currentPeriodEnd,
-      },
-      invoices: profile.invoices,
-    });
+    // ── New subscription — redirect to Stripe Checkout ────────────────────────
+    const profile = await subscriptionService.getUserProfile(user.id);
+    if (!profile?.stripeCustomerId) {
+      return NextResponse.json(
+        { error: "No Stripe customer found for this user" },
+        { status: 500 },
+      );
+    }
+
+    const baseUrl = request.nextUrl.origin;
+    const session = await stripeService.createCheckoutSession(
+      plan.priceId,
+      profile.stripeCustomerId,
+      `${baseUrl}/dashboard/billing?success=1`,
+      `${baseUrl}/dashboard/billing?canceled=1`,
+    );
+
+    return NextResponse.json({ status: "redirect", checkoutUrl: session.url });
   } catch (error) {
     console.error("Update plan error:", error);
     return NextResponse.json(
@@ -37,4 +64,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+},
+);

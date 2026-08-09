@@ -9,11 +9,26 @@
  * Phase 2.2: Smart Banking Suite
  */
 
-import { getSupabase } from "@/lib/supabase/client";
+import { logger } from "@/lib/monitoring/logger";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 
-const supabase = getSupabase();
-import { AIMLService } from "@/lib/aiml-service";
-import { ModelRouter } from "@/lib/model-router";
+/**
+ * Everything in this file reads through the service role.
+ *
+ * The anon-keyed getSupabase() singleton carries no session, so auth.uid() is
+ * NULL and every RLS policy of the form (auth.uid() = user_id) matched nothing
+ * — PostgREST returned zero rows with no error, which is indistinguishable
+ * from a user who genuinely has no data.
+ *
+ * The local lazy client and hand-rolled Proxy that used to live here are gone;
+ * the shared helper is itself Proxy-backed, so `supabase` is safe to bind at
+ * module scope. The local version guarded a `let`, and a module-scope caller
+ * above it threw "Cannot access '_savingsGoalsServiceRoleClient' before
+ * initialization".
+ */
+const supabase = getServiceRoleClient();
+const supabaseAdmin = supabase;
+import { getModelRouter, TaskType } from "@/lib/model-router";
 import type {
   SavingsAnalysis,
   RecurringCharge,
@@ -30,10 +45,6 @@ import type { BudgetCategoryValue } from "./types/budget.types";
 // CONFIGURATION
 // ============================================================================
 
-const AI_MODEL =
-  process.env.AIML_DEFAULT_CHAT_MODEL || "anthropic/claude-4.5-sonnet";
-const AI_REASONING_MODEL =
-  process.env.AIML_REASONING_MODEL || "deepseek/deepseek-r1";
 const AI_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 // Recurring charge detection thresholds
@@ -103,21 +114,10 @@ interface RecurringPattern {
 // ============================================================================
 
 export class SavingsOptimizer {
-  private aiService: AIMLService | null = null;
-  private modelRouter: ModelRouter;
   private aiCache: Map<string, { data: unknown; timestamp: number }> =
     new Map();
 
-  constructor() {
-    this.modelRouter = new ModelRouter();
-    try {
-      if (process.env.AIML_API_KEY) {
-        this.aiService = new AIMLService();
-      }
-    } catch (error) {
-      // Savings optimizer warning: AI service not available, using fallback logic
-    }
-  }
+  constructor() {}
 
   /**
    * Analyze spending patterns to identify savings opportunities
@@ -284,8 +284,7 @@ export class SavingsOptimizer {
         };
       });
 
-    // Use AI to classify importance if available
-    if (this.aiService && recurringCharges.length > 0) {
+    if (recurringCharges.length > 0) {
       try {
         await this.classifyRecurringChargeImportance(userId, recurringCharges);
       } catch (error) {
@@ -324,8 +323,7 @@ export class SavingsOptimizer {
       }
     }
 
-    // Use AI for advanced recommendations if available
-    if (this.aiService && recommendations.length > 0) {
+    if (recommendations.length > 0) {
       try {
         await this.enhanceSubscriptionRecommendationsWithAI(
           userId,
@@ -514,20 +512,17 @@ export class SavingsOptimizer {
       });
     }
 
-    // Use AI to generate additional personalized recommendations
-    if (this.aiService) {
-      try {
-        const aiRecommendations =
-          await this.generateAISavingsGoalRecommendations(
-            userId,
-            monthlyIncome,
-            availableMonthlySavings,
-            existingGoals,
-          );
-        recommendations.push(...aiRecommendations);
-      } catch (error) {
-        // Savings optimizer warning: AI goal recommendations failed
-      }
+    try {
+      const aiRecommendations =
+        await this.generateAISavingsGoalRecommendations(
+          userId,
+          monthlyIncome,
+          availableMonthlySavings,
+          existingGoals,
+        );
+      recommendations.push(...aiRecommendations);
+    } catch (error) {
+      // Savings optimizer warning: AI goal recommendations failed
     }
 
     return recommendations.sort((a, b) => a.priority - b.priority);
@@ -865,8 +860,6 @@ export class SavingsOptimizer {
     userId: string,
     recurringCharges: RecurringCharge[],
   ): Promise<void> {
-    if (!this.aiService) return;
-
     const cacheKey = `recurring-importance-${userId}`;
     const cached = this.aiCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < AI_CACHE_TTL) {
@@ -889,8 +882,8 @@ ${recurringCharges.map((c, i) => `${i + 1}. ${c.merchantName} - $${c.amount.toFi
 Return JSON array with format: [{"merchant": "name", "importance": "essential|useful|optional|unnecessary", "reason": "brief explanation"}]`;
 
     try {
-      const response = await this.aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [{ role: "user", content: prompt }],
         { temperature: 0.3 },
       );
@@ -995,8 +988,6 @@ Return JSON array with format: [{"merchant": "name", "importance": "essential|us
     recommendations: SubscriptionRecommendation[],
     subscriptions: RecurringCharge[],
   ): Promise<void> {
-    if (!this.aiService) return;
-
     const prompt = `Analyze these subscriptions and provide enhanced recommendations:
 
 ${subscriptions.map((s, i) => `${i + 1}. ${s.merchantName} - $${s.amount.toFixed(2)}/${s.frequency}`).join("\n")}
@@ -1009,8 +1000,8 @@ For each subscription, suggest:
 Return JSON array with format: [{"merchant": "name", "action": "cancel|downgrade|consolidate|negotiate", "alternatives": [{"name": "alt", "monthlyCost": 0, "savings": 0}], "reason": "explanation"}]`;
 
     try {
-      const response = await this.aiService.chat(
-        AI_REASONING_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [{ role: "user", content: prompt }],
         { temperature: 0.4 },
       );
@@ -1261,10 +1252,6 @@ Return JSON array with format: [{"merchant": "name", "action": "cancel|downgrade
     opportunities: SavingsOpportunity[],
     recurringCharges: RecurringCharge[],
   ): Promise<string[]> {
-    if (!this.aiService) {
-      return this.generateFallbackInsights(summary, opportunities);
-    }
-
     const cacheKey = `savings-insights-${userId}`;
     const cached = this.aiCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < AI_CACHE_TTL) {
@@ -1292,8 +1279,8 @@ Recurring Charges: ${recurringCharges.length} found
 Provide brief, actionable insights (1-2 sentences each).`;
 
     try {
-      const response = await this.aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [{ role: "user", content: prompt }],
         { temperature: 0.5 },
       );
@@ -1347,10 +1334,25 @@ Provide brief, actionable insights (1-2 sentences each).`;
 
   /**
    * Get existing savings goals for user
+   *
+   * `savings_goals` has never existed on the live schema — the real table
+   * is `financial_goals` (verified 2026-07-31; see savings-automation-
+   * service.ts, the reachable writer of this same table, for the full
+   * rename rationale). Uses `supabaseAdmin`: `getServiceRoleClient()` (this class's
+   * file-level client) carries no forwarded JWT, so `auth.uid()` is NULL
+   * and `financial_goals`' `auth.uid() = user_id` RLS policies would filter
+   * out every row — the service already scopes explicitly via
+   * `.eq("user_id", userId)` below, so bypassing RLS does not widen access.
+   *
+   * `progress_percentage`/`projected_completion_date`/`on_track` are not
+   * persisted columns — nothing in this codebase writes them. Computed
+   * in-memory here using the same formula savings-automation-service.ts's
+   * mapGoalFromDb() already uses, rather than adding three always-NULL
+   * columns that no writer would ever populate.
    */
   private async getExistingGoals(userId: string): Promise<SavingsGoal[]> {
-    const { data: goals, error } = await supabase
-      .from("savings_goals")
+    const { data: goals, error } = await supabaseAdmin
+      .from("financial_goals")
       .select("*")
       .eq("user_id", userId)
       .in("status", ["active", "paused"]);
@@ -1360,45 +1362,101 @@ Provide brief, actionable insights (1-2 sentences each).`;
       return [];
     }
 
-    return goals.map((g) => ({
-      id: g.id,
-      userId: g.user_id,
-      name: g.name,
-      category: g.category,
-      status: g.status,
-      targetAmount: g.target_amount,
-      currentAmount: g.current_amount,
-      targetDate: g.target_date ? new Date(g.target_date) : undefined,
-      startDate: new Date(g.start_date),
-      completedAt: g.completed_at ? new Date(g.completed_at) : undefined,
-      autoSaveEnabled: g.auto_save_enabled,
-      linkedRuleIds: g.linked_rule_ids || [],
-      priority: g.priority,
-      progressPercentage: g.progress_percentage,
-      projectedCompletionDate: g.projected_completion_date
-        ? new Date(g.projected_completion_date)
-        : undefined,
-      onTrack: g.on_track,
-      contributions: [],
-      icon: g.icon,
-      color: g.color,
-      notes: g.notes,
-      createdAt: new Date(g.created_at),
-      updatedAt: new Date(g.updated_at),
-    }));
+    const now = new Date();
+
+    return goals.map((g) => {
+      const targetDate = g.target_date ? new Date(g.target_date) : undefined;
+      const startDate = new Date(g.start_date);
+
+      let progressPercentage = 0;
+      let onTrack = true;
+      let projectedCompletionDate: Date | undefined;
+
+      if (g.target_amount > 0) {
+        progressPercentage = Math.min(
+          100,
+          (g.current_amount / g.target_amount) * 100,
+        );
+      }
+
+      if (targetDate && g.current_amount < g.target_amount) {
+        const totalDays =
+          (targetDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        const elapsedDays =
+          (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        const expectedProgress = (elapsedDays / totalDays) * 100;
+        onTrack = progressPercentage >= expectedProgress * 0.9;
+
+        if (g.current_amount > 0 && elapsedDays > 0) {
+          const dailyRate = g.current_amount / elapsedDays;
+          const remainingAmount = g.target_amount - g.current_amount;
+          const daysToComplete = remainingAmount / dailyRate;
+          projectedCompletionDate = new Date(
+            now.getTime() + daysToComplete * 24 * 60 * 60 * 1000,
+          );
+        }
+      }
+
+      return {
+        id: g.id,
+        userId: g.user_id,
+        name: g.name,
+        category: g.category,
+        status: g.status,
+        targetAmount: g.target_amount,
+        currentAmount: g.current_amount,
+        targetDate,
+        startDate,
+        completedAt: g.completed_at ? new Date(g.completed_at) : undefined,
+        autoSaveEnabled: g.auto_save_enabled,
+        linkedRuleIds: g.linked_rule_ids || [],
+        priority: g.priority,
+        progressPercentage: Math.round(progressPercentage * 10) / 10,
+        projectedCompletionDate,
+        onTrack,
+        contributions: [],
+        icon: g.icon,
+        color: g.color,
+        notes: g.notes,
+        createdAt: new Date(g.created_at),
+        updatedAt: new Date(g.updated_at),
+      };
+    });
   }
 
   /**
    * Check if user has high-interest debt
    */
   private async hasHighInterestDebt(userId: string): Promise<boolean> {
+    // `debt_accounts` — NOT `debts` (that table has never existed).
+    // PostgREST resolves an {error} for an unknown table instead of
+    // throwing, so this silently disabled the "Pay Off High-Interest Debt"
+    // recommendation for every user. The active-row filter is `is_active`,
+    // not `status` — `debt_accounts` has no `status` column. Verified
+    // against the live schema 2026-07-31 (see wellness-gate.ts for the
+    // same fix pattern).
     const { data: debts, error } = await supabase
-      .from("debts")
+      .from("debt_accounts")
       .select("interest_rate")
       .eq("user_id", userId)
-      .eq("status", "active");
+      .eq("is_active", true);
 
-    if (error || !debts) {
+    if (error) {
+      // A failed lookup must not silently read as "no high-interest debt" —
+      // that is exactly what hid this bug for every user. Log and fail safe
+      // (no recommendation) rather than throwing: this check runs inline in
+      // generateSavingsGoalRecommendations() without a surrounding
+      // try/catch, and throwing would also take down the emergency-fund and
+      // retirement recommendations generated alongside it.
+      logger.error(
+        "Failed to fetch debt_accounts for high-interest-debt check",
+        new Error(error.message),
+        { userId },
+      );
+      return false;
+    }
+
+    if (!debts) {
       return false;
     }
 
@@ -1414,8 +1472,6 @@ Provide brief, actionable insights (1-2 sentences each).`;
     availableMonthlySavings: number,
     existingGoals: SavingsGoal[],
   ): Promise<SavingsGoalRecommendation[]> {
-    if (!this.aiService) return [];
-
     const prompt = `Based on this financial profile, suggest 2-3 personalized savings goals:
 
 Monthly Income: $${monthlyIncome.toFixed(2)}
@@ -1430,8 +1486,8 @@ Suggest goals that are:
 Return JSON array with format: [{"type": "vacation|major_purchase|education|custom", "title": "Goal Name", "description": "Brief description", "recommendedAmount": 0, "recommendedMonthlyContribution": 0, "priority": 1-5, "reasoning": "Why this goal"}]`;
 
     try {
-      const response = await this.aiService.chat(
-        AI_REASONING_MODEL,
+      const response = await getModelRouter().complete(
+        TaskType.FINANCIAL_ADVICE,
         [{ role: "user", content: prompt }],
         { temperature: 0.5 },
       );

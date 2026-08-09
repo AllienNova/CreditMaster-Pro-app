@@ -1,5 +1,11 @@
 // Student Loan Types
 
+/**
+ * Branded type for SSN values that have been encrypted.
+ * Raw SSN strings must be encrypted via PIIProtectionService before assignment.
+ */
+export type EncryptedSSN = string & { readonly __brand: "EncryptedSSN" };
+
 export interface FederalProgramApplication {
   userId: string;
   programType: "fresh-start" | "rehabilitation" | "consolidation";
@@ -7,7 +13,7 @@ export interface FederalProgramApplication {
   personalInfo: {
     firstName: string;
     lastName: string;
-    ssn: string;
+    ssn: EncryptedSSN;
     dateOfBirth: string;
     email: string;
     phone: string;

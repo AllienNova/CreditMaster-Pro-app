@@ -9,14 +9,32 @@
  */
 
 import Stripe from "stripe";
+import {
+  isWebhookEventProcessed,
+  markWebhookEventProcessed,
+} from "@/lib/payment/webhook-idempotency";
 
-// Initialize Stripe with API key
-const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY || "sk_test_dummy_key_for_build",
-  {
-    apiVersion: "2025-09-30.clover",
+// Initialize Stripe with API key — lazy to allow graceful degradation
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error(
+        "STRIPE_SECRET_KEY is not configured. Payment services unavailable.",
+      );
+    }
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2025-09-30.clover",
+    });
+  }
+  return _stripe;
+}
+// Backwards-compatible alias for existing code that references `stripe` directly
+const stripe = new Proxy({} as Stripe, {
+  get(_, prop) {
+    return (getStripe() as unknown as Record<string | symbol, unknown>)[prop];
   },
-);
+});
 
 export interface SubscriptionPlan {
   id: string;
@@ -316,6 +334,49 @@ class StripePaymentService {
   }
 
   /**
+   * Create a one-time Checkout Session for a credit pack purchase. Stripe
+   * hosts the card form and emits payment_intent.succeeded after capture, at
+   * which point fulfillCreditPurchase grants the credits idempotently.
+   */
+  async createCreditPackCheckoutSession(params: {
+    customerId: string;
+    userId: string;
+    packType: string;
+    credits: number;
+    priceCents: number;
+    successUrl: string;
+    cancelUrl: string;
+  }): Promise<Stripe.Checkout.Session> {
+    return stripe.checkout.sessions.create({
+      customer: params.customerId,
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "usd",
+            unit_amount: params.priceCents,
+            product_data: {
+              name: `Fynvita ${params.credits.toLocaleString()} credits (${params.packType})`,
+            },
+          },
+        },
+      ],
+      payment_intent_data: {
+        metadata: {
+          type: "credit_purchase",
+          userId: params.userId,
+          packType: params.packType,
+          credits: String(params.credits),
+        },
+      },
+      success_url: params.successUrl,
+      cancel_url: params.cancelUrl,
+    });
+  }
+
+  /**
    * Create a billing portal session
    */
   async createBillingPortalSession(
@@ -448,9 +509,22 @@ class StripePaymentService {
   }
 
   /**
-   * Handle webhook event
+   * Handle webhook event — claim-after-success idempotency (FND-022).
+   *
+   * Sequence:
+   *   1. Check sentinel: if already processed → return (no-op; route returns 200).
+   *   2. Dispatch to the appropriate handler.
+   *   3. On success → mark sentinel (Stripe will not retry).
+   *   4. On handler throw → sentinel is NOT marked → route returns 400 → Stripe retries.
+   *
+   * Both isWebhookEventProcessed and markWebhookEventProcessed throw on RPC
+   * error — those throws propagate here so the route returns 400 and Stripe retries.
    */
   async handleWebhookEvent(event: Stripe.Event): Promise<void> {
+    if (await isWebhookEventProcessed("stripe", event.id)) {
+      return;
+    }
+
     switch (event.type) {
       case "customer.subscription.created":
         await this.handleSubscriptionCreated(
@@ -468,11 +542,15 @@ class StripePaymentService {
         );
         break;
       case "invoice.paid":
-        await this.handleInvoicePaid(event.data.object as Stripe.Invoice);
+        await this.handleInvoicePaid(
+          event.data.object as Stripe.Invoice,
+          event.id,
+        );
         break;
       case "invoice.payment_failed":
         await this.handleInvoicePaymentFailed(
           event.data.object as Stripe.Invoice,
+          event.id,
         );
         break;
       case "payment_intent.succeeded":
@@ -483,11 +561,22 @@ class StripePaymentService {
       case "payment_intent.payment_failed":
         await this.handlePaymentIntentFailed(
           event.data.object as Stripe.PaymentIntent,
+          event.id,
+        );
+        break;
+      case "checkout.session.completed":
+        await this.handleCheckoutSessionCompleted(
+          event.data.object as Stripe.Checkout.Session,
+          event.id,
         );
         break;
       default:
-      // Stripe: Unhandled event type
+        // Unhandled event type — return WITHOUT marking the sentinel, so a handler
+        // added later can still process a manual Stripe replay of this event.
+        return;
     }
+
+    await markWebhookEventProcessed("stripe", event.id);
   }
 
   // Webhook handlers
@@ -519,7 +608,10 @@ class StripePaymentService {
     await subscriptionService.handleSubscriptionDeleted(subscription);
   }
 
-  private async handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
+  private async handleInvoicePaid(
+    invoice: Stripe.Invoice,
+    eventId: string,
+  ): Promise<void> {
     // Stripe: Invoice paid
 
     // Get customer email for notification
@@ -528,38 +620,165 @@ class StripePaymentService {
         ? invoice.customer
         : invoice.customer?.id;
 
-    if (customerId) {
-      try {
-        const customer = await this.getCustomer(customerId);
+    if (!customerId) {
+      const { logger } = await import("../monitoring/logger");
+      logger.warn("invoice.paid: no customerId on invoice, skipping", {
+        invoiceId: invoice.id,
+        eventId,
+      });
+      return;
+    }
+
+    try {
+      const customer = await this.getCustomer(customerId);
+      const { logger } = await import("../monitoring/logger");
+
+      // Log successful payment for analytics
+      logger.info("Payment successful", {
+        invoiceId: invoice.id,
+        customerId,
+        amount: invoice.amount_paid,
+        currency: invoice.currency,
+      });
+
+      // ── Idempotency ordering: DB work FIRST, email LAST ───────────────────
+      // If the credit reset throws, Stripe retries this handler. The reset RPC
+      // is idempotent (same period → no-op), so re-running it is safe. The
+      // email is sent LAST so a retry after a failed reset does not re-send to
+      // the customer — the reset runs again (harmlessly) and only then the email
+      // is sent. Do not move the email above the credit reset.
+      // ─────────────────────────────────────────────────────────────────────
+
+      const { supabaseAdmin } = await import("../supabase/server");
+      // The checked-in Database types are a stale subset that omits most
+      // tables (see docs/qa/SYSTEMATIC-REVIEW-SYNTHESIS.md — regenerating them
+      // is its own slice, currently 61 tsc errors across 15 files). Reusing the
+      // one existing cast here rather than introducing a second one.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      // Resolved from the subscription record below when this invoice belongs
+      // to a subscription. A one-off invoice leaves both null — the payment is
+      // still recorded, just unattributed.
+      let resolvedUserId: string | null = null;
+      let resolvedSubId: string | null = null;
+
+      // Reset monthly credit allowance on subscription renewal
+      const subDetails = invoice.parent?.subscription_details;
+      if (subDetails?.subscription) {
+        const stripeSubId =
+          typeof subDetails.subscription === "string"
+            ? subDetails.subscription
+            : subDetails.subscription.id;
+        resolvedSubId = stripeSubId;
+
+        // Look up the user from the subscription record
+        const { data: subRecord } = await db
+          .from("subscriptions")
+          .select("user_id, stripe_price_id")
+          .eq("stripe_subscription_id", stripeSubId)
+          .single();
+
+        if (subRecord) {
+          resolvedUserId = subRecord.user_id ?? null;
+          const { resetCreditsForTier } =
+            await import("../credits/credit-reset");
+
+          // Determine tier from price ID
+          const plan = SUBSCRIPTION_PLANS.find(
+            (p) => p.priceId === subRecord.stripe_price_id,
+          );
+          if (!plan) {
+            logger.warn(
+              "invoice.paid: no plan for stripe_price_id, defaulting tier to free",
+              {
+                stripePriceId: subRecord.stripe_price_id,
+                userId: subRecord.user_id,
+                eventId,
+              },
+            );
+          }
+          const tier = plan?.id ?? "free";
+
+          await resetCreditsForTier(subRecord.user_id, tier);
+        }
+      }
+
+      // ── Revenue ledger ───────────────────────────────────────────────────
+      // Record the payment. Before this existed, NOTHING in the codebase wrote
+      // a financial record for a paid invoice — this handler touched only
+      // `subscriptions`, so /api/admin/metrics reported $0 revenue forever.
+      //
+      // amount_paid is ALREADY in minor units; it is stored verbatim with no
+      // arithmetic. Two dollar/cent unit bugs have already shipped on live
+      // money paths here (FND-024, B1) — do not "convert" this.
+      //
+      // Idempotent on stripe_invoice_id: this handler rethrows so Stripe
+      // retries, and a retry must not book the same invoice as revenue twice.
+      //
+      // Table renamed from `payments` in 20260801000000 (ADR-0011). `payments`
+      // now means a provider-agnostic payment attempt owned by payment-router;
+      // this ledger holds settled Stripe INVOICES, which is a different entity.
+      const { error: ledgerError } = await db
+        .from("subscription_invoices")
+        .upsert(
+          {
+            user_id: resolvedUserId,
+            stripe_invoice_id: invoice.id,
+            stripe_event_id: eventId,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: resolvedSubId,
+            amount_cents: invoice.amount_paid,
+            currency: invoice.currency,
+            status: "paid",
+            paid_at: new Date(
+              (invoice.status_transitions?.paid_at ??
+                Math.floor(Date.now() / 1000)) * 1000,
+            ).toISOString(),
+          },
+          { onConflict: "stripe_invoice_id", ignoreDuplicates: true },
+        );
+
+      if (ledgerError) {
+        // Stripe took the customer's money. Failing to record it is a lost
+        // financial record, not a cosmetic issue — throw so this returns non-2xx
+        // and Stripe redelivers.
+        throw new Error(
+          `Failed to record payment in revenue ledger (payments) for invoice ${invoice.id}: ${ledgerError.message}`,
+        );
+      }
+
+      // Send payment confirmation email — always last so a retry after a
+      // transient DB failure re-runs the idempotent reset without re-sending.
+      if (customer.email) {
         const { notificationService } =
           await import("../notifications/notification-service");
-
-        // Send payment confirmation email
-        if (customer.email) {
-          await notificationService.sendPaymentSuccessEmail(
-            customer.email,
-            customer.name || "Customer",
-            invoice.amount_paid ? invoice.amount_paid / 100 : 0,
-            invoice.id,
-          );
-        }
-
-        // Log successful payment for analytics
-        const { logger } = await import("../monitoring/logger");
-        logger.info("Payment successful", {
+        await notificationService.sendPaymentSuccessEmail(
+          customer.email,
+          customer.name || "Customer",
+          invoice.amount_paid ? invoice.amount_paid / 100 : 0,
+          invoice.id,
+        );
+      }
+    } catch (error) {
+      const { logger } = await import("../monitoring/logger");
+      logger.error(
+        "Failed to process invoice.paid event",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          eventId,
           invoiceId: invoice.id,
           customerId,
-          amount: invoice.amount_paid,
-          currency: invoice.currency,
-        });
-      } catch (error) {
-        // Stripe error: Failed to process invoice paid event
-      }
+          eventType: "invoice.paid",
+        },
+      );
+      throw error;
     }
   }
 
   private async handleInvoicePaymentFailed(
     invoice: Stripe.Invoice,
+    eventId: string,
   ): Promise<void> {
     // Stripe: Invoice payment failed
 
@@ -569,32 +788,53 @@ class StripePaymentService {
         ? invoice.customer
         : invoice.customer?.id;
 
-    if (customerId) {
-      try {
-        const customer = await this.getCustomer(customerId);
+    if (!customerId) {
+      const { logger } = await import("../monitoring/logger");
+      logger.warn(
+        "invoice.payment_failed: no customerId on invoice, skipping",
+        {
+          invoiceId: invoice.id,
+          eventId,
+        },
+      );
+      return;
+    }
+
+    try {
+      const customer = await this.getCustomer(customerId);
+      const { logger } = await import("../monitoring/logger");
+
+      // Log payment failure for monitoring
+      logger.warn("Payment failed", {
+        invoiceId: invoice.id,
+        customerId,
+        amount: invoice.amount_due,
+        currency: invoice.currency,
+      });
+
+      // Send payment failure email
+      if (customer.email) {
         const { notificationService } =
           await import("../notifications/notification-service");
-
-        // Send payment failure email
-        if (customer.email) {
-          await notificationService.sendPaymentFailedEmail(
-            customer.email,
-            invoice.amount_due ? invoice.amount_due / 100 : 0,
-            `Invoice ${invoice.id} payment failed. Please update your payment method.`,
-          );
-        }
-
-        // Log payment failure for monitoring
-        const { logger } = await import("../monitoring/logger");
-        logger.warn("Payment failed", {
+        await notificationService.sendPaymentFailedEmail(
+          customer.email,
+          invoice.amount_due ? invoice.amount_due / 100 : 0,
+          `Invoice ${invoice.id} payment failed. Please update your payment method.`,
+        );
+      }
+    } catch (error) {
+      const { logger } = await import("../monitoring/logger");
+      logger.error(
+        "Failed to process invoice.payment_failed event",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          eventId,
           invoiceId: invoice.id,
           customerId,
-          amount: invoice.amount_due,
-          currency: invoice.currency,
-        });
-      } catch (error) {
-        // Stripe error: Failed to process invoice payment failed event
-      }
+          eventType: "invoice.payment_failed",
+        },
+      );
+      throw error;
     }
   }
 
@@ -603,7 +843,6 @@ class StripePaymentService {
   ): Promise<void> {
     // Stripe: Payment intent succeeded
 
-    // Log successful payment for analytics
     try {
       const { logger } = await import("../monitoring/logger");
       logger.info("Payment intent succeeded", {
@@ -615,36 +854,145 @@ class StripePaymentService {
             ? paymentIntent.customer
             : paymentIntent.customer?.id,
       });
+
+      // Handle credit purchase fulfillment. Errors propagate so the webhook
+      // route returns non-2xx and Stripe retries — the underlying RPC is
+      // idempotent, so retries are safe.
+      if (paymentIntent.metadata?.type === "credit_purchase") {
+        await this.fulfillCreditPurchase(paymentIntent);
+      }
     } catch (error) {
-      // Stripe error: Failed to log payment intent success
+      const { logger } = await import("../monitoring/logger");
+      logger.error(
+        "Failed to process payment intent success",
+        error instanceof Error ? error : new Error(String(error)),
+        { paymentIntentId: paymentIntent.id },
+      );
+      throw error;
     }
+  }
+
+  /**
+   * Fulfill a credit pack purchase. The underlying add_credits RPC is atomic:
+   * the credit_purchases sentinel insert and the user_credits update happen in
+   * the same Postgres transaction. A duplicate Stripe delivery is detected
+   * inside the RPC by stripe_payment_intent_id and short-circuits cleanly,
+   * returning already_fulfilled=true with no double-grant and no stranded row.
+   */
+  private async fulfillCreditPurchase(
+    paymentIntent: Stripe.PaymentIntent,
+  ): Promise<void> {
+    const { creditService } = await import("../credits/credit-service");
+    const { logger } = await import("../monitoring/logger");
+
+    const userId = paymentIntent.metadata.userId;
+    const credits = parseInt(paymentIntent.metadata.credits, 10);
+    const packType = paymentIntent.metadata.packType;
+
+    if (
+      !userId ||
+      !packType ||
+      !Number.isFinite(credits) ||
+      credits <= 0 ||
+      paymentIntent.amount <= 0
+    ) {
+      logger.warn("Credit purchase webhook missing required metadata", {
+        paymentIntentId: paymentIntent.id,
+        userId,
+        credits,
+        packType,
+        amount: paymentIntent.amount,
+      });
+      return;
+    }
+
+    const result = await creditService.addCredits(
+      userId,
+      credits,
+      "credit_purchase",
+      {
+        paymentIntentId: paymentIntent.id,
+        packType,
+        amountCents: paymentIntent.amount,
+      },
+      {
+        paymentIntentId: paymentIntent.id,
+        packType,
+        amountPaidCents: paymentIntent.amount,
+      },
+    );
+
+    if (result.alreadyFulfilled) {
+      logger.info("Credit purchase webhook duplicate suppressed", {
+        paymentIntentId: paymentIntent.id,
+        userId,
+      });
+      return;
+    }
+
+    logger.info("Credit purchase fulfilled", {
+      paymentIntentId: paymentIntent.id,
+      userId,
+      credits,
+      packType,
+    });
   }
 
   private async handlePaymentIntentFailed(
     paymentIntent: Stripe.PaymentIntent,
+    eventId: string,
   ): Promise<void> {
-    // Stripe: Payment intent failed
+    // Stripe: payment_intent.payment_failed. Pure logging — no retryable side-effect.
+    // The logger call is unguarded: a transient logging outage propagates and Stripe
+    // retries. The failed payment itself is permanent and must NOT throw (retry storm).
+    const { logger } = await import("../monitoring/logger");
+    logger.error("Payment intent failed", new Error("Payment intent failed"), {
+      eventId,
+      paymentIntentId: paymentIntent.id,
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency,
+      customerId:
+        typeof paymentIntent.customer === "string"
+          ? paymentIntent.customer
+          : paymentIntent.customer?.id,
+      lastPaymentError: paymentIntent.last_payment_error?.message,
+    });
+  }
 
-    // Log payment failure for monitoring and alerting
-    try {
-      const { logger } = await import("../monitoring/logger");
-      logger.error(
-        "Payment intent failed",
-        new Error("Payment intent failed"),
-        {
-          paymentIntentId: paymentIntent.id,
-          amount: paymentIntent.amount,
-          currency: paymentIntent.currency,
-          customerId:
-            typeof paymentIntent.customer === "string"
-              ? paymentIntent.customer
-              : paymentIntent.customer?.id,
-          lastPaymentError: paymentIntent.last_payment_error?.message,
-        },
-      );
-    } catch (error) {
-      // Stripe error: Failed to log payment intent failure
-    }
+  /**
+   * Handle checkout.session.completed.
+   *
+   * A completed checkout session signals that a customer has finished the
+   * Stripe-hosted payment flow. For subscription mode sessions the subscription
+   * is already created via customer.subscription.created; this handler records
+   * the completion event with structured context for audit and observability.
+   *
+   * Errors propagate — the caller (handleWebhookEvent) will NOT mark the
+   * sentinel, so the route returns 400 and Stripe retries.
+   */
+  private async handleCheckoutSessionCompleted(
+    session: Stripe.Checkout.Session,
+    eventId: string,
+  ): Promise<void> {
+    const { logger } = await import("../monitoring/logger");
+
+    const customerId =
+      typeof session.customer === "string"
+        ? session.customer
+        : (session.customer?.id ?? null);
+
+    const subscriptionId =
+      typeof session.subscription === "string"
+        ? session.subscription
+        : (session.subscription?.id ?? null);
+
+    logger.info("checkout.session.completed", {
+      eventId,
+      sessionId: session.id,
+      customerId,
+      subscriptionId,
+      mode: session.mode,
+    });
   }
 
   /**

@@ -1,0 +1,224 @@
+# Strativion Example: Blow-Up Postmortems
+# Detailed forensic analysis of catastrophic trading failures
+# Every blow-up violated specific laws from "The 30 Indisputable Laws of Trading"
+
+postmortems:
+  - name: "Archegos Capital Management"
+    principal: "Bill Hwang"
+    type: "Family Office"
+    peak_exposure: "$30B+ notional (from ~$10B capital)"
+    total_losses: "$20B+ (Hwang) + $10B+ (prime brokers)"
+    date_range: "January 2021 - March 2021"
+
+    timeline:
+      - date: "2020-2021"
+        event: "Hwang builds massive concentrated positions via total return swaps"
+        detail: "Positions in ViacomCBS (VIAC), Discovery (DISCA), Baidu (BIDU), Tencent Music (TME), GSX Techedu through multiple prime brokers. Each broker saw only their portion."
+
+      - date: "2021-01 to 2021-03"
+        event: "Positions grow to $30B+ notional on ~$10B capital"
+        detail: "Leverage approximately 3:1 to 5:1 depending on the broker. Concentrated in 6-8 names."
+
+      - date: "2021-03-22"
+        event: "ViacomCBS announces $3B stock offering"
+        detail: "VIAC had rallied from $37 to $100 in 3 months. The dilutive offering triggered selling."
+
+      - date: "2021-03-23"
+        event: "VIAC drops 9%. Discovery drops 5%."
+        detail: "Margin calls begin. Archegos cannot meet them across multiple brokers simultaneously."
+
+      - date: "2021-03-24"
+        event: "Goldman Sachs and Morgan Stanley begin liquidating collateral"
+        detail: "Goldman moved first, selling $6.6B in block trades before market open on March 26."
+
+      - date: "2021-03-26"
+        event: "Block trade massacre"
+        detail: "Goldman sold $6.6B of VIAC, DISCA, Baidu, TME. Morgan Stanley sold $5B. Prices collapsed. VIAC fell from $85 to $48 in one week."
+
+      - date: "2021-03-29"
+        event: "Credit Suisse and Nomura report massive losses"
+        detail: "Credit Suisse: $5.5B loss. Nomura: $2.9B loss. They moved too slowly to liquidate."
+
+      - date: "2022-04-27"
+        event: "Bill Hwang indicted on fraud and market manipulation charges"
+
+    positions_at_collapse:
+      - {ticker: "VIAC", exposure: "$10B+", decline: "52% in one week"}
+      - {ticker: "DISCA", exposure: "$5B+", decline: "47% in one week"}
+      - {ticker: "BIDU", exposure: "$3B+", decline: "20% in one week"}
+      - {ticker: "TME", exposure: "$2B+", decline: "35% in one week"}
+      - {ticker: "GSX", exposure: "$2B+", decline: "50% in one week"}
+
+    laws_violated:
+      - law: 21
+        name: "Position Sizing"
+        detail: "$30B notional on $10B capital. No single position should exceed 10% of account. Hwang had 100%+ of capital in single names."
+      - law: 24
+        name: "Systemic Correlation"
+        detail: "All positions were high-beta growth stocks. During stress, correlations spiked to 1.0. Six positions became one bet."
+      - law: 29
+        name: "Probability of Ruin"
+        detail: "3-5x leverage on concentrated positions. A 20% adverse move (routine in these stocks) guaranteed ruin."
+      - law: 22
+        name: "Invalidation"
+        detail: "No apparent stop-loss discipline. Positions held through cascading margin calls. The thesis was wrong and the position was not exited."
+      - law: 4
+        name: "Liquidity Gravity"
+        detail: "Positions were too large relative to daily volume. Liquidation itself moved markets 20-50%."
+
+    key_lesson: >
+      Leverage + concentration + no stops = guaranteed blow-up.
+      The mechanism was total return swaps across multiple banks,
+      hiding the true size of exposure. Each bank saw only its piece.
+      The aggregate was lethal.
+
+  - name: "OptionSellers.com (James Cordier)"
+    principal: "James Cordier"
+    type: "Commodity Options Fund"
+    peak_aum: "$150M"
+    total_losses: "$150M (100% of client assets)"
+    date_range: "November 2018"
+
+    timeline:
+      - date: "2018 (all year)"
+        event: "Fund sells naked options on natural gas futures"
+        detail: "Strategy: sell far out-of-the-money naked calls on natural gas. Collect premium. Repeat. Worked for years."
+
+      - date: "2018-11-01"
+        event: "Natural gas begins sharp rally"
+        detail: "NG futures rose from $3.20 to $3.60 in first week of November. Cold weather forecasts drove buying."
+
+      - date: "2018-11-07"
+        event: "NG spikes to $3.90"
+        detail: "Naked call positions move deep into the money. Margin calls begin."
+
+      - date: "2018-11-14"
+        event: "NG reaches $4.84. Fund destroyed."
+        detail: "A 51% rally in 14 days. Naked calls with $3.50-$4.00 strikes were deep in the money. Losses exceeded all capital."
+
+      - date: "2018-11-15"
+        event: "James Cordier posts tearful video to clients"
+        detail: "Explains that the entire fund has been wiped out. All $150M in client assets gone."
+
+    positions_at_collapse:
+      - instrument: "Natural Gas Naked Calls"
+        strikes: "$3.50-$4.00"
+        ng_price_at_entry: "~$3.00-$3.20"
+        ng_price_at_collapse: "$4.84"
+        loss: "100% of fund capital"
+
+    laws_violated:
+      - law: 7
+        name: "Fat Tails"
+        detail: "Natural gas is one of the most volatile commodities. 50%+ moves in a month are not unusual. The strategy assumed normal distribution. Reality follows power law."
+      - law: 29
+        name: "Probability of Ruin"
+        detail: "Naked options have unlimited risk. A single adverse move can exceed all capital. It is mathematically certain on a long enough timeline."
+      - law: 23
+        name: "Asymmetric Damage"
+        detail: "Collecting $0.10 in premium while risking $5.00+ in potential loss. The asymmetry is catastrophically unfavorable."
+      - law: 21
+        name: "Position Sizing"
+        detail: "Position sizes were not scaled for the risk of unlimited loss. Entire fund was one bet."
+      - law: 8
+        name: "Market Regimes"
+        detail: "Strategy worked in calm regimes. Destroyed in volatile regimes. No regime filter was applied."
+
+    key_lesson: >
+      Naked options selling is the fifth deadly sin of options trading (Chapter 35).
+      Defined risk is not optional. The premium looks attractive precisely because
+      the risk is enormous. Small consistent wins followed by total destruction
+      is the mathematical signature of selling naked options without risk management.
+
+  - name: "Three Arrows Capital (3AC)"
+    principals: ["Su Zhu", "Kyle Davies"]
+    type: "Crypto Hedge Fund"
+    peak_aum: "$3.5B"
+    total_losses: "$3.5B+ (plus cascading losses across crypto ecosystem)"
+    date_range: "May 2022 - June 2022"
+
+    timeline:
+      - date: "2021"
+        event: "3AC grows to $3.5B through leveraged crypto bets"
+        detail: "Borrowed from BlockFi, Celsius, Voyager, Genesis, and others. Used borrowed funds to make directional bets."
+
+      - date: "2022-01 to 2022-04"
+        event: "Crypto market declines. 3AC doubles down."
+        detail: "BTC fell from $47K to $38K. 3AC increased positions, borrowed more. Believed in 'crypto supercycle.'"
+
+      - date: "2022-05-07"
+        event: "Terra/Luna collapse begins"
+        detail: "3AC held massive Luna position (reportedly $559M at peak). Luna crashed from $80 to $0.00001 in 6 days."
+
+      - date: "2022-05-13"
+        event: "Luna position worth zero"
+        detail: "$559M position evaporated. UST stablecoin peg broke. $40B+ ecosystem destroyed."
+
+      - date: "2022-05-14 to 2022-06-10"
+        event: "BTC continues falling from $29K to $26K. Margin calls cascade."
+        detail: "3AC cannot meet margin calls from multiple lenders. Begins defaulting on loans."
+
+      - date: "2022-06-14"
+        event: "BTC crashes to $20K. 3AC effectively insolvent."
+        detail: "Celsius halts withdrawals (Jun 12). Voyager issues 3AC notice of default for $650M."
+
+      - date: "2022-06-27"
+        event: "3AC ordered into liquidation by British Virgin Islands court"
+
+      - date: "2022-07"
+        event: "Contagion spreads"
+        detail: "BlockFi: emergency Ftx bailout. Celsius: bankruptcy Jul 13. Voyager: bankruptcy Jul 5."
+
+    positions_at_collapse:
+      - {asset: "Luna/UST", peak_value: "$559M", final_value: "$0"}
+      - {asset: "BTC (leveraged)", estimated_exposure: "$2B+"}
+      - {asset: "GBTC (Grayscale)", estimated_position: "$500M+", discount_to_nav: "30%+"}
+      - {asset: "stETH", position: "large", issue: "illiquid, trading at discount to ETH"}
+
+    counterparty_losses:
+      - {lender: "Voyager Digital", loss: "$650M", outcome: "Bankruptcy Jul 5 2022"}
+      - {lender: "Celsius Network", exposure: "undisclosed", outcome: "Bankruptcy Jul 13 2022"}
+      - {lender: "BlockFi", exposure: "$1B+", outcome: "Bankruptcy Nov 2022"}
+      - {lender: "Genesis Trading", exposure: "$2.4B", outcome: "Bankruptcy Jan 2023"}
+
+    laws_violated:
+      - law: 24
+        name: "Systemic Correlation"
+        detail: "Every position was crypto. During the crash, correlations went to 1.0. BTC, ETH, Luna, stETH, GBTC all fell simultaneously. Zero diversification."
+      - law: 29
+        name: "Probability of Ruin"
+        detail: "Borrowed from multiple lenders to make leveraged directional bets. Total leverage estimated at 3-5x. In a market with 50%+ annual drawdowns, ruin was inevitable."
+      - law: 7
+        name: "Fat Tails"
+        detail: "Luna went to zero. A 100% loss on a $559M position. The fund's models did not account for complete asset destruction."
+      - law: 30
+        name: "Survival"
+        detail: "The meta-law. 3AC prioritized maximum return over survival. Position sizing, diversification, and risk management were subordinated to the 'supercycle' thesis."
+      - law: 2
+        name: "Feedback Loops"
+        detail: "3AC's collapse triggered a negative feedback loop across the entire crypto lending ecosystem. Their defaults caused lender defaults, which caused more liquidations, which crashed prices further."
+      - law: 22
+        name: "Invalidation"
+        detail: "When Luna broke its peg, that was the invalidation signal. 3AC held. When BTC broke $30K, that was another invalidation. 3AC borrowed more."
+
+    key_lesson: >
+      Concentration + leverage + no stops + counterparty web = systemic destruction.
+      3AC did not just destroy itself. It destroyed an entire ecosystem of lenders and
+      platforms that trusted it. The hidden leverage and interconnected borrowing
+      created systemic risk that no single participant understood until it was too late.
+      Law 24 (Systemic Correlation) in its most devastating form.
+
+meta:
+  common_patterns:
+    - "All three used excessive leverage (3-5x minimum)"
+    - "All three had concentrated positions (no meaningful diversification)"
+    - "All three lacked hard stop-losses or invalidation discipline"
+    - "All three operated in regimes where their strategy worked until it catastrophically failed"
+    - "All three triggered contagion: Archegos hit prime brokers, OptionSellers destroyed client wealth, 3AC collapsed the crypto lending ecosystem"
+
+  laws_most_frequently_violated: [21, 24, 29, 7, 22]
+
+  the_universal_formula_for_blow_ups: >
+    Blow-Up = Leverage x Concentration x No Stops x Regime Blindness.
+    Remove any one of these four factors and the blow-up is survivable.
+    Combine all four and destruction is mathematically certain.

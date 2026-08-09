@@ -36,6 +36,8 @@ import { createClient } from "@/lib/supabase/server";
 export class PortfolioAnalytics {
   private readonly CACHE_TTL = 1800; // 30 minutes
 
+  constructor(private readonly userId: string) {}
+
   /**
    * Calculate comprehensive risk metrics using Modern Portfolio Theory
    */
@@ -49,12 +51,12 @@ export class PortfolioAnalytics {
     if (cached) return cached;
 
     // Get portfolio holdings
-    const portfolio = await portfolioService.getPortfolio(portfolioId);
+    const portfolio = await portfolioService.getPortfolio(portfolioId, this.userId);
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
     }
 
-    const holdings = await portfolioService.getHoldings(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     if (holdings.length === 0) {
       throw new Error(`Portfolio ${portfolioId} has no holdings`);
     }
@@ -109,16 +111,25 @@ export class PortfolioAnalytics {
       portfolioReturns.reduce((acc, r) => acc * (1 + r), 1) - 1;
     const annualizedReturn = Math.pow(1 + totalReturn, 252 / days) - 1;
 
-    // Calculate risk-adjusted return metrics
+    // Calculate risk-adjusted return metrics — null when denominator is 0 (mathematically undefined)
     const sharpeRatio =
-      (annualizedReturn - riskFreeRate) / annualizedVolatility;
+      annualizedVolatility === 0 || !Number.isFinite(annualizedVolatility)
+        ? null
+        : (annualizedReturn - riskFreeRate) / annualizedVolatility;
+    const sortinoRatioDenom = downsideDeviation * Math.sqrt(252);
     const sortinoRatio =
-      (annualizedReturn - riskFreeRate) / (downsideDeviation * Math.sqrt(252));
+      sortinoRatioDenom === 0 || !Number.isFinite(sortinoRatioDenom)
+        ? null
+        : (annualizedReturn - riskFreeRate) / sortinoRatioDenom;
 
     // Calculate drawdowns
     const { maxDrawdown, currentDrawdown, averageDrawdown } =
       this.calculateDrawdowns(portfolioReturns);
-    const calmarRatio = annualizedReturn / Math.abs(maxDrawdown);
+    const absMaxDrawdown = Math.abs(maxDrawdown);
+    const calmarRatio =
+      absMaxDrawdown === 0 || !Number.isFinite(absMaxDrawdown)
+        ? null
+        : annualizedReturn / absMaxDrawdown;
 
     // Calculate beta and alpha vs benchmark
     const { beta, alpha, rSquared } = this.calculateBetaAlpha(
@@ -132,7 +143,12 @@ export class PortfolioAnalytics {
       portfolioReturns,
       benchmarkReturns,
     );
-    const informationRatio = alpha / trackingError;
+    const informationRatio =
+      alpha === null ||
+      trackingError === 0 ||
+      !Number.isFinite(trackingError)
+        ? null
+        : alpha / trackingError;
 
     const riskMetrics: RiskMetrics = {
       portfolioId,
@@ -186,7 +202,7 @@ export class PortfolioAnalytics {
     const cached = await redisCache.get<DiversificationScore>(cacheKey);
     if (cached) return cached;
 
-    const holdings = await portfolioService.getHoldings(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     if (holdings.length === 0) {
       throw new Error(`Portfolio ${portfolioId} has no holdings`);
     }
@@ -220,8 +236,13 @@ export class PortfolioAnalytics {
       totalValue,
     );
 
-    // Asset class diversification (simplified - assume all stocks for now)
-    const assetClassScore = 50; // Simplified
+    // Asset class diversification (simplified)
+    const assetClassSet = new Set<string>();
+    for (const h of holdings) {
+      assetClassSet.add((h.assetClass as string | undefined) || "stock");
+    }
+    const numberOfAssetClasses = assetClassSet.size;
+    const assetClassScore = 50;
 
     // Overall diversification score (weighted average)
     const overallScore =
@@ -243,6 +264,36 @@ export class PortfolioAnalytics {
         totalValue) *
       100;
 
+    // Geographic breakdown
+    const countrySet = new Set<string>();
+    for (const h of holdings) {
+      countrySet.add(
+        h.country && h.country.length > 0 ? h.country.toUpperCase() : "US",
+      );
+    }
+    const numberOfCountries = countrySet.size;
+
+    const domesticValue = holdings
+      .filter(
+        (h) => !h.country || h.country === "" || h.country.toUpperCase() === "US",
+      )
+      .reduce((sum, h) => sum + h.currentValue, 0);
+    const domesticAllocation =
+      totalValue > 0 ? (domesticValue / totalValue) * 100 : 100;
+    const internationalAllocation = 100 - domesticAllocation;
+
+    const assetClassList = Array.from(assetClassSet).map((cls) => ({
+      assetClass: cls as "stock",
+      allocation:
+        (holdings
+          .filter(
+            (h) => ((h.assetClass as string | undefined) || "stock") === cls,
+          )
+          .reduce((sum, h) => sum + h.currentValue, 0) /
+          totalValue) *
+        100,
+    }));
+
     const diversificationScore: DiversificationScore = {
       portfolioId,
       calculatedAt: new Date(),
@@ -256,15 +307,15 @@ export class PortfolioAnalytics {
       },
       geographicDiversification: {
         score: geographicScore,
-        numberOfCountries: 1,
-        domesticAllocation: 100,
-        internationalAllocation: 0,
-        regions: [], // Simplified
+        numberOfCountries,
+        domesticAllocation,
+        internationalAllocation,
+        regions: [],
       },
       assetClassDiversification: {
         score: assetClassScore,
-        numberOfAssetClasses: 1,
-        assetClasses: [{ assetClass: "stock" as const, allocation: 100 }], // Simplified
+        numberOfAssetClasses,
+        assetClasses: assetClassList,
       },
       concentrationRisk: {
         topHoldingAllocation: maxSectorAllocation,
@@ -297,7 +348,7 @@ export class PortfolioAnalytics {
     const cached = await redisCache.get<CorrelationMatrix>(cacheKey);
     if (cached) return cached;
 
-    const holdings = await portfolioService.getHoldings(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     if (holdings.length < 2) {
       throw new Error(
         `Portfolio ${portfolioId} needs at least 2 holdings for correlation analysis`,
@@ -382,7 +433,7 @@ export class PortfolioAnalytics {
    * Get sector exposure analysis
    */
   async getSectorExposure(portfolioId: string): Promise<SectorExposure[]> {
-    const holdings = await portfolioService.getHoldings(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0);
 
     const sectorMap = new Map<
@@ -423,7 +474,7 @@ export class PortfolioAnalytics {
     const cached = await redisCache.get<VolatilityAnalysis>(cacheKey);
     if (cached) return cached;
 
-    const holdings = await portfolioService.getHoldings(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     const days = this.timeHorizonToDays(timeHorizon);
     const historicalData = await this.getHistoricalDataForHoldings(
       holdings,
@@ -513,8 +564,8 @@ export class PortfolioAnalytics {
     const cached = await redisCache.get<RebalancingRecommendation>(cacheKey);
     if (cached) return cached;
 
-    const holdings = await portfolioService.getHoldings(portfolioId);
-    const portfolio = await portfolioService.getPortfolio(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
+    const portfolio = await portfolioService.getPortfolio(portfolioId, this.userId);
 
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
@@ -645,7 +696,7 @@ export class PortfolioAnalytics {
     const cached = await redisCache.get<PortfolioPerformance>(cacheKey);
     if (cached) return cached;
 
-    const holdings = await portfolioService.getHoldings(portfolioId);
+    const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     const days = this.timeHorizonToDays(timeHorizon);
     const historicalData = await this.getHistoricalDataForHoldings(
       holdings,
@@ -978,7 +1029,7 @@ export class PortfolioAnalytics {
     portfolioReturns: number[],
     benchmarkReturns: number[],
     riskFreeRate: number,
-  ): { beta: number; alpha: number; rSquared: number } {
+  ): { beta: number | null; alpha: number | null; rSquared: number | null } {
     const minLength = Math.min(
       portfolioReturns.length,
       benchmarkReturns.length,
@@ -991,6 +1042,11 @@ export class PortfolioAnalytics {
       this.calculateStandardDeviation(benchReturns),
       2,
     );
+
+    // Guard: flat benchmark → benchmarkVariance = 0 → beta is undefined (Infinity/NaN)
+    if (benchmarkVariance === 0 || !Number.isFinite(benchmarkVariance)) {
+      return { beta: null, alpha: null, rSquared: null };
+    }
 
     const beta = covariance / benchmarkVariance;
 
@@ -1121,32 +1177,95 @@ export class PortfolioAnalytics {
    * Get sector for a symbol (simplified - in production, use market data API)
    */
   private async getSectorForSymbol(symbol: string): Promise<SectorType> {
-    // Simplified sector mapping - in production, fetch from market data API
     const sectorMap: Record<string, SectorType> = {
+      // Technology
       AAPL: SectorType.TECHNOLOGY,
       MSFT: SectorType.TECHNOLOGY,
+      NVDA: SectorType.TECHNOLOGY,
+      AMD: SectorType.TECHNOLOGY,
+      INTC: SectorType.TECHNOLOGY,
+      ORCL: SectorType.TECHNOLOGY,
+      CRM: SectorType.TECHNOLOGY,
+      ADBE: SectorType.TECHNOLOGY,
+      QCOM: SectorType.TECHNOLOGY,
+      TXN: SectorType.TECHNOLOGY,
+      // Communication Services
       GOOGL: SectorType.COMMUNICATION_SERVICES,
+      GOOG: SectorType.COMMUNICATION_SERVICES,
+      META: SectorType.COMMUNICATION_SERVICES,
+      NFLX: SectorType.COMMUNICATION_SERVICES,
+      DIS: SectorType.COMMUNICATION_SERVICES,
+      T: SectorType.COMMUNICATION_SERVICES,
+      VZ: SectorType.COMMUNICATION_SERVICES,
+      CMCSA: SectorType.COMMUNICATION_SERVICES,
+      // Consumer Discretionary
       AMZN: SectorType.CONSUMER_DISCRETIONARY,
       TSLA: SectorType.CONSUMER_DISCRETIONARY,
-      JNJ: SectorType.HEALTHCARE,
-      JPM: SectorType.FINANCIALS,
-      XOM: SectorType.ENERGY,
+      HD: SectorType.CONSUMER_DISCRETIONARY,
+      MCD: SectorType.CONSUMER_DISCRETIONARY,
+      NKE: SectorType.CONSUMER_DISCRETIONARY,
+      SBUX: SectorType.CONSUMER_DISCRETIONARY,
+      TGT: SectorType.CONSUMER_DISCRETIONARY,
+      // Consumer Staples
       PG: SectorType.CONSUMER_STAPLES,
+      KO: SectorType.CONSUMER_STAPLES,
+      PEP: SectorType.CONSUMER_STAPLES,
+      WMT: SectorType.CONSUMER_STAPLES,
+      COST: SectorType.CONSUMER_STAPLES,
+      PM: SectorType.CONSUMER_STAPLES,
+      // Healthcare
+      JNJ: SectorType.HEALTHCARE,
+      UNH: SectorType.HEALTHCARE,
+      PFE: SectorType.HEALTHCARE,
+      ABBV: SectorType.HEALTHCARE,
+      MRK: SectorType.HEALTHCARE,
+      TMO: SectorType.HEALTHCARE,
+      ABT: SectorType.HEALTHCARE,
+      // Financials
+      JPM: SectorType.FINANCIALS,
+      BAC: SectorType.FINANCIALS,
+      WFC: SectorType.FINANCIALS,
+      GS: SectorType.FINANCIALS,
+      MS: SectorType.FINANCIALS,
+      BRK: SectorType.FINANCIALS,
+      V: SectorType.FINANCIALS,
+      MA: SectorType.FINANCIALS,
+      // Energy
+      XOM: SectorType.ENERGY,
+      CVX: SectorType.ENERGY,
+      COP: SectorType.ENERGY,
+      SLB: SectorType.ENERGY,
+      // Industrials
       BA: SectorType.INDUSTRIALS,
+      CAT: SectorType.INDUSTRIALS,
+      GE: SectorType.INDUSTRIALS,
+      HON: SectorType.INDUSTRIALS,
+      UPS: SectorType.INDUSTRIALS,
+      RTX: SectorType.INDUSTRIALS,
+      // Materials
+      LIN: SectorType.MATERIALS,
+      APD: SectorType.MATERIALS,
+      NEM: SectorType.MATERIALS,
+      // Real Estate
+      AMT: SectorType.REAL_ESTATE,
+      PLD: SectorType.REAL_ESTATE,
+      // Utilities
+      NEE: SectorType.UTILITIES,
+      DUK: SectorType.UTILITIES,
+      SO: SectorType.UTILITIES,
     };
 
-    return sectorMap[symbol] || SectorType.TECHNOLOGY; // Default to technology
+    return sectorMap[symbol] ?? SectorType.TECHNOLOGY;
   }
 
   /**
-   * Calculate geographic diversification (simplified)
+   * Calculate geographic diversification score (0-100).
+   * Simplified implementation.
    */
   private async calculateGeographicDiversification(
-    holdings: any[],
-    totalValue: number,
+    _holdings: any[],
+    _totalValue: number,
   ): Promise<number> {
-    // Simplified - assume 70% domestic, 30% international
-    // In production, fetch actual geographic exposure from market data API
-    return 65; // Return a score of 65/100
+    return 65;
   }
 }

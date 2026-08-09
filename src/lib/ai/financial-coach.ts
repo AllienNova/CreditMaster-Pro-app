@@ -5,7 +5,7 @@
  * Helps users achieve financial freedom through proven Baby Steps framework.
  */
 
-import { AIMLService } from "@/lib/aiml-service";
+import { ModelRouter, getModelRouter, TaskType } from "@/lib/model-router";
 import { financialContextEngine } from "@/lib/financial/financial-context-engine";
 import { FinancialContext } from "@/lib/financial/types/financial-context.types";
 import {
@@ -134,26 +134,20 @@ export interface ProactiveRecommendation {
 // FINANCIAL COACH CLASS
 // ============================================================================
 
-const AI_MODEL = "anthropic/claude-4.5-sonnet";
-
-// Function to get AIMLService instance (allows for mocking in tests)
-let aiServiceInstance: AIMLService | null = null;
-export function getAIMLService(): AIMLService {
-  if (!aiServiceInstance) {
-    aiServiceInstance = new AIMLService();
+// Allow tests to override the model router
+let modelRouterInstance: ModelRouter | null = null;
+export function getModelRouterInstance(): ModelRouter {
+  if (!modelRouterInstance) {
+    modelRouterInstance = getModelRouter();
   }
-  return aiServiceInstance;
+  return modelRouterInstance;
 }
 
-// Allow tests to override the AI service
-export function setAIMLService(service: AIMLService): void {
-  aiServiceInstance = service;
+export function setModelRouter(router: ModelRouter): void {
+  modelRouterInstance = router;
 }
 
 export class FinancialCoach {
-  private get aiService(): AIMLService {
-    return getAIMLService();
-  }
   /**
    * Analyze user's complete financial situation
    */
@@ -212,8 +206,8 @@ export class FinancialCoach {
     // Build prompt for AI
     const prompt = this.buildActionPlanPrompt(context, goals, timeframe);
 
-    const response = await this.aiService.chat(
-      AI_MODEL,
+    const response = await getModelRouterInstance().complete(
+      TaskType.GENERAL_CHAT,
       [
         { role: "system", content: ACTION_PLAN_PROMPT },
         { role: "user", content: prompt },
@@ -253,8 +247,8 @@ export class FinancialCoach {
     try {
       const prompt = this.buildAdvicePrompt(context, question);
 
-      const response = await this.aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouterInstance().complete(
+        TaskType.FINANCIAL_ADVICE,
         [
           { role: "system", content: FINANCIAL_COACH_SYSTEM_PROMPT },
           { role: "user", content: prompt },
@@ -310,8 +304,8 @@ export class FinancialCoach {
 
     const prompt = this.buildRecommendationPrompt(context, opportunities);
 
-    const response = await this.aiService.chat(
-      AI_MODEL,
+    const response = await getModelRouterInstance().complete(
+      TaskType.GENERAL_CHAT,
       [
         { role: "system", content: RECOMMENDATION_PROMPT },
         { role: "user", content: prompt },
@@ -645,8 +639,8 @@ Provide:
 Respond in JSON format with keys: behavioralInsights (array), nextSteps (array), encouragement (string)`;
 
     try {
-      const response = await this.aiService.chat(
-        AI_MODEL,
+      const response = await getModelRouterInstance().complete(
+        TaskType.FINANCIAL_ADVICE,
         [
           { role: "system", content: ANALYSIS_SYSTEM_PROMPT },
           { role: "user", content: prompt },

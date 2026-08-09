@@ -129,26 +129,39 @@ ALTER TABLE dispute_template_usage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE strategy_usage ENABLE ROW LEVEL SECURITY;
 
 -- Sessions policies (users can only see their own sessions)
+DROP POLICY IF EXISTS "Users can view own sessions" ON sessions;
 CREATE POLICY "Users can view own sessions" ON sessions FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own sessions" ON sessions;
 CREATE POLICY "Users can delete own sessions" ON sessions FOR DELETE USING (auth.uid() = user_id);
 
 -- Audit logs (read-only for users, insert for system)
+DROP POLICY IF EXISTS "Users can view own audit logs" ON audit_logs;
 CREATE POLICY "Users can view own audit logs" ON audit_logs FOR SELECT USING (auth.uid() = user_id);
 
 -- Uploads policies
+DROP POLICY IF EXISTS "Users can view own uploads" ON uploads;
 CREATE POLICY "Users can view own uploads" ON uploads FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can create own uploads" ON uploads;
 CREATE POLICY "Users can create own uploads" ON uploads FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own uploads" ON uploads;
 CREATE POLICY "Users can delete own uploads" ON uploads FOR DELETE USING (auth.uid() = user_id);
 
 -- Credit scores policies
+DROP POLICY IF EXISTS "Users can view own scores" ON credit_scores;
 CREATE POLICY "Users can view own scores" ON credit_scores FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own scores" ON credit_scores;
 CREATE POLICY "Users can insert own scores" ON credit_scores FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Template/Strategy usage policies
+DROP POLICY IF EXISTS "Users can view own template usage" ON dispute_template_usage;
 CREATE POLICY "Users can view own template usage" ON dispute_template_usage FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own template usage" ON dispute_template_usage;
 CREATE POLICY "Users can insert own template usage" ON dispute_template_usage FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own strategy usage" ON strategy_usage;
 CREATE POLICY "Users can view own strategy usage" ON strategy_usage FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own strategy usage" ON strategy_usage;
 CREATE POLICY "Users can insert own strategy usage" ON strategy_usage FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own strategy usage" ON strategy_usage;
 CREATE POLICY "Users can update own strategy usage" ON strategy_usage FOR UPDATE USING (auth.uid() = user_id);
 
 -- ============================================================================

@@ -5,20 +5,16 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import type { TechnicalAnalysis } from "@/lib/investments/types/technical-analysis.types";
 
 // ============================================================================
 // POST - Generate Recommendation
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { symbol, includePrice = false, userProfile } = body;
 
@@ -115,19 +111,16 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
 
 // ============================================================================
 // GET - Get recommendation by symbol
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const symbol = searchParams.get("symbol");
 
@@ -155,4 +148,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);

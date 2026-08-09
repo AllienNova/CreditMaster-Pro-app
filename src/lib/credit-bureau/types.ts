@@ -156,6 +156,31 @@ export interface BureauResponse<T = unknown> {
   reference_id?: string;
 }
 
+/**
+ * Result of `CreditBureauService.submitDispute`.
+ *
+ * `success` reflects ONLY whether the bureau accepted the dispute — it must
+ * stay `true` even if the local audit record below fails to save, because by
+ * that point the bureau has already accepted the filing and the FCRA Sec.
+ * 611 30-day investigation clock is running. Reporting `success: false` here
+ * would cause a caller to retry, filing a DUPLICATE dispute with the bureau.
+ *
+ * `persisted` is the separate, orthogonal signal for whether Fynvita's own
+ * `bureau_disputes` record of that filing was saved successfully.
+ */
+export interface DisputeSubmissionResult extends BureauResponse {
+  /** True once the local `bureau_disputes` audit row was saved successfully. */
+  persisted: boolean;
+  /**
+   * Present only when `persisted` is `false` while `success` is `true`: the
+   * bureau accepted the dispute but the local record failed to save. Callers
+   * MUST NOT treat this as "not filed" — the `reference_id` above (when
+   * present) is the caller's only proof of the bureau-side filing until the
+   * record is reconciled.
+   */
+  persistenceError?: string;
+}
+
 export interface CreditMonitoringAlert {
   id: string;
   user_id: string;

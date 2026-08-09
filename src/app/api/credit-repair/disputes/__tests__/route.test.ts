@@ -14,6 +14,9 @@ import { NextRequest } from "next/server";
 
 // Mock dependencies BEFORE importing modules that use them
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("user"),
+}));
 jest.mock("@/lib/credit-repair/db", () => ({
   db: {
     disputes: {
@@ -340,4 +343,28 @@ describe("/api/credit-repair/disputes", () => {
       expect(data.error).toBe("Unauthorized");
     });
   });
+});
+
+describe("negative-auth – /api/credit-repair/disputes (withAuth)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+    it("GET returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const res = await GET(createMockRequest("http://localhost:3000/api/credit-repair/disputes"));
+      expect(res.status).toBe(401);
+    });
+
+    it("POST returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const res = await POST(createMockRequest("http://localhost:3000/api/credit-repair/disputes", { method: "POST" }));
+      expect(res.status).toBe(401);
+    });
 });

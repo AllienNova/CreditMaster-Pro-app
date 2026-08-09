@@ -11,28 +11,23 @@ import {
 import { BudgetPreferences } from "../types/budget.types";
 
 // Mock dependencies — define inside factory to avoid TDZ with jest.mock hoisting
-jest.mock("@/lib/supabase/client", () => {
+jest.mock("@/lib/supabase/service-role", () => {
   const _client = { from: jest.fn() };
-  return { getSupabase: () => _client };
+  return { getServiceRoleClient: () => _client };
 });
 
-import { getSupabase } from "@/lib/supabase/client";
-const supabase = getSupabase() as any;
-
-jest.mock("@/lib/aiml-service", () => ({
-  getAIMLService: jest.fn(() => ({
-    chat: jest.fn(),
-    generateText: jest.fn(),
-  })),
-}));
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+const supabase = getServiceRoleClient() as any;
 
 jest.mock("@/lib/model-router", () => ({
-  ModelRouter: jest.fn().mockImplementation(() => ({
+  getModelRouter: jest.fn().mockReturnValue({
+    complete: jest.fn().mockResolvedValue({ choices: [{ message: { content: "{}" } }] }),
     getModel: jest.fn().mockReturnValue("anthropic/claude-4.5-sonnet"),
-  })),
+  }),
   TaskType: {
-    BUDGET_GENERATION: "budget_generation",
-    BUDGET_ANALYSIS: "budget_analysis",
+    FINANCIAL_ADVICE: "financial_advice",
+    REASONING: "reasoning",
+    QUICK_RESPONSE: "quick_response",
   },
 }));
 

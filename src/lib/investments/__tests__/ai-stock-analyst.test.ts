@@ -5,67 +5,76 @@
 import { AIStockAnalystService } from "../ai-stock-analyst";
 import type { StockAnalysisRequest } from "../types/stock-analysis.types";
 
-// Mock the AIML service
-jest.mock("../../aiml-service", () => ({
-  AIMLService: jest.fn().mockImplementation(() => ({
-    chat: jest.fn().mockResolvedValue({
-      choices: [
-        {
-          message: {
-            content: JSON.stringify({
-              summary:
-                "Test stock shows strong fundamentals with moderate technical signals.",
-              bullCase: [
-                "Strong revenue growth",
-                "Market leader",
-                "Expanding margins",
-              ],
-              bearCase: [
-                "High valuation",
-                "Competition increasing",
-                "Macro headwinds",
-              ],
-              keyRisks: ["Market volatility", "Regulatory changes"],
-              investmentThesis:
-                "Consider accumulating on dips for long-term growth.",
-              priceTargets: [
-                {
-                  scenario: "bull",
-                  price: 200,
-                  probability: 25,
-                  timeframe: "12 months",
-                  rationale: "Best case",
-                },
-                {
-                  scenario: "base",
-                  price: 175,
-                  probability: 50,
-                  timeframe: "12 months",
-                  rationale: "Expected",
-                },
-                {
-                  scenario: "bear",
-                  price: 140,
-                  probability: 25,
-                  timeframe: "12 months",
-                  rationale: "Worst case",
-                },
-              ],
-              catalysts: [
-                {
-                  type: "earnings",
-                  description: "Q4 earnings",
-                  potentialImpact: "high",
-                  direction: "positive",
-                },
-              ],
-            }),
-          },
+// Mock the ModelRouter. The mock response is defined INSIDE the factory
+// because jest.mock is hoisted above module-scope const declarations.
+jest.mock("../../model-router", () => {
+  const mockAnalysisResponse = {
+    choices: [
+      {
+        message: {
+          content: JSON.stringify({
+            summary:
+              "Test stock shows strong fundamentals with moderate technical signals.",
+            bullCase: [
+              "Strong revenue growth",
+              "Market leader",
+              "Expanding margins",
+            ],
+            bearCase: [
+              "High valuation",
+              "Competition increasing",
+              "Macro headwinds",
+            ],
+            keyRisks: ["Market volatility", "Regulatory changes"],
+            investmentThesis:
+              "Consider accumulating on dips for long-term growth.",
+            priceTargets: [
+              {
+                scenario: "bull",
+                price: 200,
+                probability: 25,
+                timeframe: "12 months",
+                rationale: "Best case",
+              },
+              {
+                scenario: "base",
+                price: 175,
+                probability: 50,
+                timeframe: "12 months",
+                rationale: "Expected",
+              },
+              {
+                scenario: "bear",
+                price: 140,
+                probability: 25,
+                timeframe: "12 months",
+                rationale: "Worst case",
+              },
+            ],
+            catalysts: [
+              {
+                type: "earnings",
+                description: "Q4 earnings",
+                potentialImpact: "high",
+                direction: "positive",
+              },
+            ],
+          }),
         },
-      ],
+      },
+    ],
+  };
+  return {
+    getModelRouter: jest.fn().mockReturnValue({
+      complete: jest.fn().mockResolvedValue(mockAnalysisResponse),
+      getModel: jest.fn().mockReturnValue("anthropic/claude-reasoning"),
     }),
-  })),
-}));
+    TaskType: {
+      REASONING: "REASONING",
+    },
+    ChatMessage: {},
+  };
+});
 
 describe("AIStockAnalystService", () => {
   let service: AIStockAnalystService;

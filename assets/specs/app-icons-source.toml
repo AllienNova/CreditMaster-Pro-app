@@ -1,0 +1,32 @@
+name = "app-icons-source"
+wave = 1
+model = "gemini-3-pro-image-preview"
+resolution = "2K"
+out_dir = "assets/raw/app-icons-source"
+count = 3
+preamble = true
+
+shared_prompt = """
+Production app icon source for 'Fynvita'.
+
+THE FYNVITA MARK (identical across all variants): a heart silhouette with a white negative-space heartbeat/pulse line carved through it. The pulse starts flat-left, spikes up in two small peaks, then resolves into an upward-RIGHT pointing arrow exiting the heart's top-right quadrant. The arrow tip crosses slightly outside the heart's upper-right edge. Rounded, organic heart shape — NOT angular, NOT fragmented.
+
+STRICT CONSTRAINTS:
+- Flat design, solid colors, NO gradients, NO shadows, NO 3D, NO glows, NO outlines, NO textures
+- The mark occupies ~60% of the canvas, centered
+- NO wordmark, NO text whatsoever
+- NO rounded corners on the tile (systems apply their own rounding)
+- Exactly 2048x2048, perfectly square
+"""
+
+[[variants]]
+id = "ios-dark"
+prompt = "iOS DARK appearance variant. Background: SOLID DARK #0B1220 (near-black with a subtle navy bias, between pure black and Deep Navy). Mark rendered in WHITE #FFFFFF with the pulse/arrow cutout also WHITE (the cutout reveals the dark background, so pulse appears DARK on a WHITE heart). The mark fills about 60% of canvas, centered."
+
+[[variants]]
+id = "ios-tinted"
+prompt = "iOS TINTED appearance variant. This is for iOS 18+ tinted icon mode. Background: transparent-appearing (render it as SOLID BLACK #000000 for the source file — iOS will replace with its own tint). The mark rendered in pure WHITE #FFFFFF grayscale form — just the white heart+pulse shape, no color information. Treat this like a grayscale monochrome silhouette with the pulse cutout revealing black. Flat."
+
+[[variants]]
+id = "android-monochrome"
+prompt = "Android THEMED ICONS variant (Android 13+ monochrome). The mark rendered as a SINGLE SOLID WHITE silhouette on a BLACK background. CRITICAL: this is a MONOCHROME silhouette only — fill the entire heart shape SOLID WHITE, INCLUDING where the pulse line would be. NO pulse cutout, NO internal details — just the flat white heart-with-arrow silhouette on black. The system will mask this with the user's theme color. The silhouette occupies ~66% of the canvas (leaving ~17% safe-zone padding on each side)."

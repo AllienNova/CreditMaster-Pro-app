@@ -1,5 +1,45 @@
 import "@testing-library/jest-dom";
 
+// Test-only placeholder for the bank-credential encryption key
+// (20260801000020). NOT a secret and never used against a real database — it
+// exists so requireTokenEncryptionKey()'s length check passes under jest.
+// Real values live in Doppler as BANK_TOKEN_ENCRYPTION_KEY. Set only when
+// absent so a suite that deliberately provides its own is not overridden.
+process.env.BANK_TOKEN_ENCRYPTION_KEY ??=
+  "test-only-not-a-real-key-0000000000000000";
+
+// Polyfill IntersectionObserver for jsdom (used by framer-motion whileInView / ScrollReveal)
+if (typeof window !== "undefined" && !window.IntersectionObserver) {
+  class IntersectionObserverMock {
+    readonly root: Element | null = null;
+    readonly rootMargin: string = "";
+    readonly thresholds: ReadonlyArray<number> = [];
+    constructor(private callback: IntersectionObserverCallback) {}
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords(): IntersectionObserverEntry[] { return []; }
+  }
+  window.IntersectionObserver = IntersectionObserverMock as unknown as typeof IntersectionObserver;
+}
+
+// Polyfill window.matchMedia for jsdom (used by useReducedMotion and framer-motion)
+if (typeof window !== "undefined") {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    }),
+  });
+}
+
 // Import OpenAI shims for Node.js environment
 import "openai/shims/node";
 
