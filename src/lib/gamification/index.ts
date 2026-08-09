@@ -50,3 +50,21 @@ export {
   SHARED_GOAL_TEMPLATES,
   RELATIONSHIP_TYPES,
 } from "./shared-goals-service";
+
+// Achievements — restored 2026-08-09. Deleted by b6f6efe as a "duplicate" of
+// the badge system; it is a separate concept (achievement definitions with
+// conditions/tiers) built by another session, so it is re-exported rather than
+// left orphaned. See docs/qa/restored-services.md.
+export {
+  AchievementService,
+  getAchievementService,
+  type AchievementCategory,
+  type BadgeTier,
+  type AchievementStatus,
+  type AchievementDefinition,
+  type UserAchievement,
+  type UserAchievementWithDefinition,
+  type AchievementCheckResult,
+  type AchievementAwardResult,
+  type AchievementStats,
+} from "./achievement-service";
