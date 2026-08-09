@@ -1,4 +1,5 @@
 path,methods,current_authn,current_authz,proposed_guard,sub_batch,notes
+src/app/api/activity/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-09 - already wrapped, was missing from inventory
 src/app/api/addons/cancel/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/addons/list/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/addons/subscribe/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
@@ -8,6 +9,7 @@ src/app/api/admin/audit/route.ts,GET;POST,requireRole,inline admin role via requ
 src/app/api/admin/auth/route.ts,GET,requireRole,reads profiles.role from DB (safe),withRole(admin),a,DB-sourced role check - safe pattern; rewrap withRole(admin)
 src/app/api/admin/compliance/breach/route.ts,POST,withRole(admin),admin role via withRole,withRole(admin),a,CMP-02 breach-notify trigger; born withRole(admin) - added to inventory post-hoc
 src/app/api/admin/disputes/route.ts,GET;PATCH,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
+src/app/api/admin/health/route.ts,GET,withRole,admin,withRole,f,added 2026-08-09 - admin-only health detail
 src/app/api/admin/logs/route.ts,GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
 src/app/api/admin/metrics/route.ts,GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
 src/app/api/admin/settings/route.ts,GET;POST,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
@@ -71,13 +73,16 @@ src/app/api/credit-monitoring/history/route.ts,GET,none,none,withAuth,c,unauthen
 src/app/api/credit-monitoring/route.ts,GET;POST,none,none,withAuth,c,unauthenticated - accepts userId from query/body (IDOR) - wrap in withAuth
 src/app/api/credit-monitoring/scores/route.ts,GET,none,none,withAuth,c,unauthenticated - wrap in withAuth
 src/app/api/credit-monitoring/settings/route.ts,GET;PUT,validateFromHeaders,"rbac.hasPermission(""credit:read"");rbac.hasPermission(""credit:update_settings"")",withPermission(credit:read),c,multiple inline perms - GET credit:read PUT credit:update_settings
+src/app/api/credit-repair/accounts/route.ts,GET,withPermission,credit:read,withPermission,f,added 2026-08-09 - already wrapped
 src/app/api/credit-repair/cards/[id]/route.ts,DELETE;GET;PUT,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/credit-repair/cards/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/disputable-items/route.ts,GET,withPermission,credit:read,withPermission,f,added 2026-08-09 - already wrapped
 src/app/api/credit-repair/disputes/[id]/route.ts,DELETE;GET;PUT,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/credit-repair/disputes/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/credit-repair/goodwill/[id]/route.ts,DELETE;GET;PUT,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/credit-repair/goodwill/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/credit-repair/impact/route.ts,POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/credit-repair/inquiries/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-09 - already wrapped
 src/app/api/credit-repair/negotiate/[id]/route.ts,DELETE;GET;PUT,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/credit-repair/negotiate/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/credit-repair/quick-wins/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
@@ -93,6 +98,7 @@ src/app/api/credits/purchase/route.ts,POST,getUser,none,withAuth,f,bare session 
 src/app/api/cron/check-dispute-status/route.ts,GET,cron-secret,none,PUBLIC,f,cron job - CRON_SECRET header check stays as the auth
 src/app/api/cron/cleanup-expired-sessions/route.ts,GET,cron-secret,none,PUBLIC,f,cron job - CRON_SECRET header check stays as the auth
 src/app/api/cron/dispute-followups/route.ts,GET,cron-secret,none,PUBLIC,f,cron job - CRON_SECRET header check stays as the auth
+src/app/api/cron/financial-snapshots/route.ts,GET,cron-secret,none,PUBLIC,f,cron job - CRON_SECRET header check stays as the auth
 src/app/api/cron/send-reminders/route.ts,GET,cron-secret,none,PUBLIC,f,cron job - CRON_SECRET header check stays as the auth
 src/app/api/csrf/route.ts,GET,none,none,PUBLIC,f,CSRF token issuer - must be reachable pre-auth; genuinely public
 src/app/api/disputes/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,inline user.id ownership check,withAuth,f,inline JWT validation + ownership - wrap in withAuth; keep ownership check
@@ -130,6 +136,7 @@ src/app/api/financial/budgets/adjust/route.ts,GET,validateFromHeaders,"rbac.hasP
 src/app/api/financial/budgets/alerts/route.ts,GET;PATCH,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/budgets/analyze/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/budgets/generate/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""financial:create_budgets"")",withPermission(financial:create_budgets),c,promote inline permission check to withPermission
+src/app/api/financial/budgets/generate/zero-based/route.ts,POST,withPermission,financial:write,withPermission,f,added 2026-08-09 - already wrapped
 src/app/api/financial/budgets/predict/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/budgets/recommendations/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/budgets/rollover/route.ts,GET;PATCH;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
@@ -253,6 +260,9 @@ src/app/api/payment/billing/route.ts,GET,validateFromHeaders,"rbac.hasPermission
 src/app/api/payment/checkout/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth; critical-path payment route
 src/app/api/payment/webhook/route.ts,POST,webhook-signature,none,PUBLIC,f,Stripe webhook - signature verification stays as the auth (hookify guard enforced)
 src/app/api/performance/route.ts,DELETE;GET,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withRole(admin),f,admin-only performance metrics - promote to withRole(admin)
+src/app/api/privacy/consent/route.ts,GET|POST,withAuth,own-rows,withAuth,f,GDPR Art.7 consent - added 2026-08-09
+src/app/api/privacy/delete/route.ts,POST,withAuth,own-rows,withAuth,f,GDPR Art.17 erasure - added 2026-08-09
+src/app/api/privacy/export/route.ts,GET,withAuth,own-rows,withAuth,f,GDPR Art.15/20 export - added 2026-08-09
 src/app/api/profile/route.ts,GET;PATCH,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/servicers/analyze/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""servicers:analyze"")",withPermission(servicers:analyze),f,promote inline permission check to withPermission
 src/app/api/servicers/detect-errors/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""servicers:detect_errors"")",withPermission(servicers:detect_errors),f,promote inline permission check to withPermission

@@ -154,22 +154,38 @@ describe("FinancialAggregationService (real local Supabase)", () => {
     userId = userData.user.id;
     dbAvailable = true;
 
-    const { error: profileError } = await db.from("profiles").insert({
-      id: userId,
-      email: testEmail,
-      full_name: "Integration Test Fixture",
-    });
+    // The on_auth_user_created trigger (handle_new_user) already inserted a
+    // profiles row for this auth user, so a plain insert now collides. It did
+    // not before only because this whole block was being SKIPPED — GoTrue
+    // could not create users at all until the search_path fix in
+    // 20260809000020. Upsert is correct either way.
+    const { error: profileError } = await db.from("profiles").upsert(
+      {
+        id: userId,
+        email: testEmail,
+        full_name: "Integration Test Fixture",
+      },
+      { onConflict: "id" },
+    );
     if (profileError) {
       throw new Error(`Failed to seed profiles: ${profileError.message}`);
     }
 
-    const { error: itemError } = await db.from("plaid_items").insert({
-      item_id: testItemId,
-      user_id: userId,
-      access_token: "test-access-token-not-real",
-    });
-    if (itemError) {
-      throw new Error(`Failed to seed plaid_items: ${itemError.message}`);
+    // plaid_items became bank_connections in 20260801000020, and the
+    // credential is no longer a plaintext column — it is written only through
+    // set_bank_connection_token(). This fixture does not need a token, so it
+    // seeds the connection alone.
+    const { data: connRow, error: itemError } = await db
+      .from("bank_connections")
+      .insert({
+        item_id: testItemId,
+        user_id: userId,
+        provider: "plaid",
+      })
+      .select("id")
+      .single();
+    if (itemError || !connRow) {
+      throw new Error(`Failed to seed bank_connections: ${itemError?.message}`);
     }
 
     // Seeded values are deliberately distinct, non-round numbers so a test
@@ -178,6 +194,8 @@ describe("FinancialAggregationService (real local Supabase)", () => {
     const { error: accountError } = await db.from("financial_accounts").insert({
       id: testAccountId,
       item_id: testItemId,
+      connection_id: connRow.id,
+      provider: "plaid",
       user_id: userId,
       account_id: testAccountId,
       account_type: "checking",
