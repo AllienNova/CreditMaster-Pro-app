@@ -7,9 +7,21 @@
 import { NextRequest } from "next/server";
 import { GET, POST } from "../route";
 
-// Mock Supabase server
-jest.mock("@/lib/supabase/server", () => ({
-  createClient: jest.fn(),
+// The route moved from a bare cookie-session read to the project's standard
+// withAuth guard (audit:auth requires it), so the guard is what must be mocked
+// now. `authenticated` is flipped per test by mockAuth() below — matching the
+// pattern already used in notifications/__tests__/ntf-3-db-persistence.test.ts.
+let authenticatedUser: { id: string; email: string } | null = null;
+
+jest.mock("@/lib/auth/api-guard", () => ({
+  withAuth:
+    (handler: (req: any, user: any) => Promise<any>) => async (req: any) => {
+      if (!authenticatedUser) {
+        const { NextResponse } = require("next/server");
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      return handler(req, authenticatedUser);
+    },
 }));
 
 // Mock Achievement Service
@@ -57,15 +69,9 @@ function makeRequest(
 }
 
 function mockAuth(authenticated: boolean) {
-  const { createClient } = require("@/lib/supabase/server");
-  createClient.mockResolvedValue({
-    auth: {
-      getUser: jest.fn().mockResolvedValue({
-        data: { user: authenticated ? mockUser : null },
-        error: authenticated ? null : new Error("Not authenticated"),
-      }),
-    },
-  });
+  authenticatedUser = authenticated
+    ? { id: mockUser.id, email: mockUser.email }
+    : null;
 }
 
 describe("/api/gamification/achievements", () => {
