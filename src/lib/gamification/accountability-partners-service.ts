@@ -198,6 +198,15 @@ export class AccountabilityPartnersService {
     if (invitation.status !== "pending")
       throw new Error("Invitation is no longer valid");
 
+    // Verify the caller is the intended recipient
+    if (
+      invitation.recipient_user_id !== null &&
+      invitation.recipient_user_id !== undefined &&
+      invitation.recipient_user_id !== userId
+    ) {
+      throw new Error("Not authorized to accept this invitation");
+    }
+
     await this.supabase
       .from("partner_invitations")
       .update({ status: "accepted", recipient_user_id: userId })
@@ -206,11 +215,23 @@ export class AccountabilityPartnersService {
     return this.createPartnership(invitation.sender_id, userId);
   }
 
-  async declineInvitation(invitationId: string): Promise<void> {
+  async declineInvitation(invitationId: string, userId: string): Promise<void> {
+    const { data: invitation } = await this.supabase
+      .from("partner_invitations")
+      .select("recipient_user_id")
+      .eq("id", invitationId)
+      .single();
+
+    if (!invitation) throw new Error("Invitation not found");
+    if (invitation.recipient_user_id !== userId) {
+      throw new Error("Not authorized to decline this invitation");
+    }
+
     await this.supabase
       .from("partner_invitations")
       .update({ status: "declined" })
-      .eq("id", invitationId);
+      .eq("id", invitationId)
+      .eq("recipient_user_id", userId);
   }
 
   async getPendingInvitations(userId: string): Promise<PartnerInvitation[]> {
@@ -302,11 +323,18 @@ export class AccountabilityPartnersService {
     return data ? this.partnershipFromDb(data) : null;
   }
 
-  async endPartnership(partnershipId: string): Promise<void> {
+  async endPartnership(partnershipId: string, userId: string): Promise<void> {
+    const partnership = await this.getPartnership(partnershipId);
+    if (!partnership) throw new Error("Partnership not found");
+    if (partnership.requesterId !== userId && partnership.partnerId !== userId) {
+      throw new Error("Not authorized to end this partnership");
+    }
+
     await this.supabase
       .from("partnerships")
       .update({ status: "ended", updated_at: new Date().toISOString() })
-      .eq("id", partnershipId);
+      .eq("id", partnershipId)
+      .or(`requester_id.eq.${userId},partner_id.eq.${userId}`);
   }
 
   async sendNudge(
@@ -317,6 +345,14 @@ export class AccountabilityPartnersService {
   ): Promise<Nudge> {
     const partnership = await this.getPartnership(partnershipId);
     if (!partnership) throw new Error("Partnership not found");
+
+    // Verify sender is a member of this partnership
+    if (
+      partnership.requesterId !== senderId &&
+      partnership.partnerId !== senderId
+    ) {
+      throw new Error("Not authorized to send nudges in this partnership");
+    }
 
     const receiverId =
       partnership.requesterId === senderId
@@ -374,11 +410,23 @@ export class AccountabilityPartnersService {
     return (data || []).map(this.nudgeFromDb);
   }
 
-  async markNudgeAsRead(nudgeId: string): Promise<void> {
+  async markNudgeAsRead(nudgeId: string, userId: string): Promise<void> {
+    const { data: nudge } = await this.supabase
+      .from("partner_nudges")
+      .select("receiver_id")
+      .eq("id", nudgeId)
+      .single();
+
+    if (!nudge) throw new Error("Nudge not found");
+    if (nudge.receiver_id !== userId) {
+      throw new Error("Not authorized to mark this nudge as read");
+    }
+
     await this.supabase
       .from("partner_nudges")
       .update({ is_read: true })
-      .eq("id", nudgeId);
+      .eq("id", nudgeId)
+      .eq("receiver_id", userId);
   }
 
   getNudgeTemplates(): typeof NUDGE_TEMPLATES {

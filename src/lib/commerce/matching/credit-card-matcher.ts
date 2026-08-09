@@ -5,7 +5,7 @@
  * based on user profile, spending habits, and preferences.
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { offerService, Offer, UserProfile, MatchResult } from "../offers";
 
 // =============================================================================
@@ -15,7 +15,16 @@ import { offerService, Offer, UserProfile, MatchResult } from "../offers";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Lazily constructed so `next build` page-data-collection (no runtime env)
+// does not abort on createClient's "supabaseUrl is required".
+let _supabase: SupabaseClient | null = null;
+const supabase = new Proxy({} as SupabaseClient, {
+  get(_t, prop, recv) {
+    if (!_supabase) _supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const v = Reflect.get(_supabase, prop, recv);
+    return typeof v === "function" ? v.bind(_supabase) : v;
+  },
+});
 
 // =============================================================================
 // Types

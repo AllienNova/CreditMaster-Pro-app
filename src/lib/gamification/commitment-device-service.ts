@@ -235,17 +235,21 @@ export class CommitmentDeviceService {
     return this.contractFromDb(data);
   }
 
-  async getContract(contractId: string): Promise<CommitmentContract | null> {
+  async getContract(
+    contractId: string,
+    userId: string,
+  ): Promise<CommitmentContract | null> {
     const { data } = await this.supabase
       .from("commitment_contracts")
       .select("*")
       .eq("id", contractId)
+      .eq("user_id", userId)
       .single();
 
     if (!data) return null;
 
     const contract = this.contractFromDb(data);
-    contract.checkIns = await this.getCheckIns(contractId);
+    contract.checkIns = await this.getCheckIns(contractId, userId);
     return contract;
   }
 
@@ -266,16 +270,17 @@ export class CommitmentDeviceService {
 
     const contracts = (data || []).map(this.contractFromDb);
     for (const contract of contracts) {
-      contract.checkIns = await this.getCheckIns(contract.id);
+      contract.checkIns = await this.getCheckIns(contract.id, userId);
     }
     return contracts;
   }
 
-  async cancelContract(contractId: string): Promise<void> {
+  async cancelContract(contractId: string, userId: string): Promise<void> {
     await this.supabase
       .from("commitment_contracts")
       .update({ status: "cancelled", updated_at: new Date().toISOString() })
-      .eq("id", contractId);
+      .eq("id", contractId)
+      .eq("user_id", userId);
   }
 
   // ==========================================================================
@@ -284,10 +289,11 @@ export class CommitmentDeviceService {
 
   async recordCheckIn(
     contractId: string,
+    userId: string,
     progress: number,
     note?: string,
   ): Promise<CheckIn> {
-    const contract = await this.getContract(contractId);
+    const contract = await this.getContract(contractId, userId);
     if (!contract) throw new Error("Contract not found");
     if (contract.status !== "active") throw new Error("Contract is not active");
 
@@ -324,12 +330,23 @@ export class CommitmentDeviceService {
         current_progress: progress,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", contractId);
+      .eq("id", contractId)
+      .eq("user_id", userId);
 
     return this.checkInFromDb(data);
   }
 
-  async getCheckIns(contractId: string): Promise<CheckIn[]> {
+  async getCheckIns(contractId: string, userId: string): Promise<CheckIn[]> {
+    // Verify the contract belongs to the caller before returning its check-ins
+    const contract = await this.supabase
+      .from("commitment_contracts")
+      .select("id")
+      .eq("id", contractId)
+      .eq("user_id", userId)
+      .single();
+
+    if (!contract.data) return [];
+
     const { data, error } = await this.supabase
       .from("commitment_check_ins")
       .select("*")
@@ -346,8 +363,9 @@ export class CommitmentDeviceService {
 
   async evaluateContract(
     contractId: string,
+    userId: string,
   ): Promise<{ success: boolean; consequenceRequired: boolean }> {
-    const contract = await this.getContract(contractId);
+    const contract = await this.getContract(contractId, userId);
     if (!contract) throw new Error("Contract not found");
 
     const now = new Date();
@@ -364,7 +382,8 @@ export class CommitmentDeviceService {
         was_successful: success,
         updated_at: now.toISOString(),
       })
-      .eq("id", contractId);
+      .eq("id", contractId)
+      .eq("user_id", userId);
 
     if (
       !success &&

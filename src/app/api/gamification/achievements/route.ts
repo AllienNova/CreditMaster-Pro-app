@@ -13,11 +13,11 @@ import {
   type AchievementStatus,
 } from "@/lib/gamification";
 
-// Restored 2026-08-09. It previously did a bare cookie-session read via
-// supabase.auth.getUser(), which meant it accepted neither the Bearer tokens
-// every other route takes nor the project's standard guard — audit:auth
-// flagged it as "CSV requires withAuth but the route has an unwrapped HTTP
-// verb". Now on withAuth like the other 304 routes.
+// Restored from the state immediately before deletion (b6f6efe^), not from
+// backup/pre-wipe. The backup copy was older and still used a bare
+// supabase.auth.getUser() cookie read; the live version had already been moved
+// onto withAuth. Restoring the backup silently reverted that, and eight other
+// modules lost more than a comment — see docs/specs/deleted-feature-audit.md.
 export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const { searchParams } = new URL(request.url);

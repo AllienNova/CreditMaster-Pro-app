@@ -5,23 +5,20 @@
  */
 
 import { NextRequest } from "next/server";
-import { GET, POST } from "../route";
 
-// The route moved from a bare cookie-session read to the project's standard
-// withAuth guard (audit:auth requires it), so the guard is what must be mocked
-// now. `authenticated` is flipped per test by mockAuth() below — matching the
-// pattern already used in notifications/__tests__/ntf-3-db-persistence.test.ts.
-let authenticatedUser: { id: string; email: string } | null = null;
+// Route wrapped in withAuth (TASK-AUTH-03f); auth resolves via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidateFromHeaders = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
 
-jest.mock("@/lib/auth/api-guard", () => ({
-  withAuth:
-    (handler: (req: any, user: any) => Promise<any>) => async (req: any) => {
-      if (!authenticatedUser) {
-        const { NextResponse } = require("next/server");
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-      return handler(req, authenticatedUser);
-    },
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 
 // Mock Achievement Service
@@ -47,6 +44,8 @@ jest.mock("@/lib/gamification", () => ({
   }),
 }));
 
+import { GET, POST } from "../route";
+
 const mockUser = { id: "user-123", email: "test@example.com" };
 
 function makeRequest(
@@ -69,14 +68,37 @@ function makeRequest(
 }
 
 function mockAuth(authenticated: boolean) {
-  authenticatedUser = authenticated
-    ? { id: mockUser.id, email: mockUser.email }
-    : null;
+  if (authenticated) {
+    mockValidateFromHeaders.mockResolvedValue({ valid: true, user: mockUser });
+    mockResolveRoleFromDb.mockResolvedValue("user");
+  } else {
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+  }
 }
 
 describe("/api/gamification/achievements", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe("negative-auth", () => {
+    it("GET returns 401 when the request is not authenticated", async () => {
+      mockAuth(false);
+      const response = await GET(
+        makeRequest("/api/gamification/achievements"),
+      );
+      expect(response.status).toBe(401);
+    });
+
+    it("POST returns 401 when the request is not authenticated", async () => {
+      mockAuth(false);
+      const response = await POST(
+        makeRequest("/api/gamification/achievements", "POST", {
+          action: "award",
+        }),
+      );
+      expect(response.status).toBe(401);
+    });
   });
 
   // ======================================================================

@@ -614,7 +614,13 @@ describe("EmailPreferencesService", () => {
       const modifiedPayloadStr = JSON.stringify(payload);
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const nodeCrypto = require("crypto") as typeof import("crypto");
-      const secret = process.env.EMAIL_UNSUBSCRIBE_SECRET || "default-unsubscribe-secret";
+      // Must match getUnsubscribeSecret() in email-preferences-service.ts:
+      // env var when set, else the non-production dev default. The forged
+      // token must carry a VALID signature so the test exercises the expiry
+      // check (not a signature mismatch).
+      const secret =
+        process.env.EMAIL_UNSUBSCRIBE_SECRET ||
+        "default-unsubscribe-secret-change-in-production";
       const modifiedBase64 = Buffer.from(modifiedPayloadStr).toString("base64url");
       const modifiedSignature = nodeCrypto
         .createHmac("sha256", secret)

@@ -680,6 +680,7 @@ export class PointsRewardsService {
   // ==========================================================================
 
   async transferPoints(
+    callerId: string,
     fromUserId: string,
     toUserId: string,
     amount: number,
@@ -688,6 +689,10 @@ export class PointsRewardsService {
     fromBalance: PointsBalance;
     toBalance: PointsBalance;
   }> {
+    // Caller binding: the authenticated caller must be the sender
+    if (callerId !== fromUserId) {
+      throw new Error("Cannot transfer points on behalf of another user");
+    }
     if (amount <= 0) throw new Error("Transfer amount must be positive");
 
     const fromBalance = await this.getBalance(fromUserId);
