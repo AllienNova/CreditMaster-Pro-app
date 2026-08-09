@@ -1,0 +1,22 @@
+# Heavy / non-web paths at the REPO ROOT only — root-anchored (leading /) so nested
+# paths like src/lib/supabase/ and public/*.png are NOT matched. Keeps the upload lean
+# without dropping anything the Next.js build needs.
+/mobile-app
+/.worktrees
+/.vs
+/cypress
+/e2e
+/playwright-report
+/test-results
+/coverage
+/coverage-inv
+/coverage-inv-json
+/assets
+/docs
+/supabase
+/Rocket Money web Sep 2025
+/Credit Karma ios Feb 2025
+/smoke-*.png
+/image.png
+/*.zip
+/tsconfig.tsbuildinfo
