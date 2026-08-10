@@ -48,6 +48,7 @@ modules became dark in the first place.
 |---|---|---|---|
 | ~~R-001~~ | ~~Add `rxjs` as a direct dependency~~ | G-007 | **DONE.** `^7.8.2`, `dev:false` in the lock. tsc 0, build 0. Surfaced G-014: `npm install` cannot run on this repo (openai/zod ERESOLVE), masked because CI uses `npm ci`. |
 | R-002 | Upgrade the 18 production-dependency vulns, starting with the `next-auth` critical | G-008 | `npm audit --omit=dev` reports 0 critical, 0 high |
+| **R-008** | **Resolve the coverage-gate / DO-NOT-WIRE conflict** | G-019 | `npm run test:coverage:changed` passes, or the exception is recorded with an owner's name against it. **Owner decision — engineering cannot pick this one**, since every option trades a real thing away. |
 | R-003a | Decide the 4 tables whose verdict does not depend on M1 (`user_backup_codes`, `holdings`, `portfolios`, `bank_accounts`) | G-002 | a decision row for each, signed off. Owner: **unassigned — needs a name** |
 | R-003b | Decide the remaining 63 phantom tables | G-002 | **runs AFTER M1**, not in M0 — each verdict depends on its caller's. No table is created before its caller's verdict is WIRE |
 | R-004 | Convert the 8 anon-client modules to service-role + explicit `user_id` scoping | G-003 | `grep -rl 'from "@/lib/supabase/client"' src/lib` returns only `client.ts` consumers that are genuinely browser-side |
