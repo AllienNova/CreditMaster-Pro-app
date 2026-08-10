@@ -205,3 +205,109 @@ F-105's rate limit and entropy added to the acceptance criteria.
 
 - **Hosted schema.** Raised in every document, unresolved in every document. No owner, no date. Accepted as a standing operator dependency, not re-litigated here.
 - **Mobile.** Honestly disclosed in three places as out of scope. Accepted, with the caveat that the stated goal ("review the complete app") is therefore only partly met — that gap belongs to the owner to scope, not to this plan to hide.
+
+---
+
+## Round 4 — 2026-08-09 — re-review at `24ba4cd`
+
+**Verdict: APPROVE WITH CONDITIONS** (0 P0 · 1 P1 · 2 P2 · 1 P3).
+
+Re-verified against committed source at `24ba4cd`, not against the change
+summary. Commands re-run: the round-3 IDOR laundering reproduction (twice, plus
+a new variant), `npm run audit:idor`, `node scripts/audit-reachability.js`,
+`shellcheck scripts/dogfood.sh`, `bash -n`, and `./scripts/dogfood.sh
+/api/financial/budgets --port 3001` end to end against a live dev server and a
+real local Supabase. All temporary mutations reverted; `.env.local` restored and
+confirmed byte-identical by `shasum -c`; dev server stopped; tree clean.
+
+### Round-3 findings — all 10 verified fixed
+
+| ID | Fix | How I verified it |
+|---|---|---|
+| F-101 P0 | Content-addressed key `file\|table\|op\|kind\|sha1(chain)` + shortfall check | Re-ran my **exact** round-3 mutation → **exit 1**, new query listed at `:129`, *and* the paid-down key reported as below baseline. `sigOf` (`:330-334`) hashes the whitespace-normalised chain, so only a byte-identical chain collides — that is the same defect relocated, not a new one. |
+| F-102 P0 | DELETE → owner approval per batch | `remediation-plan.md:120` "**OWNER APPROVAL REQUIRED per batch — never autonomous**", reinforced at `:171` |
+| F-103 P1 | 55/264 → 32/287, cause stated | `gap-analysis.md:13-21`; my own measurement was 32/287 |
+| F-104 P1 | REMAP withdrawn | `remediation-plan.md:102-103` — both now DELETE-CALLER with the row-per-user vs row-per-code incompatibility spelled out |
+| F-105 P1 | R-006 acceptance widened | `:55` now requires ≥128-bit codes, rate limit + lockout **with a test that trips it**, hashed storage, plaintext once |
+| F-106 P1 | Tally corrected | `:128-131` → 38/18/3, total 59 — matches my mechanical count exactly |
+| F-107 P1 | `scripts/dogfood.sh` | Ran it. See below. |
+| F-108 P1 | R-003 split | `:51-52` R-003a/R-003b; critical path `:279` now `R-003a → M1 → R-003b → M2 → B → A → cohort` |
+| F-109 P1 | Gate enumeration | `LAUNCH_CHECKLIST.md:32` now "Gates A, B, C, D and E" |
+| F-110 P1 | Smoke row | `smoke-test-report.md:22` marked **STALE** and explains that exit 0 means "no NEW findings beyond the baseline", not "0 unscoped queries" |
+| F-111 P2 | `portfolios` reclassified | `gap-analysis.md:94-95` A=2, B=65 |
+
+**F-107 executed, not trusted.** `shellcheck` clean, `bash -n` clean, 191 lines.
+The port guard fired correctly against `:3000` (still held by the LibreChat
+container). Full run against a live dev server on `:3001`:
+
+```
+=== 1. create two users + mint real ES256 access tokens
+  user A fa7e4adb-9016-400b-b735-9de9dce04295
+  user B ca0c73da-c8d7-443c-88bf-f3a9af2f1801
+  alg: ES256
+=== 2. authenticated request as user A
+  HTTP 200   {"success":true,"data":[],"count":0}
+=== 3. unauthenticated request        HTTP 401
+=== 4. cross-user probe               no leakage of fa7e4adb… into user B's response
+=== 5. postgres errors during this run   none
+=== PASS — /api/financial/budgets
+```
+
+Every gap named in round 3 is closed: `$APP`/`$SUPABASE_URL`/`$SERVICE_KEY`/
+`$ANON_KEY`/`$DB` defined (`:39-41,61-62`), the password grant that actually
+yields a token present (`:116-124`), a second user created for the cross-user
+probe (`:129-130`), psql DSN and the Postgres-log command supplied. It also
+declares what it does *not* cover (`:188-191`) rather than implying completeness.
+
+### New finding
+
+**R4-01 (P1) — `--write-baseline` is an unguarded one-command bypass, and the tool recommends it.**
+- **Location:** `scripts/audit-service-role-idor.js:401-425`.
+- **What's wrong:** `--write-baseline` rewrites the baseline from whatever the current candidate set is, with **no shrink-only guard**. The header asserts "This list may only shrink" (`:414`); nothing enforces it. Worse, the shortfall message that F-101's fix added *instructs the operator to run it*: "Debt was paid down — regenerate the baseline: `node scripts/audit-service-role-idor.js --write-baseline`". When a paid-down finding and a new hole coexist — the exact state F-101 exists to catch — following that instruction blesses the new hole.
+- **Evidence:** with my mutation applied, gate → `exit=1` (correct). I then ran the recommended command verbatim. Result: `wrote scripts/idor-baseline.json — 79 keys, 83 findings`, gate → `exit=0`, and the baseline gained `…|analytics_events|select|none|79b7a431f26a`, the key for the new unscoped `.select("*")`. Note the totals stayed **79 keys / 83 findings**, identical to the frozen baseline — a reviewer checking counts rather than keys would see nothing. Baseline restored.
+- **Fix:** make `--write-baseline` shrink-only — refuse to write any key not already in the baseline, and exit non-zero if asked to. Change the shortfall message to name the specific stale keys and tell the operator to prune those, never to regenerate wholesale.
+- **Severity note:** P1 not P0 because the baseline is committed, so the key-level diff is reviewable, and CI runs without the flag. It is nonetheless the same laundering hole with one more step.
+
+### Residual
+
+- **R4-02 (P2) — `dogfood.sh`'s env check reads the file, not the process.** `:71,88` grep `.env.local`/`.env` on disk. I started the dev server exactly as the script's own error message instructs (`NEXT_PUBLIC_SUPABASE_URL=… npm run dev`, inline) and the script still refused, because the file was untouched. The printed remediation does not satisfy the check it prints. Either read the running server's config (e.g. an env echo from `/api/health`) or tell the operator to edit `.env.local`. *(For the record: a second apparent mismatch during this review was my own `node -e` argv bug, not a script defect — the script was right to refuse.)*
+- **R4-03 (P2) — `portfolios` REMAP contradicts the `holdings` rule.** `remediation-plan.md:103` sets `holdings` to DELETE-CALLER because "its only non-test caller is DO-NOT-WIRE". `:104` keeps `portfolios` as REMAP → `investment_portfolios` on "5 non-test call sites in `PortfolioRebalanceService.ts`". But `PortfolioRebalanceService.ts` **is itself in the unreachable list** (confirmed: `audit-reachability.js` prints both it and `AutoRebalanceScheduler.ts`), and its sole importer is `AutoRebalanceScheduler` (`:14-21,158`), verdict DO-NOT-WIRE for fabricated trade execution. Same rule, opposite verdict. Either DELETE-CALLER it too, or state why a REMAP is worth writing for a caller nothing can reach.
+- **R4-04 (P3) — headline scoping.** `gap-analysis.md:12` says "319 of 1,507 **product modules**". `audit-reachability.js:29,89` walks `src/` only. "Next.js entry point" implies it; one parenthetical ("web only; `mobile-app/` is not walked") would close it.
+
+### Judgement on the two you flagged
+
+**F-113 (mobile) — does NOT block.** Two reasons. The deleted-feature sweep
+*did* cover mobile (`git log --all --diff-filter=D … 'mobile-app/**'`, re-run in
+round 3: 51/36/15), so the "did we accidentally drop a deleted feature" half of
+the original goal is answered for mobile. Only the reachability/orphan half is
+not, and mobile is a separate runtime with its own entry-point model that the
+web walker could not analyse without being rewritten. It is disclosed in four
+places. Condition: fix R4-04's parenthetical and log "mobile reachability walk"
+as a named Wave-9 task with an owner, so it is a scheduled gap rather than a
+standing omission.
+
+**Estimates/owners/dates — does NOT block finalisation, but fix one part.**
+Sizing every task would be ceremony for an autonomously-executed plan. Two
+specifics do matter. First, M2 is a per-module loop over 38 WIRE-NOW modules,
+each carrying a mandatory 8-step dogfood; with no size at all there is no way to
+tell whether that is two weeks or two months, and the plan's own highest-rated
+risk is "dogfooding skipped under time pressure" (`:290`). An order-of-magnitude
+estimate on M2 makes that risk manageable. Second, the three open operator items
+— hosted-schema reconciliation, the `src/lib/trading` product decision, FND-026
+sign-off — have no owner and no date in any document. That is precisely how Gate
+C rotted the first time (`audit:auth` sat failing while the checklist called it
+passing). Name an owner and a date for those three; leave the rest unsized.
+
+### Conditions for finalisation
+
+1. **R4-01** — make `--write-baseline` shrink-only and rewrite the shortfall message. This is the only P1 and it re-opens F-101 with one command.
+2. **R4-03** — resolve `portfolios` against the same rule as `holdings`.
+3. **R4-02** — make the env check reflect the running server, or change the advice.
+4. **R4-04** + owner/date on the three open operator items; M2 order-of-magnitude estimate.
+
+Conditions 2–4 are trackable in the delivery plan and do not gate the start of
+work. Condition 1 should land before `audit:idor` is wired into CI as blocking
+(Gate B, box 3), since until then the gate has a documented bypass.
+
+**Plan is finalized** subject to condition 1 landing before Gate B. M0 (R-001,
+R-002, R-003a, R-004, R-005, R-006) and M1 triage may proceed now.
