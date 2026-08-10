@@ -46,6 +46,8 @@ src/app/api/analytics/reports/route.ts,GET;POST,validateFromHeaders,"rbac.hasPer
 src/app/api/analytics/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withAuth,f,"mixed route - 6 per-user sub-types scoped to user.id; `system` sub-type has an inline `rbac.hasPermission('admin:analytics')` check on the DB-resolved role."
 src/app/api/analytics/strategies/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
 src/app/api/analytics/timeseries/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withRole(admin),f,admin analytics - promote to withRole(admin)
+src/app/api/auth/backup-codes/redeem/route.ts,POST,withAuthAllowingAal1,own-rows,withAuthAllowingAal1,f,added 2026-08-10 (R-006) - MFA recovery. DELIBERATELY exempt from the AAL2 gate: a user who lost their authenticator is stuck at aal1 by definition. Rate limited per user; the only route permitted to use this guard
+src/app/api/auth/backup-codes/route.ts,GET;POST,withAuth,own-rows,withAuth,f,added 2026-08-10 (R-006) - server-side backup code management. aal2 is implicit: withAuth already refuses aal1 from a user holding a verified factor
 src/app/api/auth/webauthn/authenticate/route.ts,POST,none,none,PUBLIC,f,pre-auth webauthn challenge - genuinely public
 src/app/api/auth/webauthn/authenticate/verify/route.ts,POST,none,none,PUBLIC,f,pre-auth webauthn verify - genuinely public
 src/app/api/auth/webauthn/credentials/route.ts,DELETE;GET;PATCH,getUser,none,withAuth,f,bare session read - wrap in withAuth

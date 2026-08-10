@@ -178,6 +178,45 @@ export function withAuth(handler: AuthenticatedHandler): RouteHandler {
 }
 
 /**
+ * Authenticated, but EXEMPT from the AAL2 gate.
+ *
+ * There is exactly one legitimate use: the backup-code redemption endpoint. A
+ * user who has lost their authenticator is stuck at `aal1` by definition, so a
+ * recovery route guarded by `withAuth` would refuse the very request that exists
+ * to un-stick them.
+ *
+ * This is an explicit opt-out AT THE ROUTE rather than a central exempt-path
+ * list. A list is a second `PUBLIC_ROUTES.ts` — the drift in that file is what
+ * produced FND-001 — and a path string can be added by someone who never reads
+ * this comment. A named import cannot be applied by accident.
+ *
+ * Anything wrapped in this still requires a valid token and a resolved role. It
+ * relaxes the second factor, nothing else. Do not reach for it to "fix" a route
+ * returning 403 mfa_required: that response is the gate working.
+ */
+export function withAuthAllowingAal1(
+  handler: AuthenticatedHandler,
+): RouteHandler {
+  return async (request: NextRequest) => {
+    const validation = await jwtValidation.validateFromHeaders(request);
+
+    if (!validation.valid || !validation.user?.id) {
+      return unauthorized(validation.error);
+    }
+
+    const roleResult = await buildAuthedUser(
+      validation.user.id,
+      validation.user.email,
+    );
+    if (!roleResult.ok) {
+      return roleResult.response;
+    }
+
+    return handler(request, roleResult.user);
+  };
+}
+
+/**
  * Wraps an API route handler with JWT authentication AND permission check.
  * Returns 401 if not authenticated, 403 if missing permission.
  *
