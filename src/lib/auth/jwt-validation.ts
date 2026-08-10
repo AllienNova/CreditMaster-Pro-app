@@ -11,6 +11,18 @@ export interface JWTUser {
   email: string;
   name?: string;
   role?: string;
+  /**
+   * Authenticator Assurance Level from the token's `aal` claim.
+   *
+   * `aal1` = password only. `aal2` = a second factor was satisfied. Absent on
+   * tokens minted before MFA existed, and absent from self-issued HS256 tokens.
+   *
+   * Carried here because it is the ONLY signal that a session has not completed
+   * MFA, and until now nothing in this codebase read it: a token with
+   * `aal: "aal1"` from a user with a verified TOTP factor was accepted by every
+   * guarded route, including /api/privacy/export. See gap-analysis.md G-020.
+   */
+  aal?: string;
 }
 
 export interface JWTValidationResult {
@@ -39,6 +51,7 @@ interface SupabaseJWTPayload {
   email?: string;
   name?: string;
   role?: string;
+  aal?: string;
   exp?: number;
   iat?: number;
 }
@@ -119,6 +132,7 @@ export const jwtValidation = {
       return {
         id,
         email,
+        aal: payload.aal,
         name: payload.name,
         // NOTE: this role comes from the TOKEN and is advisory only. Every
         // guard in api-guard.ts re-resolves the role from the database before

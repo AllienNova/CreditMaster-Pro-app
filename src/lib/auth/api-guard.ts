@@ -30,6 +30,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { type Role, isAtLeast } from "./roles";
 import { jwtValidation } from "./jwt-validation";
 import { resolveRoleFromDb } from "./resolve-role";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { rbac } from "./rbac";
 
 /**
@@ -82,6 +83,58 @@ type AuthedUserResult =
  * Fail-closed: a guard that cannot determine the role grants no access — it
  * never falls through to the handler.
  */
+/**
+ * Conditional AAL2 enforcement (G-020).
+ *
+ * MEASURED, not assumed: a token carrying `aal: "aal1"` — password verified,
+ * TOTP not yet satisfied — was accepted by every guarded route, including
+ * /api/privacy/export, a full GDPR data export. Nothing anywhere inspected
+ * assurance level, so enrolling a second factor bought a user no protection at
+ * all.
+ *
+ * The check is CONDITIONAL ON ENROLMENT by design. Rejecting every `aal1`
+ * session outright would lock out every user who never opted into MFA the
+ * moment this shipped. Rejecting only users who hold a verified factor means
+ * the rule is simply "if you enrolled a second factor, you must use it".
+ *
+ * `aal` absent is treated as satisfied: tokens predating MFA, and the legacy
+ * HS256 self-issued path, carry no such claim. Treating absent as `aal1` would
+ * reject them all.
+ *
+ * Fails CLOSED. If the factor lookup errors we cannot tell whether MFA is
+ * required, and the safe answer for an auth gate is to refuse rather than to
+ * assume the user has no factors.
+ */
+async function mfaSatisfied(
+  userId: string,
+  aal: string | undefined,
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  if (aal !== "aal1") return { ok: true };
+
+  try {
+    const { data, error } = await getServiceRoleClient().rpc(
+      "user_has_verified_mfa",
+      { p_user_id: userId },
+    );
+    if (error) throw error;
+    if (data !== true) return { ok: true };
+  } catch (error) {
+    console.error("[api-guard] MFA factor lookup failed", error);
+    return { ok: false, response: serviceUnavailable() };
+  }
+
+  return {
+    ok: false,
+    response: NextResponse.json(
+      {
+        error: "mfa_required",
+        message: "Complete multi-factor authentication to continue.",
+      },
+      { status: 403 },
+    ),
+  };
+}
+
 async function buildAuthedUser(
   id: string,
   email: string,
@@ -115,6 +168,11 @@ export function withAuth(handler: AuthenticatedHandler): RouteHandler {
       return roleResult.response;
     }
 
+    const mfa = await mfaSatisfied(validation.user.id, validation.user.aal);
+    if (!mfa.ok) {
+      return mfa.response;
+    }
+
     return handler(request, roleResult.user);
   };
 }
@@ -143,6 +201,11 @@ export function withPermission(
     );
     if (!roleResult.ok) {
       return roleResult.response;
+    }
+
+    const mfa = await mfaSatisfied(validation.user.id, validation.user.aal);
+    if (!mfa.ok) {
+      return mfa.response;
     }
 
     if (!rbac.hasPermission(roleResult.user, permission)) {
@@ -182,6 +245,11 @@ export function withRole(
     );
     if (!roleResult.ok) {
       return roleResult.response;
+    }
+
+    const mfa = await mfaSatisfied(validation.user.id, validation.user.aal);
+    if (!mfa.ok) {
+      return mfa.response;
     }
 
     if (!isAtLeast(roleResult.user.role, requiredRole)) {
@@ -227,6 +295,11 @@ export function withOptionalAuth(
     );
     if (!roleResult.ok) {
       return roleResult.response;
+    }
+
+    const mfa = await mfaSatisfied(validation.user.id, validation.user.aal);
+    if (!mfa.ok) {
+      return mfa.response;
     }
 
     return handler(request, roleResult.user);
