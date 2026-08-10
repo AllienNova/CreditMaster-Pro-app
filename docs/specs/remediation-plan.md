@@ -51,6 +51,40 @@ modules became dark in the first place.
 | R-003 | Decide each of the 68 phantom tables: **CREATE / REMAP / DELETE-CALLER** (taxonomy below) | G-002 | a decision row per table, signed off; no table created before its caller's M1 verdict is WIRE |
 | R-004 | Convert the 8 anon-client modules to service-role + explicit `user_id` scoping | G-003 | `grep -rl 'from "@/lib/supabase/client"' src/lib` returns only `client.ts` consumers that are genuinely browser-side |
 | R-005 | Collapse the two backup-code implementations into one | G-009 | one module, one table, `user_backup_codes` gone |
+| **R-006** | **Fix backup-code MFA recovery — it is broken in LIVE code** | SF-01 | a user who loses their TOTP device can complete recovery, proven by the M2 step-8 dogfood recipe end to end |
+
+**R-006 is the only confirmed live defect in this plan** and it outranks
+everything else in M0. Verified independently:
+
+```
+$ grep -rn "CREATE POLICY" supabase/migrations/*.sql | grep -c backup_codes
+0
+$ grep -rn "backup_codes.*ENABLE ROW LEVEL SECURITY" supabase/migrations/*.sql
+20260516000001_atomic_backup_code_redemption.sql:30
+$ grep -rn "redeem_backup_code" supabase/migrations/*.sql | grep -i grant
+20260516000001:68: GRANT EXECUTE ON FUNCTION redeem_backup_code(UUID, TEXT) TO service_role;
+```
+
+`backup_codes` has RLS **enabled with zero policies anywhere in the migration
+set**, so every `authenticated` read and write fails closed. `redeem_backup_code`
+is granted to `service_role` only, so the browser client's RPC returns 42501. And
+`BackupCodesManagement.tsx` is **reachable** — `src/app/settings/security/page.tsx`
+renders it. A live settings screen offers a recovery mechanism that cannot work,
+and no test caught it because the suite mocks the client.
+
+Fail-closed, so it is a broken control rather than a bypass. It still means a
+user who loses their TOTP device is locked out permanently.
+
+**Design decision — server-side, not RLS policies.** Adding `authenticated`
+policies to `backup_codes` would make it work, and it is the wrong fix. It leaves
+the browser inserting its own backup codes, which puts code generation and
+therefore the entropy under client control. Backup codes are a credential: the
+server must generate them, store only hashes, return plaintext exactly once, and
+redeem through the existing atomic `SECURITY DEFINER` RPC. That RPC being
+`service_role`-only is correct and should stay. Move both `generate` and `verify`
+behind API routes using the service role, and build the missing login-time
+"use a backup code" step — `auth-service.ts` never calls `verifyBackupCode` at
+all today, so even a working table would not have produced a recovery path.
 
 **R-003 is the one that needs judgement, not typing.** Do not create 68 tables.
 Checked by column compatibility rather than name similarity:
