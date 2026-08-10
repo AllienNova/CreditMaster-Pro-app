@@ -106,7 +106,7 @@ its own test as "imported". Measured by transitive reachability:
 
 | Class | Count | Meaning |
 |---|---:|---|
-| **A — test-only** | 2 | `plaid_items`, `tax_document_access_log`. `portfolios` was wrongly placed here — it has 9 sites, 4 of them in `PortfolioRebalanceService.ts`. Cause worth recording: the classification was built by parsing this script's **human output, which truncates at 4 sites** and prints `... +N more`, so any table whose first four sites were tests looked test-only. `--json` now exists for exactly this reason. |
+| **A — test-only** | 2 | `plaid_items`, `tax_document_access_log`. `portfolios` was wrongly placed here — it has 9 sites, **5** of them in `PortfolioRebalanceService.ts` (`:240,264,277,302,555`). Cause worth recording: the classification was built by parsing this script's **human output, which truncates at 4 sites** and prints `... +N more`, so any table whose first four sites were tests looked test-only. `--json` now exists for exactly this reason. |
 | **B — behind unreachable code** | 63 | No user can reach these today. They are a **prerequisite for wiring**, not a live outage. |
 | **C — behind reachable code** | **3** | `pctt_positions`, `autonomous_execution_logs`, `autonomous_scan_logs` — all three in the Fly.io trading service, none a Next.js table. See below. |
 
@@ -141,7 +141,7 @@ Checked by column compatibility, not by name similarity:
 
 | Phantom | Verdict | Evidence |
 |---|---|---|
-| `portfolios` | **DELETE-CALLER** | Its 4 non-test sites are all in `PortfolioRebalanceService.ts`, which is unreachable and whose sole importer is `AutoRebalanceScheduler` (DO-NOT-WIRE, fabricates trades). An earlier revision said REMAP → `investment_portfolios`, which contradicted the rule applied to `holdings` one row down. Same rule, same verdict. |
+| `portfolios` | **DELETE-CALLER** | Its 5 non-test sites are all in `PortfolioRebalanceService.ts` (`:240,264,277,302,555`), which is unreachable and whose sole importer is `AutoRebalanceScheduler` (DO-NOT-WIRE, fabricates trades). An earlier revision said REMAP → `investment_portfolios`, which contradicted the rule applied to `holdings` one row down. Same rule, same verdict. |
 | `user_backup_codes` | **NOT a remap — DELETE-CALLER** | Corrected. `mfa-service.ts:254-259` upserts `{user_id, codes: <JSON array>, updated_at}` — **one row per user**. `backup_codes` (`20260516000001:18-25`) is `{id, user_id, code TEXT, used, used_at, created_at}` — **one row per code**. `codes` and `updated_at` do not exist, `code` is scalar not an array, and the `upsert` on `user_id` has no unique constraint to conflict against. Remapping would fail on first write. `mfa-service` is the orphaned duplicate; it goes, per R-005. |
 | `holdings` | **DELETE-CALLER** | Shape matches `investment_holdings`, but its only non-test caller is `weekly-summary-service.ts:476`, whose verdict is DO-NOT-WIRE. Remapping a query in a module that is not being wired is work with no consumer. |
 | `portfolios` | **REMAP** → `investment_portfolios` | Same. |

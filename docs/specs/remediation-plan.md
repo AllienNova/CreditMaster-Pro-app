@@ -102,7 +102,7 @@ Checked by column compatibility rather than name similarity:
 |---|---|---|
 | `user_backup_codes` | **DELETE-CALLER** (was wrongly "REMAP") | one-row-per-user `{user_id, codes: JSON[], updated_at}` vs one-row-per-code `{id, user_id, code TEXT, used, ...}`. Not compatible; the upsert has no unique constraint to conflict against. `mfa-service` is the orphaned duplicate — R-005 deletes it. |
 | `holdings` | **DELETE-CALLER** (was wrongly "REMAP") | shape matches `investment_holdings`, but its only non-test caller is DO-NOT-WIRE |
-| `portfolios` | **DELETE-CALLER** | 4 non-test sites, all in `PortfolioRebalanceService.ts`, which is unreachable and whose sole importer is `AutoRebalanceScheduler` (DO-NOT-WIRE). An earlier revision said REMAP, contradicting the rule applied to `holdings` in the row above. |
+| `portfolios` | **DELETE-CALLER** | 5 non-test sites, all in `PortfolioRebalanceService.ts` (`:240,264,277,302,555`), which is unreachable and whose sole importer is `AutoRebalanceScheduler` (DO-NOT-WIRE). An earlier revision said REMAP, contradicting the rule applied to `holdings` in the row above. |
 | `bank_accounts` | **CREATE** | `bank_connections` is connection-level (`item_id`, `institution_id`, `provider`); it has **no** account-level columns. The names rhyme, the schemas do not. Remapping on name would have pointed account queries at connection rows. |
 | remaining 64 | one row each | most sit behind code whose M1 verdict may be DELETE, in which case the answer is DELETE-CALLER and no migration at all |
 
@@ -294,6 +294,7 @@ the plan; the rest do not, and inventing precision would be theatre.
 | Hosted-schema reconciliation | one run of the local procedure against staging + prod | **unassigned** | **needs a date** |
 | Trading product decision (72 → now 65 unreachable modules; is PCTT M1 scope?) | one decision, blocks triaging 65 modules individually | **owner only** | **needs a date** |
 | FND-026 SEC sign-off | one sign-off | **owner only** | **needs a date** |
+| **Is the Fly.io autonomous trading service deployed?** | one command, minutes. **BLOCKED: needs operator auth.** `flyctl` is installed but has no token. Run `fly auth login`, then `fly status -a fynvita-autonomous-trading` (`deploy/fly.toml:6`, region `iad`). Undeployed → the service is inert and three phantom tables are dormant. Deployed → an autonomous **trading** process has been failing `42P01` on every write to `pctt_positions`, `autonomous_execution_logs` and `autonomous_scan_logs` in production. Both answers matter today. | **owner only** | **needs a date** |
 | Mobile reachability walker | new script; `audit-reachability.js` never walks `mobile-app/` | **unassigned** | Wave 9 |
 
 Ownerless open items are how Gate C rotted — two of its five boxes sat unowned
