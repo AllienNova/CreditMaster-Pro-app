@@ -67,6 +67,7 @@
     "react-swipeable": "^7.0.2",
     "recharts": "^3.5.1",
     "resend": "^6.2.2",
+    "rxjs": "^7.8.2",
     "stripe": "^19.1.0",
     "tailwind-merge": "^3.4.0",
     "web-push": "^3.6.7",
