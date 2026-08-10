@@ -29,7 +29,7 @@ as evidence.
 
 ## 🔒 M1 Launch Gates — BLOCKING (read before anything else)
 
-**Gates A, B, C and D are ALL M1 preconditions.** The prior revision said "Gates
+**Gates A, B, C, D and E are ALL M1 preconditions.** The prior revision said "Gates
 A–C are the M1 launch preconditions" one line after Gate D declared itself M1
 scope. Gate D is a precondition; it is not optional and not post-launch.
 
@@ -76,7 +76,7 @@ regression slips back in.
 
 - [ ] `npm run audit:auth` (`scripts/verify-auth-coverage.ts`) added to CI and **fails the build** on any unclassified route (must stay 305/305 — was 295 when this line was written; the count moves as routes are added, so CI asserts "all classified", never a hardcoded number)
 - [ ] `npm run test:auth-negative` added to CI and **fails the build** if the negative-auth suite drops below its floor (≥568; 611 at last run)
-- [ ] `npm run audit:idor` added to CI and **fails the build** on any NEW unscoped service-role query. Ratchets against `scripts/idor-baseline.json` (83 findings frozen 2026-08-09); the baseline may only shrink. Mutation-tested in both directions — see commit `6e049cf`.
+- [ ] `npm run audit:idor` added to CI and **fails the build** on any NEW unscoped service-role query. Ratchets against `scripts/idor-baseline.json` (79 keys / 83 findings). Keys are **content-addressed** (`file|table|op|kind|sha1-of-chain`). An earlier count-keyed version was launderable — scoping one baselined query while adding a new unscoped one left the count unchanged and exited 0; reproduced, then fixed in `7f856e3`. The claim that it was "mutation-tested in both directions" was made of that earlier version and is **withdrawn**; the current version is tested against the laundering attack specifically.
 - [ ] `node scripts/audit-phantom-tables.js` added to CI **once the 68 phantom tables are closed**; it exits non-zero today by design. Wiring it before then would force it to be disabled, which is how the previous gate rotted.
 - [ ] All four wired into CI **before** the production flag flip in Gate A
 

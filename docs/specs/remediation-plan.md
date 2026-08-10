@@ -9,12 +9,12 @@
 
 ## The premise, corrected
 
-The task began as "the 55 restored modules have no importers — wire them."
+The task began as "the restored modules have no importers — wire them."
 Measurement changed the shape of the problem twice:
 
 | Believed | Measured | Command |
 |---|---|---|
-| ~55 modules orphaned | **319 of 1,507 unreachable**; the 55 are 17% of it. 264 predate the restore | `node scripts/audit-reachability.js` |
+| ~55 modules orphaned | **319 of 1,507 unreachable**; only **32** came from the restore, **287** predate it | `node scripts/audit-reachability.js` |
 | 36 phantom tables fail at runtime today | **1** does (`pctt_positions`) | reachability × `audit-phantom-tables.js` |
 | 12 modules on the anon client, 4 of them live cron routes | **8**, all unreachable, all latent | grep on the *import*, not the name |
 
@@ -37,7 +37,7 @@ M0 Prerequisites ──► M1 Triage the 319 ──► M2 Wire (per-module loop)
 ```
 
 M0 blocks everything. M1 is judgement, not code, and must finish before M2
-starts — wiring one module at a time without a decided target set is how 264
+starts — wiring one module at a time without a decided target set is how 287
 modules became dark in the first place.
 
 ---
@@ -48,10 +48,11 @@ modules became dark in the first place.
 |---|---|---|---|
 | R-001 | Add `rxjs` to `package.json` as a direct dependency | G-007 | `npm ls rxjs` shows it at top level; build green after `rm -rf node_modules && npm ci` |
 | R-002 | Upgrade the 18 production-dependency vulns, starting with the `next-auth` critical | G-008 | `npm audit --omit=dev` reports 0 critical, 0 high |
-| R-003 | Decide each of the 68 phantom tables: **CREATE / REMAP / DELETE-CALLER** (taxonomy below) | G-002 | a decision row per table, signed off; no table created before its caller's M1 verdict is WIRE |
+| R-003a | Decide the 4 tables whose verdict does not depend on M1 (`user_backup_codes`, `holdings`, `portfolios`, `bank_accounts`) | G-002 | a decision row for each, signed off |
+| R-003b | Decide the remaining 64 phantom tables | G-002 | **runs AFTER M1**, not in M0 — each verdict depends on its caller's. No table is created before its caller's verdict is WIRE |
 | R-004 | Convert the 8 anon-client modules to service-role + explicit `user_id` scoping | G-003 | `grep -rl 'from "@/lib/supabase/client"' src/lib` returns only `client.ts` consumers that are genuinely browser-side |
 | R-005 | Collapse the two backup-code implementations into one | G-009 | one module, one table, `user_backup_codes` gone |
-| **R-006** | **Fix backup-code MFA recovery — it is broken in LIVE code** | SF-01 | a user who loses their TOTP device can complete recovery, proven by the M2 step-8 dogfood recipe end to end |
+| **R-006** | **Fix backup-code MFA recovery — it is broken in LIVE code** | SF-01 | ALL of: (a) a user who loses their TOTP device completes recovery, proven end to end by the M2 step-8 recipe; (b) codes are **≥128-bit** — today they are `crypto.randomBytes(4)`, i.e. **32 bits** (`backup-codes.ts:58`); (c) a **rate limit + lockout** on the redemption endpoint, with a test that proves it trips; (d) codes stored hashed, plaintext returned exactly once |
 
 **R-006 is the only confirmed live defect in this plan** and it outranks
 everything else in M0. Verified independently:
@@ -75,6 +76,13 @@ and no test caught it because the suite mocks the client.
 Fail-closed, so it is a broken control rather than a bypass. It still means a
 user who loses their TOTP device is locked out permanently.
 
+**Do not trade a fail-CLOSED defect for a fail-OPEN one.** Backup codes are
+`crypto.randomBytes(4)` — **32 bits** (`backup-codes.ts:58`) — and the module
+has no rate limiting (`grep -niE "ratelimit|throttle|attempts"` returns
+nothing). "Recovery works" as the sole acceptance criterion would ship a
+brute-forceable credential endpoint, which is strictly worse than today's
+lockout. Widen the codes and rate-limit the endpoint in the same change.
+
 **Design decision — server-side, not RLS policies.** Adding `authenticated`
 policies to `backup_codes` would make it work, and it is the wrong fix. It leaves
 the browser inserting its own backup codes, which puts code generation and
@@ -91,9 +99,9 @@ Checked by column compatibility rather than name similarity:
 
 | Phantom | Verdict | Why |
 |---|---|---|
-| `user_backup_codes` | REMAP → `backup_codes` | existing table has exactly the columns written at `mfa-service.ts:255,292` |
-| `holdings` | REMAP → `investment_holdings` | live table carries the full holding shape |
-| `portfolios` | REMAP → `investment_portfolios` | same |
+| `user_backup_codes` | **DELETE-CALLER** (was wrongly "REMAP") | one-row-per-user `{user_id, codes: JSON[], updated_at}` vs one-row-per-code `{id, user_id, code TEXT, used, ...}`. Not compatible; the upsert has no unique constraint to conflict against. `mfa-service` is the orphaned duplicate — R-005 deletes it. |
+| `holdings` | **DELETE-CALLER** (was wrongly "REMAP") | shape matches `investment_holdings`, but its only non-test caller is DO-NOT-WIRE |
+| `portfolios` | REMAP → `investment_portfolios` | 5 non-test call sites in `PortfolioRebalanceService.ts`; shape matches |
 | `bank_accounts` | **CREATE** | `bank_connections` is connection-level (`item_id`, `institution_id`, `provider`); it has **no** account-level columns. The names rhyme, the schemas do not. Remapping on name would have pointed account queries at connection rows. |
 | remaining 64 | one row each | most sit behind code whose M1 verdict may be DELETE, in which case the answer is DELETE-CALLER and no migration at all |
 
@@ -101,7 +109,7 @@ Checked by column compatibility rather than name similarity:
 
 ## M1 — Triage all 319 unreachable modules
 
-Not just the 55. Output is one verdict per module, recorded in
+Not just the 32 restored ones. Output is one verdict per module, recorded in
 `orphan-module-review.md`:
 
 | Verdict | Meaning | Next step |
@@ -109,7 +117,7 @@ Not just the 55. Output is one verdict per module, recorded in
 | `WIRE-NOW` | reachable target exists, no phantom tables, not stale | M2 |
 | `WIRE-AFTER-TABLES` | needs migrations first | M2, after R-003 |
 | `FIX-FIRST` | has a named defect | fix, then M2 |
-| `DELETE` | superseded, speculative, or duplicates a live module | delete in a standalone commit |
+| `DELETE` | superseded, speculative, or duplicates a live module | **OWNER APPROVAL REQUIRED per batch — never autonomous.** Route to a human queue, record the approval in `orphan-module-review.md`, then delete in a standalone commit |
 | `DO-NOT-WIRE` | would reintroduce a closed finding or fabricate data | leave dark, record why |
 | `JEST-INFRA` | `__mocks__`, `setupTests` | exempt |
 
@@ -118,9 +126,14 @@ Not just the 55. Output is one verdict per module, recorded in
 | Verdict | Count |
 |---|---:|
 | `WIRE-NOW` | 38 |
-| `DO-NOT-WIRE` | 21 |
+| `DO-NOT-WIRE` | 18 |
 | `JEST-INFRA` | 3 |
-| `WIRE-AFTER-TABLES` | 1 |
+| **Total reviewed** | **59** |
+
+(An earlier revision of this table read 38 / 21 / 3 / 1 = 63. That did not
+reconcile with its own source: a mechanical count of the `orphan-module-review.md`
+table gives 59, and that document carries a section headed "No pure
+WIRE-AFTER-TABLES cases". The inflated figures were mine, not the reviewer's.)
 
 **Four modules are DO-NOT-WIRE for fabricated money movement.** Each writes a
 row asserting a transfer, contribution, donation, or trade happened, with no
@@ -147,6 +160,15 @@ This is the same class as FND-016/017 (fake Visa 4242) and DEFAB-2 (fabricated
 credit scores), both of which were closed by deletion. Treatment is the
 achievements precedent: gate the path (501 / flag) until the real integration
 exists. `success: true` must never ship without a real downstream call.
+
+> **DELETE is not an autonomous verdict.** The owner has already overruled
+> exactly this call once — `8e5481d` is titled *"reactivate 55 services deleted
+> as 'dead code' — they were another session's work"*. A plan that lets an agent
+> delete 319 modules on its own judgement re-enacts that incident at six times
+> the scale, and it breaches the standing hard limit against deleting files the
+> user did not ask to be created. Autonomous verdicts are capped at
+> `WIRE-NOW` / `WIRE-AFTER-TABLES` / `DO-NOT-WIRE` / `FIX-FIRST` / `JEST-INFRA`.
+> Every DELETE waits for a named human approval, per batch, recorded in writing.
 
 Two hard constraints on this pass:
 
@@ -245,7 +267,12 @@ exercised.
 | **Medium** | Gate B CI wiring | M2 per-module wiring | `src/lib/trading` product decision |
 | **Low** | doc drift in CLAUDE.md | — | — |
 
-**Critical path:** `R-003 → M1 triage → M2 wiring → Gate B → Gate A → cohort`.
+**Critical path:** `R-003a → M1 triage → R-003b → M2 wiring → Gate B → Gate A → cohort`.
+
+An earlier revision put R-003 in M0 as "blocking, do first" while its own
+acceptance criterion required M1 verdicts — a milestone depending on the
+milestone it blocks. Splitting it removes the cycle: the 4 tables that can be
+decided from schema alone are M0; the other 64 wait for their callers.
 
 ---
 

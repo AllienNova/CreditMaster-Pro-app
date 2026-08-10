@@ -10,12 +10,19 @@
 ## The headline, stated first
 
 **319 of 1,507 product modules — 21% — cannot be reached from any Next.js entry
-point.** Only **55** of those came from the restore that prompted this review.
-The other **264 were already dead**, and had been for months.
+point.** Only **32** of those came from the restore that prompted this review.
+The other **287 were already dead**, and had been for months.
+
+(An earlier revision said 55 / 264. The 55 was the restore commit's *file*
+headline, not a count of unreachable modules: `8e5481d` touched 56 `src/` paths,
+35 non-test, of which 32 land in the unreachable set. The conclusion gets
+stronger — the restore is 10% of the problem, not 17% — but a document opening
+with "every number below is executed output" has to get its own arithmetic
+right.)
 
 That reframes the request. "The restored modules have no importers" is true, but
-it is a 17% slice of a pre-existing condition nobody had measured. Wiring the 55
-without addressing the 264 leaves four fifths of the dead code in place.
+it is a 10% slice of a pre-existing condition nobody had measured. Wiring the 32
+without addressing the 287 leaves nine tenths of the dead code in place.
 
 ```
 $ node scripts/audit-reachability.js
@@ -61,7 +68,7 @@ shipped architecture are 72 modules of unreachable code.
 
 | ID | Sev | Category | Finding | Evidence | Fix sketch |
 |---|---|---|---|---|---|
-| G-001 | P1 | Dead code | 319 product modules unreachable; 264 predate the restore | `node scripts/audit-reachability.js` | Per-module WIRE / DELETE decision. Deleting is a valid, often correct outcome. |
+| G-001 | P1 | Dead code | 319 product modules unreachable; 287 predate the restore | `node scripts/audit-reachability.js` | Per-module WIRE / DELETE decision. Deleting is a valid, often correct outcome. |
 | G-002 | P1 | Correctness | 68 tables queried, created by no migration | `node scripts/audit-phantom-tables.js` | See the table taxonomy below — most are prerequisites, not outages. |
 | G-003 | P1 | Correctness | **8** modules still import the session-less anon client; their reads return **zero rows with no error** under RLS. All 8 are unreachable, so this is **latent** — it goes live the instant one is wired | §"Anon client" below | Convert to service-role + explicit `user_id` scoping, as the 63 already converted. Must happen **before** wiring, not after. |
 | ~~G-004~~ | — | ~~Correctness~~ | **VOID — withdrawn 2026-08-09.** Claimed all four `/api/cron/*` routes used the anon client and therefore silently wrote nothing. False: each defines its **own local** `getSupabase()` built from `SUPABASE_SERVICE_ROLE_KEY` (`send-reminders/route.ts:5-14`). The finding came from grepping the function *name* rather than the *import*, which matched a local helper that happens to share it. | `grep -c SUPABASE_SERVICE_ROLE_KEY` = 1 in all four | None. The routes are correct. |
@@ -84,8 +91,8 @@ its own test as "imported". Measured by transitive reachability:
 
 | Class | Count | Meaning |
 |---|---:|---|
-| **A — test-only** | 3 | `plaid_items`, `portfolios`, `tax_document_access_log`. Only a test seeds them. The test would fail against a real database. |
-| **B — behind unreachable code** | 64 | No user can reach these today. They are a **prerequisite for wiring**, not a live outage. |
+| **A — test-only** | 2 | `plaid_items`, `tax_document_access_log` — both verified genuinely test-only; the tests would fail against a real database. `portfolios` was wrongly placed here: it has 9 sites, **5 non-test**, in `PortfolioRebalanceService.ts`. Corrected on review. |
+| **B — behind unreachable code** | 65 | No user can reach these today. They are a **prerequisite for wiring**, not a live outage. |
 | **C — behind reachable code** | **1** | `pctt_positions` — and on inspection it is not a missing migration at all. See below. |
 
 **`pctt_positions` is not a Next.js table.** The module is file-reachable
@@ -106,9 +113,10 @@ So no migration should be written for it in this repo. Verdict:
 > `pctt_positions` case. So class C is an upper bound. The honest statement is
 > "at most one, and that one is cross-service", not a proven zero.
 
-The corrected shape matters for sequencing: creating 64 tables is not urgent
-firefighting, it is the cost of turning dead code on. Only `pctt_positions` is
-urgent, and only if that path is genuinely exercised.
+The corrected shape matters for sequencing: creating tables for class B is not
+urgent firefighting, it is the cost of turning dead code on — and for any module
+whose verdict is DO-NOT-WIRE or DELETE, the correct answer is no migration at
+all. Nothing in this list is a live outage.
 
 ### Not every phantom needs a new table
 
@@ -116,8 +124,8 @@ Checked by column compatibility, not by name similarity:
 
 | Phantom | Verdict | Evidence |
 |---|---|---|
-| `user_backup_codes` | **REMAP** → `backup_codes` | Existing table has exactly `code, used, used_at, user_id, created_at` — the columns `mfa-service.ts:255,292` writes. |
-| `holdings` | **REMAP** → `investment_holdings` | Live table carries the full holding shape. |
+| `user_backup_codes` | **NOT a remap — DELETE-CALLER** | Corrected. `mfa-service.ts:254-259` upserts `{user_id, codes: <JSON array>, updated_at}` — **one row per user**. `backup_codes` (`20260516000001:18-25`) is `{id, user_id, code TEXT, used, used_at, created_at}` — **one row per code**. `codes` and `updated_at` do not exist, `code` is scalar not an array, and the `upsert` on `user_id` has no unique constraint to conflict against. Remapping would fail on first write. `mfa-service` is the orphaned duplicate; it goes, per R-005. |
+| `holdings` | **DELETE-CALLER** | Shape matches `investment_holdings`, but its only non-test caller is `weekly-summary-service.ts:476`, whose verdict is DO-NOT-WIRE. Remapping a query in a module that is not being wired is work with no consumer. |
 | `portfolios` | **REMAP** → `investment_portfolios` | Same. |
 | `bank_accounts` | **CREATE — not a remap** | `bank_connections` is connection-level (`item_id`, `institution_id`, `provider`, `access_token_encrypted`) with **no** account-level columns. The names look alike; the schemas do not. Remapping on name would have silently pointed account queries at connection rows. |
 
@@ -199,4 +207,5 @@ skipping.
 | Date | Change |
 |---|---|
 | 2026-08-09 | Created at `2b23237`. Corrects the phantom-table reachability split (36 → 1) after replacing a name-matching orphan check with a transitive graph walk. |
+| 2026-08-09 | **Round-3 critic corrections** (`critic-review.md`): restore split 55/264 → **32/287** (the 55 was a file count, not a module count); `portfolios` moved out of test-only (A=2, B=65); `user_backup_codes` and `holdings` REMAP verdicts withdrawn as wrong. |
 | 2026-08-09 | **G-004 withdrawn** and G-003 restated (12 modules → 8, all unreachable, latent not live). Both errors had the same cause: matching on a *function name* instead of an *import*. `/api/cron/*` defines a local `getSupabase()` from the service-role key, which the name-grep could not tell apart from the anon-client import. Two of the three biggest numbers in the first draft of this document came from name-matching, and both were wrong in the alarming direction. |
