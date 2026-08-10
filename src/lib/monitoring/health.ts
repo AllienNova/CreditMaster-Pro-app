@@ -145,80 +145,32 @@ async function checkCache(): Promise<ComponentHealth> {
   };
 }
 
-// Check external services
-async function checkExternalServices(): Promise<ComponentHealth[]> {
-  const services = [
-    { name: "stripe", url: "https://api.stripe.com/v1" },
-    { name: "supabase", url: process.env.NEXT_PUBLIC_SUPABASE_URL || "" },
-  ];
-
-  const results: ComponentHealth[] = [];
-
-  for (const service of services) {
-    if (!service.url) {
-      results.push({
-        name: service.name,
-        status: "degraded",
-        message: "URL not configured",
-        lastChecked: new Date().toISOString(),
-      });
-      continue;
-    }
-
-    const start = performance.now();
-
-    // The `.catch(() => {})` that used to sit on this fetch swallowed every
-    // network error, so the `catch` block below was unreachable and every
-    // service was reported healthy whether or not it answered. Removing it is
-    // the entire fix: a rejected fetch now reaches the handler.
-    //
-    // Any HTTP response counts as reachable. `HEAD https://api.stripe.com/v1`
-    // returns 401 without credentials, and a 401 still proves DNS, TLS and the
-    // service are up — which is what this check is for. Only a transport-level
-    // failure or the timeout means degraded.
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-
-      try {
-        await fetch(service.url, {
-          method: "HEAD",
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeout);
-      }
-
-      results.push({
-        name: service.name,
-        status: "healthy",
-        latency: Math.round(performance.now() - start),
-        lastChecked: new Date().toISOString(),
-      });
-    } catch (error) {
-      logDetail(service.name, error);
-      results.push({
-        name: service.name,
-        status: "degraded",
-        message: "unreachable",
-        latency: Math.round(performance.now() - start),
-        lastChecked: new Date().toISOString(),
-      });
-    }
-  }
-
-  return results;
-}
-
-// Main health check
+/**
+ * SHALLOW health, for the PUBLIC endpoint. Self-owned dependencies only.
+ *
+ * Deep, per-vendor, credential-bearing probes already exist and are better than
+ * anything worth rebuilding here: `service-probes.ts` (`probeAllServices()`),
+ * wired to `/api/admin/health` behind `withRole("admin")`. Its header names this
+ * very file as the fake-green defect it replaced — that diagnosis was correct
+ * and predates this fix.
+ *
+ * They stay separate, and the split is a security boundary rather than an
+ * oversight. `/api/health` is in `PUBLIC_ROUTES.ts` and unauthenticated. Calling
+ * `probeAllServices()` from it would let any anonymous caller drive six
+ * credential-bearing outbound requests to Stripe, Supabase, AIML, Plaid, S3 and
+ * Resend — an amplification and cost vector — and the per-service results would
+ * disclose exactly which vendors are configured.
+ *
+ * For the same reason the outbound `HEAD` checks that used to live here are
+ * gone: on a public endpoint they were a miniature of that vector, and they
+ * duplicated probes that already exist behind auth. What remains is what a
+ * liveness/readiness consumer actually needs — can this instance reach its own
+ * database and cache.
+ */
 export async function checkHealth(): Promise<HealthReport> {
-  const [database, cache, ...externalServices] = await Promise.all([
-    checkDatabase(),
-    checkCache(),
-    ...(await checkExternalServices()),
-  ]);
+  const [database, cache] = await Promise.all([checkDatabase(), checkCache()]);
 
-  const components = [database, cache, ...externalServices];
+  const components = [database, cache];
 
   // Determine overall status
   let status: HealthStatus = "healthy";
@@ -258,9 +210,10 @@ export async function readinessCheck(): Promise<{
           : undefined,
     };
   } catch (error) {
-    return {
-      ready: false,
-      reason: error instanceof Error ? error.message : "Health check failed",
-    };
+    // Same public-surface rule as the component probes: the caller gets a fixed
+    // string, the detail goes to the server log. This branch previously returned
+    // the raw error message on an unauthenticated endpoint.
+    logDetail("readiness", error);
+    return { ready: false, reason: "Health check failed" };
   }
 }
