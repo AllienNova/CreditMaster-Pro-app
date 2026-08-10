@@ -150,16 +150,44 @@ class Logger {
 
     const formatted = this.formatLog(entry);
 
-    // Output to log aggregation service in production
-    // In a real implementation, this would send to CloudWatch, Datadog, etc.
-    void formatted;
+    // EMIT IT. This line used to read `void formatted;` — the entry was built,
+    // formatted, and thrown away, in every environment, unconditionally. Ten
+    // modules call this logger and eight of them have no other output path, so
+    // stripe-service, auth-service, order-manager, position-manager and the
+    // credits purchase route produced ZERO diagnostic output on failure. A
+    // production incident in payments left no trace at all.
+    //
+    // It also silently reversed a deliberate fix. `9b5ac20` changed
+    // pctt-trading-service's persistence handlers from console.error to
+    // logger.error, reasoning in-comment that it would "surface through
+    // whatever the Fly.io deployment's log pipeline is" — moving a working
+    // path onto a discarding one, for code that runs AFTER a real broker order
+    // has already filled. A failure to persist a filled trade became invisible.
+    //
+    // console.* IS the log pipeline on both deployment targets: Vercel captures
+    // stdout/stderr from functions, Fly.io captures the process's streams. No
+    // aggregation SDK is needed for logs to be readable, and pretending one was
+    // required is what kept this a no-op.
+    switch (level) {
+      case "fatal":
+      case "error":
+        console.error(formatted);
+        break;
+      case "warn":
+        console.warn(formatted);
+        break;
+      case "debug":
+        console.debug(formatted);
+        break;
+      default:
+        console.info(formatted);
+    }
 
-    // In production, also send to:
-    // - CloudWatch Logs
-    // - Datadog
-    // - New Relic
-    // - Elasticsearch
-    // etc.
+    // NOTE: logAggregationConfig at the bottom of this file reads
+    // LOG_AGGREGATION_ENDPOINT / LOG_AGGREGATION_API_KEY and is still wired to
+    // nothing. Shipping to an aggregator is a separate decision with a cost and
+    // a vendor attached; it is NOT a prerequisite for logs existing, which is
+    // the confusion that left this method empty. Tracked in gap-analysis.md.
   }
 
   debug(message: string, context?: LogContext): void {
