@@ -113,6 +113,41 @@ Not just the 55. Output is one verdict per module, recorded in
 | `DO-NOT-WIRE` | would reintroduce a closed finding or fabricate data | leave dark, record why |
 | `JEST-INFRA` | `__mocks__`, `setupTests` | exempt |
 
+### Verdicts already returned (`orphan-module-review.md`)
+
+| Verdict | Count |
+|---|---:|
+| `WIRE-NOW` | 38 |
+| `DO-NOT-WIRE` | 21 |
+| `JEST-INFRA` | 3 |
+| `WIRE-AFTER-TABLES` | 1 |
+
+**Four modules are DO-NOT-WIRE for fabricated money movement.** Each writes a
+row asserting a transfer, contribution, donation, or trade happened, with no
+call to any payment, banking, or brokerage rail — and each carries an in-code
+comment admitting it:
+
+| Module | What it fabricates |
+|---|---|
+| `auto-save-rules-service.ts:475-506` | sets `save_transfers.status = "completed"` and increments rule stats; no banking call in the file |
+| `ContributionSchedulerService.ts:627-639` | `executeTransfer()` voids all three arguments and returns `true` unconditionally |
+| `commitment-device-service.ts:399-423` | writes `consequence_executed: true` plus a `commitment_donations` row naming a real charity and a dollar amount |
+| `AutoRebalanceScheduler.ts:425-493` | invents `orderId`, `executedPrice`, `commission`; returns `success: true` |
+
+Two of these are worse than "writes to a phantom table and 500s":
+
+- **`ContributionSchedulerService`** feeds `completeContribution()`, which
+  increments **`financial_goals.current_amount` — a real, live, user-facing
+  table.** Missing schema does not block it. Wiring it as-is moves a real
+  progress bar with money that never moved.
+- **`commitment-device-service`** tells a user that a named charity received a
+  donation in their name when nothing was sent.
+
+This is the same class as FND-016/017 (fake Visa 4242) and DEFAB-2 (fabricated
+credit scores), both of which were closed by deletion. Treatment is the
+achievements precedent: gate the path (501 / flag) until the real integration
+exists. `success: true` must never ship without a real downstream call.
+
 Two hard constraints on this pass:
 
 1. **Staleness check per module.** The restored copies came from
