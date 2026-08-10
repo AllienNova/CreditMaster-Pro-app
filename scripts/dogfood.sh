@@ -62,37 +62,64 @@ SERVICE_KEY="$(npx supabase status -o json 2>/dev/null | jq -r '.SERVICE_ROLE_KE
 ANON_KEY="$(npx supabase status -o json 2>/dev/null | jq -r '.ANON_KEY // empty')"
 [[ -n "$SERVICE_KEY" && -n "$ANON_KEY" ]] || fail "could not read keys from 'npx supabase status -o json'"
 
-# The app must verify tokens against the SAME Supabase that minted them.
-# Learned the hard way on the first real run: .env.local pointed
-# NEXT_PUBLIC_SUPABASE_URL at a hosted project while this script minted tokens
-# locally, so the app fetched a JWKS with different keys, the `kid` was unknown,
-# and every request 401'd. That looks identical to a broken auth guard. Checking
-# it here turns a confusing false failure into one line of explanation.
-APP_SUPABASE_URL="$(grep -sh '^NEXT_PUBLIC_SUPABASE_URL=' .env.local .env 2>/dev/null \
-  | head -1 | cut -d= -f2- | tr -d '"'"'"' \r')"
+# The app must verify tokens against the SAME Supabase that minted them, and the
+# service-role key must match too. Two distinct failures, both observed:
+#   URL mismatch  -> unknown JWKS `kid` -> 401 on every request, indistinguishable
+#                    from a broken auth guard.
+#   svc mismatch  -> a HOSTED service-role JWT presented to the LOCAL Supabase ->
+#                    HTTP 500 "No suitable key or wrong key type" from inside the
+#                    handler, which looks nothing like a config problem.
+#
+# These are WARNINGS, not preconditions, and that distinction was earned. The
+# first version read .env.local and refused outright — but the remediation it
+# printed said to start the dev server with INLINE env vars, which leaves
+# .env.local untouched. So following the printed instruction still failed the
+# check that printed it. A file on disk is not evidence of what a running
+# process loaded; env vars, .env.development.local and shell exports all
+# override it.
+#
+# So: warn here, and if step 2 actually fails, name these as the likely cause
+# (see diagnose_auth_failure). Observed behaviour decides; the file only hints.
+read_env() {
+  grep -sh "^$1=" .env.local .env 2>/dev/null | head -1 | cut -d= -f2- \
+    | tr -d '"'"'"' \r'
+}
+APP_SUPABASE_URL="$(read_env NEXT_PUBLIC_SUPABASE_URL)"
+APP_SVC="$(read_env SUPABASE_SERVICE_ROLE_KEY)"
+ENV_HINT=""
+
 if [[ -n "$APP_SUPABASE_URL" && "$APP_SUPABASE_URL" != "$SUPABASE_URL" ]]; then
-  fail "ENV MISMATCH — the app verifies against ${APP_SUPABASE_URL} but this
-  script mints tokens at ${SUPABASE_URL}. Different projects sign with different
-  keys, so every request would 401 on an unknown JWKS 'kid' and look like an auth
-  bug. Point NEXT_PUBLIC_SUPABASE_URL at ${SUPABASE_URL} for the dev server, e.g.
-
-    NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL} \\
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon key> npm run dev"
+  ENV_HINT+="  .env.local NEXT_PUBLIC_SUPABASE_URL = ${APP_SUPABASE_URL}
+    (this script mints tokens at ${SUPABASE_URL})
+"
+  echo "  WARN: .env.local points at ${APP_SUPABASE_URL}, not ${SUPABASE_URL}."
+  echo "        Fine if the dev server was started with inline overrides."
 fi
-
-# The SERVICE-ROLE key has to match too, and it is the easier one to forget:
-# swapping only the URL and the anon key leaves a HOSTED service-role JWT being
-# presented to the LOCAL Supabase, which cannot verify it. That surfaces as
-# HTTP 500 "No suitable key or wrong key type" from inside the route handler —
-# nothing like an auth problem, and it cost three restarts to spot.
-APP_SVC="$(grep -sh '^SUPABASE_SERVICE_ROLE_KEY=' .env.local .env 2>/dev/null \
-  | head -1 | cut -d= -f2- | tr -d '"'"'"' \r')"
 if [[ -n "$APP_SVC" && "$APP_SVC" != "$SERVICE_KEY" ]]; then
-  fail "ENV MISMATCH — SUPABASE_SERVICE_ROLE_KEY in .env.local is not the local
-  one. A hosted service-role JWT sent to the local Supabase fails as
-  500 'No suitable key or wrong key type' from inside the handler. Set all THREE
-  to local values: URL, anon key, and service-role key."
+  ENV_HINT+="  .env.local SUPABASE_SERVICE_ROLE_KEY is not the local one
+"
+  echo "  WARN: .env.local SUPABASE_SERVICE_ROLE_KEY is not the local key."
 fi
+[[ -z "$ENV_HINT" ]] && echo "  env: all three local values match"
+
+diagnose_auth_failure() {
+  echo ""
+  echo "  LIKELY CAUSE — the app is not talking to the Supabase that minted this token."
+  if [[ -n "$ENV_HINT" ]]; then
+    echo "$ENV_HINT"
+  else
+    echo "  .env.local looks correct, so check what the RUNNING process actually"
+    echo "  loaded: inline vars, exported shell vars, and .env.development.local"
+    echo "  all override it."
+  fi
+  echo "  Start the dev server with ALL THREE local values, e.g.:"
+  echo ""
+  echo "    NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL} \\"
+  echo "    NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon> \\"
+  echo "    SUPABASE_SERVICE_ROLE_KEY=<local service role> npm run dev"
+  echo ""
+  echo "  Read them with:  npx supabase status -o json | jq"
+}
 
 # ---------------------------------------------------------------------------
 # 1. Two real users. Admin-create returns a USER OBJECT, never a token; the
@@ -142,7 +169,14 @@ BODY_A="$(curl -s -w '\n%{http_code}' "${APP}${ROUTE}" -H "authorization: Bearer
 CODE_A="$(echo "$BODY_A" | tail -1)"; PAYLOAD_A="$(echo "$BODY_A" | sed '$d')"
 echo "  HTTP ${CODE_A}"
 echo "  ${PAYLOAD_A}" | head -c 600; echo
-[[ "$CODE_A" =~ ^2 ]] || fail "authenticated request returned ${CODE_A}"
+if [[ ! "$CODE_A" =~ ^2 ]]; then
+  # 401 (unknown kid) and 500 "No suitable key" are both env-mismatch
+  # signatures, not application defects. Say so instead of just failing.
+  if [[ "$CODE_A" == "401" ]] || echo "$PAYLOAD_A" | grep -q "No suitable key"; then
+    diagnose_auth_failure
+  fi
+  fail "authenticated request returned ${CODE_A}"
+fi
 
 if echo "$PAYLOAD_A" | jq -e '(.data? // .notifications? // empty) | length == 0' >/dev/null 2>&1; then
   echo "  WARNING: empty collection. If you seeded a row for this user, that is"

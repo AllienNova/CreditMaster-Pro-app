@@ -14,15 +14,15 @@ Measurement changed the shape of the problem twice:
 
 | Believed | Measured | Command |
 |---|---|---|
-| ~55 modules orphaned | **319 of 1,507 unreachable**; only **32** came from the restore, **287** predate it | `node scripts/audit-reachability.js` |
-| 36 phantom tables fail at runtime today | **1** does (`pctt_positions`) | reachability × `audit-phantom-tables.js` |
+| ~55 modules orphaned | **312 of 1,507 unreachable** (web only); only **32** came from the restore, **280** predate it | `node scripts/audit-reachability.js` |
+| 36 phantom tables fail at runtime today | **0** behind Next.js-reachable code; the 3 that look reachable belong to the Fly.io trading service | `audit-phantom-tables.js --json` × reachability |
 | 12 modules on the anon client, 4 of them live cron routes | **8**, all unreachable, all latent | grep on the *import*, not the name |
 
 Both corrections went the same direction: the alarming reading came from
 matching **names**, the true reading from following **imports**. That is the
 method rule for everything below.
 
-So this is not an outage. It is 319 modules of code that a user cannot reach,
+So this is not an outage. It is 312 modules of code that a user cannot reach,
 inside a product whose canonical docs describe much of it as shipped. The
 deliverable is a decision per module, and **DELETE is a first-class outcome** —
 `CLAUDE.md`'s own working agreement #3 says prefer deletion over addition.
@@ -32,12 +32,12 @@ deliverable is a decision per module, and **DELETE is a first-class outcome** �
 ## Sequencing
 
 ```
-M0 Prerequisites ──► M1 Triage the 319 ──► M2 Wire (per-module loop) ──► M3 Gates
+M0 Prerequisites ──► M1 Triage the 312 ──► M2 Wire (per-module loop) ──► M3 Gates
    (blocking)          (decide, cheap)       (expensive, per module)      (launch)
 ```
 
 M0 blocks everything. M1 is judgement, not code, and must finish before M2
-starts — wiring one module at a time without a decided target set is how 287
+starts — wiring one module at a time without a decided target set is how 280
 modules became dark in the first place.
 
 ---
@@ -48,8 +48,8 @@ modules became dark in the first place.
 |---|---|---|---|
 | R-001 | Add `rxjs` to `package.json` as a direct dependency | G-007 | `npm ls rxjs` shows it at top level; build green after `rm -rf node_modules && npm ci` |
 | R-002 | Upgrade the 18 production-dependency vulns, starting with the `next-auth` critical | G-008 | `npm audit --omit=dev` reports 0 critical, 0 high |
-| R-003a | Decide the 4 tables whose verdict does not depend on M1 (`user_backup_codes`, `holdings`, `portfolios`, `bank_accounts`) | G-002 | a decision row for each, signed off |
-| R-003b | Decide the remaining 64 phantom tables | G-002 | **runs AFTER M1**, not in M0 — each verdict depends on its caller's. No table is created before its caller's verdict is WIRE |
+| R-003a | Decide the 4 tables whose verdict does not depend on M1 (`user_backup_codes`, `holdings`, `portfolios`, `bank_accounts`) | G-002 | a decision row for each, signed off. Owner: **unassigned — needs a name** |
+| R-003b | Decide the remaining 63 phantom tables | G-002 | **runs AFTER M1**, not in M0 — each verdict depends on its caller's. No table is created before its caller's verdict is WIRE |
 | R-004 | Convert the 8 anon-client modules to service-role + explicit `user_id` scoping | G-003 | `grep -rl 'from "@/lib/supabase/client"' src/lib` returns only `client.ts` consumers that are genuinely browser-side |
 | R-005 | Collapse the two backup-code implementations into one | G-009 | one module, one table, `user_backup_codes` gone |
 | **R-006** | **Fix backup-code MFA recovery — it is broken in LIVE code** | SF-01 | ALL of: (a) a user who loses their TOTP device completes recovery, proven end to end by the M2 step-8 recipe; (b) codes are **≥128-bit** — today they are `crypto.randomBytes(4)`, i.e. **32 bits** (`backup-codes.ts:58`); (c) a **rate limit + lockout** on the redemption endpoint, with a test that proves it trips; (d) codes stored hashed, plaintext returned exactly once |
@@ -101,13 +101,13 @@ Checked by column compatibility rather than name similarity:
 |---|---|---|
 | `user_backup_codes` | **DELETE-CALLER** (was wrongly "REMAP") | one-row-per-user `{user_id, codes: JSON[], updated_at}` vs one-row-per-code `{id, user_id, code TEXT, used, ...}`. Not compatible; the upsert has no unique constraint to conflict against. `mfa-service` is the orphaned duplicate — R-005 deletes it. |
 | `holdings` | **DELETE-CALLER** (was wrongly "REMAP") | shape matches `investment_holdings`, but its only non-test caller is DO-NOT-WIRE |
-| `portfolios` | REMAP → `investment_portfolios` | 5 non-test call sites in `PortfolioRebalanceService.ts`; shape matches |
+| `portfolios` | **DELETE-CALLER** | 4 non-test sites, all in `PortfolioRebalanceService.ts`, which is unreachable and whose sole importer is `AutoRebalanceScheduler` (DO-NOT-WIRE). An earlier revision said REMAP, contradicting the rule applied to `holdings` in the row above. |
 | `bank_accounts` | **CREATE** | `bank_connections` is connection-level (`item_id`, `institution_id`, `provider`); it has **no** account-level columns. The names rhyme, the schemas do not. Remapping on name would have pointed account queries at connection rows. |
 | remaining 64 | one row each | most sit behind code whose M1 verdict may be DELETE, in which case the answer is DELETE-CALLER and no migration at all |
 
 ---
 
-## M1 — Triage all 319 unreachable modules
+## M1 — Triage all 312 unreachable modules
 
 Not just the 32 restored ones. Output is one verdict per module, recorded in
 `orphan-module-review.md`:
@@ -164,7 +164,7 @@ exists. `success: true` must never ship without a real downstream call.
 > **DELETE is not an autonomous verdict.** The owner has already overruled
 > exactly this call once — `8e5481d` is titled *"reactivate 55 services deleted
 > as 'dead code' — they were another session's work"*. A plan that lets an agent
-> delete 319 modules on its own judgement re-enacts that incident at six times
+> delete 312 modules on its own judgement re-enacts that incident at nine times
 > the scale, and it breaches the standing hard limit against deleting files the
 > user did not ask to be created. Autonomous verdicts are capped at
 > `WIRE-NOW` / `WIRE-AFTER-TABLES` / `DO-NOT-WIRE` / `FIX-FIRST` / `JEST-INFRA`.
@@ -172,13 +172,17 @@ exists. `success: true` must never ship without a real downstream call.
 
 Two hard constraints on this pass:
 
-1. **Staleness check per module.** The restored copies came from
-   `backup/pre-wipe-2026-08-05`, which branched at `cd8fc21` on 2026-05-16. Any
-   fix made on the main line between then and the deletion is **absent** from the
-   restored copy. This already bit once: `accountability-partners-service.ts`
-   came back having silently lost its IDOR ownership checks (fixed in `b1e993a`).
-   Diff every restored module against its pre-deletion blob, not against the
-   backup.
+1. **Staleness check — but only for the 11 modules it applies to.** The stale-copy
+   risk comes from `backup/pre-wipe-2026-08-05`, which branched at `cd8fc21` on
+   2026-05-16, so any main-line fix between then and the deletion is absent from
+   the restored copy. Scoped by `git log`, **only 11 of the 59 reviewed modules
+   went through that delete-then-restore cycle**; the other 48 have continuous
+   main-line history and were never touched by the backup branch. Of the 11, two
+   actually lost a fix — `accountability-partners-service.ts` and
+   `commitment-device-service.ts`, both an IDOR check — and both are already
+   repaired in `b1e993a`. So this constraint applies to 19% of the set, not all
+   of it, and its known instances are closed. Still diff those 11 against their
+   pre-deletion blobs rather than the backup.
 2. **Three modules must never come back** (they closed numbered findings):
    `billing-profile-store.ts` (FND-016/017, served a fake Visa 4242),
    `score-simulator-service.ts` (DEFAB-2, fabricated credit scores), and the
@@ -272,11 +276,28 @@ exercised.
 
 | | Low effort | Medium | High |
 |---|---|---|---|
-| **High impact** | R-001 rxjs · R-004 anon client · R-005 backup codes | R-002 vulns · R-003 table taxonomy | M1 triage of 319 · Gate A staging soak |
+| **High impact** | R-001 rxjs · R-004 anon client · R-005 backup codes | R-002 vulns · R-003 table taxonomy | M1 triage of 312 · Gate A staging soak |
 | **Medium** | Gate B CI wiring | M2 per-module wiring | `src/lib/trading` product decision |
 | **Low** | doc drift in CLAUDE.md | — | — |
 
 **Critical path:** `R-003a → M1 triage → R-003b → M2 wiring → Gate B → Gate A → cohort`.
+
+### Sizing and owners
+
+Deliberately coarse. Two things get numbers because getting them wrong changes
+the plan; the rest do not, and inventing precision would be theatre.
+
+| Item | Size | Owner | Date |
+|---|---|---|---|
+| M2 wiring | **38 modules × an 8-step loop.** Order of magnitude: tens of hours, not hours. This is the plan's top risk — "dogfooding skipped under time pressure" — and an unsized M2 is exactly how that happens. Batch it and re-scope after the first 5. | — | — |
+| Hosted-schema reconciliation | one run of the local procedure against staging + prod | **unassigned** | **needs a date** |
+| Trading product decision (72 → now 65 unreachable modules; is PCTT M1 scope?) | one decision, blocks triaging 65 modules individually | **owner only** | **needs a date** |
+| FND-026 SEC sign-off | one sign-off | **owner only** | **needs a date** |
+| Mobile reachability walker | new script; `audit-reachability.js` never walks `mobile-app/` | **unassigned** | Wave 9 |
+
+Ownerless open items are how Gate C rotted — two of its five boxes sat unowned
+for months. These stay listed as unassigned rather than being quietly assigned
+to nobody.
 
 An earlier revision put R-003 in M0 as "blocking, do first" while its own
 acceptance criterion required M1 verdicts — a milestone depending on the
@@ -303,7 +324,7 @@ decided from schema alone are M0; the other 64 wait for their callers.
 
 - **Mobile.** 0% coverage, not built, not run, no reachability analysis. Wave 9 scope.
 - **The hosted staging/production schema.** Never reconciled against migrations.
-- **Whether the 264 pre-existing dark modules were ever intended to ship.** That is product archaeology and needs the owner, not the code.
+- **Whether the 280 pre-existing dark modules were ever intended to ship.** That is product archaeology and needs the owner, not the code.
 - **Load, performance, accessibility.** Untouched.
 
 ---

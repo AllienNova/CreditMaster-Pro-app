@@ -36,6 +36,34 @@ const isTest = (p) => /__tests__|__mocks__|\.test\.|\.spec\.|setupTests/.test(p)
 const ENTRY =
   /src[/\\](middleware|instrumentation)\.(ts|tsx|js)$|src[/\\]app[/\\].*[/\\]?(page|route|layout|template|default|loading|error|not-found|global-error|sitemap|robots|opengraph-image|icon|apple-icon)\.(ts|tsx|js|jsx)$/;
 
+/** Build/deploy manifests that can name a .ts entry point Next.js knows nothing about. */
+function walkConfigs(dir, out = [], depth = 0) {
+  // Depth 8, not 4. The Fly.io Dockerfile lives at
+  // src/lib/trading/autonomous/deploy/Dockerfile — depth 5 — so a limit of 4
+  // found zero manifests and silently changed nothing, which reads exactly like
+  // "there were none to find".
+  if (depth > 8) return out;
+  let entries;
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return out;
+  }
+  for (const e of entries) {
+    const p = join(dir, e);
+    if (SKIP.test(p)) continue;
+    let st;
+    try {
+      st = statSync(p);
+    } catch {
+      continue;
+    }
+    if (st.isDirectory()) walkConfigs(p, out, depth + 1);
+    else if (/^(Dockerfile|fly\.toml|package\.json|Procfile)/.test(e)) out.push(p);
+  }
+  return out;
+}
+
 function walk(dir, out = []) {
   let entries;
   try {
@@ -106,7 +134,33 @@ function main() {
     edges.set(f, outs);
   }
 
-  const entries = product.filter((f) => ENTRY.test(f));
+  // Next.js is not the only thing that starts a process here. Any .ts path named
+  // by a Dockerfile, fly.toml, or a package.json script is ALSO an entry point,
+  // and treating it as dead is a false positive with real consequences:
+  // src/lib/trading/autonomous/standalone-server.ts has zero src/ importers by
+  // design — it is bundled by `npx esbuild` at
+  // src/lib/trading/autonomous/deploy/Dockerfile:22 and deployed to Fly.io as
+  // its own service. A reachability audit that only knows about `src/app`
+  // reports a live production entry point, and everything only it imports, as
+  // unreachable.
+  const extraEntries = new Set();
+  for (const cfg of walkConfigs(ROOT)) {
+    let text;
+    try {
+      text = readFileSync(cfg, "utf8");
+    } catch {
+      continue;
+    }
+    for (const m of text.matchAll(/([\w./-]*src\/[\w./-]+\.tsx?)/g)) {
+      const abs = join(ROOT, m[1]);
+      if (existsSync(abs)) extraEntries.add(abs);
+    }
+  }
+
+  const entries = [
+    ...product.filter((f) => ENTRY.test(f)),
+    ...[...extraEntries].filter((f) => !isTest(f)),
+  ];
   const seen = new Set();
   const stack = [...entries];
   while (stack.length) {
@@ -119,7 +173,7 @@ function main() {
   const dead = product.filter((f) => !seen.has(f)).sort();
 
   console.log(`product (non-test) modules : ${product.length}`);
-  console.log(`entry points               : ${entries.length}`);
+  console.log(`entry points               : ${entries.length} (incl. ${extraEntries.size} from build manifests)`);
   console.log(`reachable from an entry    : ${seen.size}`);
   console.log(`UNREACHABLE                : ${dead.length}`);
   console.log(`unresolved specifiers      : ${unresolved.length}\n`);

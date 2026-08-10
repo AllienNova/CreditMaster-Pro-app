@@ -140,6 +140,25 @@ function main() {
 
   const phantom = [...refs.keys()].filter((t) => !known.has(t)).sort();
 
+  // --json exists because classifying these tables by parsing the human output
+  // below silently produced WRONG ANSWERS: the display truncates at 4 sites and
+  // prints "... +N more", so any table with more sites looked test-only if its
+  // first four happened to be tests. `portfolios` has 9 sites, 4 of them in
+  // PortfolioRebalanceService.ts, and was classified test-only for exactly that
+  // reason. Never parse the pretty output.
+  if (process.argv.includes("--json")) {
+    const out = {};
+    for (const t of phantom) out[t] = [...refs.get(t)].sort();
+    process.stdout.write(
+      JSON.stringify(
+        { schemaTables: known.size, referenced: refs.size, phantom: out },
+        null,
+        2,
+      ) + "\n",
+    );
+    process.exit(phantom.length ? 1 : 0);
+  }
+
   console.log(`Schema tables (from migrations): ${known.size}`);
   console.log(`Distinct tables referenced in code: ${refs.size}`);
   console.log(`PHANTOM (queried, never created): ${phantom.length}\n`);

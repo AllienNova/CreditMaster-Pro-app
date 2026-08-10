@@ -9,27 +9,35 @@
 
 ## The headline, stated first
 
-**319 of 1,507 product modules — 21% — cannot be reached from any Next.js entry
-point.** Only **32** of those came from the restore that prompted this review.
-The other **287 were already dead**, and had been for months.
+**312 of 1,507 product modules (web only) — 21% — cannot be reached from any
+entry point.** Only **32** of those came from the restore that prompted this
+review. The other **280 were already dead**, and had been for months.
 
-(An earlier revision said 55 / 264. The 55 was the restore commit's *file*
-headline, not a count of unreachable modules: `8e5481d` touched 56 `src/` paths,
-35 non-test, of which 32 land in the unreachable set. The conclusion gets
-stronger — the restore is 10% of the problem, not 17% — but a document opening
-with "every number below is executed output" has to get its own arithmetic
-right.)
+"Web only" is load-bearing: `audit-reachability.js` walks `src/` and never
+`mobile-app/`, so mobile reachability is genuinely unmeasured. The
+accidentally-dropped-feature half of the goal *is* covered for mobile by the
+full-history deletion sweep in `deleted-feature-audit.md`; the reachability half
+is not, and is carried as a named Wave-9 task.
+
+(This figure moved twice. It began as 55 / 264 — the 55 was the restore commit's
+*file* headline, not a count of unreachable modules. Then 319 dropped to 312
+when the reachability walker learned that Next.js is not the only thing that
+starts a process here: `standalone-server.ts` is bundled by `npx esbuild` at
+`src/lib/trading/autonomous/deploy/Dockerfile:22` and deployed to Fly.io as its
+own service, so it and the six modules only it imports were false positives.
+A document opening with "every number below is executed output" has to survive
+its own numbers being re-derived.)
 
 That reframes the request. "The restored modules have no importers" is true, but
 it is a 10% slice of a pre-existing condition nobody had measured. Wiring the 32
-without addressing the 287 leaves nine tenths of the dead code in place.
+without addressing the 280 leaves nine tenths of the dead code in place.
 
 ```
 $ node scripts/audit-reachability.js
 product (non-test) modules : 1507
-entry points               : 606
-reachable from an entry    : 1189
-UNREACHABLE                : 319
+entry points               : 607 (incl. 1 from build manifests)
+reachable from an entry    : 1196
+UNREACHABLE                : 312
 unresolved specifiers      : 0
 ```
 
@@ -68,7 +76,7 @@ shipped architecture are 72 modules of unreachable code.
 
 | ID | Sev | Category | Finding | Evidence | Fix sketch |
 |---|---|---|---|---|---|
-| G-001 | P1 | Dead code | 319 product modules unreachable; 287 predate the restore | `node scripts/audit-reachability.js` | Per-module WIRE / DELETE decision. Deleting is a valid, often correct outcome. |
+| G-001 | P1 | Dead code | 312 product modules unreachable (web only); 280 predate the restore | `node scripts/audit-reachability.js` | Per-module WIRE / DELETE decision. Deleting is a valid, often correct outcome. |
 | G-002 | P1 | Correctness | 68 tables queried, created by no migration | `node scripts/audit-phantom-tables.js` | See the table taxonomy below — most are prerequisites, not outages. |
 | G-003 | P1 | Correctness | **8** modules still import the session-less anon client; their reads return **zero rows with no error** under RLS. All 8 are unreachable, so this is **latent** — it goes live the instant one is wired | §"Anon client" below | Convert to service-role + explicit `user_id` scoping, as the 63 already converted. Must happen **before** wiring, not after. |
 | ~~G-004~~ | — | ~~Correctness~~ | **VOID — withdrawn 2026-08-09.** Claimed all four `/api/cron/*` routes used the anon client and therefore silently wrote nothing. False: each defines its **own local** `getSupabase()` built from `SUPABASE_SERVICE_ROLE_KEY` (`send-reminders/route.ts:5-14`). The finding came from grepping the function *name* rather than the *import*, which matched a local helper that happens to share it. | `grep -c SUPABASE_SERVICE_ROLE_KEY` = 1 in all four | None. The routes are correct. |
@@ -91,21 +99,23 @@ its own test as "imported". Measured by transitive reachability:
 
 | Class | Count | Meaning |
 |---|---:|---|
-| **A — test-only** | 2 | `plaid_items`, `tax_document_access_log` — both verified genuinely test-only; the tests would fail against a real database. `portfolios` was wrongly placed here: it has 9 sites, **5 non-test**, in `PortfolioRebalanceService.ts`. Corrected on review. |
-| **B — behind unreachable code** | 65 | No user can reach these today. They are a **prerequisite for wiring**, not a live outage. |
-| **C — behind reachable code** | **1** | `pctt_positions` — and on inspection it is not a missing migration at all. See below. |
+| **A — test-only** | 2 | `plaid_items`, `tax_document_access_log`. `portfolios` was wrongly placed here — it has 9 sites, 4 of them in `PortfolioRebalanceService.ts`. Cause worth recording: the classification was built by parsing this script's **human output, which truncates at 4 sites** and prints `... +N more`, so any table whose first four sites were tests looked test-only. `--json` now exists for exactly this reason. |
+| **B — behind unreachable code** | 63 | No user can reach these today. They are a **prerequisite for wiring**, not a live outage. |
+| **C — behind reachable code** | **3** | `pctt_positions`, `autonomous_execution_logs`, `autonomous_scan_logs` — all three in the Fly.io trading service, none a Next.js table. See below. |
 
-**`pctt_positions` is not a Next.js table.** The module is file-reachable
-(`PCTTChart.tsx` → `src/lib/trading/pctt`), but the three methods that touch
-`pctt_positions` are constructed only from `src/lib/trading/autonomous/`, whose
-`standalone-server.ts` is a **separate Fly.io deployment with its own
-`fly.toml`** and its own Supabase project — and both that server and
-`autonomous-scheduler.ts` are unreachable from Next.js. The code says so itself
-at `pctt-trading-service.ts:808-816`, including the honest admission that
-whether that service is deployed "is an infrastructure fact, not a code fact".
+**All three class-C tables belong to the Fly.io service, not to Next.js.**
+`autonomous-executor.ts` and `signal-scanner.ts` are reachable only through
+`standalone-server.ts`, which `src/lib/trading/autonomous/deploy/Dockerfile:22`
+bundles with esbuild and deploys to Fly.io under its own `fly.toml`, against its
+own Supabase project. `pctt-trading-service.ts:808-816` states this in-code,
+including the honest admission that whether that service is deployed "is an
+infrastructure fact, not a code fact".
 
-So no migration should be written for it in this repo. Verdict:
-**cross-service — out of scope**, not CREATE.
+So **no phantom table sits behind Next.js-reachable code**, and no migration for
+these three belongs in this repo. Verdict: **cross-service — out of scope**,
+not CREATE. What they do raise is a separate operational question nobody has
+answered: if that Fly.io service IS deployed, it is writing to tables this repo
+never creates.
 
 > **Limitation of this classification, stated plainly.** Reachability here is
 > measured per FILE, not per function. A module can be reachable while the
@@ -124,6 +134,7 @@ Checked by column compatibility, not by name similarity:
 
 | Phantom | Verdict | Evidence |
 |---|---|---|
+| `portfolios` | **DELETE-CALLER** | Its 4 non-test sites are all in `PortfolioRebalanceService.ts`, which is unreachable and whose sole importer is `AutoRebalanceScheduler` (DO-NOT-WIRE, fabricates trades). An earlier revision said REMAP → `investment_portfolios`, which contradicted the rule applied to `holdings` one row down. Same rule, same verdict. |
 | `user_backup_codes` | **NOT a remap — DELETE-CALLER** | Corrected. `mfa-service.ts:254-259` upserts `{user_id, codes: <JSON array>, updated_at}` — **one row per user**. `backup_codes` (`20260516000001:18-25`) is `{id, user_id, code TEXT, used, used_at, created_at}` — **one row per code**. `codes` and `updated_at` do not exist, `code` is scalar not an array, and the `upsert` on `user_id` has no unique constraint to conflict against. Remapping would fail on first write. `mfa-service` is the orphaned duplicate; it goes, per R-005. |
 | `holdings` | **DELETE-CALLER** | Shape matches `investment_holdings`, but its only non-test caller is `weekly-summary-service.ts:476`, whose verdict is DO-NOT-WIRE. Remapping a query in a module that is not being wired is work with no consumer. |
 | `portfolios` | **REMAP** → `investment_portfolios` | Same. |
@@ -198,7 +209,7 @@ skipping.
 - **Hosted schema.** Everything is measured against a local Supabase.
 - **Dynamic imports.** `import(variable)` is invisible to the reachability walk, so a module reached only that way reads as dead. No such site was found, but the search was not exhaustive.
 - **Gutted-in-place features.** A file that still exists but lost its behaviour is invisible to both the deletion sweep and the reachability walk.
-- **Whether the 319 unreachable modules *should* be wired.** That is per-module product judgement, tracked in `orphan-module-review.md`.
+- **Whether the 312 unreachable modules *should* be wired.** That is per-module product judgement, tracked in `orphan-module-review.md`.
 
 ---
 
@@ -207,5 +218,6 @@ skipping.
 | Date | Change |
 |---|---|
 | 2026-08-09 | Created at `2b23237`. Corrects the phantom-table reachability split (36 → 1) after replacing a name-matching orphan check with a transitive graph walk. |
+| 2026-08-09 | **Round-4 critic corrections**: 319 → **312** unreachable and 287 → **280** pre-existing, after the reachability walker learned to read build manifests (`standalone-server.ts` is a Fly.io entry point, not dead code — 7 modules were false positives). Phantom split re-derived from `--json` rather than truncated human output: A=2, B=63, **C=3**, all three cross-service. `portfolios` REMAP → DELETE-CALLER. Headline marked web-only. |
 | 2026-08-09 | **Round-3 critic corrections** (`critic-review.md`): restore split 55/264 → **32/287** (the 55 was a file count, not a module count); `portfolios` moved out of test-only (A=2, B=65); `user_backup_codes` and `holdings` REMAP verdicts withdrawn as wrong. |
 | 2026-08-09 | **G-004 withdrawn** and G-003 restated (12 modules → 8, all unreachable, latent not live). Both errors had the same cause: matching on a *function name* instead of an *import*. `/api/cron/*` defines a local `getSupabase()` from the service-role key, which the name-grep could not tell apart from the anon-client import. Two of the three biggest numbers in the first draft of this document came from name-matching, and both were wrong in the alarming direction. |
