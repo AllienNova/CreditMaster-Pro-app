@@ -294,6 +294,19 @@ export class AccountabilityPartnersService {
     const partnership = await this.getPartnership(partnershipId);
     if (!partnership) throw new Error("Partnership not found");
 
+    // Membership check, matching endPartnership and sendNudge below.
+    //
+    // Without it the `isRequester` branch treats "not the requester" as
+    // "therefore the partner": a caller who is a stranger to this partnership
+    // fell through to `partner_share_level` and could set it to "full", which
+    // per SharedProgress/PartnerProfile governs exposure of savingsProgress,
+    // debtProgress, budgetAdherence and goalDetails to the other side. This
+    // client runs on the service role, so RLS is bypassed and the app-level
+    // check is the ONLY enforcement — the FND-030 lesson. Reported as SF-04.
+    if (partnership.requesterId !== userId && partnership.partnerId !== userId) {
+      throw new Error("Not authorized to update this partnership");
+    }
+
     const isRequester = partnership.requesterId === userId;
     const updateField = isRequester
       ? "requester_share_level"
