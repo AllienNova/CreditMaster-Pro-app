@@ -88,6 +88,29 @@ function walk(dir, acc = []) {
   return acc;
 }
 
+/**
+ * Does this file talk to Postgres with RLS bypassed?
+ *
+ * This used to be `raw.includes("getServiceRoleClient")` — the shared helper's
+ * name. That made the gate a FALSE GREEN over any file that reaches the
+ * service role another way, and 22 of the 34 modules restored in 8e5481d do
+ * exactly that: a raw `createClient(url, SUPABASE_SERVICE_ROLE_KEY)` or the
+ * typed `supabaseAdmin` from @/lib/supabase/server. The audit reported
+ * "0 findings" while never opening any of them.
+ *
+ * Detecting the CAPABILITY rather than one spelling of it is the point: any
+ * client constructed with the service-role key bypasses RLS, so the
+ * `.eq("user_id", ...)` filters in that file are load-bearing regardless of
+ * which import produced the client.
+ */
+function usesServiceRole(text) {
+  return (
+    text.includes("getServiceRoleClient") ||
+    text.includes("SUPABASE_SERVICE_ROLE_KEY") ||
+    /\bsupabaseAdmin\b/.test(text)
+  );
+}
+
 function operationOf(chain) {
   if (/\.(insert|upsert)\(/.test(chain)) return "insert";
   if (/\.update\(/.test(chain)) return "update";
@@ -262,6 +285,31 @@ function audit(text, rel, userScoped, findings, marked) {
   }
 }
 
+/**
+ * Known-unfixed findings, frozen 2026-08-09. A RATCHET, not an exemption.
+ *
+ * Widening usesServiceRole() from one helper name to the service-role
+ * CAPABILITY took the audit's coverage from 63 files to 185 — it had never
+ * looked at two thirds of the service-role code, including 22 of the modules
+ * restored in 8e5481d. The findings that appeared are pre-existing debt, not a
+ * regression, and are tracked in docs/specs/remediation-plan.md.
+ *
+ * The gate therefore fails on any finding NOT in this list. The list may only
+ * shrink; scripts/idor-baseline.json is regenerated only by removing entries.
+ * If it ever needs to grow, that is a new unscoped query and it should be
+ * fixed instead.
+ */
+function loadBaseline() {
+  const p = join(ROOT, "scripts", "idor-baseline.json");
+  try {
+    return JSON.parse(readFileSync(p, "utf8")).counts || {};
+  } catch {
+    return {};
+  }
+}
+
+const key = (f) => `${f.file}|${f.table}|${f.op}|${f.kind}`;
+
 function main() {
   const tablesPath = process.argv[2];
   if (!tablesPath) {
@@ -277,7 +325,7 @@ function main() {
 
   for (const file of walk(SRC)) {
     const raw = readFileSync(file, "utf8");
-    if (!raw.includes("getServiceRoleClient")) continue; // not converted yet
+    if (!usesServiceRole(raw)) continue;
     const rel = relative(ROOT, file);
     converted.push(rel);
     audit(stripComments(raw), rel, userScoped, findings, markedLines(raw));
@@ -320,10 +368,36 @@ function main() {
   // PK-scoped reads DO fail unless individually cleared. They were once
   // treated as safe-because-single-row; GoalPlanner.simulateGoal disproved
   // that, and this audit passed it clean at the time.
-  const blocking = [
+  const baseline = loadBaseline();
+  const candidate = [
     ...unscoped.filter((f) => f.op !== "insert"),
     ...pkScoped.filter((f) => !f.cleared),
   ];
+
+  // COUNT-based, not key-membership. A key is file|table|op|kind, which is
+  // stable across line drift but collapses several findings in one file into
+  // one key — so plain membership let a NEW unscoped query hide behind an
+  // already-baselined one in the same file. Verified: deleting a user_id
+  // filter from bill-calendar-service.ts passed a membership check. Comparing
+  // COUNTS catches the increment.
+  const seen = new Map();
+  for (const f of candidate) seen.set(key(f), (seen.get(key(f)) || 0) + 1);
+
+  const blocking = [];
+  for (const [k, n] of seen) {
+    const allowed = baseline[k] || 0;
+    if (n > allowed) {
+      const f = candidate.find((c) => key(c) === k);
+      for (let i = 0; i < n - allowed; i++) blocking.push(f);
+    }
+  }
+  const grandfathered = candidate.length - blocking.length;
+  if (grandfathered > 0) {
+    console.log(
+      `\n${grandfathered} pre-existing finding(s) held in scripts/idor-baseline.json (frozen 2026-08-09).` +
+        `\nThey do NOT pass review — they are tracked debt. The list may only shrink.`,
+    );
+  }
   if (blocking.length > 0) {
     console.log(
       `\n${blocking.length} queries are neither owner-scoped nor cleared.` +
