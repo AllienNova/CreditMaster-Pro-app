@@ -274,8 +274,74 @@ not as live imports.
 | 57 | `src/setupTests.ts` | Jest global test setup | none | No | N/A | **JEST-INFRA** |
 | 58 | `src/types/student-loan-agent.ts` | Type defs for the student-loan AI agent | none (types only) | No | Continuous | WIRE-NOW |
 
+## DELETE-RECOMMENDED queue (owner decision required — not an execution list)
+
+Team-lead correction applied: DELETE is gated behind named owner approval per
+batch (the owner already overruled an autonomous delete-vs-restore call once,
+`8e5481d`). Nothing below has been deleted. Each row was individually
+re-verified against its live counterpart's actual exports/content this pass —
+not re-asserted from the original duplicate finding — because "duplicates a
+live module" and "nothing would be lost by deleting" are different claims,
+and three of these nine turned out to have something worth naming before an
+owner signs off.
+
+| Module | Live replacement | What confirms duplication | What would be lost |
+|---|---|---|---|
+| `src/lib/credit-repair/db-legacy.ts` | `src/lib/credit-repair/db/credit-reports-db-service.ts` (9 functions: create/get/getByUser/getLatest/getByBureau/update/delete/getCreditScoreHistory/getCreditReportStats), imported as `db` by 15+ live routes | Orphan's entire `db` export is one `creditReports` object with a strict subset of the live functions | Nothing — live version is a superset |
+| `src/lib/credit/services/GoodwillLetterService.ts` | `negotiation-service.ts:generateGoodwillLetter()` (`negotiation-service.ts:26-80`) + `db/goodwill-db-service.ts` | Live goodwill route (`goodwill/route.ts:20-21`) imports `negotiationService`/`db`, not this file | Different **strategy**, not missing feature: live path generates letter text via AI (inline prompt, `negotiation-service.ts:36`); orphan instead ships a static `LETTER_TEMPLATES` array (~318 lines, `GoodwillLetterService.ts:101-419`). Live path is shipped and works without it. If a non-AI template fallback is ever wanted, that specific content would need to be rebuilt — it is not present anywhere else |
+| `src/lib/credit/services/DisputeLetterGenerator.ts` | `dispute-service.ts:generateDisputeLetter()` (`dispute-service.ts:274-287`) | Live route (`credit-repair/disputes/route.ts:20`) imports `disputeService`, not this file | Nothing — both are AI-generation wrappers (orphan via ModelRouter, live via `AIOrchestrator.generateDispute()`), functionally equivalent, no static content asset at stake |
+| `src/lib/auth/biometric-service.ts` | `src/lib/auth/webauthn-service.ts` | Method-for-method match: capability check, registration, authentication, get/rename/delete credentials — same shape, imported live by `PasskeyManagement.tsx`/`PasskeyLoginButton.tsx` | Nothing |
+| `src/lib/api/openapi-spec.ts` | `src/lib/api/generated-openapi-spec.ts`, imported by `/api/financial/openapi/route.ts` | Orphan documents **3** API paths; the live generated spec documents **274** | Nothing — orphan is a small, stale hand-written stub |
+| `src/lib/auth/mfa-service.ts` | Split across two live modules: `auth-service.ts` (TOTP — confirmed identical `supabase.auth.mfa.enroll/challenge/verify` calls, `auth-service.ts:550-563` vs `mfa-service.ts:103-149`, used by `TwoFactorSettings.tsx`) + `backup-codes.ts` (backup codes, real `backup_codes` table) | Orphan's declared `MFAMethodType` includes `"webauthn" | "sms" | "email"` but has **zero** implementing methods for any of those three — grep for SMS/email-send/WebAuthn-specific methods in the class returns nothing. `TwoFactorSettings.tsx` has its own independent `checkMFAStatus()`, not dependent on the orphan's aggregator | Nothing real — TOTP and backup codes are both live elsewhere; WebAuthn/SMS/email were declared types that were never implemented, so there is no working code to lose |
+| `src/lib/credit/services/SecuredCardRecommendationService.ts` | `CreditScoreSimulator.getSecuredCardRecommendations()` (`CreditScoreSimulator.ts:649`, called live at `credit/simulator/route.ts:129`) | Both produce secured-card recommendations from a credit profile | **Something real would be lost.** The live version returns generic categories (`basic_secured`/`rewards_secured`/`limit_boost_secured`) with no real product names. The orphan has a curated database of 11 **named, real** products with issuers — "Discover it® Secured Credit Card" (discover), "Capital One Quicksilver Secured" (capital_one), "OpenSky® Secured Visa® Credit Card" (opensky), etc. (`SecuredCardRecommendationService.ts:99-165+`). If the product-specific recommendation experience is ever wanted, this content is the only copy of it |
+| `src/lib/database/connection-pool.ts` | `src/lib/supabase/{client,server,service-role,admin}.ts` for client construction (the documented project convention) | Architectural duplicate of the client-factory pattern; separately contains the unverified pooler-URL defect noted above | The client-factory piece: nothing. But `checkDatabaseHealth()` (`connection-pool.ts:147-170`) runs a **real** query (`.from("profiles").select("id").limit(1)`); the closest live analog, `monitoring/health.ts:checkDatabase()`, has its actual DB ping **commented out** (`health.ts:32`, `// const result = await supabase.from('health_check')...`) and returns a hardcoded healthy status instead. Deleting this file removes the one real DB health check that exists in the codebase today — worth a note to whoever owns `/api/health`, independent of this file's fate. `executeWithRetry()` has no live equivalent either, though the separate orphan `src/lib/utils/retry.ts` (verdict: WIRE-NOW, #56 above) is a generic version of the same idea and is the better path forward if retry-wrapped queries are wanted |
+| `src/lib/monitoring/metrics.ts` | Originally stated as: siblings `analytics.ts`/`error-tracking.ts`/`health.ts`/`sentry.ts` via the `monitoring/index.ts` barrel | **Correction on re-check, not smoothed over:** the barrel itself, and every one of those named siblings, has **zero importers anywhere in `src/`** (checked directly this pass) — no route, component, `instrumentation.ts`, or `next.config.*` wiring exists for any of them. There is no confirmed live monitoring suite for `metrics.ts` to be superseded by; the "dropped from the barrel" reasoning in the original finding does not hold up under a direct import check | Unknown — can't assess against a "replacement" that isn't itself confirmed live. **Lower confidence, explicitly: this row should not be treated as equivalent evidence to the other eight.** Recommend a separate, scoped pass on all 8 files in `src/lib/monitoring/` (not just this one) before any delete decision, rather than deciding `metrics.ts` in isolation |
+
+## LEAVE-DARK — do not delete (9 modules)
+
+The four fabrication P0s plus the five dead-with-cause modules should stay in
+the tree, undeleted, rather than be removed:
+
+- `auto-save-rules-service.ts`, `ContributionSchedulerService.ts`,
+  `commitment-device-service.ts`, `AutoRebalanceScheduler.ts` — these are
+  real, substantial feature implementations (rule engines, scheduling,
+  approval workflows) whose only defect is the missing payment-rail
+  integration at the execution boundary. Deleting them discards working
+  design and CRUD code to fix a problem that is one integration away from
+  resolved. They should stay as a paper trail — visible, not wired, not
+  deleted — until the real payment/banking/brokerage integration is scoped
+  and someone decides to finish them or formally kill them. This mirrors the
+  precedent set for `affiliate-service.ts`'s attribution methods in `df3e1f0`:
+  tested, near-complete code one migration/integration away from working is
+  kept, not deleted, when a real path to finishing it exists.
+- `proactive-alert-engine.ts`, `social-proof-nudges-service.ts`,
+  `accountability-partners-service.ts`, `expert-sessions-service.ts`,
+  `weekly-summary-service.ts` — already killed once, for cause, in the
+  2026-07-31 commits (`ac82c67`, `df3e1f0`, `6766a3a`), then restored by
+  accident on 2026-08-09. These are the ones where the prior remediation's
+  own judgment should stand: recommend deletion, but only by the same route
+  the 2026-07-31 commits used (evidenced, cited, one commit per module) —
+  not folded into this DELETE-RECOMMENDED queue, because that queue is for
+  *new* findings this session, and re-deleting these is re-applying a
+  decision that was already made and already reverted once. Flagging that
+  distinction for the owner rather than blurring it: these are
+  "re-delete, we've been here before" (see the Correction section above for
+  the full 2026-07-31/2026-08-09 sequence), not "delete, newly found."
+
 ## Revision History
 
 - 2026-08-09 — Initial version (kh session). All 59 modules reviewed; every
   claim traces to a cited command, file:line, or commit SHA captured this
   session.
+- 2026-08-10 — Added DELETE-RECOMMENDED queue (9 modules) and LEAVE-DARK
+  section (9 modules) per team-lead request, following team-lead's correction
+  that their 63/21/1 count (from grepping verdict words out of prose/headings
+  rather than table rows) was their error, not a gap in this file — this
+  file's 59/38/18/3/0 count was correct throughout. Each of the 9
+  DELETE-RECOMMENDED rows was independently re-verified against its live
+  counterpart's actual code this pass; `SecuredCardRecommendationService.ts`
+  and `connection-pool.ts` turned out to have real, nameable content/capability
+  that would be lost (not "nothing lost" as a blanket assumption), and
+  `metrics.ts`'s original "duplicate" reasoning did not survive a direct
+  import check on its claimed live siblings — corrected in place rather than
+  quietly dropped.

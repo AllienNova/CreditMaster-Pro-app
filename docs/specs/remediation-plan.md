@@ -52,6 +52,7 @@ modules became dark in the first place.
 | R-003b | Decide the remaining 63 phantom tables | G-002 | **runs AFTER M1**, not in M0 — each verdict depends on its caller's. No table is created before its caller's verdict is WIRE |
 | R-004 | Convert the 8 anon-client modules to service-role + explicit `user_id` scoping | G-003 | `grep -rl 'from "@/lib/supabase/client"' src/lib` returns only `client.ts` consumers that are genuinely browser-side |
 | R-005 | Collapse the two backup-code implementations into one | G-009 | one module, one table, `user_backup_codes` gone |
+| **R-007** | **Make `/api/health` actually check something** | G-012 | each probe performs real work; with Supabase stopped, `/api/health` returns 503 and `?type=ready` returns `ready:false`. Proven by stopping the dependency, not by reading the code. |
 | **R-006** | **Fix backup-code MFA recovery — it is broken in LIVE code** | SF-01 | ALL of: (a) a user who loses their TOTP device completes recovery, proven end to end by the M2 step-8 recipe; (b) codes are **≥128-bit** — today they are `crypto.randomBytes(4)`, i.e. **32 bits** (`backup-codes.ts:58`); (c) a **rate limit + lockout** on the redemption endpoint, with a test that proves it trips; (d) codes stored hashed, plaintext returned exactly once |
 
 **R-006 is the only confirmed live defect in this plan** and it outranks

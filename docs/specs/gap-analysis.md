@@ -87,6 +87,8 @@ shipped architecture are 72 modules of unreachable code.
 | G-009 | P2 | Duplication | Two parallel backup-code implementations: `backup-codes.ts` → `backup_codes` (exists), `mfa-service.ts` → `user_backup_codes` (**does not exist**) | `src/lib/auth/mfa-service.ts:255,292` | Collapse to one. See `security-findings.md`. |
 | G-010 | P2 | Docs | `LAUNCH_CHECKLIST.md` carried five stale figures cited as clearance, and a direct A–C/A–D contradiction | commit `b03edca` | Fixed. |
 | G-011 | P3 | Docs | Two unrelated "Gate A–D" schemes (launch vs brand assets) | `docs/superpowers/plans/2026-04-16-*.md` | Disambiguated in the checklist header. |
+| **G-012** | **P1** | **Fabricated status — LIVE** | **`/api/health` reports every component healthy without checking any of them.** `checkDatabase()` has its query commented out and returns `status: "healthy"` (`monitoring/health.ts:31-38`); `checkCache()` likewise (`:55-60`); `checkExternalServices()` does `fetch(...).catch(() => {})` then unconditionally pushes `"healthy"` (`:99-111`), so its `degraded` branch is unreachable. `readinessCheck()` returns `ready: health.status !== "unhealthy"`, which can therefore never be false. | `src/lib/monitoring/health.ts:31,55,99-111`; route is reachable via `src/app/api/health/route.ts` | Make each probe do real work and fail loudly. A health endpoint that cannot report unhealthy is worse than none — an uptime monitor or k8s readiness probe will route traffic to a pod with a dead database. |
+| G-013 | P2 | Dead code | 5 of the 8 `src/lib/monitoring/` modules are unreachable, including the barrel `index.ts` — so `analytics.ts`, `error-tracking.ts`, `metrics.ts` and `sentry.ts` have no consumer. `health.ts` is the only live one, and it is G-012. | `audit-reachability.js` | Decide the monitoring story as one scoped pass, not module by module. |
 
 ---
 
@@ -187,6 +189,29 @@ wiring, never after it.
 | `CLAUDE.md` §8: "Coverage by Domain — Trading Engine PASS (>=80%)" | Coverage measures which lines a test executes, not whether a user can. Both can be true at once, and here both are. | — |
 | `LAUNCH_CHECKLIST.md`: "GO WITH CONDITIONS for M1" | NO-GO. Gates A, B, D unstarted; C has two of five. | commit `b03edca` |
 | 30 migrations (`CLAUDE.md` §3) | **103** migration files, 202 tables derived | `ls supabase/migrations/*.sql \| wc -l` |
+
+---
+
+## The health endpoint fabricates its own evidence
+
+Worth separating from the table because I **cited it as evidence myself**.
+`smoke-test-report.md` listed `/api/health` returning "components: database,
+cache, stripe, supabase all `healthy`" as a sign the application was working. It
+is not evidence of anything: all four values are hardcoded.
+
+```
+$ sed -n '31,38p' src/lib/monitoring/health.ts
+    // In production, this would ping the database
+    // const result = await supabase.from('health_check').select('1').single();
+    return { name: "database", status: "healthy", ... }
+```
+
+Same class as FND-016/017 (fake Visa 4242) and DEFAB-2 (fabricated credit
+scores): a system reporting a state it never measured. It is the only one of the
+three that was being read back as verification.
+
+Found by a reviewer re-checking a *different* claim — that `connection-pool.ts`
+duplicated a live health check. It does not; the live one is the stub.
 
 ---
 

@@ -36,7 +36,7 @@ Unauthenticated:
 | `/pricing` | 200 | 81 KB |
 | `/about` | 200 | |
 | `/dashboard`, `/badges`, `/credit` | 307 | redirect to login — auth guard working as intended |
-| `/api/health` | 200 | components: database, cache, stripe, supabase all `healthy` |
+| `/api/health` | 200 | **RETRACTED as evidence.** It reports `healthy` for database, cache, stripe and supabase *without checking any of them* — the probes are commented out and the values hardcoded (`monitoring/health.ts:31,55,99-111`). A 200 here says nothing about the system. See `gap-analysis.md` G-012. |
 | `/api/financial/goals`, `/api/notifications`, `/api/admin/metrics` | 401 | guard rejects unauthenticated |
 
 Authenticated with a genuine Supabase **ES256** access token:
@@ -102,5 +102,7 @@ Stated plainly rather than implied by omission.
 ## Revision History
 
 | Date | Change |
+|---|---|
+| 2026-08-09 | **Retracted the `/api/health` row.** It was cited as evidence the app was working; the endpoint hardcodes every component to `healthy`. Also marked the IDOR row STALE. Two of this report's original evidence rows did not survive scrutiny — the underlying runtime findings (§3) stand, since those came from observed failures rather than from an endpoint's self-report. |
 |---|---|
 | 2026-08-09 | Created. Post-merge verification of `main` @ `61a4460`, including the four defects found by running the app and the six now-live integration proofs. |
