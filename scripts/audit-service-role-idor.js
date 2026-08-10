@@ -400,8 +400,47 @@ function main() {
   ];
 
   if (process.argv.includes("--write-baseline")) {
+    // SHRINK-ONLY, and that is the whole point of the flag existing at all.
+    //
+    // The first version regenerated from whatever was on disk. That made it a
+    // one-command bypass of the very hole the content-addressed key closes:
+    // with a paid-down finding and a NEW unscoped query coexisting, the gate
+    // correctly exited 1 — and running this flag blessed the new query and
+    // returned the gate to green. Worse, the shortfall message USED TO
+    // RECOMMEND running it, so the documented remedy was the exploit.
+    //
+    // Totals hid it too: 79 keys / 83 findings before and after, so a reviewer
+    // checking counts rather than keys would see nothing in the diff.
+    //
+    // Now: a key absent from the current baseline can never be written. The
+    // baseline may lose entries, never gain them. Adding one is a deliberate
+    // act that has to go through the file, in a reviewable diff, with a human
+    // saying why.
+    const existing = loadBaseline();
     const counts = {};
     for (const f of candidate) counts[key(f)] = (counts[key(f)] || 0) + 1;
+
+    const added = Object.keys(counts).filter((k) => !(k in existing));
+    if (added.length > 0) {
+      console.error(
+        `\nREFUSING to write: ${added.length} key(s) are NOT in the current baseline.` +
+          `\n${added.map((k) => `  + ${k}`).join("\n")}` +
+          `\n\nThis flag is shrink-only. A key that is not already baselined is a NEW` +
+          `\nfinding — fix the query, or add the entry to scripts/idor-baseline.json by` +
+          `\nhand so the addition shows up in review with a reason attached.`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+    for (const k of Object.keys(counts)) {
+      if (counts[k] > existing[k]) {
+        console.error(
+          `\nREFUSING to write: ${k} would grow from ${existing[k]} to ${counts[k]}.`,
+        );
+        process.exitCode = 1;
+        return;
+      }
+    }
     writeFileSync(
       join(ROOT, "scripts", "idor-baseline.json"),
       JSON.stringify(
@@ -479,11 +518,12 @@ function main() {
       `\n${stale.length} baseline key(s) are now BELOW their frozen count:` +
         `\n  ${stale.slice(0, 10).join("\n  ")}` +
         (stale.length > 10 ? `\n  ... +${stale.length - 10} more` : "") +
-        `\n\nDebt was paid down — regenerate the baseline:` +
-        `\n  node scripts/audit-service-role-idor.js --write-baseline` +
-        `\nUntil then every freed slot silently accepts a NEW unscoped query` +
-        `\nwith the same file|table|op|kind key. That is not hypothetical: it` +
-        `\nwas reproduced on src/app/api/analytics/events/route.ts.`,
+        `\n\nDebt was paid down. PRUNE EXACTLY THE KEYS LISTED ABOVE from` +
+        `\nscripts/idor-baseline.json — do not regenerate the file wholesale.` +
+        `\nRegenerating rewrites every entry from whatever is on disk, which is` +
+        `\nhow a paid-down finding and a NEW hole get blessed in one step while` +
+        `\nthe totals stay identical. --write-baseline is shrink-only for that` +
+        `\nreason and will refuse to add a key.`,
     );
   }
   process.exitCode = blocking.length > 0 || stale.length > 0 ? 1 : 0;
