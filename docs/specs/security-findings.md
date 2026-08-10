@@ -9,14 +9,37 @@ work tracks (see "What I could NOT verify").
 Every row below was read from source this session. No finding is carried over from a prior
 report without independent verification.
 
-## Ground-truth correction
+## Ground-truth corrections
 
-The assignment listed 12 modules using the anon `getSupabase()` client. Verified: only **8**
-actually import it from `src/lib/supabase/client.ts`. The other 4 — the cron routes
-(`send-reminders`, `financial-snapshots`, `cleanup-expired-sessions`, `check-dispute-status`)
-— each define their own, differently-implemented, identically-named local `getSupabase()`
-that reads `SUPABASE_SERVICE_ROLE_KEY` (`src/app/api/cron/send-reminders/route.ts:5-13` and
-siblings). They share a function name with the broken singleton, not its behavior. See SF-08.
+**Anon-client count.** The assignment listed 12 modules using the anon `getSupabase()` client.
+Verified: only **8** actually import it from `src/lib/supabase/client.ts`. The other 4 — the
+cron routes (`send-reminders`, `financial-snapshots`, `cleanup-expired-sessions`,
+`check-dispute-status`) — each define their own, differently-implemented, identically-named
+local `getSupabase()` that reads `SUPABASE_SERVICE_ROLE_KEY` (
+`src/app/api/cron/send-reminders/route.ts:5-13` and siblings). They share a function name with
+the broken singleton, not its behavior. See SF-08.
+
+**Reachability methodology.** The original brief for this review used "0 live importers" (a
+direct, non-test import grep) as the reachability signal. Team lead subsequently landed
+`scripts/audit-reachability.js` (commit `2b23237`), which computes true transitive reachability
+from Next.js entry points and corrects the earlier "~55 orphans" estimate to **319 of 1,507
+product modules unreachable** (the 55 are a subset). Re-run against the four modules central to
+SF-03/04/05 and against `mfa-service.ts`: all five are confirmed **unreachable** by the
+canonical script, consistent with this review's own direct-importer check. `backup-codes.ts`
+and `BackupCodesManagement.tsx` (SF-01) do **not** appear in the script's unreachable list —
+confirmed live. Severity labels below use LIVE / LATENT per this script, not the earlier
+import-count language.
+
+**Phantom-table framing.** Of the 68 phantom tables, exactly 1 (`pctt_positions`) sits behind
+reachable code; 64 are behind unreachable code and 3 are test-only. A phantom table behind
+unreachable code is a **wiring prerequisite**, not a live outage — findings below that mention a
+phantom table are worded to reflect that (SF-03, SF-04, "What I could NOT verify"). The one
+exception in this report's scope is `backup_codes` (SF-01), which is **not** phantom — it was
+created by `20260516000001_atomic_backup_code_redemption.sql` and sits behind reachable code; its
+problem is a grant/policy mismatch, not a missing table. `user_backup_codes`, the table the
+*orphaned* `mfa-service.ts` writes to (SF-02), **is** phantom — no migration creates it. These are
+two parallel MFA-backup-code implementations against two different tables, one real, one not;
+see SF-01 vs. SF-02.
 
 ## Findings
 

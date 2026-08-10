@@ -86,7 +86,25 @@ its own test as "imported". Measured by transitive reachability:
 |---|---:|---|
 | **A — test-only** | 3 | `plaid_items`, `portfolios`, `tax_document_access_log`. Only a test seeds them. The test would fail against a real database. |
 | **B — behind unreachable code** | 64 | No user can reach these today. They are a **prerequisite for wiring**, not a live outage. |
-| **C — behind reachable code** | **1** | `pctt_positions`, via `src/lib/trading/pctt/pctt-trading-service.ts`. The only phantom a real request can hit. |
+| **C — behind reachable code** | **1** | `pctt_positions` — and on inspection it is not a missing migration at all. See below. |
+
+**`pctt_positions` is not a Next.js table.** The module is file-reachable
+(`PCTTChart.tsx` → `src/lib/trading/pctt`), but the three methods that touch
+`pctt_positions` are constructed only from `src/lib/trading/autonomous/`, whose
+`standalone-server.ts` is a **separate Fly.io deployment with its own
+`fly.toml`** and its own Supabase project — and both that server and
+`autonomous-scheduler.ts` are unreachable from Next.js. The code says so itself
+at `pctt-trading-service.ts:808-816`, including the honest admission that
+whether that service is deployed "is an infrastructure fact, not a code fact".
+
+So no migration should be written for it in this repo. Verdict:
+**cross-service — out of scope**, not CREATE.
+
+> **Limitation of this classification, stated plainly.** Reachability here is
+> measured per FILE, not per function. A module can be reachable while the
+> specific method that queries a phantom table is not — which is exactly the
+> `pctt_positions` case. So class C is an upper bound. The honest statement is
+> "at most one, and that one is cross-service", not a proven zero.
 
 The corrected shape matters for sequencing: creating 64 tables is not urgent
 firefighting, it is the cost of turning dead code on. Only `pctt_positions` is

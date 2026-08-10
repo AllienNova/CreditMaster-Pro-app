@@ -223,7 +223,8 @@ exercised.
 | Service role + a forgotten `user_id` filter = cross-user data | **High** | `audit:idor` ratchet blocks new instances (mutation-tested, `6e049cf`) |
 | Dogfooding skipped under time pressure | **High** | it is the only step that has ever caught anything; step 7 passing is not evidence for step 8 |
 | Hosted schema differs from local | Medium | **unresolved.** Everything verified so far is a local Supabase |
-| `pctt_positions` is hit in production | Medium | the one live phantom; resolve in M0 or confirm the path is dead |
+| ~~`pctt_positions` is hit in production~~ | — | **Resolved.** Not a Next.js table: its three call sites are constructed only from `src/lib/trading/autonomous/`, a separate Fly.io deployment with its own `fly.toml` and Supabase project (`pctt-trading-service.ts:808-816`). No migration in this repo. Whether that service is deployed is an infrastructure question the repo cannot answer. |
+| Reachability is measured per FILE, not per function | Medium | a module can be reachable while the method querying a phantom table is not. Class C is an upper bound, not a proven zero. |
 
 ---
 
