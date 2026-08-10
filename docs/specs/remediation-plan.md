@@ -51,7 +51,21 @@ modules became dark in the first place.
 | **R-008** | **Resolve the coverage-gate / DO-NOT-WIRE conflict** | G-019 | `npm run test:coverage:changed` passes, or the exception is recorded with an owner's name against it. **Owner decision — engineering cannot pick this one**, since every option trades a real thing away. |
 | R-003a | Decide the 4 tables whose verdict does not depend on M1 (`user_backup_codes`, `holdings`, `portfolios`, `bank_accounts`) | G-002 | a decision row for each, signed off. Owner: **unassigned — needs a name** |
 | R-003b | Decide the remaining 63 phantom tables | G-002 | **runs AFTER M1**, not in M0 — each verdict depends on its caller's. No table is created before its caller's verdict is WIRE |
-| R-004 | Convert the 8 anon-client modules to service-role + explicit `user_id` scoping | G-003 | `grep -rl 'from "@/lib/supabase/client"' src/lib` returns only `client.ts` consumers that are genuinely browser-side |
+| R-004 | Convert the anon-client modules to service-role + explicit `user_id` scoping — **but not all 8** | G-003 | `grep -rl 'from "@/lib/supabase/client"' src/lib` returns only genuinely browser-side consumers, **excluding the modules resolved by deletion** |
+
+**R-004 is mis-scoped as "convert all 8", and cross-referencing the verdicts is
+why.** Two of the eight are already DO-NOT-WIRE, so converting them is work on
+code slated for removal:
+
+| Module | Verdict | Consequence for R-004 |
+|---|---|---|
+| `lib/auth/mfa-service.ts` | **DO-NOT-WIRE** — duplicates the live `backup-codes.ts`, and writes to `user_backup_codes`, which does not exist | Do NOT convert. Resolved by R-005 (collapse the two backup-code implementations), not by a client swap. |
+| `lib/goals/services/ContributionSchedulerService.ts` | **DO-NOT-WIRE** — fabricated money movement; `executeTransfer()` voids its arguments and returns `true`, then increments the real `financial_goals.current_amount` | Do NOT convert. Converting it makes the fabrication reach the database more reliably. |
+| the other 6 | no verdict recorded — they were not in the 59-module reviewed set | **Need a verdict before conversion.** Converting first would repeat the mistake this plan exists to stop: doing work on a module before deciding whether it should exist. |
+
+So R-004's real precondition is M1, not M0. Left in M0 as a placeholder it reads
+like six hours of safe mechanical work; it is actually two modules that must not
+be touched and six awaiting a decision.
 | R-005 | Collapse the two backup-code implementations into one | G-009 | one module, one table, `user_backup_codes` gone |
 | ~~R-007~~ | ~~Make `/api/health` actually check something~~ | G-012 | **DONE.** Acceptance met as written — dependency stopped, not code read. Supabase down → `503` / `unhealthy` / `ready:false`; Supabase up → `200` / `ready:true`. |
 | **R-006** | **Fix backup-code MFA recovery — it is broken in LIVE code** | SF-01 | ALL of: (a) a user who loses their TOTP device completes recovery, proven end to end by the M2 step-8 recipe; (b) codes are **≥128-bit** — today they are `crypto.randomBytes(4)`, i.e. **32 bits** (`backup-codes.ts:58`); (c) a **rate limit + lockout** on the redemption endpoint, with a test that proves it trips; (d) codes stored hashed, plaintext returned exactly once |
