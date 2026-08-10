@@ -23,7 +23,7 @@ as evidence.
 | "32 vulns (1 critical)" — CLAUDE.md §9 and §11 carry the same figure | **33 total**, and the number that matters is the one nobody was reporting: **18 of them are in PRODUCTION dependencies** (1 critical, 10 high, 7 moderate). The critical is `next-auth`. | `npm audit --omit=dev` |
 | Gate C "200 tables derived" | **202** (achievements + erasure migrations landed since) | `node scripts/schema-from-migrations.js` |
 | — (not previously tracked) | **68 tables are queried by code but created by no migration** | `node scripts/audit-phantom-tables.js` |
-| — (not previously tracked) | **12 modules / 25 call sites still use the session-less anon client**, so their reads return zero rows under RLS with no error | see `docs/specs/gap-analysis.md` |
+| — (not previously tracked) | **8 modules import the session-less anon client**; their reads return zero rows under RLS with no error. All 8 are currently unreachable, so this is latent, not live | see `docs/specs/gap-analysis.md` G-003 |
 
 ---
 
@@ -92,7 +92,7 @@ regression slips back in.
 - [ ] **`main` branch protection** — require PR + review + CODEOWNERS enforcement
 - [ ] **`npm audit`** — re-measured 2026-08-09: **18 vulnerabilities in production dependencies** (1 critical, 10 high, 7 moderate) out of 33 total. The critical is `next-auth`. Every doc that tracks this cites only the combined total ("32 vulns, 1 critical"), which hides the split; update CLAUDE.md §9/§11 in the same change that fixes the vulns. Report `npm audit --omit=dev` alongside the total from now on — a prod-vs-dev split is the only form of this number that is decision-relevant.
 - [ ] **68 phantom tables closed** — code queries 68 tables that no migration creates (`node scripts/audit-phantom-tables.js`). Each is a runtime PostgREST `42P01` on a real user's first request. Invisible to types, lint, build and all 16,599 tests. See `docs/specs/remediation-plan.md`.
-- [ ] **12 modules moved off the session-less anon client** — 25 call sites whose reads silently return zero rows under RLS, including all four `/api/cron/*` routes, which have no user session by definition. A cron job that writes nothing and reports success is worse than one that crashes.
+- [ ] **8 modules moved off the session-less anon client** — reads that silently return zero rows under RLS. All 8 are unreachable today, so nothing is broken for a user right now; the conversion must land in the SAME change that wires each module, never after, or the endpoint ships returning `200 OK` with an empty array and no error. (An earlier draft of this line claimed 12 modules including all four `/api/cron/*` routes. Withdrawn: those four build their own client from `SUPABASE_SERVICE_ROLE_KEY` and are correct — the claim came from grepping a function name instead of an import.)
 - [ ] **Closed-beta cohort** — invite the limited real-user cohort only after Gates A + B pass
 
 ### Gate D — Multi-provider payments preconditions (NEW 2026-08-01, see ADR-0011)
@@ -352,7 +352,7 @@ ENABLE_AI_CHAT=false
 
 | Date | Change |
 |---|---|
-| 2026-08-09 | Gates reorganised. M1 verdict corrected to NO-GO. Five stale figures re-measured and replaced (tests 441→16,599; routes 295→305; `npm audit` split out to 18 **production** vulns incl. 1 critical, a split no doc was reporting; schema 200→202 tables). Resolved the "Gates A–C are the M1 preconditions" / "Gate D is M1 scope" contradiction — all are preconditions. Added Gate E (JWT verification proven against a real issuer). Added the brand-gate naming-collision note. Added three new Gate C blockers found by running the app: 68 phantom tables, 12 modules on the session-less anon client, and the false-green `audit:auth`. |
+| 2026-08-09 | Gates reorganised. M1 verdict corrected to NO-GO. Five stale figures re-measured and replaced (tests 441→16,599; routes 295→305; `npm audit` split out to 18 **production** vulns incl. 1 critical, a split no doc was reporting; schema 200→202 tables). Resolved the "Gates A–C are the M1 preconditions" / "Gate D is M1 scope" contradiction — all are preconditions. Added Gate E (JWT verification proven against a real issuer). Added the brand-gate naming-collision note. Added three new Gate C blockers found by running the app: 68 phantom tables, 8 modules on the session-less anon client, and the false-green `audit:auth`. |
 | 2025-12-04 | Version 1.0.0. |
 
 **Last Updated:** 2026-08-09

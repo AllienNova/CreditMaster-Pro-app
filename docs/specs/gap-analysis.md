@@ -63,8 +63,8 @@ shipped architecture are 72 modules of unreachable code.
 |---|---|---|---|---|---|
 | G-001 | P1 | Dead code | 319 product modules unreachable; 264 predate the restore | `node scripts/audit-reachability.js` | Per-module WIRE / DELETE decision. Deleting is a valid, often correct outcome. |
 | G-002 | P1 | Correctness | 68 tables queried, created by no migration | `node scripts/audit-phantom-tables.js` | See the table taxonomy below — most are prerequisites, not outages. |
-| G-003 | P1 | Correctness | 12 modules / 25 call sites still use the session-less anon client; reads return **zero rows with no error** under RLS | grep in §"Anon client" | Convert to service-role + explicit `user_id` scoping, as the 63 already converted. |
-| G-004 | P0 | Correctness | All four `/api/cron/*` routes use that anon client. Cron has no user session by definition, so the scheduler writes nothing and reports success | `src/app/api/cron/{send-reminders,financial-snapshots,cleanup-expired-sessions,check-dispute-status}/route.ts` | Service-role client. A cron job that silently no-ops is worse than one that crashes. |
+| G-003 | P1 | Correctness | **8** modules still import the session-less anon client; their reads return **zero rows with no error** under RLS. All 8 are unreachable, so this is **latent** — it goes live the instant one is wired | §"Anon client" below | Convert to service-role + explicit `user_id` scoping, as the 63 already converted. Must happen **before** wiring, not after. |
+| ~~G-004~~ | — | ~~Correctness~~ | **VOID — withdrawn 2026-08-09.** Claimed all four `/api/cron/*` routes used the anon client and therefore silently wrote nothing. False: each defines its **own local** `getSupabase()` built from `SUPABASE_SERVICE_ROLE_KEY` (`send-reminders/route.ts:5-14`). The finding came from grepping the function *name* rather than the *import*, which matched a local helper that happens to share it. | `grep -c SUPABASE_SERVICE_ROLE_KEY` = 1 in all four | None. The routes are correct. |
 | G-005 | P1 | Security gate | `audit:idor` was a false green — it keyed on the literal `getServiceRoleClient`, while 22 of 34 restored modules reach the service role via `supabaseAdmin` or a raw `SUPABASE_SERVICE_ROLE_KEY` client | commit `6e049cf` | Fixed: detection keys on the capability. 63 → 185 files scanned. |
 | G-006 | P0 | Security | `POST /api/gamification/achievements` let any authenticated user mint any achievement and its XP | commit `6e049cf` | Fixed: gated 501 until a verified server-side event path exists. |
 | G-007 | P1 | Supply chain | `rxjs` is imported by **9 product modules** (11 files incl. tests) and is **absent from `package.json`** — neither a dependency nor a devDependency. It resolves only because a transitive dependency hoists it | `require.resolve('rxjs')` succeeds; `package.json` has no entry | Add as a direct dependency. A hoisted transitive can move or vanish on any lockfile change, and the build breaks with no code change. |
@@ -117,23 +117,28 @@ It stores its session in **localStorage**; the app authenticates through
 `auth.uid()` is NULL and RLS returns **zero rows with no error**. Silent, not
 loud — which is why a green suite never saw it.
 
-| Module | Tables | Why it matters |
-|---|---|---|
-| `app/api/cron/send-reminders/route.ts` | `notifications` | **G-004** |
-| `app/api/cron/financial-snapshots/route.ts` | 5 history tables | **G-004** |
-| `app/api/cron/cleanup-expired-sessions/route.ts` | `sessions`, `audit_logs`, … | **G-004** |
-| `app/api/cron/check-dispute-status/route.ts` | `notifications` | **G-004** |
-| `lib/auth/mfa-service.ts` | `user_backup_codes`, `user_mfa_names` | auth path; both tables also phantom |
-| `lib/financial/bill-calendar-service.ts` | `bills`, `bill_reminders` | |
-| `lib/goals/services/ContributionSchedulerService.ts` | `goal_contributions`, `scheduled_contributions` | money-adjacent |
-| `lib/goals/services/GoalNotificationService.ts` | `goal_milestones`, `recommendation_actions` | |
-| `lib/credit-bureau/inquiry-removal-service.ts` | — | |
-| `lib/credit-bureau/credit-error-detector.ts` | `credit_report_errors` | |
-| `lib/documents/ocr-bridge-service.ts` | `ocr_bridge_results` | |
-| `lib/email/email-preferences-service.ts` | `email_preferences` | |
+**Count this by the import, not by the function name.** The first pass of this
+section grepped for the string `getSupabase()` and reported 12 modules. Four of
+those were `/api/cron/*` routes that define their **own local** `getSupabase()`
+from `SUPABASE_SERVICE_ROLE_KEY` — correct code that merely shares a name. The
+real list is the 8 that import the symbol from `@/lib/supabase/client`:
 
-Eight of the twelve are themselves unreachable, so only the four cron routes are
-live today. That is what makes G-004 a P0 and the rest P1.
+| Module | Tables | Reachable? |
+|---|---|---|
+| `lib/auth/mfa-service.ts` | `user_backup_codes`, `user_mfa_names` — **both phantom** | no |
+| `lib/financial/bill-calendar-service.ts` | `bills`, `bill_reminders` | no |
+| `lib/goals/services/ContributionSchedulerService.ts` | `goal_contributions`, `scheduled_contributions` | no |
+| `lib/goals/services/GoalNotificationService.ts` | `goal_milestones`, `recommendation_actions` | no |
+| `lib/credit-bureau/inquiry-removal-service.ts` | `inquiry_removal_requests` | no |
+| `lib/credit-bureau/credit-error-detector.ts` | `credit_report_errors` | no |
+| `lib/documents/ocr-bridge-service.ts` | `ocr_bridge_results` | no |
+| `lib/email/email-preferences-service.ts` | `email_preferences` | no |
+
+**All eight are unreachable.** So no user is affected today. The reason it stays
+P1 rather than dropping to P2 is the failure mode: wiring one of these produces
+an endpoint that returns `200 OK` with an empty array instead of the user's
+data, and no error anywhere. The conversion belongs in the same change as the
+wiring, never after it.
 
 ---
 
@@ -176,3 +181,4 @@ skipping.
 | Date | Change |
 |---|---|
 | 2026-08-09 | Created at `2b23237`. Corrects the phantom-table reachability split (36 → 1) after replacing a name-matching orphan check with a transitive graph walk. |
+| 2026-08-09 | **G-004 withdrawn** and G-003 restated (12 modules → 8, all unreachable, latent not live). Both errors had the same cause: matching on a *function name* instead of an *import*. `/api/cron/*` defines a local `getSupabase()` from the service-role key, which the name-grep could not tell apart from the anon-client import. Two of the three biggest numbers in the first draft of this document came from name-matching, and both were wrong in the alarming direction. |
