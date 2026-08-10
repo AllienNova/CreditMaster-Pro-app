@@ -19,7 +19,7 @@
 | Build | `npm run build` | **PASS** | exit 0 |
 | Migrations | `npx supabase db reset` | **PASS** | applies clean from zero |
 | Auth coverage | `npm run audit:auth` | **PASS** | 305/305 routes match their CSV guard |
-| IDOR | `npm run audit:idor` | **PASS** | 0 unscoped non-insert queries |
+| IDOR | `npm run audit:idor` | **STALE — see note** | Was PASS at `61a4460`, when the gate keyed on the literal `getServiceRoleClient` and never opened the 22 restored modules that reach the service role another way. Widened in `6e049cf`: 185 files scanned, 180 unscoped + 63 PK-scoped surfaced, 83 held in a content-addressed baseline. Exit 0 today means "no NEW findings beyond the baseline", **not** "0 unscoped queries". |
 | Phantom columns | `audit-phantom-columns.js` vs **live** schema | **PASS** | 0 hits |
 
 > `supabase db reset` **exits 0 even when a migration fails** — the error appears only in stdout. Its exit code cannot be used as a gate. Verified: an earlier run printed `LegacyMigrationApplyError` and still returned 0.

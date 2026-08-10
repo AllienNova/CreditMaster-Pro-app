@@ -212,40 +212,49 @@ until step 8 passes.
 
 ### Step 8 — the dogfooding recipe
 
-This exists because **every** significant defect found this session was found by
-running the app, and **none** was visible to any gate. Broken signup, universal
-401s, 163 unreadable relations, a live self-award exploit, a false-green IDOR
-audit. 16,599 passing tests saw none of them.
-
 ```bash
-# 0. Confirm who owns the port. :3000 was held by an unrelated Docker container
-#    serving a LibreChat panel, and the first smoke run read its 404s as ours.
-lsof -i :3000 || true
-npx supabase start && npx supabase db reset     # exits 0 EVEN ON FAILURE — read stdout
-npm run dev                                      # note the port it actually binds
-
-# 1. Real user, real token. Not a fixture, not a mock.
-#    Supabase issues ES256 via JWKS with the user id in `sub` (RFC 7519).
-curl -s -X POST "$SUPABASE_URL/auth/v1/admin/users" -H "apikey: $SERVICE_KEY" ...
-#    -> if this 500s, signup is broken. That is the bug, not your setup.
-
-# 2. Hit the new endpoint as that user. Assert on the BODY, not just the status.
-curl -s "$APP/api/<new-route>" -H "authorization: Bearer $TOKEN"
-#    200 with {"data":[]} is a FAILURE if you seeded a row. That is exactly what
-#    the anon-client bug looks like: success shape, empty payload, no error.
-
-# 3. Seed a row directly in Postgres, re-request, confirm it comes back.
-# 4. Cross-user probe: request user A's resource as user B. MUST be 403/404, never 200.
-# 5. Unauthenticated probe: no token. MUST be 401.
-# 6. UI: click the actual screen. Screenshot to
-#    ~/.claude/screenshots/Fynvita/current/web/. Capture console errors.
-# 7. Check the Postgres log for permission-denied and 42P01 — PostgREST swallows
-#    plenty into an empty result set.
+./scripts/dogfood.sh /api/financial/budgets --port 3001
 ```
 
-**Evidence required before a module is marked done:** the curl command and its
-body for steps 2–5, a screenshot for step 6, and the Postgres log line count for
-step 7. "Should work" fails this step by definition.
+This is a committed script, not a checklist, because the checklist version was
+not runnable — `$TOKEN`, `$APP` and `$SERVICE_KEY` were defined nowhere, step 1
+returned a user object rather than an access token, and the cross-user probe
+needed a second user that no step created. A recipe an engineer cannot paste is
+a recipe that gets skipped, which is the exact failure mode it exists to prevent.
+
+It creates **two real users**, mints **real ES256 access tokens** via the
+password grant, and asserts:
+
+| Step | Assertion |
+|---|---|
+| 0 | local Supabase up; app answering; **app's Supabase URL, anon key and service-role key all match the one minting tokens** |
+| 1 | two users created; token `alg` printed |
+| 2 | authenticated request 2xx — and warns when the body is an empty collection, the signature of the anon-client bug |
+| 3 | unauthenticated request is 401/403/307 |
+| 4 | user B's response does not contain user A's id |
+| 5 | Postgres log carries no `42P01` / `42501` / permission-denied |
+
+Verified end to end on `/api/financial/budgets`:
+
+```
+2. authenticated request as user A   HTTP 200 {"success":true,"data":[],"count":0}
+3. unauthenticated request           HTTP 401
+4. cross-user probe                  no leakage of user A's id
+5. postgres errors                   none
+=== PASS
+```
+
+The env checks in step 0 are not defensive padding — both were earned during
+that run. Pointing `NEXT_PUBLIC_SUPABASE_URL` at a hosted project while minting
+tokens locally 401s every request on an unknown JWKS `kid` and looks exactly
+like a broken auth guard. Swapping only the URL and anon key, leaving a hosted
+`SUPABASE_SERVICE_ROLE_KEY`, produces a 500 `No suitable key or wrong key type`
+from inside the handler instead. Three restarts to find; one line to detect.
+
+**Still owed by hand**, and the script says so on exit rather than implying
+coverage it lacks: seed a row for user A and confirm it comes back, and click
+the real screen with a screenshot to
+`~/.claude/screenshots/Fynvita/current/web/`.
 
 ---
 
