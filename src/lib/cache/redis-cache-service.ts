@@ -69,6 +69,50 @@ export class RedisCacheService {
   }
 
   /**
+   * Liveness probe for the health endpoint.
+   *
+   * Deliberately NOT built on redisRequest(): that helper swallows every error
+   * and returns null, so a caller cannot tell "Redis is not configured" from
+   * "Redis is configured and failing". Collapsing those two is precisely the
+   * defect this method exists to avoid reporting — see gap-analysis.md G-012,
+   * where a health endpoint returned "healthy" for components it never checked.
+   *
+   * `configured: false` is not a failure. Without Upstash credentials this
+   * service falls back to an in-process cache, which works but is per-instance;
+   * the health endpoint reports that as degraded rather than healthy, because on
+   * serverless each instance then holds its own copy.
+   */
+  async ping(): Promise<{ configured: boolean; ok: boolean; error?: string }> {
+    if (!this.redisAvailable) return { configured: false, ok: false };
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      const response = await fetch(`${REDIS_URL}/PING`, {
+        headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        return {
+          configured: true,
+          ok: false,
+          error: `HTTP ${response.status}`,
+        };
+      }
+      const data = await response.json();
+      return { configured: true, ok: data?.result === "PONG" };
+    } catch (error) {
+      return {
+        configured: true,
+        ok: false,
+        error: error instanceof Error ? error.message : "unknown",
+      };
+    }
+  }
+
+  /**
    * Get value from cache
    */
   async get<T>(key: string): Promise<T | null> {

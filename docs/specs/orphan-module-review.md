@@ -274,6 +274,184 @@ not as live imports.
 | 57 | `src/setupTests.ts` | Jest global test setup | none | No | N/A | **JEST-INFRA** |
 | 58 | `src/types/student-loan-agent.ts` | Type defs for the student-loan AI agent | none (types only) | No | Continuous | WIRE-NOW |
 
+## G-013 — `src/lib/monitoring/` directory: the one story
+
+**Does this project have observability, or the shape of observability?
+Both, split roughly down the middle, and the split does not follow the
+reachable/unreachable line.** Two of the four *live* files are real
+(`metrics.ts` was unreachable and is now confirmed real; `service-probes.ts`
+is live and real — see below). Two of the four live files fabricate or
+discard the signal they claim to produce (`health.ts` — G-012; `logger.ts` —
+new finding below, and worse). Of the five originally-unreachable files, two
+are genuinely ready to wire (`metrics.ts`, `error-tracking.ts` for its core
+function), one looks ready but silently would not work without a companion
+piece nobody built (`analytics.ts`), one is an honest, self-declared stub
+(`sentry.ts`), and the barrel is moot. So: this is not "the observability is
+fake" and it is not "the observability is fine" — it is a codebase where the
+newest, most carefully-written piece (`service-probes.ts`, explicit "Wave 7
+honesty contract" in its own header) was built specifically to fix the
+oldest, most foundational piece (`logger.ts`) being silently broken the
+entire time, and the fix shipped without anyone going back to retire what it
+was built to replace.
+
+Follow-up to the `metrics.ts` correction above, requested by team-lead as a
+single scoped decision rather than deciding `metrics.ts` in isolation, then
+deepened per team-lead's second request to check whether each file does what
+it claims (the G-012 lens) rather than assuming reachability alone settles
+the verdict. Two live fabrication findings came out of that deepening and
+were reported to team-lead immediately rather than held for this write-up —
+recorded here with full detail for the record.
+
+**Correction to team-lead's summary, not just a confirmation:** team-lead's
+message described `health.ts` as "the only live one." Direct import grep
+shows that's undercounting — **four** files are live, not one:
+
+| File | Status | Live importers |
+|---|---|---|
+| `health.ts` | LIVE — tracked separately as **G-012** (fabricates health status; not re-litigated here) | `/api/health/route.ts`, `/api/monitoring/health/route.ts`, `service-probes.ts` |
+| `logger.ts` | LIVE — widely used, not an orphan | 10 call sites including `auth-service.ts`, `stripe-service.ts`, `credits/purchase/route.ts`, `pctt-trading-service.ts`, `order-manager.ts` — a foundational logging utility across auth, payments, and trading |
+| `real-time-monitoring.ts` | LIVE | `/api/monitoring/health/route.ts`, `/api/monitoring/history/route.ts`, `/api/monitoring/events/route.ts`, `useRealtimeEvents.ts` |
+| `service-probes.ts` | LIVE | `/app/admin/health/page.tsx`, `/api/admin/health/route.ts` |
+| `analytics.ts` | Unreachable | none |
+| `error-tracking.ts` | Unreachable | none |
+| `metrics.ts` | Unreachable | none |
+| `sentry.ts` | Unreachable | none |
+| `index.ts` (barrel) | Unreachable | none — and note none of the 4 live files above are re-exported by it; every live consumer imports its file directly. The barrel only ever aggregated `error-tracking`/`health`/`sentry`/`analytics`, and 3 of those 4 are themselves unreachable |
+
+### Does each live file actually do what it claims? (the G-012 lens)
+
+Team-lead asked this to be checked, not assumed, for every file — reachable
+or not. Two of the four live files fail it; the third fix that already
+exists in this same directory passes it cleanly.
+
+**`logger.ts` — LIVE, and a total no-op. Reported to team-lead immediately;
+the most severe finding of this pass.** Every public method
+(`debug`/`info`/`warn`/`error`/`fatal`/`securityEvent`/`apiRequest`/
+`aiInteraction`/`performance`) funnels through one private `log()`
+(`logger.ts:125-163`). That method correctly builds a fully formatted entry —
+`JSON.stringify` in production, pretty-print in development, level
+filtering, error serialization, service/environment tagging — then:
+```
+const formatted = this.formatLog(entry);
+// Output to log aggregation service in production
+// In a real implementation, this would send to CloudWatch, Datadog, etc.
+void formatted;
+```
+`void formatted` discards it. No `console.log`, no network call, nothing. A
+`LogAggregationConfig` exists at the bottom of the file (`logger.ts:356-373`)
+with `endpoint`/`apiKey`/`batchSize`/`flushInterval`, correctly reading
+`LOG_AGGREGATION_ENDPOINT`/`LOG_AGGREGATION_API_KEY` — and is never
+referenced by `log()` or anywhere else in the file. Every `logger.*()` call
+across the 10 live consumers (`auth-service.ts`, `stripe-service.ts`,
+`credits/purchase/route.ts`, `pctt-trading-service.ts`, `order-manager.ts`,
+and 5 more) has been silently discarding its message, unconditionally, in
+every environment, since whenever this file was written. Not checked: whether
+any call site also `console.log`s directly as a separate, redundant path —
+flagged as unverified, not assumed either way.
+
+**`real-time-monitoring.ts` + `/api/monitoring/health/route.ts` — a second
+live fabricated-status finding, reported to team-lead immediately.** The
+`GET` handler (`route.ts:10-85`) collects genuinely real data —
+`process.uptime()`, `process.memoryUsage()`, `process.cpuUsage()`,
+`JobScheduler.getActiveJobs()`, `RealtimeMonitoringService.getStatistics()` —
+then hardcodes `status: "healthy"` (`route.ts:28`) without deriving it from
+any of that data, plus a second inline placeholder,
+`active_workflows: 0, // Would be fetched from database in production`
+(`route.ts:42`). The `POST` handler (`route.ts:91-120`) is a pure relay: it
+takes `cpu_usage`/`memory_usage`/`active_workflows`/`active_jobs`/
+`pending_disputes`/`error_rate` straight from the request body (each
+defaulting to `0`) and republishes them via
+`RealtimeMonitoringService.publishSystemHealth()` — it measures nothing
+itself. No caller anywhere in `src/` `POST`s real measured data to it, so in
+practice it is likely never invoked, but the endpoint exists, is
+admin-authenticated (`withRole("admin")`), and would blindly relay whatever
+an admin-authenticated caller sends. Lower blast radius than `health.ts`/
+G-012 — this route is admin-gated, not the public surface an uptime monitor
+or k8s readiness probe would hit — but the same defect pattern, live, today.
+`real-time-monitoring.ts` itself does not fabricate: `publishSystemHealth()`
+just relays whatever `SystemHealthMetrics` it's handed: the fabrication is in
+the route that calls it, not the module.
+
+**`service-probes.ts` — the opposite of the above, and already live.** Its
+own header states the honesty contract explicitly: "a service is NEVER
+reported `healthy` unless a real, credential-bearing liveness call to it
+actually succeeded... the exact fake-green defect this route replaces
+(`src/lib/monitoring/health.ts` pings nothing and always returns healthy)."
+It makes real calls — `supabaseAdmin.from("profiles").select(..., {head:
+true})`, `stripe.balance.retrieve()`, `client.models.list()` (AIML),
+`institutionsGet()` (Plaid), `HeadBucketCommand` (S3), `resend.apiKeys.list()`
+— each gated on the relevant env vars actually being present (`unknown`, not
+`healthy`, if not configured), each time-bounded (`PROBE_TIMEOUT_MS = 3000`),
+aggregated worst-status-wins. This already exists and is already live, wired
+to `/api/admin/health` and the admin health dashboard — just not to the
+public `/api/health` that `health.ts` (G-012) serves. **This changes R-007's
+shape, told to team-lead immediately:** the fix for G-012 does not need to be
+built — `probeAllServices()` already is the fix, it just needs `/api/health`
+repointed at it (and possibly extended with a database/cache probe of its
+own) instead of `health.ts`'s hardcoded checks.
+
+Verdicts for the 5 originally-unreachable items (the nominal G-013 scope):
+
+- **`src/lib/monitoring/analytics.ts` — revised from WIRE-NOW to FIX-FIRST.**
+  Its own comment admits the gap: "GA4 script is typically loaded via
+  next/script in layout" (`analytics.ts:23`) — but `initAnalytics()` never
+  loads that script, it only defines a local `window.gtag` that pushes to a
+  local `dataLayer` array. Confirmed the actual
+  `googletagmanager.com/gtag/js` tag does not exist anywhere in `src/app` —
+  no `<Script>` in the root layout, nothing. Wiring only this file's
+  `initAnalytics()`/event trackers (my original advice, withdrawn) would run
+  error-free while transmitting zero data to Google Analytics — the exact
+  "looks like it works, measures nothing" shape as `health.ts`. The fix needs
+  **both**: add the missing `next/script` GA4 tag to the root layout, **and**
+  call `initAnalytics()` + the event trackers. `NEXT_PUBLIC_GA_MEASUREMENT_ID`
+  itself is a real, documented env var (`.env.production.example`), not
+  phantom — the gap is the missing script tag, not the config.
+- **`src/lib/monitoring/error-tracking.ts` — WIRE-NOW, with a caveat this
+  pass surfaced.** Its primary function works standalone: `trackError()`
+  stores into an in-memory ring buffer (`recentErrors`, capped at 100) that
+  `getRecentErrors()`/`getErrorById()`/`getErrorStats()` genuinely read back
+  — this part does not depend on anything else in the directory and is real.
+  Two things do depend on other files, both now known to be inert: it calls
+  `logger.error(...)` (`error-tracking.ts:71`) for every tracked error, which
+  per the `logger.ts` finding above currently discards silently; and its
+  optional Sentry-forwarding branch (`error-tracking.ts:77-81`,
+  `if (NODE_ENV === "production" && SENTRY_DSN) { // Sentry integration would
+  go here }`) is honestly gated and commented, matching `sentry.ts`'s status,
+  not currently misleading since `SENTRY_DSN` is unset outside the `.env`
+  example. Net: safe to wire for its in-memory tracking and
+  `setupGlobalErrorHandlers()` (needs one call site, e.g. a root error
+  boundary or `instrumentation.ts`), but do not describe it as "logs through
+  the app's logging pipeline" — that pipeline doesn't currently write
+  anywhere.
+- **`src/lib/monitoring/metrics.ts` — verdict revised from DO-NOT-WIRE to
+  WIRE-NOW.** The original finding ("dropped from the live barrel") is the
+  one already retracted above — recorded here as the resolution, not repeated
+  as new evidence. Re-checked properly this pass: queries `metrics_data`
+  (`metrics.ts:142,170`), confirmed **real**, created in
+  `supabase/migrations/20260217000000_infrastructure_persistence.sql` — not
+  phantom. Uses the canonical `supabaseAdmin` client from
+  `@/lib/supabase/server` (the correct pattern, unlike `connection-pool.ts`'s
+  competing factory). No confirmed duplicate exists now that the barrel and
+  its siblings are established as unreachable. One nit, not blocking:
+  `(supabaseAdmin.from as any)("metrics_data")` (`metrics.ts:142,170`) casts
+  away type safety rather than typing the table — worth fixing in the same
+  change that wires it up, not a reason to leave it dark.
+- **`src/lib/monitoring/sentry.ts` — FIX-FIRST, not DELETE-RECOMMENDED and not
+  WIRE-NOW.** Its own header is explicit: "To enable Sentry, install
+  `@sentry/nextjs` ... Then uncomment the Sentry imports and implementations."
+  Confirmed `@sentry/nextjs` is not in `package.json` — this is an honestly
+  labeled placeholder, not a fabrication (it correctly no-ops and logs "DSN
+  not configured" rather than pretending to report errors). The fix is named
+  and small (install the package, uncomment three lines,
+  `sentry.ts:37-39`), but adding a new dependency is an owner decision per
+  this project's working agreement #5 ("no new dependencies without
+  request"), not something to do unilaterally inside this review.
+- **`src/lib/monitoring/index.ts` (barrel) — WIRE-NOW, low priority.**
+  Harmless once `analytics.ts`/`error-tracking.ts` are wired; every live
+  consumer in this directory already imports its target file directly rather
+  than through this barrel, so re-wiring the barrel itself is optional
+  convenience, not a blocker for the two files above.
+
 ## DELETE-RECOMMENDED queue (owner decision required — not an execution list)
 
 Team-lead correction applied: DELETE is gated behind named owner approval per
@@ -295,7 +473,7 @@ owner signs off.
 | `src/lib/auth/mfa-service.ts` | Split across two live modules: `auth-service.ts` (TOTP — confirmed identical `supabase.auth.mfa.enroll/challenge/verify` calls, `auth-service.ts:550-563` vs `mfa-service.ts:103-149`, used by `TwoFactorSettings.tsx`) + `backup-codes.ts` (backup codes, real `backup_codes` table) | Orphan's declared `MFAMethodType` includes `"webauthn" | "sms" | "email"` but has **zero** implementing methods for any of those three — grep for SMS/email-send/WebAuthn-specific methods in the class returns nothing. `TwoFactorSettings.tsx` has its own independent `checkMFAStatus()`, not dependent on the orphan's aggregator | Nothing real — TOTP and backup codes are both live elsewhere; WebAuthn/SMS/email were declared types that were never implemented, so there is no working code to lose |
 | `src/lib/credit/services/SecuredCardRecommendationService.ts` | `CreditScoreSimulator.getSecuredCardRecommendations()` (`CreditScoreSimulator.ts:649`, called live at `credit/simulator/route.ts:129`) | Both produce secured-card recommendations from a credit profile | **Something real would be lost.** The live version returns generic categories (`basic_secured`/`rewards_secured`/`limit_boost_secured`) with no real product names. The orphan has a curated database of 11 **named, real** products with issuers — "Discover it® Secured Credit Card" (discover), "Capital One Quicksilver Secured" (capital_one), "OpenSky® Secured Visa® Credit Card" (opensky), etc. (`SecuredCardRecommendationService.ts:99-165+`). If the product-specific recommendation experience is ever wanted, this content is the only copy of it |
 | `src/lib/database/connection-pool.ts` | `src/lib/supabase/{client,server,service-role,admin}.ts` for client construction (the documented project convention) | Architectural duplicate of the client-factory pattern; separately contains the unverified pooler-URL defect noted above | The client-factory piece: nothing. But `checkDatabaseHealth()` (`connection-pool.ts:147-170`) runs a **real** query (`.from("profiles").select("id").limit(1)`); the closest live analog, `monitoring/health.ts:checkDatabase()`, has its actual DB ping **commented out** (`health.ts:32`, `// const result = await supabase.from('health_check')...`) and returns a hardcoded healthy status instead. Deleting this file removes the one real DB health check that exists in the codebase today — worth a note to whoever owns `/api/health`, independent of this file's fate. `executeWithRetry()` has no live equivalent either, though the separate orphan `src/lib/utils/retry.ts` (verdict: WIRE-NOW, #56 above) is a generic version of the same idea and is the better path forward if retry-wrapped queries are wanted |
-| `src/lib/monitoring/metrics.ts` | Originally stated as: siblings `analytics.ts`/`error-tracking.ts`/`health.ts`/`sentry.ts` via the `monitoring/index.ts` barrel | **Correction on re-check, not smoothed over:** the barrel itself, and every one of those named siblings, has **zero importers anywhere in `src/`** (checked directly this pass) — no route, component, `instrumentation.ts`, or `next.config.*` wiring exists for any of them. There is no confirmed live monitoring suite for `metrics.ts` to be superseded by; the "dropped from the barrel" reasoning in the original finding does not hold up under a direct import check | Unknown — can't assess against a "replacement" that isn't itself confirmed live. **Lower confidence, explicitly: this row should not be treated as equivalent evidence to the other eight.** Recommend a separate, scoped pass on all 8 files in `src/lib/monitoring/` (not just this one) before any delete decision, rather than deciding `metrics.ts` in isolation |
+| `src/lib/monitoring/metrics.ts` | **RESOLVED — see "G-013" section below, do not treat this row as current.** Originally stated as duplicated by siblings `analytics.ts`/`error-tracking.ts`/`health.ts`/`sentry.ts` via the `monitoring/index.ts` barrel; that premise didn't survive a direct import check (barrel and those siblings are themselves unreachable) | N/A — removed from the DELETE-RECOMMENDED queue entirely once G-013's scoped pass confirmed a real, non-phantom table (`metrics_data`) and no actual duplicate | N/A — **verdict revised to WIRE-NOW in G-013**, not delete |
 
 ## LEAVE-DARK — do not delete (9 modules)
 
@@ -345,3 +523,36 @@ the tree, undeleted, rather than be removed:
   `metrics.ts`'s original "duplicate" reasoning did not survive a direct
   import check on its claimed live siblings — corrected in place rather than
   quietly dropped.
+- 2026-08-10 — Added "G-013" section: scoped verdict pass on all 9 files in
+  `src/lib/monitoring/`, closing the `metrics.ts` open question per
+  team-lead's offer. Correction to team-lead's own summary recorded in place:
+  4 of the 9 files are live (`health.ts` — tracked as G-012, `logger.ts`,
+  `real-time-monitoring.ts`, `service-probes.ts`), not 1. `metrics.ts`'s
+  verdict is revised from DO-NOT-WIRE to WIRE-NOW (real table, no duplicate,
+  no missing dependency) — the DELETE-RECOMMENDED table row above is marked
+  resolved and points here rather than left contradicting this section.
+  `analytics.ts` and `error-tracking.ts` are new WIRE-NOW findings, not
+  previously reviewed. `sentry.ts` is FIX-FIRST: self-documented as
+  incomplete pending `@sentry/nextjs`, which is not an installed dependency —
+  flagged for an owner decision rather than installed unilaterally.
+- 2026-08-10 — Deepened G-013 per team-lead's second request: apply the
+  G-012 lens (does each file do what it claims, or fake it) to every live
+  file, not just verdict the 5 unreachable ones on reachability alone.
+  Two live findings reported to team-lead immediately, not held for
+  write-up: `logger.ts` is a total no-op (every log call across 10 live
+  consumers including `stripe-service.ts`/`auth-service.ts` is silently
+  discarded, `logger.ts:151-155`) — the most severe finding of this whole
+  review; `/api/monitoring/health/route.ts` hardcodes `status: "healthy"`
+  regardless of the real metrics it collects and its `POST` handler relays
+  caller-supplied numbers unverified — a second live instance of the G-012
+  pattern, admin-gated so narrower blast radius than the public `/api/health`.
+  One positive finding, also reported immediately since it changes R-007's
+  shape: `service-probes.ts` is a genuine, already-live fix for the G-012
+  pattern (real liveness calls to Supabase/Stripe/AIML/Plaid/S3/Resend,
+  correct `unknown`-not-`healthy` gating) — R-007 likely needs `/api/health`
+  repointed at it rather than new health-check logic built. `analytics.ts`'s
+  verdict is revised from WIRE-NOW to FIX-FIRST: wiring it alone would be a
+  third instance of the same pattern, since the GA4 script tag it depends on
+  is never loaded anywhere in the app. `error-tracking.ts` stays WIRE-NOW for
+  its real in-memory tracking, with a note that its `logger.error()` call and
+  Sentry-forward branch are both currently inert for the reasons above.

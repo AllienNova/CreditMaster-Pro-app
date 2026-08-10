@@ -46,13 +46,13 @@ modules became dark in the first place.
 
 | ID | Task | Closes | Acceptance |
 |---|---|---|---|
-| R-001 | Add `rxjs` to `package.json` as a direct dependency | G-007 | `npm ls rxjs` shows it at top level; build green after `rm -rf node_modules && npm ci` |
+| ~~R-001~~ | ~~Add `rxjs` as a direct dependency~~ | G-007 | **DONE.** `^7.8.2`, `dev:false` in the lock. tsc 0, build 0. Surfaced G-014: `npm install` cannot run on this repo (openai/zod ERESOLVE), masked because CI uses `npm ci`. |
 | R-002 | Upgrade the 18 production-dependency vulns, starting with the `next-auth` critical | G-008 | `npm audit --omit=dev` reports 0 critical, 0 high |
 | R-003a | Decide the 4 tables whose verdict does not depend on M1 (`user_backup_codes`, `holdings`, `portfolios`, `bank_accounts`) | G-002 | a decision row for each, signed off. Owner: **unassigned — needs a name** |
 | R-003b | Decide the remaining 63 phantom tables | G-002 | **runs AFTER M1**, not in M0 — each verdict depends on its caller's. No table is created before its caller's verdict is WIRE |
 | R-004 | Convert the 8 anon-client modules to service-role + explicit `user_id` scoping | G-003 | `grep -rl 'from "@/lib/supabase/client"' src/lib` returns only `client.ts` consumers that are genuinely browser-side |
 | R-005 | Collapse the two backup-code implementations into one | G-009 | one module, one table, `user_backup_codes` gone |
-| **R-007** | **Make `/api/health` actually check something** | G-012 | each probe performs real work; with Supabase stopped, `/api/health` returns 503 and `?type=ready` returns `ready:false`. Proven by stopping the dependency, not by reading the code. |
+| ~~R-007~~ | ~~Make `/api/health` actually check something~~ | G-012 | **DONE.** Acceptance met as written — dependency stopped, not code read. Supabase down → `503` / `unhealthy` / `ready:false`; Supabase up → `200` / `ready:true`. |
 | **R-006** | **Fix backup-code MFA recovery — it is broken in LIVE code** | SF-01 | ALL of: (a) a user who loses their TOTP device completes recovery, proven end to end by the M2 step-8 recipe; (b) codes are **≥128-bit** — today they are `crypto.randomBytes(4)`, i.e. **32 bits** (`backup-codes.ts:58`); (c) a **rate limit + lockout** on the redemption endpoint, with a test that proves it trips; (d) codes stored hashed, plaintext returned exactly once |
 
 **R-006 is the only confirmed live defect in this plan** and it outranks

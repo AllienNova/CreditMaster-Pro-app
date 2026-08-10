@@ -311,3 +311,108 @@ work. Condition 1 should land before `audit:idor` is wired into CI as blocking
 
 **Plan is finalized** subject to condition 1 landing before Gate B. M0 (R-001,
 R-002, R-003a, R-004, R-005, R-006) and M1 triage may proceed now.
+
+---
+
+## Round 5 — 2026-08-09 — re-verification at `b4ff051`
+
+**Verdict: APPROVE** (0 P0 · 1 P1 · 0 P2 · 1 P3). The P1 is an operational
+unknown outside this repo, not a defect in the plan.
+
+Re-review was warranted and I would have insisted on it: `b4ff051` changes the
+**entry-point set** of the reachability walker. That is the one edit class that
+can silently reclassify dead code as live, and it moves in the opposite
+direction from every error found so far — an over-admitting entry point would
+mark a whole subtree reachable and shrink the problem on paper. It did not.
+
+### The 319 → 312 change is correct and tightly scoped
+
+I diffed the unreachable sets by running the *old* script from `f8c6d09` in-tree
+(it resolves `ROOT` from `__dirname`, so it has to run from `scripts/`; my first
+attempt from `/tmp` produced a garbage empty set — my error, not the tool's).
+
+```
+old_unreachable=319   new_unreachable=312
+FLIPPED to reachable:
+  src/lib/trading/autonomous/autonomous-executor.ts
+  src/lib/trading/autonomous/autonomous-scheduler.ts
+  src/lib/trading/autonomous/autonomous-types.ts
+  src/lib/trading/autonomous/job-queue.ts
+  src/lib/trading/autonomous/market-hours.ts
+  src/lib/trading/autonomous/signal-scanner.ts
+  src/lib/trading/autonomous/standalone-server.ts
+newly UNREACHABLE: (none)
+```
+
+Exactly 7, every one inside `src/lib/trading/autonomous/`, and **zero** modules
+newly marked unreachable. The manifest scan admitted precisely one new entry
+point and its six transitive imports — no subtree inflation. `entry points: 607
+(incl. 1 from build manifests)`, reachable 1189 → 1196. The depth-8 fix is
+sound: the Fly Dockerfile sits at depth 5 and a cap of 4 found nothing while
+reporting success, which is the same silent-no-op failure mode as the original
+`getServiceRoleClient` name-grep.
+
+Dropping "Next.js" from the headline was the right call — with a build-manifest
+entry in the set, "unreachable from any entry point" is now the accurate phrasing
+and "from any Next.js entry point" would have been false for those 7.
+
+### Round-4 findings — all verified fixed
+
+| ID | Verification |
+|---|---|
+| R4-01 | Re-ran the bypass verbatim: gate `exit=1`; `--write-baseline` printed `REFUSING to write: 1 key(s) are NOT in the current baseline / + …\|analytics_events\|select\|none\|79b7a431f26a`; `diff -q` against the pre-run baseline **clean**; gate still `exit=1`. Refusal exit code measured directly: **1** (my earlier `\| tail` pipe measured `tail`, not the script). |
+| R4-02 | `dogfood.sh:95,101` now `WARN` rather than `fail`, with the diagnosis deferred to an actual failure (`:73-81`) |
+| R4-03 | `remediation-plan.md:105` — `portfolios` → **DELETE-CALLER**, with the contradiction against the `holdings` row named explicitly |
+| R4-04 | `gap-analysis.md:12` — "312 of 1,507 product modules **(web only)**", plus a paragraph on which half of the goal mobile does and does not satisfy |
+| sizing | `:293` M2 sized "tens of hours, not hours" with a re-scope after the first 5; `:294-297` hosted schema, trading decision, FND-026 and the mobile walker all listed **unassigned**, needing a name and a date |
+
+### Phantom reclassification verified
+
+`--json` output is complete — 68 tables, **zero** `... +N more` truncation
+markers. Classes sum correctly: A=2 · B=63 · C=3 = 68. The root cause the lead
+recorded is real and worth keeping in the document: the original classification
+parsed human output that truncates at four sites, so any table whose first four
+sites were tests read as test-only. That is a third instance of the same
+meta-defect this whole review has been chasing — deriving a fact from a
+*rendering* of the data rather than the data.
+
+### R5-01 (P1, operational — outside this repo)
+
+**If `fynvita-autonomous-trading` is deployed, it is writing to three tables no
+migration in this repo creates.** Class C is now `pctt_positions`,
+`autonomous_execution_logs`, `autonomous_scan_logs`, all reachable from
+`standalone-server.ts`, which `src/lib/trading/autonomous/deploy/Dockerfile:22`
+bundles and `deploy/fly.toml:6` deploys as app `fynvita-autonomous-trading`
+(region `iad`). The lead logged this as an open question. It should be an owned,
+dated action instead, for one reason: unlike every other open item, this one may
+describe a **live** condition affecting an autonomous trading process, and it is
+answerable in minutes rather than weeks — `fly status -a fynvita-autonomous-trading`,
+then reconcile those three tables against whichever Supabase project
+`deploy/fly.toml:41-42` points that app at. Two possible outcomes, both worth
+knowing today: the app is not deployed and this is inert, or it is deployed and
+every write to those three tables has been failing `42P01` in production.
+
+### R5-02 (P3)
+
+`portfolios` has **5** non-test sites, not 4. Measured from `--json`:
+`PortfolioRebalanceService.ts:240,264,277,302,555`, plus 4 test sites, 9 total.
+`gap-analysis.md:104` says "4 of them in `PortfolioRebalanceService.ts`" and
+`remediation-plan.md:105` says "4 non-test sites". Four is the truncation limit
+of the old human output — the corrected line still carries the fingerprint of
+the bug it documents. No verdict changes; DELETE-CALLER holds either way.
+
+### Verdict
+
+**APPROVE.** Across three rounds this plan has taken 2 P0, 9 P1 and 6 P2, and
+every one was fixed at the root rather than reworded — twice by the lead
+discovering that their own first fix failed the same attack, and saying so.
+Condition 1 from round 4 is met: `--write-baseline` is shrink-only and the
+bypass is closed, verified by reproduction rather than by reading the diff.
+`audit:idor` may now be wired into CI as blocking.
+
+Remaining work is bookkeeping, not gating: give R5-01 an owner and a date this
+week, and fix the 4 → 5 in two lines. Neither blocks M0 or M1.
+
+**No round 6 required.** If the Fly deployment turns out to be live, the phantom
+taxonomy and `pctt_positions`' "out of scope" verdict both need revisiting — that
+would be a new finding, not a re-review of this one.
