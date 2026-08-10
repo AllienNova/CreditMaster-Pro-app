@@ -45,7 +45,8 @@
  *   node scripts/audit-service-role-idor.js /tmp/uid.txt
  */
 
-const { readFileSync, readdirSync, statSync } = require("fs");
+const { createHash } = require("crypto");
+const { readFileSync, readdirSync, statSync, writeFileSync } = require("fs");
 const { join, relative } = require("path");
 
 const ROOT = process.cwd();
@@ -250,6 +251,7 @@ function audit(text, rel, userScoped, findings, marked) {
         table,
         op: operationOf(chain),
         kind: fk ? "fk" : pk ? "pk" : "none",
+        sig: sigOf(chain),
         via: fk ? fk[2] : pk ? "id" : null,
       });
     }
@@ -279,6 +281,7 @@ function audit(text, rel, userScoped, findings, marked) {
       table,
       op: operationOf(chain),
       kind: fk ? "fk" : pk ? "pk" : "none",
+      sig: sigOf(chain),
       via: fk ? fk[2] : pk ? "id" : null,
       cleared: isMarked(marked.pkChecked, text.slice(0, at).split("\n").length),
     });
@@ -308,7 +311,29 @@ function loadBaseline() {
   }
 }
 
-const key = (f) => `${f.file}|${f.table}|${f.op}|${f.kind}`;
+// The baseline key MUST identify the query by its CONTENT, not merely count
+// findings per file/table/op/kind. A count-keyed baseline is launderable and
+// this was proven with a reproduction: in a file baselined at
+// `analytics_events|select|none = 3`, scoping one existing query while adding a
+// brand-new fully-unscoped `.select("*")` leaves the count at 3, so the gate
+// exits 0 and a read of every user's rows never surfaces. Neither `n > allowed`
+// nor a shortfall check catches that — the totals are identical.
+//
+// `sig` is a hash of the whitespace-normalised query chain, so a NEW query is a
+// NEW key regardless of what else in the file was fixed, and a FIXED query's key
+// simply disappears (caught by the staleness check).
+//
+// Trade-off, accepted deliberately: reformatting or editing a baselined query
+// changes its signature and blocks until the baseline is regenerated. That is
+// the safe direction to fail — it forces a human to re-look at a query that is
+// still unscoped, rather than silently re-blessing it.
+const sigOf = (chain) =>
+  createHash("sha1")
+    .update(chain.replace(/\s+/g, " ").trim())
+    .digest("hex")
+    .slice(0, 12);
+
+const key = (f) => `${f.file}|${f.table}|${f.op}|${f.kind}|${f.sig}`;
 
 function main() {
   const tablesPath = process.argv[2];
@@ -374,6 +399,32 @@ function main() {
     ...pkScoped.filter((f) => !f.cleared),
   ];
 
+  if (process.argv.includes("--write-baseline")) {
+    const counts = {};
+    for (const f of candidate) counts[key(f)] = (counts[key(f)] || 0) + 1;
+    writeFileSync(
+      join(ROOT, "scripts", "idor-baseline.json"),
+      JSON.stringify(
+        {
+          frozen: new Date().toISOString().slice(0, 10),
+          why:
+            "Pre-existing unscoped/PK-scoped service-role queries, held as tracked debt " +
+            "so the gate can block NEW ones from line one. Keys are content-addressed " +
+            "(file|table|op|kind|sha1-of-normalised-chain): a new query is a new key, " +
+            "and a fixed query's key disappears. This list may only shrink.",
+          counts,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    console.log(
+      `wrote scripts/idor-baseline.json — ${Object.keys(counts).length} keys, ${candidate.length} findings`,
+    );
+    return;
+  }
+
+
   // COUNT-based, not key-membership. A key is file|table|op|kind, which is
   // stable across line drift but collapses several findings in one file into
   // one key — so plain membership let a NEW unscoped query hide behind an
@@ -383,13 +434,30 @@ function main() {
   const seen = new Map();
   for (const f of candidate) seen.set(key(f), (seen.get(key(f)) || 0) + 1);
 
+  // A count-only comparison is STILL launderable, and this was proven with a
+  // reproduction rather than reasoned about: in a file baselined at
+  // `analytics_events|select|none = 3`, adding `.eq("user_id", …)` to one query
+  // AND introducing a brand-new fully-unscoped `.select("*")` leaves the count
+  // at 3. `n > allowed` is false, exit 0, and a query returning every user's
+  // rows never surfaces. Fixing one finding silently buys a slot for the next.
+  //
+  // So a SHORTFALL is now a failure too. If a key comes in under its baseline,
+  // the debt was paid down and the baseline is stale — regenerate it, which
+  // re-freezes the real remaining set and closes the slot. Noisy by design:
+  // the alternative is a gate that quietly rewards leaving debt in place.
   const blocking = [];
+  const stale = [];
   for (const [k, n] of seen) {
     const allowed = baseline[k] || 0;
     if (n > allowed) {
       const f = candidate.find((c) => key(c) === k);
       for (let i = 0; i < n - allowed; i++) blocking.push(f);
+    } else if (n < allowed) {
+      stale.push(`${k}: baseline ${allowed}, now ${n}`);
     }
+  }
+  for (const k of Object.keys(baseline)) {
+    if (!seen.has(k)) stale.push(`${k}: baseline ${baseline[k]}, now 0`);
   }
   const grandfathered = candidate.length - blocking.length;
   if (grandfathered > 0) {
@@ -406,7 +474,19 @@ function main() {
         `\n  // idor-audit: cross-user — <why this must span users>`,
     );
   }
-  process.exitCode = blocking.length > 0 ? 1 : 0;
+  if (stale.length > 0) {
+    console.log(
+      `\n${stale.length} baseline key(s) are now BELOW their frozen count:` +
+        `\n  ${stale.slice(0, 10).join("\n  ")}` +
+        (stale.length > 10 ? `\n  ... +${stale.length - 10} more` : "") +
+        `\n\nDebt was paid down — regenerate the baseline:` +
+        `\n  node scripts/audit-service-role-idor.js --write-baseline` +
+        `\nUntil then every freed slot silently accepts a NEW unscoped query` +
+        `\nwith the same file|table|op|kind key. That is not hypothetical: it` +
+        `\nwas reproduced on src/app/api/analytics/events/route.ts.`,
+    );
+  }
+  process.exitCode = blocking.length > 0 || stale.length > 0 ? 1 : 0;
 }
 
 main();
