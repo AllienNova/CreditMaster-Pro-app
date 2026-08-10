@@ -415,6 +415,18 @@ describe("PointsRewardsService", () => {
       expect(result.toBalance).toBeDefined();
     });
 
+    it("refuses to transfer on behalf of another user", async () => {
+      // Caller binding. Every other test in this block passes callerId ===
+      // fromUserId, so the guard itself was never exercised: an attacker
+      // supplying someone else's fromUserId would have drained their balance.
+      await expect(
+        service.transferPoints("attacker", "victim", "attacker", 100),
+      ).rejects.toThrow("Cannot transfer points on behalf of another user");
+
+      // Must reject BEFORE reading or writing any balance.
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+
     it("throws on zero or negative amount", async () => {
       await expect(
         service.transferPoints("a", "a", "b", 0),
