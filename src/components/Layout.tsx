@@ -12,12 +12,22 @@ const Layout: React.FC<LayoutProps> = ({ children, showNavigation = true }) => {
   const router = useRouter();
   const pathname = usePathname();
 
+  /**
+   * The five product pillars, matching the landing page (src/app/page.tsx:40-85)
+   * so the signed-in header and the marketing site name the same product.
+   *
+   * The previous list was Dashboard / Credit Builder / Marketplace / Student
+   * Loans / Pricing — it advertised "Pricing" to users who had already paid,
+   * and omitted Financial Wellness, Investment Intelligence and Tax entirely,
+   * which is most of what the platform does.
+   */
   const navigationItems = [
     { href: "/dashboard", label: "Dashboard" },
-    { href: "/credit-builder", label: "Credit Builder" },
+    { href: "/credit", label: "Credit Health" },
+    { href: "/financial-hub", label: "Financial Wellness" },
+    { href: "/invest", label: "Investing" },
+    { href: "/tax", label: "Tax" },
     { href: "/marketplace", label: "Marketplace" },
-    { href: "/student-loan-agent", label: "Student Loans" },
-    { href: "/pricing", label: "Pricing" },
   ];
 
   return (
@@ -28,15 +38,20 @@ const Layout: React.FC<LayoutProps> = ({ children, showNavigation = true }) => {
             <div className="flex justify-between items-center h-16">
               {/* Logo */}
               <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 via-blue-600 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-lg"></span>
+                {/* The mark rendered as an empty blue square: the span had no
+                    content. Now the brand initial, matching the wordmark. */}
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-lg">F</span>
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-blue-600 to-blue-600 bg-clip-text text-transparent">
-                    Agentic Credit Repair
+                  {/* Was "Agentic Credit Repair" / "AI-Agent Powered Platform" —
+                      pre-rebrand naming that also undersold the product as a
+                      credit-repair tool. Matches src/app/page.tsx:26 now. */}
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-blue-700 bg-clip-text text-transparent">
+                    Fynvita
                   </h1>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
-                    AI-Agent Powered Platform
+                    Your Financial Vitality Platform
                   </p>
                 </div>
               </div>
