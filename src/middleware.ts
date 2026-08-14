@@ -243,13 +243,34 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Check for auth token in cookies
-    const token =
-      request.cookies.get("sb-access-token")?.value ||
-      request.cookies.get("supabase-auth-token")?.value;
+    // Resolve the session through @supabase/ssr, NOT by guessing a cookie name.
+    //
+    // This block used to read:
+    //
+    //   request.cookies.get("sb-access-token") ||
+    //   request.cookies.get("supabase-auth-token")
+    //
+    // Neither cookie is ever written. @supabase/ssr names its cookie
+    // `sb-<project-ref>-auth-token` — `sb-127-auth-token` against a local stack,
+    // `sb-<ref>-auth-token` against a hosted one — so the lookup returned
+    // undefined for every signed-in user and EVERY protected page redirected to
+    // /auth/login. Not environment-specific: no deployment writes those two
+    // names.
+    //
+    // Observed: signed in through the real login form, cookie
+    // `sb-127-auth-token` present in the browser, and /settings/security still
+    // bounced to login.
+    //
+    // The correct client was already being constructed fifteen lines below for
+    // the admin-role check; this now uses the same one. getUser() validates the
+    // token rather than merely observing that some cookie exists, so it is also
+    // a stronger check than the string it replaces.
+    const supabase = createEdgeSupabaseClient(request);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    // If no token, redirect to login
-    if (!token) {
+    if (!user) {
       const loginUrl = new URL("/auth/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
@@ -262,16 +283,9 @@ export async function middleware(request: NextRequest) {
     // Edge-safe @supabase/ssr cookie client) is the only source of truth.
     if (adminRoutes.some((route) => pathname.startsWith(route))) {
       try {
-        const supabase = createEdgeSupabaseClient(request);
-
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-          return NextResponse.redirect(new URL("/auth/login", request.url));
-        }
-
+        // Reuses the client and `user` resolved above — this block used to
+        // build a second client and call getUser() again, which was one
+        // redundant network round-trip on every admin page load.
         const { data: profile } = await supabase
           .from("profiles")
           .select("role")

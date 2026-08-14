@@ -67,15 +67,35 @@ export const jwtValidation = {
     try {
       const authHeader = request.headers.get("authorization");
 
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      // Bearer header first, then the session COOKIE.
+      //
+      // Without the cookie fallback this method accepted the header only, while
+      // the browser keeps its session in a cookie (`sb-<ref>-auth-token`, written
+      // by @supabase/ssr). Every client component that called fetch("/api/...")
+      // without manually attaching a token therefore got 401 — measured at 213
+      // such call sites across 135 files, and confirmed live: a signed-in browser
+      // with a valid cookie got 401 from /api/financial/budgets and
+      // /api/notifications.
+      //
+      // Fixed here rather than at those 213 call sites: this is the single choke
+      // point every guard funnels through, and a per-call-site fix would be
+      // re-broken by the next component someone writes.
+      //
+      // CSRF: the auth cookie is SameSite=Lax (@supabase/ssr
+      // utils/constants.js:6), so browsers do not attach it to cross-site POST,
+      // PUT or DELETE — only to top-level GET navigations, which cannot read the
+      // JSON response. Accepting it here does not open a cross-site write path.
+      const token = authHeader?.startsWith("Bearer ")
+        ? authHeader.substring(7)
+        : readSessionCookie(request);
+
+      if (!token) {
         return {
           valid: false,
           user: null,
           error: "No authorization token provided",
         };
       }
-
-      const token = authHeader.substring(7);
 
       // In production, this would verify the JWT token signature
       // For now, we decode and validate the token structure
@@ -146,6 +166,47 @@ export const jwtValidation = {
     }
   },
 };
+
+/**
+ * Pull the access token out of the @supabase/ssr session cookie.
+ *
+ * The cookie is named `sb-<project-ref>-auth-token`, where the ref is derived
+ * from the Supabase URL, so it cannot be matched by a fixed name — that exact
+ * mistake is what left src/middleware.ts redirecting every signed-in user to
+ * the login page. Matched by PATTERN instead.
+ *
+ * Its value is a JSON session object, base64-prefixed in newer versions, and
+ * large values are split across `.0`, `.1` … chunks which must be rejoined in
+ * order before parsing.
+ */
+function readSessionCookie(request: Request): string | null {
+  const header = request.headers.get("cookie");
+  if (!header) return null;
+
+  const jar = new Map<string, string>();
+  for (const part of header.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    jar.set(part.slice(0, idx).trim(), part.slice(idx + 1).trim());
+  }
+
+  const base = [...jar.keys()]
+    .filter((k) => /^sb-.*-auth-token(\.\d+)?$/.test(k))
+    .sort();
+  if (base.length === 0) return null;
+
+  const raw = base.map((k) => jar.get(k) ?? "").join("");
+
+  try {
+    const decoded = raw.startsWith("base64-")
+      ? Buffer.from(raw.slice(7), "base64").toString("utf8")
+      : decodeURIComponent(raw);
+    const parsed = JSON.parse(decoded);
+    return typeof parsed?.access_token === "string" ? parsed.access_token : null;
+  } catch {
+    return null;
+  }
+}
 
 /** Decode the JOSE header without verifying — needed to pick a strategy. */
 function decodeHeader(token: string): { alg?: string; kid?: string } | null {
