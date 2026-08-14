@@ -68,7 +68,26 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https: blob:",
-    "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.plaid.com https://api.aimlapi.com wss://*.supabase.co",
+    // Local Supabase is added in DEVELOPMENT ONLY. Without it `connect-src`
+    // permits `https://*.supabase.co` and nothing else, so a browser pointed at
+    // a local stack cannot even sign in — every auth call is refused by the CSP
+    // before it leaves the page:
+    //
+    //   Connecting to 'http://127.0.0.1:54321/auth/v1/token?grant_type=password'
+    //   violates the following Content Security Policy directive: "connect-src…"
+    //
+    // That silently made browser dogfooding of EVERY authenticated feature
+    // impossible locally, which is why the curl-based scripts/dogfood.sh could
+    // pass while the real UI could not log in at all. Found while device-testing
+    // the backup-codes screen.
+    //
+    // Production is untouched: this appends only when NODE_ENV !== "production",
+    // and the hosted app talks to *.supabase.co, which was already allowed.
+    `connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.plaid.com https://api.aimlapi.com wss://*.supabase.co${
+      isDevelopment
+        ? " http://127.0.0.1:54321 http://localhost:54321 ws://127.0.0.1:54321 ws://localhost:54321"
+        : ""
+    }`,
     "frame-src 'self' https://js.stripe.com https://cdn.plaid.com",
     "object-src 'none'",
     "base-uri 'self'",
