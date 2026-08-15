@@ -443,7 +443,12 @@ export default function TemplatesScreen() {
                     size={14}
                     color={lightTheme.colors.textSecondary}
                   />{" "}
-                  {template.requiredDocuments.length} docs required
+                  {/* Per-item field, not the list itself — a template without
+                      `requiredDocuments` threw "Cannot read property 'length'
+                      of undefined" and took the whole screen down. Coercing the
+                      list (toArray) does not help here; each ITEM's array field
+                      needs the same treatment. */}
+                  {template.requiredDocuments?.length ?? 0} docs required
                 </Text>
               </View>
 

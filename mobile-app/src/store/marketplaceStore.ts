@@ -155,7 +155,7 @@ export const useMarketplaceStore = create<MarketplaceState & MarketplaceActions>
         const response = await marketplaceApi.getCategories();
         if (response.success && response.data) {
           set({
-            categories: response.data,
+            categories: toArray(response.data),
             lastUpdated: new Date().toISOString(),
           });
         }

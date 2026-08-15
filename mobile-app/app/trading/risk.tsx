@@ -348,7 +348,7 @@ export default function RiskScreen() {
                 ]}
               >
                 <Text style={styles.riskLevelText}>
-                  {riskMetrics.riskLevel.toUpperCase()}
+                  {riskMetrics.riskLevel?.toUpperCase() ?? "UNKNOWN"}
                 </Text>
               </View>
               <View style={styles.riskBannerInfo}>
@@ -359,7 +359,7 @@ export default function RiskScreen() {
                     { color: getRiskLevelColor(riskMetrics.riskLevel) },
                   ]}
                 >
-                  {riskMetrics.riskScore.toFixed(0)}/100
+                  {(riskMetrics.riskScore ?? 0).toFixed(0)}/100
                 </Text>
               </View>
             </View>
@@ -510,7 +510,7 @@ export default function RiskScreen() {
                 />
                 <MetricCard
                   title="Scale Factor"
-                  value={`${(riskMetrics.drawdownScaleFactor * 100).toFixed(0)}%`}
+                  value={`${((riskMetrics.drawdownScaleFactor ?? 0) * 100).toFixed(0)}%`}
                   subtitle="Position sizing"
                   icon="resize-outline"
                   valueColor={
@@ -555,7 +555,7 @@ export default function RiskScreen() {
                         {riskMetrics.largestPosition.symbol}
                       </Text>
                       <Text style={styles.largestPositionValue}>
-                        {(riskMetrics.largestPosition.percent * 100).toFixed(1)}
+                        {((riskMetrics.largestPosition?.percent ?? 0) * 100).toFixed(1)}
                         % of portfolio
                       </Text>
                     </View>

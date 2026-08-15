@@ -93,8 +93,8 @@ export default function CreditsScreen() {
 
   // Real backend shape: { balance, usage: { thisMonth, total } }
   // usedThisPeriod = usage.thisMonth; total allowance = usage.total
-  const totalAllowance = balance ? balance.usage.total : 0;
-  const usedThisPeriod = balance ? balance.usage.thisMonth : 0;
+  const totalAllowance = balance?.usage?.total ?? 0;
+  const usedThisPeriod = balance?.usage?.thisMonth ?? 0;
   const remainingPercent =
     totalAllowance > 0
       ? Math.round(((totalAllowance - usedThisPeriod) / totalAllowance) * 100)
@@ -139,13 +139,13 @@ export default function CreditsScreen() {
                 <View style={styles.statItem}>
                   <Text style={styles.statLabel}>Total</Text>
                   <Text style={styles.statValue}>
-                    {balance.usage.total.toLocaleString()}
+                    {(balance.usage?.total ?? 0).toLocaleString()}
                   </Text>
                 </View>
                 <View style={styles.statItem}>
                   <Text style={styles.statLabel}>Used (Month)</Text>
                   <Text style={styles.statValue}>
-                    {balance.usage.thisMonth.toLocaleString()}
+                    {(balance.usage?.thisMonth ?? 0).toLocaleString()}
                   </Text>
                 </View>
                 <View style={styles.statItem}>

@@ -115,7 +115,20 @@ for (const route of routes) {
   // One retry: the first navigation to a route can race Metro's on-demand
   // transform, which looks identical to a blank screen.
   if (screen.elements < 5) {
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 4000);
+    sleep(4000);
+    screen = readScreen();
+  }
+
+  // CONFIRM near-empty on a freshly launched app, exactly as crashes are
+  // confirmed. A route measured moments after a relaunch reads back the Expo Go
+  // splash — 4 elements — which is indistinguishable from a blank screen. That
+  // artefact reported /rewards, /rewards/quests and /marketplace as broken
+  // immediately after they had been verified working; a full relaunch plus a
+  // longer settle showed /rewards rendering 28 elements.
+  if (screen.elements < 5) {
+    relaunch();
+    sh("xcrun", ["simctl", "openurl", UDID, `exp://${HOST}:8081/--/${path}`]);
+    sleep(SETTLE_MS + 6000);
     screen = readScreen();
   }
 

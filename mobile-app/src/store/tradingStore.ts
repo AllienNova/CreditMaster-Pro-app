@@ -307,7 +307,7 @@ export const useTradingStore = create<TradingState & TradingActions>(
         ]);
 
         if (signalsRes.data) {
-          set({ signals: signalsRes.data.signals });
+          set({ signals: toArray(signalsRes.data?.signals) });
         }
         if (summaryRes.data) {
           set({
