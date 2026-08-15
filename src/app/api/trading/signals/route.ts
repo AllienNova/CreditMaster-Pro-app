@@ -561,6 +561,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
           );
         }
 
+        // mock-audit: not-user-data — id nonce, not a reported value
         const signalId = `SIG-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 
         const row = {

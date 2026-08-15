@@ -254,6 +254,10 @@ export const GET = withPermission(
 
     // Return fallback data for better UX
     return NextResponse.json({
+      // Degraded, and SAYS SO. This used to answer a failed upstream call with
+      // `success: false`, which is indistinguishable from a real empty result —
+      // the caller could not tell a genuine "no insights yet" from an outage.
+      degraded: true,
       success: true,
       data: {
         opportunities: [],

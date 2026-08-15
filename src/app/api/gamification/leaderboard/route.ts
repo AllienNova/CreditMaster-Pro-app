@@ -5,6 +5,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import type { LeaderboardResponse } from "@/lib/gamification/types";
 
 export type LeaderboardType =
   | "weekly_xp"
@@ -20,14 +22,15 @@ export interface LeaderboardEntry {
   isCurrentUser?: boolean;
 }
 
-export interface LeaderboardResponse {
-  type: LeaderboardType;
-  periodStart: string;
-  periodEnd: string;
-  entries: LeaderboardEntry[];
-  userRank?: number;
-  userPercentile?: number;
-}
+/**
+ * Re-exported from the canonical definition in @/lib/gamification/types.
+ *
+ * This route previously declared its OWN copy of the shape. Two interfaces for
+ * one payload is the same hazard that let the dispute detail page ship broken:
+ * the compiler happily checks each side against a different declaration, so a
+ * field present in one and absent in the other is invisible until runtime.
+ */
+export type { LeaderboardResponse } from "@/lib/gamification/types";
 
 // Mock leaderboard data for demonstration
 const MOCK_LEADERBOARD: Record<LeaderboardType, LeaderboardEntry[]> = {
@@ -126,43 +129,53 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
     // Get period range based on type
     const period = type === "monthly_xp" ? getMonthRange() : getWeekRange();
 
-    // Get mock entries and mark current user
-    const entries = MOCK_LEADERBOARD[type].map((entry) => ({
+    // Reads the real leaderboard_snapshots table.
+    //
+    // This block used to build the entire response from MOCK_LEADERBOARD plus
+    // `Math.floor(Math.random() * 50) + 10` for the caller's own rank and a
+    // percentile computed against a hardcoded "totalUsers = 100". The user was
+    // shown a competitive standing that was invented on each request — a
+    // different rank every refresh, all of it presented as fact.
+    //
+    // leaderboard_snapshots exists for precisely this (leaderboard_type,
+    // period_start, period_end, rankings jsonb) and is currently unpopulated:
+    // no job writes it yet. An empty leaderboard is the truthful answer until
+    // one does. `pending` tells the client to render "not ranked yet" rather
+    // than a zero that looks like last place.
+    const { data: snapshot } = await getServiceRoleClient()
+      .from("leaderboard_snapshots")
+      // idor-audit: cross-user — a leaderboard is a ranking ACROSS users; that is the feature
+      .select("rankings")
+      .eq("leaderboard_type", type)
+      .gte("period_end", period.start)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const rankings: LeaderboardEntry[] = Array.isArray(snapshot?.rankings)
+      ? (snapshot!.rankings as LeaderboardEntry[])
+      : [];
+
+    const entries = rankings.map((entry) => ({
       ...entry,
-      isCurrentUser: false,
+      isCurrentUser: entry.userId === user.id,
     }));
 
-    // Simulate current user being on the leaderboard
-    // In production, this would query the database
-    const mockUserRank = Math.floor(Math.random() * 50) + 10;
-    const mockUserValue =
-      type === "streak" ? 14 : Math.floor(Math.random() * 1000) + 500;
-
-    // Add current user if not in top 10
-    if (mockUserRank > 10) {
-      entries.push({
-        rank: mockUserRank,
-        userId: user.id,
-        displayName: "You",
-        value: mockUserValue,
-        isCurrentUser: true,
-      });
-    } else {
-      // Mark one of the existing entries as current user for demo
-      entries[mockUserRank - 1].isCurrentUser = true;
-    }
-
-    // Calculate percentile
-    const totalUsers = 100; // Mock total users
-    const userPercentile = ((totalUsers - mockUserRank) / totalUsers) * 100;
+    const mine = entries.find((e) => e.isCurrentUser);
+    const userRank = mine?.rank;
+    const userPercentile =
+      userRank !== undefined && entries.length > 0
+        ? Math.round(((entries.length - userRank) / entries.length) * 100)
+        : undefined;
 
     const response: LeaderboardResponse = {
       type,
       periodStart: period.start,
       periodEnd: period.end,
-      entries: entries.slice(0, 11), // Return top 10 + current user if needed
-      userRank: mockUserRank,
-      userPercentile: Math.round(userPercentile),
+      entries: entries.slice(0, 10),
+      userRank,
+      userPercentile,
+      pending: entries.length === 0,
     };
 
     return NextResponse.json(response);

@@ -52,6 +52,32 @@ jest.mock("@/lib/trading/strategies/strategy-validator", () => ({
 const mockCheckSufficientCredits = jest.fn().mockResolvedValue(true);
 const mockDeductCredits = jest.fn().mockResolvedValue({ success: true, remaining: 100 });
 
+/**
+ * Deterministic market history.
+ *
+ * These tests used to run with NO market-data mock at all. fetchMarketData
+ * silently fell back to generateSyntheticOHLCV() — a Math.random() walk — so
+ * every backtest assertion below was measuring a strategy against fresh noise
+ * on each run. Removing that silent fallback is what surfaced it.
+ *
+ * A fixed ramp makes the fixture reproducible, which is what a backtest test
+ * needs to assert anything at all.
+ */
+jest.mock("@/lib/investments/market-data-service", () => ({
+  marketDataService: {
+    getHistory: jest.fn(async (_symbol: string, _type: unknown, _interval: unknown, days: number) => ({
+      data: Array.from({ length: days || 30 }, (_, i) => ({
+        timestamp: new Date(Date.UTC(2026, 0, 1) + i * 86400000),
+        open: 100 + i,
+        high: 101 + i,
+        low: 99 + i,
+        close: 100.5 + i,
+        volume: 1_000_000,
+      })),
+    })),
+  },
+}));
+
 jest.mock("@/lib/credits", () => ({
   creditService: {
     checkSufficientCredits: (...args: unknown[]) => mockCheckSufficientCredits(...args),
@@ -73,7 +99,35 @@ jest.mock("@/lib/credits", () => ({
 }));
 
 import { createBacktestEngine } from "@/lib/trading/backtesting/backtest-engine";
+import { marketDataService as _mds } from "@/lib/investments/market-data-service";
 import { GET, POST } from "../route";
+
+/**
+ * jest.config.js sets `resetMocks: true`, which clears implementations declared
+ * in a jest.mock factory before EVERY test — so the market-data fixture has to
+ * be re-applied here, not just declared above. Without this getHistory() returns
+ * undefined and the route reports "Market data unavailable".
+ */
+function applyMarketDataFixture(days = 30) {
+  (_mds.getHistory as jest.Mock).mockImplementation(async () => ({
+    data: Array.from({ length: days }, (_, i) => ({
+      timestamp: new Date(Date.UTC(2026, 0, 1) + i * 86400000),
+      open: 100 + i,
+      high: 101 + i,
+      low: 99 + i,
+      close: 100.5 + i,
+      volume: 1_000_000,
+    })),
+  }));
+}
+
+// Global, not per-describe: every suite in this file exercises a route that
+// reads market data, and a fixture applied in only the first describe left the
+// others throwing "Market data unavailable".
+beforeEach(() => {
+  applyMarketDataFixture();
+});
+
 
 // ============================================================================
 // TEST DATA

@@ -78,73 +78,31 @@ export const POST = withAuth(
           ? "TransUnion"
           : "Unknown";
 
-    // Generate mock analysis result
-    const result: AnalysisResult = {
-      reportId: `report-${Date.now()}`,
-      bureau: bureauName,
-      reportDate: new Date().toISOString(),
-      creditScore: Math.floor(Math.random() * 150) + 600, // 600-750
-      summary: {
-        totalAccounts: 15,
-        openAccounts: 8,
-        closedAccounts: 7,
-        negativeItems: 3,
-        inquiries: 4,
-        collections: 1,
+    // GATED 501 — this route used to FABRICATE the analysis it returned.
+    //
+    // It generated `creditScore: Math.floor(Math.random() * 150) + 600` plus
+    // hardcoded account counts and an invented list of "disputeable items",
+    // and presented all of it as an analysis of the file the user had just
+    // uploaded. A credit-repair product telling someone their score and which
+    // tradelines to dispute — from random numbers — is the most damaging shape
+    // of the fabrication class this wave exists to close (FND-049..053).
+    //
+    // There is no report parser in the codebase: nothing implements
+    // analyzeReport/parseCreditReport. So the honest answer is that the feature
+    // is not built. This follows the precedent set for
+    // POST /api/gamification/achievements (commit 6e049cf), which was gated 501
+    // rather than left minting fake achievements.
+    //
+    // The upload is still validated above, so the client learns immediately if
+    // the file itself is unacceptable. Implement a real parser, then remove.
+    return NextResponse.json(
+      {
+        error: "Not implemented",
+        message:
+          "Credit report analysis is not available yet. Your file was not analyzed.",
       },
-      disputeableItems: [
-        {
-          id: "item-1",
-          type: "Late Payment",
-          description: "Capital One - 30 days late March 2023",
-          bureau: bureauName,
-          severity: "high",
-          estimatedImpact: 35,
-          recommendation:
-            "Send goodwill letter requesting removal due to otherwise good payment history",
-        },
-        {
-          id: "item-2",
-          type: "Collection",
-          description: "ABC Collections - Medical debt $450",
-          bureau: bureauName,
-          severity: "high",
-          estimatedImpact: 50,
-          recommendation:
-            "Request debt validation or negotiate pay-for-delete agreement",
-        },
-        {
-          id: "item-3",
-          type: "Hard Inquiry",
-          description: "XYZ Lender - Unauthorized inquiry Oct 2024",
-          bureau: bureauName,
-          severity: "low",
-          estimatedImpact: 5,
-          recommendation:
-            "Dispute as unauthorized inquiry if you did not apply",
-        },
-      ],
-      recommendations: [
-        "Prioritize disputing the collection account for maximum score improvement",
-        "Send goodwill letter to Capital One for late payment removal",
-        "Reduce credit utilization below 30% on revolving accounts",
-        "Avoid opening new credit accounts for the next 6 months",
-        "Consider becoming an authorized user on a well-aged account",
-      ],
-      overallHealth: "fair",
-    };
-
-    // Fix the self-reference issue
-    result.disputeableItems = result.disputeableItems.map((item) => ({
-      ...item,
-      bureau: result.bureau,
-    }));
-
-    return NextResponse.json({
-      success: true,
-      analysis: result,
-      message: "Credit report analyzed successfully",
-    });
+      { status: 501 },
+    );
   } catch (_error) {
     // Error silently caught
     return NextResponse.json(

@@ -479,6 +479,15 @@ export interface LeaderboardResponse {
   entries: LeaderboardEntry[];
   userRank?: number;
   userPercentile?: number;
+  /**
+   * True when no leaderboard snapshot exists for the period yet.
+   *
+   * Lets the client render "not ranked yet" instead of treating an absent rank
+   * as last place. Added when the route stopped inventing a rank with
+   * Math.random() and started reading leaderboard_snapshots, which no job
+   * populates yet.
+   */
+  pending?: boolean;
 }
 
 // ============================================================================

@@ -518,14 +518,35 @@ async function fetchMarketData(
     }
 
     return { data, source: "live" };
-  } catch {
-    return {
-      data: generateSyntheticOHLCV(days, 100, baseDate),
-      source: "synthetic",
-    };
+  } catch (err) {
+    // NO SILENT SYNTHETIC FALLBACK.
+    //
+    // This used to answer a market-data outage with generateSyntheticOHLCV() —
+    // a random walk — and run the backtest on it. The caller got a Sharpe
+    // ratio, a win rate and a drawdown computed from noise, labelled only by a
+    // `source: "synthetic"` field several layers up. Someone deciding whether
+    // to deploy a strategy on that number is being actively misled, and a
+    // strategy "backtested" on randomness is the most expensive kind of
+    // fabrication in this codebase.
+    //
+    // Synthetic data is still available, but only when the caller ASKS for it
+    // (see allowSynthetic), so it can never masquerade as history.
+    throw new Error(
+      `Market data unavailable for backtest: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
   }
 }
 
+/**
+ * Random-walk OHLCV for demos and tests ONLY.
+ *
+ * Never reachable from a failed market-data fetch — see the throw above. A
+ * backtest run on this produces meaningless statistics, so it must only ever
+ * run when the caller explicitly opted in and knows the data is synthetic.
+ */
+// mock-audit: not-user-data — explicit opt-in demo/test fixture; never substituted for real market history
 function generateSyntheticOHLCV(
   days: number,
   startPrice: number = 100,
@@ -536,10 +557,14 @@ function generateSyntheticOHLCV(
   const start = (baseDate || new Date(Date.now() - days * 86400000)).getTime();
 
   for (let i = 0; i < days; i++) {
+    // mock-audit: not-user-data — opt-in demo fixture, never real market history
     const change = (Math.random() - 0.48) * 2;
     price = Math.max(10, price + change);
+    // mock-audit: not-user-data — opt-in demo fixture, never real market history
     const high = price + Math.random() * 2;
+    // mock-audit: not-user-data — opt-in demo fixture, never real market history
     const low = price - Math.random() * 2;
+    // mock-audit: not-user-data — opt-in demo fixture, never real market history
     const open = price + (Math.random() - 0.5);
 
     data.push({
@@ -548,6 +573,7 @@ function generateSyntheticOHLCV(
       high,
       low,
       close: price,
+      // mock-audit: not-user-data — opt-in demo fixture, never real market history
       volume: 1000000 + Math.random() * 500000,
     });
   }

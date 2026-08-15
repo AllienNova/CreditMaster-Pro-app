@@ -66,7 +66,11 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   } catch (_error) {
     // AnalyticsEventsRoute error: Analytics processing failed
     void _error;
-    return NextResponse.json({ success: true }); // Don't fail client requests
+    // Analytics ingestion is deliberately fire-and-forget — a telemetry outage
+    // must not break the app. But it used to answer `{ success: true }`, which
+    // told the client the events WERE stored. Report the truth and still return
+    // 200 so the caller does not retry a non-critical write.
+    return NextResponse.json({ success: false, stored: false, degraded: true });
   }
 });
 

@@ -16,7 +16,10 @@ export const GET = withAuth(
         subscriptionCancellationService.getCancellationInfo(merchant);
       return NextResponse.json({ info });
     } catch {
-      return NextResponse.json({ info: null }, { status: 200 });
+      // `info: null` is honest — no cancellation info was retrieved — but the
+      // client could not tell "this merchant has none on file" from "the lookup
+      // failed". `degraded` distinguishes them.
+      return NextResponse.json({ info: null, degraded: true }, { status: 200 });
     }
   },
 );
