@@ -26,7 +26,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
+import { verifyCronRequest } from "@/lib/security/cron-auth";
 
 /** Users processed per batch, to bound memory on a large account base. */
 const USER_BATCH_SIZE = 500;
@@ -59,11 +59,6 @@ function getSupabase(): SupabaseClient {
   return createClient(url, key);
 }
 
-function verifyCronSecret(request: Request): boolean {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) return false;
-  return timingSafeEqual(authHeader, `Bearer ${process.env.CRON_SECRET}`);
-}
 
 function sum(rows: Array<Record<string, unknown>>, field: string): number {
   return rows.reduce((total, row) => total + (Number(row[field]) || 0), 0);
@@ -207,7 +202,11 @@ async function snapshotUser(
 }
 
 export async function GET(request: Request) {
-  if (process.env.NODE_ENV === "production" && !verifyCronSecret(request)) {
+  // Gated in EVERY environment, not just production. These jobs mutate data
+  // for all users, and a staging or preview deploy running with any other
+  // NODE_ENV was previously wide open. Local runs set CRON_SECRET like any
+  // other credential.
+  if (!verifyCronRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

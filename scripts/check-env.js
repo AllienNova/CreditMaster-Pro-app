@@ -25,6 +25,12 @@ const requiredVars = {
   ],
   "AIML API": ["AIML_API_KEY", "AIML_API_URL"],
   "App Config": ["NEXT_PUBLIC_APP_URL"],
+  // Gates all five /api/cron/* routes, which mutate data across every user
+  // (session cleanup, dispute status, reminder email, snapshot writes). The
+  // routes now fail closed without it, so a missing value means the scheduled
+  // jobs silently stop rather than run unauthenticated — still an outage, and
+  // one worth catching here before deploy rather than in a support ticket.
+  "Scheduled jobs": ["CRON_SECRET"],
 };
 
 const optionalVars = {

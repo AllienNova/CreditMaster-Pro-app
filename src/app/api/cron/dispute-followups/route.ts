@@ -7,19 +7,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { processFollowups } from "@/lib/automation/dispute-followups";
-import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
-
-// Verify cron secret to prevent unauthorized access
-const CRON_SECRET = process.env.CRON_SECRET;
+import { verifyCronRequest } from "@/lib/security/cron-auth";
 
 export async function GET(request: NextRequest) {
-  // Verify authorization
-  const authHeader = request.headers.get("authorization");
-
-  if (
-    CRON_SECRET &&
-    !timingSafeEqual(authHeader ?? "", `Bearer ${CRON_SECRET}`)
-  ) {
+  // Previously `if (CRON_SECRET && !timingSafeEqual(...))`, which skipped the
+  // check entirely when the secret was unset — the route rejected nobody, no
+  // header required. It also read the env var at module load, so the value was
+  // frozen at cold start. verifyCronRequest fails closed and reads at call time.
+  if (!verifyCronRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
