@@ -24,16 +24,78 @@ export const userProfileApi = {
   /**
    * Get current user profile
    */
-  getProfile: () => api.get<UserProfile>("/user/profile"),
+  // GET /api/profile returns { profile: {...}, stats: {...} } with snake_case
+  // keys and a single `full_name` (profile/route.ts:82-100). UserProfile here
+  // is flat camelCase with firstName/lastName split. `/user/profile` never
+  // existed, and a bare repoint would have type-checked — api.get<T> is an
+  // unchecked cast — while yielding undefined for every field on screen.
+  //
+  // The name split is lossy in one direction (the server keeps one field), so
+  // it is done in exactly one place rather than in each screen that needs a
+  // first name.
+  getProfile: async () => {
+    const res = await api.get<{
+      profile?: {
+        id?: string;
+        email?: string;
+        full_name?: string;
+        avatar_url?: string;
+        phone?: string;
+        address?: UserProfile["address"];
+        created_at?: string;
+        subscription?: { tier?: string; status?: string } | null;
+      };
+    }>("/profile");
+
+    const p = res.data?.profile;
+    const [firstName = "", ...rest] = (p?.full_name ?? "").split(" ");
+
+    return {
+      ...res,
+      data: p
+        ? ({
+            id: p.id ?? "",
+            email: p.email ?? "",
+            firstName,
+            lastName: rest.join(" "),
+            avatarUrl: p.avatar_url,
+            phone: p.phone,
+            address: p.address,
+            createdAt: p.created_at ?? "",
+            subscriptionTier: (p.subscription?.tier ??
+              "free") as UserProfile["subscriptionTier"],
+            subscriptionStatus: (p.subscription?.status ??
+              "active") as UserProfile["subscriptionStatus"],
+          } as UserProfile)
+        : undefined,
+    };
+  },
 
   /**
-   * Update user profile
+   * Update user profile.
+   *
+   * PATCH /api/profile allows exactly four fields: full_name, phone, address,
+   * avatar_url (profile/route.ts:122). Anything else is dropped server-side,
+   * so the camelCase names are translated here and unsupported keys are not
+   * sent at all rather than silently ignored.
    */
   updateProfile: (
     updates: Partial<
       Omit<UserProfile, "id" | "email" | "createdAt" | "updatedAt">
     >,
-  ) => api.patch<UserProfile>("/user/profile", updates),
+  ) => {
+    const body: Record<string, unknown> = {};
+    if (updates.firstName !== undefined || updates.lastName !== undefined) {
+      body.full_name = [updates.firstName, updates.lastName]
+        .filter(Boolean)
+        .join(" ");
+    }
+    if (updates.phone !== undefined) body.phone = updates.phone;
+    if (updates.address !== undefined) body.address = updates.address;
+    if (updates.avatarUrl !== undefined) body.avatar_url = updates.avatarUrl;
+
+    return api.patch<UserProfile>("/profile", body);
+  },
 
   /**
    * Upload avatar.

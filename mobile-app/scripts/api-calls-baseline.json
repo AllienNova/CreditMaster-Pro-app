@@ -57,7 +57,6 @@
     "/user/billing/payment-method",
     "/user/onboarding",
     "/user/onboarding/complete",
-    "/user/profile",
     "/user/recommendations",
     "/user/recommendations/ /click",
     "/user/recommendations/ /dismiss",
