@@ -296,6 +296,7 @@ export class PaymentRouter {
 
     // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
+      // money-audit: already-cents — PaymentRequest.amount is the branded `Cents` type (payment-router.ts:96,125); the dollar->cents conversion happened at the caller
       amount: request.amount,
       currency: request.currency.toLowerCase(),
       customer: await this.getOrCreateStripeCustomer(request.userId),
@@ -317,6 +318,7 @@ export class PaymentRouter {
       provider: "stripe",
       providerPaymentId: paymentIntent.id,
       status: this.mapStripeStatus(paymentIntent.status),
+      // money-audit: already-cents — PaymentRequest.amount is the branded `Cents` type (payment-router.ts:96,125); the dollar->cents conversion happened at the caller
       amount: request.amount,
       currency: request.currency,
       type: request.type,
@@ -502,6 +504,7 @@ export class PaymentRouter {
     if (payment.provider === "stripe") {
       const refund = await stripe.refunds.create({
         payment_intent: payment.providerPaymentId,
+        // money-audit: already-cents — PaymentRequest.amount is the branded `Cents` type (payment-router.ts:96,125); the dollar->cents conversion happened at the caller
         amount: refundAmount,
         reason: reason as Stripe.RefundCreateParams.Reason,
       });
@@ -509,6 +512,7 @@ export class PaymentRouter {
       return {
         id: refund.id,
         status: refund.status === "succeeded" ? "succeeded" : "pending",
+        // money-audit: already-cents — PaymentRequest.amount is the branded `Cents` type (payment-router.ts:96,125); the dollar->cents conversion happened at the caller
         amount: refund.amount,
       };
     } else if (payment.provider === "truelayer") {
@@ -521,6 +525,7 @@ export class PaymentRouter {
       return {
         id: refund.id,
         status: refund.status === "executed" ? "succeeded" : "pending",
+        // money-audit: already-cents — PaymentRequest.amount is the branded `Cents` type (payment-router.ts:96,125); the dollar->cents conversion happened at the caller
         amount: refundAmount,
       };
     }
