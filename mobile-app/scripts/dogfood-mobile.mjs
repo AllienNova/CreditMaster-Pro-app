@@ -114,7 +114,7 @@ for (const route of routes) {
   let screen = readScreen();
   // One retry: the first navigation to a route can race Metro's on-demand
   // transform, which looks identical to a blank screen.
-  if (screen.elements < 5) {
+  if (screen.chars < 25) {
     sleep(4000);
     screen = readScreen();
   }
@@ -125,7 +125,7 @@ for (const route of routes) {
   // artefact reported /rewards, /rewards/quests and /marketplace as broken
   // immediately after they had been verified working; a full relaunch plus a
   // longer settle showed /rewards rendering 28 elements.
-  if (screen.elements < 5) {
+  if (screen.chars < 25) {
     relaunch();
     sh("xcrun", ["simctl", "openurl", UDID, `exp://${HOST}:8081/--/${path}`]);
     sleep(SETTLE_MS + 6000);
@@ -151,8 +151,17 @@ for (const route of routes) {
 
   const problems = [];
   if (crash) problems.push(`crash: ${crash}`);
-  // 3 elements is the empty-Expo-Go shell; a real screen has a header at minimum.
-  if (screen.elements < 5) problems.push(`near-empty (${screen.elements} elements)`);
+  // Judge on TEXT, not element count.
+  //
+  // An element-count floor misreads screens whose content is aggregated into a
+  // few accessibility labels: /coach/goals renders "Financial Goals / Emergency
+  // Fund Savings ACTIVE 0% CURRENT $0 TARGET $5,000 MONTHLY $0" — real, correct,
+  // seeded data — in FOUR nodes, and was reported broken three runs running.
+  // Same mistake the web sweep made with a 60-character floor over a valid
+  // 53-character empty state. 25 chars matches the web harness.
+  if (screen.chars < 25) {
+    problems.push(`near-empty (${screen.chars} chars, ${screen.elements} elements)`);
+  }
 
   results.push({
     route,

@@ -83,17 +83,21 @@ export default function UseStrategyScreen() {
 
   const fetchStrategy = async () => {
     setLoading(true);
-    const { data } = await disputesAPI.getStrategy(strategyId || "");
-    if (data?.strategy) {
-      setStrategy(data.strategy);
-      const requiredVars = getRequiredVariables(strategyId || "");
-      const initial: Record<string, string> = {};
-      requiredVars.forEach((v) => {
-        initial[v] = "";
-      });
-      setVariables(initial);
+    // try/finally — a rejection here left the screen spinning forever.
+    try {
+      const { data } = await disputesAPI.getStrategy(strategyId || "");
+      if (data?.strategy) {
+        setStrategy(data.strategy);
+        const requiredVars = getRequiredVariables(strategyId || "");
+        const initial: Record<string, string> = {};
+        requiredVars.forEach((v) => {
+          initial[v] = "";
+        });
+        setVariables(initial);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleGenerateLetter = async () => {
