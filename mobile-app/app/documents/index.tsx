@@ -42,18 +42,24 @@ export default function DocumentsScreen() {
 
   const loadDocuments = useCallback(async () => {
     setLoading(true);
-    setError(null);
-    const response = await documentApi.getAll();
-    if (response.success && response.data) {
-      setDocuments(toArray<Document>(response?.data?.documents));
-    } else {
-      setError(
-        response.error?.message ||
-          response.message ||
-          "Failed to load documents",
-      );
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      setError(null);
+      const response = await documentApi.getAll();
+      if (response.success && response.data) {
+        setDocuments(toArray<Document>(response?.data?.documents));
+      } else {
+        setError(
+          response.error?.message ||
+            response.message ||
+            "Failed to load documents",
+        );
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {

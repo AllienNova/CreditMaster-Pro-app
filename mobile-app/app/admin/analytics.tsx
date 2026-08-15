@@ -51,14 +51,20 @@ export default function AdminAnalyticsScreen() {
 
   const loadAnalytics = useCallback(async () => {
     setLoading(true);
-    setError(null);
-    const res = await adminAnalyticsApi.getAnalytics(range);
-    if (res.success && res.data) {
-      setData(res.data);
-    } else {
-      setError(res.error?.message ?? "Unable to load analytics right now.");
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      setError(null);
+      const res = await adminAnalyticsApi.getAnalytics(range);
+      if (res.success && res.data) {
+        setData(res.data);
+      } else {
+        setError(res.error?.message ?? "Unable to load analytics right now.");
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [range]);
 
   // Refetch on mount and whenever the selected range changes.

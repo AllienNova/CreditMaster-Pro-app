@@ -44,14 +44,20 @@ export default function CreditAgeScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await creditRepairApi.getAccounts();
-    if (res.success && res.data) {
-      setAccounts(toArray<CreditAccount>(res?.data?.accounts));
-      setError(null);
-    } else {
-      setError(res.error?.message ?? "Unable to load your accounts.");
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      const res = await creditRepairApi.getAccounts();
+      if (res.success && res.data) {
+        setAccounts(toArray<CreditAccount>(res?.data?.accounts));
+        setError(null);
+      } else {
+        setError(res.error?.message ?? "Unable to load your accounts.");
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {

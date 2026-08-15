@@ -70,14 +70,20 @@ export default function AdminDisputesScreen() {
 
   const loadDisputes = useCallback(async () => {
     setLoading(true);
-    setError(null);
-    const res = await adminDisputesApi.getDisputes();
-    if (res.success && res.data) {
-      setDisputes(toArray<AdminDispute>(res?.data));
-    } else {
-      setError(res.error?.message ?? "Unable to load disputes right now.");
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      setError(null);
+      const res = await adminDisputesApi.getDisputes();
+      if (res.success && res.data) {
+        setDisputes(toArray<AdminDispute>(res?.data));
+      } else {
+        setError(res.error?.message ?? "Unable to load disputes right now.");
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {

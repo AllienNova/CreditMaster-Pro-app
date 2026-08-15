@@ -103,8 +103,14 @@ export default function DebtScreen() {
   // data exists, the full-screen loader is suppressed so slider changes update in place.
   const loadPlan = useCallback(async () => {
     setLoading(true);
-    await fetchPlan();
-    setLoading(false);
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      await fetchPlan();
+    } finally {
+      setLoading(false);
+    }
   }, [fetchPlan]);
 
   useEffect(() => {

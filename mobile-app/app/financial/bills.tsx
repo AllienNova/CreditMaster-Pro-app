@@ -138,8 +138,14 @@ export default function BillsScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    await fetchBills();
-    setLoading(false);
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      await fetchBills();
+    } finally {
+      setLoading(false);
+    }
   }, [fetchBills]);
 
   useEffect(() => {
