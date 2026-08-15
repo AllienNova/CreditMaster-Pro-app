@@ -22,7 +22,7 @@
  */
 
 import { chromium } from "playwright";
-import { readdirSync, statSync, writeFileSync } from "fs";
+import { readdirSync, statSync, writeFileSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
 
 const arg = (name, fallback = null) => {
@@ -35,6 +35,7 @@ const EMAIL = arg("email");
 const PASSWORD = arg("password");
 const LIMIT = parseInt(arg("limit", "0"), 10);
 const OUT = arg("out", "dogfood-report.json");
+const SEEDS = arg("seeds", "scripts/dogfood-seeds.json");
 
 /** Every page route Next.js will serve, derived from the filesystem. */
 function collectRoutes(dir = "src/app", prefix = "") {
@@ -54,17 +55,64 @@ function collectRoutes(dir = "src/app", prefix = "") {
 
 const isDynamic = (r) => r.includes("[");
 
+/**
+ * Substitute real record ids into dynamic routes.
+ *
+ * Dynamic routes were previously skipped outright, which left seven pages
+ * permanently unmeasured — and that is exactly where two stacked defects were
+ * hiding on /disputes/[id]: the detail component fetched a LIST endpoint that
+ * ignores its id param, and under that, the DB mapper omitted the `timeline`
+ * array the UI maps over unguarded. A sweep that skips a route cannot find
+ * either.
+ *
+ * A pattern with no seed is REPORTED as unseeded rather than silently dropped,
+ * so the coverage gap stays visible instead of looking like a pass.
+ */
+function loadSeeds(path) {
+  if (!existsSync(path)) return {};
+  const raw = JSON.parse(readFileSync(path, "utf8"));
+  return Object.fromEntries(
+    Object.entries(raw).filter(([k]) => !k.startsWith("_")),
+  );
+}
+
+function expandDynamic(routes, seeds) {
+  const expanded = [];
+  const unseeded = [];
+  for (const route of routes) {
+    const seed = seeds[route];
+    if (seed === undefined) {
+      unseeded.push(route);
+      continue;
+    }
+    // Replace whichever bracket segment the route carries ([id], [symbol], …).
+    expanded.push({
+      route: route.replace(/\[[^\]]+\]/, encodeURIComponent(seed)),
+      pattern: route,
+    });
+  }
+  return { expanded, unseeded };
+}
+
 async function main() {
   const all = [...new Set(collectRoutes())].sort();
+  const staticRoutes = all
+    .filter((r) => !isDynamic(r))
+    .map((route) => ({ route, pattern: route }));
+
   // Dynamic segments need a real id to be meaningful; a literal "[id]" URL only
-  // ever proves the 404 path. Reported as skipped rather than silently dropped.
-  const testable = all.filter((r) => !isDynamic(r));
-  const skipped = all.filter(isDynamic);
+  // ever proves the 404 path. Seeded ones are now exercised for real.
+  const { expanded, unseeded } = expandDynamic(all.filter(isDynamic), loadSeeds(SEEDS));
+
+  const testable = [...staticRoutes, ...expanded];
   const routes = LIMIT ? testable.slice(0, LIMIT) : testable;
 
   console.log(
-    `routes: ${all.length} total, ${testable.length} static, ${skipped.length} dynamic (skipped), testing ${routes.length}`,
+    `routes: ${all.length} total, ${staticRoutes.length} static, ${expanded.length} dynamic seeded, ${unseeded.length} dynamic UNSEEDED, testing ${routes.length}`,
   );
+  if (unseeded.length) {
+    console.log(`  unseeded (NOT measured): ${unseeded.join(", ")}`);
+  }
 
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -108,7 +156,7 @@ async function main() {
   }
 
   const results = [];
-  for (const route of routes) {
+  for (const { route, pattern } of routes) {
     const consoleErrors = [];
     const failedRequests = [];
 
@@ -207,6 +255,9 @@ async function main() {
 
     results.push({
       route,
+      // Differs from `route` only for seeded dynamic pages, so a failure can be
+      // traced back to the source file that produced it.
+      pattern,
       status,
       landedOn,
       bodyChars: body.chars,
@@ -232,11 +283,26 @@ async function main() {
 
   writeFileSync(
     OUT,
-    JSON.stringify({ base: BASE, total: all.length, tested: results.length, skippedDynamic: skipped, results }, null, 2),
+    JSON.stringify(
+      {
+        base: BASE,
+        total: all.length,
+        tested: results.length,
+        dynamicSeeded: expanded.map((e) => e.pattern),
+        dynamicUnseeded: unseeded,
+        results,
+      },
+      null,
+      2,
+    ),
   );
 
   console.log(`\n${results.length} tested — ${failing.length} FAIL, ${warning.length} WARN, ${results.length - failing.length - warning.length} ok`);
-  console.log(`${skipped.length} dynamic routes skipped (need real ids): ${skipped.slice(0, 6).join(", ")}${skipped.length > 6 ? " …" : ""}`);
+  console.log(
+    unseeded.length
+      ? `${unseeded.length} dynamic routes UNMEASURED (no seed in ${SEEDS}): ${unseeded.join(", ")}`
+      : `all ${expanded.length} dynamic routes exercised with real ids`,
+  );
   console.log(`report -> ${OUT}`);
 }
 

@@ -1,0 +1,11 @@
+{
+  "_comment": "Concrete ids for dynamic page routes, so the dogfood sweep can exercise them instead of skipping them. A literal '[id]' URL only ever proves the 404 path. Every id below points at a REAL row seeded for the local dogfood user m@t.co (6ba6571a-b562-45fd-9247-7e94cce84cde) — see docs/specs/dogfood-report.md. Re-seed after `supabase db reset`; a stale id shows up as a 404, not a silent pass. A dynamic route with no entry here is reported as UNSEEDED rather than dropped, so the coverage gap stays visible.",
+
+  "/disputes/[id]": "fbee6c55-6d9c-4342-91b6-ceabdb1ca848",
+  "/documents/[id]": "c8ffad26-080e-4b77-a4a0-d905ae2560bf",
+  "/financial/coach/goal-detail/[id]": "a6f0a9c2-0c1e-4798-aa0b-35bc8b3c1240",
+  "/investments/analyze/[symbol]": "AAPL",
+  "/investments/crypto/[coinId]": "bitcoin",
+  "/trading/strategies/[id]": "bc7f8183-c7fe-4ae3-a8a4-ad4132ba0dbf",
+  "/admin/users/[id]": "6ba6571a-b562-45fd-9247-7e94cce84cde"
+}
