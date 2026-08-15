@@ -101,7 +101,13 @@ export default function DisputeDetailScreen() {
               },
             ]}
           >
-            {dispute.bureau.charAt(0).toUpperCase() + dispute.bureau.slice(1)}
+            {/* `bureau` is typed as a required string but the record may not
+                carry it, and the ErrorBoundary took the whole screen down with
+                "Cannot read property 'charAt' of undefined". Capitalising an
+                absent value should degrade, not crash. */}
+            {dispute.bureau
+              ? dispute.bureau.charAt(0).toUpperCase() + dispute.bureau.slice(1)
+              : "Unknown bureau"}
           </Text>
           <View
             style={[
@@ -115,7 +121,7 @@ export default function DisputeDetailScreen() {
                 { color: statusColors[dispute.status]?.text },
               ]}
             >
-              {dispute.status.replace("_", " ")}
+              {dispute.status?.replace("_", " ") ?? "unknown"}
             </Text>
           </View>
         </View>
