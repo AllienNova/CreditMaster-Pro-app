@@ -92,12 +92,46 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
-// Mock react-native-reanimated
-jest.mock("react-native-reanimated", () => {
-  const Reanimated = require("react-native-reanimated/mock");
-  Reanimated.default.call = () => {};
-  return Reanimated;
+// react-native-reanimated: explicit factory pointing at the project-local mock.
+//
+// The automatic `__mocks__/<package>.js` convention does NOT apply here because
+// jest `roots` is scoped to `src`, so a root-level __mocks__ directory is never
+// scanned. Wiring it explicitly is what actually takes effect.
+//
+// See __mocks__/react-native-reanimated.js for why the package's own mock is
+// unusable: it ships TypeScript/ESM only, and routing around that still breaks
+// React Native Testing Library's host-component detection, which fails every
+// render() in an affected file.
+// React Native's jest mock leaves AccessibilityInfo.isReduceMotionEnabled
+// returning undefined, so src/lib/animations.ts:44 —
+// `AccessibilityInfo.isReduceMotionEnabled().then(...)` — throws
+// "Cannot read properties of undefined (reading 'then')" inside an effect.
+// Real RN returns a Promise, so this restores the documented contract rather
+// than working around app code.
+//
+// Patched on the live object rather than jest.mock()'d by module path: mocking
+// the deep Libraries/... path replaced more of the module than intended and
+// broke a second test.
+// Applied in beforeEach, not at module scope: requiring react-native while this
+// setup file is still evaluating initialises RN too early and breaks its Switch
+// component, which then fails RNTL's host-component detection for the whole
+// file. Same trap as __mocks__/react-native-reanimated.js. `clearMocks: true`
+// also wipes these between tests, so they must be re-applied each time anyway.
+beforeEach(() => {
+  const { AccessibilityInfo } = require("react-native");
+  AccessibilityInfo.isReduceMotionEnabled = jest.fn(() =>
+    Promise.resolve(false),
+  );
+  AccessibilityInfo.isScreenReaderEnabled = jest.fn(() =>
+    Promise.resolve(false),
+  );
+  AccessibilityInfo.addEventListener = jest.fn(() => ({ remove: jest.fn() }));
 });
+
+
+jest.mock("react-native-reanimated", () =>
+  require("./__mocks__/react-native-reanimated.js"),
+);
 
 // Mock expo-notifications (comprehensive — covers pushNotificationService)
 jest.mock("expo-notifications", () => ({
