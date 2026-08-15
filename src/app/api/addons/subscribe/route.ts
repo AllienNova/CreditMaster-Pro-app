@@ -87,6 +87,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     // Insert into addon_subscriptions table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: insertError } = await (supabaseAdmin as any)
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("addon_subscriptions")
       .insert({
         user_id: user.id,

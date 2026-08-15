@@ -1133,6 +1133,7 @@ export class AchievementService {
         .eq("user_id", userId)
         .eq("achievement_id", achievementId);
     } else {
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       await this.supabase.from("user_achievements").insert({
         id: crypto.randomUUID(),
         user_id: userId,
@@ -1241,6 +1242,7 @@ export class AchievementService {
         .eq("user_id", userId)
         .eq("achievement_id", achievement.id);
     } else {
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       await this.supabase.from("user_achievements").insert({
         id: crypto.randomUUID(),
         user_id: userId,
@@ -1257,6 +1259,7 @@ export class AchievementService {
     }
 
     // Record XP award
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await this.supabase.from("xp_transactions").insert({
       user_id: userId,
       amount: xpEarned,
@@ -1297,6 +1300,7 @@ export class AchievementService {
       createdAt: new Date().toISOString(),
     };
 
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await this.supabase.from("notifications").insert({
       id: crypto.randomUUID(),
       user_id: userId,

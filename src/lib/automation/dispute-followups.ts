@@ -169,6 +169,7 @@ async function sendFollowupEmail(
   // logging failure must not fail the follow-up itself — but it must not be
   // silently discarded either, or the audit trail can go missing with no
   // way to tell.
+  // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
   const { error: logError } = await supabase.from("email_logs").insert({
     user_id: user.id,
     dispute_id: dispute.id,

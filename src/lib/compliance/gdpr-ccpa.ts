@@ -216,6 +216,7 @@ export class GDPRComplianceService {
       }
     }
 
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await this.db.from("audit_logs").insert({
       user_id: userId,
       action: "gdpr_rectification",
@@ -310,6 +311,7 @@ export class GDPRComplianceService {
       throw new Error(`Processing restriction failed: ${error.message}`);
     }
 
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await this.db.from("audit_logs").insert({
       user_id: userId,
       action: "gdpr_restrict_processing",
@@ -327,6 +329,7 @@ export class GDPRComplianceService {
     userId: string,
     processingType: string,
   ): Promise<boolean> {
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     const { error } = await this.db.from("consent_records").insert({
       user_id: userId,
       consent_type: processingType,
@@ -338,6 +341,7 @@ export class GDPRComplianceService {
       throw new Error(`Processing objection failed: ${error.message}`);
     }
 
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await this.db.from("audit_logs").insert({
       user_id: userId,
       action: "gdpr_object_processing",
@@ -685,6 +689,7 @@ export class GDPRComplianceService {
     const toEmail = (profile as { email?: string } | null)?.email;
     if (!toEmail) {
       // No profile email — record as failed and return without crashing the loop.
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       await this.db.from("breach_notifications").insert({
         breach_id: notification.breachId,
         user_id: userId,
@@ -744,6 +749,7 @@ export class GDPRComplianceService {
     } catch (err) {
       const sendError = err instanceof Error ? err.message : String(err);
       // Write the failed record before re-throwing
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       await this.db.from("breach_notifications").insert({
         breach_id: notification.breachId,
         user_id: userId,
@@ -756,6 +762,7 @@ export class GDPRComplianceService {
     }
 
     // Happy path — record the successful send
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await this.db.from("breach_notifications").insert({
       breach_id: notification.breachId,
       user_id: userId,
@@ -831,6 +838,7 @@ export class CCPAComplianceService {
    * User can opt-out of sale of personal information
    */
   async optOutOfSale(userId: string): Promise<boolean> {
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     const { error } = await this.db.from("consent_records").insert({
       user_id: userId,
       consent_type: "data_sharing",
@@ -842,6 +850,7 @@ export class CCPAComplianceService {
       throw new Error(`Opt-out failed: ${error.message}`);
     }
 
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await this.db.from("audit_logs").insert({
       user_id: userId,
       action: "ccpa_opt_out_sale",
@@ -887,6 +896,7 @@ export class ConsentManagementService {
    * Record user consent — appends a new row; never overwrites history.
    */
   async recordConsent(consent: ConsentRecord): Promise<void> {
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     const { error } = await this.db.from("consent_records").insert({
       user_id: consent.userId,
       consent_type: consent.consentType,

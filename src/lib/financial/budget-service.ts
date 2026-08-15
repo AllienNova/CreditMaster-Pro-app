@@ -316,6 +316,7 @@ export class BudgetService {
     const { start, end } = calculatePeriodDates(input.period);
 
     const { data, error } = await supabase()
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("budgets")
       .insert({
         user_id: input.userId,
@@ -875,6 +876,7 @@ export class BudgetService {
    */
   async createAlert(input: CreateBudgetAlertInput): Promise<BudgetAlert> {
     const { data, error } = await supabase()
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("budget_alerts")
       .insert({
         user_id: input.userId,

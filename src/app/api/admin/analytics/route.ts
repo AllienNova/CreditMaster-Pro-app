@@ -38,6 +38,7 @@ export const GET = withRole(
     try {
     // ── disputes by status ──────────────────────────────────────────────────
     const { data: disputeRows, error: disputeError } = await supabase
+      // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
       .from("disputes")
       .select("status")
       .range(0, 9999);
@@ -65,6 +66,7 @@ export const GET = withRole(
     // rationale on why an unresolvable price ID throws instead of being
     // silently excluded from the count.
     const { data: subRows, error: subError } = await supabase
+      // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
       .from("subscriptions")
       .select("stripe_price_id")
       .range(0, 99999);
@@ -148,6 +150,7 @@ export const GET = withRole(
       end.setMonth(end.getMonth() + 1);
 
       const { data: revSubs, error: revError } = await supabase
+        // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
         .from("subscriptions")
         .select("stripe_price_id")
         .eq("status", "active")

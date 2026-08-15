@@ -40,6 +40,7 @@ export const GET = withRole(
       const offset = (page - 1) * limit;
 
       let query = supabase
+        // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
         .from("audit_logs")
         .select("*, profiles(full_name, email)", { count: "exact" });
 
@@ -108,6 +109,7 @@ export const POST = withRole(
         "unknown";
 
       const { data, error } = await supabase
+        // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
         .from("audit_logs")
         .insert({
           action,

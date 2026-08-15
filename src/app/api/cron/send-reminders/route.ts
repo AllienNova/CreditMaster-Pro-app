@@ -33,6 +33,7 @@ export async function GET(request: Request) {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const { data: pendingDisputes } = await supabase
+      // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
       .from("disputes")
       .select("id, user_id, bureau, item_type")
       .eq("status", "sent")
@@ -40,6 +41,7 @@ export async function GET(request: Request) {
       .gt("sent_at", new Date(sevenDaysAgo.getTime() - 86400000).toISOString());
 
     for (const dispute of pendingDisputes || []) {
+      // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
       const { error: notifyError } = await supabase.from("notifications").insert({
         user_id: dispute.user_id,
         type: "dispute_reminder",
@@ -61,12 +63,14 @@ export async function GET(request: Request) {
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
     const { data: draftDisputes } = await supabase
+      // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
       .from("disputes")
       .select("id, user_id, bureau, item_type")
       .eq("status", "draft")
       .lt("created_at", threeDaysAgo.toISOString());
 
     for (const dispute of draftDisputes || []) {
+      // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
       const { error: notifyError } = await supabase.from("notifications").insert({
         user_id: dispute.user_id,
         type: "draft_reminder",
@@ -92,6 +96,7 @@ export async function GET(request: Request) {
         .eq("notification_preferences->score_reminders", true);
 
       for (const user of users || []) {
+        // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
         const { error: notifyError } = await supabase.from("notifications").insert({
           user_id: user.id,
           type: "score_reminder",

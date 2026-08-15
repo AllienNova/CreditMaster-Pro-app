@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
       updates.email_scores = false;
     }
 
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     const { error } = await supabase.from("user_settings").upsert({
       user_id: userId,
       notifications: updates,
@@ -93,6 +94,7 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
 
     // Log unsubscribe event
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await supabase.from("audit_logs").insert({
       user_id: userId,
       action: "email_unsubscribe",

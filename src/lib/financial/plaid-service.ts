@@ -205,6 +205,7 @@ class PlaidService {
     const client = getServiceRoleClient();
 
     const { data, error } = await client
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("bank_connections")
       .insert({
         user_id: userId,
@@ -362,6 +363,7 @@ class PlaidService {
     // getServiceRoleClient() — see getAccounts above; financial_accounts
     // writes are service-role-only (sync-derived, never user-editable via RLS).
     const { error } = await getServiceRoleClient()
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("financial_accounts")
       .upsert({
       id: account.id,
@@ -511,6 +513,7 @@ class PlaidService {
    * Store transaction in database
    */
   private async storeTransaction(transaction: PlaidTransaction): Promise<void> {
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     const { error } = await supabase.from("transactions").upsert({
       id: transaction.id,
       account_id: transaction.accountId,

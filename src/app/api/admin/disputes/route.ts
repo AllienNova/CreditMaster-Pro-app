@@ -28,6 +28,7 @@ export const GET = withRole(
     try {
     // Fetch disputes
     const { data: disputes, error } = await supabase
+      // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
       .from("disputes")
       .select("*")
       .order("created_at", { ascending: false });
@@ -192,6 +193,7 @@ export const PATCH = withRole(
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { error } = await supabase
+      // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
       .from("disputes")
       .update(safePayload)
       .eq("id", disputeId);

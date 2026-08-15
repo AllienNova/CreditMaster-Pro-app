@@ -164,6 +164,7 @@ async function snapshotUser(
   const month = await computeMonthTotals(supabase, userId, monthStart, monthEnd);
 
   const writes = await Promise.all([
+    // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
     supabase.from("net_worth_history").upsert(
       {
         user_id: userId,
@@ -174,18 +175,22 @@ async function snapshotUser(
       },
       { onConflict: "user_id,date" },
     ),
+    // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
     supabase.from("savings_history").upsert(
       { user_id: userId, date: today, total_saved: totals.savings },
       { onConflict: "user_id,date" },
     ),
+    // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
     supabase.from("debt_history").upsert(
       { user_id: userId, date: today, total_debt: totals.liabilities },
       { onConflict: "user_id,date" },
     ),
+    // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
     supabase.from("investment_history").upsert(
       { user_id: userId, date: today, total_value: totals.investments },
       { onConflict: "user_id,date" },
     ),
+    // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
     supabase.from("monthly_summaries").upsert(
       {
         user_id: userId,

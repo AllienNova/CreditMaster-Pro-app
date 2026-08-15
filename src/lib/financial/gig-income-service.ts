@@ -235,6 +235,7 @@ class GigIncomeService {
     const resolvedCategory = category || this.detectPlatformCategory(name);
 
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("gig_platforms")
       .insert({
         user_id: userId,
@@ -304,6 +305,7 @@ class GigIncomeService {
     }
 
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("gig_income")
       .insert({
         user_id: userId,
@@ -394,6 +396,7 @@ class GigIncomeService {
     }
 
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("gig_deductions")
       .insert({
         user_id: userId,

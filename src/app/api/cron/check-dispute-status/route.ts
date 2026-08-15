@@ -34,6 +34,7 @@ export async function GET(request: Request) {
 
     // Find disputes sent more than 30 days ago still pending
     const { data: overdueDisputes, error } = await supabase
+      // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
       .from("disputes")
       .select("id, user_id, bureau, item_type, sent_at")
       .eq("status", "sent")
@@ -51,6 +52,7 @@ export async function GET(request: Request) {
     for (const dispute of overdueDisputes || []) {
       // Update status to "no_response" after 30 days
       await supabase
+        // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
         .from("disputes")
         .update({
           status: "no_response",
@@ -63,6 +65,7 @@ export async function GET(request: Request) {
       results.updated++;
 
       // Create notification for user
+      // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
       const { error: notifyError } = await supabase.from("notifications").insert({
         user_id: dispute.user_id,
         type: "dispute_overdue",

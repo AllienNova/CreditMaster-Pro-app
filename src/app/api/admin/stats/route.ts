@@ -55,11 +55,14 @@ export const GET = withRole(
       ] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase
+          // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
           .from("subscriptions")
           .select("id", { count: "exact", head: true })
           .eq("status", "active"),
+        // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
         supabase.from("disputes").select("id", { count: "exact", head: true }),
         supabase
+          // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
           .from("disputes")
           .select("id", { count: "exact", head: true })
           .eq("status", "resolved"),
@@ -80,6 +83,7 @@ export const GET = withRole(
       // excluding it would be exactly the kind of wrong-but-plausible number
       // this route's header promises never to produce.
       const { data: subscriptions, error: revenueError } = await supabase
+        // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
         .from("subscriptions")
         .select("stripe_price_id")
         .eq("status", "active");

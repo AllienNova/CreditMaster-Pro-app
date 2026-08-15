@@ -117,6 +117,7 @@ class RevenueTracker {
         : null;
 
     const { error: insertError } = await getServiceRoleClient()
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("revenue_events")
       .insert({
         event_id: fullEvent.eventId,

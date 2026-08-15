@@ -1131,6 +1131,7 @@ class FinancialVitalityScoreService {
     //
     // The onConflict target is backed by the unique index added in
     // 20260731000160; without it this upsert had no constraint to conflict on.
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await supabase.from("vitality_score_history").upsert(
       {
         user_id: userId,

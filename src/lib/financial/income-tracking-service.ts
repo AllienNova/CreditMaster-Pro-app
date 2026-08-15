@@ -170,6 +170,7 @@ class IncomeTrackingService {
     const supabase = supabaseAdmin as any;
 
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("income_sources")
       .insert({
         user_id: userId,

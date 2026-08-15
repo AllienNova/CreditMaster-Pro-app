@@ -144,6 +144,7 @@ class SavingsAutomationService {
     input: CreateSavingsRuleInput,
   ): Promise<SavingsRule> {
     const { data, error } = await supabaseAdmin
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("savings_rules")
       .insert({
         user_id: userId,
@@ -296,6 +297,7 @@ class SavingsAutomationService {
     input: CreateSavingsGoalInput,
   ): Promise<SavingsGoal> {
     const { data, error } = await supabaseAdmin
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("financial_goals")
       .insert({
         user_id: userId,
@@ -399,6 +401,7 @@ class SavingsAutomationService {
   ): Promise<SavingsContribution> {
     // Create contribution record
     const { data: contribution, error: contribError } = await supabaseAdmin
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("savings_contributions")
       .insert({
         // user_id is required (NOT NULL, RLS-backing column) — the caller
@@ -792,6 +795,7 @@ class SavingsAutomationService {
     },
   ): Promise<SavingsTransfer> {
     const { data: transfer, error } = await supabaseAdmin
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("savings_transfers")
       .insert({
         user_id: userId,

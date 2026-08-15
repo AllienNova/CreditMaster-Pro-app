@@ -85,6 +85,7 @@ export const POST = withAuth(
 
       // Create new subscription
       const { data, error } = await supabase
+        // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
         .from("push_subscriptions")
         .insert({
           user_id: user.id,

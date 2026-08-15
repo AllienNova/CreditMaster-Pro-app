@@ -148,6 +148,7 @@ export async function createNegotiation(
 ): Promise<Negotiation> {
   try {
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("negotiations")
       .insert({
         user_id: input.userId,

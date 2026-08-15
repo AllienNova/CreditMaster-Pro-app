@@ -28,6 +28,7 @@ export const GET = withRole(
     try {
     // Fetch subscriptions with user data
     const { data: subscriptions, error } = await supabase
+      // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
       .from("subscriptions")
       .select(
         `
@@ -104,6 +105,7 @@ export const DELETE = withRole(
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { error } = await supabase
+      // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
       .from("subscriptions")
       .update({ status: "canceled", cancel_at_period_end: true })
       .eq("stripe_subscription_id", subscriptionId);

@@ -720,6 +720,7 @@ class StripePaymentService {
       // now means a provider-agnostic payment attempt owned by payment-router;
       // this ledger holds settled Stripe INVOICES, which is a different entity.
       const { error: ledgerError } = await db
+        // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
         .from("subscription_invoices")
         .upsert(
           {

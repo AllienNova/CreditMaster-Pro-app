@@ -137,6 +137,7 @@ async function loadUserRisk(userId: string): Promise<UserRiskRow> {
 async function saveUserRisk(userId: string, row: Partial<UserRiskRow>): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabaseAdmin as any)
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     .from("user_risk_settings")
     .upsert(
       { user_id: userId, ...row, updated_at: new Date().toISOString() },

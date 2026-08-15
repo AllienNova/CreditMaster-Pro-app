@@ -345,6 +345,7 @@ export class SpendingAnalyzer {
 
     // Upsert patterns
     for (const pattern of patternRecords) {
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       await this.supabase.from("spending_patterns").upsert(
         {
           user_id: pattern.userId,
@@ -504,6 +505,7 @@ export class SpendingAnalyzer {
     analysis: SpendingRiskAnalysis,
   ): Promise<EmotionalSpendingAlert> {
     const { data, error } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("emotional_spending_alerts")
       .insert({
         user_id: userId,

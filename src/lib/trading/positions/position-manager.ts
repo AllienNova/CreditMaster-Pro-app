@@ -653,6 +653,7 @@ export class PositionManager {
     const supabase = getServiceRoleClient();
 
     const { error } = await (
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       supabase.from("positions") as unknown as PositionsTableClient
     ).upsert({
       id: position.id,

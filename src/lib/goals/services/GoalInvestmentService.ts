@@ -209,6 +209,7 @@ export class GoalInvestmentService {
       const defaults = GOAL_TYPE_DEFAULTS[data.type];
 
       const { data: result, error } = await supabase
+        // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
         .from("financial_goals")
         .insert({
           user_id: userId,

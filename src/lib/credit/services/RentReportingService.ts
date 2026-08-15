@@ -426,6 +426,7 @@ export class RentReportingIntegrationService {
     };
 
     const { data, error } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("rent_payments")
       .insert({
         id: newPayment.id,

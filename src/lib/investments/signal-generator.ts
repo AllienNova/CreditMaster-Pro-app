@@ -1183,6 +1183,7 @@ Format as a JSON array of strings.`;
     try {
       const supabase = getServiceRoleClient();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       const { error } = await (supabase as any).from("trading_signals").insert({
         id: signal.id,
         user_id: signal.userId,
@@ -1228,6 +1229,7 @@ Format as a JSON array of strings.`;
     const supabase = getServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: signal, error } = await (supabase as any)
+      // idor-audit: pk-owner-checked — signalId is owner-resolved by the caller: signals/[id]/route.ts fetches getSignalHistory(user.id) and confirms the id is in that set before calling in
       .from("trading_signals")
       .select("*")
       .eq("id", signalId)
@@ -1283,6 +1285,7 @@ Format as a JSON array of strings.`;
     const supabase = getServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: signal, error: signalError } = await (supabase as any)
+      // idor-audit: pk-owner-checked — signalId is owner-resolved by the caller: signals/[id]/route.ts fetches getSignalHistory(user.id) and confirms the id is in that set before calling in
       .from("trading_signals")
       .select("*")
       .eq("id", signalId)
@@ -1370,6 +1373,7 @@ Format as a JSON array of strings.`;
     // outcome was ever persisted — trackSignalOutcome returned its result
     // object to the caller while the row stayed untouched.
     const { error: outcomeError } = await (supabase as any)
+      // idor-audit: pk-owner-checked — signalId is owner-resolved by the caller: signals/[id]/route.ts fetches getSignalHistory(user.id) and confirms the id is in that set before calling in
       .from("trading_signals")
       .update({
         is_active: false,

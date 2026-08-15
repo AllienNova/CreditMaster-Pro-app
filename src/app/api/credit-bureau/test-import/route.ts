@@ -47,6 +47,7 @@ export const POST = withAuth(
     const reportDate = new Date().toISOString().split("T")[0];
 
     const { data: creditReportData, error: reportError } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("credit_reports")
       .insert({
         user_id: userId,
@@ -88,6 +89,7 @@ export const POST = withAuth(
     }));
 
     const { data: accountsData, error: accountsError } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("credit_accounts")
       .insert(accountsToInsert)
       .select();
@@ -116,6 +118,7 @@ export const POST = withAuth(
     }));
 
     const { data: inquiriesData, error: inquiriesError } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("credit_inquiries")
       .insert(inquiriesToInsert)
       .select();

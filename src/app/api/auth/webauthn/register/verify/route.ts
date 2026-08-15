@@ -96,6 +96,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
 
     // Store the credential
     const { data: storedCredential, error: storeError } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("webauthn_credentials")
       .insert({
         user_id: user.id,

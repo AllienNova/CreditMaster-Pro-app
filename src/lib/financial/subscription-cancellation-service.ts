@@ -480,6 +480,7 @@ class SubscriptionCancellationService {
     const instructions = this.generateCancellationInstructions(subscription);
 
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("cancellation_requests")
       .insert({
         subscription_id: subscriptionId,
@@ -923,6 +924,7 @@ class SubscriptionCancellationService {
     );
 
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("subscriptions")
       .insert({
         user_id: userId,

@@ -389,6 +389,7 @@ export abstract class TradingAgent<T extends BaseAgentDecision> {
         operatingMode: context.operatingMode,
       };
 
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       await supabase.from("trading_agent_logs").insert({
         user_id: entry.userId,
         signal_id: entry.signalId || null,

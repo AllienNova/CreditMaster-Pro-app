@@ -418,6 +418,7 @@ class FinancialService {
     }
 
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("budgets")
       .insert({
         user_id: userId,
@@ -468,6 +469,7 @@ class FinancialService {
     targetDate: Date,
   ): Promise<FinancialGoal> {
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("financial_goals")
       .insert({
         user_id: userId,

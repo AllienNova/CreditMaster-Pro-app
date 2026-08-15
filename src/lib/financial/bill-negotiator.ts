@@ -276,6 +276,7 @@ export class BillNegotiator {
 
     // Store outcome in database
     const { error } = await (
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       supabase.from("bill_negotiation_outcomes") as any
     ).insert([
       {

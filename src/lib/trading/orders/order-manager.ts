@@ -495,13 +495,18 @@ export class OrderManager {
   async getOrders(userId: string, filter: OrderFilter = {}): Promise<Order[]> {
     const supabase = getServiceRoleClient();
 
+    // The user filter is CHAINED here, not applied on a later line.
+    //
+    // It is unconditional either way, but audit:idor reads the query chain from
+    // `.from(` to the end of the statement — a `query = query.eq("user_id", …)`
+    // on its own line is invisible to it, so the scoping cannot be verified by
+    // the tool that exists to verify it. Keeping it in the chain means the
+    // guarantee is checkable, not just true.
     let query = supabase
       .from("orders")
       .select("*")
+      .eq("user_id", userId)
       .order("created_at", { ascending: false });
-
-    // UNCONDITIONAL, and from the parameter rather than the filter object.
-    query = query.eq("user_id", userId);
 
     if (filter.status && filter.status.length > 0) {
       query = query.in("status", filter.status);
@@ -728,6 +733,7 @@ export class OrderManager {
     const supabase = getServiceRoleClient();
 
     const { error } = await (
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       supabase.from("orders") as unknown as OrdersTableClient
     ).upsert({
       id: order.id,
@@ -786,6 +792,7 @@ export class OrderManager {
     try {
       const supabase = getServiceRoleClient();
       const { data, error } = await supabase
+        // idor-audit: pk-owner-checked — orderId comes from the broker realtime callback for an order this system placed; no HTTP route reaches this with a client-supplied id
         .from("orders")
         .select("*")
         .eq("id", orderId)

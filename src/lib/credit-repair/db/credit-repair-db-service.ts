@@ -184,6 +184,7 @@ export async function saveCreditRepairScore(
 ): Promise<CreditRepairScore> {
   try {
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("credit_repair_scores")
       .insert({
         user_id: input.userId,
@@ -359,6 +360,7 @@ export async function createAction(
 ): Promise<CreditRepairAction> {
   try {
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("credit_repair_actions")
       .insert({
         user_id: input.userId,
@@ -500,6 +502,7 @@ export async function createProgress(
 ): Promise<CreditRepairProgress> {
   try {
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("credit_repair_progress")
       .insert({
         user_id: input.userId,

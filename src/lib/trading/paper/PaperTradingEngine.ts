@@ -272,6 +272,7 @@ export class PaperTradingEngine {
     const balance = initialBalance ?? this.config.initialBalance;
 
     const { data, error } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("paper_accounts")
       .insert({
         user_id: userId,
@@ -418,6 +419,7 @@ export class PaperTradingEngine {
     // is only true when validateOrder found the account (see ACCOUNT_NOT_FOUND
     // check below).
     const { data: createdOrder, error } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("paper_orders")
       .insert({
         user_id: account!.user_id,

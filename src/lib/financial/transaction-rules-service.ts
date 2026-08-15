@@ -200,6 +200,7 @@ class TransactionRulesService {
     }
 
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("transaction_rules")
       .insert({
         user_id: userId,

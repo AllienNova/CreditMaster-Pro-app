@@ -534,6 +534,7 @@ class GoalPlanner {
   private async saveGoalToDatabase(goal: FinancialGoalPlan): Promise<void> {
     const supabase = getServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await (supabase as any).from("financial_goals").insert({
       id: goal.id,
       user_id: goal.userId,

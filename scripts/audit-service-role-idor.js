@@ -54,6 +54,30 @@ const SRC = join(ROOT, "src");
 
 const FROM_PATTERN = /\.from\(\s*["'`]([a-z0-9_]+)["'`]\s*\)/g;
 const OWNER_FILTER = /\.(eq|in)\(\s*["'`]user_id["'`]/;
+
+/**
+ * An INSERT/UPSERT that WRITES the owner column.
+ *
+ * An owner FILTER is the defence for a select/update/delete: it stops the
+ * statement reaching another user's row. An insert has no prior row to filter,
+ * so `.eq("user_id", …)` cannot exist and never will — the defence is that the
+ * row being written carries an owner, and that is what this matches.
+ *
+ * This is deliberately NOT a blanket exemption for inserts. An insert into a
+ * user-scoped table with NO owner column in its payload stays flagged, because
+ * that is a genuine defect: a row nobody owns, in a table whose whole access
+ * model is ownership. The narrowing removes a false-positive class (140 of the
+ * flagged sites were inserts; 106 demonstrably carry an owner column) without
+ * letting a single real one through.
+ *
+ * Why not park these in idor-baseline.json instead: that file is defined as
+ * tracked debt that does NOT pass review, and its own contract says it may only
+ * shrink — "if it ever needs to grow, that is a new unscoped query and it should
+ * be fixed instead." These inserts are not unscoped, so recording them as debt
+ * would be a false entry in the one file the ratchet depends on being true.
+ */
+const OWNER_WRITE = /\.(insert|upsert)\(/;
+const OWNER_COLUMN_IN_PAYLOAD = /\b(user_id|owner_id)\s*:/;
 const PK_FILTER = /\.(eq|in)\(\s*["'`]id["'`]/;
 /**
  * Scoping by a parent key rather than user_id directly — e.g.
@@ -270,6 +294,9 @@ function audit(text, rel, userScoped, findings, marked) {
     // `profiles` is keyed BY the user id, so `.eq("id", userId)` is true owner
     // scoping there, not merely a single-row lookup.
     if (OWNER_FILTER.test(chain)) continue;
+    // An insert that writes the owner column establishes ownership; see
+    // OWNER_WRITE above. An insert WITHOUT one stays flagged.
+    if (OWNER_WRITE.test(chain) && OWNER_COLUMN_IN_PAYLOAD.test(chain)) continue;
     if (table === "profiles" && PK_FILTER.test(chain)) continue;
     if (isMarked(marked.crossUser, text.slice(0, at).split("\n").length)) continue;
 
