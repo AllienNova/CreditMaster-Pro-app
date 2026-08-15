@@ -36,6 +36,17 @@ const PASSWORD = arg("password");
 const LIMIT = parseInt(arg("limit", "0"), 10);
 const OUT = arg("out", "dogfood-report.json");
 const SEEDS = arg("seeds", "scripts/dogfood-seeds.json");
+/**
+ * Re-run only the routes that failed or warned in a previous report.
+ *
+ * A full sweep is ~200 page loads against a dev server, and a dev server that
+ * dies partway through (OOM, or a hot-recompile triggered by editing a source
+ * file mid-run) turns every remaining route into ERR_CONNECTION_REFUSED. Those
+ * are infrastructure failures wearing a product failure's clothes, and the only
+ * honest response is to re-measure them — not to report them, and not to quietly
+ * drop them either.
+ */
+const RETRY_FROM = arg("retry-from");
 
 /** Every page route Next.js will serve, derived from the filesystem. */
 function collectRoutes(dir = "src/app", prefix = "") {
@@ -104,7 +115,19 @@ async function main() {
   // ever proves the 404 path. Seeded ones are now exercised for real.
   const { expanded, unseeded } = expandDynamic(all.filter(isDynamic), loadSeeds(SEEDS));
 
-  const testable = [...staticRoutes, ...expanded];
+  let testable = [...staticRoutes, ...expanded];
+
+  if (RETRY_FROM) {
+    const prior = JSON.parse(readFileSync(RETRY_FROM, "utf8"));
+    const rerun = new Set(
+      prior.results
+        .filter((r) => r.problems.length || r.failedRequests.length)
+        .map((r) => r.route),
+    );
+    testable = testable.filter((t) => rerun.has(t.route));
+    console.log(`retrying ${testable.length} route(s) that failed or warned in ${RETRY_FROM}`);
+  }
+
   const routes = LIMIT ? testable.slice(0, LIMIT) : testable;
 
   console.log(

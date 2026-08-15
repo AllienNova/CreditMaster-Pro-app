@@ -32,14 +32,21 @@ const mockFrom = jest.fn(() => ({
 
 const mockSupabaseClient = { from: mockFrom };
 
-jest.mock("@/lib/supabase/server", () => ({
-  createClient: jest.fn(() => Promise.resolve(mockSupabaseClient)),
+// Mocks the SERVICE-ROLE client, not "@/lib/supabase/server", and note it is
+// SYNCHRONOUS where createClient was async.
+//
+// PositionManager moved off the request-scoped client: `positions` grants
+// `authenticated` no table privilege (deliberate — a missing grant fails loudly
+// with 42501 instead of silently returning zero rows), so every query threw and
+// /api/trading/positions answered 500 for every caller.
+jest.mock("@/lib/supabase/service-role", () => ({
+  getServiceRoleClient: jest.fn(() => mockSupabaseClient),
 }));
 
 import { PositionManager } from "../position-manager";
 import type { Position, PositionClose, TradeRecord } from "../position-types";
 import type { Fill, Order } from "../../orders/order-types";
-import { createClient as _createClient } from "@/lib/supabase/server";
+import { getServiceRoleClient as _createClient } from "@/lib/supabase/service-role";
 
 // Cast to jest.Mock so we can re-apply its implementation after resetMocks
 // (jest.config.js sets resetMocks: true, which wipes jest.fn() implementations
@@ -119,9 +126,7 @@ describe("PositionManager", () => {
   beforeEach(() => {
     // Re-apply createClient's mock implementation (resetMocks: true clears
     // it after every test — see comment on mockedCreateClient above).
-    mockedCreateClient.mockImplementation(() =>
-      Promise.resolve(mockSupabaseClient),
-    );
+    mockedCreateClient.mockImplementation(() => mockSupabaseClient);
     resetChainMocks();
     manager = makeManager();
   });

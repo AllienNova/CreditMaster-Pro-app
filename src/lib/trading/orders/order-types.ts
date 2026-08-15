@@ -179,9 +179,13 @@ export interface OrderBlotter {
 
 export interface OrderFilter {
   /**
-   * Scopes the result set to a single user's orders. Set by the API route
-   * from the authenticated caller — never from client input — to prevent
-   * cross-user order enumeration (IDOR).
+   * NOTE: user scoping for `OrderManager.getOrders` is NOT carried here — it is
+   * a required positional argument on that method, so it cannot be omitted.
+   *
+   * This type is shared with `PaperTradingEngine.getOrders`, which scopes by
+   * `accountId` instead, so a required `userId` here would force a meaningless
+   * value on a consumer that does not use it. Optional-and-ignored is the wrong
+   * shape for something load-bearing; the parameter is the guarantee.
    */
   userId?: string;
   status?: OrderStatus[];

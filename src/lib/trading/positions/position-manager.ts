@@ -9,7 +9,26 @@
  * - Portfolio exposure analysis
  */
 
-import { createClient } from "@/lib/supabase/server";
+/**
+ * Service-role client, NOT the request-scoped `createClient()`.
+ *
+ * `positions` deliberately grants `authenticated` no table privilege — see
+ * supabase/migrations/20260731000009_financial_accounts_revoke_authenticated.sql,
+ * which documents the decision: a role with no grant gets a loud 42501 rather
+ * than a silent empty read, and silent-empty was the defect class that made
+ * financial pages render $0 with nothing to log. Every real read in this
+ * codebase goes through the service role with explicit `user_id` scoping.
+ *
+ * This module was still on the session client, so every call hit
+ * `permission denied for table positions` and /api/trading/positions,
+ * /api/trading/orders and /api/trading/risk all returned 500. The 42501 was
+ * the schema working as designed; the module was on the wrong side of it.
+ *
+ * Because the service role BYPASSES RLS, the `.eq("user_id", …)` in
+ * loadPositions and the `user_id` written by persistPosition are now the only
+ * thing separating one user's positions from another's. Do not remove them.
+ */
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { logger } from "@/lib/monitoring/logger";
 import {
   Position,
@@ -631,7 +650,7 @@ export class PositionManager {
   // @supabase/postgrest-js/src/PostgrestBuilder.ts), and the old code never
   // read `error` off the result at all, so the try/catch had nothing to catch.
   private async persistPosition(position: Position): Promise<void> {
-    const supabase = await createClient();
+    const supabase = getServiceRoleClient();
 
     const { error } = await (
       supabase.from("positions") as unknown as PositionsTableClient
@@ -686,7 +705,7 @@ export class PositionManager {
   // 500 rather than a false "you have no positions" 200.
   async loadPositions(userId: string): Promise<void> {
     try {
-      const supabase = await createClient();
+      const supabase = getServiceRoleClient();
       const { data, error } = await supabase
         .from("positions")
         .select("*")

@@ -48,12 +48,22 @@ const ALLOCATION_COLORS: Record<string, string> = {
 };
 
 export const GET = withPermission(
-  "financial:create_goals",
+  // READ permission for a read — the `user` role holds no create_* permission
+  // (rbac.ts:106-120), so this 403'd for every standard account.
+  "financial:read",
   async (request: NextRequest, user: AuthedUser) => {
     const userId = user.id;
   try {
 
-    const goalId = request.nextUrl.pathname.split("/").pop() as string;
+    // NOT `.pop()`. This route is /api/financial/goals/<id>/investment, so the
+    // LAST segment is the literal string "investment" — popping it queried
+    // `financial_goals` for id = "investment", which never matches, and every
+    // request 404'd "Goal not found" no matter how valid the goal was.
+    //
+    // The guard does not forward Next's route `params`, so the id must come
+    // from the path; take the segment after "goals" rather than the last one.
+    const segments = request.nextUrl.pathname.split("/");
+    const goalId = segments[segments.indexOf("goals") + 1];
 
     const { data: goal, error } = await supabase
       .from("financial_goals")

@@ -142,9 +142,11 @@ describe("IDOR – /api/trading/orders", () => {
     const body = await res.json();
     expect(body.data.openOrders).toHaveLength(1);
     expect(body.data.openOrders[0].userId).toBe("user-B");
-    expect(mockGetOrders).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "user-B" }),
-    );
+    // User scoping is the REQUIRED FIRST ARGUMENT, not a filter field. It moved
+    // there when getOrders switched to the service-role client (which bypasses
+    // RLS), so that omitting it fails to compile rather than silently returning
+    // every user's orders.
+    expect(mockGetOrders).toHaveBeenCalledWith("user-B", expect.any(Object));
     expect(
       body.data.orders.every((o: { userId: string }) => o.userId === "user-B"),
     ).toBe(true);
