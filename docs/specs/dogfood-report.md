@@ -26,8 +26,8 @@ found afterwards.
 
 | | Result |
 |---|---|
-| Web page sweep | **197 static routes**, signed in, real Chromium — **174 ok, 7 FAIL, 16 WARN** |
-| Web routes skipped | **7 dynamic** (`[id]`, `[symbol]` …) — a literal `[id]` URL only proves the 404 path |
+| Web page sweep | **all 204 page routes**, signed in, real Chromium — **0 FAIL, 12 WARN** |
+| Web routes skipped | **none.** The 7 dynamic routes are now seeded and exercised (`scripts/dogfood-seeds.json`) |
 | Mobile tabs | **all 6 walked on iPhone 17 Pro** via `idb` — Home, Credit, Disputes, Money, Invest, Profile |
 | Mobile build + boot | bundled **2,069 modules**, signed in with a real account |
 | Mobile unit tests | 100 suites, **1,171 tests** — was 32 failing |
@@ -89,11 +89,64 @@ you know why it says what it says.
 
 ---
 
+## Round 2 — the dynamic routes, and what the WARNs were hiding
+
+The first round skipped 7 dynamic routes because they need real record ids.
+That gap is closed: `scripts/dogfood-seeds.json` maps each pattern to a seeded
+row, the sweep expands them, and a pattern with **no** seed is now reported as
+`UNMEASURED` rather than silently dropped. All 204 routes are measured.
+
+Exercising those 7 immediately found a page that had never worked:
+
+| Defect | Evidence |
+|---|---|
+| **Every dispute detail page was unreachable**, two stacked defects. `DisputeDetail` fetched `/api/disputes?disputeId=X`, but that GET reads only status/bureau/page/limit and returns a paginated LIST — the id was ignored, so the page rendered "Dispute not found". Behind it, `mapToDispute` omitted `timeline`, which `<DisputeTimeline>` `.map`s unguarded → error boundary. | 24 chars → **355 chars** of real dispute with a working Timeline, 0 console errors |
+| **Trading APIs 500'd for every caller.** `positions`/`orders` grant `authenticated` nothing, so the managers — still on the request-scoped client — got Postgres 42501. The declared RLS policies are dead letters: grants are checked *before* policies. | positions / orders / risk **500 → 200** |
+| **Users were 403'd from their own financial data.** Six handlers gated non-create work on a premium CREATE permission. DELETE gated that way meant a downgraded user could never delete their own data. | goals/[id] **403 → 200**; goals/[id]/investment **404 → 200** |
+| **Session listing and revocation did nothing.** A client component queried `sessions` through the browser anon client → 403 on every call. The page rendered fine while the control behind it was dead. | **403 → 200**; cross-user DELETE left the victim row intact |
+
+### What the 12 remaining WARNs actually are
+
+A WARN is a page that renders but whose own API calls fail. Grouped by cause,
+they are almost entirely **unbuilt endpoints**, not broken ones:
+
+- **13 × 404 — endpoints that do not exist.** `/api/credit-builder/*` (7),
+  `/api/financial/subscriptions*` (3), `/api/investments/portfolio/*` (2).
+  The pages call them and degrade. Feature work, not defects.
+- **1 × 500 — `/api/investments/signals`.** Real, diagnosed, and deliberately
+  left loud: see G-024. The service-role fix landed (moving the error from
+  42501 to 42703); the remaining cause is that 14 of 27 fields the code maps
+  do not exist on `trading_signals`. Renaming the two that break the query
+  would turn a visible 500 into a page of silently-undefined values.
+- **1 × 400 — `/api/student-loans/analyze`.** A POST endpoint; GET returns its
+  own usage docs with 200. Not triaged further.
+
+### One thing my own method got wrong again
+
+The first full run reported **64 FAIL**. Nearly all of them were
+`ERR_CONNECTION_REFUSED`, alphabetically from `/help/faq` onward — the dev
+server died mid-sweep. The cause was mine: I restored a source file and ran the
+test suite *while* the sweep was running, which triggered a Next hot-recompile
+under load. Re-running the 75 failed/warned routes on a quiet machine gave
+**0 FAIL**.
+
+That is the fourth time in this effort a measurement, not the app, was the
+thing that was broken. `--retry-from <report.json>` now exists so a suspect run
+can be re-measured cheaply instead of being reported.
+
+---
+
 ## Not verified — stated plainly
 
 - ~~76 of 197 web routes unmeasured~~ — **resolved.** That run died under
   Next + Metro + simulator together. Re-run on a quiet machine: all 197 measured.
-- **7 dynamic web routes** were never exercised; they need real record ids.
+- ~~7 dynamic web routes never exercised~~ — **resolved.** Seeded and measured;
+  see Round 2. Doing so found the dispute detail page had never worked.
+- **The session feature is inert, and that is now known rather than assumed.**
+  `public.sessions` holds 0 rows because `createSession` writes to five columns
+  that do not exist and never supplies the NOT NULL `token_hash` (G-027). The
+  list endpoint returning `[]` is therefore honest, not evidence that listing
+  works against real data.
 - **Mobile drill-down screens.** All six bottom tabs were signed into and
   walked, but the app has 37 route groups; screens reached by tapping *into* a
   tab are still unexercised.
@@ -101,8 +154,11 @@ you know why it says what it says.
   runs local, so the two halves were never exercised against the same data. It
   was pointed at local temporarily for this run and restored.
 - **Hosted environment.** Everything here is local.
-- The 15 WARN routes (pages whose own API calls returned 4xx/5xx) are recorded in
-  the sweep report and **not yet triaged**.
+- ~~15 WARN routes not triaged~~ — **resolved.** All triaged; see Round 2. Four
+  were real defects and are fixed; the rest are unbuilt endpoints.
+- **The 13 missing endpoints are recorded, not built.** credit-builder,
+  subscriptions and investments/portfolio have pages calling APIs that do not
+  exist.
 
 ---
 
@@ -128,3 +184,4 @@ application bugs — see `scripts/dogfood.sh`, which guards for exactly that.
 | Date | Change |
 |---|---|
 | 2026-08-15 | Created. First systematic dogfood of this codebase; first time the mobile app has been run. |
+| 2026-08-15 | **Round 2.** Dynamic-route gap closed via `dogfood-seeds.json` — all 204 routes measured, 0 FAIL. Found and fixed 4 live defects the WARNs were hiding (dispute detail unreachable, trading APIs 500, financial 403s, session revocation dead). Recorded 3 findings needing an owner decision rather than guessing: G-024 signal schema drift, G-027 sessions cannot be created, G-028 revoke-all-others. Added `--retry-from` after a self-inflicted dev-server crash produced 64 false failures. |
