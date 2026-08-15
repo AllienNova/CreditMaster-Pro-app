@@ -234,6 +234,28 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+/**
+ * Compact currency for the metrics row: $124,350 -> $124.4K.
+ *
+ * The four cards share one grid column, so a full-precision figure does not fit
+ * at a readable weight — it was overflowing the card, and simply truncating it
+ * produced "$124…", which is worse than useless on a financial dashboard.
+ * Compact notation is the standard answer: the magnitude stays legible and the
+ * exact figure is preserved in the `title` attribute.
+ *
+ * Values under 10,000 are left in full, because "$8.5K" is less informative
+ * than "$8,500" and there is room for it.
+ */
+function formatCompactCurrency(amount: number): string {
+  if (Math.abs(amount) < 10000) return formatCurrency(amount);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(amount);
+}
+
 function getScoreColor(score: number): string {
   if (score >= 90) return "#22C55E";
   if (score >= 80) return "#84CC16";
@@ -361,11 +383,14 @@ function HealthScoreGauge({
 function MetricCard({
   label,
   value,
+  exactValue,
   icon,
   trend,
 }: {
   label: string;
   value: string;
+  /** Full-precision figure for the tooltip when `value` is compacted. */
+  exactValue?: string;
   icon: React.ReactNode;
   trend?: "positive" | "negative" | "neutral";
 }) {
@@ -376,17 +401,28 @@ function MetricCard({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+    // `min-w-0` is the fix, not the smaller font. Grid and flex children default
+    // to `min-width: auto`, which refuses to shrink below their content — so a
+    // value like "$124,350" at text-2xl simply overflowed the card and spilled
+    // across the one next to it. Every nesting level that must be allowed to
+    // shrink needs it, which is why it appears three times here.
+    <div className="min-w-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 sm:p-5">
+      <div className="flex items-center gap-2 sm:gap-3 mb-2 min-w-0">
+        {/* shrink-0 keeps the icon square; without it the icon squashes before
+            the text does. */}
+        <div className="shrink-0 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
           {icon}
         </div>
-        <span className="text-sm font-medium text-gray-500 dark:text-slate-400">
+        <span className="min-w-0 truncate text-sm font-medium text-gray-500 dark:text-slate-400">
           {label}
         </span>
       </div>
+      {/* Steps down on narrow viewports rather than clipping. `tabular-nums`
+          keeps the four cards' digits vertically aligned. `title` preserves the
+          full value for anyone who does hit the truncation. */}
       <p
-        className={`text-2xl font-bold ${trendStyles[trend ?? "neutral"]}`}
+        title={exactValue ?? value}
+        className={`tabular-nums break-words text-xl sm:text-2xl font-bold ${trendStyles[trend ?? "neutral"]}`}
       >
         {value}
       </p>
@@ -530,7 +566,7 @@ export default function FinancialIntelligencePage() {
         {/* ---------------------------------------------------------------- */}
         {snapshot && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 md:p-8 mb-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-center">
               {/* Gauge */}
               <div className="lg:col-span-1 flex justify-center">
                 <HealthScoreGauge
@@ -541,22 +577,34 @@ export default function FinancialIntelligencePage() {
               </div>
 
               {/* Metric cards */}
-              <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* min-w-0 on the grid itself: without it this column refuses to
+                  shrink inside the lg:grid-cols-3 parent, pushing the cards
+                  wider than the container. */}
+              {/* 2x2, not 1x4. These four cards share only two of the three
+                  columns, so a single row gave each card roughly 150px of
+                  content width — narrower than "$124.4K" at a readable weight,
+                  which is why the figures overflowed and then truncated. A 2x2
+                  grid doubles the width per card and costs nothing vertically,
+                  since the gauge beside it is taller than two rows anyway. */}
+              <div className="min-w-0 lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <MetricCard
                   label="Net Worth"
-                  value={formatCurrency(snapshot.netWorth)}
+                  value={formatCompactCurrency(snapshot.netWorth)}
+                  exactValue={formatCurrency(snapshot.netWorth)}
                   icon={<Activity className="h-5 w-5" />}
                   trend="positive"
                 />
                 <MetricCard
                   label="Total Debt"
-                  value={formatCurrency(snapshot.totalDebt)}
+                  value={formatCompactCurrency(snapshot.totalDebt)}
+                  exactValue={formatCurrency(snapshot.totalDebt)}
                   icon={<CreditCard className="h-5 w-5" />}
                   trend="negative"
                 />
                 <MetricCard
                   label="Monthly Income"
-                  value={formatCurrency(snapshot.monthlyIncome)}
+                  value={formatCompactCurrency(snapshot.monthlyIncome)}
+                  exactValue={formatCurrency(snapshot.monthlyIncome)}
                   icon={<TrendingUp className="h-5 w-5" />}
                   trend="positive"
                 />
