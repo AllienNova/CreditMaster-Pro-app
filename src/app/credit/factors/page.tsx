@@ -326,7 +326,7 @@ export default function CreditFactorsPage() {
               </h1>
             </div>
             <Link
-              href="/help/guides/credit-factors"
+              href="/help/guides"
               className="text-blue-600 hover:text-blue-700 transition-colors"
             >
               <svg

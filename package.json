@@ -38,7 +38,8 @@
     "audit:mocks": "node scripts/audit-mocks.mjs",
     "test:no-mock-fallback": "jest --testPathPatterns='\\.no-mock-fallback\\.test\\.'",
     "test:compliance": "jest --testPathPatterns='\\.compliance\\.test\\.'",
-    "audit:cascade": "node scripts/audit-cascade.mjs"
+    "audit:cascade": "node scripts/audit-cascade.mjs",
+    "audit:links": "node scripts/audit-dead-links.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",

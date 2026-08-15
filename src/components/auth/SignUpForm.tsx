@@ -293,7 +293,7 @@ export default function SignUpForm() {
             </Link>{" "}
             and{" "}
             <Link
-              href="/privacy"
+              href="/privacy-policy"
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
               Privacy Policy

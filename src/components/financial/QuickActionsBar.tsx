@@ -55,7 +55,7 @@ const quickActions: QuickAction[] = [
   },
   {
     label: "Health Score",
-    href: "/financial/health",
+    href: "/financial-hub",
     icon: "wallet",
     description: "View financial health details",
     color: "from-red-500 to-emerald-600",

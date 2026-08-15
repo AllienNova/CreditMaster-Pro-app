@@ -153,7 +153,7 @@ export default function PaymentCancelPage() {
           <p>
             Have questions?{" "}
             <Link
-              href="/support"
+              href="/help/contact"
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
               Contact Support

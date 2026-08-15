@@ -59,7 +59,7 @@ describe("QuickActionsBar", () => {
     ).toHaveAttribute("href", "/financial/goals");
     expect(
       screen.getByText("Health Score").closest("a"),
-    ).toHaveAttribute("href", "/financial/health");
+    ).toHaveAttribute("href", "/financial-hub");
   });
 
   it("renders additional action links (Transactions, Reports, Settings)", () => {
