@@ -454,7 +454,7 @@ export default function DarkWebScreen() {
             ))}
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => router.push("/identity/add-monitored" as Href)}
+              onPress={() => router.push("/identity" as Href)}
             >
               <Ionicons
                 name="add-circle"

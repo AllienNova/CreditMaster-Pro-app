@@ -270,7 +270,7 @@ export default function BillsScreen() {
           </TouchableOpacity>
           <Text style={styles.title}>Bills & Payments</Text>
           <TouchableOpacity
-            onPress={() => router.push("/financial/add-bill" as Href)}
+            onPress={() => router.push("/financial/bills" as Href)}
           >
             <Ionicons
               name="add-circle-outline"

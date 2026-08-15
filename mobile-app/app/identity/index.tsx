@@ -300,7 +300,7 @@ export default function IdentityScreen() {
           <Text style={styles.title}>Identity Protection</Text>
           <TouchableOpacity
             style={styles.settingsButton}
-            onPress={() => router.push("/settings/identity" as Href)}
+            onPress={() => router.push("/identity" as Href)}
           >
             <Ionicons
               name="settings-outline"

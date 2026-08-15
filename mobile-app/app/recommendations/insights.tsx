@@ -37,7 +37,7 @@ const INSIGHTS: Insight[] = [
       "You spent $420 on restaurants this month, up from $290 last month",
     impact: "-$130",
     action: "Set Budget",
-    actionRoute: "/financial/budget",
+    actionRoute: "/financial/budgets",
     isNew: true,
   },
   {

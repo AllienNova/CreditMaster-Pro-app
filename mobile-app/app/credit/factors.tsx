@@ -338,7 +338,7 @@ export default function FactorsScreen() {
           </TouchableOpacity>
           <Text style={styles.title}>Credit Factors</Text>
           <TouchableOpacity
-            onPress={() => router.push("/help/guides/credit-factors" as Href)}
+            onPress={() => router.push("/help/guides" as Href)}
           >
             <Ionicons
               name="help-circle-outline"

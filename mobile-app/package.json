@@ -24,7 +24,8 @@
     "submit:ios": "eas submit --platform ios",
     "submit:android": "eas submit --platform android",
     "test:mobile-security": "jest --testPathPattern='(mobile-security|openExternalUrl)'",
-    "audit:bundle": "node scripts/audit-bundle.mjs"
+    "audit:bundle": "node scripts/audit-bundle.mjs",
+    "audit:links": "node scripts/audit-dead-links.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "~14.0.4",

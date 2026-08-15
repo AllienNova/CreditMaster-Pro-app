@@ -191,7 +191,7 @@ export default function DebtScreen() {
           </TouchableOpacity>
           <Text style={styles.title}>Debt Payoff</Text>
           <TouchableOpacity
-            onPress={() => router.push("/financial/add-debt" as Href)}
+            onPress={() => router.push("/financial/debt" as Href)}
           >
             <Ionicons
               name="add-circle-outline"

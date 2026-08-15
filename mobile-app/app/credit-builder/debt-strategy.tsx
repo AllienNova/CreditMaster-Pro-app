@@ -315,7 +315,7 @@ export default function DebtStrategyScreen() {
             <TouchableOpacity
               style={styles.calculatorButton}
               onPress={() =>
-                router.push("/credit-builder/debt-calculator" as never)
+                router.push("/loans/calculator" as never)
               }
             >
               <Ionicons

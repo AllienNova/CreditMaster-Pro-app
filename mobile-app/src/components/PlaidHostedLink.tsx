@@ -62,7 +62,11 @@ let WebViewComponent: React.ComponentType<{
 }> | null = null;
 
 try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // Deliberate require(): react-native-webview is an OPTIONAL dependency, so the
+  // import must be resolvable at runtime rather than link time. The disable named
+  // only `no-require-imports`, but this config fires `no-var-requires` — so the
+  // suppression missed and mobile lint sat at 1 error.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
   const webview = require("react-native-webview");
   WebViewComponent = webview.WebView ?? webview.default ?? null;
 } catch {
