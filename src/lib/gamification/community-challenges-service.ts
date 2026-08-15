@@ -307,12 +307,29 @@ export class CommunityChallengesService {
     return this.challengeFromDb(data);
   }
 
+  /**
+   * Status is DERIVED from dates, because `community_challenges` has no
+   * `status` column — and no `is_public` column either. Both queries below used
+   * to filter on them and failed outright:
+   *
+   *   42703  column community_challenges.status does not exist
+   *
+   * which surfaced as a 500 on /api/gamification/challenges and left the
+   * /challenges page showing "Failed to fetch challenges" for every user.
+   *
+   * The real columns are is_active, start_date and end_date, so "active" means
+   * flagged active AND inside its window, and "upcoming" means starting later.
+   * Filtering on dates in the query (not in JS) keeps the work in Postgres and
+   * avoids pulling every historical challenge to discard most of them.
+   */
   async getActiveChallenes(): Promise<Challenge[]> {
+    const now = new Date().toISOString();
     const { data, error } = await this.supabase
       .from("community_challenges")
       .select("*")
-      .eq("status", "active")
-      .eq("is_public", true)
+      .eq("is_active", true)
+      .lte("start_date", now)
+      .gte("end_date", now)
       .order("start_date", { ascending: true });
 
     if (error) throw error;
@@ -320,11 +337,12 @@ export class CommunityChallengesService {
   }
 
   async getUpcomingChallenges(): Promise<Challenge[]> {
+    const now = new Date().toISOString();
     const { data, error } = await this.supabase
       .from("community_challenges")
       .select("*")
-      .eq("status", "upcoming")
-      .eq("is_public", true)
+      .eq("is_active", true)
+      .gt("start_date", now)
       .order("start_date", { ascending: true });
 
     if (error) throw error;

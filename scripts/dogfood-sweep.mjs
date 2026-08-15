@@ -159,7 +159,12 @@ async function main() {
     }
 
     const landedOn = page.url().replace(BASE, "");
-    const bouncedToLogin = landedOn.startsWith("/auth/login") && route !== "/auth/login";
+    // /login redirecting to /auth/login is the app working, not a failure —
+    // it is an alias route. Only flag a bounce from somewhere that is not
+    // itself a login entry point.
+    const LOGIN_ROUTES = new Set(["/auth/login", "/login"]);
+    const bouncedToLogin =
+      landedOn.startsWith("/auth/login") && !LOGIN_ROUTES.has(route);
 
     // Wrapped: a page that crashes or navigates mid-evaluate throws here, and
     // an unguarded throw ended the first full run at route 108 of 197 —
@@ -192,7 +197,10 @@ async function main() {
     if (status && status >= 400) problems.push(`http ${status}`);
     if (bouncedToLogin) problems.push(`redirected to login`);
     if (body.boundary) problems.push("error boundary rendered");
-    if (body.chars < 60) problems.push(`near-empty body (${body.chars} chars)`);
+    // 25, not 60. A legitimate empty state is short: /dashboard/notifications
+    // renders "Back / Notifications / All / Unread / No notifications yet" —
+    // 53 characters of correct UI that a 60-char floor called a failure.
+    if (body.chars < 25) problems.push(`near-empty body (${body.chars} chars)`);
 
     const uniqueConsole = [...new Set(consoleErrors)];
     const uniqueFailed = [...new Set(failedRequests)];
