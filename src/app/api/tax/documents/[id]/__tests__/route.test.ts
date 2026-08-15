@@ -27,12 +27,16 @@ jest.mock("@/lib/auth/resolve-role", () => ({
 
 function chain() {
   const c: Record<string, unknown> = {};
-  for (const m of ["select", "delete", "update"]) c[m] = jest.fn(() => c);
+  for (const m of ["select", "delete", "update", "insert"]) c[m] = jest.fn(() => c);
   c.eq = jest.fn((col: string, val: unknown) => {
     eqCalls.push([col, val]);
     return c;
   });
   c.maybeSingle = jest.fn(async () => queryResult);
+  // The audit-log insert is awaited without .maybeSingle(), so the chain has
+  // to be thenable or the await hangs on a plain object.
+  c.then = (resolve: (v: unknown) => unknown) =>
+    Promise.resolve({ data: null, error: null }).then(resolve);
   return c;
 }
 
@@ -41,8 +45,14 @@ const mockFrom = jest.fn((table: string) => {
   return chain();
 });
 
+const mockStorageRemove = jest.fn(async () => ({ error: null }));
+const mockStorageFrom = jest.fn(() => ({ remove: mockStorageRemove }));
+
 jest.mock("@/lib/supabase/service-role", () => ({
-  getServiceRoleClient: jest.fn(() => ({ from: mockFrom })),
+  getServiceRoleClient: jest.fn(() => ({
+    from: mockFrom,
+    storage: { from: mockStorageFrom },
+  })),
 }));
 
 import { getServiceRoleClient } from "@/lib/supabase/service-role";
@@ -70,7 +80,12 @@ beforeEach(() => {
     tablesTouched.push(table);
     return chain();
   });
-  (getServiceRoleClient as jest.Mock).mockReturnValue({ from: mockFrom });
+  mockStorageRemove.mockResolvedValue({ error: null });
+  mockStorageFrom.mockReturnValue({ remove: mockStorageRemove });
+  (getServiceRoleClient as jest.Mock).mockReturnValue({
+    from: mockFrom,
+    storage: { from: mockStorageFrom },
+  });
 
   mockValidateFromHeaders.mockResolvedValue({
     valid: true,
@@ -165,5 +180,35 @@ describe("DELETE /api/tax/documents/[id]", () => {
     const { DELETE } = await import("../route");
 
     expect((await DELETE(req("DELETE"))).status).toBe(500);
+  });
+
+  it("removes the stored file, not just the row", async () => {
+    queryResult = {
+      data: { id: DOC_ID, storage_path: "u/1/w2-2024.pdf" },
+      error: null,
+    };
+    const { DELETE } = await import("../route");
+    await DELETE(req("DELETE"));
+
+    // The collection-level DELETE already does this. A row-only delete would
+    // leave the user's W-2 sitting in the bucket after they deleted it —
+    // and would make the two delete paths behave differently.
+    expect(mockStorageFrom).toHaveBeenCalledWith("tax-documents");
+    expect(mockStorageRemove).toHaveBeenCalledWith(["u/1/w2-2024.pdf"]);
+  });
+
+  it("does not call storage when the row has no stored file", async () => {
+    queryResult = { data: { id: DOC_ID, storage_path: null }, error: null };
+    const { DELETE } = await import("../route");
+    await DELETE(req("DELETE"));
+
+    expect(mockStorageRemove).not.toHaveBeenCalled();
+  });
+
+  it("writes an audit-log entry for the deletion", async () => {
+    const { DELETE } = await import("../route");
+    await DELETE(req("DELETE"));
+
+    expect(tablesTouched).toContain("tax_audit_log");
   });
 });

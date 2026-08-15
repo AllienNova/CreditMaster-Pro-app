@@ -85,12 +85,14 @@ export const DELETE = withAuth(
       // idor-audit: pk-owner-checked — DELETE filtered by both id and the
       // authenticated user_id. Without user_id a guessed uuid would destroy
       // another user's tax record.
-      const { data, error } = await getServiceRoleClient()
+      const supabase = getServiceRoleClient();
+
+      const { data, error } = await supabase
         .from("tax_documents")
         .delete()
         .eq("id", id)
         .eq("user_id", user.id)
-        .select("id")
+        .select("id, storage_path")
         .maybeSingle();
 
       if (error) {
@@ -108,6 +110,34 @@ export const DELETE = withAuth(
           { status: 404 },
         );
       }
+
+      // The FILE, not just the row. The collection-level DELETE in
+      // ../route.ts already does this; a row-only delete here would leave the
+      // user's W-2 in the bucket after they deleted it, and would make the two
+      // delete paths behave differently for the same action.
+      if (data.storage_path) {
+        const { error: storageError } = await supabase.storage
+          .from("tax-documents")
+          .remove([data.storage_path]);
+        // The row is already gone, so this cannot be undone by failing the
+        // request — but an orphaned tax document in storage must be visible
+        // to an operator rather than silent.
+        if (storageError) {
+          console.error(
+            "Tax document row deleted but its file remains:",
+            data.storage_path,
+            storageError,
+          );
+        }
+      }
+
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the authenticated caller; there is no prior row to filter on
+      await supabase.from("tax_audit_log").insert({
+        user_id: user.id,
+        action_type: "document_deleted",
+        entity_type: "tax_document",
+        entity_id: id,
+      });
 
       return NextResponse.json({ success: true, data: { id: data.id } });
     } catch (error) {

@@ -100,7 +100,24 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
       .single();
 
     if (dbError) {
-      // Database error silently handled
+      // An EMPTY block sat here and the handler then returned success: true
+      // with databaseRecordId undefined. The extraction had run, the user was
+      // told their W-2 was saved, and no row existed — so the document was
+      // absent from their list on the next load with no error anywhere and no
+      // way to tell it apart from having never uploaded it.
+      //
+      // The upload is not partially successful: without the row there is
+      // nothing to verify, correct or calculate from.
+      console.error("Failed to persist tax document record:", dbError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Storage error",
+          message:
+            "The document was processed but could not be saved. Please try uploading it again.",
+        },
+        { status: 500 },
+      );
     }
 
     // 8. Return result
