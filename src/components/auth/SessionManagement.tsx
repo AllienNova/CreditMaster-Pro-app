@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { sessionService, Session } from "@/lib/auth/session-service";
+// Type-only. The runtime `sessionService` is deliberately NOT imported here:
+// it queries `public.sessions` through the browser anon client, which the table
+// grants no privilege to. This component talks to /api/auth/sessions instead.
+import type { Session } from "@/lib/auth/session-service";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function SessionManagement() {
@@ -21,8 +24,18 @@ export default function SessionManagement() {
     setError(null);
 
     try {
-      const userSessions = await sessionService.getUserSessions(user.id);
-      setSessions(userSessions);
+      // Goes through /api/auth/sessions rather than sessionService.
+      //
+      // sessionService queries `public.sessions` with the BROWSER anon client,
+      // and that table grants `authenticated` no privilege — so every call here
+      // returned 403 and this screen could neither list nor revoke sessions.
+      // The table is read server-side under the service role now, scoped to the
+      // authenticated caller. See the route's header for why the answer is not
+      // to grant the browser access.
+      const res = await fetch("/api/auth/sessions");
+      if (!res.ok) throw new Error("Failed to load sessions");
+      const body = await res.json();
+      setSessions(body.data ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load sessions");
     } finally {
@@ -52,10 +65,15 @@ export default function SessionManagement() {
     setSuccess(null);
 
     try {
-      const response = await sessionService.revokeSession(sessionId, user.id);
+      // The route scopes the delete to the authenticated caller server-side;
+      // passing another user's sessionId deletes nothing.
+      const res = await fetch(
+        `/api/auth/sessions?sessionId=${encodeURIComponent(sessionId)}`,
+        { method: "DELETE" },
+      );
 
-      if (!response.success) {
-        throw new Error(response.error || "Failed to revoke session");
+      if (!res.ok) {
+        throw new Error("Failed to revoke session");
       }
 
       setSuccess("Session revoked successfully");
@@ -88,13 +106,13 @@ export default function SessionManagement() {
         throw new Error("Current session not found");
       }
 
-      const response = await sessionService.revokeAllOtherSessions(
-        user.id,
-        currentSession.id,
+      const res = await fetch(
+        `/api/auth/sessions?allExcept=${encodeURIComponent(currentSession.id)}`,
+        { method: "DELETE" },
       );
 
-      if (!response.success) {
-        throw new Error(response.error || "Failed to revoke sessions");
+      if (!res.ok) {
+        throw new Error("Failed to revoke sessions");
       }
 
       setSuccess("All other sessions revoked successfully");
