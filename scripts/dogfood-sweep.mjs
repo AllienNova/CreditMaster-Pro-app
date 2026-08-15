@@ -71,11 +71,33 @@ async function main() {
   const page = await context.newPage();
 
   if (EMAIL && PASSWORD) {
+    // Waits for the form to be interactive rather than filling immediately.
+    // In dev, Next compiles /auth/login on first visit, so a fill fired right
+    // after domcontentloaded can hit an unhydrated page — the run then aborts
+    // with "LOGIN FAILED" even though the credentials are perfectly valid.
     await page.goto(`${BASE}/auth/login`, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector('input[type="password"]', {
+      state: "visible",
+      timeout: 60000,
+    });
     await page.fill('input[type="email"], input[placeholder*="@"]', EMAIL);
     await page.fill('input[type="password"]', PASSWORD);
     await page.click('button:has-text("Sign In")');
-    await page.waitForTimeout(4000);
+
+    // Wait for the navigation away from the login page rather than a fixed
+    // sleep, with one retry: hydration can drop the very first click.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        await page.waitForURL((u) => !u.pathname.startsWith("/auth/login"), {
+          timeout: 30000,
+        });
+        break;
+      } catch {
+        if (attempt === 0) {
+          await page.click('button:has-text("Sign In")').catch(() => {});
+        }
+      }
+    }
     const landed = page.url();
     if (landed.includes("/auth/login")) {
       console.error(`LOGIN FAILED — still at ${landed}. Aborting: an unauthenticated sweep would report every protected page as a false failure.`);
@@ -113,6 +135,25 @@ async function main() {
       // Client components fetch after paint; without this the sweep reports a
       // clean page that is about to fail.
       await page.waitForTimeout(2500);
+
+      // RETRY ON A NEAR-EMPTY BODY.
+      //
+      // In dev, Next compiles each route on FIRST visit, which routinely takes
+      // longer than the wait above — so the sweep measured a blank page and
+      // called it a failure. That produced seven false "near-empty body (0
+      // chars)" results in the first full run, including /trading/journal
+      // (really 430 chars) and /financial-intelligence (really 1,100).
+      //
+      // The second visit hits a compiled route, so a page that is genuinely
+      // empty stays empty and a page that was merely slow now reports its real
+      // content. Cheap, because it only fires for routes that looked broken.
+      const firstPass = await page
+        .evaluate(() => (document.body?.innerText ?? "").trim().length)
+        .catch(() => 0);
+      if (firstPass < 60) {
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
+        await page.waitForTimeout(4000);
+      }
     } catch (e) {
       error = e.message.slice(0, 200);
     }
