@@ -210,6 +210,32 @@ crash. Fifth time in this effort that the measurement, not the app, was broken.
 
 ---
 
+## Round 4 — re-dogfooded after the Wave 7 gate work
+
+All 14 Wave 7 gates were built or repaired in this round, which changed live
+routes (`/api/credit-report/analyze` gated 501, the leaderboard rewired to real
+data, the backtest's synthetic fallback removed, three stores moved off a
+static dev-seed import). Both apps were swept again to prove none of it broke
+what was working.
+
+| | Result |
+|---|---|
+| Web | **204 of 204 routes, 0 FAIL**, 9 WARN (unbuilt endpoints) |
+| Mobile static | **223 routes, 220 ok, 3 FAIL** — the same three known crashes, no regression |
+| Mobile dynamic | **8 of 8, 0 FAIL** |
+
+Every route touched by the gate work renders: `/rewards` 713 chars,
+`/trading/backtest` 137, `/credit-reports` 461, `/leaderboard` 167.
+
+**The dev server died twice mid-sweep**, both times alphabetically from a fixed
+point — 113 then 7 "failures" that were nothing of the kind. Metro, an iOS
+simulator and Next together exceed this machine. `--retry-from` closed the gap
+in two follow-up passes; the merged result is the table above. The lesson is
+now mechanical rather than remembered: run the two sweeps sequentially, never
+together.
+
+---
+
 ## Not verified — stated plainly
 
 - ~~76 of 197 web routes unmeasured~~ — **resolved.** That run died under
