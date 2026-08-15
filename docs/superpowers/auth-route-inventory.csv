@@ -282,6 +282,8 @@ src/app/api/tax/recommendations/[id]/complete/route.ts,POST,withAuth,own-rows,wi
 src/app/api/tax/scenarios/calculate/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - what-if calculator over the caller's own tax profile. Profile loaded by user.id; a userId in the body is never read. Scenario applied to a COPY and never persisted. 409 when no profile exists rather than computing from a default income
 src/app/api/tax/scenarios/compare/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - ranks what-if scenarios by total tax against the caller's own profile. Capped at 20 per request since each is a full computation. All scenarios validated before any is computed
 src/app/api/tax/documents/route.ts,DELETE;GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/tax/documents/[id]/route.ts,GET;DELETE,withAuth,own-rows,withAuth,f,added 2026-08-15 - read/delete one tax document (W-2/1099 + extracted contents). Service-role queries filtered by BOTH id and user_id; 404 rather than 403 for another user's row
+src/app/api/tax/documents/[id]/verify/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - confirms an extraction. verified_by is stamped from the SESSION, never the body, so the audit trail cannot name a different verifier
 src/app/api/tax/documents/upload/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/test-db/route.ts,GET,getUser,none,withAuth,f,diagnostic DB-test route - SECURITY: should be removed before launch; gate with withRole(admin) at minimum
 src/app/api/trading/agents/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
