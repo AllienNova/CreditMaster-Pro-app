@@ -136,6 +136,68 @@ can be re-measured cheaply instead of being reported.
 
 ---
 
+## Round 3 — the mobile app, actually driven
+
+The first two rounds could only say the six bottom tabs rendered. This round
+deep-linked **all 223 static expo-router routes** on a booted iPhone 17 Pro,
+signed in as a real user, reading each screen back from the accessibility tree.
+
+| | Result |
+|---|---|
+| Mobile routes measured | **223 of 223** static routes |
+| Rendered | **204** |
+| Failed | **19** — 12 crashed to the ErrorBoundary, 7 rendered almost nothing |
+| Fixed and re-verified on device | **7** (6 crashes + `/billing`) |
+
+Getting there needed a detour: `expo run:ios` misread the simulator as a
+physical device and demanded code signing, and a from-source `xcodebuild` died
+compiling `fmt` on a loaded machine. Expo Go needs no native build and both
+native deps (`expo-secure-store`, `reanimated`) ship inside it, so that is the
+path the harness uses.
+
+### What it found
+
+Two root causes accounted for six of the crashes:
+
+- **Partial optional chains.** `a?.b.c` guards only `a` — the `.b` hop is still
+  a hard dereference. 22 sites across 11 files. `/rewards` also had a
+  truthiness-only `{progress && …}` over a block reading `progress.level.current`
+  — the Home tab bug again, on the screen Home links to.
+- **Raw API payloads written into array-typed state.**
+  `setDocuments(response.data.documents)` where the state is
+  `useState<Document[]>([])`: a missing key leaves `undefined` behind a type
+  that promises an array, and the first `.length` takes the screen down. This
+  is the case `src/store/toArray.ts` already exists for; the stores were fixed,
+  the 17 component call sites were not.
+
+Separately, **28 screens can hang on a permanent spinner** — their loaders
+`setLoading(true)`, `await`, then `setLoading(false)` with no `finally`, so a
+rejected call never clears the flag. `/billing` sat on "Loading billing…"
+forever; it now shows an honest error with a retry.
+
+### The finding that limits every mobile claim
+
+**A dev build cannot verify the mobile data layer at all.** The Home tab
+displayed a 731 credit score with per-bureau detail and "4 disputes / 2 pending
+/ 1 resolved" while the database held **0 credit scores and 1 dispute** for
+that user. `creditStore`, `disputeStore` and `investmentStore` contain 10 fetch
+methods that `if (__DEV__) { set(seedData); return; }` — they never call the
+API. Production takes the real path, so nothing fabricated ships; but it means
+this sweep proves screens **navigate and render**, not that their data is
+right. Recorded as G-031.
+
+### The harness was wrong first, again
+
+Run 1 reported **210 of 223 routes crashing**. Every failure carried an
+identical 71-element count — and 210 independent crashes do not render
+identically. React's ErrorBoundary replaces the whole tree and expo-router deep
+links do not re-mount it, so after ONE crash (`/admin/users`) every later route
+read back that same error screen. Truth: 13 passed, 1 crashed, 209 were never
+measured. The harness now relaunches and re-navigates before recording any
+crash. Fifth time in this effort that the measurement, not the app, was broken.
+
+---
+
 ## Not verified — stated plainly
 
 - ~~76 of 197 web routes unmeasured~~ — **resolved.** That run died under
@@ -147,20 +209,9 @@ can be re-measured cheaply instead of being reported.
   that do not exist and never supplies the NOT NULL `token_hash` (G-027). The
   list endpoint returning `[]` is therefore honest, not evidence that listing
   works against real data.
-- **Mobile drill-down screens — still not driven on a simulator.** All six
-  bottom tabs were walked, but screens reached by tapping *into* a tab have not
-  been. A static pass over them did find two real defects, so the area is not
-  untouched, just not *dogfooded*:
-  - **Six of them render hardcoded data and never fetch** (G-029), including
-    `documents/[id]`, which reads the route id and then ignores it — every
-    document shows the same fabricated one.
-  - **Two truthiness guards did not cover the fields dereferenced under them**
-    (G-030), one of which would have crashed the Home tab the same way the
-    original `gamification.level.current` bug did.
-
-  Finding those by grep rather than by driving the app is the point: a
-  simulator pass over the 37 route groups is still owed, and would likely find
-  more.
+- ~~Mobile drill-down screens never driven on a simulator~~ — **resolved.** See
+  Round 3. All 223 static routes deep-linked on an iPhone 17 Pro. It did find
+  more, as predicted: 12 crashing screens and a permanent-spinner class.
 - **Mobile points at HOSTED Supabase** (`EXPO_PUBLIC_SUPABASE_URL`) while web
   runs local, so the two halves were never exercised against the same data. It
   was pointed at local temporarily for this run and restored.
@@ -195,4 +246,5 @@ application bugs — see `scripts/dogfood.sh`, which guards for exactly that.
 | Date | Change |
 |---|---|
 | 2026-08-15 | Created. First systematic dogfood of this codebase; first time the mobile app has been run. |
+| 2026-08-15 | **Round 3.** Mobile actually driven: 223 of 223 static routes deep-linked on an iPhone 17 Pro, 204 render / 19 fail, 7 fixed and re-verified on device. Root causes: partial optional chains (22 sites) and raw payloads into array-typed state (17 sites). Found that a dev build cannot verify mobile data at all (G-031) — Home showed a 731 score against 0 rows. Harness reported 210 false crashes before recovery was added. |
 | 2026-08-15 | **Round 2.** Dynamic-route gap closed via `dogfood-seeds.json` — all 204 routes measured, 0 FAIL. Found and fixed 4 live defects the WARNs were hiding (dispute detail unreachable, trading APIs 500, financial 403s, session revocation dead). Recorded 3 findings needing an owner decision rather than guessing: G-024 signal schema drift, G-027 sessions cannot be created, G-028 revoke-all-others. Added `--retry-from` after a self-inflicted dev-server crash produced 64 false failures. |
