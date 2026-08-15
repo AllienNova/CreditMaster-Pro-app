@@ -29,7 +29,7 @@
     "test:auth-negative": "jest --testPathPatterns='api/.*/__tests__/.*route\\.test\\.ts$' -t 'negative-auth'",
     "test:webhook-idempotency": "jest -t 'wbh-phase2'",
     "test:idor": "jest -t idor",
-    "audit:auth": "tsx scripts/verify-auth-coverage.ts",
+    "audit:auth": "tsx scripts/verify-auth-coverage.ts --self-test && tsx scripts/verify-auth-coverage.ts",
     "audit:tier-map": "tsx scripts/audit-tier-map.ts",
     "audit:idor": "node scripts/list-user-scoped-tables.js /tmp/user-scoped-tables.txt && node scripts/audit-service-role-idor.js /tmp/user-scoped-tables.txt",
     "type-check": "tsc --noEmit",

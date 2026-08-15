@@ -20,6 +20,13 @@ export const PUBLIC_API_ROUTES: readonly string[] = [
   "/api/cron/check-dispute-status", // cron job — CRON_SECRET header is the auth
   "/api/cron/cleanup-expired-sessions", // cron job — CRON_SECRET header is the auth
   "/api/cron/dispute-followups", // cron job — CRON_SECRET header is the auth
+  // Was MISSING while its four siblings were listed, so the middleware denied
+  // it and the nightly snapshot job could never run — net worth, savings and
+  // spending trend series would simply stop accumulating, with no error
+  // anywhere a user or operator would see. Found by the audit:auth
+  // PUBLIC-vs-allowlist cross-check, which this file's own header claimed
+  // existed long before it did.
+  "/api/cron/financial-snapshots", // cron job — CRON_SECRET header is the auth
   "/api/cron/send-reminders", // cron job — CRON_SECRET header is the auth
   "/api/csrf", // CSRF token issuer — must be reachable pre-auth
   "/api/email/unsubscribe", // unsubscribe via signed token in email link — token is the auth
