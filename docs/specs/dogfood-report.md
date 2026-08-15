@@ -147,9 +147,20 @@ can be re-measured cheaply instead of being reported.
   that do not exist and never supplies the NOT NULL `token_hash` (G-027). The
   list endpoint returning `[]` is therefore honest, not evidence that listing
   works against real data.
-- **Mobile drill-down screens.** All six bottom tabs were signed into and
-  walked, but the app has 37 route groups; screens reached by tapping *into* a
-  tab are still unexercised.
+- **Mobile drill-down screens — still not driven on a simulator.** All six
+  bottom tabs were walked, but screens reached by tapping *into* a tab have not
+  been. A static pass over them did find two real defects, so the area is not
+  untouched, just not *dogfooded*:
+  - **Six of them render hardcoded data and never fetch** (G-029), including
+    `documents/[id]`, which reads the route id and then ignores it — every
+    document shows the same fabricated one.
+  - **Two truthiness guards did not cover the fields dereferenced under them**
+    (G-030), one of which would have crashed the Home tab the same way the
+    original `gamification.level.current` bug did.
+
+  Finding those by grep rather than by driving the app is the point: a
+  simulator pass over the 37 route groups is still owed, and would likely find
+  more.
 - **Mobile points at HOSTED Supabase** (`EXPO_PUBLIC_SUPABASE_URL`) while web
   runs local, so the two halves were never exercised against the same data. It
   was pointed at local temporarily for this run and restored.

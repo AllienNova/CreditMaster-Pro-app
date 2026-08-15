@@ -141,7 +141,14 @@ export default function SavingsScreen() {
                 color={theme.colors.success}
               />
               <Text style={styles.interestText}>
-                {dashboard.savingsRate.toFixed(0)}% savings rate
+                {/* `dashboard &&` above only proves the object exists, not that
+                    this field does — the same truthiness-guard gap that crashed
+                    the Home tab on `gamification.level.current`. A payload
+                    without `savingsRate` makes `.toFixed` throw and the
+                    ErrorBoundary replaces the screen. dashboardStore already
+                    treats the field as optional (`?.savingsRate || 0`, :121),
+                    so the type's `savingsRate: number` is not a guarantee. */}
+                {(dashboard.savingsRate ?? 0).toFixed(0)}% savings rate
               </Text>
             </View>
             <View style={styles.statsRow}>

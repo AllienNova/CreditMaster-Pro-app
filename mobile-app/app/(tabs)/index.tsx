@@ -782,8 +782,14 @@ export default function HomeScreen() {
             That is the FIRST screen after login, so the app was unusable the
             moment a user signed in. Found by driving a real simulator: signing
             in on iPhone 17 Pro crashed straight to the error boundary. A guard
-            must check the fields the code below actually dereferences. */}
-        {gamification?.level && gamification?.xp ? (
+            must check the fields the code below actually dereferences.
+
+            `streak` is in the guard for that exact reason: the first version of
+            this fix checked only `level` and `xp` while the block below still
+            reads `gamification.streak.days/.multiplier/.longestStreak`. A
+            payload carrying level and xp but no streak would have crashed the
+            same screen the same way — the original bug, one field over. */}
+        {gamification?.level && gamification?.xp && gamification?.streak ? (
           <TouchableOpacity
             onPress={() => router.push("/rewards" as never)}
             activeOpacity={0.9}
