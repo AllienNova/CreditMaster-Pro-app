@@ -48,7 +48,11 @@ function walkSources(dir, out = []) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) {
       if (!["node_modules", ".next", "__tests__"].includes(entry)) walkSources(full, out);
-    } else if (/\.tsx$/.test(entry) && !/\.test\.tsx$/.test(entry)) {
+    } else if (/\.tsx?$/.test(entry) && !/\.(test|spec)\.tsx?$/.test(entry)) {
+      // .ts as well as .tsx. Adding src/lib to the walk changed almost nothing
+      // until this filter widened, because the helpers there are plain .ts —
+      // the directory was being "covered" by a walker that could not open a
+      // single one of its files.
       out.push(full);
     }
   }
@@ -67,15 +71,52 @@ function resolves(link) {
   });
 }
 
-// href="/x", router.push("/x"), router.replace("/x"). Template literals with an
-// interpolation are skipped — the path is not statically known.
-const LINK = /(?:href\s*=\s*|router\.(?:push|replace)\s*\(\s*)["'`](\/[^"'`\s${}]*)["'`]/g;
+// href="/x", href={"/x"}, router.push/replace("/x"), redirect("/x").
+//
+// Three channels were missing, found by an independent review of this gate.
+// The old pattern required a quote IMMEDIATELY after `href=`, so the JSX brace
+// form href={"/x"} never matched. Server-side redirect("/x") — which sends a
+// real user to a real 404 just as surely as a link does — was invisible
+// entirely. Template literals carrying an interpolation are still skipped:
+// the path is not statically known.
+const LINK =
+  /(?:href\s*=\s*\{?\s*|router\.(?:push|replace)\s*\(\s*|\bredirect\s*\(\s*)["'`](\/[^"'`\s${}]*)["'`]/g;
+
+// `--self-test` proves the matcher sees every channel it claims to. The href
+// channel was missing from the mobile gate for its entire life while its
+// comment said otherwise, and nothing caught that because the gate's only
+// evidence was "it went green". These cases fail if a channel is dropped.
+if (process.argv.includes("--self-test")) {
+  const CASES = [
+    ['<Link href="/a">', "/a", "plain href"],
+    ['<Link href={"/b"}>', "/b", "JSX brace href"],
+    ['router.push("/c")', "/c", "router.push"],
+    ['router.replace("/d")', "/d", "router.replace"],
+    ['redirect("/e")', "/e", "server-side redirect"],
+  ];
+  let bad = 0;
+  for (const [src, want, why] of CASES) {
+    const got = [...src.matchAll(new RegExp(LINK.source, "g"))].map((m) => m[1]);
+    if (got.includes(want)) continue;
+    bad++;
+    console.log(`  SELF-TEST FAIL: ${why} — ${JSON.stringify(src)} did not yield ${want}`);
+  }
+  console.log(
+    bad === 0
+      ? `audit:links self-test PASSED — ${CASES.length}/${CASES.length} link channels matched.`
+      : `audit:links self-test FAILED — ${bad} of ${CASES.length} channels missed.`,
+  );
+  process.exit(bad === 0 ? 0 : 1);
+}
 
 const dead = new Map();
 let linksSeen = 0;
 
+// src/lib is walked too: link-bearing helpers live there, and a gate that skips
+// a directory is a gate that certifies it.
 for (const file of walkSources(join(ROOT, "src", "app")).concat(
   walkSources(join(ROOT, "src", "components")),
+  walkSources(join(ROOT, "src", "lib")),
 )) {
   const rel = relative(ROOT, file);
   const text = readFileSync(file, "utf8");

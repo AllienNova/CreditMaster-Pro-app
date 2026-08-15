@@ -49,7 +49,9 @@ function walkSources(dir, out = []) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) {
       if (!["node_modules", ".next", "__tests__"].includes(entry)) walkSources(full, out);
-    } else if (/\.tsx$/.test(entry) && !/\.test\.tsx$/.test(entry)) {
+    } else if (/\.tsx?$/.test(entry) && !/\.(test|spec)\.tsx?$/.test(entry)) {
+      // .ts as well as .tsx — navigation helpers in src/services and src/store
+      // are plain .ts, and were invisible to this walker.
       out.push(full);
     }
   }
@@ -68,9 +70,46 @@ function resolves(link) {
   });
 }
 
-// href="/x", router.push("/x"), router.replace("/x"). Template literals with an
-// interpolation are skipped — the path is not statically known.
-const LINK = /router\.(?:push|replace|navigate)\s*\(\s*["'`](\/[^"'`\s${}]*)["'`]/g;
+// <Link href="/x">, router.push/replace/navigate("/x").
+//
+// The href channel was MISSING while this comment claimed it was covered —
+// caught by an independent review of this gate. <Link> is expo-router's primary
+// navigation primitive, so the gate could not see the app's most common way of
+// linking. Every dead link the gate has ever found was router.push-shaped,
+// which made its success record an artifact of its own blind spot rather than
+// evidence of coverage.
+//
+// Template literals carrying an interpolation are skipped — the path is not
+// statically known. The brace form href={"/x"} is matched too.
+const LINK =
+  /(?:href\s*=\s*\{?\s*|router\.(?:push|replace|navigate)\s*\(\s*)["'`](\/[^"'`\s${}]*)["'`]/g;
+
+// `--self-test` proves the matcher sees every channel it claims to. The href
+// channel was missing from the mobile gate for its entire life while its
+// comment said otherwise, and nothing caught that because the gate's only
+// evidence was "it went green". These cases fail if a channel is dropped.
+if (process.argv.includes("--self-test")) {
+  const CASES = [
+    ['<Link href="/a">', "/a", "plain href"],
+    ['<Link href={"/b"}>', "/b", "JSX brace href"],
+    ['router.push("/c")', "/c", "router.push"],
+    ['router.replace("/d")', "/d", "router.replace"],
+    ['router.navigate("/e")', "/e", "router.navigate"],
+  ];
+  let bad = 0;
+  for (const [src, want, why] of CASES) {
+    const got = [...src.matchAll(new RegExp(LINK.source, "g"))].map((m) => m[1]);
+    if (got.includes(want)) continue;
+    bad++;
+    console.log(`  SELF-TEST FAIL: ${why} — ${JSON.stringify(src)} did not yield ${want}`);
+  }
+  console.log(
+    bad === 0
+      ? `audit:links self-test PASSED — ${CASES.length}/${CASES.length} link channels matched.`
+      : `audit:links self-test FAILED — ${bad} of ${CASES.length} channels missed.`,
+  );
+  process.exit(bad === 0 ? 0 : 1);
+}
 
 const dead = new Map();
 let linksSeen = 0;

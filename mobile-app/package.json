@@ -25,7 +25,7 @@
     "submit:android": "eas submit --platform android",
     "test:mobile-security": "jest --testPathPattern='(mobile-security|openExternalUrl)'",
     "audit:bundle": "node scripts/audit-bundle.mjs",
-    "audit:links": "node scripts/audit-dead-links.mjs",
+    "audit:links": "node scripts/audit-dead-links.mjs --self-test && node scripts/audit-dead-links.mjs",
     "audit:api": "node scripts/audit-api-calls.mjs --self-test && node scripts/audit-api-calls.mjs"
   },
   "dependencies": {
