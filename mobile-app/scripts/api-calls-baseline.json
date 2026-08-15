@@ -44,7 +44,6 @@
     "/tax/documents/ /download",
     "/tax/documents/ /verify",
     "/tax/documents/checklist",
-    "/tax/recommendations",
     "/tax/recommendations/ /complete",
     "/tax/scenarios",
     "/tax/scenarios/ ",
