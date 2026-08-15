@@ -275,6 +275,7 @@ src/app/api/student-loans/analyze/route.ts,GET;POST,validateFromHeaders,"rbac.ha
 src/app/api/student-loans/route.ts,GET,none,none,withAuth,f,unauthenticated - accepts userId from query (IDOR) - wrap in withAuth
 src/app/api/student-loans/strategy/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - wrap in withAuth
 src/app/api/tax/analyze/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/tax/brackets/route.ts,POST,withAuth,none,withAuth,f,added 2026-08-15 - bracket visualisation over TaxBracketCalculator. Stateless arithmetic (no user rows read) but authed: an unauthenticated compute endpoint is a free CPU faucet
 src/app/api/tax/documents/route.ts,DELETE;GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/tax/documents/upload/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/test-db/route.ts,GET,getUser,none,withAuth,f,diagnostic DB-test route - SECURITY: should be removed before launch; gate with withRole(admin) at minimum
