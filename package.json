@@ -34,7 +34,7 @@
     "audit:idor": "node scripts/list-user-scoped-tables.js /tmp/user-scoped-tables.txt && node scripts/audit-service-role-idor.js /tmp/user-scoped-tables.txt",
     "type-check": "tsc --noEmit",
     "test:money": "jest --testPathPatterns='\\.money\\.test\\.'",
-    "audit:money": "node scripts/audit-money.mjs",
+    "audit:money": "node scripts/audit-money.mjs --self-test && node scripts/audit-money.mjs",
     "audit:mocks": "node scripts/audit-mocks.mjs",
     "test:no-mock-fallback": "jest --testPathPatterns='\\.no-mock-fallback\\.test\\.'",
     "test:compliance": "jest --testPathPatterns='\\.compliance\\.test\\.'",

@@ -356,6 +356,11 @@ class StripePaymentService {
           quantity: 1,
           price_data: {
             currency: "usd",
+            // money-audit: already-cents — CREDIT_PACKS in @/lib/credits/credit-costs
+            // declares priceCents as integer minor units (499 for $4.99), and
+            // credit-costs.test.ts pins priceCents === Math.round(priceUsd * 100).
+            // The only caller, /api/credits/purchase, passes pack.priceCents
+            // straight through.
             unit_amount: params.priceCents,
             product_data: {
               name: `Fynvita ${params.credits.toLocaleString()} credits (${params.packType})`,

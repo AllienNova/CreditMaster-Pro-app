@@ -28,9 +28,24 @@ import { join, relative } from "path";
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
 
-/** Stripe calls whose amount field is money leaving the platform. */
-const MONEY_CALLS =
-  /\b(transfers|payouts|paymentIntents|charges|refunds|invoiceItems)\.create\s*\(/;
+/**
+ * Any Stripe `.create(` / `.update(` call, by its receiver chain.
+ *
+ * This replaced a six-name whitelist —
+ * transfers|payouts|paymentIntents|charges|refunds|invoiceItems — which an
+ * adversarial review of this gate broke twice over. `checkout.sessions.create`
+ * and `invoices.create` both carry money fields and were never scanned; a LIVE
+ * instance sat in the tree (src/lib/payment/stripe-service.ts, `unit_amount:
+ * params.priceCents` inside checkout.sessions.create) while this gate printed
+ * PASSED. A whitelist of resources is a promise to keep a list current against
+ * a vendor API that adds to it, and that promise was already broken.
+ *
+ * Matching the receiver chain instead means new Stripe resources are covered
+ * the day they are used. Non-Stripe `.create()` calls are excluded by the
+ * /stripe/i test on the chain, so an internal repository create carrying a
+ * dollar `amount` is not dragged in.
+ */
+const STRIPE_CALL = /([\w.$]+)\s*\.\s*(?:create|update)\s*\(/g;
 
 /**
  * The amount-bearing fields Stripe expects in integer minor units.
@@ -57,8 +72,25 @@ const AMOUNT_FIELD =
 const SAFE_SOURCE =
   /\b(toStripeAmount|fromDollars|cents)\s*\(|Math\.round\s*\([^)]*\*\s*100/;
 
-/** Literal integers are already minor units and self-evidently so. */
+/**
+ * Bare integer literals are NOT self-evidently minor units.
+ *
+ * This used to be an automatic pass, on the reasoning that "a literal integer
+ * is obviously cents". It is obviously cents only to a reader already thinking
+ * in cents. `amount: 50` is FND-024 written as a literal: an author who means
+ * "$50" and types 50 moves fifty cents, and the gate whose entire purpose is
+ * that defect waved it through.
+ *
+ * Small integers now require the marker, which forces the author to state
+ * where the value came from. Large ones (>= 1000, i.e. $10.00 and up) still
+ * pass: at that magnitude a dollars-as-cents error is implausible as a literal
+ * — nobody types 5000 meaning five thousand dollars in a field they believe
+ * takes dollars — and requiring markers on every fee constant is the kind of
+ * noise that gets a gate switched off.
+ */
 const INTEGER_LITERAL = /^-?\d+$/;
+const LITERAL_OBVIOUSLY_CENTS = (expr) =>
+  INTEGER_LITERAL.test(expr) && Math.abs(Number(expr)) >= 1000;
 
 const MARKER = /\/\/\s*money-audit:\s*already-cents\s*[—-]\s*\S/;
 
@@ -73,6 +105,97 @@ function walk(dir, out = []) {
   return out;
 }
 
+/**
+ * Text between the parenthesis at `open` and its match, brace-counted.
+ *
+ * Returns null on an unbalanced run (truncated file, parenthesis inside a
+ * string we mis-read) so the caller skips rather than scanning to EOF and
+ * reporting every amount field in the rest of the module.
+ */
+function balancedArgs(text, open) {
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    const c = text[i];
+    if (c === "(") depth++;
+    else if (c === ")") {
+      depth--;
+      if (depth === 0) return text.slice(open + 1, i);
+    }
+  }
+  return null;
+}
+
+/**
+ * The comment block immediately above `index`, however many lines it runs.
+ *
+ * A fixed N-line lookback was the first attempt and it was wrong in the worst
+ * direction: it rejected a marker whose justification ran longer than the
+ * window, which pushes authors toward terse unexplained markers — the opposite
+ * of what the marker is for. Walking contiguous comment lines instead means a
+ * justification can be as long as it needs to be, while a marker sitting above
+ * some OTHER field, with code in between, still does not count.
+ */
+function precedingCommentBlock(text, index) {
+  const lines = text.slice(0, index).split("\n");
+  // The field's own line is partial; start from the line above it.
+  const block = [];
+  for (let i = lines.length - 2; i >= 0; i--) {
+    const t = lines[i].trim();
+    if (t === "" || t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) {
+      block.unshift(lines[i]);
+      continue;
+    }
+    break;
+  }
+  return block.join("\n");
+}
+
+/** Run the detector over a source string; returns the offending expressions. */
+function scan(text) {
+  const found = [];
+  for (const call of text.matchAll(new RegExp(STRIPE_CALL.source, "g"))) {
+    if (!/stripe/i.test(call[1])) continue;
+    const args = balancedArgs(text, call.index + call[0].length - 1);
+    if (args === null) continue;
+    for (const m of args.matchAll(AMOUNT_FIELD)) {
+      const expr = m[2].trim();
+      const preceding = precedingCommentBlock(args, m.index);
+      if (SAFE_SOURCE.test(expr) || LITERAL_OBVIOUSLY_CENTS(expr) || MARKER.test(preceding)) continue;
+      found.push(expr);
+    }
+  }
+  return found;
+}
+
+// `--self-test` pins the three shapes an adversarial review slipped past the
+// previous version. Each was PROVEN to evade it by execution, so each is
+// asserted here rather than assumed fixed.
+if (process.argv.includes("--self-test")) {
+  const CASES = [
+    [`await stripe.transfers.create({ amount: payoutDollars })`, true, "one-line dollar variable (the original FND-024 shape)"],
+    ["await stripe.transfers\n  .create({\n    amount: payoutDollars,\n  })", true, "call split across lines by the formatter"],
+    [`await stripe.checkout.sessions.create({ line_items: [{ price_data: { unit_amount: priceDollars } }] })`, true, "checkout.sessions — absent from the old resource whitelist"],
+    [`await stripe.invoices.create({ amount: owedDollars })`, true, "invoices — also absent from the whitelist"],
+    [`await stripe.transfers.create({ amount: 50 })`, true, "small bare integer — 50 cents or a $50 payout typed as 50?"],
+    [`await stripe.transfers.create({ amount: toStripeAmount(fromDollars(x)) })`, false, "the sanctioned conversion still passes"],
+    [`await stripe.transfers.create({ amount: 5000 })`, false, "a large literal is implausible as dollars-as-cents"],
+    [`await repo.create({ amount: dollars })`, false, "a non-Stripe create is not this gate's business"],
+  ];
+  let bad = 0;
+  for (const [src, shouldFlag, why] of CASES) {
+    const flagged = scan(src).length > 0;
+    if (flagged === shouldFlag) continue;
+    bad++;
+    console.log(`  SELF-TEST FAIL: expected ${shouldFlag ? "FLAG" : "PASS"} — ${why}`);
+  }
+  console.log(
+    bad === 0
+      ? `audit:money self-test PASSED — ${CASES.length}/${CASES.length} detector cases correct.`
+      : `audit:money self-test FAILED — ${bad} of ${CASES.length} cases wrong.`,
+  );
+  process.exit(bad === 0 ? 0 : 1);
+}
+
 const offenders = [];
 let callsChecked = 0;
 let fieldsChecked = 0;
@@ -82,32 +205,43 @@ for (const file of walk(SRC)) {
   // A test's whole job may be to assert the wrong shape is rejected.
   if (/__tests__|\.test\.|\.spec\./.test(rel)) continue;
 
-  const lines = readFileSync(file, "utf8").split("\n");
+  const text = readFileSync(file, "utf8");
 
-  for (let i = 0; i < lines.length; i++) {
-    if (!MONEY_CALLS.test(lines[i])) continue;
+  // Whole-file text, not line by line.
+  //
+  // The previous version tested each LINE for the call, so any call whose
+  // receiver and method sat on different lines never entered the scan at all —
+  // proven by execution during an adversarial review:
+  //
+  //     await stripe.transfers
+  //       .create({ amount: 5000 })   // never seen by the gate
+  //
+  // Prettier produces that shape on its own once the line grows past 80
+  // columns. The formatter could silence the gate.
+  //
+  // The 40-line window is gone with it. The argument list is now delimited by
+  // its own parentheses, so a call is read exactly as far as it actually
+  // extends: no truncation on a long params object, no bleed into the next
+  // call on a short one.
+  for (const call of text.matchAll(STRIPE_CALL)) {
+    if (!/stripe/i.test(call[1])) continue;
     callsChecked++;
 
-    // Scan the argument object as TEXT so an amount field is found whether the
-    // call spans 20 lines or is written on one. 40 lines is generous for a
-    // Stripe params object.
-    const end = Math.min(lines.length, i + 40);
+    const args = balancedArgs(text, call.index + call[0].length - 1);
+    if (args === null) continue;
 
-    for (let j = i; j < end; j++) {
-      for (const m of lines[j].matchAll(AMOUNT_FIELD)) {
-        fieldsChecked++;
+    for (const m of args.matchAll(AMOUNT_FIELD)) {
+      fieldsChecked++;
 
-        const expr = m[2].trim();
-        const window = lines.slice(Math.max(0, j - 3), j + 1).join("\n");
+      const expr = m[2].trim();
+      const safe =
+        SAFE_SOURCE.test(expr) ||
+        LITERAL_OBVIOUSLY_CENTS(expr) ||
+        MARKER.test(precedingCommentBlock(args, m.index));
 
-        const safe =
-          SAFE_SOURCE.test(expr) ||
-          INTEGER_LITERAL.test(expr) ||
-          MARKER.test(window);
-
-        if (!safe) {
-          offenders.push(`${rel}:${j + 1}  ${m[1]}: ${expr.slice(0, 70)}`);
-        }
+      if (!safe) {
+        const line = text.slice(0, call.index + m.index).split("\n").length;
+        offenders.push(`${rel}:~${line}  ${m[1]}: ${expr.slice(0, 70)}`);
       }
     }
   }
