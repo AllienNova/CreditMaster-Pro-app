@@ -101,35 +101,37 @@ export const creditMonitoringApi = {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());
-    if (params?.unreadOnly) queryParams.append("unread", "true");
+    // The server reads `unreadOnly` (src/app/api/credit-monitoring/alerts/route.ts:17).
+    // Sending `unread` meant the filter was silently ignored and every caller
+    // asking for unread alerts got all of them.
+    if (params?.unreadOnly) queryParams.append("unreadOnly", "true");
     if (params?.severity) queryParams.append("severity", params.severity);
     const query = queryParams.toString();
     return api.get<PaginatedResponse<CreditMonitoringAlert>>(
-      `/credit/monitoring/alerts${query ? `?${query}` : ""}`,
+      `/credit-monitoring/alerts${query ? `?${query}` : ""}`,
     );
   },
 
   /**
-   * Get single alert by ID
-   */
-  getAlert: (alertId: string) =>
-    api.get<CreditMonitoringAlert>(`/credit/monitoring/alerts/${alertId}`),
-
-  /**
-   * Acknowledge an alert
+   * Acknowledge one alert.
+   *
+   * There is no per-alert sub-route. The server exposes a single PATCH on the
+   * collection that takes `alertId` or `markAllAsRead` in the BODY
+   * (src/app/api/credit-monitoring/alerts/route.ts:50-70). The previous
+   * `/alerts/{id}/acknowledge` and `/alerts/acknowledge-all` paths never
+   * existed, so acknowledging an alert has always been a 404 — and because the
+   * screen swallows the failure, the alert simply stayed unread with no error.
    */
   acknowledgeAlert: (alertId: string) =>
-    api.patch<CreditMonitoringAlert>(
-      `/credit/monitoring/alerts/${alertId}/acknowledge`,
-    ),
+    api.patch<{ success: boolean }>("/credit-monitoring/alerts", { alertId }),
 
   /**
-   * Acknowledge all alerts
+   * Acknowledge every unread alert. Same collection endpoint, `markAllAsRead`.
    */
   acknowledgeAllAlerts: () =>
-    api.post<{ acknowledged: number }>(
-      "/credit/monitoring/alerts/acknowledge-all",
-    ),
+    api.patch<{ success: boolean }>("/credit-monitoring/alerts", {
+      markAllAsRead: true,
+    }),
 
   /**
    * Update monitoring preferences

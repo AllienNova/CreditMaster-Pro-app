@@ -171,36 +171,39 @@ describe("Credit Monitoring API", () => {
         unreadOnly: true,
       });
 
+      // These three assertions previously pinned the paths the client USED
+      // rather than the ones the server SERVES, so they passed while every one
+      // of these calls 404'd. They now encode the real contract in
+      // src/app/api/credit-monitoring/alerts/route.ts.
       expect(api.get).toHaveBeenCalledWith(
-        "/credit/monitoring/alerts?page=1&limit=10&unread=true",
+        "/credit-monitoring/alerts?page=1&limit=10&unreadOnly=true",
       );
     });
   });
 
   describe("acknowledgeAlert", () => {
-    it("should acknowledge single alert", async () => {
+    it("PATCHes the collection with the alert id in the body", async () => {
       (api.patch as jest.Mock).mockResolvedValueOnce({ success: true });
 
       await creditMonitoringApi.acknowledgeAlert("alert-123");
 
-      expect(api.patch).toHaveBeenCalledWith(
-        "/credit/monitoring/alerts/alert-123/acknowledge",
-      );
+      // No per-alert sub-route exists; route.ts:63 reads `alertId` from the body.
+      expect(api.patch).toHaveBeenCalledWith("/credit-monitoring/alerts", {
+        alertId: "alert-123",
+      });
     });
   });
 
   describe("acknowledgeAllAlerts", () => {
-    it("should acknowledge all alerts", async () => {
-      (api.post as jest.Mock).mockResolvedValueOnce({
-        success: true,
-        data: { acknowledged: 5 },
-      });
+    it("PATCHes the collection with markAllAsRead", async () => {
+      (api.patch as jest.Mock).mockResolvedValueOnce({ success: true });
 
       await creditMonitoringApi.acknowledgeAllAlerts();
 
-      expect(api.post).toHaveBeenCalledWith(
-        "/credit/monitoring/alerts/acknowledge-all",
-      );
+      // route.ts:61 branches on `markAllAsRead`.
+      expect(api.patch).toHaveBeenCalledWith("/credit-monitoring/alerts", {
+        markAllAsRead: true,
+      });
     });
   });
 });
