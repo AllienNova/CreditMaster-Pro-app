@@ -22,6 +22,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { documentApi } from "../../src/services/api/user";
 import type { Document } from "../../src/services/api/types";
+import { toArray } from "../../src/store/toArray";
 
 const FILTER_TYPES: { key: Document["type"] | "all"; label: string }[] = [
   { key: "all", label: "All" },
@@ -44,7 +45,7 @@ export default function DocumentsScreen() {
     setError(null);
     const response = await documentApi.getAll();
     if (response.success && response.data) {
-      setDocuments(response.data.documents);
+      setDocuments(toArray<Document>(response?.data?.documents));
     } else {
       setError(
         response.error?.message ||

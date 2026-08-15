@@ -34,6 +34,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { billsApi } from "../../src/services/api/financial";
 import type { BillItem } from "../../src/services/api/financial";
+import { toArray } from "../../src/store/toArray";
 
 // Status derived from the real nextDueDate. There is intentionally no "paid":
 // payment history is not exposed over HTTP, so it has no honest source.
@@ -128,7 +129,7 @@ export default function BillsScreen() {
   const fetchBills = useCallback(async () => {
     const res = await billsApi.getBills();
     if (res.success && res.data) {
-      setBills(res.data.bills);
+      setBills(toArray<BillItem>(res?.data?.bills));
       setError(null);
     } else {
       setError(res.error?.message ?? "Unable to load bills.");

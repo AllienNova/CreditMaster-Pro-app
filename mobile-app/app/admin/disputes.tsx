@@ -31,6 +31,7 @@ import {
   ADMIN_DISPUTE_STATUSES,
 } from "../../src/services/api/admin";
 import type { AdminDispute } from "../../src/services/api/admin";
+import { toArray } from "../../src/store/toArray";
 
 // Humanize a real DB status/enum value for display: "under_review" -> "Under Review".
 // Presentation only — the underlying value stays the real status.
@@ -72,7 +73,7 @@ export default function AdminDisputesScreen() {
     setError(null);
     const res = await adminDisputesApi.getDisputes();
     if (res.success && res.data) {
-      setDisputes(res.data);
+      setDisputes(toArray<AdminDispute>(res?.data));
     } else {
       setError(res.error?.message ?? "Unable to load disputes right now.");
     }

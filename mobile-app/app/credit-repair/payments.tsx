@@ -34,6 +34,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { billsApi } from "../../src/services/api/financial";
 import type { BillItem } from "../../src/services/api/financial";
+import { toArray } from "../../src/store/toArray";
 
 // dueDate arrives as an ISO string; render a compact locale date.
 function formatDate(iso?: string): string {
@@ -58,7 +59,7 @@ export default function PaymentsScreen() {
   const fetchBills = useCallback(async () => {
     const res = await billsApi.getBills();
     if (res.success && res.data) {
-      setBills(res.data.bills);
+      setBills(toArray<BillItem>(res?.data?.bills));
       setError(null);
     } else {
       setError(res.error?.message ?? "Unable to load bills.");

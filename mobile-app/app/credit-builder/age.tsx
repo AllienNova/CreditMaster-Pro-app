@@ -28,6 +28,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { creditRepairApi } from "../../src/services/api/creditRepair";
 import type { CreditAccount } from "../../src/services/api/creditRepair";
+import { toArray } from "../../src/store/toArray";
 
 const getAgeColor = (years: number) => {
   if (years >= 7) return "#22C55E";
@@ -45,7 +46,7 @@ export default function CreditAgeScreen() {
     setLoading(true);
     const res = await creditRepairApi.getAccounts();
     if (res.success && res.data) {
-      setAccounts(res.data.accounts);
+      setAccounts(toArray<CreditAccount>(res?.data?.accounts));
       setError(null);
     } else {
       setError(res.error?.message ?? "Unable to load your accounts.");

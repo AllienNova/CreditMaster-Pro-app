@@ -19,6 +19,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import api from "../../src/services/api/client";
 import type { ApiResponse } from "../../src/services/api/types";
+import { toArray } from "../../src/store/toArray";
 
 interface BacktestResult {
   id: string;
@@ -60,7 +61,7 @@ export default function BacktestScreen() {
       const response: ApiResponse<BacktestResponse> =
         await api.get<BacktestResponse>("/trading/backtest");
       if (response.data?.results) {
-        setResults(response.data.results);
+        setResults(toArray<BacktestResult>(response?.data?.results));
       }
     } catch (err) {
       setError(

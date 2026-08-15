@@ -27,6 +27,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { creditRepairApi } from "../../src/services/api/creditRepair";
+import { toArray } from "../../src/store/toArray";
 import type {
   CreditInquiry,
   InquiryBureau,
@@ -54,7 +55,7 @@ export default function InquiriesScreen() {
   const fetchInquiries = useCallback(async () => {
     const res = await creditRepairApi.getInquiries();
     if (res.success && res.data) {
-      setInquiries(res.data.inquiries);
+      setInquiries(toArray<CreditInquiry>(res?.data?.inquiries));
       setError(null);
     } else {
       setError(res.error?.message ?? "Unable to load inquiries.");

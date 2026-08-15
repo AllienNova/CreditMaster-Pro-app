@@ -26,6 +26,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { creditRepairApi } from "../../src/services/api/creditRepair";
+import { toArray } from "../../src/store/toArray";
 import type {
   NegotiationDebt,
   NegotiationStatus,
@@ -48,7 +49,7 @@ export default function NegotiateScreen() {
   const fetchDebts = useCallback(async () => {
     const res = await creditRepairApi.getNegotiations();
     if (res.success && res.data) {
-      setDebts(res.data.debts);
+      setDebts(toArray<NegotiationDebt>(res?.data?.debts));
       setError(null);
     } else {
       setError(res.error?.message ?? "Unable to load negotiations.");

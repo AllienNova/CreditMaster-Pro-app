@@ -27,6 +27,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { creditRepairApi } from "../../src/services/api/creditRepair";
 import type { CreditCard } from "../../src/services/api/creditRepair";
+import { toArray } from "../../src/store/toArray";
 
 const getUtilizationColor = (util: number) => {
   if (util <= 10) return "#22C55E";
@@ -53,7 +54,7 @@ export default function UtilizationScreen() {
     setLoading(true);
     const res = await creditRepairApi.getCards();
     if (res.success && res.data) {
-      setCards(res.data.cards);
+      setCards(toArray<CreditCard>(res?.data?.cards));
       setError(null);
     } else {
       setError(res.error?.message ?? "Unable to load your credit cards.");

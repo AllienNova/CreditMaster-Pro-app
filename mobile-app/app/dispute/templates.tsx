@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
 import { disputesAPI, DisputeTemplate } from "../../services/api";
+import { toArray } from "../../src/store/toArray";
 
 // Local template data (fallback when API unavailable)
 const LOCAL_TEMPLATES: DisputeTemplate[] = [
@@ -273,7 +274,7 @@ export default function TemplatesScreen() {
     try {
       const { data, error } = await disputesAPI.getTemplates();
       if (data?.templates && !error) {
-        setTemplates(data.templates);
+        setTemplates(toArray<DisputeTemplate>(data?.templates));
       }
     } catch {
       // Use local templates as fallback

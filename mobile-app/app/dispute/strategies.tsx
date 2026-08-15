@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
 import { disputesAPI, DisputeStrategy } from "../../services/api";
+import { toArray } from "../../src/store/toArray";
 
 // Local strategy data (fallback when API unavailable)
 const LOCAL_STRATEGIES: DisputeStrategy[] = [
@@ -284,7 +285,7 @@ export default function StrategiesScreen() {
     try {
       const { data, error } = await disputesAPI.getStrategies();
       if (data?.strategies && !error) {
-        setStrategies(data.strategies);
+        setStrategies(toArray<DisputeStrategy>(data?.strategies));
       }
     } catch {
       // Use local strategies

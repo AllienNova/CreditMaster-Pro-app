@@ -34,6 +34,7 @@ import { useNudges } from "../../src/hooks/useNudges";
 import { useCoaching } from "../../src/hooks/useCoaching";
 import { financialOverviewApi } from "../../src/services/api/financial";
 import type { Insight, InsightType } from "../../src/services/api/financial";
+import { toArray } from "../../src/store/toArray";
 
 // Explore grid — pure navigation to insight sub-screens (all four routes exist).
 const QUICK_ACTIONS: {
@@ -102,7 +103,7 @@ export default function FinancialInsightsScreen() {
     setError(null);
     const res = await financialOverviewApi.getInsights();
     if (res.success && res.data) {
-      setInsights(res.data.insights);
+      setInsights(toArray<Insight>(res?.data?.insights));
     } else {
       setError(res.error?.message ?? "Unable to load insights right now.");
     }

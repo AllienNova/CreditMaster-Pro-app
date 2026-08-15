@@ -21,6 +21,7 @@ import { lightTheme as theme } from "../../../src/constants/theme";
 import { Card } from "../../../src/components/Card";
 import api from "../../../src/services/api/client";
 import type { ApiResponse } from "../../../src/services/api/types";
+import { toArray } from "../../../src/store/toArray";
 
 type RiskLevel = "low" | "medium" | "high";
 
@@ -64,7 +65,7 @@ export default function StrategiesListScreen() {
       const response: ApiResponse<StrategiesResponse> =
         await api.get<StrategiesResponse>("/trading/strategies");
       if (response.data?.strategies) {
-        setStrategies(response.data.strategies);
+        setStrategies(toArray<Strategy>(response?.data?.strategies));
       }
     } catch (err) {
       setError(

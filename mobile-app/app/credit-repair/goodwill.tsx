@@ -25,6 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { creditRepairApi } from "../../src/services/api/creditRepair";
+import { toArray } from "../../src/store/toArray";
 import type {
   GoodwillLetter,
   GoodwillLetterStatus,
@@ -47,7 +48,7 @@ export default function GoodwillScreen() {
   const fetchLetters = useCallback(async () => {
     const res = await creditRepairApi.getGoodwillLetters();
     if (res.success && res.data) {
-      setLetters(res.data.letters);
+      setLetters(toArray<GoodwillLetter>(res?.data?.letters));
       setError(null);
     } else {
       setError(res.error?.message ?? "Unable to load goodwill letters.");
