@@ -164,6 +164,46 @@ jobs:
       - name: audit:idor - service-role queries must be owner-scoped
         run: npm run audit:idor
 
+      # BLOCKING: FND-024 sent dollars into Stripe's integer-cents field - a $50
+      # payout moved 50 cents. Every Stripe amount must derive from @/lib/money
+      # or carry a justification marker. Self-tests its own detector first.
+      - name: audit:money - Stripe amounts must be integer cents
+        run: npm run audit:money
+
+      # BLOCKING: FND-049..053 returned Math.random() and hardcoded mock objects
+      # to real users as their own financial data. Fails on fabrication in a
+      # response path, or a catch returning a payload with no failure signal.
+      - name: audit:mocks - no fabricated data in an API response
+        run: npm run audit:mocks
+
+      # BLOCKING: a link pointing at a route that does not exist is a 404 for a
+      # real user. The dogfood sweep enumerates routes from the filesystem and
+      # cannot find these - the bad link is never in its input.
+      - name: audit:links (web) - every internal link resolves
+        run: npm run audit:links
+
+      - name: audit:links (mobile) - every internal link resolves
+        working-directory: mobile-app
+        run: npm run audit:links
+
+      # BLOCKING: the mobile client and the web API drifted apart - 88 of the
+      # app's API calls hit 404 while the route sweep was green, because every
+      # screen catches the error and renders an empty state.
+      - name: audit:api (mobile) - every API call has a backing route
+        working-directory: mobile-app
+        run: npm run audit:api
+
+  # audit:cascade is NOT wired here yet, deliberately and visibly. It needs a
+  # live Postgres to read the erasure function body, and it currently calls
+  # process.exit(0) when the database is unreachable - so adding it as-is would
+  # make it green by absence on every runner. That is worse than absent: it
+  # would read as GDPR Art. 17 coverage while proving nothing. It needs a --ci
+  # flag making DB-unreachable a failure, plus a Postgres service container,
+  # before it can block a merge honestly.
+  #
+  # audit:bundle is likewise absent: it runs a full `expo export`, which belongs
+  # in its own job with the mobile toolchain rather than a step in this one.
+
   build:
     name: Build
     runs-on: ubuntu-latest
