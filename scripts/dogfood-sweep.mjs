@@ -103,6 +103,7 @@ async function main() {
 
     let status = null;
     let error = null;
+    let problemsFromEvaluate = null;
     try {
       const resp = await page.goto(`${BASE}${route}`, {
         waitUntil: "domcontentloaded",
@@ -119,8 +120,13 @@ async function main() {
     const landedOn = page.url().replace(BASE, "");
     const bouncedToLogin = landedOn.startsWith("/auth/login") && route !== "/auth/login";
 
-    const body = await page.evaluate(() => {
-      const text = document.body?.innerText ?? "";
+    // Wrapped: a page that crashes or navigates mid-evaluate throws here, and
+    // an unguarded throw ended the first full run at route 108 of 197 —
+    // silently truncating coverage in a tool whose entire purpose is coverage.
+    let body = { chars: 0, boundary: false, head: "" };
+    try {
+      body = await page.evaluate(() => {
+        const text = document.body?.innerText ?? "";
       // NOT `document.querySelector("nextjs-portal")`. That element is the dev
       // TOOLS overlay and is present on every page in development, so testing
       // for it marked all 12 smoke routes as failures — including `/`, which
@@ -130,14 +136,18 @@ async function main() {
         /Application error|Unhandled Runtime Error|client-side exception|This page could not be found/i.test(
           text,
         );
-      return { chars: text.trim().length, boundary, head: text.trim().slice(0, 100) };
-    });
+        return { chars: text.trim().length, boundary, head: text.trim().slice(0, 100) };
+      });
+    } catch (e) {
+      problemsFromEvaluate = `page evaluate failed: ${e.message.slice(0, 120)}`;
+    }
 
     page.off("console", onConsole);
     page.off("response", onResponse);
 
     const problems = [];
     if (error) problems.push(`navigation: ${error}`);
+    if (problemsFromEvaluate) problems.push(problemsFromEvaluate);
     if (status && status >= 400) problems.push(`http ${status}`);
     if (bouncedToLogin) problems.push(`redirected to login`);
     if (body.boundary) problems.push("error boundary rendered");
