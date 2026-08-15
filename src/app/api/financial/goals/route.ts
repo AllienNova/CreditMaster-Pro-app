@@ -40,7 +40,11 @@ const createGoalSchema = z.object({
 });
 
 export const GET = withPermission(
-  "financial:create_goals",
+  // READ permission for a read. This was gated on "financial:create_goals",
+  // which the `user` role does not hold (rbac.ts) — so every free user got
+  // 403 Forbidden merely LISTING their own goals, while premium and above
+  // worked. POST below still requires create_goals, which is correct.
+  "financial:read",
   async (request: NextRequest, user: AuthedUser) => {
     const userId = user.id;
   try {

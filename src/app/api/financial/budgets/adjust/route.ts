@@ -70,9 +70,29 @@ export const GET = withPermission(
     const userId = middleware.userId!;
 
     // Get adjustment suggestions
+    // "No active budget" is an EMPTY STATE, not a server fault — same defect
+    // this route's sibling /analyze had. The engine throws for it, the catch
+    // below turned that into a 500, and every user without a budget yet (i.e.
+    // every new user) got a server error instead of a prompt to create one.
     const smartBudgetEngine = getSmartBudgetEngine();
-    const suggestions =
-      await smartBudgetEngine.suggestCategoryAdjustments(userId);
+    let suggestions;
+    try {
+      suggestions = await smartBudgetEngine.suggestCategoryAdjustments(userId);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        /no active budget found/i.test(error.message)
+      ) {
+        const empty = NextResponse.json({
+          success: true,
+          data: [],
+          hasBudget: false,
+          message: "No active budget yet. Create one to see suggestions.",
+        });
+        return finalizeResponse(request, empty, startTime, userId);
+      }
+      throw error;
+    }
 
     const response = NextResponse.json({
       success: true,

@@ -75,7 +75,8 @@ class SessionService {
           ip_address: data.ipAddress,
           location: data.location,
           created_at: new Date().toISOString(),
-          last_active_at: new Date().toISOString(),
+          // Real column is `last_activity` (see updateSessionActivity below).
+          last_activity: new Date().toISOString(),
           expires_at: expiresAt.toISOString(),
         })
         .select()
@@ -115,7 +116,10 @@ class SessionService {
         .select("*")
         .eq("user_id", userId)
         .gt("expires_at", new Date().toISOString())
-        .order("last_active_at", { ascending: false });
+        // `last_active_at` does not exist on public.sessions, so this ORDER BY
+        // made PostgREST reject the whole query with 400 — the security screen
+        // could never list a user's sessions. Real column: `last_activity`.
+        .order("last_activity", { ascending: false });
 
       if (error) {
         // SessionService error: Get user sessions error
@@ -132,7 +136,7 @@ class SessionService {
         ipAddress: session.ip_address,
         location: session.location,
         createdAt: new Date(session.created_at),
-        lastActiveAt: new Date(session.last_active_at),
+        lastActiveAt: new Date(session.last_activity),
         expiresAt: new Date(session.expires_at),
         isCurrent: session.id === currentSessionId,
       }));
