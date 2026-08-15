@@ -28,7 +28,29 @@ import {
   SignalPerformanceSchema,
 } from "./types/trading-signals.types";
 import { Timeframe } from "./types/investment.types";
-import { createClient } from "@/lib/supabase/server";
+/**
+ * Service-role client, NOT the request-scoped `createClient()`.
+ *
+ * `trading_signals` grants `authenticated` no table privilege (deliberate — see
+ * supabase/migrations/20260731000009_financial_accounts_revoke_authenticated.sql:
+ * a missing grant fails LOUDLY with 42501 rather than silently returning zero
+ * rows), so every query here raised "permission denied for table
+ * trading_signals" and GET /api/investments/signals returned 500.
+ *
+ * This also removes a second, independent bug: three of the five call sites
+ * wrote `const supabase = createClient()` with NO `await`, against an `async`
+ * function (supabase/server.ts:26). They held a Promise, so `.from()` was
+ * undefined — hidden because each was cast `as any`. getServiceRoleClient is
+ * synchronous, so the shape is now correct by construction.
+ *
+ * The service role bypasses RLS. getSignalHistory scopes by its required
+ * `userId` argument. evaluateSignalStrength and trackSignalOutcome look up by
+ * signal id ALONE and rely on their caller's ownership gate:
+ * app/api/investments/signals/[id]/route.ts fetches getSignalHistory(user.id)
+ * and confirms the id is in that set before calling either. Do not call them
+ * from a path that has not made that check.
+ */
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { redisCache, shortRedisCache } from "@/lib/cache/redis-cache-service";
 
 // ============================================================================
@@ -1159,7 +1181,7 @@ Format as a JSON array of strings.`;
    */
   private async saveSignal(signal: TradingSignal): Promise<void> {
     try {
-      const supabase = createClient();
+      const supabase = getServiceRoleClient();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any).from("trading_signals").insert({
         id: signal.id,
@@ -1203,7 +1225,7 @@ Format as a JSON array of strings.`;
     strengthChange: "stronger" | "weaker" | "unchanged";
     recommendation: string;
   }> {
-    const supabase = createClient();
+    const supabase = getServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: signal, error } = await (supabase as any)
       .from("trading_signals")
@@ -1258,7 +1280,7 @@ Format as a JSON array of strings.`;
     },
   ): Promise<SignalOutcome> {
     // Get the signal
-    const supabase = createClient();
+    const supabase = getServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: signal, error: signalError } = await (supabase as any)
       .from("trading_signals")
@@ -1383,7 +1405,7 @@ Format as a JSON array of strings.`;
       return cached;
     }
 
-    const supabase = await createClient();
+    const supabase = getServiceRoleClient();
     let query = supabase
       .from("trading_signals")
       .select("*")
@@ -1463,7 +1485,7 @@ Format as a JSON array of strings.`;
     const startDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
 
     // Get all signals in period
-    const supabase = await createClient();
+    const supabase = getServiceRoleClient();
     const { data: signals, error } = await supabase
       .from("trading_signals")
       .select("*")

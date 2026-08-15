@@ -66,9 +66,12 @@ jest.mock("../../cache/redis-cache-service", () => ({
   },
 }));
 
-// Mock Supabase
-jest.mock("../../supabase/server", () => ({
-  createClient: jest.fn(() => ({
+// Mock Supabase — the SERVICE-ROLE client, which is what SignalGenerator uses.
+// `trading_signals` grants `authenticated` no table privilege, so the module
+// moved off the request-scoped client; mocking the old module left these tests
+// calling the real one.
+jest.mock("../../supabase/service-role", () => ({
+  getServiceRoleClient: jest.fn(() => ({
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
       insert: jest.fn().mockReturnThis(),
@@ -90,7 +93,7 @@ jest.mock("../../supabase/server", () => ({
 import { getAIMLService } from "../../aiml-service";
 import { UnifiedMarketDataService } from "../market-data-service";
 import { redisCache, shortRedisCache } from "../../cache/redis-cache-service";
-import { createClient } from "../../supabase/server";
+import { getServiceRoleClient as createClient } from "../../supabase/service-role";
 import { FundamentalAnalysisService } from "../services/FundamentalAnalysisService";
 import { SentimentAnalysisService } from "../services/SentimentAnalysisService";
 
