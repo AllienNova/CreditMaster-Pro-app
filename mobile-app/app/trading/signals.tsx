@@ -84,7 +84,12 @@ function SignalsSummaryCard({
         </View>
       </View>
       <View style={styles.sourceBadges}>
-        {Object.entries(bySource).map(([source, count]) =>
+        {/* `Object.entries(undefined)` throws "Cannot convert undefined value
+            to object". The prop is typed Record<SignalSource, number> but
+            arrives from signalSummary.bySource, which the API may omit — so
+            the type is a promise the payload does not keep. Guarded here rather
+            than at the call site so every caller is covered. */}
+        {Object.entries(bySource ?? {}).map(([source, count]) =>
           count > 0 ? (
             <View
               key={source}

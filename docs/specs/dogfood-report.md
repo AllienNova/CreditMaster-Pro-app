@@ -147,7 +147,7 @@ signed in as a real user, reading each screen back from the accessibility tree.
 | Mobile routes measured | **223 of 223** static routes |
 | Rendered | **204** |
 | Failed | **19** — 12 crashed to the ErrorBoundary, 7 rendered almost nothing |
-| Fixed and re-verified on device | **7** (6 crashes + `/billing`) |
+| Fixed and re-verified on device | **12** — 19 failing routes reduced to 7 |
 
 Getting there needed a detour: `expo run:ios` misread the simulator as a
 physical device and demanded code signing, and a from-source `xcodebuild` died
@@ -169,6 +169,13 @@ Two root causes accounted for six of the crashes:
   that promises an array, and the first `.length` takes the screen down. This
   is the case `src/store/toArray.ts` already exists for; the stores were fixed,
   the 17 component call sites were not.
+
+A third cause turned up as the fixes went in: **`Object.entries(undefined)`**
+("Cannot convert undefined value to object") where a prop typed
+`Record<K, number>` arrives absent, and **numeric fields typed `number` that
+arrive `null`** (`goal.progress.toFixed`, `riskMetrics.riskScore.toFixed`).
+Same root shape as the others — the type promises something the payload does
+not keep.
 
 Separately, **28 screens can hang on a permanent spinner** — their loaders
 `setLoading(true)`, `await`, then `setLoading(false)` with no `finally`, so a
