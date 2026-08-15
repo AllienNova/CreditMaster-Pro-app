@@ -4,6 +4,7 @@
  */
 
 import { create } from "zustand";
+import { toArray } from "./toArray";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -113,7 +114,7 @@ export const useStudentLoanStore = create<StudentLoanState>()(
           if (response.error) {
             set({ error: response.error, isLoadingLoans: false });
           } else {
-            set({ loans: response.data, isLoadingLoans: false });
+            set({ loans: toArray(response.data), isLoadingLoans: false });
           }
         } catch (error) {
           set({
@@ -293,7 +294,7 @@ export const useStudentLoanStore = create<StudentLoanState>()(
             set({ error: response.error, isLoadingStrategies: false });
             return [];
           }
-          set({ strategies: response.data, isLoadingStrategies: false });
+          set({ strategies: toArray(response.data), isLoadingStrategies: false });
           return response.data;
         } catch (error) {
           set({

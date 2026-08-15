@@ -5,6 +5,7 @@
  */
 
 import { create } from "zustand";
+import { toArray } from "./toArray";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { transactionApi } from "../services/api";
@@ -67,7 +68,7 @@ export const useTransactionStore = create<TransactionState>()(
           const response = await transactionApi.getAll(params);
           if (response.success && response.data) {
             set({
-              transactions: response.data.items,
+              transactions: toArray(response.data.items),
               totalCount: response.data.total || response.data.items.length,
               currentPage: params.page || 1,
               isLoadingTransactions: false,
@@ -95,7 +96,7 @@ export const useTransactionStore = create<TransactionState>()(
           const response = await transactionApi.getCategories();
           if (response.success && response.data) {
             set({
-              categories: response.data.categories,
+              categories: toArray(response.data.categories),
               isLoadingCategories: false,
             });
           } else {

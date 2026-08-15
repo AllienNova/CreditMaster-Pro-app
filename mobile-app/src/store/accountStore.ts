@@ -5,6 +5,7 @@
  */
 
 import { create } from "zustand";
+import { toArray } from "./toArray";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { bankAccountApi } from "../services/api";
@@ -58,7 +59,7 @@ export const useAccountStore = create<AccountState>()(
         try {
           const response = await bankAccountApi.getAccounts();
           if (response.success && response.data) {
-            set({ accounts: response.data.accounts, isLoadingAccounts: false });
+            set({ accounts: toArray(response.data.accounts), isLoadingAccounts: false });
           } else {
             set({
               error: response.error?.message || "Failed to fetch accounts",

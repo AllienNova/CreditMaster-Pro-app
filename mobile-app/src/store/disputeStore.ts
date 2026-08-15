@@ -4,6 +4,7 @@
  */
 
 import { create } from "zustand";
+import { toArray } from "./toArray";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -123,7 +124,7 @@ export const useDisputeStore = create<DisputeState>()(
           });
           if (response.success && response.data) {
             set({
-              disputes: response.data.items,
+              disputes: toArray(response.data.items),
               totalDisputes: response.data.total,
               isLoading: false,
             });
@@ -312,7 +313,7 @@ export const useDisputeStore = create<DisputeState>()(
         try {
           const response = await disputeResourcesApi.getTemplates();
           if (response.success && response.data) {
-            set({ templates: response.data.templates });
+            set({ templates: toArray(response.data.templates) });
           }
         } catch (error) {
           if (__DEV__) console.error("Failed to fetch templates:", error);
@@ -324,7 +325,7 @@ export const useDisputeStore = create<DisputeState>()(
         try {
           const response = await disputeResourcesApi.getStrategies();
           if (response.success && response.data) {
-            set({ strategies: response.data.strategies });
+            set({ strategies: toArray(response.data.strategies) });
           }
         } catch (error) {
           if (__DEV__) console.error("Failed to fetch strategies:", error);
@@ -336,7 +337,7 @@ export const useDisputeStore = create<DisputeState>()(
         try {
           const response = await disputeResourcesApi.getReasons();
           if (response.success && response.data) {
-            set({ reasons: response.data.reasons });
+            set({ reasons: toArray(response.data.reasons) });
           }
         } catch (error) {
           if (__DEV__) console.error("Failed to fetch reasons:", error);

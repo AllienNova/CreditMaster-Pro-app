@@ -770,8 +770,20 @@ export default function HomeScreen() {
 
         {/* Gamification Widget — real XP/level/streak from gamificationStore.
             Real data renders the card; while loading with no data yet, an inline
-            skeleton; on no-data/error the widget is simply hidden (never faked). */}
-        {gamification ? (
+            skeleton; on no-data/error the widget is simply hidden (never faked).
+
+            The guard tests `level` and `xp`, NOT just truthiness. It used to be
+            `{gamification ? ...}`, which passes for ANY object — and the store
+            can hold a payload without those fields, so the very next line,
+            `gamification.level.current`, threw "Cannot read property 'current'
+            of undefined" and the ErrorBoundary replaced the whole HomeScreen
+            with "Something went wrong".
+
+            That is the FIRST screen after login, so the app was unusable the
+            moment a user signed in. Found by driving a real simulator: signing
+            in on iPhone 17 Pro crashed straight to the error boundary. A guard
+            must check the fields the code below actually dereferences. */}
+        {gamification?.level && gamification?.xp ? (
           <TouchableOpacity
             onPress={() => router.push("/rewards" as never)}
             activeOpacity={0.9}

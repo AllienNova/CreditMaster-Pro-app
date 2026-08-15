@@ -5,6 +5,7 @@
  */
 
 import { create } from "zustand";
+import { toArray } from "./toArray";
 import investmentsApi, {
   PortfolioResponse,
   Holding,
@@ -121,7 +122,7 @@ export const useInvestmentStore = create<InvestmentState & InvestmentActions>(
         if (response.data) {
           set({
             portfolio: response.data,
-            holdings: response.data.holdings,
+            holdings: toArray(response.data.holdings),
             lastUpdated: new Date().toISOString(),
           });
         }

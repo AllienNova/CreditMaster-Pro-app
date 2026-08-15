@@ -5,6 +5,7 @@
  */
 
 import { create } from "zustand";
+import { toArray } from "./toArray";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { debtApi } from "../services/api";
@@ -85,7 +86,7 @@ export const useDebtStore = create<DebtState>()(
             set({
               overview: {
                 totalDebt: response.data.totalDebt,
-                debts: response.data.debts,
+                debts: toArray(response.data.debts),
                 monthlyPayments: response.data.monthlyPayments,
                 projectedPayoffDate: response.data.projectedPayoffDate,
               },
