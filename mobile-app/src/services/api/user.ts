@@ -100,8 +100,13 @@ export const userProfileApi = {
   /**
    * Delete account
    */
+  // GDPR Art. 17 erasure. The route is POST /api/privacy/delete and it requires
+  // the literal confirmation token: { "confirm": "DELETE" } (privacy/delete/
+  // route.ts:36,66). This sent { confirmation } to /user/delete-account, so it
+  // was a 404 — and had the path been right it would still have been rejected
+  // for the wrong key. A user asking to be forgotten was silently not forgotten.
   deleteAccount: (confirmation: string) =>
-    api.post<{ success: boolean }>("/user/delete-account", { confirmation }),
+    api.post<{ success: boolean }>("/privacy/delete", { confirm: confirmation }),
 
   /**
    * Get onboarding status
@@ -429,19 +434,27 @@ export const subscriptionApi = {
       cancelSubscription: true,
     }),
 
-  /**
-   * Get current subscription
-   */
-  getCurrent: () => api.get<Subscription>("/user/subscription"),
+  // GET /api/payment/billing is the ONE billing read. It returns
+  // { plans, subscription, paymentMethods, invoices } in a single response
+  // (payment/billing/route.ts:11-15), so the four separate paths the client
+  // used — /user/subscription, /subscription/plans, /user/billing/history and
+  // /user/billing/payment-method — were four 404s asking for slices of a
+  // document that is already served whole.
+  getCurrent: async () => {
+    const res = await api.get<{ subscription: Subscription }>("/payment/billing");
+    return { ...res, data: res.data?.subscription };
+  },
 
   /**
    * Get available plans
    */
-  getPlans: () =>
-    api.get<{ plans: SubscriptionPlan[] }>("/subscription/plans", {
+  getPlans: async () => {
+    const res = await api.get<{ plans: SubscriptionPlan[] }>("/payment/billing", {
       enableCache: true,
       cacheTime: 60 * 60 * 1000,
-    }),
+    });
+    return { ...res, data: { plans: res.data?.plans ?? [] } };
+  },
 
   /**
    * Create checkout session
@@ -451,28 +464,23 @@ export const subscriptionApi = {
       priceId,
     }),
 
-  /**
-   * Upgrade subscription
-   */
-  upgrade: (planId: string) =>
-    api.post<{ success: boolean; newPlan: string }>(
-      "/user/subscription/upgrade",
-      { planId },
-    ),
+  // upgrade / cancel / reactivate were exact duplicates of updatePlan and
+  // cancelPlan above, except that those two call the REAL route and these
+  // three called /user/subscription/{upgrade,cancel,reactivate}, none of
+  // which exist. Two implementations of one operation, one working and one
+  // 404ing, is how a feature appears to work in a code review and fails in a
+  // user's hands. They now delegate; there is one implementation.
+  upgrade: (planId: string) => subscriptionApi.updatePlan(planId),
 
   /**
-   * Cancel subscription
+   * Cancel the subscription (access continues to period end).
    */
-  cancel: () =>
-    api.post<{ success: boolean; cancelAt: string }>(
-      "/user/subscription/cancel",
-    ),
+  cancel: () => subscriptionApi.cancelPlan(),
 
   /**
-   * Reactivate subscription
+   * Resume a cancelled subscription by re-selecting a plan.
    */
-  reactivate: () =>
-    api.post<{ success: boolean }>("/user/subscription/reactivate"),
+  reactivate: (planId: string) => subscriptionApi.updatePlan(planId),
 
   /**
    * Get billing history
@@ -486,7 +494,7 @@ export const subscriptionApi = {
         date: string;
         pdfUrl?: string;
       }[];
-    }>("/user/billing/history"),
+    }>("/payment/billing"),
 
   /**
    * Update payment method
@@ -917,27 +925,70 @@ export const settingsApi = {
   /**
    * Get user settings
    */
-  getAll: () =>
-    api.get<{
-      theme: "light" | "dark" | "system";
-      language: string;
-      biometricEnabled: boolean;
-      twoFactorEnabled: boolean;
-      dataSharing: boolean;
-    }>("/user/settings"),
+  // The server stores settings NESTED and snake_case:
+  //   { settings: { notifications, privacy: { share_data, analytics,
+  //     two_factor }, display: { theme, language, timezone } } }
+  // (src/app/api/settings/route.ts:18-32,39). The mobile screens want a flat
+  // camelCase object. Repointing the path alone would have type-checked —
+  // api.get<T> is an unchecked cast — and handed every field back as
+  // undefined, which is worse than the 404 it replaced. Hence a real adapter.
+  //
+  // biometricEnabled is deliberately absent from the round-trip. Biometric
+  // unlock is a property of the DEVICE, not the account (biometricService.ts
+  // keeps it in local storage); syncing it would enable Face ID on a phone
+  // that has never been unlocked with it.
+  getAll: async () => {
+    const res = await api.get<{
+      settings?: {
+        privacy?: { share_data?: boolean; two_factor?: boolean };
+        display?: { theme?: "light" | "dark" | "system"; language?: string };
+      };
+    }>("/settings");
+    const s = res.data?.settings;
+    return {
+      ...res,
+      data: {
+        theme: s?.display?.theme ?? "system",
+        language: s?.display?.language ?? "en",
+        twoFactorEnabled: s?.privacy?.two_factor ?? false,
+        dataSharing: s?.privacy?.share_data ?? false,
+      },
+    };
+  },
 
   /**
    * Update settings
    */
+  // Inverse of the adapter above. The PATCH body is validated by a zod schema
+  // that requires at least one of notifications/privacy/display and rejects
+  // unknown shapes (settings/route.ts:34-48), so the flat object the screens
+  // hold has to be regrouped before it is sent.
   update: (
     settings: Partial<{
       theme: "light" | "dark" | "system";
       language: string;
-      biometricEnabled: boolean;
       twoFactorEnabled: boolean;
       dataSharing: boolean;
     }>,
-  ) => api.patch<{ success: boolean }>("/user/settings", settings),
+  ) => {
+    const display: Record<string, unknown> = {};
+    if (settings.theme !== undefined) display.theme = settings.theme;
+    if (settings.language !== undefined) display.language = settings.language;
+
+    const privacy: Record<string, unknown> = {};
+    if (settings.twoFactorEnabled !== undefined) {
+      privacy.two_factor = settings.twoFactorEnabled;
+    }
+    if (settings.dataSharing !== undefined) {
+      privacy.share_data = settings.dataSharing;
+    }
+
+    const body: Record<string, unknown> = {};
+    if (Object.keys(display).length > 0) body.display = display;
+    if (Object.keys(privacy).length > 0) body.privacy = privacy;
+
+    return api.patch<{ success: boolean }>("/settings", body);
+  },
 
   /**
    * Enable two-factor authentication
@@ -963,8 +1014,13 @@ export const settingsApi = {
   /**
    * Export user data
    */
-  exportData: () =>
-    api.post<{ downloadUrl: string; expiresAt: string }>("/user/data-export"),
+  // GDPR Art. 20 portability. GET /api/privacy/export returns the export
+  // INLINE as { success, data } (privacy/export/route.ts:71) — there is no
+  // download URL and no POST. The old signature promised { downloadUrl,
+  // expiresAt }, which no route has ever produced; it had no callers, so the
+  // shape is corrected here rather than adapted around.
+  exportData: (format: "json" | "csv" | "xml" = "json") =>
+    api.get<Record<string, unknown>>(`/privacy/export?format=${format}`),
 };
 
 export default {

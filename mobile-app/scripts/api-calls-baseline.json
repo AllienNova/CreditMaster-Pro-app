@@ -30,7 +30,6 @@
     "/identity/status",
     "/notifications/push-token",
     "/student-loans/ ",
-    "/subscription/plans",
     "/tax/brackets",
     "/tax/calendar",
     "/tax/calendar/ ",
@@ -55,23 +54,15 @@
     "/tax/tips",
     "/tax/tips/ /dismiss",
     "/trading/paper/positions/close",
-    "/user/billing/history",
     "/user/billing/payment-method",
-    "/user/data-export",
-    "/user/delete-account",
     "/user/onboarding",
     "/user/onboarding/complete",
     "/user/profile",
     "/user/recommendations",
     "/user/recommendations/ /click",
     "/user/recommendations/ /dismiss",
-    "/user/settings",
     "/user/settings/2fa/disable",
     "/user/settings/2fa/enable",
-    "/user/settings/2fa/verify",
-    "/user/subscription",
-    "/user/subscription/cancel",
-    "/user/subscription/reactivate",
-    "/user/subscription/upgrade"
+    "/user/settings/2fa/verify"
   ]
 }
