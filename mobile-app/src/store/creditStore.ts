@@ -16,7 +16,27 @@ import type {
   MonitoringStatus,
 } from "../services/api/types";
 import { pushNotificationService } from "../services/notifications/pushNotificationService";
-import { seedCreditScores, seedScoreHistory, seedCreditFactors, seedMonitoringStatus, seedAlerts } from "../data/dev-seed";
+
+/**
+ * dev-seed is loaded LAZILY, inside the `__DEV__` branch — never as a top-level
+ * import.
+ *
+ * A static import puts the module in the production graph whether or not the
+ * branch runs: Metro does not tree-shake it, so a release bundle carried the
+ * fabricated seed strings ("Your Experian score increased", "Emergency Fund",
+ * a 731 credit score). The `if (__DEV__)` guard stopped it EXECUTING but not
+ * SHIPPING — protection by build-time flag over a payload already on the
+ * device, which is the FND-064 shape.
+ *
+ * `require()` inside the guard is dead code once Metro folds `__DEV__` to
+ * false, so the module leaves the graph entirely. Verified by audit:bundle
+ * against a real `expo export`.
+ */
+function devSeed(): typeof import("../data/dev-seed") {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- deliberate: see above
+  return require("../data/dev-seed");
+}
+
 
 interface CreditState {
   // Credit Scores
@@ -129,9 +149,9 @@ export const useCreditStore = create<CreditState>()(
       fetchScores: async () => {
         set({ isLoadingScores: true, scoreError: null });
         if (__DEV__) {
-          const avgScore = seedCreditScores.length > 0 ? Math.round(seedCreditScores.reduce((sum, s) => sum + s.score, 0) / seedCreditScores.length) : null;
+          const avgScore = devSeed().seedCreditScores.length > 0 ? Math.round(devSeed().seedCreditScores.reduce((sum, s) => sum + s.score, 0) / devSeed().seedCreditScores.length) : null;
           const now = new Date().toISOString();
-          set({ scores: seedCreditScores, currentScore: avgScore, lastScoreUpdate: now, lastScoreFetch: now, isLoadingScores: false });
+          set({ scores: devSeed().seedCreditScores, currentScore: avgScore, lastScoreUpdate: now, lastScoreFetch: now, isLoadingScores: false });
           return;
         }
         try {
@@ -180,7 +200,7 @@ export const useCreditStore = create<CreditState>()(
       fetchScoreHistory: async (months = 6) => {
         set({ isLoadingScores: true });
         if (__DEV__) {
-          set({ scoreHistory: seedScoreHistory, isLoadingScores: false });
+          set({ scoreHistory: devSeed().seedScoreHistory, isLoadingScores: false });
           return;
         }
         try {
@@ -215,7 +235,7 @@ export const useCreditStore = create<CreditState>()(
 
       fetchFactors: async () => {
         if (__DEV__) {
-          set({ factors: seedCreditFactors });
+          set({ factors: devSeed().seedCreditFactors });
           return;
         }
         try {
@@ -277,7 +297,7 @@ export const useCreditStore = create<CreditState>()(
 
       fetchMonitoringStatus: async () => {
         if (__DEV__) {
-          set({ monitoringStatus: seedMonitoringStatus });
+          set({ monitoringStatus: devSeed().seedMonitoringStatus });
           return;
         }
         try {
@@ -295,7 +315,7 @@ export const useCreditStore = create<CreditState>()(
         set({ isLoadingAlerts: true, alertError: null });
         if (__DEV__) {
           const now = new Date().toISOString();
-          set({ alerts: seedAlerts, unreadAlertCount: seedAlerts.filter(a => !a.acknowledged).length, lastAlertFetch: now, isLoadingAlerts: false });
+          set({ alerts: devSeed().seedAlerts, unreadAlertCount: devSeed().seedAlerts.filter(a => !a.acknowledged).length, lastAlertFetch: now, isLoadingAlerts: false });
           return;
         }
         try {

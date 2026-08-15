@@ -6,6 +6,27 @@
 
 import { create } from "zustand";
 import { toArray } from "./toArray";
+
+/**
+ * dev-seed is loaded LAZILY, inside the `__DEV__` branch — never as a top-level
+ * import.
+ *
+ * A static import puts the module in the production graph whether or not the
+ * branch runs: Metro does not tree-shake it, so a release bundle carried the
+ * fabricated seed strings ("Your Experian score increased", "Emergency Fund",
+ * a 731 credit score). The `if (__DEV__)` guard stopped it EXECUTING but not
+ * SHIPPING — protection by build-time flag over a payload already on the
+ * device, which is the FND-064 shape.
+ *
+ * `require()` inside the guard is dead code once Metro folds `__DEV__` to
+ * false, so the module leaves the graph entirely. Verified by audit:bundle
+ * against a real `expo export`.
+ */
+function devSeed(): typeof import("../data/dev-seed") {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- deliberate: see above
+  return require("../data/dev-seed");
+}
+
 import investmentsApi, {
   PortfolioResponse,
   Holding,
@@ -14,7 +35,6 @@ import investmentsApi, {
   PortfolioAnalysisResponse,
   PortfolioHoldingInput,
 } from "../services/api/investments";
-import { seedPortfolio } from "../data/dev-seed";
 
 // ============================================================================
 // TYPES
@@ -108,8 +128,8 @@ export const useInvestmentStore = create<InvestmentState & InvestmentActions>(
     fetchPortfolio: async (period?: string) => {
       if (__DEV__) {
         set({
-          portfolio: seedPortfolio,
-          holdings: seedPortfolio.holdings,
+          portfolio: devSeed().seedPortfolio,
+          holdings: devSeed().seedPortfolio.holdings,
           lastUpdated: new Date().toISOString(),
           isLoading: false,
           error: null,
