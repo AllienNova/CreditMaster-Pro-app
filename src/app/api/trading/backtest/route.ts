@@ -529,8 +529,12 @@ async function fetchMarketData(
     // strategy "backtested" on randomness is the most expensive kind of
     // fabrication in this codebase.
     //
-    // Synthetic data is still available, but only when the caller ASKS for it
-    // (see allowSynthetic), so it can never masquerade as history.
+    // There is NO synthetic fallback and no opt-in flag. This comment
+    // previously pointed at an `allowSynthetic` parameter that was never
+    // built — a promise of a gated escape hatch that did not exist, which is
+    // exactly how a future change talks itself into reinstating the fallback
+    // "behind the existing flag". When market data is unavailable the request
+    // fails; that is the whole design.
     throw new Error(
       `Market data unavailable for backtest: ${
         err instanceof Error ? err.message : String(err)

@@ -534,7 +534,15 @@ class PlaidService {
     });
 
     if (error) {
-      // PlaidService error: Error storing transaction
+      // Must THROW, not swallow. The webhook route returns 500 when
+      // handleEvent throws, and Plaid retries on 500 — that is the entire
+      // durability story for transaction sync. Dropping the error here made
+      // the route answer 200, Plaid marked the event delivered, and the
+      // transactions were permanently lost on any transient DB failure, with
+      // balances and insights silently wrong and nothing logged anywhere.
+      throw new Error(
+        `Failed to store Plaid transaction ${transaction.transactionId}: ${error.message}`,
+      );
     }
   }
 

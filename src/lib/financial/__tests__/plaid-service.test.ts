@@ -1023,6 +1023,36 @@ describe("PlaidService", () => {
       expect(params.end_date).toBeTruthy();
     });
 
+    it("propagates a transaction write failure instead of reporting success", async () => {
+      // Found by an independent second-opinion review. storeTransaction had a
+      // bare `if (error) { /* comment */ }` — the upsert error was dropped, so
+      // syncTransactions resolved normally and the webhook route returned 200.
+      // Plaid treats 200 as delivered and never redelivers, so a transient DB
+      // error meant those transactions were permanently absent: balances, net
+      // worth and spending insights silently wrong, no error anywhere.
+      //
+      // The retry machinery already exists one layer up (the route returns 500
+      // on a throw, which is what makes Plaid retry). The swallow was the only
+      // break in the chain.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
+      const failingWrite = buildChain({
+        data: null,
+        error: { message: "connection reset" },
+      });
+
+      supabaseClient().from.mockImplementation((table: string) => {
+        if (table === "bank_connections") return tokenChain;
+        return failingWrite;
+      });
+
+      mockTransactionsGet.mockResolvedValue(plaidSdkTransactionsResponse);
+
+      await expect(
+        plaidService.syncTransactions("item-abc", "user-123"),
+      ).rejects.toThrow(/connection reset/);
+    });
+
     it("should send date range in params", async () => {
       const tokenChain = buildChain({ data: { id: "conn-xyz" }, error: null });
       mockRpc.mockResolvedValue({ data: "access-token-xyz", error: null });

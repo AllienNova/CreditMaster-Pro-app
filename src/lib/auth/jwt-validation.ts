@@ -97,8 +97,16 @@ export const jwtValidation = {
         };
       }
 
-      // In production, this would verify the JWT token signature
-      // For now, we decode and validate the token structure
+      // verifyToken CRYPTOGRAPHICALLY VERIFIES the signature — HS256 via
+      // jsonwebtoken with pinned algorithms, ES256/RS256 via jose against the
+      // project's remote JWKS. It does not merely decode.
+      //
+      // The comment here used to say the opposite ("for now, we decode and
+      // validate the token structure"), which was left behind when real
+      // verification landed. In the highest-stakes file in the codebase that
+      // is a live hazard: the next engineer reads it, concludes signatures are
+      // unverified, and either re-implements verification or "fixes" the code
+      // to match the comment.
       const user = await this.verifyToken(token);
 
       if (!user) {
