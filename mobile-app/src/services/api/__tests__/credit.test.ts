@@ -40,7 +40,7 @@ describe("Credit Score API", () => {
 
       const result = await creditScoreApi.getScores();
 
-      expect(api.get).toHaveBeenCalledWith("/credit/scores", {
+      expect(api.get).toHaveBeenCalledWith("/credit-monitoring/scores", {
         enableCache: true,
         cacheTime: 300000,
       });
@@ -49,18 +49,34 @@ describe("Credit Score API", () => {
   });
 
   describe("getScoreByBureau", () => {
-    it("should fetch score for specific bureau", async () => {
-      const mockScore = { bureau: "experian", score: 720 };
+    // There is no per-bureau route. The collection endpoint returns every
+    // bureau ("Get current credit scores for all bureaus", scores/route.ts:8)
+    // and the selection happens client-side. The old assertion pinned
+    // /credit/scores/experian, which 404'd for all three bureaus.
+    it("reads the collection and selects the requested bureau", async () => {
+      const experian = { bureau: "experian", score: 720 };
+      const equifax = { bureau: "equifax", score: 705 };
 
       (api.get as jest.Mock).mockResolvedValueOnce({
         success: true,
-        data: mockScore,
+        data: [equifax, experian],
       });
 
       const result = await creditScoreApi.getScoreByBureau("experian");
 
-      expect(api.get).toHaveBeenCalledWith("/credit/scores/experian");
-      expect(result.data).toEqual(mockScore);
+      expect(api.get).toHaveBeenCalledWith("/credit-monitoring/scores");
+      expect(result.data).toEqual(experian);
+    });
+
+    it("returns undefined rather than the wrong bureau when absent", async () => {
+      (api.get as jest.Mock).mockResolvedValueOnce({
+        success: true,
+        data: [{ bureau: "equifax", score: 705 }],
+      });
+
+      const result = await creditScoreApi.getScoreByBureau("experian");
+
+      expect(result.data).toBeUndefined();
     });
   });
 
@@ -75,7 +91,7 @@ describe("Credit Score API", () => {
 
       await creditScoreApi.getHistory(6);
 
-      expect(api.get).toHaveBeenCalledWith("/credit/scores/history?months=6");
+      expect(api.get).toHaveBeenCalledWith("/credit-monitoring/history?months=6");
     });
 
     it("should fetch score history without params", async () => {
@@ -83,7 +99,7 @@ describe("Credit Score API", () => {
 
       await creditScoreApi.getHistory();
 
-      expect(api.get).toHaveBeenCalledWith("/credit/scores/history");
+      expect(api.get).toHaveBeenCalledWith("/credit-monitoring/history");
     });
   });
 
@@ -153,7 +169,7 @@ describe("Credit Monitoring API", () => {
 
       const result = await creditMonitoringApi.getStatus();
 
-      expect(api.get).toHaveBeenCalledWith("/credit/monitoring/status");
+      expect(api.get).toHaveBeenCalledWith("/credit-monitoring");
       expect(result.data).toEqual(mockStatus);
     });
   });
@@ -218,7 +234,7 @@ describe("Credit Report API", () => {
 
       await creditReportApi.getReports();
 
-      expect(api.get).toHaveBeenCalledWith("/credit/reports");
+      expect(api.get).toHaveBeenCalledWith("/credit-bureau/report");
     });
   });
 
@@ -244,7 +260,9 @@ describe("Credit Report API", () => {
 
       await creditReportApi.analyzeReport("report-1");
 
-      expect(api.post).toHaveBeenCalledWith("/credit/reports/report-1/analyze");
+      expect(api.post).toHaveBeenCalledWith("/credit-bureau/analyze", {
+        reportId: "report-1",
+      });
     });
   });
 });

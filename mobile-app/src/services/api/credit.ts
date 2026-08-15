@@ -21,23 +21,34 @@ export const creditScoreApi = {
    * Get all current credit scores from connected bureaus
    */
   getScores: () =>
-    api.get<CreditScore[]>("/credit/scores", {
+    api.get<CreditScore[]>("/credit-monitoring/scores", {
       enableCache: true,
       cacheTime: 5 * 60 * 1000,
     }),
 
   /**
-   * Get credit score from specific bureau
+   * Get credit score from a specific bureau.
+   *
+   * There is no per-bureau route; /credit-monitoring/scores returns every
+   * connected bureau in one response ("Get current credit scores for all
+   * bureaus", scores/route.ts:8). Selecting one is a client concern, so it is
+   * done here rather than by asking the server for a path that has never
+   * existed — the previous `/credit/scores/${bureau}` 404'd for all three.
    */
-  getScoreByBureau: (bureau: "experian" | "equifax" | "transunion") =>
-    api.get<CreditScore>(`/credit/scores/${bureau}`),
+  getScoreByBureau: async (bureau: "experian" | "equifax" | "transunion") => {
+    const res = await api.get<CreditScore[]>("/credit-monitoring/scores");
+    return {
+      ...res,
+      data: res.data?.find((s) => s.bureau === bureau),
+    };
+  },
 
   /**
    * Get credit score history
    */
   getHistory: (months?: number) =>
     api.get<CreditScore[]>(
-      `/credit/scores/history${months ? `?months=${months}` : ""}`,
+      `/credit-monitoring/history${months ? `?months=${months}` : ""}`,
     ),
 
   /**
@@ -79,14 +90,18 @@ export const creditMonitoringApi = {
   /**
    * Get monitoring status and connection info
    */
-  getStatus: () => api.get<MonitoringStatus>("/credit/monitoring/status"),
+  getStatus: () => api.get<MonitoringStatus>("/credit-monitoring"),
 
   /**
    * Enable/disable monitoring for a bureau
    */
   toggleBureauMonitoring: (bureau: string, enabled: boolean) =>
-    api.patch<MonitoringStatus>(`/credit/monitoring/bureaus/${bureau}`, {
-      enabled,
+    // One endpoint governs all three bureau operations:
+    // POST /credit-bureau/connect { bureau, action: "connect" | "disconnect" }
+    // (connect/route.ts:4-5). There are no per-bureau sub-routes.
+    api.post<MonitoringStatus>("/credit-bureau/connect", {
+      bureau,
+      action: enabled ? "connect" : "disconnect",
     }),
 
   /**
@@ -142,7 +157,9 @@ export const creditMonitoringApi = {
     pushNotifications?: boolean;
     threshold?: number;
   }) =>
-    api.patch<MonitoringStatus>("/credit/monitoring/preferences", preferences),
+    // /credit-monitoring/settings exports GET and PUT — there is no PATCH, so a
+    // PATCH here would 405 even once the path was right.
+    api.put<MonitoringStatus>("/credit-monitoring/settings", preferences),
 
   /**
    * Connect to a credit bureau
@@ -151,16 +168,20 @@ export const creditMonitoringApi = {
     bureau: string,
     credentials: { username: string; password: string },
   ) =>
-    api.post<{ success: boolean; message: string }>(
-      `/credit/monitoring/bureaus/${bureau}/connect`,
+    api.post<{ success: boolean; message: string }>("/credit-bureau/connect", {
+      bureau,
+      action: "connect",
       credentials,
-    ),
+    }),
 
   /**
    * Disconnect from a credit bureau
    */
   disconnectBureau: (bureau: string) =>
-    api.delete<{ success: boolean }>(`/credit/monitoring/bureaus/${bureau}`),
+    api.post<{ success: boolean }>("/credit-bureau/connect", {
+      bureau,
+      action: "disconnect",
+    }),
 };
 
 // Credit Report Endpoints
@@ -171,7 +192,7 @@ export const creditReportApi = {
   getReports: () =>
     api.get<{
       reports: { id: string; bureau: string; date: string; status: string }[];
-    }>("/credit/reports"),
+    }>("/credit-bureau/report"),
 
   /**
    * Get single credit report
@@ -262,7 +283,7 @@ export const creditReportApi = {
       disputableItems: any[];
       recommendations: string[];
       riskAreas: string[];
-    }>(`/credit/reports/${reportId}/analyze`),
+    }>("/credit-bureau/analyze", { reportId }),
 };
 
 export default {
