@@ -26,6 +26,16 @@ const FILING_STATUSES = Object.values(FilingStatus) as string[];
 /** Ceiling on a single call's income, so one request cannot ask for nonsense. */
 const MAX_TAXABLE_INCOME = 1_000_000_000;
 
+/**
+ * The tax years this codebase actually holds bracket data for.
+ *
+ * Only 2024 exists (FEDERAL_TAX_BRACKETS_2024 is the sole table). Accepting
+ * `taxYear: 2023`, echoing it back, and silently applying 2024 brackets would
+ * hand someone a confidently wrong number for a prior-year return. Rejecting is
+ * the honest answer until another year is loaded.
+ */
+const SUPPORTED_TAX_YEARS = [2024];
+
 interface BracketRequest {
   taxYear?: number;
   filingStatus?: string;
@@ -92,7 +102,16 @@ export const POST = withAuth(
       );
     }
 
-    const year = typeof taxYear === "number" ? taxYear : new Date().getFullYear();
+    const year = typeof taxYear === "number" ? taxYear : SUPPORTED_TAX_YEARS[0];
+    if (!SUPPORTED_TAX_YEARS.includes(year)) {
+      return NextResponse.json(
+        {
+          error: `No bracket data for tax year ${year}. Supported: ${SUPPORTED_TAX_YEARS.join(", ")}`,
+        },
+        { status: 400 },
+      );
+    }
+
     const calculator = new TaxBracketCalculator(year);
 
     const brackets =

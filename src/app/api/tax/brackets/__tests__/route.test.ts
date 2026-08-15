@@ -160,6 +160,21 @@ describe("POST /api/tax/brackets", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects a tax year it has no bracket data for", async () => {
+    const { POST } = await import("../route");
+    // 2024 is the ONLY year in the codebase. Echoing back taxYear: 2023 while
+    // silently applying 2024 brackets would hand a user a confidently wrong
+    // number for a prior-year return — the exact silent-wrong-answer shape
+    // this route was built to avoid.
+    const res = await POST(
+      post({ taxYear: 2023, filingStatus: "single", taxableIncome: 50000 }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toMatch(/2024/);
+  });
+
   it("echoes the filing status and tax year it actually used", async () => {
     const { POST } = await import("../route");
     const res = await POST(
