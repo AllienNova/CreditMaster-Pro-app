@@ -144,10 +144,10 @@ signed in as a real user, reading each screen back from the accessibility tree.
 
 | | Result |
 |---|---|
-| Mobile routes measured | **223 of 223** static routes |
-| Rendered | **204** |
-| Failed | **19** — 12 crashed to the ErrorBoundary, 7 rendered almost nothing |
-| Fixed and re-verified on device | **12** — 19 failing routes reduced to 7 |
+| Mobile routes measured | **231 of 231** — 223 static + all 8 dynamic, with seeded ids |
+| Rendered | **220 of 223** static, **8 of 8** dynamic |
+| Failed | **3**, all genuine crashes |
+| Fixed and re-verified on device | **17** — 19 failing static routes down to 3, plus `/dispute/[id]` |
 
 Getting there needed a detour: `expo run:ios` misread the simulator as a
 physical device and demanded code signing, and a from-source `xcodebuild` died
@@ -176,6 +176,11 @@ A third cause turned up as the fixes went in: **`Object.entries(undefined)`**
 arrive `null`** (`goal.progress.toFixed`, `riskMetrics.riskScore.toFixed`).
 Same root shape as the others — the type promises something the payload does
 not keep.
+
+The 8 dynamic routes were swept last, with the same seeded records used for
+the web sweep. Seven rendered; `/dispute/[id]` crashed twice, one field apart —
+`dispute.bureau.charAt(0)` then `dispute.status.replace()` — the mobile mirror
+of the web dispute-detail defect. Both now degrade instead of crashing.
 
 Separately, **28 screens can hang on a permanent spinner** — their loaders
 `setLoading(true)`, `await`, then `setLoading(false)` with no `finally`, so a
