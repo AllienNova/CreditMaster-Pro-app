@@ -455,7 +455,12 @@ export default function TemplatesScreen() {
               <View style={styles.whenToUse}>
                 <Text style={styles.whenToUseLabel}>Best for:</Text>
                 <Text style={styles.whenToUseText} numberOfLines={1}>
-                  {template.whenToUse[0]}
+                  {/* `whenToUse` is typed as a required array but a template may
+                      arrive without it, and `undefined[0]` throws "Cannot
+                      convert undefined value to object" — which takes the whole
+                      screen down through the ErrorBoundary. Same per-ITEM array
+                      field as requiredDocuments above. */}
+                  {template.whenToUse?.[0] ?? "any dispute"}
                 </Text>
               </View>
 

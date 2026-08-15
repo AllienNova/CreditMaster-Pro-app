@@ -132,7 +132,7 @@ export default function CreditsScreen() {
             <>
               <Text style={styles.balanceLabel}>Available Credits</Text>
               <Text style={styles.balanceValue}>
-                {balance.balance.toLocaleString()}
+                {(balance.balance ?? 0).toLocaleString()}
               </Text>
 
               <View style={styles.statsRow}>
@@ -151,7 +151,7 @@ export default function CreditsScreen() {
                 <View style={styles.statItem}>
                   <Text style={styles.statLabel}>Remaining</Text>
                   <Text style={styles.statValue}>
-                    {balance.balance.toLocaleString()}
+                    {(balance.balance ?? 0).toLocaleString()}
                   </Text>
                 </View>
               </View>

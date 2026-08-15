@@ -221,11 +221,32 @@ what was working.
 | | Result |
 |---|---|
 | Web | **204 of 204 routes, 0 FAIL**, 9 WARN (unbuilt endpoints) |
-| Mobile static | **223 routes, 220 ok, 3 FAIL** — the same three known crashes, no regression |
+| Mobile static | **223 routes, 0 FAIL** — the last three crashes are fixed |
 | Mobile dynamic | **8 of 8, 0 FAIL** |
 
 Every route touched by the gate work renders: `/rewards` 713 chars,
 `/trading/backtest` 137, `/credit-reports` 461, `/leaderboard` 167.
+
+### The last three mobile crashes — and why they took so long
+
+I had recorded these as needing "a runtime stack that static search cannot
+reach". That was wrong: Expo Go's error screen carries the stack, and the
+accessibility tree exposes it. Reading it gave the exact frame in one step each:
+
+| Route | Frame | Cause |
+|---|---|---|
+| `dispute/templates` | `templates.tsx (458:38)` | `template.whenToUse[0]` — indexing an absent per-item array |
+| `settings/credits` | `creditBalanceStore.ts (172:36)` | `selectIsLow` guarded `balance` then read `balance.usage.total` |
+| `trading/risk` | `risk.tsx (503:70)` | `riskMetrics.grossExposure.toLocaleString()` |
+
+Each then revealed the next one in the same file — four rounds on `trading/risk`
+alone — which is what happens when a screen has many unguarded reads of the same
+object. The durable fixes were the shared ones: hardening `formatPercent` and
+`formatCurrency` to accept a possibly-absent number covers every metric that
+flows through them, including ones added later.
+
+`selectIsLow` is the one worth remembering: a partial guard inside a SELECTOR
+took down the whole screen rather than the single widget that wanted the flag.
 
 **The dev server died twice mid-sweep**, both times alphabetically from a fixed
 point — 113 then 7 "failures" that were nothing of the kind. Metro, an iOS
