@@ -132,7 +132,7 @@ export default function TaxOptimizerScreen() {
   const [showAllTips, setShowAllTips] = useState(false);
   const [displayTips, setDisplayTips] = useState(TAX_TIPS);
 
-  const taxableIncome = analysis?.currentProjection.taxableIncome || 285400;
+  const taxableIncome = analysis?.currentProjection?.taxableIncome || 285400;
 
   useEffect(() => {
     loadData();

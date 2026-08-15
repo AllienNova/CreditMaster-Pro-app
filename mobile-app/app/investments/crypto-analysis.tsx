@@ -177,7 +177,7 @@ export default function CryptoAnalysisScreen() {
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {analysis?.symbol.toUpperCase() || coinId}
+          {analysis?.symbol?.toUpperCase() || coinId}
         </Text>
         <View style={styles.headerActions}>
           <TouchableOpacity

@@ -581,7 +581,7 @@ export default function CreditBuilderLoanScreen() {
               <View style={styles.modalStats}>
                 <View style={styles.modalStatItem}>
                   <Text style={styles.modalStatValue}>
-                    ${selectedLoan?.loanAmount.toLocaleString()}
+                    ${selectedLoan?.loanAmount?.toLocaleString()}
                   </Text>
                   <Text style={styles.modalStatLabel}>Loan Amount</Text>
                 </View>
@@ -636,7 +636,7 @@ export default function CreditBuilderLoanScreen() {
               {/* Requirements */}
               <Text style={styles.modalSectionTitle}>Requirements</Text>
               <View style={styles.requirementsList}>
-                {selectedLoan?.requirements.minCreditScore && (
+                {selectedLoan?.requirements?.minCreditScore && (
                   <View style={styles.requirementRow}>
                     <Ionicons
                       name="checkmark-circle"
@@ -652,19 +652,19 @@ export default function CreditBuilderLoanScreen() {
                 <View style={styles.requirementRow}>
                   <Ionicons
                     name={
-                      selectedLoan?.requirements.employmentRequired
+                      selectedLoan?.requirements?.employmentRequired
                         ? "alert-circle"
                         : "checkmark-circle"
                     }
                     size={18}
                     color={
-                      selectedLoan?.requirements.employmentRequired
+                      selectedLoan?.requirements?.employmentRequired
                         ? "#F59E0B"
                         : "#22C55E"
                     }
                   />
                   <Text style={styles.requirementText}>
-                    {selectedLoan?.requirements.employmentRequired
+                    {selectedLoan?.requirements?.employmentRequired
                       ? "Employment Required"
                       : "No Employment Required"}
                   </Text>
@@ -680,7 +680,7 @@ export default function CreditBuilderLoanScreen() {
               {/* Benefits */}
               <Text style={styles.modalSectionTitle}>Benefits</Text>
               <View style={styles.benefitsList}>
-                {selectedLoan?.benefits.map((benefit, idx) => (
+                {selectedLoan?.benefits?.map((benefit, idx) => (
                   <View key={idx} style={styles.benefitItemModal}>
                     <Ionicons
                       name="checkmark-circle"

@@ -931,7 +931,7 @@ ${template?.requiredDocuments?.map((doc) => `- ${doc}`).join("\n") || "- Support
               Fill in the details for your dispute letter
             </Text>
 
-            {template?.placeholders.map((placeholder) => (
+            {template?.placeholders?.map((placeholder) => (
               <View key={placeholder} style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>
                   {PLACEHOLDER_LABELS[placeholder] ||

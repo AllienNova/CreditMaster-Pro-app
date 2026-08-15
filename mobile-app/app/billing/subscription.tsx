@@ -201,11 +201,11 @@ export default function SubscriptionScreen() {
     );
   }
 
-  const currentPlan = detail?.plans.find((p) => p.isCurrent) ?? null;
+  const currentPlan = detail?.plans?.find((p) => p.isCurrent) ?? null;
   const statusColor = detail
     ? (STATUS_COLORS[detail.status] ?? theme.colors.textSecondary)
     : theme.colors.textSecondary;
-  const hasPlans = (detail?.plans.length ?? 0) > 0;
+  const hasPlans = (detail?.plans?.length ?? 0) > 0;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>

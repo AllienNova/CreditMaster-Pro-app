@@ -376,8 +376,8 @@ export default function RiskScreen() {
 
         {/* Kill Switch */}
         <KillSwitchCard
-          active={riskMetrics?.killSwitch.active || false}
-          reason={riskMetrics?.killSwitch.reason}
+          active={riskMetrics?.killSwitch?.active || false}
+          reason={riskMetrics?.killSwitch?.reason}
           onActivate={handleActivateKillSwitch}
           onDeactivate={deactivateKillSwitch}
         />
