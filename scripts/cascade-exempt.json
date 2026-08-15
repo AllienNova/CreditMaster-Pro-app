@@ -1,0 +1,9 @@
+{
+  "_comment": "Tables holding user_id that delete_user_data_cascade deliberately does NOT delete. Every entry is a decision, visible in review, with the reason attached. audit:cascade fails on any user-scoped table that is neither cascaded nor listed here. NOT a place to silence an inconvenient failure — a table lands here only when retaining it is a defensible obligation, and all three below are PENDING OWNER/LEGAL SIGN-OFF (see docs/specs/gap-analysis.md G-034).",
+
+  "payments": "Financial transaction record. Retention is the standard GDPR Art. 17(3)(b) case — a legal obligation (tax, anti-fraud, chargeback windows) overrides erasure. NEEDS SIGN-OFF, and the better long-term answer is to ANONYMISE on erasure (null the user_id, keep the amounts) so the ledger survives without the person attached. Erasing the link is not the same as erasing the row, and only the link is personal data.",
+
+  "subscription_invoices": "Same as payments: an invoice is an accounting record with a statutory retention period. NEEDS SIGN-OFF; anonymise-on-erasure is the preferred fix rather than a permanent exemption.",
+
+  "affiliate_conversions": "Commission attribution backing money already paid to a third party. Deleting it would corrupt settled affiliate accounting. NEEDS SIGN-OFF; anonymise-on-erasure applies here too — the payout record must survive, the identity behind it need not."
+}

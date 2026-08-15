@@ -36,7 +36,9 @@
     "test:money": "jest --testPathPatterns='\\.money\\.test\\.'",
     "audit:money": "node scripts/audit-money.mjs",
     "audit:mocks": "node scripts/audit-mocks.mjs",
-    "test:no-mock-fallback": "jest --testPathPatterns='\\.no-mock-fallback\\.test\\.'"
+    "test:no-mock-fallback": "jest --testPathPatterns='\\.no-mock-fallback\\.test\\.'",
+    "test:compliance": "jest --testPathPatterns='\\.compliance\\.test\\.'",
+    "audit:cascade": "node scripts/audit-cascade.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
