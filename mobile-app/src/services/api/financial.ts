@@ -685,7 +685,13 @@ export const bankAccountApi = {
     publicToken: string,
     metadata?: Record<string, unknown>,
   ) =>
-    api.post<PlaidExchangeResult>("/financial/plaid/exchange", {
+    // The route is /financial/plaid/exchange-token (src/app/api/financial/plaid/
+    // exchange-token/route.ts:14 reads `publicToken` from the body). This asked
+    // for /exchange, which does not exist — so every bank link made through
+    // this helper 404'd at the final step, after the user had already completed
+    // the Plaid flow and handed over their credentials. PlaidHostedLink.tsx
+    // calls the correct path; only this one drifted.
+    api.post<PlaidExchangeResult>("/financial/plaid/exchange-token", {
       publicToken,
       metadata,
     }),
