@@ -28,6 +28,37 @@ interface AuthState {
 
 export type { AuthState };
 
+/**
+ * Report a failed `profiles` read instead of swallowing it.
+ *
+ * VERIFIED BROKEN ON DEVICE (2026-08-16, iOS simulator against a local stack):
+ * every one of these reads returns
+ *
+ *   {"code":"42501","message":"permission denied for table profiles",
+ *    "hint":"GRANT SELECT ON public.profiles TO authenticated;"}
+ *
+ * because the project deliberately grants the `authenticated` role nothing on
+ * public.profiles — server routes reach it with the service role behind
+ * withAuth. The mobile client queries the table directly in five places
+ * (initialize, login, register's insert, updateProfile, completeOnboarding),
+ * so ALL of them fail, and onboarding state can be neither read nor recorded.
+ *
+ * A user whose row said onboarding_completed = false was sent straight to the
+ * tabs, because the error branch below assumes completion. That assumption is
+ * right for a transient failure and wrong for this one, which is permanent —
+ * it is left in place only because the alternative sends every user into a
+ * wizard that cannot save. The real fix is to stop reading the table from the
+ * client; tracked separately.
+ */
+function reportProfileReadFailure(where: string, error: unknown): void {
+  if (!__DEV__) return;
+  const code = (error as { code?: string } | null)?.code;
+  console.warn(
+    `[authStore] ${where}: profiles read failed (${code ?? "unknown"}). ` +
+      "Onboarding state is unknown and is being assumed complete.",
+  );
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoading: true,
@@ -75,10 +106,18 @@ export const useAuthStore = create<AuthState>((set) => ({
           // wrong answer. A missing ROW (no error, no data) is different and
           // does mean unfinished — register() inserts the row, so its absence
           // is a genuinely unconfigured account.
+          //
+          // ON MOBILE THIS ERROR BRANCH IS CURRENTLY ALWAYS TAKEN. See
+          // reportProfileReadFailure above: `authenticated` has no SELECT on
+          // public.profiles, so this query returns 42501 for every user and
+          // the flag is never really read. Verified on a simulator against a
+          // local stack — a user whose row says onboarding_completed = false
+          // was sent straight to the tabs.
           onboardingCompleted: profileError
             ? true
             : Boolean((profile as User | null)?.onboarding_completed),
         });
+        if (profileError) reportProfileReadFailure("initialize", profileError);
       } else {
         set({ user: null, isAuthenticated: false, isLoading: false });
       }
@@ -133,6 +172,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             ? true
             : Boolean((profile as User | null)?.onboarding_completed),
         });
+        if (profileError) reportProfileReadFailure("login", profileError);
         return true;
       }
       return false;
