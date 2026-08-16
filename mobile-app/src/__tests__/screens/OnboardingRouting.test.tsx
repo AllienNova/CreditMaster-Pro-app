@@ -28,6 +28,15 @@ import Index from "../../../app/index";
 import type { User } from "../../types";
 import { isPublicRoute } from "../../navigation/route-access";
 
+jest.mock("../../services/api/user", () => ({
+  userProfileApi: {
+    getProfile: jest.fn(),
+    updateProfile: jest.fn(),
+    completeOnboarding: jest.fn(),
+    deleteAccount: jest.fn(),
+  },
+}));
+
 jest.mock("../../services/supabase", () => ({
   supabase: { from: jest.fn() },
   signIn: jest.fn(),
@@ -42,6 +51,7 @@ const {
   getCurrentUser,
   supabase,
 } = require("../../services/supabase");
+const { userProfileApi } = require("../../services/api/user");
 
 /** A profiles row as `select("*").single()` returns it. */
 function profileRow(over: Partial<User> = {}) {
@@ -58,14 +68,38 @@ function profileRow(over: Partial<User> = {}) {
   };
 }
 
-/** Arm the chained supabase builder that authStore drives. */
+/**
+ * Arm GET /api/profile.
+ *
+ * The store used to query public.profiles directly; it cannot, because the
+ * `authenticated` role has no grant on that table (42501, verified on a
+ * simulator). It now reads through the server, so this mocks the API.
+ */
 function armProfileFetch(result: { data: unknown }) {
-  supabase.from.mockReturnValue({
-    select: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockResolvedValue({ error: null }),
-    update: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    single: jest.fn().mockResolvedValue(result),
+  const row = result.data as Record<string, unknown> | null;
+  userProfileApi.getProfile.mockResolvedValue({
+    success: true,
+    data: row
+      ? {
+          id: row.id ?? "user-1",
+          email: row.email ?? "a@b.com",
+          firstName: "A",
+          lastName: "",
+          createdAt: row.created_at ?? "2026-01-01",
+          role: row.role ?? "user",
+          onboardingCompleted: Boolean(row.onboarding_completed),
+          subscriptionTier: "free",
+          subscriptionStatus: "active",
+        }
+      : undefined,
+  });
+}
+
+/** Arm a FAILED profile read — the shape ApiResponse uses for an error. */
+function armProfileFetchFailure(code = "42501") {
+  userProfileApi.getProfile.mockResolvedValue({
+    success: false,
+    error: { code, message: "permission denied for table profiles" },
   });
 }
 
@@ -192,9 +226,9 @@ describe("completeOnboarding", () => {
   });
 
   it("sets the flag once the write succeeds", async () => {
-    supabase.from.mockReturnValue({
-      update: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockResolvedValue({ error: null }),
+    userProfileApi.completeOnboarding.mockResolvedValue({
+      success: true,
+      data: { success: true, onboarding_completed: true },
     });
 
     await act(async () => {
@@ -208,9 +242,9 @@ describe("completeOnboarding", () => {
     // Setting it optimistically would strand the user: the app would believe
     // onboarding is done while the column says otherwise, and the wizard is the
     // only thing that ever writes that column.
-    supabase.from.mockReturnValue({
-      update: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockResolvedValue({ error: new Error("offline") }),
+    userProfileApi.completeOnboarding.mockResolvedValue({
+      success: false,
+      error: { code: "500", message: "offline" },
     });
 
     await act(async () => {
@@ -342,13 +376,7 @@ describe("a failed profile READ must not replay the wizard", () => {
       user: { id: "user-1", email: "a@b.com", created_at: "2026-01-01" },
       error: null,
     });
-    supabase.from.mockReturnValue({
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      single: jest
-        .fn()
-        .mockResolvedValue({ data: null, error: { message: "network" } }),
-    });
+    armProfileFetchFailure("network");
 
     await act(async () => {
       await useAuthStore.getState().initialize();
@@ -358,18 +386,15 @@ describe("a failed profile READ must not replay the wizard", () => {
     expect(useAuthStore.getState().isAuthenticated).toBe(true);
   });
 
-  it("a MISSING row still means unfinished", async () => {
-    // No error and no data is a genuinely unconfigured account: register()
-    // inserts the row, so its absence is not a transport problem.
+  it("a successful read saying false still means unfinished", async () => {
+    // The counterpart to the case above: when the server ANSWERS, its answer
+    // is authoritative and a false must not be rounded up to true.
     getCurrentUser.mockResolvedValue({
       user: { id: "user-1", email: "a@b.com", created_at: "2026-01-01" },
       error: null,
     });
-    supabase.from.mockReturnValue({
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      single: jest.fn().mockResolvedValue({ data: null, error: null }),
-    });
+    // Read SUCCEEDED and the server says not onboarded.
+    armProfileFetch(profileRow({ onboarding_completed: false }));
 
     await act(async () => {
       await useAuthStore.getState().initialize();

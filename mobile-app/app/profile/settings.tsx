@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/hooks/useTheme";
 import { withOpacity } from "../../src/constants/theme";
 import { useAuthStore } from "../../src/store/authStore";
-import { supabase } from "../../src/services/supabase";
+import { userProfileApi } from "../../src/services/api/user";
 
 interface SettingItem {
   id: string;
@@ -178,13 +178,15 @@ export default function SettingsScreen() {
 
     setIsDeleting(true);
     try {
-      // Delete user profile from database
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", user.id);
-
-      if (profileError) throw profileError;
+      // GDPR Art. 17 erasure, server-side. Deleting the row from here
+      // returned 42501 — the `authenticated` role has no grant on
+      // public.profiles — so a user asking to be forgotten got an error and
+      // nothing else. POST /api/privacy/delete runs the real cascade and
+      // requires the literal { confirm: "DELETE" } token.
+      const res = await userProfileApi.deleteAccount("DELETE");
+      if (!res.success) {
+        throw new Error(res.error?.message ?? "Failed to delete account");
+      }
 
       // Sign out the user (the auth deletion should be handled by Supabase edge function or admin)
       await logout();

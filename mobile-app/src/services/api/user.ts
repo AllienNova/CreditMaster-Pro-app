@@ -44,6 +44,7 @@ export const userProfileApi = {
         phone?: string;
         address?: UserProfile["address"];
         created_at?: string;
+        onboarding_completed?: boolean;
         subscription?: { tier?: string; status?: string } | null;
       };
     }>("/profile");
@@ -64,6 +65,11 @@ export const userProfileApi = {
             address: p.address,
             createdAt: p.created_at ?? "",
             role: (p.role ?? "user") as UserProfile["role"],
+            // Server-authoritative. UserProfile has declared this field all
+            // along and the adapter never filled it, so the app fell back to
+            // reading profiles.onboarding_completed straight from the table —
+            // which the `authenticated` role has no grant on (task #65).
+            onboardingCompleted: Boolean(p.onboarding_completed),
             subscriptionTier: (p.subscription?.tier ??
               "free") as UserProfile["subscriptionTier"],
             subscriptionStatus: (p.subscription?.status ??
@@ -194,8 +200,17 @@ export const userProfileApi = {
   /**
    * Complete onboarding
    */
+  /**
+   * Mark onboarding finished. POSTs /api/onboarding/complete (withAuth), which
+   * calls the complete_onboarding() SECURITY DEFINER function so
+   * onboarding_progress and profiles.onboarding_completed move together.
+   *
+   * The old path, /user/onboarding/complete, is not a route this app serves.
+   */
   completeOnboarding: () =>
-    api.post<{ success: boolean }>("/user/onboarding/complete"),
+    api.post<{ success: boolean; onboarding_completed?: boolean }>(
+      "/onboarding/complete",
+    ),
 };
 
 // ── Billing overview (real source: GET /api/payment/billing) ──────────────────

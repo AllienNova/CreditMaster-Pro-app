@@ -207,6 +207,14 @@ jobs:
         working-directory: mobile-app
         run: npm run audit:reachability
 
+      # BLOCKING: the mobile suite mocks the Supabase client, so a query the
+      # database refuses at runtime passes all 1,200 tests. Six such call sites
+      # were live - onboarding could not be read or recorded, profile edits were
+      # discarded, account deletion errored - and nothing in CI saw it.
+      - name: audit:client-tables (mobile) - no client query on a privileged table
+        working-directory: mobile-app
+        run: npm run audit:client-tables
+
   # audit:cascade is NOT wired here yet, deliberately and visibly. It needs a
   # live Postgres to read the erasure function body, and it currently calls
   # process.exit(0) when the database is unreachable - so adding it as-is would

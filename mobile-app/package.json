@@ -27,7 +27,8 @@
     "audit:bundle": "node scripts/audit-bundle.mjs",
     "audit:links": "node scripts/audit-dead-links.mjs --self-test && node scripts/audit-dead-links.mjs",
     "audit:api": "node scripts/audit-api-calls.mjs --self-test && node scripts/audit-api-calls.mjs",
-    "audit:reachability": "node scripts/audit-reachability.mjs"
+    "audit:reachability": "node scripts/audit-reachability.mjs",
+    "audit:client-tables": "node scripts/audit-client-tables.mjs --self-test && node scripts/audit-client-tables.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "~14.0.4",
