@@ -1,0 +1,35 @@
+{
+  "frozen": "2026-08-16",
+  "unreachable": [
+    "/about",
+    "/admin/analytics",
+    "/admin/settings",
+    "/admin/users/[id]",
+    "/auth/callback",
+    "/auth/reset-password",
+    "/disputes/[id]",
+    "/documents/[id]",
+    "/features",
+    "/financial/coach/goal-detail/[id]",
+    "/investments/analyze/[symbol]",
+    "/investments/crypto/[coinId]",
+    "/onboarding",
+    "/onboarding/complete",
+    "/onboarding/connect",
+    "/onboarding/goals",
+    "/onboarding/profile",
+    "/payment/cancel",
+    "/payment/success",
+    "/privacy-policy",
+    "/terms",
+    "/trading/strategies/[id]"
+  ],
+  "why": {
+    "detail-routes": "[id]/[symbol]/[coinId] pages are reached from their list, which builds the href by interpolation. A nav entry cannot supply an id.",
+    "auth-flow": "/auth/callback and /auth/reset-password are arrived at from an email link, never a click inside the app.",
+    "payment-returns": "/payment/success and /payment/cancel are Stripe redirect targets.",
+    "onboarding": "The post-signup flow. Entered by redirect after registration; deliberately chrome-free.",
+    "marketing": "/about, /features, /privacy-policy and /terms belong to the Footer on the marketing site, not the app sidebar.",
+    "admin": "Admin-only pages are deliberately absent from the user navigation."
+  }
+}

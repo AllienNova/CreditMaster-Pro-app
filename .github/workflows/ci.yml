@@ -182,6 +182,12 @@ jobs:
       - name: audit:links (web) - every internal link resolves
         run: npm run audit:links
 
+      # BLOCKING: the inverse of audit:links. A page with no link pointing AT
+      # it is invisible to a user no matter how well it renders - 165 of 204
+      # pages were in that state because no navigation was mounted at all.
+      - name: audit:reachability - every page is reachable by clicking
+        run: npm run audit:reachability
+
       - name: audit:links (mobile) - every internal link resolves
         working-directory: mobile-app
         run: npm run audit:links

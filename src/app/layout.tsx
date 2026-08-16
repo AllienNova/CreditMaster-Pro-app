@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Providers } from "./providers";
+import { AppShell } from "@/components/navigation/AppShell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -79,7 +80,16 @@ export default function RootLayout({
         className="min-h-screen bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 antialiased transition-colors duration-200"
         suppressHydrationWarning
       >
-        <Providers>{children}</Providers>
+        {/*
+          AppShell mounts the primary navigation. Before it, this layout
+          rendered only <Providers> — no nav chrome anywhere in the
+          authenticated app — so 165 of 204 built pages could only be reached
+          by typing a URL. It hides itself on marketing, auth and onboarding
+          routes; see isChromelessRoute.
+        */}
+        <Providers>
+          <AppShell>{children}</AppShell>
+        </Providers>
       </body>
     </html>
   );
