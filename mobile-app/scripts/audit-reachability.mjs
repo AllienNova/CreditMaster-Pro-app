@@ -64,16 +64,6 @@ const KNOWN_COLLISIONS = new Map([
     // router, signed in lands on the dashboard.
     "app/index.tsx is the entry router; (tabs)/index.tsx is reached as /(tabs)",
   ],
-  [
-    "/investments",
-    // A REAL dual implementation: (tabs)/investments.tsx at 622 lines and
-    // investments/index.tsx at 625. One of them never renders. Which is
-    // canonical needs an owner's call, and merging two 600-line screens on a
-    // guess is how the losing one's features get quietly dropped. Tracked in
-    // task #66; this entry may only be removed by resolving it, never by
-    // widening the list.
-    "two full implementations, ~620 lines each — needs an owner decision (task #66)",
-  ],
 ]);
 
 /**
