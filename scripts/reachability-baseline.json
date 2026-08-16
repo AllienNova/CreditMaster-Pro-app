@@ -1,35 +1,20 @@
 {
   "frozen": "2026-08-16",
   "unreachable": [
-    "/about",
-    "/admin/analytics",
-    "/admin/settings",
-    "/admin/users/[id]",
     "/auth/callback",
-    "/auth/reset-password",
-    "/disputes/[id]",
     "/documents/[id]",
-    "/features",
     "/financial/coach/goal-detail/[id]",
-    "/investments/analyze/[symbol]",
     "/investments/crypto/[coinId]",
-    "/onboarding",
-    "/onboarding/complete",
-    "/onboarding/connect",
-    "/onboarding/goals",
-    "/onboarding/profile",
     "/payment/cancel",
-    "/payment/success",
-    "/privacy-policy",
-    "/terms",
-    "/trading/strategies/[id]"
+    "/payment/success"
   ],
   "why": {
-    "detail-routes": "[id]/[symbol]/[coinId] pages are reached from their list, which builds the href by interpolation. A nav entry cannot supply an id.",
-    "auth-flow": "/auth/callback and /auth/reset-password are arrived at from an email link, never a click inside the app.",
-    "payment-returns": "/payment/success and /payment/cancel are Stripe redirect targets.",
-    "onboarding": "The post-signup flow. Entered by redirect after registration; deliberately chrome-free.",
-    "marketing": "/about, /features, /privacy-policy and /terms belong to the Footer on the marketing site, not the app sidebar.",
-    "admin": "Admin-only pages are deliberately absent from the user navigation."
-  }
+    "/auth/callback": "OAuth redirect target. The provider navigates here; there is no click path and there should not be one.",
+    "/payment/success": "Stripe return URL. Reached by redirect after checkout.",
+    "/payment/cancel": "Stripe return URL. Reached by redirect after an abandoned checkout.",
+    "/documents/[id]": "Detail route behind a PLACEHOLDER list: src/app/documents/page.tsx renders [1,2,3,4].map(...) rather than real documents, so it has no ids to link. Linking it from a placeholder would fabricate navigation to records that do not exist. Unblocked by wiring the list to real data, not by adding a nav entry.",
+    "/financial/coach/goal-detail/[id]": "Same shape: src/app/financial/coach/goals/page.tsx renders a placeholder array and links only back to /financial/coach.",
+    "/investments/crypto/[coinId]": "There is no /investments/crypto list page at all \u2014 the directory contains only [coinId]. Needs a list before a detail can be reached."
+  },
+  "note": "6 of 204. Three are redirect targets that are correctly unclickable; three are detail routes whose list pages are placeholders. None is a navigation gap \u2014 every real feature area is now in the sidebar."
 }

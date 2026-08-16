@@ -50,7 +50,7 @@ function activeGroupLabel(pathname: string): string | null {
   return best?.label ?? null;
 }
 
-export function AppSidebar() {
+export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const pathname = usePathname() ?? "";
   const active = activeGroupLabel(pathname);
   // Only the active group starts open — eight expanded groups is 65 links at
@@ -68,11 +68,12 @@ export function AppSidebar() {
   return (
     <nav
       aria-label="Primary"
-      className="w-64 shrink-0 border-r border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800/60"
+      className="h-full w-64 shrink-0 overflow-y-auto border-r border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800/60"
     >
       <div className="sticky top-0 max-h-screen overflow-y-auto py-4">
         <Link
           href="/dashboard"
+          onClick={onNavigate}
           className="mb-4 flex items-center gap-2 px-4 text-lg font-bold"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-600 to-blue-700 font-bold text-white">
@@ -114,6 +115,7 @@ export function AppSidebar() {
                         <li key={item.href}>
                           <Link
                             href={item.href}
+                            onClick={onNavigate}
                             aria-current={current ? "page" : undefined}
                             className={`block rounded-md px-3 py-1.5 text-sm ${
                               current

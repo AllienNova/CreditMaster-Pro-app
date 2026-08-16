@@ -14,7 +14,7 @@
  * and offers links that bounce them back to login.
  */
 
-import { readdirSync, statSync } from "fs";
+import { readdirSync, statSync, readFileSync } from "fs";
 import { join } from "path";
 import { PRIMARY_NAV, NAV_HREFS } from "@/lib/navigation/primary-nav";
 import { isChromelessRoute } from "../AppShell";
@@ -129,5 +129,39 @@ describe("isChromelessRoute", () => {
     // default. An allowlist would reproduce the exact bug this fixes — a page
     // invisible because nobody remembered to register it.
     expect(isChromelessRoute("/some-feature-shipped-tomorrow")).toBe(false);
+  });
+});
+
+describe("responsive shell", () => {
+  const shell = readFileSync(
+    join(process.cwd(), "src", "components", "navigation", "AppShell.tsx"),
+    "utf8",
+  );
+
+  it("hides the desktop sidebar below the lg breakpoint", () => {
+    // Without this the 256px sidebar eats most of a phone screen and the
+    // content it is meant to navigate to is squeezed out of view.
+    expect(shell).toMatch(/hidden lg:block/);
+  });
+
+  it("shows the drawer trigger ONLY below lg", () => {
+    // A burger button on desktop, where the sidebar is already visible, opens
+    // a second copy of the same navigation.
+    expect(shell).toMatch(/lg:hidden/);
+    expect(shell).toMatch(/aria-label=\{drawerOpen \? "Close navigation"/);
+  });
+
+  it("closes the drawer when the route changes", () => {
+    // Otherwise tapping a link navigates BEHIND a drawer that stays open over
+    // the page the user just asked for.
+    expect(shell).toMatch(/useEffect\(\(\) => \{\s*setDrawerOpen\(false\);\s*\}, \[pathname\]\)/);
+  });
+
+  it("closes the drawer on Escape", () => {
+    expect(shell).toMatch(/e\.key === "Escape"/);
+  });
+
+  it("dims and closes on backdrop click", () => {
+    expect(shell).toMatch(/onClick=\{\(\) => setDrawerOpen\(false\)\}/);
   });
 });
