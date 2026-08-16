@@ -48,12 +48,77 @@ function routeOf(file) {
   return "/" + parts.join("/");
 }
 
+/**
+ * Collisions that are known and deliberately not failing the build.
+ *
+ * Each needs a reason, and the reason has to be one that survives being read
+ * back later — this list is the difference between tracked debt and an alibi.
+ */
+const KNOWN_COLLISIONS = new Map([
+  [
+    "/",
+    // Not a real collision, an artefact of flattening groups. app/index.tsx IS
+    // the entry router; (tabs)/index.tsx is the tab navigator's initial screen
+    // and is reached as /(tabs), which is how app/index.tsx redirects to it.
+    // Confirmed on a simulator: signed out lands on the carousel via the
+    // router, signed in lands on the dashboard.
+    "app/index.tsx is the entry router; (tabs)/index.tsx is reached as /(tabs)",
+  ],
+  [
+    "/investments",
+    // A REAL dual implementation: (tabs)/investments.tsx at 622 lines and
+    // investments/index.tsx at 625. One of them never renders. Which is
+    // canonical needs an owner's call, and merging two 600-line screens on a
+    // guess is how the losing one's features get quietly dropped. Tracked in
+    // task #66; this entry may only be removed by resolving it, never by
+    // widening the list.
+    "two full implementations, ~620 lines each — needs an owner decision (task #66)",
+  ],
+]);
+
+/**
+ * A file that renders somebody else's screen rather than defining one.
+ *
+ * Two shapes are already used deliberately in this app and are NOT collisions:
+ * a `<Redirect>` into a different navigator — (tabs)/student-loans.tsx sends
+ * /student-loans to the stack — and a re-export, which is how
+ * (tabs)/reports.tsx now points at the real 874-line screen.
+ *
+ * Matched on content, not on line count: a 300-line screen that happens to be
+ * short is still a second implementation, and a shim is still a shim however
+ * long its explanatory comment.
+ */
+function isShim(file) {
+  const body = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  if (/export\s*\{\s*default\s*\}\s*from/.test(body)) return true;
+  // A default export whose entire return is a <Redirect .../>.
+  return /export\s+default\s+function[^{]*\{\s*return\s*<Redirect[^>]*\/>;?\s*\}/.test(body);
+}
+
 const screens = new Map();
+/**
+ * Two files resolving to ONE url.
+ *
+ * A route group "(x)" is not part of the path, so app/(tabs)/reports.tsx and
+ * app/reports/index.tsx are both `/reports`. expo-router serves one; the other
+ * is dead code, and an edit to it is invisible. That is not hypothetical — the
+ * "Your Credit Reports" list, the only entry point to /reports/[id], sat in the
+ * losing file for a whole commit while this gate reported the route reachable.
+ *
+ * This map deduped by key and so counted the pair once, which kept the screen
+ * total honest and the collision silent. Now it is collected and reported.
+ */
+const collisions = new Map();
 for (const f of walk(APP)) {
   const base = f.split(/[\\/]/).pop();
   if (base.startsWith("_")) continue;
   const r = routeOf(f);
-  if (r) screens.set(r, f);
+  if (!r) continue;
+  if (screens.has(r) && !isShim(f) && !isShim(screens.get(r)) && !KNOWN_COLLISIONS.has(r)) {
+    const prior = screens.get(r);
+    collisions.set(r, [...(collisions.get(r) ?? [prior]), f]);
+  }
+  screens.set(r, f);
 }
 
 const WILDCARD = " ";
@@ -153,6 +218,26 @@ while (queue.length > 0) {
       queue.push(r);
     }
   }
+}
+
+if (KNOWN_COLLISIONS.size > 0) {
+  console.log(`\naudit:reachability — ${KNOWN_COLLISIONS.size} known route collision(s), not failing:`);
+  for (const [route, why] of KNOWN_COLLISIONS) console.log(`  ${route}  — ${why}`);
+}
+
+if (collisions.size > 0) {
+  console.log(`\naudit:reachability — ${collisions.size} route(s) served by more than one file:\n`);
+  for (const [route, files] of collisions) {
+    console.log(`  ${route}`);
+    for (const f of files) console.log(`      ${relative(APP, f)}`);
+  }
+  console.log(
+    "\nOnly one of each pair renders. Either make the losing file re-export the" +
+      "\nwinner — `export { default } from \"../x/index\"` — or remove it. A" +
+      "\n<Redirect> to the shared url LOOPS: expo-router resolves it back to the" +
+      "\nsame file and the screen dies with \"Maximum update depth exceeded\".",
+  );
+  process.exitCode = 1;
 }
 
 const unreachable = [...screens.keys()].filter((r) => !seen.has(r)).sort();
