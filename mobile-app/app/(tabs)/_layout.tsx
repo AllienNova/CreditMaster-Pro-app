@@ -78,6 +78,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: "More",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="grid" size={size} color={color} />
+          ),
+        }}
+      />
       {/* Hidden tabs - accessible via navigation but not shown in tab bar */}
       <Tabs.Screen
         name="reports"
