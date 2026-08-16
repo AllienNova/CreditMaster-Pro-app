@@ -40,6 +40,7 @@ export const userProfileApi = {
         email?: string;
         full_name?: string;
         avatar_url?: string;
+        role?: string;
         phone?: string;
         address?: UserProfile["address"];
         created_at?: string;
@@ -62,6 +63,7 @@ export const userProfileApi = {
             phone: p.phone,
             address: p.address,
             createdAt: p.created_at ?? "",
+            role: (p.role ?? "user") as UserProfile["role"],
             subscriptionTier: (p.subscription?.tier ??
               "free") as UserProfile["subscriptionTier"],
             subscriptionStatus: (p.subscription?.status ??

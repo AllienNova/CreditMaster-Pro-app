@@ -199,6 +199,14 @@ jobs:
         working-directory: mobile-app
         run: npm run audit:api
 
+      # BLOCKING: the mobile inverse of audit:links. The tab bar holds nine
+      # destinations against 232 screens, so 131 of them - the whole of trading,
+      # tax, the marketplace and rewards - could only be opened by typing a deep
+      # link. Two remain baselined with written reasons; the list may only shrink.
+      - name: audit:reachability (mobile) - every screen is reachable by tapping
+        working-directory: mobile-app
+        run: npm run audit:reachability
+
   # audit:cascade is NOT wired here yet, deliberately and visibly. It needs a
   # live Postgres to read the erasure function body, and it currently calls
   # process.exit(0) when the database is unreachable - so adding it as-is would

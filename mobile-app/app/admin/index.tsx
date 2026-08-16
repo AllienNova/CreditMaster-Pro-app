@@ -85,15 +85,31 @@ const METRICS: MetricCard[] = [
   },
 ];
 
+/**
+ * Every admin screen, reachable from this dashboard.
+ *
+ * The list held three entries against twelve screens in app/admin/, so
+ * analytics, audit, config, disputes, features, health, logs, subscriptions
+ * and admin settings had no link anywhere in the app — built, registered in
+ * the Stack, and openable only by typing the path.
+ *
+ * These are deliberately NOT in the More directory: the app has no client-side
+ * role, so listing them there would show an Admin section to every user. They
+ * belong behind this dashboard, which an admin reaches directly.
+ */
 const QUICK_ACTIONS: QuickAction[] = [
-  { id: "1", title: "View Users", icon: "people", route: "/admin/users" },
-  {
-    id: "2",
-    title: "View Metrics",
-    icon: "stats-chart",
-    route: "/admin/metrics",
-  },
-  { id: "3", title: "Settings", icon: "settings", route: "/settings" },
+  { id: "1", title: "Users", icon: "people", route: "/admin/users" },
+  { id: "2", title: "Metrics", icon: "stats-chart", route: "/admin/metrics" },
+  { id: "3", title: "Analytics", icon: "bar-chart", route: "/admin/analytics" },
+  { id: "4", title: "Disputes", icon: "document-text", route: "/admin/disputes" },
+  { id: "5", title: "Subscriptions", icon: "card", route: "/admin/subscriptions" },
+  { id: "6", title: "System health", icon: "pulse", route: "/admin/health" },
+  { id: "7", title: "Logs", icon: "list", route: "/admin/logs" },
+  { id: "8", title: "Audit trail", icon: "shield-checkmark", route: "/admin/audit" },
+  { id: "9", title: "Feature flags", icon: "flag", route: "/admin/features" },
+  { id: "10", title: "System config", icon: "construct", route: "/admin/config" },
+  { id: "11", title: "Admin settings", icon: "settings", route: "/admin/settings" },
+  { id: "12", title: "App settings", icon: "options", route: "/settings" },
 ];
 
 export default function AdminDashboardScreen() {

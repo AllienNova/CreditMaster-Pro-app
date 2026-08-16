@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (user) {
         // Fetch user profile from database
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", user.id)
@@ -63,6 +63,21 @@ export const useAuthStore = create<AuthState>((set) => ({
           },
           isAuthenticated: true,
           isLoading: false,
+          // The profile row was already fetched with select("*"), so this
+          // column was in hand and simply dropped. Without it the flag reset
+          // to false on every cold start, and app/index.tsx sent a signed-in
+          // user to the onboarding carousel — whose button goes to LOGIN.
+          //
+          // A FAILED read is not the same as "has not onboarded". Treating a
+          // transport error as false marches an established user back through
+          // the four-screen wizard on every network blip; the read is retried
+          // on the next launch, so assuming completion is the recoverable
+          // wrong answer. A missing ROW (no error, no data) is different and
+          // does mean unfinished — register() inserts the row, so its absence
+          // is a genuinely unconfigured account.
+          onboardingCompleted: profileError
+            ? true
+            : Boolean((profile as User | null)?.onboarding_completed),
         });
       } else {
         set({ user: null, isAuthenticated: false, isLoading: false });
@@ -95,7 +110,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (error) throw error;
 
       if (data.user) {
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", data.user.id)
@@ -112,6 +127,11 @@ export const useAuthStore = create<AuthState>((set) => ({
           },
           isAuthenticated: true,
           isLoading: false,
+          // Same rule as initialize: an unreadable profile must not replay
+          // the wizard for someone who already finished it.
+          onboardingCompleted: profileError
+            ? true
+            : Boolean((profile as User | null)?.onboarding_completed),
         });
         return true;
       }
@@ -151,6 +171,9 @@ export const useAuthStore = create<AuthState>((set) => ({
           },
           isAuthenticated: true,
           isLoading: false,
+          // A brand-new account has no profile, no goals and no linked
+          // institutions — exactly what the setup wizard collects.
+          onboardingCompleted: false,
         });
         return true;
       }
@@ -167,7 +190,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     set({ isLoading: true });
     await signOut();
-    set({ user: null, isAuthenticated: false, isLoading: false });
+    // onboardingCompleted is per-USER state. Leaving it set carries one
+    // account's answer into the next sign-in attempt.
+    set({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      onboardingCompleted: false,
+    });
   },
 
   clearError: () => set({ error: null }),
@@ -204,6 +234,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         .eq("id", currentUser.id);
 
       if (error) throw error;
+
+      // Only after the write succeeds. Setting it optimistically would let a
+      // failed write leave the app believing onboarding is done, and the
+      // wizard is the only thing that ever sets the column.
+      set({ onboardingCompleted: true });
     } catch (error) {
       if (__DEV__) console.error("Failed to complete onboarding:", error);
       throw error;

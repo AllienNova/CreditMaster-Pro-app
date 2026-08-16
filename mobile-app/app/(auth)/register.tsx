@@ -48,7 +48,12 @@ export default function RegisterScreen() {
 
     const success = await register(email, password, name);
     if (success) {
-      router.replace("/(tabs)");
+      // Back through the root, exactly like login. A new account has no
+      // profile, no goals and no linked institutions, and register() sets
+      // onboardingCompleted:false, so index sends it to the wizard — but the
+      // DECISION stays in one place. Naming the destination here is how the
+      // old `/(tabs)` jump came to skip the wizard entirely.
+      router.replace("/");
     }
   };
 

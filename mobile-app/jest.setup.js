@@ -45,6 +45,10 @@ jest.mock("expo-router", () => ({
   useLocalSearchParams: () => ({}),
   useSegments: () => [],
   Link: "Link",
+  // Rendered as a host element so a test can read the href it was given.
+  // app/index.tsx is nothing BUT a Redirect, so without this its routing
+  // decision has no observable output to assert on.
+  Redirect: "Redirect",
   Stack: {
     Screen: "Screen",
   },

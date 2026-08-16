@@ -271,6 +271,15 @@ export interface UserProfile {
   subscriptionStatus: "active" | "canceled" | "past_due" | "trialing";
   createdAt: string;
   updatedAt: string;
+  /**
+   * Server-assigned role. GET /api/profile returns it (profile/route.ts:98)
+   * and the mobile adapter previously dropped it, so the app had no notion of
+   * an admin at all — which is why the twelve admin screens had no entry
+   * point that could be shown to the right people and hidden from everyone
+   * else. Display-gating only; every admin API enforces its own permission
+   * server-side.
+   */
+  role?: "user" | "premium" | "admin" | "super_admin";
   onboardingCompleted: boolean;
   goals?: string[];
 }

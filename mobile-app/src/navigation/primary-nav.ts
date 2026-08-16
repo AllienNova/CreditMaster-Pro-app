@@ -23,6 +23,12 @@ export interface NavGroup {
   label: string;
   /** Ionicons name, resolved by the More screen. */
   icon: string;
+  /**
+   * Minimum role required to SEE this group. Display-gating only — every
+   * admin API enforces its own permission server-side, so hiding the group
+   * removes clutter and the hint that an admin surface exists, not access.
+   */
+  requiresRole?: "admin";
   items: NavItem[];
 }
 
@@ -280,6 +286,25 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
       { label: "Privacy", href: "/settings/privacy" },
       { label: "Profile", href: "/settings/profile" },
       { label: "Transaction rules", href: "/settings/transaction-rules" },
+    ],
+  },
+  {
+    label: "Admin",
+    icon: "shield-checkmark",
+    requiresRole: "admin",
+    items: [
+      { label: "Admin dashboard", href: "/admin" },
+      { label: "Users", href: "/admin/users" },
+      { label: "Metrics", href: "/admin/metrics" },
+      { label: "Analytics", href: "/admin/analytics" },
+      { label: "Disputes", href: "/admin/disputes" },
+      { label: "Subscriptions", href: "/admin/subscriptions" },
+      { label: "System health", href: "/admin/health" },
+      { label: "Logs", href: "/admin/logs" },
+      { label: "Audit trail", href: "/admin/audit" },
+      { label: "Feature flags", href: "/admin/features" },
+      { label: "System config", href: "/admin/config" },
+      { label: "Admin settings", href: "/admin/settings" },
     ],
   },
 ] as const;

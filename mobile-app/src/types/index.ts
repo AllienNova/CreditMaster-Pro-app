@@ -10,6 +10,12 @@ export interface User {
   avatar_url?: string;
   subscription_tier: "free" | "basic" | "premium" | "enterprise";
   goals?: string[];
+  /**
+   * Mirrors profiles.onboarding_completed (migration 20260731000004).
+   * Optional because a row written before that migration will not carry it,
+   * and because the type is also used for the locally-built fallback user.
+   */
+  onboarding_completed?: boolean;
   created_at: string;
   updated_at: string;
 }
