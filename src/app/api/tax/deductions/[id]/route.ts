@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getServiceRoleClient } from "@/lib/supabase/service-role";
-import { DEDUCTION_CATEGORIES } from "../route";
+import { DEDUCTION_CATEGORIES } from "@/lib/tax/deduction-categories";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

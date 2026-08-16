@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getServiceRoleClient } from "@/lib/supabase/service-role";
-import { DEDUCTION_CATEGORIES } from "../route";
+import { DEDUCTION_CATEGORIES } from "@/lib/tax/deduction-categories";
 
 /** SALT is capped by statute; surfacing it lets the UI show a ceiling. */
 const CATEGORY_CAPS: Record<string, number> = {
