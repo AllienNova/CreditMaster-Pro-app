@@ -15,6 +15,7 @@ import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isPublicApiRoute } from "@/lib/auth/PUBLIC_ROUTES";
 import { isFlagEnabledEdge } from "@/lib/flags/edge";
+import { supabaseConnectSrc } from "@/lib/security/csp";
 
 // Define public routes that don't require authentication
 const publicRoutes = [
@@ -68,22 +69,29 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https: blob:",
-    // Local Supabase is added in DEVELOPMENT ONLY. Without it `connect-src`
-    // permits `https://*.supabase.co` and nothing else, so a browser pointed at
-    // a local stack cannot even sign in — every auth call is refused by the CSP
-    // before it leaves the page:
+    // Supabase is allowed by its CONFIGURED ORIGIN, not by wildcard.
+    //
+    // This read `https://*.supabase.co`, which is both too wide and too narrow.
+    // Too wide: that pattern permits every other tenant's project on
+    // supabase.co, so an injected script could exfiltrate to a Supabase project
+    // the attacker controls and still satisfy the policy. Too narrow: a
+    // self-hosted Supabase, or one behind a custom domain, is refused outright
+    // — a browser pointed at a local stack could not even sign in, every auth
+    // call being refused before it left the page:
     //
     //   Connecting to 'http://127.0.0.1:54321/auth/v1/token?grant_type=password'
     //   violates the following Content Security Policy directive: "connect-src…"
     //
     // That silently made browser dogfooding of EVERY authenticated feature
     // impossible locally, which is why the curl-based scripts/dogfood.sh could
-    // pass while the real UI could not log in at all. Found while device-testing
-    // the backup-codes screen.
+    // pass while the real UI could not log in at all.
     //
-    // Production is untouched: this appends only when NODE_ENV !== "production",
-    // and the hosted app talks to *.supabase.co, which was already allowed.
-    `connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.plaid.com https://api.aimlapi.com wss://*.supabase.co${
+    // Deriving from NEXT_PUBLIC_SUPABASE_URL fixes both: the app can only ever
+    // talk to the origin it is configured with, so allowing exactly that origin
+    // is the tightest policy that still works — and it works wherever Supabase
+    // is hosted. The dev-only loopback entries remain for the case where the
+    // variable is unset.
+    `connect-src 'self' ${supabaseConnectSrc()} https://api.stripe.com https://*.plaid.com https://api.aimlapi.com${
       isDevelopment
         ? " http://127.0.0.1:54321 http://localhost:54321 ws://127.0.0.1:54321 ws://localhost:54321"
         : ""
