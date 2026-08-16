@@ -10,6 +10,57 @@ interface CreditBalanceData {
   periodEnd: string;
 }
 
+/**
+ * Parse GET /api/credits/balance.
+ *
+ * This component crashed /settings/credits outright — "Application error: a
+ * client-side exception has occurred" — because `setData(json)` was an
+ * UNCHECKED CAST and the shapes had never matched. The route answers
+ * `{ balance: CreditBalance, usage: { thisMonth, total } }`
+ * (src/app/api/credits/balance/route.ts), while this file declared five
+ * top-level fields; not one of them existed on the response, so
+ * `data.creditBalance.toLocaleString()` threw on undefined.
+ *
+ * Nothing caught it. The route has its own auth and db-was-called tests, tsc
+ * believes a cast, and audit:links only proves the page exists. It took a
+ * browser.
+ *
+ * So this validates rather than asserts: an unrecognised payload returns null
+ * and the caller shows a message, which is a bad render instead of a dead page.
+ */
+export function parseBalance(json: unknown): CreditBalanceData | null {
+  if (typeof json !== "object" || json === null) return null;
+  const balance = (json as { balance?: unknown }).balance;
+  if (typeof balance !== "object" || balance === null) return null;
+
+  const b = balance as Record<string, unknown>;
+  const num = (v: unknown): number | null =>
+    typeof v === "number" && Number.isFinite(v) ? v : null;
+
+  const creditBalance = num(b.creditBalance);
+  const subscriptionAllowance = num(b.subscriptionAllowance);
+  const purchasedCredits = num(b.purchasedCredits);
+  const usedThisPeriod = num(b.usedThisPeriod);
+  if (
+    creditBalance === null ||
+    subscriptionAllowance === null ||
+    purchasedCredits === null ||
+    usedThisPeriod === null
+  ) {
+    return null;
+  }
+
+  // periodEnd is a Date on the server; NextResponse.json makes it an ISO
+  // string. It is not rendered today, so a missing one is not fatal.
+  return {
+    creditBalance,
+    subscriptionAllowance,
+    purchasedCredits,
+    usedThisPeriod,
+    periodEnd: typeof b.periodEnd === "string" ? b.periodEnd : "",
+  };
+}
+
 interface CreditBalanceProps {
   compact?: boolean;
 }
@@ -23,8 +74,7 @@ export default function CreditBalance({ compact = true }: CreditBalanceProps) {
     try {
       const res = await fetch("/api/credits/balance");
       if (!res.ok) return;
-      const json = await res.json();
-      setData(json);
+      setData(parseBalance(await res.json()));
     } catch {
       // Silently fail — balance display is non-critical
     } finally {
@@ -45,7 +95,20 @@ export default function CreditBalance({ compact = true }: CreditBalanceProps) {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    // Compact mode is an inline badge in the chrome; an empty slot there is
+    // the right amount of noise. The expanded card IS the point of
+    // /settings/credits, so silence would read as "you have no credits".
+    if (compact) return null;
+    return (
+      <div className="rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+        <p className="text-sm text-gray-600 dark:text-slate-300">
+          We couldn&apos;t load your credit balance. Your credits are unaffected
+          — refresh to try again.
+        </p>
+      </div>
+    );
+  }
 
   const totalAllowance = data.subscriptionAllowance + data.purchasedCredits;
   const usedPercent =

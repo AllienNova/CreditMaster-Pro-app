@@ -45,6 +45,23 @@ describe("primary navigation data", () => {
     expect(dead).toEqual([]);
   });
 
+  it("has no two items sharing a label within a group", () => {
+    // Distinct from the href check below, and the gap it left: the Account
+    // group carried "Profile" twice — /settings/profile and /profile, two real
+    // and different pages — so the hrefs were unique and the user still saw
+    // the same word twice with no way to tell them apart. Found by looking at
+    // the rendered sidebar, not by any assertion here.
+    const collisions: string[] = [];
+    for (const group of PRIMARY_NAV) {
+      const seen = new Set<string>();
+      for (const item of group.items) {
+        if (seen.has(item.label)) collisions.push(`${group.label} > ${item.label}`);
+        seen.add(item.label);
+      }
+    }
+    expect(collisions).toEqual([]);
+  });
+
   it("has no duplicate destinations", () => {
     // The same page under two labels makes the active-item highlight
     // ambiguous and doubles the list for no navigational gain.
