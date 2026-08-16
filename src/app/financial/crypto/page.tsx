@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Coins,
@@ -361,8 +362,20 @@ export default function CryptoPortfolioPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
+                          {/*
+                            /investments/crypto/[coinId] existed with nothing
+                            linking to it — the only place a coin is listed is
+                            here, so a holding could be seen but never opened.
+                            The detail route keys on coinId, which the API
+                            addresses by lowercase symbol.
+                          */}
                           <h3 className="font-semibold text-gray-900 dark:text-white">
-                            {holding.name}
+                            <Link
+                              href={`/investments/crypto/${holding.symbol.toLowerCase()}`}
+                              className="hover:text-emerald-700 hover:underline dark:hover:text-emerald-400"
+                            >
+                              {holding.name}
+                            </Link>
                           </h3>
                           <span className="text-sm text-gray-500 dark:text-slate-400">
                             {holding.symbol}

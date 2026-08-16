@@ -107,8 +107,21 @@ export default function DocumentCard({
 
             {/* Info */}
             <div className="flex-1 min-w-0">
+              {/*
+                The card had download, delete and share but no way to OPEN a
+                document — /documents/[id] existed with nothing linking to it,
+                so a user could see their W-2 listed and never read it. The
+                title is the obvious affordance and `router` was already here,
+                imported and unused for navigation.
+              */}
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                {document.originalName}
+                <button
+                  type="button"
+                  onClick={() => router.push(`/documents/${document.id}`)}
+                  className="text-left hover:text-emerald-700 hover:underline dark:hover:text-emerald-400"
+                >
+                  {document.originalName}
+                </button>
               </h3>
               <div className="flex items-center gap-3 mt-1 text-xs text-gray-600 dark:text-slate-300">
                 <span

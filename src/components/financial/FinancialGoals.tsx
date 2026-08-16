@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { EmptyState } from "@/components/ui/EmptyState";
 import AIGoalsOptimizer from "./AIGoalsOptimizer";
@@ -359,8 +360,18 @@ export default function FinancialGoals() {
                   <div className="flex items-center gap-3">
                     <div className="text-4xl">{getGoalIcon(goal.type)}</div>
                     <div>
+                      {/*
+                        /financial/coach/goal-detail/[id] existed with nothing
+                        linking to it, so a goal could be listed but never
+                        opened. The name is the affordance a user reaches for.
+                      */}
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {goal.name}
+                        <Link
+                          href={`/financial/coach/goal-detail/${goal.id}`}
+                          className="hover:text-emerald-700 hover:underline dark:hover:text-emerald-400"
+                        >
+                          {goal.name}
+                        </Link>
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span

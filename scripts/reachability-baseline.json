@@ -2,19 +2,13 @@
   "frozen": "2026-08-16",
   "unreachable": [
     "/auth/callback",
-    "/documents/[id]",
-    "/financial/coach/goal-detail/[id]",
-    "/investments/crypto/[coinId]",
     "/payment/cancel",
     "/payment/success"
   ],
+  "note": "3 of 204, all redirect targets that CORRECTLY have no click path. Every page a user can navigate to is reachable. This list should never grow; if it does, a real feature has gone dark.",
   "why": {
     "/auth/callback": "OAuth redirect target. The provider navigates here; there is no click path and there should not be one.",
-    "/payment/success": "Stripe return URL. Reached by redirect after checkout.",
-    "/payment/cancel": "Stripe return URL. Reached by redirect after an abandoned checkout.",
-    "/documents/[id]": "Detail route behind a PLACEHOLDER list: src/app/documents/page.tsx renders [1,2,3,4].map(...) rather than real documents, so it has no ids to link. Linking it from a placeholder would fabricate navigation to records that do not exist. Unblocked by wiring the list to real data, not by adding a nav entry.",
-    "/financial/coach/goal-detail/[id]": "Same shape: src/app/financial/coach/goals/page.tsx renders a placeholder array and links only back to /financial/coach.",
-    "/investments/crypto/[coinId]": "There is no /investments/crypto list page at all \u2014 the directory contains only [coinId]. Needs a list before a detail can be reached."
-  },
-  "note": "6 of 204. Three are redirect targets that are correctly unclickable; three are detail routes whose list pages are placeholders. None is a navigation gap \u2014 every real feature area is now in the sidebar."
+    "/payment/success": "Stripe return URL, reached by redirect after checkout.",
+    "/payment/cancel": "Stripe return URL, reached by redirect after an abandoned checkout."
+  }
 }
