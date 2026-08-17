@@ -197,19 +197,16 @@ export const creditReportApi = {
       reports: { id: string; bureau: string; date: string; status: string }[];
     }>("/credit-bureau/report"),
 
-  /**
-   * Get single credit report
+  /*
+   * getReport is gone.
+   *
+   * It fetched /credit/reports/:id, a route that has never existed — the real
+   * one is /credit-repair/reports/:id, the '/' vs '-' drift this codebase has
+   * hit before. It also had no callers: app/reports/[id].tsx uses
+   * creditRepairApi.getReport, which fetches the correct path and adapts the
+   * web shape to the mobile one. Two functions for one screen, and the unused
+   * one pointed at nothing.
    */
-  getReport: (reportId: string) =>
-    api.get<{
-      id: string;
-      bureau: string;
-      date: string;
-      accounts: any[];
-      inquiries: any[];
-      publicRecords: any[];
-      personalInfo: any;
-    }>(`/credit/reports/${reportId}`),
 
   /**
    * Upload and analyze a credit report.

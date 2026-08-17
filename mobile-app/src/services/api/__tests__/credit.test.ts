@@ -238,18 +238,15 @@ describe("Credit Report API", () => {
     });
   });
 
-  describe("getReport", () => {
-    it("should fetch single report", async () => {
-      (api.get as jest.Mock).mockResolvedValueOnce({
-        success: true,
-        data: { id: "report-1" },
-      });
-
-      await creditReportApi.getReport("report-1");
-
-      expect(api.get).toHaveBeenCalledWith("/credit/reports/report-1");
-    });
-  });
+  /*
+   * The getReport suite is gone with the method.
+   *
+   * It asserted `api.get("/credit/reports/report-1")` — a route that has never
+   * existed — so it locked in the '/' vs '-' drift rather than catching it: the
+   * real route is /credit-repair/reports/:id. The method had no callers either;
+   * app/reports/[id].tsx uses creditRepairApi.getReport, which fetches the
+   * correct path and is covered by ReportDetailScreen.test.tsx.
+   */
 
   describe("analyzeReport", () => {
     it("should request AI analysis", async () => {

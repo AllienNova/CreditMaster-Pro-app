@@ -347,6 +347,73 @@ so the new detail route could share it rather than hold a second copy, and
 pointing here. The new route returns it so the detail screen agrees with the
 list screen — not because it is a fact.
 
+---
+
+## SF-10 — Tax document uploads discard the file
+
+**Status:** LIVE. **Severity:** MEDIUM-HIGH (data loss, silent).
+**Found:** 2026-08-17, while scoping `/tax/documents/[id]/download`.
+
+`POST /api/tax/documents/upload` accepts a file, runs extraction over it, and
+inserts a `tax_documents` row containing `document_name`, `file_size`,
+`mime_type`, `extracted_data`, `extraction_confidence` and `is_verified`.
+
+It never stores the file. There is no S3 call, no Supabase Storage call, no
+write of any kind for the bytes — and the insert does not set `storage_path`.
+
+```
+grep -n "storage|\.upload\(|PutObject|s3Client|writeFile" \
+  src/app/api/tax/documents/upload/route.ts
+  -> no matches
+```
+
+`storage_path` is READ in three places — `/api/tax/documents/route.ts:126,148,151`
+and `/api/tax/documents/[id]/route.ts:95` — where deletion calls
+`.remove([document.storage_path])` to clean up a file that was never written. It
+is written nowhere in `src/`, and the column is null on every row:
+
+```sql
+select count(*) filter (where storage_path is not null) || ' of ' || count(*)
+  from public.tax_documents;
+-> 0 of 0
+```
+
+### Why it matters
+
+A user uploads their W-2, the app reads it and shows the numbers, and the
+document itself is gone. They cannot re-download what they gave us, and nothing
+can re-extract from the original if the parser improves or a value is disputed.
+
+The table itself expects the original to exist: `requires_review`,
+`review_reasons`, `verified_by` and `verified_at` describe a human review
+workflow, and `manual_corrections`/`correction_history` describe correcting
+extraction against a source. None of that is possible without the file.
+
+### Consequence for the tracked route
+
+`/tax/documents/[id]/download` cannot be built. It is not a missing endpoint —
+there is nothing to serve. Anything that appears to download a tax document
+today would have to fabricate one.
+
+### Options
+
+1. **Store it.** Write the file (S3 or Supabase Storage, matching whichever
+   the delete paths already assume) and set `storage_path` on insert. The
+   delete paths then start working as written, and the download route becomes
+   the same shape as `/api/documents/[id]/download`.
+2. **Say so.** If discarding the file is deliberate — a data-minimisation
+   choice for tax documents — then the upload UI should say the original is not
+   kept, the delete paths' `storage_path` handling should go, and the download
+   control should not exist.
+
+Either is defensible. Silently dropping the file while the schema and three
+code paths assume it is there is not.
+
+### Not done
+
+No code changed. This was found while scoping a download route that was then
+not built, because building it would have meant inventing a file.
+
 ## Revision History
 
 | Date | Change |
@@ -356,3 +423,4 @@ list screen — not because it is a fact.
 | 2026-08-17 | Added SF-07: PaperTradingEngine.getCurrentPrice falls back to `100 + Math.random() * 100` for every trade (POLYGON_API_KEY unconfigured), and getDailyReturns generates a random walk that is the sole input to maxDrawdown/sharpeRatio. Fabricated prices reach paper_fills, paper_trades, paper_positions and paper_accounts, and drive WATCH->GUIDED graduation. Three options presented; owner decision required. |
 | 2026-08-17 (rev 2) | Added SF-08: MFAService's TOTP methods run on a session-less anon singleton (dead + non-functional); verified from auth-js source that a global Authorization header does NOT authenticate supabase-js MFA calls (they read session.access_token and pass it as `jwt`); unenroll of a verified factor requires aal2, so disable must challenge+verify first. Challenge/verify endpoint paths deliberately left unverified rather than guessed. |
 | 2026-08-17 (rev 3) | Added SF-09: dispute letter templates carry a hardcoded `successRate` (65, etc.) that nothing measures, surfaced to users via the templates list and /api/disputes/generate; public.dispute_template_usage has template_id/dispute_id/outcome and is written and read by nothing. Three options; no behaviour changed. |
+| 2026-08-17 (rev 4) | Added SF-10: /api/tax/documents/upload never stores the uploaded file and never sets storage_path, while three delete paths read storage_path to remove a file that was never written (0 of 0 rows have one). Blocks /tax/documents/[id]/download — nothing to serve. |
