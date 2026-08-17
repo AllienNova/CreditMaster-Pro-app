@@ -433,6 +433,45 @@ function toInvoiceStatus(status: string): InvoiceStatus {
  * field is sourced; a malformed row from the JSON boundary degrades honestly —
  * absent/invalid amount -> 0, absent/invalid date -> "" — rather than fabricating.
  */
+/** A saved card, as the billing SETTINGS screen lists them. */
+export interface PaymentMethodListView {
+  id: string;
+  type: "card";
+  last4: string;
+  brand: string;
+  expiry: string;
+  isDefault: boolean;
+}
+
+/**
+ * Every saved card, not just the default one.
+ *
+ * mapWebBilling reduces the same payload to a single `paymentMethod` because
+ * the OVERVIEW screen shows one. The settings screen lists them all, and it was
+ * listing two hardcoded constants instead — a Visa ending 4242 (Stripe's test
+ * card) and a Mastercard 5555 — while making no network call at all. See
+ * SF-12; it is FND-016/017 in mobile.
+ *
+ * An empty array stays empty. billing-data.ts returns no payment methods for a
+ * user with no Stripe customer, and "no card on file" is the true answer.
+ */
+export function mapWebPaymentMethods(
+  res: WebBillingResponse,
+): PaymentMethodListView[] {
+  const methods = Array.isArray(res.paymentMethods) ? res.paymentMethods : [];
+  return methods
+    .filter((pm) => pm && pm.id && pm.last4)
+    .map((pm) => ({
+      id: pm.id,
+      type: "card" as const,
+      last4: pm.last4,
+      // Never guess a brand; an unlabelled card is still a real card.
+      brand: pm.brand || "Card",
+      expiry: `${String(pm.expMonth).padStart(2, "0")}/${String(pm.expYear).slice(-2)}`,
+      isDefault: Boolean(pm.isDefault),
+    }));
+}
+
 export function mapWebInvoices(res: WebBillingResponse): InvoiceView[] {
   const invoices = Array.isArray(res.invoices) ? res.invoices : [];
   return invoices.map((inv) => {
@@ -455,6 +494,36 @@ export const subscriptionApi = {
    * Adapted to the mobile BillingOverview view-model by mapWebBilling; unsourced
    * fields are omitted so the screen can empty-state rather than fabricate.
    */
+  /**
+   * Everything the billing SETTINGS screen renders — all saved cards, the
+   * invoice list, and the active plan id — from the one Stripe-backed read.
+   *
+   * Composed from mapWebPaymentMethods and mapWebInvoices rather than a second
+   * adapter: /api/payment/billing already serves plans, subscription,
+   * paymentMethods and invoices whole, and a parallel mapper over the same
+   * payload is exactly the drift this codebase keeps paying for.
+   */
+  getBillingSettings: async (): Promise<
+    ApiResponse<{
+      paymentMethods: PaymentMethodListView[];
+      invoices: InvoiceView[];
+      planId: string | null;
+    }>
+  > => {
+    const res = await api.get<WebBillingResponse>("/payment/billing");
+    if (res.success && res.data) {
+      return {
+        success: true,
+        data: {
+          paymentMethods: mapWebPaymentMethods(res.data),
+          invoices: mapWebInvoices(res.data),
+          planId: res.data.subscription?.planId ?? null,
+        },
+      };
+    }
+    return { success: false, error: res.error };
+  },
+
   getBillingOverview: async (): Promise<ApiResponse<BillingOverview>> => {
     const res = await api.get<WebBillingResponse>("/payment/billing");
     if (res.success && res.data) {
@@ -571,13 +640,16 @@ export const subscriptionApi = {
       }[];
     }>("/payment/billing"),
 
-  /**
-   * Update payment method
+  /*
+   * updatePaymentMethod is gone — the last of the four billing slices named in
+   * the comment above.
+   *
+   * It POSTed /user/billing/payment-method, a route that has never existed, and
+   * had no callers. There is no endpoint for it either: stripeService
+   * .setDefaultPaymentMethod exists in the web service but nothing exposes it,
+   * and there is no detach capability at all. The billing settings screen now
+   * says so rather than mutating local state to look successful.
    */
-  updatePaymentMethod: (paymentMethodId: string) =>
-    api.post<{ success: boolean }>("/user/billing/payment-method", {
-      paymentMethodId,
-    }),
 };
 
 // The real web route (/api/notifications) returns notifications with `message`

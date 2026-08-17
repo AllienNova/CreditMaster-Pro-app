@@ -551,10 +551,32 @@ never wired to it.
 
 There is no third option in which the constants stay.
 
-### Not done
+### Resolved 2026-08-17
 
-No code changed. The tracked path `/user/billing/payment-method` remains a 404,
-but that 404 is not the problem — the screen never calls it, or anything else.
+Option 1 taken. `app/settings/billing.tsx` now reads
+`subscriptionApi.getBillingSettings()`, which calls `GET /api/payment/billing`
+and maps it with `mapWebPaymentMethods` + `mapWebInvoices` — both added to the
+existing billing module in `services/api/user.ts` rather than a second adapter
+over the same payload. Both constants are deleted.
+
+The screen distinguishes three states it previously collapsed into one wrong
+one: loading, could-not-load (with a retry), and genuinely no card on file.
+`currentPlan` comes from `subscription.planId` instead of a hardcoded
+`useState("basic")`, which told free users they were on a paid plan.
+
+`handleSetDefault` and `handleRemoveMethod` mutated local state and looked
+successful — a card the user "removed" returned on the next load. There is no
+route for either (`stripeService.setDefaultPaymentMethod` exists but nothing
+exposes it; there is no detach capability at all), so both now say the action
+is not available in the app yet. `userApi.updatePaymentMethod`, which POSTed the
+never-existent `/user/billing/payment-method` and had no callers, is deleted.
+
+Mutation-verified: reintroducing a fallback 4242 card fails 4 tests, one of
+which asserts the string "4242" never appears in the output of an empty list.
+
+STILL OPEN from this finding: there is no way to add, change or remove a card
+from the mobile app. That is now visible to the user instead of faked, but it
+needs the two Stripe routes to actually work.
 
 ## Revision History
 
