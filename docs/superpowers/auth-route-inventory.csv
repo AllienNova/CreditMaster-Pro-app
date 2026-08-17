@@ -60,6 +60,7 @@ src/app/api/chat/financial/route.ts,POST,getUser,none,withAuth,f,bare session re
 src/app/api/chat/financial/sessions/[id]/messages/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/chat/financial/sessions/[id]/route.ts,DELETE;GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/chat/financial/sessions/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/credit-builder/debts/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session; replaced a client-side fallback that invented 3 debts and ran a payoff simulation on them
 src/app/api/credit-builder/loans/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
 src/app/api/credit-builder/progress/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
 src/app/api/credit-builder/recommendations/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
@@ -121,6 +122,7 @@ src/app/api/federal-programs/route.ts,GET;POST,none,none,withAuth,f,unauthentica
 src/app/api/federal/check-eligibility/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""federal_programs:check_eligibility"")",withPermission(federal_programs:check_eligibility),f,promote inline permission check to withPermission
 src/app/api/federal/submit-application/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""federal_programs:submit_application"")",withPermission(federal_programs:submit_application),f,promote inline permission check to withPermission
 src/app/api/federal/track-application/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""federal_programs:track_application"")",withPermission(federal_programs:track_application),f,promote inline permission check to withPermission
+src/app/api/financial/accounts/[accountId]/sync/route.ts,POST,withAuth,own-rows,withAuth,g,added 2026-08-17 - accountId read from pathname (withAuth does not forward params); item resolved from the account scoped to user_id so a guessed id cannot sync another user's connection
 src/app/api/financial/accounts/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/aggregated/route.ts,DELETE;GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/ai-insights/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
@@ -195,6 +197,9 @@ src/app/api/financial/spending/route.ts,GET,validateFromHeaders,"rbac.hasPermiss
 src/app/api/financial/spending/summary/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/spending/trends/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/financial/subscriptions/cancellation-info/route.ts,GET,none,none,withAuth,c,unauthenticated - wrap in withAuth
+src/app/api/financial/subscriptions/insights/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session
+src/app/api/financial/subscriptions/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session
+src/app/api/financial/subscriptions/stats/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session
 src/app/api/financial/tax/retirement/route.ts,GET;POST,getUser,none,withAuth,c,bare session read - wrap in withAuth
 src/app/api/financial/transactions/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/gamification/achievements/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
@@ -222,12 +227,17 @@ src/app/api/investments/crypto/[coinId]/route.ts,GET,getUser,none,withAuth,e,bar
 src/app/api/investments/crypto/[coinId]/sentiment/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/investments/crypto/trending/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/investments/dividends/route.ts,GET,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/historical/[symbol]/route.ts,GET,withAuth,none,withAuth,g,added 2026-08-17 - MARKET DATA: no user-owned rows to scope (see quote/[symbol])
 src/app/api/investments/holdings/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,inline user.id ownership check,withAuth,e,inline JWT validation + ownership - wrap in withAuth; keep ownership check
 src/app/api/investments/holdings/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
 src/app/api/investments/patterns/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
 src/app/api/investments/portfolio-analysis/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
 src/app/api/investments/portfolio/analyze/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/portfolio/default/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session; replaced a fabricated portfolio id that cascaded into 4 further 404s
+src/app/api/investments/portfolio/performance/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session; replaced generateMockPerformanceData (invented returns/Sharpe/alpha)
 src/app/api/investments/portfolio/route.ts,GET,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth; portfolio-service omits user_id filter (FND-030 IDOR) - verify ownership in AUTH-03
+src/app/api/investments/quote/[symbol]/route.ts,GET,withAuth,none,withAuth,g,added 2026-08-17 - MARKET DATA: no user-owned rows to scope. authn required to keep the provider quota behind a login; authz none is correct not missing
+src/app/api/investments/quotes/route.ts,GET,withAuth,none,withAuth,g,added 2026-08-17 - MARKET DATA batch: no user-owned rows to scope; MAX_SYMBOLS=50 caps provider fan-out
 src/app/api/investments/recommendations/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
 src/app/api/investments/signals/[id]/route.ts,GET;PATCH,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/investments/signals/active/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
@@ -257,6 +267,7 @@ src/app/api/notifications/push/send/route.ts,POST,none,userId/userIds from body 
 src/app/api/notifications/push/subscribe/route.ts,DELETE;GET;POST,none,userId from body (untrusted),withAuth,b,unauthenticated - accepts userId from body (IDOR FND-041..044) - wrap in withAuth
 src/app/api/notifications/push/vapid-key/route.ts,GET,none,none,PUBLIC,b,returns VAPID public key - needed pre-subscribe; genuinely public
 src/app/api/notifications/route.ts,DELETE;GET;PATCH;POST,none,userId from query (untrusted),withAuth,b,unauthenticated - accepts userId from query (IDOR FND-041..044) - wrap in withAuth
+src/app/api/onboarding/complete/route.ts,POST,withAuth,own-rows,withAuth,g,added 2026-08-17 - writes the CALLER's own profile only; no id accepted from the body
 src/app/api/onboarding/progress/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/payment/billing/plan/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""billing:update"")",withPermission(billing:update),f,promote inline permission check to withPermission
 src/app/api/payment/billing/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""billing:read"")",withPermission(billing:read),f,promote inline permission check to withPermission
@@ -275,21 +286,21 @@ src/app/api/student-loans/analyze/route.ts,GET;POST,validateFromHeaders,"rbac.ha
 src/app/api/student-loans/route.ts,GET,none,none,withAuth,f,unauthenticated - accepts userId from query (IDOR) - wrap in withAuth
 src/app/api/student-loans/strategy/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - wrap in withAuth
 src/app/api/tax/analyze/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
-src/app/api/tax/calendar/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - estimated-tax deadlines computed from the caller's profile via getQuarterlyPaymentSchedule. No calendar table exists; deadlines are statutory and amounts derive from profile income. Absent profile returns an empty state rather than invented amounts
 src/app/api/tax/brackets/route.ts,POST,withAuth,none,withAuth,f,added 2026-08-15 - bracket visualisation over TaxBracketCalculator. Stateless arithmetic (no user rows read) but authed: an unauthenticated compute endpoint is a free CPU faucet
-src/app/api/tax/recommendations/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - TaxOptimizationEngine recommendations for the caller's stored profile. Profile loaded by user.id only; a userId query param is never read. Absent profile returns an explicit empty state, never advice computed from defaults
-src/app/api/tax/recommendations/[id]/complete/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - marks the caller's own recommendation complete. Service-role UPDATE filtered by BOTH id and user_id; 404 (not 403) when the row belongs to someone else so uuid probing cannot confirm existence
-src/app/api/tax/scenarios/calculate/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - what-if calculator over the caller's own tax profile. Profile loaded by user.id; a userId in the body is never read. Scenario applied to a COPY and never persisted. 409 when no profile exists rather than computing from a default income
-src/app/api/tax/scenarios/compare/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - ranks what-if scenarios by total tax against the caller's own profile. Capped at 20 per request since each is a full computation. All scenarios validated before any is computed
-src/app/api/tax/deductions/route.ts,GET;POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - list/create itemised deductions. INSERT sets user_id from the SESSION and forces is_verified=false; a user_id in the body is never read
+src/app/api/tax/calendar/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - estimated-tax deadlines computed from the caller's profile via getQuarterlyPaymentSchedule. No calendar table exists; deadlines are statutory and amounts derive from profile income. Absent profile returns an empty state rather than invented amounts
 src/app/api/tax/deductions/[id]/route.ts,PATCH;DELETE,withAuth,own-rows,withAuth,f,added 2026-08-15 - amend/remove one deduction. Update built from an ALLOWLIST so user_id and is_verified cannot be set by the caller; both queries filtered by id AND user_id
 src/app/api/tax/deductions/categories/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - fixed category vocabulary with the CALLER'S totals and items
+src/app/api/tax/deductions/route.ts,GET;POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - list/create itemised deductions. INSERT sets user_id from the SESSION and forces is_verified=false; a user_id in the body is never read
 src/app/api/tax/deductions/summary/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - itemise-vs-standard recommendation. Threshold read from the profile's filing status; a read failure errors rather than recommending from missing data
-src/app/api/tax/documents/route.ts,DELETE;GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
-src/app/api/tax/documents/checklist/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - which tax forms the caller still needs. REQUIRED is derived from their own profile income, not a fixed list; uploads looked up by user_id + tax_year. A read failure errors rather than rendering as 'you have uploaded nothing'
 src/app/api/tax/documents/[id]/route.ts,GET;DELETE,withAuth,own-rows,withAuth,f,added 2026-08-15 - read/delete one tax document (W-2/1099 + extracted contents). Service-role queries filtered by BOTH id and user_id; 404 rather than 403 for another user's row
 src/app/api/tax/documents/[id]/verify/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - confirms an extraction. verified_by is stamped from the SESSION, never the body, so the audit trail cannot name a different verifier
+src/app/api/tax/documents/checklist/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - which tax forms the caller still needs. REQUIRED is derived from their own profile income, not a fixed list; uploads looked up by user_id + tax_year. A read failure errors rather than rendering as 'you have uploaded nothing'
+src/app/api/tax/documents/route.ts,DELETE;GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/tax/documents/upload/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/tax/recommendations/[id]/complete/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - marks the caller's own recommendation complete. Service-role UPDATE filtered by BOTH id and user_id; 404 (not 403) when the row belongs to someone else so uuid probing cannot confirm existence
+src/app/api/tax/recommendations/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - TaxOptimizationEngine recommendations for the caller's stored profile. Profile loaded by user.id only; a userId query param is never read. Absent profile returns an explicit empty state, never advice computed from defaults
+src/app/api/tax/scenarios/calculate/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - what-if calculator over the caller's own tax profile. Profile loaded by user.id; a userId in the body is never read. Scenario applied to a COPY and never persisted. 409 when no profile exists rather than computing from a default income
+src/app/api/tax/scenarios/compare/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - ranks what-if scenarios by total tax against the caller's own profile. Capped at 20 per request since each is a full computation. All scenarios validated before any is computed
 src/app/api/test-db/route.ts,GET,getUser,none,withAuth,f,diagnostic DB-test route - SECURITY: should be removed before launch; gate with withRole(admin) at minimum
 src/app/api/trading/agents/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/trading/backtest/route.ts,GET;POST,withAuth,none,withAuth,e,already wrapped with withAuth - no change
