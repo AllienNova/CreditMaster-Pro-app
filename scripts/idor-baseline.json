@@ -22,8 +22,6 @@
     "src/app/api/trading/strategies/[id]/route.ts|strategy_library|select|pk|4f57e7e2eacd": 2,
     "src/app/api/trading/strategies/[id]/route.ts|strategy_library|update|pk|97689bc0f1a0": 1,
     "src/app/api/trading/strategies/[id]/route.ts|strategy_library|update|pk|9212ab774340": 1,
-    "src/lib/ai-personalization/nudge-engine.ts|nudge_history|update|pk|5c3925ea8231": 1,
-    "src/lib/ai-personalization/nudge-engine.ts|nudge_history|update|pk|075e467c6d73": 1,
     "src/lib/ai-personalization/spending-analyzer.ts|emotional_spending_alerts|update|pk|97c3593ba3ae": 1,
     "src/lib/automation/dispute-followups.ts|disputes|update|pk|dc7e927822a7": 1,
     "src/lib/commerce/affiliate/commission-calculator.ts|affiliate_conversions|select|pk|9977f1f29907": 1,

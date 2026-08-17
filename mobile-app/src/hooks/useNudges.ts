@@ -93,13 +93,23 @@ export function useNudges(): UseNudgesReturn {
           setActiveNudge(remaining.length > 0 ? remaining[0] : null);
         }
 
-        // Persist response to API
-        await api.post("/ai/nudges/respond", {
+        // POST /ai/nudges IS the record-response endpoint (its own docblock
+        // says so). /ai/nudges/respond has never existed, and the field is
+        // `action`, not `response` — so this call 404'd on every nudge anyone
+        // ever answered, and nothing was recorded.
+        const res = await api.post("/ai/nudges", {
           nudgeId,
-          response: nudgeResponse,
+          action: nudgeResponse,
         });
+
+        if (!res.success) {
+          // The nudge is already gone from the list above. Say so rather than
+          // let it silently return on the next launch.
+          setError("We could not save that. It may reappear later.");
+        }
       } catch (err) {
-        // Don't revert UI - response was already recorded locally
+        console.error("Failed to record nudge response:", err);
+        setError("We could not save that. It may reappear later.");
       }
     },
     [activeNudge, nudges],

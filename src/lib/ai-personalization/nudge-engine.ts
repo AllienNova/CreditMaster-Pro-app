@@ -442,19 +442,42 @@ export class NudgeEngine {
   // NUDGE RESPONSES
   // --------------------------------------------------------------------------
 
+  /**
+   * Record what the user did with a nudge.
+   *
+   * `userId` is not optional and is not decoration. This used to filter on
+   * `.eq("id", nudgeId)` alone, so any authenticated caller could write
+   * action_taken — and arbitrary `feedback` text into the context jsonb — onto
+   * ANY user's nudge_history row, simply by knowing or guessing its uuid. The
+   * route compounded it by taking `_user` and never using it.
+   *
+   * Returns whether a row actually matched, so the caller can answer 404
+   * instead of reporting a response it did not record. A Postgres UPDATE that
+   * matches nothing is not an error.
+   */
   async recordNudgeResponse(
+    userId: string,
     nudgeId: string,
     action: NudgeAction,
     feedback?: string,
-  ): Promise<void> {
-    await this.supabase
+  ): Promise<boolean> {
+    const { data, error } = await this.supabase
       .from("nudge_history")
       .update({
         action_taken: action,
         action_at: new Date().toISOString(),
         context: feedback ? { feedback } : undefined,
       })
-      .eq("id", nudgeId);
+      .eq("id", nudgeId)
+      .eq("user_id", userId)
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to record nudge response: ${error.message}`);
+    }
+
+    return data !== null;
   }
 
   async getNudgeHistory(userId: string, limit = 50): Promise<NudgeHistory[]> {
@@ -488,11 +511,22 @@ export class NudgeEngine {
     return data.map(this.mapToNudgeHistory);
   }
 
-  async markNudgeAsOpened(nudgeId: string): Promise<void> {
-    await this.supabase
+  /**
+   * Mark a nudge opened. Scoped to its owner for the same reason as
+   * recordNudgeResponse: without the user_id filter this stamps opened_at on
+   * anyone's row, which silently removes their unread nudge from
+   * getUnreadNudges.
+   */
+  async markNudgeAsOpened(userId: string, nudgeId: string): Promise<void> {
+    const { error } = await this.supabase
       .from("nudge_history")
       .update({ opened_at: new Date().toISOString() })
-      .eq("id", nudgeId);
+      .eq("id", nudgeId)
+      .eq("user_id", userId);
+
+    if (error) {
+      throw new Error(`Failed to mark nudge as opened: ${error.message}`);
+    }
   }
 
   // --------------------------------------------------------------------------
