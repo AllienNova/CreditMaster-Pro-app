@@ -209,6 +209,90 @@ close` (commit `2f66f87`) was built on top of this engine and reports faithfully
 what the engine records — which means it currently reports fabricated P&L. Its
 commit carries a `Directive:` trailer saying so.
 
+---
+
+## SF-08 — The MFA service cannot work server-side, and the obvious fix does not work either
+
+**Status:** LATENT (the TOTP methods have zero callers). **Severity:** MEDIUM as it stands,
+HIGH if someone wires it up without reading this.
+**Found:** 2026-08-17, while scoping `/user/settings/2fa/{enable,verify,disable}`.
+**This is a note to whoever builds 2FA next. It is not a bug report.**
+
+### What is there today
+
+`src/lib/auth/mfa-service.ts` exposes `enrollTOTP`, `verifyTOTPEnrollment`,
+`unenrollTOTP`, `createChallenge` and `verifyChallenge`. Every one of them calls
+`supabase.auth.mfa.*` on a module-level singleton:
+
+```ts
+import { getSupabase } from "@/lib/supabase/client";
+const supabase = getSupabase();
+```
+
+`getSupabase()` is a lazily-built **anon** client with no user session. Supabase
+MFA operates on the currently signed-in user, so on the server there is no user
+for it to operate on. Nothing calls these five methods — they are dead code that
+also could not run. The three mobile endpoints
+(`/user/settings/2fa/enable|verify|disable`) are 404s that would have been built
+on top of them.
+
+### The trap
+
+The natural fix is a per-request client carrying the caller's bearer token:
+
+```ts
+createClient(url, anonKey, {
+  global: { headers: { Authorization: `Bearer ${accessToken}` } },
+})
+```
+
+**That does not work for MFA.** Verified against auth-js source
+(`supabase/auth-js`, `src/GoTrueClient.ts`): the MFA methods do not use the
+client's global headers. They read the session and pass the token explicitly:
+
+```
+const { data: sessionData, error: sessionError } = result
+...
+jwt: sessionData?.session?.access_token,
+```
+
+with `_enroll` POSTing to `` `${this.url}/factors` `` and `_unenroll` DELETEing
+`` `${this.url}/factors/${params.factorId}` ``. With no session in the client,
+`sessionData?.session?.access_token` is undefined and the request is
+unauthenticated regardless of what headers were configured.
+
+So a working server-side implementation needs either a client with a real
+session (`setSession` needs a refresh token, which mobile does not send — and
+accepting refresh tokens at an API is its own decision), or direct calls to the
+GoTrue REST endpoints with the caller's access token as the bearer.
+
+### The second constraint, on disable
+
+Per the official reference for `mfa.unenroll()`: "A user has to have an `aal2`
+authenticator level in order to unenroll a `verified` factor."
+
+The mobile contract is `disable2FA(code)` — a TOTP code in the body. A bearer
+token from a password login is **aal1**. Presenting a code in a request body does
+not by itself elevate anything. Disable therefore has to challenge and verify
+first (which elevates the session), then unenroll, within the same request and
+on the same client. Building it as "check the code ourselves, then unenroll"
+would either fail against Supabase or, if someone routed around it with the
+service role, remove a verified second factor on the strength of a check we
+wrote — an MFA bypass.
+
+### Not verified, and needed before building
+
+The auth-js source fetch truncated before `_challenge` and `_verify`. Their exact
+endpoint paths and request-body field names are therefore NOT confirmed here, and
+they are not guessed. Confirm them from source or the GoTrue OpenAPI spec before
+writing the code.
+
+### Not done
+
+No routes built, no code changed. Building any of the three on the current
+`MFAService` would produce endpoints that cannot work; building `disable` on a
+guessed contract could produce one that works and should not.
+
 ## Revision History
 
 | Date | Change |
@@ -216,3 +300,4 @@ commit carries a `Directive:` trailer saying so.
 | 2026-08-09 | Initial version — MFA/backup-code, JWT HS256, anon-client classification, orphan-module exploit review, secrets sweep, OWASP/LLM checklist pass. |
 | 2026-08-09 (rev 2) | Applied team-lead's two corrections: reachability re-graded LIVE/LATENT against the canonical `scripts/audit-reachability.js` (commit `2b23237`) instead of direct-importer count; phantom-table language tightened to "wiring prerequisite, not live outage" per the corrected 1-reachable/64-unreachable/3-test-only split. Confirmed SF-01 as the only LIVE finding (`BackupCodesManagement.tsx` is rendered by `src/app/settings/security/page.tsx`); SF-02 through SF-06 confirmed LATENT against the same script. |
 | 2026-08-17 | Added SF-07: PaperTradingEngine.getCurrentPrice falls back to `100 + Math.random() * 100` for every trade (POLYGON_API_KEY unconfigured), and getDailyReturns generates a random walk that is the sole input to maxDrawdown/sharpeRatio. Fabricated prices reach paper_fills, paper_trades, paper_positions and paper_accounts, and drive WATCH->GUIDED graduation. Three options presented; owner decision required. |
+| 2026-08-17 (rev 2) | Added SF-08: MFAService's TOTP methods run on a session-less anon singleton (dead + non-functional); verified from auth-js source that a global Authorization header does NOT authenticate supabase-js MFA calls (they read session.access_token and pass it as `jwt`); unenroll of a verified factor requires aal2, so disable must challenge+verify first. Challenge/verify endpoint paths deliberately left unverified rather than guessed. |
