@@ -80,11 +80,46 @@ const isDynamic = (r) => r.includes("[");
  * so the coverage gap stays visible instead of looking like a pass.
  */
 function loadSeeds(path) {
-  if (!existsSync(path)) return {};
+  if (!existsSync(path)) return { seeds: {}, meta: {} };
   const raw = JSON.parse(readFileSync(path, "utf8"));
-  return Object.fromEntries(
-    Object.entries(raw).filter(([k]) => !k.startsWith("_")),
+  const entries = Object.entries(raw);
+  return {
+    seeds: Object.fromEntries(entries.filter(([k]) => !k.startsWith("_"))),
+    meta: Object.fromEntries(entries.filter(([k]) => k.startsWith("_"))),
+  };
+}
+
+/**
+ * Refuse to run when the seeded rows belong to someone other than the user we
+ * sign in as.
+ *
+ * These resources are scoped by owner and answer 404 — not 403, so existence is
+ * not leaked — for another user's row. A foreign seed id therefore produces a
+ * page failure that is INDISTINGUISHABLE from a broken endpoint.
+ *
+ * This is not hypothetical. The seeds were created for m@t.co (6ba6571a) and a
+ * later run signed in as dogios@fynvita.test (0ae37503). Four pages reported
+ * failures — /disputes/[id], /documents/[id], goal-detail/[id],
+ * /trading/strategies/[id] — against code that was behaving exactly right, and
+ * the only way to tell was to query the owner of each row by hand. A comment in
+ * the seeds file already warned about this and did not prevent it, so the check
+ * is mechanical now.
+ *
+ * Exits rather than warns: a sweep measuring the wrong user's data is worse
+ * than no sweep, because its green rows are meaningless too.
+ */
+function preflightSeedOwnership(meta, email) {
+  const declared = meta._ownerEmail;
+  if (!declared || !email || declared === email) return;
+  console.error(
+    `\nSEED OWNERSHIP MISMATCH — refusing to run.\n` +
+      `  ${SEEDS} seeds rows owned by : ${declared}\n` +
+      `  this run authenticates as    : ${email}\n\n` +
+      `Every scoped endpoint would answer 404 for the other user's rows, and those\n` +
+      `404s look exactly like broken routes. Either sign in as ${declared}, or\n` +
+      `re-seed for ${email} with scripts/dogfood-seed.sql and update ${SEEDS}.\n`,
   );
+  process.exit(1);
 }
 
 function expandDynamic(routes, seeds) {
@@ -113,7 +148,9 @@ async function main() {
 
   // Dynamic segments need a real id to be meaningful; a literal "[id]" URL only
   // ever proves the 404 path. Seeded ones are now exercised for real.
-  const { expanded, unseeded } = expandDynamic(all.filter(isDynamic), loadSeeds(SEEDS));
+  const { seeds, meta } = loadSeeds(SEEDS);
+  preflightSeedOwnership(meta, EMAIL);
+  const { expanded, unseeded } = expandDynamic(all.filter(isDynamic), seeds);
 
   let testable = [...staticRoutes, ...expanded];
 
