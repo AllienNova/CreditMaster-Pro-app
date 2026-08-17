@@ -162,6 +162,7 @@ src/app/api/financial/debt/calculate/route.ts,POST,validateFromHeaders,none,with
 src/app/api/financial/debt/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/financial/disputes/ai-strategy/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/export/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/goals/[id]/contribute/route.ts,POST,withPermission,own-rows,withPermission,g,"added 2026-08-17 - adds a contribution to the caller own goal; reads current_amount scoped by user_id+id then calls updateGoalProgress with the SUM, because that service takes an absolute total and forwarding the delta would erase prior progress"
 src/app/api/financial/goals/[id]/investment/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:create_goals"")",withPermission(financial:create_goals),c,promote inline permission check to withPermission
 src/app/api/financial/goals/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,"rbac.hasPermission(""financial:create_goals""); inline ownership check",withPermission(financial:create_goals),c,promote inline permission check; keep ownership check
 src/app/api/financial/goals/optimizations/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
