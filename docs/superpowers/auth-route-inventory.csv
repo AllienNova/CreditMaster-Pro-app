@@ -113,6 +113,7 @@ src/app/api/disputes/reasons/route.ts,GET,validateFromHeaders,none,withAuth,f,in
 src/app/api/disputes/recommend-strategy/route.ts,POST,withAuth,none,withAuth,g,added 2026-08-17 - pure scenario-to-strategy mapping over a static catalogue; reads no user rows so there is nothing to scope. authn required because it is a product feature not a public API
 src/app/api/disputes/route.ts,DELETE;GET;PATCH;POST,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
 src/app/api/disputes/stats/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
+src/app/api/disputes/strategies/[id]/route.ts,GET,withAuth,none,withAuth,g,added 2026-08-17 - reads a STATIC strategy catalogue by id; no user rows involved so there is nothing to scope. authn required as a product feature
 src/app/api/disputes/strategies/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
 src/app/api/disputes/templates/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - static templates but POST mutates; wrap in withAuth
 src/app/api/documents/route.ts,DELETE;GET;PATCH,getUser,inline user.id ownership check,withAuth,c,bare session read + ownership - wrap in withAuth; keep ownership check
