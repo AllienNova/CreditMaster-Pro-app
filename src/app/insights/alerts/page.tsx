@@ -96,7 +96,7 @@ const MOCK_ALERTS: Alert[] = [
     priority: "medium",
     title: "Unusual Spending Pattern",
     message: "Your shopping spending is 85% higher than your monthly average",
-    actionUrl: "/insights/spending",
+    actionUrl: "/financial/spending",
     actionLabel: "View Details",
     data: {
       category: "Shopping",

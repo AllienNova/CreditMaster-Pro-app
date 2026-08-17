@@ -71,7 +71,24 @@ function resolves(link) {
   });
 }
 
-// href="/x", href={"/x"}, router.push/replace("/x"), redirect("/x").
+// href="/x", href={"/x"}, href: "/x", actionUrl: "/x",
+// router.push/replace("/x"), redirect("/x").
+//
+// Two channels were added after a browser sweep found seven dead destinations
+// this gate had passed as clean.
+//
+// `href:` — the OBJECT-PROPERTY form. A nav declared as data,
+// `{ href: "/contact", label: "Contact" }`, is exactly how Footer.tsx lists its
+// links, and requiring `=` meant every one of them was invisible. /contact and
+// /faq had no page.tsx at all. (audit:reachability already matched `[=:]`; this
+// gate never got the same treatment.)
+//
+// `actionUrl:` — a navigation target under a different name. The vitality score
+// service and the proactive-alert engine attach one to every recommendation, so
+// "Improve your savings" pointed at /dashboard/savings, which does not exist.
+// Five such CTAs were dead. A destination is a destination whatever the key is
+// called; the browser found these as _rsc= prefetch 404s, which is the only
+// reason anyone noticed.
 //
 // Three channels were missing, found by an independent review of this gate.
 // The old pattern required a quote IMMEDIATELY after `href=`, so the JSX brace
@@ -80,7 +97,7 @@ function resolves(link) {
 // entirely. Template literals carrying an interpolation are still skipped:
 // the path is not statically known.
 const LINK =
-  /(?:href\s*=\s*\{?\s*|router\.(?:push|replace)\s*\(\s*|\bredirect\s*\(\s*)["'`](\/[^"'`\s${}]*)["'`]/g;
+  /(?:href\s*[=:]\s*\{?\s*|actionUrl\s*:\s*|router\.(?:push|replace)\s*\(\s*|\bredirect\s*\(\s*)["'`](\/[^"'`\s${}]*)["'`]/g;
 
 // `--self-test` proves the matcher sees every channel it claims to. The href
 // channel was missing from the mobile gate for its entire life while its
@@ -90,6 +107,10 @@ if (process.argv.includes("--self-test")) {
   const CASES = [
     ['<Link href="/a">', "/a", "plain href"],
     ['<Link href={"/b"}>', "/b", "JSX brace href"],
+    ['{ href: "/c", label: "C" }', "/c", "object-property href"],
+    ["{ href: '/c2' }", "/c2", "object-property href, single quotes"],
+    ['actionUrl: "/d"', "/d", "actionUrl navigation target"],
+    ["actionUrl:'/d2'", "/d2", "actionUrl, no space"],
     ['router.push("/c")', "/c", "router.push"],
     ['router.replace("/d")', "/d", "router.replace"],
     ['redirect("/e")', "/e", "server-side redirect"],

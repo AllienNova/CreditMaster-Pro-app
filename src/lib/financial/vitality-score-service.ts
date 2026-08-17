@@ -952,7 +952,7 @@ class FinancialVitalityScoreService {
         impact: "high",
         estimatedPoints: 5,
         category: "credit",
-        actionUrl: "/dashboard/credit",
+        actionUrl: "/credit",
       });
     }
 
@@ -965,7 +965,7 @@ class FinancialVitalityScoreService {
         impact: "high",
         estimatedPoints: 8,
         category: "savings",
-        actionUrl: "/dashboard/savings",
+        actionUrl: "/financial/savings",
       });
     }
 
@@ -978,7 +978,7 @@ class FinancialVitalityScoreService {
         impact: "high",
         estimatedPoints: 6,
         category: "debt",
-        actionUrl: "/dashboard/debt",
+        actionUrl: "/financial/debt",
       });
     }
 
@@ -991,7 +991,7 @@ class FinancialVitalityScoreService {
         impact: "medium",
         estimatedPoints: 4,
         category: "investments",
-        actionUrl: "/dashboard/investments",
+        actionUrl: "/investments",
       });
     }
 

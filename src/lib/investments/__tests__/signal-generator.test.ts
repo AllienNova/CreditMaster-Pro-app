@@ -250,7 +250,10 @@ const mockSignalDb = {
   target_price: 185.0,
   stop_loss: 170.0,
   timeframe: "1d",
-  generated_at: new Date().toISOString(),
+  // created_at, not generated_at — the latter is not a column on
+  // trading_signals, which is why the query 500'd in production while
+  // this mocked suite stayed green.
+  created_at: new Date().toISOString(),
   expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   status: "active",
   ai_insights: ["Strong momentum", "Positive sentiment"],
@@ -966,11 +969,11 @@ describe("SignalGenerator", () => {
 
       const fromChain = mockSupabase.from();
       expect(fromChain.gte).toHaveBeenCalledWith(
-        "generated_at",
+        "created_at",
         startDate.toISOString(),
       );
       expect(fromChain.lte).toHaveBeenCalledWith(
-        "generated_at",
+        "created_at",
         endDate.toISOString(),
       );
     });
@@ -1020,9 +1023,17 @@ describe("SignalGenerator", () => {
       const signals = await signalGenerator.getActiveSignals(mockUserId);
 
       expect(signals).toBeDefined();
-      expect(mockChain.in).toHaveBeenCalledWith("status", [
-        SignalStatus.ACTIVE,
-      ]);
+      // This asserted `in("status", [ACTIVE])` — a column trading_signals does
+      // NOT have. The assertion encoded the bug: GET /api/investments/signals
+      // returned 500 for every caller with
+      // `column trading_signals.status does not exist`, and this test passed
+      // over it the whole time because the Supabase client is mocked, so a
+      // phantom column is invisible here.
+      //
+      // is_active is the real column, and the write side already used it (see
+      // trackSignalOutcome); only this read was left behind.
+      expect(mockChain.eq).toHaveBeenCalledWith("is_active", true);
+      expect(mockChain.in).not.toHaveBeenCalledWith("status", expect.anything());
     });
 
     it("should filter out expired signals", async () => {
@@ -1178,7 +1189,7 @@ describe("SignalGenerator", () => {
 
       const fromChain = mockSupabase.from();
       expect(fromChain.gte).toHaveBeenCalledWith(
-        "generated_at",
+        "created_at",
         expect.any(String),
       );
     });

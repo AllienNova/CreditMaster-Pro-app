@@ -992,7 +992,7 @@ export class ProactiveAlertEngine {
 
   private getActionUrl(alertType: AlertType): string {
     const urls: Record<AlertType, string> = {
-      unusual_spending: "/insights/spending",
+      unusual_spending: "/financial/spending",
       low_balance: "/financial/accounts",
       large_transaction: "/financial/transactions",
       bill_due: "/budgeting/bills",
