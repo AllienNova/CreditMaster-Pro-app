@@ -207,6 +207,18 @@ jobs:
         working-directory: mobile-app
         run: npm run audit:api
 
+      # BLOCKING: audit:mocks has always scanned web src/app/api only, and the
+      # mobile app fabricates differently - not a catch-block fallback inside a
+      # route, but a module-level constant rendered directly with no request at
+      # all. That is the shape of every fabrication found by hand here: the Visa
+      # ending 4242 on the billing screen, the $285,400 income on the tax
+      # optimizer, MOCK_SESSIONS behind the "AI coach". Frozen at 87 entries
+      # (57 of them in files that make no request); shrink-only, and each must
+      # be classified catalogue or fabrication.
+      - name: audit:screen-data (mobile) - no screen renders invented data
+        working-directory: mobile-app
+        run: npm run audit:screen-data
+
       # BLOCKING: the mobile inverse of audit:links. The tab bar holds nine
       # destinations against 232 screens, so 131 of them - the whole of trading,
       # tax, the marketplace and rewards - could only be opened by typing a deep

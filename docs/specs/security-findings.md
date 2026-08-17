@@ -578,6 +578,82 @@ STILL OPEN from this finding: there is no way to add, change or remove a card
 from the mobile app. That is now visible to the user instead of faked, but it
 needs the two Stripe routes to actually work.
 
+---
+
+## SF-13 — 57 mobile screens render a constant data set and never ask the server
+
+**Status:** LIVE. **Severity:** HIGH in aggregate; individually it ranges from harmless
+to SF-12-grade.
+**Found:** 2026-08-17, by building the gate that should have found SF-12.
+
+SF-12 (a hardcoded Visa 4242 on the billing screen) was found by reading the
+file. So were the tax optimizer's invented $285,400 income and the coaching
+hook's canned "AI coach" replies. `audit:mocks` caught none of them: it scans
+web `src/app/api` for routes returning mock data from a catch block, and mobile
+fabricates a different way — a module-level constant, rendered directly, with no
+request made at all.
+
+`scripts/audit-screen-data.mjs` now finds that shape mechanically. First run:
+
+```
+audit:screen-data — 87 screen(s) render a constant data set,
+                    57 of them with NO request in the file
+  38 catalogue
+  19 fabrication
+  30 UNCLASSIFIED
+```
+
+### The classification matters and a regex cannot do it
+
+`const BUREAUS = [{ id: "experian", ... }]` and
+`const MOCK_BILLS = [{ amount: 120, ... }]` are the same shape. The first is a
+catalogue — product content, legitimately in code. The second is a claim about
+someone's money. So the gate enumerates and freezes; a human classifies each as
+`catalogue` or `fabrication` in `scripts/screen-data-baseline.json`, and the
+list may only shrink.
+
+19 are already classified `fabrication` on the strength of their names and
+screens, 18 of them in files that make no request at all:
+
+```
+app/analytics/credit-score.tsx      SCORE_HISTORY, SCORE_FACTORS
+app/analytics/disputes.tsx          DISPUTES_BY_TYPE, MONTHLY_DATA
+app/analytics/trends.tsx            TREND_METRICS
+app/budgeting/bills.tsx             MOCK_BILLS
+app/budgeting/subscriptions.tsx     MOCK_SUBSCRIPTIONS
+app/budgeting/auto-save.tsx         MOCK_RULES
+app/credit-builder/payments.tsx     MOCK_PAYMENTS
+app/credit-builder/pay-for-delete.tsx  MOCK_COLLECTIONS
+app/credit-builder/goals.tsx        SAMPLE_GOALS, SCORE_HISTORY
+app/recommendations/insights.tsx    INSIGHTS
+app/recommendations/index.tsx       AI_RECOMMENDATIONS
+app/reports/comparison.tsx          COMPARISON_ROWS
+app/settings/connected-accounts.tsx CONNECTED_ACCOUNTS
+app/admin/{audit,logs,metrics,subscriptions,index}.tsx
+                                    AUDIT_EVENTS, LOGS, REVENUE_DATA,
+                                    DISPUTE_DATA, SUBSCRIPTIONS, METRICS
+```
+
+Several of those are the same severity as SF-12 on their own terms.
+`CONNECTED_ACCOUNTS` tells a user which bank accounts are linked.
+`SCORE_HISTORY` is their credit score over time. The `admin/*` screens show
+business metrics — revenue, subscriptions, audit events — that an operator could
+act on.
+
+### What this means for the route-count metric
+
+Tracked API paths measure whether a screen's request has a backing route. These
+57 screens make no request, so they have never appeared in that count and never
+will. A mobile app can reach 232 of 232 routes with every gate green while a
+third of its screens show data nobody fetched.
+
+### Not done
+
+No screen fixed in this pass. The gate is frozen at 87 entries and wired into CI
+as blocking, so the number cannot grow and each entry has to be looked at once.
+30 remain UNCLASSIFIED — that is honest debt, not a gap: they need someone who
+knows the product to say which they are.
+
 ## Revision History
 
 | Date | Change |
@@ -590,3 +666,4 @@ needs the two Stripe routes to actually work.
 | 2026-08-17 (rev 4) | Added SF-10: /api/tax/documents/upload never stores the uploaded file and never sets storage_path, while three delete paths read storage_path to remove a file that was never written (0 of 0 rows have one). Blocks /tax/documents/[id]/download — nothing to serve. |
 | 2026-08-17 (rev 5) | Added SF-11 (HIGHEST severity here): CreditBureauService.getCreditReport falls back to MockCreditBureauAdapter on any failed live call, enableFallback defaults to true, bureau clients build from empty env vars so the call always fails, and the `fallback_` tag on reference_id is read by nothing outside the service's own test. Users are shown invented accounts, creditors, statuses and scores as their own credit report — the input to the dispute-letter flow. /credit/scores/refresh deliberately not built on top of it. |
 | 2026-08-17 (rev 6) | Added SF-12: mobile-app/app/settings/billing.tsx renders a hardcoded Visa 4242, a Mastercard 5555 and three $29.00 paid invoices, and makes no network call at all — FND-016/017 reproduced in mobile, uncovered by audit:mocks which scans web src/ only. /api/payment/billing already returns the real plans, subscription, paymentMethods and invoices. |
+| 2026-08-17 (rev 7) | Added SF-13: new gate audit:screen-data finds 87 mobile screens rendering a module-level constant data set, 57 with no request in the file. 19 classified fabrication (MOCK_BILLS, MOCK_PAYMENTS, SCORE_HISTORY, CONNECTED_ACCOUNTS, admin REVENUE_DATA…), 38 catalogue, 30 unclassified. Frozen shrink-only and wired into CI. These screens make no request, so they never appeared in the tracked-API-path count. |

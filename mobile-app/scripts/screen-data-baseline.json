@@ -1,0 +1,354 @@
+{
+  "frozen": "2026-08-17",
+  "why": "Screens rendering a module-level constant data set. Each must be classified `catalogue` (product content: plans offered, bureaus, filter chips) or `fabrication` (invented user data that must be replaced by a real read). UNCLASSIFIED entries are debt someone has not looked at yet. This list may only shrink.",
+  "entries": {
+    "app/activity/index.tsx: FILTERS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/admin/audit.tsx: AUDIT_EVENTS": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/admin/config.tsx: CONFIG_ITEMS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/admin/features.tsx: FEATURES": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/admin/index.tsx: METRICS, QUICK_ACTIONS": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/admin/logs.tsx: LOGS": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/admin/metrics.tsx: DISPUTE_DATA, REVENUE_DATA": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/admin/subscriptions.tsx: SUBSCRIPTIONS": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/analytics/credit-score.tsx: SCORE_FACTORS, SCORE_HISTORY": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/analytics/disputes.tsx: DISPUTES_BY_TYPE, MONTHLY_DATA": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/analytics/reports.tsx: GENERATED_REPORTS, REPORT_TEMPLATES": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/analytics/trends.tsx: TREND_METRICS": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/billing/invoices.tsx: FILTERS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/budgeting/auto-save.tsx: MOCK_RULES": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/budgeting/bills.tsx: MOCK_BILLS": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/budgeting/index.tsx: FEATURES, QUICK_STATS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/budgeting/subscriptions.tsx: MOCK_SUBSCRIPTIONS": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/coach/goals.tsx: GOAL_TYPES": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/coach/recommendations.tsx: FILTER_OPTIONS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/credit-builder/authorized-user.tsx: BENEFITS, REQUIREMENTS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/budget.tsx: BUDGET_CATEGORIES, CREDIT_IMPACT_TIPS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/freeze.tsx: BENEFITS, BUREAUS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/goals.tsx: RECOMMENDED_ACTIONS, SAMPLE_GOALS, SCORE_HISTORY": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/credit-builder/goodwill.tsx: LETTER_TEMPLATES": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/identity-theft.tsx: IMPORTANT_CONTACTS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/index.tsx: TOOL_CATEGORIES": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/credit-builder/loan.tsx: CREDIT_IMPACT_DATA, HOW_IT_WORKS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/mix.tsx: CREDIT_TYPES": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/pay-for-delete.tsx: MOCK_COLLECTIONS, STEPS": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/credit-builder/payments.tsx: MOCK_PAYMENTS": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/credit-builder/reports/upload.tsx: BUREAUS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/secured-card.tsx: SECURED_CARDS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-repair/building.tsx: STRATEGIES": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-repair/cards.tsx: CARDS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/credit-repair/index.tsx: TOOLS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/credit/history.tsx: DATE_RANGES": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/credit/score-detail.tsx: SCORE_RANGES": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/dashboard/progress.tsx: ACHIEVEMENTS, MILESTONES": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/dashboard/reports.tsx: REPORT_TYPES": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/dispute/create.tsx: BUREAUS, DISPUTE_TYPES": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/dispute/templates.tsx: CATEGORIES": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/dispute/use-template.tsx: BUREAUS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/documents/index.tsx: FILTER_TYPES": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/financial-intelligence/index.tsx: QUICK_ACTIONS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/financial/accounts.tsx: ACCOUNTS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/financial/budgets.tsx: BUDGET_CATEGORIES, RECOMMENDATIONS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/financial/holdings.tsx: ASSET_TYPES": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/financial/income.tsx: INCOME_HISTORY, INCOME_SOURCES": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/financial/overview.tsx: ACCOUNTS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/financial/reports.tsx: REPORT_TEMPLATES, SAVED_REPORTS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/financial/transactions.tsx: SPENDING_BY_CATEGORY, TRANSACTIONS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/help/contact.tsx: CONTACT_OPTIONS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/help/faq.tsx: FAQ_ITEMS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/help/guides.tsx: GUIDES": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/identity/index.tsx: FEATURES": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/investments/analyze/fundamental.tsx: PEER_COMPARISON, REVENUE_BREAKDOWN": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/investments/analyze/recommendation.tsx: PRICE_PROJECTION, RISK_FACTORS, SCORE_BREAKDOWN": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/investments/analyze/sentiment.tsx: ANALYST_RATINGS, INSIDER_TRADES, NEWS_ITEMS, SENTIMENT_TREND, SOCIAL_SENTIMENT": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/investments/analyze/technical.tsx: CHART_PATTERNS, MOVING_AVERAGES, OSCILLATORS, PRICE_DATA, SUPPORT_RESISTANCE": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/loans/programs.tsx: FEDERAL_PROGRAMS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/marketplace/calculators.tsx: CALCULATOR_OPTIONS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "app/marketplace/index.tsx: SERVICES": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/monitoring/alerts.tsx: FILTERS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/monitoring/index.tsx: BUREAUS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/monitoring/settings.tsx: ALERT_TYPES, BUREAUS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/onboarding/complete.tsx: NEXT_STEPS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/onboarding/connect.tsx: BUREAUS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/onboarding/goals.tsx: GOALS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/onboarding/index.tsx: ONBOARDING_SLIDES": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/profile/help.tsx: CONTACT_OPTIONS, FAQ_ITEMS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/profile/settings.tsx: SETTINGS_SECTIONS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "app/profile/subscription.tsx: PLANS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/recommendations/credit-cards.tsx: CARD_TYPES, CREDIT_CARDS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/recommendations/index.tsx: AI_RECOMMENDATIONS, CATEGORIES": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/recommendations/insights.tsx: INSIGHTS": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/recommendations/loans.tsx: LOAN_OFFERS, LOAN_TYPES": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/reports/comparison.tsx: BUREAUS, COMPARISON_ROWS": {
+      "classification": "fabrication",
+      "offline": false
+    },
+    "app/reports/index.tsx: REPORT_CONFIGS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/reports/upload.tsx: BUREAUS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/search/index.tsx: CATEGORY_TABS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/settings/billing.tsx: PLANS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/settings/connected-accounts.tsx: CONNECTED_ACCOUNTS": {
+      "classification": "fabrication",
+      "offline": true
+    },
+    "app/tax/calendar.tsx: TAX_EVENTS_2026": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/tax/deductions.tsx: DEDUCTION_CATEGORIES": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/tax/documents.tsx: FILTER_CATEGORIES, UPLOAD_DOCUMENT_TYPES": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/trading/index.tsx: QUICK_ACTIONS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/trading/strategies/index.tsx: RISK_FILTERS": {
+      "classification": "catalogue",
+      "offline": true
+    }
+  }
+}
