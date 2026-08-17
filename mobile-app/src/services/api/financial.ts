@@ -697,10 +697,15 @@ export const bankAccountApi = {
     }),
 
   /**
-   * Refresh account data
+   * Refresh account data.
+   *
+   * The route is /financial/accounts/[accountId]/sync — this asked for
+   * /refresh, which does not exist, so every pull-to-refresh on an account
+   * 404'd. Same naming drift as the exchange-token helper above: two names for
+   * one operation, and only one of them was ever built.
    */
   refreshAccount: (accountId: string) =>
-    api.post<BankAccount>(`/financial/accounts/${accountId}/refresh`),
+    api.post<BankAccount>(`/financial/accounts/${accountId}/sync`),
 
   /**
    * Disconnect bank account

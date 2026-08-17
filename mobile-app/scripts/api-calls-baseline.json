@@ -14,8 +14,6 @@
     "/documents/ ",
     "/documents/ /analyze",
     "/documents/ /download",
-    "/financial/accounts/ ",
-    "/financial/accounts/ /refresh",
     "/financial/debt/ ",
     "/financial/goals/ /contribute",
     "/financial/transactions/ ",
@@ -49,6 +47,7 @@
     "/user/settings/2fa/verify"
   ],
   "verbMismatch": [
+    "DELETE /financial/accounts/ ",
     "GET /tax/deductions/recommendations",
     "PATCH /notifications/preferences",
     "POST /notifications/preferences",
@@ -64,6 +63,7 @@
     "PATCH /notifications/preferences": "NOT a verb typo — do not simply flip it to PUT. The route exports GET and PUT, but mobile types.ts NotificationPreferences carries categories:{disputes,scoreChanges,alerts,recommendations,payments,marketing} while the server model is channels:{dispute_update,score_change,payment_reminder,document_processed,recommendation,system,promotion}, and notification_preferences has NO categories column. Changing the verb alone would persist pushEnabled/emailEnabled/smsEnabled and SILENTLY DROP every category toggle. Exactly the shape proven live on the budgets route: PATCH {amount:750} returned 200 and left the amount at 500.00. Design written up in docs/specs/adr/0014-notification-taxonomy.md (Status: Proposed) — needs D1 (which taxonomy is canonical) and D2 (is the per-category channel matrix real) answered.",
     "POST /notifications/preferences": "app/settings/notification-preferences.tsx sends {categories:[{id,enabled,channels}], quietHours} — a per-category channel MATRIX. The server stores a flat channels object and a quiet_hours object, with no categories column at all. Same reconciliation as the PATCH entry. Design written up in docs/specs/adr/0014-notification-taxonomy.md (Status: Proposed) — needs D1 (which taxonomy is canonical) and D2 (is the per-category channel matrix real) answered.",
     "_disputesFixed": "POST /disputes/recommend-strategy closed 2026-08-17. recommendStrategy() already existed in @/lib/disputes/advanced-strategies and was already used by /api/disputes/generate; only the route was missing.",
-    "_taxonomy": "FIVE notification taxonomies exist in this codebase (push-notification-service, web-push-service+scheduler, the preferences route, mobile types.ts, the mobile settings screen). Only score_change and payment_reminder appear in more than two. notification-scheduler.ts:461 gates delivery on keys the preferences route never writes, so the check is broken at the taxonomy level, not just the transport level. notification_preferences has 0 rows — nobody has ever saved one. See ADR-0014."
+    "_taxonomy": "FIVE notification taxonomies exist in this codebase (push-notification-service, web-push-service+scheduler, the preferences route, mobile types.ts, the mobile settings screen). Only score_change and payment_reminder appear in more than two. notification-scheduler.ts:461 gates delivery on keys the preferences route never writes, so the check is broken at the taxonomy level, not just the transport level. notification_preferences has 0 rows — nobody has ever saved one. See ADR-0014.",
+    "DELETE /financial/accounts/": "Disconnecting a bank account (financial.ts:709). The detail route now exists with GET, so this moved from a path break to a verb break — a more accurate description of the same gap. DELETE is deliberately unbuilt: unlinking a Plaid-linked account is destructive with no established pattern here. manual-account-service.deleteAccount() works on `manual_accounts`, a different table, so it is not this. Deleting a financial_accounts row orphans its transactions and discards balance history; the alternative — mark disconnected and revoke the Plaid item — needs a column that does not exist. A DELETE that quietly destroys account history, or one that returns 200 and leaves the account linked, are both worse than the 404 today. Needs a decision on unlink semantics plus, probably, a status column."
   }
 }
