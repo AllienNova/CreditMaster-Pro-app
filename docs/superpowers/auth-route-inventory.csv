@@ -241,6 +241,7 @@ src/app/api/investments/quotes/route.ts,GET,withAuth,none,withAuth,g,added 2026-
 src/app/api/investments/recommendations/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
 src/app/api/investments/signals/[id]/route.ts,GET;PATCH,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/investments/signals/active/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/signals/generate/route.ts,POST,withAuth,own-rows,withAuth,g,added 2026-08-17 - generates a trading signal for the CALLER (user.id passed to generateSignal); rate-limited to 30/hour separately from the 100/hour read budget because each generation runs an analysis plus an AI pass
 src/app/api/investments/signals/performance/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/investments/signals/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/marketplace/products/[id]/route.ts,GET,none,none,PUBLIC,f,public product catalog - read-only browse; genuinely public
