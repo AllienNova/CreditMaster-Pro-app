@@ -194,6 +194,35 @@ function normalise(path) {
   return segments.join("/") || "/";
 }
 
+/**
+ * Blank out whole-line comments before scanning for calls.
+ *
+ * A comment is not a call. Documenting a path that USED to be wrong — "was
+ * api.get(\"/api/credit/check\")" — re-armed this gate against prose and kept
+ * the entry alive in the baseline after the code was fixed. A tool that
+ * punishes accurate comments teaches people to write vague ones.
+ *
+ * Deliberately line-based rather than a full tokeniser: only lines whose
+ * trimmed form OPENS with //, /*, or * (a JSDoc continuation) are cleared. A
+ * line starting that way cannot be inside a string literal, so no
+ * "http://host" is ever damaged — the failure mode a naive strip-everything
+ * regex has. A trailing comment on a line of real code is still scanned, which
+ * over-detects rather than under-detects: the safe direction for a gate.
+ */
+function stripCommentLines(source) {
+  return source
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trimStart();
+      return trimmed.startsWith("//") ||
+        trimmed.startsWith("/*") ||
+        trimmed.startsWith("*")
+        ? ""
+        : line;
+    })
+    .join("\n");
+}
+
 // `--self-test` proves the matcher still discriminates, using the real route
 // table. A gate is only worth its green light if it can be shown to go red, and
 // the alternative — dropping a throwaway probe file into src/ — is both easy to
@@ -219,7 +248,27 @@ if (process.argv.includes("--self-test")) {
       has("/student-loans/history"),
       "a conditional query truncates the path rather than corrupting it"],
   ];
+
   let bad = 0;
+
+  // The comment stripper gets its own cases: it decides what is even a call.
+  const stripCases = [
+    ['  * Was `api.get("/api/credit/check")`.', "", "a JSDoc continuation line is cleared"],
+    ['  // api.get("/gone")', "", "a line comment is cleared"],
+    ['  /* api.get("/gone") */', "", "a block-comment opener is cleared"],
+    ['const u = "http://localhost:3000";', 'const u = "http://localhost:3000";',
+      "a URL inside a string is NOT damaged"],
+    ['  api.get("/student-loans");', '  api.get("/student-loans");',
+      "a real call survives untouched"],
+  ];
+  for (const [input, want, why] of stripCases) {
+    const got = stripCommentLines(input);
+    if (got === want) continue;
+    bad++;
+    console.log(`  SELF-TEST FAIL: strip ${JSON.stringify(input)} -> ${JSON.stringify(got)}, expected ${JSON.stringify(want)} (${why})`);
+  }
+
+  let total = cases.length + stripCases.length;
   for (const [path, want, why] of cases) {
     const got = resolvesTo(path);
     if (got === want) continue;
@@ -228,8 +277,8 @@ if (process.argv.includes("--self-test")) {
   }
   console.log(
     bad === 0
-      ? `audit:api self-test PASSED — ${cases.length}/${cases.length} matcher cases correct.`
-      : `audit:api self-test FAILED — ${bad} of ${cases.length} cases wrong.`,
+      ? `audit:api self-test PASSED — ${total}/${total} matcher cases correct.`
+      : `audit:api self-test FAILED — ${bad} of ${total} cases wrong.`,
   );
   process.exit(bad === 0 ? 0 : 1);
 }
@@ -242,7 +291,7 @@ let callsSeen = 0;
 
 for (const file of walkSources(join(MOBILE, "app")).concat(walkSources(join(MOBILE, "src")))) {
   const rel = relative(MOBILE, file);
-  for (const m of readFileSync(file, "utf8").matchAll(CALL)) {
+  for (const m of stripCommentLines(readFileSync(file, "utf8")).matchAll(CALL)) {
     // Group 1 is now the VERB, so the path moved from m[2] to m[3]. Getting
     // this wrong would make every path unresolvable and the gate would scream —
     // the safe direction, but check it if this regex is ever edited again.

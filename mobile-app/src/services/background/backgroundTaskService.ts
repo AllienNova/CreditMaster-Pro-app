@@ -10,6 +10,11 @@ import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { api } from "../api/client";
+import {
+  toCreditCheckResult,
+  type ApiMonitoringDashboard,
+  type CreditCheckResult,
+} from "../api/creditCheckAdapter";
 
 // Task names
 export const BACKGROUND_TASKS = {
@@ -33,15 +38,6 @@ const TASK_INTERVALS = {
   DATA_SYNC: 15 * 60, // 15 minutes
 };
 
-interface CreditCheckResult {
-  score: number;
-  change: number;
-  alerts: Array<{
-    type: string;
-    message: string;
-    severity: "info" | "warning" | "critical";
-  }>;
-}
 
 interface PriceAlert {
   id: string;
@@ -103,6 +99,12 @@ class BackgroundTaskService {
         }
         const result = await this.performCreditCheck();
 
+        // A failed read is reported as a failed run, not recorded as a
+        // successful check with nothing to say.
+        if (!result) {
+          return BackgroundFetch.BackgroundFetchResult.Failed;
+        }
+
         if (result.alerts.length > 0) {
           await this.notifyCreditAlerts(result);
         }
@@ -112,7 +114,9 @@ class BackgroundTaskService {
           new Date().toISOString(),
         );
 
-        return BackgroundFetch.BackgroundFetchResult.NewData;
+        return result.alerts.length > 0
+          ? BackgroundFetch.BackgroundFetchResult.NewData
+          : BackgroundFetch.BackgroundFetchResult.NoData;
       } catch (error) {
         if (__DEV__)
           console.error("[Background] Credit monitor failed:", error);
@@ -239,18 +243,42 @@ class BackgroundTaskService {
   /**
    * Perform credit check
    */
-  private async performCreditCheck(): Promise<CreditCheckResult> {
-    try {
-      const response = await api.get("/api/credit/check");
-      return response.data as CreditCheckResult;
-    } catch {
-      // Return mock data for development
-      return {
-        score: 720,
-        change: 0,
-        alerts: [],
-      };
+  /**
+   * Read the caller's credit position, or null when it cannot be read.
+   *
+   * Was `api.get("/api/credit/check")`. The client's base URL already ends in
+   * /api, so that resolved to /api/api/credit/check and 404'd on every run.
+   * The client returns { success: false } rather than throwing, so the catch
+   * below never fired: `response.data` was undefined, and the caller's
+   * `result.alerts.length` threw a TypeError. This task has never completed.
+   *
+   * The catch used to return { score: 720, change: 0, alerts: [] } as "mock
+   * data for development". Never again: a monitor that cannot read a score
+   * reports that it could not, rather than inventing one and pushing
+   * notifications derived from it.
+   */
+  private async performCreditCheck(): Promise<CreditCheckResult | null> {
+    const response = await api.get<ApiMonitoringDashboard>(
+      "/credit-monitoring",
+    );
+
+    if (!response.success || !response.data) {
+      if (__DEV__) {
+        console.warn(
+          "[Background] Credit check could not be read:",
+          response.error?.message,
+        );
+      }
+      return null;
     }
+
+    // The route wraps its payload as { success, data }; the client unwraps one
+    // layer, so the dashboard may still be nested.
+    const payload =
+      (response.data as { data?: ApiMonitoringDashboard }).data ??
+      response.data;
+
+    return toCreditCheckResult(payload);
   }
 
   /**

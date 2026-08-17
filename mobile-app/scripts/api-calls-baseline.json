@@ -5,7 +5,6 @@
     "/ai/coaching/chat",
     "/ai/coaching/sessions",
     "/ai/nudges/respond",
-    "/api/credit/check",
     "/credit/reports/ ",
     "/credit/scores/refresh",
     "/credit/simulate",
