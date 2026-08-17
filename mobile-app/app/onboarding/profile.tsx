@@ -3,7 +3,7 @@
  * Collect user profile information
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -20,16 +20,43 @@ import { useTheme } from "../../src/hooks/useTheme";
 import { withOpacity } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { useAuthStore } from "../../src/store/authStore";
+import { useOnboardingProgress } from "../../src/hooks/useOnboardingProgress";
+
+const STEP = 1;
 
 export default function OnboardingProfileScreen() {
   const { colors, spacing, borderRadius, fontSize, fontWeight, iconSize } =
     useTheme();
   const { user, updateProfile } = useAuthStore();
+  const {
+    progress: savedProgress,
+    loading,
+    completeStep,
+  } = useOnboardingProgress();
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [phone, setPhone] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const hydratedRef = useRef(false);
+
+  // Saved answers win over the auth profile: they are what this user typed on a
+  // previous run of the wizard that ended before it reached updateProfile().
+  // This cannot be a useState initialiser — progress loads asynchronously, so
+  // at first render form_data is still empty and the answers would never show.
+  useEffect(() => {
+    if (loading || hydratedRef.current) return;
+    hydratedRef.current = true;
+
+    const saved = (savedProgress.form_data?.profile ?? {}) as Record<
+      string,
+      string | undefined
+    >;
+    if (saved.firstName) setFirstName(saved.firstName);
+    if (saved.lastName) setLastName(saved.lastName);
+    if (saved.phone) setPhone(saved.phone);
+    if (saved.dateOfBirth) setDateOfBirth(saved.dateOfBirth);
+  }, [loading, savedProgress.form_data]);
 
   const handleContinue = async () => {
     if (!firstName.trim() || !lastName.trim()) {
@@ -39,12 +66,17 @@ export default function OnboardingProfileScreen() {
     setIsLoading(true);
     try {
       await updateProfile({ firstName, lastName, phone, dateOfBirth });
-      router.push("/onboarding/goals");
     } catch (error) {
       console.error("Failed to update profile:", error);
-    } finally {
-      setIsLoading(false);
     }
+
+    // Recorded even when updateProfile threw, so a failed profile write does
+    // not also cost the user the answers they typed.
+    await completeStep(STEP, {
+      profile: { firstName, lastName, phone, dateOfBirth },
+    });
+    setIsLoading(false);
+    router.push("/onboarding/goals");
   };
 
   const handleSkip = () => {

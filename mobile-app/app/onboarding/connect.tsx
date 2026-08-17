@@ -11,6 +11,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../src/hooks/useTheme";
 import { withOpacity } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { PlaidHostedLink } from "../../src/components/PlaidHostedLink";
+import { useOnboardingProgress } from "../../src/hooks/useOnboardingProgress";
+import { useAuthStore } from "../../src/store/authStore";
+import { creditMonitoringApi } from "../../src/services/api/credit";
+
+const STEP = 3;
 
 const BUREAUS = [
   {
@@ -35,27 +41,48 @@ const BUREAUS = [
 
 export default function OnboardingConnectScreen() {
   const { colors, spacing, borderRadius, fontSize, fontWeight } = useTheme();
+  const { user } = useAuthStore();
+  const { completeStep } = useOnboardingProgress();
   const [connectedBureaus, setConnectedBureaus] = useState<string[]>([]);
   const [bankConnected, setBankConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState<string | null>(null);
 
+  /**
+   * Connect a bureau for real.
+   *
+   * This used to be `await new Promise(r => setTimeout(r, 1500))` followed by
+   * marking the bureau connected — a 1.5s pause, a green tick, and a footer
+   * reading "N of 3 bureaus connected", with no request made and nothing
+   * stored. The user finished onboarding believing their credit bureaus were
+   * linked. It now posts to the same endpoint the web app uses, and a failure
+   * says so instead of showing success.
+   */
   const handleConnectBureau = async (bureauId: string) => {
     setIsConnecting(bureauId);
-    // Simulate connection
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setConnectedBureaus((prev) => [...prev, bureauId]);
-    setIsConnecting(null);
+    try {
+      const res = await creditMonitoringApi.connectBureau(bureauId);
+      if (!res.success) {
+        throw new Error(res.error?.message ?? "Connection failed");
+      }
+      setConnectedBureaus((prev) =>
+        prev.includes(bureauId) ? prev : [...prev, bureauId],
+      );
+    } catch (error) {
+      console.error(`Failed to connect ${bureauId}:`, error);
+      Alert.alert(
+        "Could not connect",
+        `We could not connect to ${bureauId}. You can try again, or skip and connect later from Settings.`,
+      );
+    } finally {
+      setIsConnecting(null);
+    }
   };
 
-  const handleConnectBank = async () => {
-    setIsConnecting("bank");
-    // Simulate Plaid connection
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setBankConnected(true);
-    setIsConnecting(null);
-  };
-
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    await completeStep(STEP, {
+      connectedBureaus,
+      bankConnected,
+    });
     router.push("/onboarding/complete");
   };
 
@@ -306,44 +333,44 @@ export default function OnboardingConnectScreen() {
                   Track spending and get financial insights
                 </Text>
               </View>
-              <TouchableOpacity
-                style={[
-                  {
-                    backgroundColor: colors.primary,
+              {bankConnected ? (
+                <View
+                  style={{
+                    backgroundColor: colors.success,
                     paddingHorizontal: 16,
                     paddingVertical: 8,
                     borderRadius: borderRadius.md,
-                  },
-                  bankConnected && { backgroundColor: colors.success },
-                ]}
-                onPress={() => !bankConnected && handleConnectBank()}
-                disabled={bankConnected || isConnecting === "bank"}
-              >
-                {isConnecting === "bank" ? (
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: fontWeight.medium,
-                      color: colors.white,
-                    }}
-                  >
-                    ...
-                  </Text>
-                ) : bankConnected ? (
+                  }}
+                >
                   <Ionicons name="checkmark" size={18} color={colors.white} />
-                ) : (
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: fontWeight.medium,
-                      color: colors.white,
-                    }}
-                  >
-                    Connect
-                  </Text>
-                )}
-              </TouchableOpacity>
+                </View>
+              ) : null}
             </View>
+
+            {/*
+              The real Plaid flow: hosted-link -> WebView -> deep-link callback
+              -> exchange-token. It replaces a button that waited 1.5s and then
+              set bankConnected = true without contacting anything, while this
+              exact component already existed in the same app.
+
+              Rendered only for a signed-in user because /financial/plaid/
+              hosted-link requires a userId matching the caller's token.
+            */}
+            {!bankConnected && user?.id ? (
+              <PlaidHostedLink
+                userId={user.id}
+                onSuccess={() => setBankConnected(true)}
+                onExit={(error) => {
+                  if (error) {
+                    console.error("Plaid link failed:", error);
+                    Alert.alert(
+                      "Could not link your bank",
+                      "You can try again, or skip and link it later from Settings.",
+                    );
+                  }
+                }}
+              />
+            ) : null}
           </Card>
 
           <View

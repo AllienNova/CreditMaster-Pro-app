@@ -162,16 +162,19 @@ export const creditMonitoringApi = {
     api.put<MonitoringStatus>("/credit-monitoring/settings", preferences),
 
   /**
-   * Connect to a credit bureau
+   * Connect to a credit bureau.
+   *
+   * Takes no credentials. It used to accept { username, password } and forward
+   * them, but the route destructures only { bureau, action } and calls
+   * CreditBureauService.connectBureau(user.id, bureau) — the credentials were
+   * read by nothing. Prompting for a bureau password to send somewhere that
+   * discards it is a credential-harvesting surface with no purpose, so the
+   * parameter is gone rather than left for a caller to fill in.
    */
-  connectBureau: (
-    bureau: string,
-    credentials: { username: string; password: string },
-  ) =>
+  connectBureau: (bureau: string) =>
     api.post<{ success: boolean; message: string }>("/credit-bureau/connect", {
       bureau,
       action: "connect",
-      credentials,
     }),
 
   /**
