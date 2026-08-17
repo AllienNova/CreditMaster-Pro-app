@@ -414,6 +414,148 @@ code paths assume it is there is not.
 No code changed. This was found while scoping a download route that was then
 not built, because building it would have meant inventing a file.
 
+---
+
+## SF-11 — A failed bureau call returns an invented credit report, and nothing says so
+
+**Status:** LIVE. **Severity:** HIGH — the highest in this file. Credit report data drives
+dispute letters, which are legal correspondence sent to a bureau.
+**Found:** 2026-08-17, while scoping `/credit/scores/refresh`.
+
+`CreditBureauService.getCreditReport(userId, bureau, reportType, enableFallback = true)`:
+
+```ts
+      // Graceful fallback: if the live call failed and fallback is enabled,
+      // use MockCreditBureauAdapter to return realistic data
+      if (!response.success && enableFallback) {
+        const mockAdapter = new MockCreditBureauAdapter({ simulatedBureau: bureau });
+        response = await mockAdapter.getCreditReport(request, userPII);
+        // Tag the response so callers know it came from mock
+        response.reference_id = `fallback_${response.reference_id ?? "unknown"}`;
+```
+
+Three facts together make this live:
+
+1. **The fallback is on by default** — `enableFallback = true` in the signature.
+2. **The live call always fails without credentials.** The clients are built from
+   `process.env.EXPERIAN_CLIENT_ID || ""` and siblings; with no key there is no
+   successful bureau call to fall back from.
+3. **Nothing reads the tag.** `reference_id` is prefixed `fallback_`, but a
+   repo-wide search for that prefix finds it only inside the service and in its
+   own unit test (`credit-bureau-service.test.ts:1552`). No route, no client, no
+   screen inspects it. A marker nobody checks is not a marker.
+
+### What the user is shown
+
+`MockCreditBureauAdapter` generates data designed to look real:
+
+```
+account_number: `****${randomInt(1000, 9999)}`
+creditor_name:  randomChoice([...])
+payment_status: randomChoice(statuses)
+credit_score:   score
+```
+
+So a user opens their credit report and sees accounts, creditors, payment
+statuses, inquiries and a score — none of which are theirs, none of which are
+labelled, and all of which look exactly like a real report.
+
+### Why this outranks SF-07
+
+SF-07's fabricated prices corrupt a paper-trading account. These fabricated
+accounts are the input to the dispute flow: `/api/disputes/generate` takes a
+credit report and produces a letter that a user sends to a credit bureau. A
+person could dispute an account that does not exist, on the strength of a report
+this code invented.
+
+### Options
+
+1. **Remove the fallback.** A failed bureau call returns a failure. The screen
+   says the report could not be retrieved — which is true, and is what every
+   other read path in this remediation now does.
+2. **Keep it for development only**, behind a flag that cannot be set in
+   production, and default `enableFallback` to false.
+3. **Keep it and surface it**, loudly — the payload carries an explicit
+   `isSimulated: true` that routes propagate and screens render as a banner, and
+   the dispute flow refuses to generate a letter from simulated data.
+
+Option 1 is the recommendation. The reason the fallback exists — "so the UX
+remains functional during development or outages" — is met by option 2 for
+development, and during an outage an honest error beats an invented report.
+
+### Not done
+
+No code changed. `/credit/scores/refresh` (7 callers in the mobile app, all
+currently 404ing) was NOT built, because a refresh endpoint on top of this
+service would hand the user a freshly-generated fake report and call it new
+data.
+
+---
+
+## SF-12 — The mobile billing screen shows everyone a Visa ending 4242
+
+**Status:** LIVE (user-visible). **Severity:** HIGH.
+**Found:** 2026-08-17, while scoping `/user/billing/payment-method`.
+**This is FND-016/017 again, in the mobile app.**
+
+`mobile-app/app/settings/billing.tsx` renders payment methods and invoices from
+two module constants:
+
+```ts
+const PAYMENT_METHODS: PaymentMethod[] = [
+  { id: "1", type: "card", last4: "4242", brand: "Visa",       expiry: "12/25", isDefault: true  },
+  { id: "2", type: "card", last4: "5555", brand: "Mastercard", expiry: "08/26", isDefault: false },
+];
+
+const INVOICES: Invoice[] = [
+  { id: "1", date: "Dec 1, 2024", amount: 29.0, status: "paid" },
+  { id: "2", date: "Nov 1, 2024", amount: 29.0, status: "paid" },
+  { id: "3", date: "Oct 1, 2024", amount: 29.0, status: "paid" },
+];
+```
+
+`useState(PAYMENT_METHODS)` at line 99, `INVOICES.map` at 241. The file makes no
+network call of any kind — no `api.`, no `fetch(`, not even a `useEffect`.
+
+So every user opening billing sees a Visa ending 4242 saved as their default
+payment method, a second Mastercard, and three $29.00 invoices marked paid.
+`4242` is Stripe's test card number.
+
+### Why this is not a new class of problem
+
+The register already records FND-016/017: "`billing-profile-store` returns fake
+Visa 4242 to every new user". That was found and remediated on the WEB side. The
+same fabrication is sitting in the mobile app, untouched, and no gate covers it —
+`audit:mocks` scans web `src/`, not `mobile-app/`.
+
+### What a user can conclude
+
+That a card is on file when none is. That they have been charged $29.00 three
+times when they have not. Both are statements about someone's money, and the
+second is a statement about money already taken.
+
+### The real data exists
+
+`GET /api/payment/billing` returns `{ plans, subscription, paymentMethods,
+invoices }` in one response — the same route the client's own comment (see
+`services/api/user.ts:512-517`) describes as "the ONE billing read", and which
+three other billing paths were already reconciled onto. This screen was simply
+never wired to it.
+
+### Options
+
+1. **Wire it to `/payment/billing`** and delete both constants. The route exists
+   and already serves exactly these four things.
+2. If it must ship before that, **render nothing** rather than invented cards —
+   an empty state saying billing could not be loaded.
+
+There is no third option in which the constants stay.
+
+### Not done
+
+No code changed. The tracked path `/user/billing/payment-method` remains a 404,
+but that 404 is not the problem — the screen never calls it, or anything else.
+
 ## Revision History
 
 | Date | Change |
@@ -424,3 +566,5 @@ not built, because building it would have meant inventing a file.
 | 2026-08-17 (rev 2) | Added SF-08: MFAService's TOTP methods run on a session-less anon singleton (dead + non-functional); verified from auth-js source that a global Authorization header does NOT authenticate supabase-js MFA calls (they read session.access_token and pass it as `jwt`); unenroll of a verified factor requires aal2, so disable must challenge+verify first. Challenge/verify endpoint paths deliberately left unverified rather than guessed. |
 | 2026-08-17 (rev 3) | Added SF-09: dispute letter templates carry a hardcoded `successRate` (65, etc.) that nothing measures, surfaced to users via the templates list and /api/disputes/generate; public.dispute_template_usage has template_id/dispute_id/outcome and is written and read by nothing. Three options; no behaviour changed. |
 | 2026-08-17 (rev 4) | Added SF-10: /api/tax/documents/upload never stores the uploaded file and never sets storage_path, while three delete paths read storage_path to remove a file that was never written (0 of 0 rows have one). Blocks /tax/documents/[id]/download — nothing to serve. |
+| 2026-08-17 (rev 5) | Added SF-11 (HIGHEST severity here): CreditBureauService.getCreditReport falls back to MockCreditBureauAdapter on any failed live call, enableFallback defaults to true, bureau clients build from empty env vars so the call always fails, and the `fallback_` tag on reference_id is read by nothing outside the service's own test. Users are shown invented accounts, creditors, statuses and scores as their own credit report — the input to the dispute-letter flow. /credit/scores/refresh deliberately not built on top of it. |
+| 2026-08-17 (rev 6) | Added SF-12: mobile-app/app/settings/billing.tsx renders a hardcoded Visa 4242, a Mastercard 5555 and three $29.00 paid invoices, and makes no network call at all — FND-016/017 reproduced in mobile, uncovered by audit:mocks which scans web src/ only. /api/payment/billing already returns the real plans, subscription, paymentMethods and invoices. |
