@@ -17,17 +17,21 @@ jest.mock("@/lib/auth/jwt-validation", () => ({
 jest.mock("@/lib/auth/resolve-role", () => ({
   resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
+// supabaseAdmin, not createClient. The ownership read used the cookie-scoped
+// client while chat_sessions is under RLS with `auth.uid() = user_id`, so it
+// 404'd every real session for a bearer-token caller — see
+// src/lib/ai/chat-session-access.ts. These negative-auth cases assert the same
+// 403 as before; only the client behind them changed.
 jest.mock("@/lib/supabase/server", () => ({
-  createClient: () =>
-    Promise.resolve({
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            single: (...args: unknown[]) => mockSingle(...args),
-          }),
+  supabaseAdmin: {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: (...args: unknown[]) => mockSingle(...args),
         }),
       }),
     }),
+  },
 }));
 jest.mock("@/lib/ai/financial-chat-engine", () => ({
   FinancialChatEngine: jest.fn().mockImplementation(() => ({

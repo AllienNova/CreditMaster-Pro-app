@@ -14,7 +14,9 @@
  * POST against a session I had just created. Both handlers answered "Session not
  * found" for a session that provably existed, because the ownership check used a
  * cookie-scoped client against an RLS policy of `auth.uid() = user_id` while the
- * caller authenticated with a bearer token. See assertSessionOwned below. My
+ * caller authenticated with a bearer token. The check now lives in
+ * src/lib/ai/chat-session-access.ts, shared with the sibling route that had the
+ * same defect. My
  * first draft of this comment claimed "reading worked"; it did not, for any
  * bearer-token client, which is every mobile user.
  */
@@ -24,9 +26,10 @@ import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { FinancialChatEngine } from "@/lib/ai/financial-chat-engine";
 import { MessageRole } from "@/lib/ai/types/financial-chat.types";
-
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import {
+  denyUnlessSessionOwned,
+  SESSION_UUID_REGEX,
+} from "@/lib/ai/chat-session-access";
 
 /**
  * A chat turn goes to a language model, so its length is a cost and a prompt
@@ -35,65 +38,6 @@ const UUID_REGEX =
  */
 const MAX_MESSAGE_CHARS = 4000;
 
-/**
- * Confirm the session exists AND belongs to the caller.
- *
- * Extracted because GET already did this inline and POST needs exactly the same
- * check. Two copies of an ownership check drift, and the one that drifts is the
- * one nobody is looking at.
- *
- * WHY THE SERVICE-ROLE CLIENT, NOT createClient(). This is a live bug fix, not a
- * style preference. createClient() is COOKIE-scoped (@supabase/ssr over
- * next/headers), and chat_sessions is under RLS with `auth.uid() = user_id`. A
- * request authenticated by a BEARER token therefore has no cookie, auth.uid()
- * is NULL, the policy matches nothing, and .single() errors — which this handler
- * reported as "Session not found". Measured against a session that provably
- * exists:
- *
- *   GET  /api/chat/financial/sessions/d0900020-…/messages   404 Session not found
- *   POST (same session)                                     404 Session not found
- *
- * withAuth accepts bearer tokens and the MOBILE app uses them
- * (mobile-app/app/financial-intelligence/chat.tsx:102), so chat history has been
- * unreadable on mobile for every user. The two auth channels disagreed: the
- * guard verified a JWT while the data client looked for a cookie that was
- * never sent.
- *
- * Ownership is now enforced in code against the JWT-verified user.id — the same
- * pattern the rest of this codebase uses for privileged tables, and the one the
- * tests below pin. That is a stronger guarantee than RLS-plus-cookie, because it
- * does not depend on which transport the caller happened to use.
- *
- * Returns 404 for a missing session and 403 for someone else's, matching what
- * GET already answered.
- */
-async function assertSessionOwned(
-  sessionId: string,
-  userId: string,
-): Promise<NextResponse | null> {
-  // idor-audit: pk-owner-checked — reads only user_id for the express purpose of
-  // comparing it to the JWT-verified caller three lines below; a mismatch is a
-  // 403 and nothing else in this function touches the row.
-  const { data: session, error } = await supabaseAdmin
-    .from("chat_sessions")
-    .select("user_id")
-    .eq("id", sessionId)
-    .single();
-
-  if (error || !session) {
-    return NextResponse.json(
-      { error: "Not found", message: "Session not found" },
-      { status: 404 },
-    );
-  }
-  if ((session as { user_id: string }).user_id !== userId) {
-    return NextResponse.json(
-      { error: "Forbidden", message: "Access denied to this session" },
-      { status: 403 },
-    );
-  }
-  return null;
-}
 
 /**
  * GET /api/chat/financial/sessions/[id]/messages
@@ -107,7 +51,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
     const sessionId = segments[segments.length - 2];
 
     // Validate session ID format (UUID)
-    if (!UUID_REGEX.test(sessionId)) {
+    if (!SESSION_UUID_REGEX.test(sessionId)) {
       return NextResponse.json(
         { error: "Validation error", message: "Invalid session ID format" },
         { status: 400 },
@@ -142,7 +86,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
     // now via the shared helper, so the cookie-versus-bearer fix documented
     // there applies to reads too. This inline copy was the bug: it 404'd every
     // real session for any bearer-token caller, mobile included.
-    const denied = await assertSessionOwned(sessionId, user.id);
+    const denied = await denyUnlessSessionOwned(sessionId, user.id);
     if (denied) return denied;
 
     // Initialize chat engine
@@ -223,7 +167,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     const segments = request.nextUrl.pathname.split("/");
     const sessionId = segments[segments.length - 2];
 
-    if (!UUID_REGEX.test(sessionId)) {
+    if (!SESSION_UUID_REGEX.test(sessionId)) {
       return NextResponse.json(
         { error: "Validation error", message: "Invalid session ID format" },
         { status: 400 },
@@ -262,7 +206,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
 
     // Ownership BEFORE the engine call: sendMessage() writes rows and bills a
     // model call, so it must not run for a session the caller does not own.
-    const denied = await assertSessionOwned(sessionId, user.id);
+    const denied = await denyUnlessSessionOwned(sessionId, user.id);
     if (denied) return denied;
 
     const chatEngine = new FinancialChatEngine();

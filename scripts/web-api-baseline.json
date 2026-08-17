@@ -26,9 +26,7 @@
     "POST /api/investments/signals/generate <- src/app/investments/signals/page.tsx",
     "POST /api/financial/budgets/apply-recommendation <- src/components/financial/AIBudgetOptimizer.tsx",
     "PUT /api/financial/budgets/:id <- src/components/financial/BudgetManagement.tsx",
-    "PUT /api/financial/budgets/:id <- src/components/financial/SmartBudgetManagement.tsx",
-    "POST /api/chat/financial/sessions/:id/messages <- src/hooks/use-chat-queries.ts",
-    "PATCH /api/chat/financial/sessions/:id <- src/hooks/use-chat-queries.ts"
+    "PUT /api/financial/budgets/:id <- src/components/financial/SmartBudgetManagement.tsx"
   ],
   "verbMismatchWhy": {
     "_what": "The PATH resolves, so the resolve check passes; the handler does not export this METHOD, so Next.js answers 405 and the page swallows it. Shrink-only, like broken[]. HEAD and OPTIONS are exempt — Next.js derives HEAD from GET (verified: /api/health exports GET only and curl -I returned 200) and auto-implements OPTIONS.",
@@ -38,7 +36,6 @@
     "POST /api/financial/budgets/adjust <- src/app/financial/coach/recommendations/RecommendationsContent.tsx": "The route exists but exports GET only; no write handler was ever written for adjusting a budget from a coach recommendation.",
     "POST /api/investments/signals/generate <- src/app/investments/signals/page.tsx": "No generate route exists. The call falls through to investments/signals/[id] with id=\"generate\", which exports GET and PATCH. Same misnamed-sub-resource shape as the signals/history bug fixed earlier — check for an existing route under another name before building one.",
     "POST /api/financial/budgets/apply-recommendation <- src/components/financial/AIBudgetOptimizer.tsx": "No apply-recommendation route. Falls through to budgets/[id] with id=\"apply-recommendation\".",
-    "POST /api/chat/financial/sessions/:id/messages <- src/hooks/use-chat-queries.ts": "SENDING A MESSAGE in the financial chat. The route exports GET only, so the read path works and every send has always 405d. Highest user-visible impact in this list.",
-    "PATCH /api/chat/financial/sessions/:id <- src/hooks/use-chat-queries.ts": "Renaming a chat session. Route exports GET and DELETE; no update handler."
+    "_fixed": "Both chat entries closed 2026-08-17: POST .../messages (sending a message) and PATCH /sessions/:id (renaming). Both had a service method waiting — sendMessage and updateSession. Fixing them also uncovered that GET and DELETE on those routes 404d for every bearer-token caller, mobile included; see src/lib/ai/chat-session-access.ts."
   }
 }
