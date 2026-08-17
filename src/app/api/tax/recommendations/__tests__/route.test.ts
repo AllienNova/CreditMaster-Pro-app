@@ -102,7 +102,6 @@ describe("GET /api/tax/recommendations", () => {
     await GET(get());
 
     expect(mockFetchTaxProfile).toHaveBeenCalledWith(
-      expect.anything(),
       CALLER,
       expect.any(Number),
     );
@@ -150,7 +149,6 @@ describe("GET /api/tax/recommendations", () => {
     );
 
     expect(mockFetchTaxProfile).toHaveBeenCalledWith(
-      expect.anything(),
       CALLER,
       2024,
     );

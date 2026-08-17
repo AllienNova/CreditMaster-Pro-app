@@ -94,7 +94,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
 
     // The filing status drives the threshold, so it comes from the profile.
     const supabase = await createClient();
-    const profile = await fetchTaxProfile(supabase, user.id, year);
+    const profile = await fetchTaxProfile(user.id, year);
     const standardDeduction =
       STANDARD_DEDUCTION[profile?.filingStatus ?? FilingStatus.SINGLE] ??
       CONTRIBUTION_LIMITS_2024.standardDeductionSingle;

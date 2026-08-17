@@ -7,7 +7,7 @@
  * plausible wrong number rather than an error.
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase/server";
 import {
   FilingStatus,
   OptimizationGoal,
@@ -26,14 +26,38 @@ import type { TaxProfile } from "@/lib/tax/types/tax-profile.types";
 // a user-specific "no accounts" state.
 export const ACCOUNT_LEVEL_DATA_AVAILABLE = false;
 
+/**
+ * Load a user's tax profile.
+ *
+ * THE CLIENT IS NO LONGER A PARAMETER, and that is the fix rather than a tidy-up.
+ *
+ * All eight callers passed the COOKIE-scoped createClient(), while tax_profiles
+ * is under RLS and `withAuth` accepts BEARER tokens. For a bearer caller
+ * auth.uid() is NULL, the policy matches nothing, `.single()` errors, and this
+ * function returned null — which every route reports as `profileMissing: true`.
+ * So the whole tax surface told mobile users they had no tax profile.
+ *
+ * Measured, with a profile that provably exists:
+ *
+ *   insert into tax_profiles … ; select count(*) -> 1
+ *   GET /api/tax/calendar?year=2026  (bearer)
+ *     -> {"events":[],"profileMissing":true,"year":2026}
+ *
+ * That is worse than an error: "you have no tax profile" is a statement about
+ * the user's data, and it was false for anyone who had filled one in.
+ *
+ * Taking a client as a parameter was what allowed it — eight call sites, each
+ * free to pass the wrong one, and nothing to notice. The security boundary is
+ * `userId`, which comes from the verified JWT and is applied on the next line;
+ * it does not depend on which transport the caller used.
+ */
 export async function fetchTaxProfile(
-  // Typed as the generic client rather than the route's createClient return,
-  // so this module does not depend on which Supabase factory the caller used.
-  supabase: SupabaseClient,
   userId: string,
   taxYear: number,
 ): Promise<TaxProfile | null> {
-  const { data, error } = await supabase
+  // idor-audit: pk-owner-checked — filtered by the caller's own userId, which
+  // withAuth resolved from the JWT; no client-supplied id reaches this query.
+  const { data, error } = await supabaseAdmin
     .from("tax_profiles")
     .select("*")
     .eq("user_id", userId)

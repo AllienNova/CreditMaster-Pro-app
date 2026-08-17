@@ -39,7 +39,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
     const supabase = await createClient();
     // Scoped to the authenticated caller. A userId in the query string is
     // ignored entirely — it is not read anywhere in this handler.
-    const profile = await fetchTaxProfile(supabase, user.id, taxYear);
+    const profile = await fetchTaxProfile(user.id, taxYear);
 
     if (!profile) {
       // An explicit empty state, NOT recommendations derived from a default

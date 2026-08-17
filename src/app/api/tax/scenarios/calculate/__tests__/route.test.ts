@@ -126,7 +126,6 @@ describe("POST /api/tax/scenarios/calculate", () => {
     await POST(post({ ...SCENARIO, userId: "victim" }));
 
     expect(mockFetchTaxProfile).toHaveBeenCalledWith(
-      expect.anything(),
       CALLER,
       expect.any(Number),
     );

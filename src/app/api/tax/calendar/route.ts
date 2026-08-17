@@ -57,7 +57,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
 
   try {
     const supabase = await createClient();
-    const profile = await fetchTaxProfile(supabase, user.id, year);
+    const profile = await fetchTaxProfile(user.id, year);
 
     if (!profile) {
       // No profile means no income to estimate from. A schedule of dollar

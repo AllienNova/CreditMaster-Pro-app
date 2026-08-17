@@ -63,7 +63,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
 
   try {
     const supabase = await createClient();
-    const profile = await fetchTaxProfile(supabase, user.id, year);
+    const profile = await fetchTaxProfile(user.id, year);
 
     // idor-audit: pk-owner-checked — SELECT filtered by the authenticated
     // user_id; a checklist must reflect this caller's own uploads only.

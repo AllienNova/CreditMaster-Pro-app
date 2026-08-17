@@ -301,10 +301,24 @@ const verbBroken = [...verbMismatch.keys()].sort();
 
 let baseline = [];
 let verbBaseline = [];
+/**
+ * The prose that explains WHY each entry is here, carried through every rewrite.
+ *
+ * --write-baseline used to rebuild this file from three fields, which silently
+ * deleted the per-entry reasons somebody had written — the reasons are the only
+ * part of a baseline that tells the next person whether an entry is blocked on a
+ * schema decision or is simply unfinished. A tool that discards them is worse
+ * than one that never had them, because the loss is invisible.
+ */
+let reasons = {};
 try {
   const parsed = JSON.parse(readFileSync(BASELINE_PATH, "utf8"));
   baseline = parsed.broken ?? [];
   verbBaseline = parsed.verbMismatch ?? [];
+  reasons = {
+    ...(parsed.why ? { why: parsed.why } : {}),
+    ...(parsed.verbMismatchWhy ? { verbMismatchWhy: parsed.verbMismatchWhy } : {}),
+  };
 } catch {
   baseline = [];
   verbBaseline = [];
@@ -316,7 +330,7 @@ if (process.argv.includes("--freeze-baseline")) {
   writeFileSync(
     BASELINE_PATH,
     JSON.stringify(
-      { frozen: "2026-08-15", broken, verbMismatch: verbBroken },
+      { frozen: "2026-08-15", broken, verbMismatch: verbBroken, ...reasons },
       null,
       2,
     ) + "\n",
@@ -335,7 +349,7 @@ if (process.argv.includes("--write-baseline")) {
   writeFileSync(
     BASELINE_PATH,
     JSON.stringify(
-      { frozen: "2026-08-15", broken: kept, verbMismatch: keptVerbs },
+      { frozen: "2026-08-15", broken: kept, verbMismatch: keptVerbs, ...reasons },
       null,
       2,
     ) + "\n",

@@ -56,5 +56,15 @@
     "POST /notifications/preferences",
     "POST /student-loans",
     "POST /tax/calendar"
-  ]
+  ],
+  "verbMismatchWhy": {
+    "_what": "The PATH resolves, so the path check passes; the handler it resolves to does not export this METHOD, so Next.js answers 405 at runtime and the calling screen swallows it. Shrink-only, like broken[].",
+    "_lost_once": "These reasons were written on 2026-08-17 and then silently deleted by `audit:api --write-baseline`, which rebuilt the file from three fields. The writer now carries `why` and `verbMismatchWhy` through every rewrite.",
+    "GET /tax/deductions/recommendations": "No recommendations route exists, so the call falls through to tax/deductions/[id] with id=\"recommendations\", which exports only PATCH and DELETE. The siblings categories/ and summary/ DO exist with GET; this one was never built. Belongs with the tax-deductions work (tasks #58/#60).",
+    "POST /disputes/recommend-strategy": "Same misnamed-sub-resource shape: falls through to disputes/[id] (GET,PATCH,DELETE) with id=\"recommend-strategy\". The handler was never written.",
+    "POST /student-loans": "Creating a loan. /api/student-loans exports GET only. Blocked on the same schema decision as the web Add Loan form: student_loans.account_number is NOT NULL and ADR-0013 says store a mask, not a full account number.",
+    "POST /tax/calendar": "SCHEMA-BLOCKED, not a missing handler — correcting an earlier note of mine that called this straightforward. createReminder (src/services/api/tax.ts:224) posts a TaxEvent to create a CUSTOM reminder and there is nowhere to put one: the tax_* tables are deductions, documents, profiles, recommendations and strategies, and a search for any event/calendar/deadline table returns only analytics_events, circuit_breaker_events, kill_switch_events, monitoring_events, processed_webhook_events and revenue_events — none a user reminder store. GET does not read a table at all; it COMPUTES the schedule from taxOptimizationEngine.getQuarterlyPaymentSchedule(profile). A POST that answered 200 and stored nothing would be the student-loans Add form defect again. Needs a table decision, in the shape of ADR-0013.",
+    "PATCH /notifications/preferences": "NOT a verb typo — do not simply flip it to PUT. The route exports GET and PUT, but mobile types.ts NotificationPreferences carries categories:{disputes,scoreChanges,alerts,recommendations,payments,marketing} while the server model is channels:{dispute_update,score_change,payment_reminder,document_processed,recommendation,system,promotion}, and notification_preferences has NO categories column. Changing the verb alone would persist pushEnabled/emailEnabled/smsEnabled and SILENTLY DROP every category toggle. Exactly the shape proven live on the budgets route: PATCH {amount:750} returned 200 and left the amount at 500.00.",
+    "POST /notifications/preferences": "app/settings/notification-preferences.tsx sends {categories:[{id,enabled,channels}], quietHours} — a per-category channel MATRIX. The server stores a flat channels object and a quiet_hours object, with no categories column at all. Same reconciliation as the PATCH entry."
+  }
 }

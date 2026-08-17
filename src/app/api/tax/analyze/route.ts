@@ -69,7 +69,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     const taxYear = body.taxYear || new Date().getFullYear();
 
     // 4. Fetch or create tax profile
-    let profile = await fetchTaxProfile(supabase, user.id, taxYear);
+    let profile = await fetchTaxProfile(user.id, taxYear);
 
     if (!profile) {
       // Create a basic profile if none exists

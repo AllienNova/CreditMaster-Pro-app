@@ -40,7 +40,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const supabase = await createClient();
     const taxYear = new Date().getFullYear();
-    const profile = await fetchTaxProfile(supabase, user.id, taxYear);
+    const profile = await fetchTaxProfile(user.id, taxYear);
 
     if (!profile) {
       // 409 rather than an empty result: a scenario needs a baseline, and

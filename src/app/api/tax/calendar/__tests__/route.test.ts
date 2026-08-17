@@ -131,7 +131,6 @@ describe("GET /api/tax/calendar", () => {
     await GET(get("http://localhost:3000/api/tax/calendar?userId=victim"));
 
     expect(mockFetchTaxProfile).toHaveBeenCalledWith(
-      expect.anything(),
       CALLER,
       expect.any(Number),
     );
