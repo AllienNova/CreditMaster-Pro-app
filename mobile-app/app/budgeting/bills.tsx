@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,84 +11,64 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { billsApi, type BillItem } from "../../src/services/api/financial";
 
-type BillStatus = "paid" | "upcoming" | "overdue";
+/*
+ * MOCK_BILLS, BillStatus and STATUS_CONFIG are gone.
+ *
+ * This screen showed every user a $1,500 "Rent" bill and a $125 electric bill,
+ * with paid/overdue badges, and summed them into a total, a paid count and an
+ * overdue count. It made no request at all. Meanwhile app/financial/bills.tsx —
+ * also in the nav, as "Financial bills" — showed the user's ACTUAL bills from
+ * the same endpoint this now uses. Two bills destinations, one real, one
+ * invented. See docs/specs/security-findings.md SF-13.
+ *
+ * NO PER-BILL STATUS. paid/upcoming/overdue is payment HISTORY
+ * (BillPayment.isLate), which billDetectionService exposes only through
+ * getPaymentHistory — and that has no HTTP route. The adapter's own docblock in
+ * services/api/financial.ts records the same conclusion for the two screens
+ * fixed before this one: carry only what the endpoint truly provides, and omit
+ * the rest rather than fabricate it. So the badges and the paid/overdue counts
+ * are gone, not re-derived from a guess.
+ */
 
-interface Bill {
-  id: string;
-  name: string;
-  amount: number;
-  dueDate: string;
-  status: BillStatus;
-  category: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}
-
-const STATUS_CONFIG: Record<BillStatus, { label: string; color: string; bg: string }> = {
-  paid: { label: "Paid", color: "#22C55E", bg: "#DCFCE7" },
-  upcoming: { label: "Upcoming", color: "#F59E0B", bg: "#FEF3C7" },
-  overdue: { label: "Overdue", color: "#EF4444", bg: "#FEE2E2" },
-};
-
-const MOCK_BILLS: Bill[] = [
-  {
-    id: "1",
-    name: "Rent",
-    amount: 1500,
-    dueDate: "Mar 1",
-    status: "paid",
-    category: "Housing",
-    icon: "home-outline",
-  },
-  {
-    id: "2",
-    name: "Electric Bill",
-    amount: 125,
-    dueDate: "Mar 15",
-    status: "overdue",
-    category: "Utilities",
-    icon: "flash-outline",
-  },
-  {
-    id: "3",
-    name: "Internet",
-    amount: 79.99,
-    dueDate: "Mar 20",
-    status: "upcoming",
-    category: "Utilities",
-    icon: "wifi-outline",
-  },
-  {
-    id: "4",
-    name: "Car Insurance",
-    amount: 145,
-    dueDate: "Mar 25",
-    status: "upcoming",
-    category: "Insurance",
-    icon: "car-outline",
-  },
-  {
-    id: "5",
-    name: "Credit Card",
-    amount: 350,
-    dueDate: "Mar 28",
-    status: "upcoming",
-    category: "Debt",
-    icon: "card-outline",
-  },
-];
-
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("en-US", {
+const formatCurrency = (amount: number): string =>
+  new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(amount);
-};
 
 export default function BillsScreen() {
-  const totalBills = MOCK_BILLS.reduce((sum, bill) => sum + bill.amount, 0);
-  const overdueBills = MOCK_BILLS.filter((b) => b.status === "overdue");
-  const paidBills = MOCK_BILLS.filter((b) => b.status === "paid");
+  const [bills, setBills] = useState<BillItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadBills = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    const res = await billsApi.getBills();
+
+    if (!res.success || !res.data) {
+      // Not an empty list: "we could not load your bills" and "you have no
+      // bills" lead a user to opposite actions.
+      setError("We could not load your bills.");
+      setIsLoading(false);
+      return;
+    }
+
+    setBills(res.data.bills);
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadBills();
+  }, [loadBills]);
+
+  const totalBills = bills.reduce((sum, bill) => sum + bill.amount, 0);
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -119,56 +99,80 @@ export default function BillsScreen() {
               <Text style={styles.summaryAmount}>{formatCurrency(totalBills)}</Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Paid</Text>
+              {/* Was "Paid" over a count of fabricated paid bills. Payment history
+                  has no HTTP route, so this counts what is actually tracked. */}
+              <Text style={styles.summaryLabel}>Tracked</Text>
               <Text style={[styles.summaryAmount, { color: theme.colors.success }]}>
-                {paidBills.length}
+                {bills.length}
               </Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Overdue</Text>
+              {/* Was "Overdue". isAutoPay is a real column on the bill; overdue
+                  is not derivable from anything this endpoint returns. */}
+              <Text style={styles.summaryLabel}>Auto-pay</Text>
               <Text style={[styles.summaryAmount, { color: theme.colors.error }]}>
-                {overdueBills.length}
+                {bills.filter((b) => b.isAutoPay).length}
               </Text>
             </View>
           </View>
         </Card>
 
         {/* Bills List */}
-        {MOCK_BILLS.map((bill) => {
-          const statusConfig = STATUS_CONFIG[bill.status];
+        {isLoading ? (
+          <Card>
+            <Text style={styles.billCategory}>Loading your bills…</Text>
+          </Card>
+        ) : error ? (
+          <Card>
+            <Text style={styles.billCategory}>{error}</Text>
+            <TouchableOpacity onPress={loadBills}>
+              <Text style={styles.billName}>Try again</Text>
+            </TouchableOpacity>
+          </Card>
+        ) : bills.length === 0 ? (
+          <Card>
+            <Text style={styles.billCategory}>No bills tracked yet.</Text>
+          </Card>
+        ) : null}
+
+        {bills.map((bill) => {
           return (
             <TouchableOpacity key={bill.id} activeOpacity={0.7}>
               <Card style={styles.billCard}>
                 <View style={styles.billRow}>
                   <View style={styles.billIconContainer}>
                     <Ionicons
-                      name={bill.icon}
+                      name="receipt-outline"
                       size={22}
                       color={theme.colors.primary}
                     />
                   </View>
                   <View style={styles.billContent}>
-                    <Text style={styles.billName}>{bill.name}</Text>
+                    <Text style={styles.billName}>{bill.merchant}</Text>
                     <Text style={styles.billCategory}>
-                      {bill.category} &middot; Due {bill.dueDate}
+                      {bill.category} &middot; Due{" "}
+                      {new Date(bill.dueDate).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
                     </Text>
                   </View>
                   <View style={styles.billRight}>
                     <Text style={styles.billAmount}>
                       {formatCurrency(bill.amount)}
                     </Text>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        { backgroundColor: statusConfig.bg },
-                      ]}
-                    >
-                      <Text
-                        style={[styles.statusText, { color: statusConfig.color }]}
+                    {bill.isAutoPay ? (
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: "#DCFCE7" },
+                        ]}
                       >
-                        {statusConfig.label}
-                      </Text>
-                    </View>
+                        <Text style={[styles.statusText, { color: "#22C55E" }]}>
+                          Auto-pay
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
                 </View>
               </Card>
