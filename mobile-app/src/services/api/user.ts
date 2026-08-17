@@ -178,24 +178,20 @@ export const userProfileApi = {
   deleteAccount: (confirmation: string) =>
     api.post<{ success: boolean }>("/privacy/delete", { confirm: confirmation }),
 
-  /**
-   * Get onboarding status
+  /*
+   * getOnboardingStatus and updateOnboarding are gone.
+   *
+   * They GET/PATCHed /user/onboarding, a route that has never existed, using a
+   * string-keyed step model ({ step: "profile", completed }) that matches
+   * nothing on the server — onboarding_progress stores current_step as an
+   * INTEGER 1-5 with completed_steps INT4[]. Nothing in the app called either
+   * one.
+   *
+   * The live path is useOnboardingProgress, which reads and writes
+   * /onboarding/progress and is wired into the profile, goals and connect
+   * screens. Keeping a second, differently-shaped onboarding API alongside it
+   * was one concern with two contracts, and the unused one was already wrong.
    */
-  getOnboardingStatus: () =>
-    api.get<{
-      completed: boolean;
-      steps: { step: string; completed: boolean }[];
-      currentStep: string;
-    }>("/user/onboarding"),
-
-  /**
-   * Update onboarding progress
-   */
-  updateOnboarding: (step: string, data?: Record<string, unknown>) =>
-    api.patch<{ nextStep: string; completed: boolean }>("/user/onboarding", {
-      step,
-      data,
-    }),
 
   /**
    * Complete onboarding
