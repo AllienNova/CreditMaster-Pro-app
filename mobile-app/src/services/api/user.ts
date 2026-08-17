@@ -633,11 +633,17 @@ export const notificationApi = {
   > => {
     // The web route honors ?limit= and returns { notifications, unreadCount } in
     // the web notification shape; adapt each to the mobile Notification shape.
-    const query = params?.limit ? `?limit=${params.limit}` : "";
+    // The conditional is inlined rather than hoisted into a `query` const so
+    // the query string is visible AT the call site. audit:api truncates a path
+    // at an interpolation containing "?", but `${query}` gives it nothing to
+    // go on — it fused with the literal and collapsed the whole path to a
+    // wildcard, putting a bare "/" in the tracked-debt list for a call that
+    // has always resolved. Same idiom as taxCalendarApi's
+    // `/tax/calendar${query ? `?${query}` : ""}`.
     const res = await api.get<{
       notifications: WebNotification[];
       unreadCount: number;
-    }>(`/notifications${query}`);
+    }>(`/notifications${params?.limit ? `?limit=${params.limit}` : ""}`);
     if (res.success && res.data) {
       return {
         success: true,

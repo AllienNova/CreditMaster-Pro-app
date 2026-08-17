@@ -224,6 +224,23 @@ function stringConstants(source) {
   )) {
     consts.set(m[1], m[2]);
   }
+
+  // One level of aliasing: `const apiBaseUrl = ISE_BASE_URL;`.
+  //
+  // useISE.ts does exactly that, and without this the four calls it makes were
+  // reported as a bare "/<wildcard>" — a FALSE entry in the tracked-debt list,
+  // since ISE_BASE_URL is "/trading/ise" and /api/trading/ise exists. A debt
+  // list with invented entries in it is worth less than a shorter true one.
+  //
+  // One level only, and only onto an already-known literal: chasing an
+  // arbitrary chain would mean evaluating the module, and anything unresolved
+  // still degrades to the conservative skip.
+  for (const m of source.matchAll(
+    /(?:^|\n)\s*(?:export\s+)?const\s+([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)\s*;/g,
+  )) {
+    if (!consts.has(m[1]) && consts.has(m[2])) consts.set(m[1], consts.get(m[2]));
+  }
+
   return consts;
 }
 
