@@ -10,14 +10,14 @@
     "/api/credit-bureau/import <- src/components/credit-bureau/CreditReportImport.tsx",
     "/api/financial/savings/auto-save <- src/components/financial/AIGoalsOptimizer.tsx"
   ],
-  "note": "13 web fetch() calls with no backing route. Each is a live 404 and the page renders an empty state that reads as 'you have no data'. This list may only SHRINK. Two more were wrong paths and were fixed rather than baselined: /api/plaid/link-token was /api/financial/plaid/link-token, and /api/investments/signals/history was /signals/performance — always check for an existing route one directory over before building one.",
+  "note": "13 web fetch() calls with no backing route. Each is a live 404 and the page renders an empty state that reads as 'you have no data'. This list may only SHRINK. Two more were wrong paths and were fixed rather than baselined: /api/plaid/link-token was /api/financial/plaid/link-token, and /api/investments/signals/history was /signals/performance \u2014 always check for an existing route one directory over before building one.",
   "why": {
-    "/api/credit-builder/budget <- src/app/credit-builder/budget/page.tsx": "No incomes/expenses tables exist; only income_sources. Needs a schema decision before a route can return anything real.",
-    "/api/credit-builder/freeze-status <- src/app/credit-builder/freeze/page.tsx": "No freeze table exists. Credit-freeze state is not stored anywhere.",
-    "/api/credit-builder/freeze-history <- src/app/credit-builder/freeze/page.tsx": "No freeze table exists.",
-    "/api/credit-builder/identity-alerts <- src/app/credit-builder/freeze/page.tsx": "No identity-alert table exists.",
-    "/api/credit-builder/identity-theft/accounts <- src/app/credit-builder/identity-theft/page.tsx": "No identity-theft table exists.",
-    "/api/credit-builder/identity-theft/documents <- src/app/credit-builder/identity-theft/page.tsx": "No identity-theft table exists.",
+    "/api/credit-builder/budget <- src/app/credit-builder/budget/page.tsx": "No incomes/expenses tables exist; only income_sources. Needs a schema decision before a route can return anything real. Schema proposed in docs/specs/adr/0013-credit-freeze-and-identity-theft-storage.md (Status: Proposed) \u2014 needs D1-D3 answered.",
+    "/api/credit-builder/freeze-status <- src/app/credit-builder/freeze/page.tsx": "No freeze table exists. Credit-freeze state is not stored anywhere. Schema proposed in docs/specs/adr/0013-credit-freeze-and-identity-theft-storage.md (Status: Proposed) \u2014 needs D1-D3 answered.",
+    "/api/credit-builder/freeze-history <- src/app/credit-builder/freeze/page.tsx": "No freeze table exists. Schema proposed in docs/specs/adr/0013-credit-freeze-and-identity-theft-storage.md (Status: Proposed) \u2014 needs D1-D3 answered.",
+    "/api/credit-builder/identity-alerts <- src/app/credit-builder/freeze/page.tsx": "No identity-alert table exists. Schema proposed in docs/specs/adr/0013-credit-freeze-and-identity-theft-storage.md (Status: Proposed) \u2014 needs D1-D3 answered.",
+    "/api/credit-builder/identity-theft/accounts <- src/app/credit-builder/identity-theft/page.tsx": "No identity-theft table exists. Schema proposed in docs/specs/adr/0013-credit-freeze-and-identity-theft-storage.md (Status: Proposed) \u2014 needs D1-D3 answered.",
+    "/api/credit-builder/identity-theft/documents <- src/app/credit-builder/identity-theft/page.tsx": "No identity-theft table exists. Schema proposed in docs/specs/adr/0013-credit-freeze-and-identity-theft-storage.md (Status: Proposed) \u2014 needs D1-D3 answered.",
     "/api/credit-bureau/import <- src/components/credit-bureau/CreditReportImport.tsx": "Sibling routes are connect/ and test-import/. Which is intended is a product call, not a rename to guess at on a credit-report import.",
     "/api/financial/savings/auto-save <- src/components/financial/AIGoalsOptimizer.tsx": "No auto-save route in the savings family. Genuinely absent."
   }
