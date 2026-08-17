@@ -208,7 +208,10 @@ src/app/api/financial/subscriptions/insights/route.ts,GET,withAuth,own-rows,with
 src/app/api/financial/subscriptions/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session
 src/app/api/financial/subscriptions/stats/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session
 src/app/api/financial/tax/retirement/route.ts,GET;POST,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/financial/transactions/[id]/route.ts,PATCH,withPermission,own-rows,withPermission,g,"added 2026-08-17 - recategorise one transaction; update filtered by id AND user_id with .select() after, so a non-owned id returns no row and answers 404 rather than a false success"
+src/app/api/financial/transactions/categories/route.ts,GET,withPermission,own-rows,withPermission,g,"added 2026-08-17 - distinct categories present on the CALLER's own transactions; category is free text in the schema so there is no canonical vocabulary to serve"
 src/app/api/financial/transactions/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/transactions/search/route.ts,GET,withPermission,own-rows,withPermission,g,"added 2026-08-17 - ilike over name/merchant_name scoped by user_id; wildcards in the query are escaped so a query of % is a literal search not a match-all"
 src/app/api/gamification/achievements/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/badges/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/challenges/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
