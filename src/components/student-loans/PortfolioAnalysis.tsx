@@ -3,7 +3,8 @@
 interface PortfolioStats {
   total_loans: number;
   total_debt: number;
-  weighted_interest_rate: number;
+  // null when there is no balance to weight by — never 0, which reads as "you pay 0%".
+  weighted_interest_rate: number | null;
   loans_by_status: Record<string, number>;
   loans_by_servicer: Record<string, number>;
 }
@@ -22,12 +23,21 @@ export default function PortfolioAnalysis({ stats }: PortfolioAnalysisProps) {
     }).format(amount);
   };
 
-  const formatPercent = (value: number) => {
-    return `${value.toFixed(2)}%`;
+  const formatPercent = (value: number | null) => {
+    return value === null ? "—" : `${value.toFixed(2)}%`;
   };
 
-  // Calculate monthly payment estimate (assuming 10-year standard repayment)
-  const estimateMonthlyPayment = () => {
+  /**
+   * Monthly payment on a 10-year standard repayment.
+   *
+   * Returns null when there is no weighted rate to work from. The rate is null
+   * precisely when total debt is zero, and the previous version treated a
+   * missing rate as 0% — which fell into the `monthlyRate === 0` branch and
+   * rendered a confident "$0.00/mo" estimate. A payment figure is a claim about
+   * what someone owes each month; "we cannot compute this" is not that claim.
+   */
+  const estimateMonthlyPayment = (): number | null => {
+    if (stats.weighted_interest_rate === null) return null;
     const monthlyRate = stats.weighted_interest_rate / 100 / 12;
     const numPayments = 120; // 10 years
     if (monthlyRate === 0) {
@@ -121,10 +131,12 @@ export default function PortfolioAnalysis({ stats }: PortfolioAnalysisProps) {
           </svg>
         </div>
         <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-          {formatCurrency(monthlyPayment)}
+          {monthlyPayment === null ? "—" : formatCurrency(monthlyPayment)}
         </p>
         <p className="text-sm text-gray-500 dark:text-slate-400">
-          10-year standard plan
+          {monthlyPayment === null
+            ? "Add a loan to estimate this"
+            : "10-year standard plan"}
         </p>
       </div>
 

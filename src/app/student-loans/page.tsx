@@ -22,7 +22,8 @@ interface StudentLoan {
 interface PortfolioStats {
   total_loans: number;
   total_debt: number;
-  weighted_interest_rate: number;
+  // null when there is no balance to weight by — never 0, which reads as "you pay 0%".
+  weighted_interest_rate: number | null;
   loans_by_status: Record<string, number>;
   loans_by_servicer: Record<string, number>;
 }
@@ -46,11 +47,11 @@ export default function StudentLoansPage() {
     setError(null);
 
     try {
-      const response = await fetch("/api/student-loans/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: "current-user" }),
-      });
+      // GET the listing route. This used to POST {user_id: "current-user"} — a
+      // hardcoded literal — to /analyze, which takes a `loans` ARRAY as input
+      // and answers 400 without one. It 400'd for every user on every visit,
+      // and the page showed "Failed to fetch loans" to all of them.
+      const response = await fetch("/api/student-loans");
 
       if (!response.ok) {
         throw new Error("Failed to fetch loans");
@@ -66,17 +67,28 @@ export default function StudentLoansPage() {
     }
   };
 
-  const handleAddLoan = async (loanData: NewLoanFormData) => {
-    try {
-      // In a real app, this would call an API to add the loan
-      console.log("Adding loan:", loanData);
-
-      // Refresh loans after adding
-      await fetchLoans();
-      setShowAddForm(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add loan");
-    }
+  /**
+   * Manual loan entry is NOT wired up, and this now says so.
+   *
+   * What it used to do: `console.log("Adding loan:", loanData)`, then close the
+   * form and refetch. To the person who had just filled in their servicer,
+   * balance and rate, that is indistinguishable from success — the form closes,
+   * the list reloads, and their loan is simply not there. Nothing was ever
+   * stored.
+   *
+   * Why it is not wired here instead of fixed: public.student_loans requires
+   * three NOT NULL columns the form does not collect — loan_id, servicer, and
+   * account_number. The first two can be derived, but account_number is a
+   * student-loan account number, and ADR-0013 already took the position that we
+   * store a MASK rather than a full account number for exactly this class of
+   * field. Supplying a placeholder to satisfy the constraint would write a fake
+   * account number into a financial record. That needs a schema decision, not a
+   * guess, so the form reports the truth until it is made.
+   */
+  const handleAddLoan = async (_loanData: NewLoanFormData) => {
+    setError(
+      "Adding a loan by hand isn't available yet — nothing you enter here would be saved. Your details have not been submitted.",
+    );
   };
 
   const handleViewStrategies = (loanId: string) => {
