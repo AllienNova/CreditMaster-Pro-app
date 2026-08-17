@@ -332,6 +332,7 @@ src/app/api/trading/modes/route.ts,GET,getUser,none,withAuth,e,bare session read
 src/app/api/trading/orders/route.ts,DELETE;GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/trading/paper/orders/route.ts,DELETE;GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/trading/paper/performance/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/paper/positions/close/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-17 - flattens one of the caller's own paper positions. Account resolved from the authenticated user; engine.closePosition filters on account_id so another user's positionId finds nothing. 404 covers not-yours/no-such/already-flat alike so uuids cannot be probed. Sells through the ordinary order pipeline, so realized P&L is the engine's not the route's
 src/app/api/trading/paper/positions/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/trading/paper/reset/route.ts,POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/trading/paper/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth

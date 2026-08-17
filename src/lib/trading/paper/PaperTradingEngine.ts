@@ -621,6 +621,73 @@ export class PaperTradingEngine {
     };
   }
 
+  /**
+   * Close a position outright by selling the whole holding.
+   *
+   * Short selling is disabled (validateOrder: "Insufficient shares to sell and
+   * short selling is disabled"), so every position is long and closing one is
+   * always a full-quantity sell. There is no separate close path in the
+   * engine — the position is flattened by the ordinary order pipeline, so it
+   * gets the same fill record, position update, balance update and trade row
+   * as any other sell, and cannot drift from them.
+   *
+   * Returns null when the position is not this account's, so the caller can
+   * answer 404 without confirming that someone else's position exists.
+   *
+   * realizedPL is read back from the recorded paper_trades row rather than
+   * recomputed here. The engine already calculated it inside executeOrder; a
+   * second calculation in a second place is the duplicate-catalogue pattern
+   * that drifts, and reporting what was PERSISTED is what the caller wants to
+   * know anyway.
+   */
+  async closePosition(
+    accountId: string,
+    positionId: string,
+  ): Promise<{ order: Order; realizedPL: number } | null> {
+    const { data, error } = await this.supabase
+      .from("paper_positions")
+      .select("*")
+      // Both filters are load-bearing: account_id is the whole ownership
+      // boundary for a service-role client.
+      .eq("id", positionId)
+      .eq("account_id", accountId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to load position: ${error.message}`);
+    }
+    if (!data) return null;
+
+    const position = mapDbToPosition(data);
+
+    // A zero-quantity row is a closed position that was never cleaned up.
+    // Placing a zero-quantity order would fail validation with a confusing
+    // message, so it is treated as nothing to close.
+    if (position.quantity <= 0) return null;
+
+    const order = await this.placeOrder(accountId, {
+      symbol: position.symbol,
+      side: "sell" as OrderSide,
+      type: "market" as OrderType,
+      quantity: position.quantity,
+      // paper_orders.time_in_force is NOT NULL with
+      // CHECK (day|gtc|ioc|fok|opg|cls). Omitting it inserts null and the whole
+      // close fails with a constraint violation surfaced as a 500 — which is
+      // exactly what happened the first time this ran against a real database,
+      // while every mocked test passed. "day" matches what
+      // /api/trading/paper/orders already defaults to.
+      timeInForce: "day" as TimeInForce,
+    } as OrderRequest);
+
+    const { data: trade } = await this.supabase
+      .from("paper_trades")
+      .select("realized_pl")
+      .eq("order_id", order.id)
+      .maybeSingle();
+
+    return { order, realizedPL: Number(trade?.realized_pl ?? 0) };
+  }
+
   // ==========================================================================
   // TRADE HISTORY
   // ==========================================================================
