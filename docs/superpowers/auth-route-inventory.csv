@@ -110,6 +110,7 @@ src/app/api/disputes/[id]/send/route.ts,PATCH,validateFromHeaders,inline user.id
 src/app/api/disputes/generate-student-loan/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""disputes:create"")",withPermission(disputes:create),f,promote inline permission check to withPermission
 src/app/api/disputes/generate/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/disputes/reasons/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation; static reference data - wrap in withAuth
+src/app/api/disputes/recommend-strategy/route.ts,POST,withAuth,none,withAuth,g,added 2026-08-17 - pure scenario-to-strategy mapping over a static catalogue; reads no user rows so there is nothing to scope. authn required because it is a product feature not a public API
 src/app/api/disputes/route.ts,DELETE;GET;PATCH;POST,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
 src/app/api/disputes/stats/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
 src/app/api/disputes/strategies/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
