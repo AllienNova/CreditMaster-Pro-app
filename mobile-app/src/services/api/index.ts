@@ -21,6 +21,8 @@ export {
 
 // API modules
 export { creditScoreApi, creditMonitoringApi, creditReportApi } from "./credit";
+export { toTaxTipView, toTaxTipViews } from "./taxTipAdapter";
+export type { TaxTipView, ApiTaxRecommendation } from "./taxTipAdapter";
 export { disputeApi, disputeLetterApi, disputeResourcesApi } from "./disputes";
 export {
   financialOverviewApi,

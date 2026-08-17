@@ -28,8 +28,6 @@
     "/tax/documents/ /download",
     "/tax/scenarios",
     "/tax/scenarios/ ",
-    "/tax/tips",
-    "/tax/tips/ /dismiss",
     "/trading/paper/positions/close",
     "/user/billing/payment-method",
     "/user/onboarding",

@@ -15,6 +15,7 @@ import {
   taxDocumentsApi,
   taxTipsApi,
   taxComparisonApi,
+  type TaxTipView,
   type TaxAnalysis,
   type TaxRecommendation,
   type TaxScenarioInput,
@@ -26,15 +27,13 @@ import {
   type TaxBracketVisualization,
 } from "../services/api/tax";
 
-interface TaxTip {
-  id: string;
-  title: string;
-  description: string;
-  potentialSavings: number;
-  difficulty: "easy" | "medium" | "hard";
-  category: string;
-  actionSteps: string[];
-}
+/**
+ * A tip is a TaxRecommendation flattened for the optimizer screen. The shape
+ * lives in taxTipAdapter next to the mapping that produces it, so the two
+ * cannot drift; difficulty and category are optional there because they come
+ * from the joined strategy and are not always present.
+ */
+type TaxTip = TaxTipView;
 
 interface DeductionSummary {
   totalDeductions: number;
@@ -83,6 +82,13 @@ interface TaxState {
 
   // Tips
   tips: TaxTip[];
+  /**
+   * True when the user has no stored tax profile. Distinct from an empty
+   * `tips`: one means "tell us about your taxes", the other "we looked and
+   * found nothing". Showing the second for the first is how a user concludes
+   * they have no opportunities when nobody has looked.
+   */
+  tipsProfileMissing: boolean;
 
   // Comparison
   yearComparisons: YearComparison[];
@@ -177,6 +183,7 @@ const initialState = {
   documents: [],
   missingDocuments: null,
   tips: [],
+  tipsProfileMissing: false,
   yearComparisons: [],
   selectedYear: currentYear,
   isLoading: false,
@@ -556,7 +563,10 @@ export const useTaxStore = create<TaxState>()(
         try {
           const response = await taxTipsApi.getTips();
           if (response.success && response.data) {
-            set({ tips: toArray(response.data.tips) });
+            set({
+              tips: toArray(response.data.tips),
+              tipsProfileMissing: response.data.profileMissing,
+            });
           }
         } catch (error) {
           if (__DEV__) console.error("Failed to fetch tips:", error);
