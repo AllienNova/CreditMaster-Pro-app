@@ -6,7 +6,7 @@
   ],
   "note": "2 of 232. /handoff correctly has no tap path; /document/[id] is a stale duplicate awaiting an owner's deletion call. Every screen a user can navigate to is reachable. This list should never grow; if it does, a real feature has gone dark.",
   "why": {
-    "/handoff": "Deep-link target for fynvita://continue?route=... from QR codes. The OS navigates here from outside the app; there is no tap path and there should not be one. Mobile counterpart of the web's /auth/callback.",
+    "/handoff": "Deep-link target for fynvita://continue?route=... from QR codes. The OS navigates here from outside the app; there is no tap path and there should not be one. Mobile counterpart of the web's /auth/callback. VERIFIED ON DEVICE 2026-08-17, no longer an assertion: firing exp://127.0.0.1:8082/--/handoff?route=/settings at a booted simulator rendered the handoff screen ('Continuing from web', caught at ~400ms) and then landed on Settings. The same run found the route guard was inert and let //evil.com out to Safari — see src/navigation/handoff-routes.ts. Re-verify with the three URLs in that commit if this screen changes.",
     "/document/[id]": "Stale duplicate of /documents/[id], which IS linked (app/documents/index.tsx:289). Both render a document detail; the singular one is the older copy from the 239f11f mega-commit. app/_layout.tsx:82 registers it as a Stack.Screen for its header options, but registration is not a tap path and nothing links to it. Deleting a module needs a named owner's approval, so it is tracked here rather than removed — the honest state is 'superseded, pending a deletion call', not 'reachable'."
   }
 }
