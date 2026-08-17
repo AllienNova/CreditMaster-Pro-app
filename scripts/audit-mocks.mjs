@@ -201,8 +201,137 @@ if (process.argv.includes("--self-test")) {
   process.exit(bad === 0 ? 0 : 1);
 }
 
+/**
+ * THIRD DETECTOR — a service the route CALLS may fabricate while the route
+ * itself is clean.
+ *
+ * The first two detectors only ever opened route.ts. A route whose whole body is
+ * `return NextResponse.json(await svc.get(user.id))` has no Math.random() and no
+ * catch-fallback, so it passed — no matter what svc.get did.
+ *
+ * That is not hypothetical. src/lib/federal-integration-service.ts is a mock
+ * feeding SIX routes (/api/student-loans, /api/federal/check-eligibility,
+ * /track-application, /submit-application, /api/federal-programs). Its
+ * retrieveNSLDSData always returns `loans: []`, and checkFreshStartEligibility
+ * returns `eligible: true` UNCONDITIONALLY — a fabricated eligibility
+ * determination about a real federal student-loan programme, shown to every
+ * user who asks. audit:mocks reported PASSED the whole time.
+ *
+ * Reachability is transitive; a gate that stops at the route boundary measures
+ * the wrong thing.
+ *
+ * WHAT IT LOOKS FOR. Not "is this code fake" — that is undecidable by regex.
+ * It looks for the code SAYING SO: a `// Mock implementation` / `// In a real
+ * app` / `// In production this would` comment whose next executable line
+ * returns a LITERAL. The codebase already admits where it is fake in 114 places;
+ * nothing was reading those admissions.
+ *
+ * Requiring a literal return is what keeps it precise. A comment describing a
+ * mock that was REMOVED sits above real code (a call, a query, an await), and
+ * trading/signals/route.ts documents exactly such a removal — it must stay
+ * clean.
+ */
+const STUB_ADMISSION =
+  /^\s*\/\/\s*(mock implementation|in a real app|in production,? this would|placeholder|stub implementation|for now,? (?:return|we)|simulated?\b)/i;
+
+/** `return` of a literal value, not of a call or an await. */
+const RETURNS_LITERAL = /^\s*return\s*(\{|\[|true\b|false\b|null\b|["'`]|-?\d)/;
+
+const IMPORT = /from\s+["']([^"']+)["']/g;
+const CANDIDATE_EXT = [".ts", ".tsx", "/index.ts", "/index.tsx"];
+
+/** Resolve an import specifier to a real file under src/, or null. */
+function resolveImport(spec, fromFile) {
+  let base;
+  if (spec.startsWith("@/")) base = join(ROOT, "src", spec.slice(2));
+  else if (spec.startsWith(".")) base = join(fromFile, "..", spec);
+  else return null; // node_modules — not ours to audit
+  for (const ext of ["", ...CANDIDATE_EXT]) {
+    const p = base + ext;
+    try {
+      if (statSync(p).isFile()) return p;
+    } catch {}
+  }
+  return null;
+}
+
+/**
+ * Every first-party module reachable from the route files, with the route that
+ * reached it first. Depth-capped: the fabrication that matters to a response is
+ * near the route, and an uncapped walk pulls in most of src/.
+ */
+function reachableModules(routeFiles, maxDepth = 3) {
+  const seen = new Map();
+  let frontier = routeFiles.map((f) => ({ file: f, origin: relative(ROOT, f) }));
+  for (let depth = 0; depth < maxDepth; depth++) {
+    const next = [];
+    for (const { file, origin } of frontier) {
+      let text;
+      try {
+        text = readFileSync(file, "utf8");
+      } catch {
+        continue;
+      }
+      for (const m of text.matchAll(IMPORT)) {
+        const target = resolveImport(m[1], file);
+        if (!target || seen.has(target)) continue;
+        if (/__tests__|\.test\.|\.spec\./.test(target)) continue;
+        if (/[/\\]app[/\\]api[/\\]/.test(target)) continue; // routes: detectors 1-2
+        seen.set(target, origin);
+        next.push({ file: target, origin });
+      }
+    }
+    frontier = next;
+    if (!frontier.length) break;
+  }
+  return seen;
+}
+
+/**
+ * Math.random() in a module an API route calls.
+ *
+ * Detector 1 blocks this inside route.ts and always has. It turns out the same
+ * defect was sitting one directory over, untouched: 186 sites across 34
+ * route-reachable modules. crypto-analyst.ts:319 is the clearest — its own
+ * comment reads "For now, return realistic mock data", and it returns
+ * activeAddresses24h: Math.floor(Math.random() * 100000) + 10000 as on-chain
+ * analytics. A user reading that has no way to know it is a die roll.
+ *
+ * Counted PER FILE rather than per line, and the baseline stores the count, so
+ * the number may only fall. Per-file-presence alone would let a new fabrication
+ * slip into an already-listed file for free.
+ */
+function randomSites(file) {
+  const lines = readFileSync(file, "utf8").split("\n");
+  let n = 0;
+  lines.forEach((line, i) => {
+    if (/^\s*(\/\/|\*)/.test(line)) return; // a comment describing one
+    if (!RANDOM.test(line)) return;
+    const window = lines.slice(Math.max(0, i - 3), i + 1).join("\n");
+    if (MARKER.test(window)) return;
+    n++;
+  });
+  return n;
+}
+
+function stubAdmissions(file) {
+  const lines = readFileSync(file, "utf8").split("\n");
+  const hits = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (!STUB_ADMISSION.test(lines[i])) continue;
+    // Next executable line — skip blanks and further comment lines.
+    let j = i + 1;
+    while (j < lines.length && /^\s*(\/\/|$)/.test(lines[j])) j++;
+    if (j < lines.length && RETURNS_LITERAL.test(lines[j])) {
+      hits.push({ line: i + 1, admission: lines[i].trim().slice(0, 64) });
+    }
+  }
+  return hits;
+}
+
 const randomOffenders = [];
 const fallbackOffenders = [];
+const stubOffenders = [];
 
 for (const file of walk(API)) {
   const rel = relative(ROOT, file);
@@ -238,15 +367,127 @@ for (const file of walk(API)) {
   }
 }
 
-const total = randomOffenders.length + fallbackOffenders.length;
-console.log(`audit:mocks — scanned ${walk(API).length} API route(s)`);
+// Detector 3: self-admitted stubs in the modules those routes call.
+const ROUTE_FILES = walk(API);
+const REACHED = reachableModules(ROUTE_FILES);
+const randomInModules = new Map(); // relPath -> { count, origin }
+for (const [file, origin] of REACHED) {
+  for (const hit of stubAdmissions(file)) {
+    stubOffenders.push({
+      key: `${relative(ROOT, file)}:${hit.line}`,
+      origin,
+      admission: hit.admission,
+    });
+  }
+  const n = randomSites(file);
+  if (n > 0) randomInModules.set(relative(ROOT, file), { count: n, origin });
+}
+
+/**
+ * Shrink-only baseline, same contract as audit:web-api.
+ *
+ * 114 self-admissions exist across 65 files today. Failing the build on all of
+ * them at once would get the gate switched off within a day, and quietly
+ * dropping them would be the false green this detector exists to end. So the
+ * existing set is recorded with a reason each and may only ever get smaller;
+ * anything NEW fails immediately.
+ */
+const STUB_BASELINE = join(ROOT, "scripts", "mocks-baseline.json");
+let baselineKeys = new Set();
+let baselineWhy = {};
+try {
+  const b = JSON.parse(readFileSync(STUB_BASELINE, "utf8"));
+  baselineKeys = new Set(b.stubs || []);
+  baselineWhy = b.why || {};
+} catch {}
+
+const newStubs = stubOffenders.filter((s) => !baselineKeys.has(s.key));
+const stillPresent = new Set(stubOffenders.map((s) => s.key));
+const fixedStubs = [...baselineKeys].filter((k) => !stillPresent.has(k));
+
+// Randomness in reachable modules: the baseline stores a COUNT per file, so a
+// new site inside an already-listed file still fails. Presence-only would hand
+// out a free pass to every future fabrication in ai-stock-analyst.ts.
+let randomBaseline = {};
+try {
+  randomBaseline = JSON.parse(readFileSync(STUB_BASELINE, "utf8")).randomInModules || {};
+} catch {}
+const randomRegressions = [];
+for (const [file, { count, origin }] of randomInModules) {
+  const allowed = randomBaseline[file];
+  if (allowed === undefined) {
+    randomRegressions.push(`${file} — ${count} site(s), NEW file (reached from ${origin})`);
+  } else if (count > allowed) {
+    randomRegressions.push(`${file} — ${count} site(s), baseline allows ${allowed}`);
+  }
+}
+const randomImproved = Object.entries(randomBaseline).filter(
+  ([f, n]) => (randomInModules.get(f)?.count ?? 0) < n,
+);
+
+const total =
+  randomOffenders.length +
+  fallbackOffenders.length +
+  newStubs.length +
+  randomRegressions.length;
+console.log(
+  `audit:mocks — scanned ${ROUTE_FILES.length} API route(s) and ${REACHED.size} module(s) they reach`,
+);
+console.log(
+  `  self-admitted stubs reachable from a route: ${stubOffenders.length} (${baselineKeys.size} baselined, ${newStubs.length} new)`,
+);
+if (fixedStubs.length) {
+  console.log(
+    `  ${fixedStubs.length} baselined stub(s) no longer present — prune them from scripts/mocks-baseline.json:`,
+  );
+  fixedStubs.forEach((k) => console.log(`    ${k}`));
+}
+const randomTotal = [...randomInModules.values()].reduce((a, b) => a + b.count, 0);
+console.log(
+  `  Math.random() in route-reachable modules: ${randomTotal} site(s) across ${randomInModules.size} file(s)`,
+);
+if (randomImproved.length) {
+  console.log(`  ${randomImproved.length} file(s) improved — lower the counts in scripts/mocks-baseline.json:`);
+  randomImproved.forEach(([f, n]) =>
+    console.log(`    ${f}: ${randomInModules.get(f)?.count ?? 0} now, baseline says ${n}`),
+  );
+}
+if (randomRegressions.length) {
+  console.log(`\naudit:mocks FAILED — randomness grew in ${randomRegressions.length} reachable module(s):\n`);
+  randomRegressions.forEach((r) => console.log(`    ${r}`));
+  console.log(
+    `\nMath.random() in a module an API route calls reaches the user exactly as it` +
+      `\nwould from the route itself. Detector 1 has blocked this in route.ts all` +
+      `\nalong; the same defect one directory over is the same defect.`,
+  );
+}
+
+if (newStubs.length) {
+  console.log(`\naudit:mocks FAILED — ${newStubs.length} NEW self-admitted stub(s) on a route path:\n`);
+  for (const s of newStubs) {
+    console.log(`    ${s.key}`);
+    console.log(`      ${s.admission}`);
+    console.log(`      reached from ${s.origin}`);
+  }
+  console.log(
+    `\nThis code says it is a mock and an API route calls it, so a user reads its` +
+      `\noutput as real. Implement it, or make the route return an honest error.`,
+  );
+}
 
 if (total === 0) {
-  console.log("audit:mocks PASSED — no fabricated data in an API response path.");
+  console.log(
+    "audit:mocks PASSED — no NEW fabricated data in an API response path." +
+      (stubOffenders.length
+        ? `\n${stubOffenders.length} self-admitted stub(s) remain baselined in scripts/mocks-baseline.json.` +
+          `\nThat is tracked debt, NOT a pass: each one is a route serving invented data today.`
+        : ""),
+  );
   process.exit(0);
 }
 
-console.log(`\naudit:mocks FAILED — ${total} fabrication site(s):\n`);
+const inRoute = randomOffenders.length + fallbackOffenders.length;
+if (inRoute) console.log(`\naudit:mocks FAILED — ${inRoute} fabrication site(s) in a route:\n`);
 
 if (randomOffenders.length) {
   console.log("  Math.random() in a route (reported to the user as real):");
@@ -257,10 +498,12 @@ if (fallbackOffenders.length) {
   fallbackOffenders.forEach((o) => console.log(`    ${o}`));
 }
 
-console.log(
-  `\nA fabricated number is indistinguishable from a real one to the person` +
-    `\nreading it. Query the data, or return an error — never invent it.` +
-    `\n\nIf randomness genuinely is not reported data (a nonce, a sample id):` +
-    `\n  // mock-audit: not-user-data — <why>`,
-);
+if (inRoute) {
+  console.log(
+    `\nA fabricated number is indistinguishable from a real one to the person` +
+      `\nreading it. Query the data, or return an error — never invent it.` +
+      `\n\nIf randomness genuinely is not reported data (a nonce, a sample id):` +
+      `\n  // mock-audit: not-user-data — <why>`,
+  );
+}
 process.exit(1);
