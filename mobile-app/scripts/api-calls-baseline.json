@@ -2,6 +2,8 @@
   "frozen": "2026-08-15",
   "broken": [
     "/ ",
+    "/api/notifications/register",
+    "/api/notifications/unregister",
     "/credit/reports/ ",
     "/credit/scores/refresh",
     "/credit/simulate",
@@ -39,6 +41,11 @@
     "POST /student-loans",
     "POST /tax/calendar"
   ],
+  "brokenWhy": {
+    "/api/notifications/register": "Expo push token registration. No Expo push path exists server-side, and push_subscriptions is web-push shaped (endpoint + keys_p256dh + keys_auth) — an ExponentPushToken has nowhere to go. Same blocker as /notifications/push-token. ALSO double-prefixed (/api on top of the client's base URL); not corrected because the un-prefixed path 404s too, and changing it would imply a route that does not exist. Added by hand, NOT via --write-baseline, which is shrink-only: these are pre-existing breakage that became visible when the scanner learned to match apiClient.* calls, not new breakage.",
+    "/api/notifications/unregister": "Expo push token registration. No Expo push path exists server-side, and push_subscriptions is web-push shaped (endpoint + keys_p256dh + keys_auth) — an ExponentPushToken has nowhere to go. Same blocker as /notifications/push-token. ALSO double-prefixed (/api on top of the client's base URL); not corrected because the un-prefixed path 404s too, and changing it would imply a route that does not exist. Added by hand, NOT via --write-baseline, which is shrink-only: these are pre-existing breakage that became visible when the scanner learned to match apiClient.* calls, not new breakage.",
+    "/notifications/push-token": "Expo push token registration; no Expo send path server-side and push_subscriptions is web-push shaped. Blocked on a product decision: add Expo push, or move the app to web-push."
+  },
   "verbMismatchWhy": {
     "_what": "The PATH resolves, so the path check passes; the handler it resolves to does not export this METHOD, so Next.js answers 405 at runtime and the calling screen swallows it. Shrink-only, like broken[].",
     "_lost_once": "These reasons were written on 2026-08-17 and then silently deleted by `audit:api --write-baseline`, which rebuilt the file from three fields. The writer now carries `why` and `verbMismatchWhy` through every rewrite.",

@@ -134,7 +134,17 @@ function matchedRoute(call) {
 // The VERB is captured, not discarded. It was previously a non-capturing group
 // — the method was matched and thrown away — so `api.post("/student-loans")`
 // was checked as though the verb did not exist.
-const CALL = /\bapi\.(get|post|put|patch|delete)(?:<[^>]*>)?\(\s*([`"'])([^`"']*)\2/g;
+/**
+ * `api.get("/x")` and `apiClient.get("/x")`.
+ *
+ * `apiClient` is a local ApiResponse-unwrapping wrapper (see
+ * src/services/coachApi.ts). Matching only `api.` hid all 12 of that file's
+ * calls, every one of which was double-prefixed and 404ing. A new wrapper name
+ * would hide its calls the same way — `--report-skipped` exists so that shows
+ * up as a number rather than as silence.
+ */
+const CALL =
+  /\b(?:api|apiClient)\.(get|post|put|patch|delete)(?:<[^>]*>)?\(\s*([`"'])([^`"']*)\2/g;
 
 const WILDCARD = " ";
 
@@ -192,6 +202,43 @@ function normalise(path) {
   // wildcard — that is a real segment the route is required to provide.
   while (segments.length > 1 && segments[segments.length - 1] === "") segments.pop();
   return segments.join("/") || "/";
+}
+
+/**
+ * Module-level `const NAME = "literal"` declarations in one file.
+ *
+ * WHY. The scan used to drop any call whose path did not start with "/", which
+ * silently excluded every path built from a variable prefix — 16 calls, and
+ * all 12 in src/services/coachApi.ts were broken (its BASE_PATH began with
+ * "/api", which the client's base URL already supplies, so each resolved to
+ * /api/api/... and 404'd). A gate that quietly skips what it cannot parse
+ * reports green over exactly the calls nobody has checked.
+ *
+ * Only literal string constants are resolved. A prefix computed at runtime is
+ * still skipped — but it is skipped LOUDLY now, via --report-skipped.
+ */
+function stringConstants(source) {
+  const consts = new Map();
+  for (const m of source.matchAll(
+    /(?:^|\n)\s*(?:export\s+)?const\s+([A-Za-z_$][\w$]*)\s*=\s*["'`]([^"'`\n]*)["'`]\s*;/g,
+  )) {
+    consts.set(m[1], m[2]);
+  }
+  return consts;
+}
+
+/**
+ * Substitute a leading `${CONST}` with its literal value.
+ *
+ * Deliberately only the LEADING interpolation, and only from a literal const:
+ * anything else stays a wildcard, which is the existing, conservative
+ * behaviour.
+ */
+function resolveLeadingConst(raw, consts) {
+  const m = raw.match(/^\$\{([A-Za-z_$][\w$]*)\}/);
+  if (!m) return raw;
+  const value = consts.get(m[1]);
+  return value === undefined ? raw : value + raw.slice(m[0].length);
 }
 
 /**
@@ -315,16 +362,25 @@ const doublePrefixed = new Map();
 /** "POST /api/x" -> { target, exports, files } — path resolves, verb does not. */
 const verbMismatch = new Map();
 let callsSeen = 0;
+/** Calls whose path prefix could not be resolved to a literal. */
+const unresolved = [];
 
 for (const file of walkSources(join(MOBILE, "app")).concat(walkSources(join(MOBILE, "src")))) {
   const rel = relative(MOBILE, file);
-  for (const m of stripCommentLines(readFileSync(file, "utf8")).matchAll(CALL)) {
+  const source = stripCommentLines(readFileSync(file, "utf8"));
+  const consts = stringConstants(source);
+  for (const m of source.matchAll(CALL)) {
     // Group 1 is now the VERB, so the path moved from m[2] to m[3]. Getting
     // this wrong would make every path unresolvable and the gate would scream —
     // the safe direction, but check it if this regex is ever edited again.
     const verb = m[1].toUpperCase();
-    const path = staticise(m[3]);
-    if (!path.startsWith("/")) continue;
+    const path = staticise(resolveLeadingConst(m[3], consts));
+    if (!path.startsWith("/")) {
+      // Still unresolvable — a runtime-computed prefix. Counted so the gate
+      // can say how much it could not see, instead of silently skipping.
+      unresolved.push(`${rel}: ${verb} ${JSON.stringify(m[3])}`);
+      continue;
+    }
     callsSeen++;
     if (!resolvesTo(path)) {
       // Distinguish the mechanical double-prefix case: the caller wrote /api/x
@@ -393,6 +449,11 @@ try {
   verbBaseline = parsed.verbMismatch ?? [];
   reasons = {
     ...(parsed.why ? { why: parsed.why } : {}),
+    // brokenWhy is the same idea for `broken` entries: path -> the blocker
+    // that keeps it there. It MUST be listed here, or --write-baseline drops
+    // it on the next rewrite — the exact silent loss this block exists to
+    // prevent.
+    ...(parsed.brokenWhy ? { brokenWhy: parsed.brokenWhy } : {}),
     ...(parsed.verbMismatchWhy ? { verbMismatchWhy: parsed.verbMismatchWhy } : {}),
   };
 } catch {
@@ -487,6 +548,18 @@ if (regressions.length === 0) {
         `They do NOT pass review; each is a live 404 whose screen renders an empty\n` +
         `state instead of an error. The list may only shrink.`,
     );
+
+    // Print the reasons that ARE recorded. A tracked path with a documented
+    // blocker is a decision someone can act on; one without is just a number
+    // that gets re-derived from scratch every time anyone looks.
+    const why = reasons.brokenWhy ?? {};
+    const documented = broken.filter((p) => why[p]);
+    if (documented.length > 0) {
+      console.log(
+        `\n${documented.length} of them record WHY they are still broken:\n` +
+          documented.map((p) => `  ${p}\n      ${why[p]}`).join("\n"),
+      );
+    }
   }
   if (fixed.length > 0) {
     console.log(
