@@ -9,10 +9,7 @@
     "/api/credit-builder/identity-theft/documents <- src/app/credit-builder/identity-theft/page.tsx",
     "/api/credit-bureau/import <- src/components/credit-bureau/CreditReportImport.tsx",
     "/api/financial/savings/auto-save <- src/components/financial/AIGoalsOptimizer.tsx",
-    "/api/financial/accounts/:id/sync <- src/components/financial/AccountDetailsModal.tsx",
-    "/api/investments/quote/:id <- src/hooks/useMarketData.ts",
-    "/api/investments/historical/:id <- src/hooks/useMarketData.ts",
-    "/api/investments/quotes <- src/hooks/useRealTimePrice.ts"
+    "/api/financial/accounts/:id/sync <- src/components/financial/AccountDetailsModal.tsx"
   ],
   "note": "13 web fetch() calls with no backing route. Each is a live 404 and the page renders an empty state that reads as 'you have no data'. This list may only SHRINK. Two more were wrong paths and were fixed rather than baselined: /api/plaid/link-token was /api/financial/plaid/link-token, and /api/investments/signals/history was /signals/performance — always check for an existing route one directory over before building one.",
   "why": {
@@ -24,9 +21,6 @@
     "/api/credit-builder/identity-theft/documents <- src/app/credit-builder/identity-theft/page.tsx": "No identity-theft table exists.",
     "/api/credit-bureau/import <- src/components/credit-bureau/CreditReportImport.tsx": "Sibling routes are connect/ and test-import/. Which is intended is a product call, not a rename to guess at on a credit-report import.",
     "/api/financial/savings/auto-save <- src/components/financial/AIGoalsOptimizer.tsx": "No auto-save route in the savings family. Genuinely absent.",
-    "/api/financial/accounts/:id/sync <- src/components/financial/AccountDetailsModal.tsx": "Only /api/financial/accounts exists; no per-account sync route.",
-    "/api/investments/quote/:id <- src/hooks/useMarketData.ts": "No market-data quote route. useMarketData.ts calls it on every symbol view.",
-    "/api/investments/historical/:id <- src/hooks/useMarketData.ts": "No historical-prices route.",
-    "/api/investments/quotes <- src/hooks/useRealTimePrice.ts": "No batch-quotes route. useRealTimePrice.ts polls it."
+    "/api/financial/accounts/:id/sync <- src/components/financial/AccountDetailsModal.tsx": "Only /api/financial/accounts exists; no per-account sync route."
   }
 }
