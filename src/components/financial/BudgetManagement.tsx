@@ -221,12 +221,34 @@ export default function BudgetManagement() {
 
     try {
       setIsSubmitting(true);
+      // TWO things were wrong here, and the verb was only the first.
+      //
+      // The route exports PATCH, not PUT, so Next.js answered 405 and this
+      // update never reached the server at all.
+      //
+      // Underneath that, the handler reads `budgetedAmount` and the service
+      // maps it to the `amount` column (budget-service.ts:431). This component
+      // sends `amount`, so once the verb was corrected the request would have
+      // succeeded while silently discarding the one field a budget edit is
+      // usually about. The body is now built explicitly rather than posting
+      // formData raw, so the mapping is visible at the call site.
+      //
+      // `name` and `category` are deliberately NOT sent: updateBudget() never
+      // maps `name` (the budgets table has no such column — `category` is the
+      // label), and `category` is not part of UpdateBudgetInput. Sending them
+      // would look like they persist. They do not, and that gap is tracked
+      // separately rather than papered over here.
       const response = await fetch(
         `/api/financial/budgets/${selectedBudget.id}`,
         {
-          method: "PUT",
+          method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            budgetedAmount: formData.amount,
+            period: formData.period,
+            alertThreshold: formData.alertThreshold,
+            rolloverEnabled: formData.rolloverEnabled,
+          }),
         },
       );
 
