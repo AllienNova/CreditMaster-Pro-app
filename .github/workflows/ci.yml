@@ -188,6 +188,14 @@ jobs:
       - name: audit:reachability - every page is reachable by clicking
         run: npm run audit:reachability
 
+      # BLOCKING: the mobile counterpart, audit:api, has existed for months;
+      # the web app had nothing checking what a page ASKS THE SERVER for. Twelve
+      # absent endpoints shipped that way - each a 404 for every user, none
+      # failing a gate, because the page still rendered an empty state. Two were
+      # wrong paths whose destination existed one directory over.
+      - name: audit:web-api - every fetch hits a real API route
+        run: npm run audit:web-api
+
       - name: audit:links (mobile) - every internal link resolves
         working-directory: mobile-app
         run: npm run audit:links

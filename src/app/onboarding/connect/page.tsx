@@ -195,7 +195,11 @@ export default function OnboardingConnectPage() {
 
     try {
       // Get Plaid Link token
-      const tokenResponse = await fetch("/api/plaid/link-token", {
+      const tokenResponse = await fetch(// /api/financial/plaid/link-token — every Plaid route lives under
+        // /api/financial/plaid/*. This asked for /api/plaid/link-token, which
+        // is not a route this app serves, so the onboarding step that connects
+        // a bank account could never get a token.
+        "/api/financial/plaid/link-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });

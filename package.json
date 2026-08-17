@@ -40,7 +40,8 @@
     "test:compliance": "jest --testPathPatterns='\\.compliance\\.test\\.'",
     "audit:cascade": "node scripts/audit-cascade.mjs",
     "audit:links": "node scripts/audit-dead-links.mjs --self-test && node scripts/audit-dead-links.mjs",
-    "audit:reachability": "node scripts/audit-reachability.mjs"
+    "audit:reachability": "node scripts/audit-reachability.mjs",
+    "audit:web-api": "node scripts/audit-web-api.mjs --self-test && node scripts/audit-web-api.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",

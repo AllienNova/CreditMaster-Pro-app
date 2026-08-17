@@ -340,7 +340,14 @@ export default function TradingSignalsPage() {
   // Fetch performance stats
   const fetchPerformance = useCallback(async () => {
     try {
-      const response = await fetch("/api/investments/signals/history");
+      /*
+       * /signals/performance, not /signals/history. The latter is not a route
+       * this app serves, so this fetch 404'd for every user and the panel
+       * stayed empty. The existing route returns { success, data, metadata }
+       * and `data` is exactly the shape read below — it was a wrong path, not
+       * a missing endpoint.
+       */
+      const response = await fetch("/api/investments/signals/performance");
       if (!response.ok) throw new Error("Failed to fetch performance");
 
       const data = await response.json();
