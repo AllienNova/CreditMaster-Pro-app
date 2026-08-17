@@ -8,7 +8,6 @@
     "/credit/simulate",
     "/disputes/ /generate",
     "/documents/ /analyze",
-    "/documents/ /download",
     "/identity/alerts",
     "/identity/alerts/ /resolve",
     "/identity/dark-web/disable",

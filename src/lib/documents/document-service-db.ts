@@ -46,6 +46,15 @@ export type DocumentType =
   | "proof_of_address"
   | "supporting_doc";
 
+/**
+ * How long a download link lives.
+ *
+ * Long enough for a slow connection to start the transfer, short enough that a
+ * leaked link is worthless by the time anyone finds it. The upload path's
+ * seven-day URL is a separate, pre-existing choice.
+ */
+const DOWNLOAD_URL_TTL_SECONDS = 300;
+
 export interface Document {
   id: string;
   userId: string;
@@ -186,6 +195,43 @@ class DocumentServiceDB {
     }
 
     return this.mapToDocument(docData);
+  }
+
+  /**
+   * A short-lived presigned URL for downloading one of the caller's documents.
+   *
+   * Deliberately NOT the `url` on the Document returned by getDocument(). That
+   * one is minted with `expiresIn: 604800` — seven days — and is CACHED in the
+   * `s3_url` column, so it is a week-long bearer credential to somebody's tax
+   * return or pay stub sitting in a database column, handed to any client that
+   * reads the document. It is refreshed rather than shortened here because
+   * changing it would alter what the existing /api/documents/[id] route
+   * returns; a download link minted on demand has no reason to outlive the
+   * download.
+   *
+   * Returns null when the document is not the caller's — getDocument filters on
+   * both id and user_id — so the route can answer 404 without confirming that
+   * someone else's document exists.
+   */
+  async createDownloadUrl(
+    documentId: string,
+    userId: string,
+    expiresInSeconds = DOWNLOAD_URL_TTL_SECONDS,
+  ): Promise<{ url: string; expiresAt: string; fileName: string } | null> {
+    const document = await this.getDocument(documentId, userId);
+    if (!document) return null;
+
+    const url = await getSignedUrl(
+      s3Client,
+      new GetObjectCommand({ Bucket: BUCKET_NAME, Key: document.s3Key }),
+      { expiresIn: expiresInSeconds },
+    );
+
+    return {
+      url,
+      expiresAt: new Date(Date.now() + expiresInSeconds * 1000).toISOString(),
+      fileName: document.originalName,
+    };
   }
 
   /**
