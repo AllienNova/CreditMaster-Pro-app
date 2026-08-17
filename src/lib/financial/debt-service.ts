@@ -96,6 +96,34 @@ class DebtService {
     return ((data ?? []) as DebtRow[]).map(rowToDebt);
   }
 
+  /**
+   * One debt, scoped to its owner. Returns null when the id does not exist OR
+   * belongs to someone else — the caller cannot tell those apart, which is the
+   * point.
+   *
+   * Added because deleteDebt() cannot report whether it removed anything.
+   * Deleting zero rows is not an error in Postgres, so a cross-user delete
+   * resolves cleanly — correct and safe at this layer, and documented by the
+   * "idor: resolves without error for cross-user id" test below. But a ROUTE
+   * that turns that silence into {success: true} tells someone their debt was
+   * deleted when it was not. The route checks with this first.
+   */
+  async getDebt(debtId: string, userId: string): Promise<Debt | null> {
+    const supabase = getServiceRoleClient();
+    const { data, error } = await supabase
+      .from("debt_accounts")
+      .select("*")
+      .eq("id", debtId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to get debt: ${error.message}`);
+    }
+
+    return data ? rowToDebt(data as DebtRow) : null;
+  }
+
   async createDebt(userId: string, input: DebtInput): Promise<Debt> {
     const validated = debtInputSchema.parse(input);
     const supabase = getServiceRoleClient();
