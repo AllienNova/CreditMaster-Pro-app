@@ -117,9 +117,102 @@ agents) all warrant a dedicated pass — see "What I could NOT verify."
   claims about env-var presence are based on `.env.example`/`.env.production.example`/
   `.env.local.example` and source references only.
 
+---
+
+## SF-07 — Paper trading executes at randomly generated prices, and its performance metrics are a random walk
+
+**Status:** LIVE. **Severity:** HIGH (data integrity / user-facing fabrication).
+**Found:** 2026-08-17, while building `POST /api/trading/paper/positions/close`.
+**Decision required from the owner** — this is a product fork, not a bug with one obvious fix.
+
+### What the code does
+
+`src/lib/trading/paper/PaperTradingEngine.ts:1201`, inside `getCurrentPrice`:
+
+```ts
+    } catch {
+      // Fallback to mock price for testing
+    }
+
+    // Fallback mock price
+    const mockPrice = 100 + Math.random() * 100;
+```
+
+The Polygon call above it uses `process.env.POLYGON_API_KEY`, which is not
+configured (it appears only in `docs/archive/` and deployment examples, not in
+any live env file). So the `catch` is the normal path, and **every paper trade
+executes at a uniformly random price between $100 and $200**, regardless of
+symbol. `Math.random()` means it is not even reproducible between runs.
+
+`src/lib/trading/paper/PaperTradingEngine.ts:1283`, inside `getDailyReturns`:
+
+```ts
+    // Generate mock daily returns for now
+    const dailyReturn = (Math.random() - 0.48) * 0.04; // -2% to +2%
+```
+
+This generates a random walk forward from `initial_balance` and **never reads a
+single trade**. It is the sole input to `calculateMaxDrawdown` and
+`calculateSharpeRatio`, and it is returned directly as `dailyReturns`.
+
+### Blast radius
+
+The fabricated price is not confined to display. It sets, per trade:
+
+| Written to | Column |
+|---|---|
+| `paper_fills` | `price` |
+| `paper_trades` | `price`, `total_value`, `realized_pl` |
+| `paper_positions` | `avg_entry_price`, `market_value`, `cost_basis`, `unrealized_pl` |
+| `paper_accounts` | `cash_balance`, `buying_power`, `total_value` |
+
+And `realized_pl` is passed to `trackTradeForGraduation` and
+`recordStrategyPerformance` — so **a user's progression from WATCH to GUIDED
+mode is decided by random numbers**, as is the apparent performance of every
+strategy in the library.
+
+`GET /api/trading/paper/performance` serves `maxDrawdown`, `sharpeRatio` and
+`dailyReturns` computed entirely from the random walk. Two refreshes give two
+different Sharpe ratios for the same account.
+
+### Observed
+
+A live close of a seeded AAPL position (10 shares, avg entry $150) on
+2026-08-17 filled at **$144.05**, inside the `100–200` band, producing a
+recorded `realized_pl` of `-59.55`. No market produced that price.
+
+### Options
+
+1. **Fail closed.** `getCurrentPrice` throws when no real quote is available;
+   paper trading refuses to execute rather than executing at fiction. Honest,
+   and consistent with how the rest of this remediation has treated missing
+   data. Cost: paper trading stops working anywhere without a market-data key,
+   including demos, until one is provisioned.
+2. **Provision the market-data key** (`POLYGON_API_KEY`) and keep the fallback
+   only for tests, behind an explicit flag that is never set in production.
+   Cost: a vendor dependency and its billing.
+3. **Keep a simulated mode, but label and quarantine it.** Trades executed at a
+   simulated price are marked as such in `paper_trades`, excluded from
+   graduation and from strategy performance, and the UI says the prices are
+   simulated. Cost: schema change plus UI work; the honest version of what the
+   code pretends to do today.
+
+`getDailyReturns` has no equivalent fork: it should compute from real
+`paper_trades`/account history or return empty, and the metrics derived from it
+should be absent rather than invented. That part is a straight bug fix once the
+price question is settled.
+
+### Not done
+
+No change has been made to either function. `POST /api/trading/paper/positions/
+close` (commit `2f66f87`) was built on top of this engine and reports faithfully
+what the engine records — which means it currently reports fabricated P&L. Its
+commit carries a `Directive:` trailer saying so.
+
 ## Revision History
 
 | Date | Change |
 |---|---|
 | 2026-08-09 | Initial version — MFA/backup-code, JWT HS256, anon-client classification, orphan-module exploit review, secrets sweep, OWASP/LLM checklist pass. |
 | 2026-08-09 (rev 2) | Applied team-lead's two corrections: reachability re-graded LIVE/LATENT against the canonical `scripts/audit-reachability.js` (commit `2b23237`) instead of direct-importer count; phantom-table language tightened to "wiring prerequisite, not live outage" per the corrected 1-reachable/64-unreachable/3-test-only split. Confirmed SF-01 as the only LIVE finding (`BackupCodesManagement.tsx` is rendered by `src/app/settings/security/page.tsx`); SF-02 through SF-06 confirmed LATENT against the same script. |
+| 2026-08-17 | Added SF-07: PaperTradingEngine.getCurrentPrice falls back to `100 + Math.random() * 100` for every trade (POLYGON_API_KEY unconfigured), and getDailyReturns generates a random walk that is the sole input to maxDrawdown/sharpeRatio. Fabricated prices reach paper_fills, paper_trades, paper_positions and paper_accounts, and drive WATCH->GUIDED graduation. Three options presented; owner decision required. |
