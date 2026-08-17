@@ -18,28 +18,7 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../src/constants/theme";
 
-/** Allowed route prefixes for security — prevents navigation to arbitrary paths */
-const ALLOWED_PREFIXES = [
-  "/",
-  "/(tabs)",
-  "/settings",
-  "/financial",
-  "/credit",
-  "/trading",
-  "/investments",
-  "/dashboard",
-  "/analytics",
-  "/dispute",
-  "/(tabs)/disputes",
-  "/documents",
-  "/coach",
-  "/onboarding",
-];
-
-function isAllowedRoute(route: string): boolean {
-  if (!route.startsWith("/")) return false;
-  return ALLOWED_PREFIXES.some((prefix) => route.startsWith(prefix));
-}
+import { isAllowedHandoffRoute } from "../src/navigation/handoff-routes";
 
 export default function HandoffScreen() {
   const params = useLocalSearchParams<{ route?: string }>();
@@ -90,9 +69,21 @@ export default function HandoffScreen() {
     let destination = "/(tabs)";
 
     if (raw) {
-      const decoded = decodeURIComponent(raw);
-      if (isAllowedRoute(decoded)) {
+      let decoded = raw;
+      try {
+        decoded = decodeURIComponent(raw);
+      } catch {
+        // A malformed %-sequence throws. Keep the safe default rather than
+        // navigating on a half-decoded string.
+        decoded = "";
+      }
+      if (isAllowedHandoffRoute(decoded)) {
         destination = decoded;
+      } else {
+        console.warn(
+          "[handoff] Rejected deep-link route, falling back to the dashboard:",
+          decoded,
+        );
       }
     }
 
