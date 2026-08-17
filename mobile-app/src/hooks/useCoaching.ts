@@ -5,6 +5,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { api } from "../services/api/client";
+import {
+  toCoachReply,
+  questionRejectionReason,
+  type ApiPersonalizedAdvice,
+} from "../services/api/coachReplyAdapter";
 
 type CoachingTopic =
   | "budgeting"
@@ -47,7 +52,20 @@ interface UseCoachingReturn {
   fetchSessions: () => Promise<void>;
 }
 
-const MOCK_SESSIONS: CoachingSession[] = [
+/**
+ * The coaching curriculum this app offers.
+ *
+ * NOT mock data, despite its old name: these are the sessions the product
+ * teaches, the same kind of fixed catalogue as the goal list in onboarding.
+ * They were being fetched from /ai/coaching/sessions — a route that has never
+ * existed — with this array as the "fallback", so the request failed on every
+ * launch and the catalogue was used anyway. It is now read directly and no
+ * request is made.
+ *
+ * A user's PROGRESS through them is a different thing and is not stored yet;
+ * `completed` is local to the session. See the note on completeSession.
+ */
+const COACHING_SESSIONS: CoachingSession[] = [
   {
     id: "1",
     topic: "budgeting",
@@ -138,25 +156,15 @@ export function useCoaching(): UseCoachingReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Load the curriculum.
+   *
+   * No request: the catalogue is product content that ships with the app.
+   * This used to GET /ai/coaching/sessions and fall back to the same array
+   * when that 404'd, which it always did.
+   */
   const fetchSessions = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await api.get<{ sessions: CoachingSession[] }>(
-        "/ai/coaching/sessions",
-      );
-      if (res.success) {
-        setSessions(res.data?.sessions || []);
-      } else {
-        // Fallback to mock data if API unavailable
-        setSessions(MOCK_SESSIONS);
-      }
-    } catch (err) {
-      // Fallback to mock data on network error
-      setSessions(MOCK_SESSIONS);
-    } finally {
-      setIsLoading(false);
-    }
+    setSessions(COACHING_SESSIONS);
   }, []);
 
   const startSession = useCallback(
@@ -214,56 +222,69 @@ export function useCoaching(): UseCoachingReturn {
       };
 
       setMessages((prev) => [...prev, userMessage]);
+      setError(null);
+
+      // The advice endpoint validates 10-500 characters and answers a 400 with
+      // a Zod issue list. Saying so here beats sending "ok" and rendering an
+      // opaque failure the user cannot act on.
+      const rejection = questionRejectionReason(message);
+      if (rejection) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: "coach",
+            content: rejection,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+        return;
+      }
+
       setIsLoading(true);
 
       try {
+        // /ai/financial-coach/advice is the real coach: authenticated,
+        // rate-limited to 10/min and backed by ModelRouter. It takes a single
+        // `question` — it has no conversation-history parameter, so the
+        // history this used to send was going nowhere even in principle.
         const res = await api.post<{
-          response: string;
-          suggestions: string[];
-        }>("/ai/coaching/chat", {
-          message,
-          sessionId: currentSession?.id,
-          sessionTopic: currentSession?.topic,
-          conversationHistory: messages.slice(-10).map((m) => ({
-            role: m.role === "coach" ? "assistant" : "user",
-            content: m.content,
-          })),
-        });
+          data?: ApiPersonalizedAdvice;
+          answer?: string;
+        }>("/ai/financial-coach/advice", { question: message.trim() });
 
-        let coachResponse: CoachingMessage;
-        if (res.success) {
-          coachResponse = {
-            id: (Date.now() + 1).toString(),
-            role: "coach",
-            content:
-              res.data?.response || getCoachResponse(message, currentSession),
-            timestamp: new Date().toISOString(),
-            suggestions:
-              res.data?.suggestions ||
-              getCoachSuggestions(message, currentSession),
-          };
-        } else {
-          // Fallback to local response generation
-          coachResponse = {
-            id: (Date.now() + 1).toString(),
-            role: "coach",
-            content: getCoachResponse(message, currentSession),
-            timestamp: new Date().toISOString(),
-            suggestions: getCoachSuggestions(message, currentSession),
-          };
+        const payload = res.success
+          ? ((res.data as { data?: ApiPersonalizedAdvice })?.data ??
+            (res.data as ApiPersonalizedAdvice))
+          : null;
+        const reply = toCoachReply(payload);
+
+        if (!reply) {
+          // No canned substitute. A coach that did not answer must not appear
+          // to have answered — getCoachResponse used to fill this silence with
+          // one of five hardcoded paragraphs picked by substring match, and
+          // because the old endpoint never existed that was every reply any
+          // user ever saw.
+          setError(
+            res.success
+              ? "The coach did not have an answer for that. Try rephrasing?"
+              : "I could not reach your coach just now. Please try again.",
+          );
+          return;
         }
 
-        setMessages((prev) => [...prev, coachResponse]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: "coach",
+            content: reply,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
       } catch (err) {
-        // Fallback to local response on network error
-        const fallbackResponse: CoachingMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "coach",
-          content: getCoachResponse(message, currentSession),
-          timestamp: new Date().toISOString(),
-          suggestions: getCoachSuggestions(message, currentSession),
-        };
-        setMessages((prev) => [...prev, fallbackResponse]);
+        console.error("Coach request failed:", err);
+        setError("I could not reach your coach just now. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -293,38 +314,14 @@ export function useCoaching(): UseCoachingReturn {
   };
 }
 
-function getCoachResponse(
-  message: string,
-  session: CoachingSession | null,
-): string {
-  const lowerMessage = message.toLowerCase();
-
-  if (lowerMessage.includes("budget")) {
-    return "Budgeting is the foundation of financial health! The key is to track every dollar and assign it a purpose. Have you tried the 50/30/20 rule? 50% for needs, 30% for wants, and 20% for savings and debt repayment.";
-  }
-  if (lowerMessage.includes("save") || lowerMessage.includes("saving")) {
-    return "Saving is easier when it's automatic! Try setting up automatic transfers on payday - even $25 a week adds up to $1,300 a year. What's your current savings goal?";
-  }
-  if (lowerMessage.includes("credit")) {
-    return "Your credit score is influenced by 5 main factors: payment history (35%), credit utilization (30%), length of credit history (15%), credit mix (10%), and new credit (10%). Which area would you like to focus on?";
-  }
-  if (lowerMessage.includes("yes") || lowerMessage.includes("start")) {
-    return session
-      ? `Perfect! Let's begin with step 1: ${session.steps[0]}. Take a moment to think about this, and let me know when you're ready to move on.`
-      : "Great enthusiasm! What financial topic would you like to tackle first?";
-  }
-
-  return "That's a great point! Financial wellness is a journey, not a destination. Every small step counts. What specific aspect would you like to explore further?";
-}
-
-function getCoachSuggestions(
-  message: string,
-  session: CoachingSession | null,
-): string[] {
-  if (session) {
-    return ["Next step", "Explain more", "Skip this step", "End session"];
-  }
-  return ["Help me budget", "Saving tips", "Credit advice", "Debt payoff"];
-}
+/*
+ * getCoachResponse and getCoachSuggestions are gone.
+ *
+ * getCoachResponse substring-matched the user's message for "budget", "save",
+ * "credit" or "yes" and returned one of five hardcoded paragraphs, otherwise a
+ * generic one. getCoachSuggestions returned a fixed chip list unrelated to
+ * anything the coach said. Because /ai/coaching/chat did not exist, these were
+ * not a fallback — they were the product.
+ */
 
 export default useCoaching;
