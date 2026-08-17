@@ -242,14 +242,41 @@ if (process.argv.includes("--self-test")) {
     // /credit/scores, so every /x/${id} passed whenever /x existed.
     [staticise("/student-loans/${id}"), has("/student-loans/[id]"),
       "a detail call is not satisfied by its collection"],
-    // Nested braces: the old /\$\{[^}]*\}/ stopped at the first `}` and
-    // produced literal garbage instead of a path.
-    [staticise("/student-loans/history${m ? `?months=${m}` : \"\"}"),
-      has("/student-loans/history"),
-      "a conditional query truncates the path rather than corrupting it"],
   ];
 
+  // Declared before ANY loop that increments it: the counter is only touched
+  // on a failing case, so a declaration below the first loop passes while every
+  // case passes and throws a TDZ ReferenceError the moment one fails — a
+  // self-test that cannot report a failure.
   let bad = 0;
+
+  // staticise() output is asserted as an exact STRING, not via resolvesTo().
+  //
+  // The truncation case used to be `[staticise(...), has("/student-loans/
+  // history"), ...]`, which read the live route table for its expectation. When
+  // /api/student-loans/[id] was added that path started resolving — a
+  // [dynamic] segment matches the literal "history" — and the case failed
+  // while staticise() was working perfectly. Asserting the produced string is
+  // both tighter and immune to the route table changing underneath it.
+  //
+  // (That /student-loans/history now resolves to [id] is real and worth
+  // knowing: a future history endpoint would be shadowed by the detail route
+  // unless it is declared before it.)
+  const staticiseCases = [
+    ["/student-loans/history${m ? `?months=${m}` : \"\"}", "/student-loans/history",
+      "nested braces truncate at the query, rather than corrupting the path"],
+    ["/disputes/${id}", `/disputes/${WILDCARD}`, "interpolation becomes a wildcard segment"],
+    ["/student-loans?x=${q}", "/student-loans", "a query string is stripped"],
+    ["/x/pre-${id}", `/x/${WILDCARD}`, "a wildcard fused to literal text takes the whole segment"],
+  ];
+  for (const [input, want, why] of staticiseCases) {
+    const got = staticise(input);
+    if (got === want) continue;
+    bad++;
+    console.log(`  SELF-TEST FAIL: staticise(${JSON.stringify(input)}) -> ${JSON.stringify(got)}, expected ${JSON.stringify(want)} (${why})`);
+  }
+
+
 
   // The comment stripper gets its own cases: it decides what is even a call.
   const stripCases = [
@@ -268,7 +295,7 @@ if (process.argv.includes("--self-test")) {
     console.log(`  SELF-TEST FAIL: strip ${JSON.stringify(input)} -> ${JSON.stringify(got)}, expected ${JSON.stringify(want)} (${why})`);
   }
 
-  let total = cases.length + stripCases.length;
+  let total = cases.length + stripCases.length + staticiseCases.length;
   for (const [path, want, why] of cases) {
     const got = resolvesTo(path);
     if (got === want) continue;
