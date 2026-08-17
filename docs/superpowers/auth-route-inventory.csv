@@ -115,6 +115,7 @@ src/app/api/disputes/route.ts,DELETE;GET;PATCH;POST,validateFromHeaders,none,wit
 src/app/api/disputes/stats/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
 src/app/api/disputes/strategies/[id]/route.ts,GET,withAuth,none,withAuth,g,added 2026-08-17 - reads a STATIC strategy catalogue by id; no user rows involved so there is nothing to scope. authn required as a product feature
 src/app/api/disputes/strategies/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
+src/app/api/disputes/templates/[id]/route.ts,GET,withAuth,none,withAuth,f,added 2026-08-17 - one dispute letter template from the shared catalogue in lib/disputes/letter-templates.ts. No user-scoped data: every caller sees the same templates, so authz is none beyond requiring a session (the letter bodies are product IP). Slug ids only; path traversal is normalised away by URL parsing before the lookup
 src/app/api/disputes/templates/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - static templates but POST mutates; wrap in withAuth
 src/app/api/documents/[id]/route.ts,GET;DELETE,withAuth,own-rows,withAuth,g,"added 2026-08-17 - path-segment wrapper over documentServiceDB.getDocument/deleteDocument which each take (documentId,userId) and filter on both; the collection serves the same operations via ?documentId= for the web client"
 src/app/api/documents/route.ts,DELETE;GET;PATCH,getUser,inline user.id ownership check,withAuth,c,bare session read + ownership - wrap in withAuth; keep ownership check

@@ -293,6 +293,60 @@ No routes built, no code changed. Building any of the three on the current
 `MFAService` would produce endpoints that cannot work; building `disable` on a
 guessed contract could produce one that works and should not.
 
+---
+
+## SF-09 — Dispute letters advertise a success rate nobody measured
+
+**Status:** LIVE (user-visible). **Severity:** MEDIUM — it is a claim about outcomes in a
+credit-repair product, not a data leak.
+**Found:** 2026-08-17, while building `/api/disputes/templates/[id]`.
+
+Each entry in the dispute letter catalogue carries a hardcoded `successRate`:
+
+```ts
+{
+  id: "late-payment-goodwill",
+  name: "Late Payment Goodwill Letter",
+  successRate: 65,
+  ...
+}
+```
+
+Nothing computes it. `public.dispute_template_usage` exists with exactly the
+columns that would — `template_id`, `dispute_id`, `outcome` — and is written by
+nothing and read by nothing; the only reference to it anywhere in `src/` is a
+comment. The figure reaches users through the templates list and through
+`/api/disputes/generate` (which copies `successRate` onto strategies and
+generated letters in six places), presented as a property of the letter.
+
+So a user choosing which dispute to send about their own credit report is
+shown a number that looks measured and is not.
+
+### Why this is not simply deleted
+
+Removing the field changes what an existing screen shows, and whether the
+product should display an expected success rate at all is a product question.
+There is also a real version available: once `dispute_template_usage.outcome`
+is populated, the rate could be computed per template from actual outcomes.
+
+### Options
+
+1. **Compute it.** Write outcomes to `dispute_template_usage` when a dispute
+   resolves, and derive `successRate` from them — showing nothing until there
+   is enough data to be worth showing.
+2. **Label it.** Keep the constants but mark them plainly as estimates rather
+   than measurements, in the payload and in the UI.
+3. **Remove it.** Drop the field; let users pick a letter on what it says.
+
+### Not done
+
+No behaviour changed. The catalogue was extracted from
+`/api/disputes/templates/route.ts` into `src/lib/disputes/letter-templates.ts`
+so the new detail route could share it rather than hold a second copy, and
+`successRate` was carried across unchanged with a note at the top of that file
+pointing here. The new route returns it so the detail screen agrees with the
+list screen — not because it is a fact.
+
 ## Revision History
 
 | Date | Change |
@@ -301,3 +355,4 @@ guessed contract could produce one that works and should not.
 | 2026-08-09 (rev 2) | Applied team-lead's two corrections: reachability re-graded LIVE/LATENT against the canonical `scripts/audit-reachability.js` (commit `2b23237`) instead of direct-importer count; phantom-table language tightened to "wiring prerequisite, not live outage" per the corrected 1-reachable/64-unreachable/3-test-only split. Confirmed SF-01 as the only LIVE finding (`BackupCodesManagement.tsx` is rendered by `src/app/settings/security/page.tsx`); SF-02 through SF-06 confirmed LATENT against the same script. |
 | 2026-08-17 | Added SF-07: PaperTradingEngine.getCurrentPrice falls back to `100 + Math.random() * 100` for every trade (POLYGON_API_KEY unconfigured), and getDailyReturns generates a random walk that is the sole input to maxDrawdown/sharpeRatio. Fabricated prices reach paper_fills, paper_trades, paper_positions and paper_accounts, and drive WATCH->GUIDED graduation. Three options presented; owner decision required. |
 | 2026-08-17 (rev 2) | Added SF-08: MFAService's TOTP methods run on a session-less anon singleton (dead + non-functional); verified from auth-js source that a global Authorization header does NOT authenticate supabase-js MFA calls (they read session.access_token and pass it as `jwt`); unenroll of a verified factor requires aal2, so disable must challenge+verify first. Challenge/verify endpoint paths deliberately left unverified rather than guessed. |
+| 2026-08-17 (rev 3) | Added SF-09: dispute letter templates carry a hardcoded `successRate` (65, etc.) that nothing measures, surfaced to users via the templates list and /api/disputes/generate; public.dispute_template_usage has template_id/dispute_id/outcome and is written and read by nothing. Three options; no behaviour changed. |

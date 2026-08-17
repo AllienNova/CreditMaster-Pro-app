@@ -8,7 +8,6 @@
     "/credit/scores/refresh",
     "/credit/simulate",
     "/disputes/ /generate",
-    "/disputes/templates/ ",
     "/documents/ /analyze",
     "/documents/ /download",
     "/identity/alerts",
