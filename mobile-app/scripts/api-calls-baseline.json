@@ -42,12 +42,19 @@
     "/trading/paper/positions/close",
     "/user/billing/payment-method",
     "/user/onboarding",
-    "/user/onboarding/complete",
     "/user/recommendations",
     "/user/recommendations/ /click",
     "/user/recommendations/ /dismiss",
     "/user/settings/2fa/disable",
     "/user/settings/2fa/enable",
     "/user/settings/2fa/verify"
+  ],
+  "verbMismatch": [
+    "GET /tax/deductions/recommendations",
+    "PATCH /notifications/preferences",
+    "POST /disputes/recommend-strategy",
+    "POST /notifications/preferences",
+    "POST /student-loans",
+    "POST /tax/calendar"
   ]
 }

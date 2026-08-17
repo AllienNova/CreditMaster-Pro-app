@@ -31,7 +31,21 @@ const MOBILE = process.cwd();
 const WEB = resolve(MOBILE, "..");
 const API_DIR = join(WEB, "src", "app", "api");
 
-/** Every API route the web app serves, as a path relative to /api. */
+/**
+ * Every API route the web app serves, as a path relative to /api, AND the set
+ * of HTTP verbs each one actually exports.
+ *
+ * The verbs are the point. This gate used to answer only "does a handler file
+ * exist at this path", which is not the question a caller cares about:
+ * `api.post("/student-loans", loan)` resolved happily against a route.ts that
+ * exports GET and nothing else, and 405s at runtime. Measured across both apps,
+ * fifteen calls were in that state while every gate was green.
+ *
+ * A route module's verbs are its exported handler names — Next.js dispatches on
+ * exactly that, so reading the exports IS reading the contract.
+ */
+const routeVerbs = new Map();
+
 function collectRoutes(dir = API_DIR, prefix = "") {
   const out = [];
   for (const entry of readdirSync(dir)) {
@@ -42,11 +56,25 @@ function collectRoutes(dir = API_DIR, prefix = "") {
       const seg = /^\(.*\)$/.test(entry) ? "" : `/${entry}`;
       out.push(...collectRoutes(full, prefix + seg));
     } else if (entry === "route.ts" || entry === "route.js") {
-      out.push(prefix || "/");
+      const path = prefix || "/";
+      out.push(path);
+      const verbs = new Set();
+      for (const m of readFileSync(full, "utf8").matchAll(VERB_EXPORT)) {
+        verbs.add(m[1]);
+      }
+      routeVerbs.set(path, verbs);
     }
   }
   return out;
 }
+
+/**
+ * `export const GET`, `export async function POST`, `export function DELETE`.
+ * All three forms appear in this codebase; missing one would under-report,
+ * which for a gate is the failure direction that matters.
+ */
+const VERB_EXPORT =
+  /export\s+(?:const|async\s+function|function)\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/g;
 
 function walkSources(dir, out = []) {
   for (const entry of readdirSync(dir)) {
@@ -68,16 +96,30 @@ const routes = [...new Set(collectRoutes())];
  * (an interpolated `${…}`), which can only stand in for a [dynamic] segment.
  */
 function resolvesTo(call) {
-  if (routes.includes(call)) return true;
+  return matchedRoute(call) !== null;
+}
+
+/**
+ * WHICH route a call lands on, not merely whether one exists.
+ *
+ * Needed because the verb check has to ask a specific handler what it exports.
+ * An exact path wins over a [dynamic] match, which mirrors Next.js's own
+ * precedence — otherwise /api/tax/deductions/summary would be attributed to
+ * deductions/[id] even if a literal summary route existed.
+ */
+function matchedRoute(call) {
+  if (routes.includes(call)) return call;
   const cp = call.split("/");
-  return routes.some((r) => {
+  for (const r of routes) {
     const rp = r.split("/");
-    if (rp.length !== cp.length) return false;
-    return rp.every((s, i) => {
+    if (rp.length !== cp.length) continue;
+    const ok = rp.every((s, i) => {
       if (cp[i] === WILDCARD) return s.startsWith("[");
       return s.startsWith("[") || s === cp[i];
     });
-  });
+    if (ok) return r;
+  }
+  return null;
 }
 
 // api.get("/x"), api.post<T>("/x", body), api.delete(`/x/${id}`).
@@ -88,7 +130,11 @@ function resolvesTo(call) {
 // wrong. Since a gate that skips its hardest inputs is the thing it is meant to
 // prevent, `${…}` is instead collapsed to a wildcard segment that matches any
 // single [dynamic] route segment.
-const CALL = /\bapi\.(?:get|post|put|patch|delete)(?:<[^>]*>)?\(\s*([`"'])([^`"']*)\1/g;
+//
+// The VERB is captured, not discarded. It was previously a non-capturing group
+// — the method was matched and thrown away — so `api.post("/student-loans")`
+// was checked as though the verb did not exist.
+const CALL = /\bapi\.(get|post|put|patch|delete)(?:<[^>]*>)?\(\s*([`"'])([^`"']*)\2/g;
 
 const WILDCARD = " ";
 
@@ -190,21 +236,44 @@ if (process.argv.includes("--self-test")) {
 
 const dead = new Map();
 const doublePrefixed = new Map();
+/** "POST /api/x" -> { target, exports, files } — path resolves, verb does not. */
+const verbMismatch = new Map();
 let callsSeen = 0;
 
 for (const file of walkSources(join(MOBILE, "app")).concat(walkSources(join(MOBILE, "src")))) {
   const rel = relative(MOBILE, file);
   for (const m of readFileSync(file, "utf8").matchAll(CALL)) {
-    const path = staticise(m[2]);
+    // Group 1 is now the VERB, so the path moved from m[2] to m[3]. Getting
+    // this wrong would make every path unresolvable and the gate would scream —
+    // the safe direction, but check it if this regex is ever edited again.
+    const verb = m[1].toUpperCase();
+    const path = staticise(m[3]);
     if (!path.startsWith("/")) continue;
     callsSeen++;
-    if (resolvesTo(path)) continue;
+    if (!resolvesTo(path)) {
+      // Distinguish the mechanical double-prefix case: the caller wrote /api/x
+      // but the base URL already supplies /api, and /x is a route that exists.
+      const bucket =
+        path.startsWith("/api/") && resolvesTo(path.slice(4)) ? doublePrefixed : dead;
+      if (!bucket.has(path)) bucket.set(path, new Set());
+      bucket.get(path).add(rel);
+      continue;
+    }
 
-    // Distinguish the mechanical double-prefix case: the caller wrote /api/x but
-    // the base URL already supplies /api, and /x is a route that really exists.
-    const bucket = path.startsWith("/api/") && resolvesTo(path.slice(4)) ? doublePrefixed : dead;
-    if (!bucket.has(path)) bucket.set(path, new Set());
-    bucket.get(path).add(rel);
+    // The path resolves. Does the handler it resolves to accept this verb?
+    const target = matchedRoute(path);
+    if (!target) continue;
+    const verbs = routeVerbs.get(target) ?? new Set();
+    if (verbs.has(verb)) continue;
+    const key = `${verb} ${path}`;
+    if (!verbMismatch.has(key)) {
+      verbMismatch.set(key, {
+        target,
+        exports: [...verbs].sort().join(",") || "NONE",
+        files: new Set(),
+      });
+    }
+    verbMismatch.get(key).files.add(rel);
   }
 }
 
@@ -227,12 +296,18 @@ console.log(
 // number is not allowed to grow.
 const BASELINE_PATH = join(MOBILE, "scripts", "api-calls-baseline.json");
 const broken = [...doublePrefixed.keys(), ...dead.keys()].sort();
+/** Tracked separately: these paths DO exist — it is the method that is refused. */
+const verbBroken = [...verbMismatch.keys()].sort();
 
 let baseline = [];
+let verbBaseline = [];
 try {
-  baseline = JSON.parse(readFileSync(BASELINE_PATH, "utf8")).broken ?? [];
+  const parsed = JSON.parse(readFileSync(BASELINE_PATH, "utf8"));
+  baseline = parsed.broken ?? [];
+  verbBaseline = parsed.verbMismatch ?? [];
 } catch {
   baseline = [];
+  verbBaseline = [];
 }
 
 // One-time freeze of the CURRENT breakage. Separate from --write-baseline,
@@ -240,29 +315,77 @@ try {
 if (process.argv.includes("--freeze-baseline")) {
   writeFileSync(
     BASELINE_PATH,
-    JSON.stringify({ frozen: "2026-08-15", broken }, null, 2) + "\n",
+    JSON.stringify(
+      { frozen: "2026-08-15", broken, verbMismatch: verbBroken },
+      null,
+      2,
+    ) + "\n",
   );
-  console.log(`audit:api baseline frozen with ${broken.length} tracked call(s).`);
+  console.log(
+    `audit:api baseline frozen with ${broken.length} tracked call(s) and ${verbBroken.length} verb mismatch(es).`,
+  );
   process.exit(0);
 }
 
 if (process.argv.includes("--write-baseline")) {
   const kept = baseline.filter((p) => broken.includes(p));
+  const keptVerbs = verbBaseline.filter((p) => verbBroken.includes(p));
   // Shrink-only: a --write-baseline run can never ADD an entry. Otherwise the
   // same command that introduces a broken call could bless it.
   writeFileSync(
     BASELINE_PATH,
-    JSON.stringify({ frozen: "2026-08-15", broken: kept }, null, 2) + "\n",
+    JSON.stringify(
+      { frozen: "2026-08-15", broken: kept, verbMismatch: keptVerbs },
+      null,
+      2,
+    ) + "\n",
   );
   console.log(
-    `audit:api baseline rewritten — ${baseline.length} -> ${kept.length} tracked call(s).` +
-      (kept.length === baseline.length ? " (nothing fixed since last run)" : ""),
+    `audit:api baseline rewritten — ${baseline.length} -> ${kept.length} tracked call(s), ` +
+      `${verbBaseline.length} -> ${keptVerbs.length} verb mismatch(es).` +
+      (kept.length === baseline.length && keptVerbs.length === verbBaseline.length
+        ? " (nothing fixed since last run)"
+        : ""),
   );
   process.exit(0);
 }
 
 const regressions = broken.filter((p) => !baseline.includes(p));
 const fixed = baseline.filter((p) => !broken.includes(p));
+const verbRegressions = verbBroken.filter((p) => !verbBaseline.includes(p));
+const verbFixed = verbBaseline.filter((p) => !verbBroken.includes(p));
+
+if (verbBroken.length) {
+  console.log(
+    `  ${verbBroken.length} call(s) reach a real route that REFUSES their method ` +
+      `(${verbBaseline.length} baselined, ${verbRegressions.length} new)`,
+  );
+}
+if (verbRegressions.length) {
+  console.log(
+    `\naudit:api FAILED — ${verbRegressions.length} NEW call(s) whose route rejects their method:\n`,
+  );
+  for (const key of verbRegressions) {
+    const info = verbMismatch.get(key);
+    console.log(`  ${key}`);
+    console.log(`      resolves to ${info.target}, which exports {${info.exports}}`);
+    for (const f of info.files) console.log(`      ${f}`);
+  }
+  console.log(
+    `\nThe path exists, so the other check passes and the browser sweep may never` +
+      `\ntrigger it — but at runtime Next.js answers 405 and the calling screen` +
+      `\nswallows it. Either the client is using the wrong verb (PUT where the route` +
+      `\nexports PATCH), or the handler was never written.`,
+  );
+  process.exit(1);
+}
+if (verbFixed.length) {
+  console.log(
+    `\n${verbFixed.length} baselined verb mismatch(es) now resolve. Run` +
+      ` \`npm run audit:api -- --write-baseline\` to bank it:\n` +
+      verbFixed.map((p) => `  ${p}`).join("\n"),
+  );
+}
 
 if (regressions.length === 0) {
   if (broken.length === 0) {
@@ -277,7 +400,7 @@ if (regressions.length === 0) {
   }
   if (fixed.length > 0) {
     console.log(
-      `\n${fixed.length} baselined call(s) now resolve. Run` +
+      `\n${fixed.length} baselined call(s) are no longer broken — either the route now exists or the call was changed or removed. Run` +
         ` \`npm run audit:api -- --write-baseline\` to bank the progress:\n` +
         fixed.map((p) => `  ${p}`).join("\n"),
     );
