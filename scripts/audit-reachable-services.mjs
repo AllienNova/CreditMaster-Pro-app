@@ -37,6 +37,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ROOT = process.cwd();
 const SRC = path.join(ROOT, "src");
@@ -392,4 +393,15 @@ function main() {
   }
 }
 
-main();
+/*
+ * Only run when executed directly. This module exports extractSpecifiers,
+ * resolveSpecifier and reachableFrom on purpose — they are useful for probing
+ * a specific chain by hand ("is payout-service reachable, and through what?")
+ * — and an unguarded main() meant importing it ran the whole audit as a side
+ * effect, printing 34 lines before the caller's own output.
+ */
+const invokedDirectly =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+
+if (invokedDirectly) main();

@@ -35,8 +35,8 @@
     "src/lib/commerce/payouts/payout-service.ts": {
       "dbCalls": 42,
       "reachableFromPage": false,
-      "verdict": "UNREVIEWED",
-      "why": ""
+      "verdict": "NEEDS-DECISION",
+      "why": "CONFIRMED unreachable 2026-08-18, and the most consequential entry in this file. 42 database calls, instantiates Stripe, writes affiliate_payouts. The ONLY importers are barrels (payouts/index.ts, re-exported by commerce/index.ts) and no route imports either — routes import @/lib/commerce/affiliate, which is why commission-calculator and affiliate-service ARE reachable. So affiliate commissions are calculated and recorded, and the service that pays them is unreachable: money accrues, nothing can pay it out. An earlier grep appeared to show commission-calculator importing it; that match was a COMMENT stating the opposite — 'payouts are handled exclusively in payout-service.ts; this file must never write to affiliate_payouts or call a payment provider directly'. That comment also describes 'two independent payout rails', which is FND-026, listed in CLAUDE.md as an unmet launch condition. Decide the rail before wiring a route."
     },
     "src/lib/goals/services/ContributionSchedulerService.ts": {
       "dbCalls": 40,
