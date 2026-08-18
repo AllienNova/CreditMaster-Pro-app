@@ -24,6 +24,19 @@
  * a delta. Deriving one needs the history route, which is a third request this
  * page does not otherwise need; "+15" beside a score nobody differenced is
  * exactly the shape removed from /analytics earlier today.
+ *
+ * CORRECTION (second pass). The first version of this rewrite mapped products
+ * with `features?.includes("alerts")` and `product.bureauCount`. Neither is
+ * real: MarketplaceProduct.features is `Record<string, unknown>`
+ * (marketplace-service.ts:23) holding a per-product jsonb object, and there is
+ * no bureauCount field at all. On a real row `{}.includes` is not a function,
+ * so the page threw; on any row it claimed "1 bureau" out of nothing. The
+ * fixture was an array, which is why the tests went green over a crash — a
+ * mock built from an assumption instead of the type it stands in for.
+ *
+ * What replaced it: every column maps to a field that exists, `bureaus` is
+ * read as the array of bureau NAMES the seed actually stores, and each product
+ * lists the features it declares. Absent means "Not stated", never "No".
  */
 
 "use client";
@@ -57,13 +70,25 @@ interface CreditAlert {
   createdAt: string;
 }
 
+/**
+ * Mirrors MarketplaceProduct in marketplace-service.ts:13, reduced to what
+ * this table shows. `features` is jsonb with NO fixed schema — the seeded rows
+ * declare `disputes_per_month`, `bureaus`, `support`, `specialist`,
+ * `ai_letters`, `templates` (migration 20251218000000:366-395). So there is
+ * nothing to build a fixed Alerts/Identity/Score matrix out of: each product
+ * gets whatever it actually declares, and "Not stated" where it declares
+ * nothing.
+ */
 interface MonitoringService {
+  id: string;
   name: string;
+  description: string | null;
   price: number;
-  bureaus: number;
-  alerts: boolean;
-  identity: boolean;
-  score: boolean;
+  priceType: string;
+  rating: number;
+  reviewCount: number;
+  bureaus: string[] | null;
+  included: string[];
 }
 
 const SEVERITY_CLASSES: Record<string, string> = {
@@ -73,17 +98,59 @@ const SEVERITY_CLASSES: Record<string, string> = {
   low: "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300",
 };
 
+const PRICE_CADENCE: Record<string, string> = {
+  monthly: "/ month",
+  yearly: "/ year",
+  one_time: "one-time",
+};
+
+/** `disputes_per_month` -> `Disputes per month`. */
+function humanizeKey(key: string): string {
+  const spaced = key.replace(/[_-]+/g, " ").trim();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/**
+ * Turns one feature entry into a line, or null when it says nothing. A `false`
+ * boolean is dropped rather than rendered as "No" — the product declined the
+ * feature, and listing it under "Included" would read as the opposite.
+ */
+function describeFeature(key: string, value: unknown): string | null {
+  if (typeof value === "boolean") return value ? humanizeKey(key) : null;
+  if (typeof value === "number" || typeof value === "string") {
+    return `${humanizeKey(key)}: ${value}`;
+  }
+  if (Array.isArray(value) && value.length > 0) {
+    return `${humanizeKey(key)}: ${value.join(", ")}`;
+  }
+  return null;
+}
+
 function mapProductToService(
   product: Record<string, unknown>,
 ): MonitoringService {
-  const features = product.features as string[] | undefined;
+  const raw = product.features;
+  const features =
+    raw && typeof raw === "object" && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>)
+      : {};
+
+  const bureaus = features.bureaus;
+
   return {
-    name: String(product.name || ""),
-    price: Number(product.price || 0),
-    bureaus: Number(product.bureauCount || 1),
-    alerts: features?.includes("alerts") ?? true,
-    identity: features?.includes("identity_protection") ?? false,
-    score: features?.includes("score_tracking") ?? true,
+    id: String(product.id ?? product.name ?? ""),
+    name: String(product.name ?? ""),
+    description:
+      typeof product.description === "string" ? product.description : null,
+    price: Number(product.price ?? 0),
+    priceType: String(product.priceType ?? ""),
+    rating: Number(product.rating ?? 0),
+    reviewCount: Number(product.reviewCount ?? 0),
+    bureaus: Array.isArray(bureaus) ? bureaus.map(String) : null,
+    included: Object.entries(features)
+      .filter(([key]) => key !== "bureaus")
+      .map(([key, value]) => describeFeature(key, value))
+      .filter((line): line is string => line !== null),
   };
 }
 
@@ -305,27 +372,68 @@ export default function CreditMonitoringPage() {
                 <tr className="text-left text-gray-500 dark:text-slate-400 border-b border-gray-100 dark:border-slate-700">
                   <th className="p-4 font-medium">Service</th>
                   <th className="p-4 font-medium">Price</th>
+                  <th className="p-4 font-medium">Rating</th>
                   <th className="p-4 font-medium">Bureaus</th>
-                  <th className="p-4 font-medium">Alerts</th>
-                  <th className="p-4 font-medium">Identity</th>
-                  <th className="p-4 font-medium">Score</th>
+                  <th className="p-4 font-medium">Included</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                 {services.map((service) => (
-                  <tr key={service.name}>
+                  <tr key={service.id} className="align-top">
                     <td className="p-4 text-gray-900 dark:text-white">
-                      {service.name}
+                      <span className="font-medium">{service.name}</span>
+                      {service.description && (
+                        <span className="block text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                          {service.description}
+                        </span>
+                      )}
                     </td>
-                    <td className="p-4 text-gray-900 dark:text-white">
+                    <td className="p-4 text-gray-900 dark:text-white whitespace-nowrap">
                       ${service.price.toFixed(2)}
+                      {PRICE_CADENCE[service.priceType] && (
+                        <span className="text-xs text-gray-500 dark:text-slate-400">
+                          {" "}
+                          {PRICE_CADENCE[service.priceType]}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 text-gray-900 dark:text-white whitespace-nowrap">
+                      {service.reviewCount > 0 ? (
+                        <>
+                          {service.rating.toFixed(1)}
+                          <span className="text-xs text-gray-500 dark:text-slate-400">
+                            {" "}
+                            ({service.reviewCount})
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-gray-500 dark:text-slate-400">
+                          No ratings yet
+                        </span>
+                      )}
                     </td>
                     <td className="p-4 text-gray-900 dark:text-white">
-                      {service.bureaus}
+                      {service.bureaus?.length ? (
+                        service.bureaus.join(", ")
+                      ) : (
+                        <span className="text-gray-500 dark:text-slate-400">
+                          Not stated
+                        </span>
+                      )}
                     </td>
-                    <td className="p-4">{service.alerts ? "Yes" : "No"}</td>
-                    <td className="p-4">{service.identity ? "Yes" : "No"}</td>
-                    <td className="p-4">{service.score ? "Yes" : "No"}</td>
+                    <td className="p-4 text-gray-900 dark:text-white">
+                      {service.included.length > 0 ? (
+                        <ul className="space-y-0.5">
+                          {service.included.map((line) => (
+                            <li key={line}>{line}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-gray-500 dark:text-slate-400">
+                          Not stated
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

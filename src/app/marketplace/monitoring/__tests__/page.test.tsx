@@ -47,10 +47,21 @@ function serve({
   ],
   products = [
     {
+      id: "prod-1",
       name: "Fynvita Monitoring",
+      description: "Daily bureau monitoring",
       price: 9.99,
-      bureauCount: 3,
-      features: ["alerts", "score_tracking"],
+      priceType: "monthly",
+      rating: 4.6,
+      reviewCount: 128,
+      // The REAL shape: jsonb, per-product keys, `bureaus` an array of names.
+      // Seeded rows look like this (migration 20251218000000:366).
+      features: {
+        bureaus: ["Experian", "Equifax"],
+        disputes_per_month: 5,
+        specialist: true,
+        ai_letters: false,
+      },
     },
   ],
 }: Record<string, unknown> = {}) {
@@ -160,6 +171,96 @@ describe("Monitoring — the price comparison has no mock fallback", () => {
       await screen.findByText(/no monitoring products to compare/i),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Showing sample data/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("Monitoring — the product table reads the real jsonb shape", () => {
+  /**
+   * These exist because the first version of this page shipped a mapper built
+   * on an assumption: `features?.includes("alerts")` and `product.bureauCount`.
+   * `features` is a jsonb OBJECT (marketplace-service.ts:23) whose column
+   * default is `'{}'`, so `.includes` is not a function and a real row threw.
+   * The old fixture was an array, so the suite went green over a crash.
+   */
+  it("renders a product whose features object is empty, rather than throwing", async () => {
+    serve({
+      products: [
+        {
+          id: "p-empty",
+          name: "Bare Product",
+          price: 5,
+          priceType: "monthly",
+          rating: 0,
+          reviewCount: 0,
+          features: {}, // the column default
+        },
+      ],
+    });
+
+    render(<CreditMonitoringPage />);
+
+    expect(await screen.findByText("Bare Product")).toBeInTheDocument();
+    expect(screen.getAllByText("Not stated").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("survives a product with no features key at all", async () => {
+    serve({
+      products: [{ id: "p-none", name: "No Features Key", price: 1 }],
+    });
+
+    render(<CreditMonitoringPage />);
+
+    expect(await screen.findByText("No Features Key")).toBeInTheDocument();
+  });
+
+  it("lists the bureaus by name, because that is what the row stores", async () => {
+    serve();
+
+    render(<CreditMonitoringPage />);
+
+    // Seeded rows hold `"bureaus": ["Experian", ...]` — names, not a count.
+    expect(await screen.findByText("Experian, Equifax")).toBeInTheDocument();
+    expect(screen.queryByText("1")).not.toBeInTheDocument();
+  });
+
+  it("lists a declared feature and omits one the product declined", async () => {
+    serve();
+
+    render(<CreditMonitoringPage />);
+
+    expect(await screen.findByText("Disputes per month: 5")).toBeInTheDocument();
+    expect(screen.getByText("Specialist")).toBeInTheDocument();
+    // `ai_letters: false` means the product does NOT include it.
+    expect(screen.queryByText("Ai letters")).not.toBeInTheDocument();
+  });
+
+  it("says what the price cadence is, so the comparison means something", async () => {
+    serve();
+
+    render(<CreditMonitoringPage />);
+
+    expect(await screen.findByText("$9.99")).toBeInTheDocument();
+    expect(screen.getByText("/ month")).toBeInTheDocument();
+  });
+
+  it("says there are no ratings rather than printing 0.0", async () => {
+    serve({
+      products: [
+        {
+          id: "p-new",
+          name: "Unrated",
+          price: 3,
+          rating: 0,
+          reviewCount: 0,
+          features: {},
+        },
+      ],
+    });
+
+    render(<CreditMonitoringPage />);
+
+    expect(await screen.findByText("No ratings yet")).toBeInTheDocument();
+    expect(screen.queryByText("0.0")).not.toBeInTheDocument();
   });
 });
 
