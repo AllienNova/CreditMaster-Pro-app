@@ -1,9 +1,28 @@
 /**
- * Fynvita Financial Overview Screen
- * Net worth, account balances, transactions, budget status
+ * Financial Overview — the caller's real accounts, net worth and budgets.
+ *
+ * WHAT THIS REPLACED. An ACCOUNTS fixture (Primary Checking $4,250 at Chase,
+ * a High-Yield Savings, and more) and a BUDGET_STATUS object ($2,450 of
+ * $4,000 spent, Food & Dining 620/800, Shopping over budget at 450/400).
+ * No request. BUDGET_STATUS is a constant OBJECT rather than an array, so
+ * audit:screen-data could not see it until the detector was extended.
+ *
+ * AND THE NET WORTH WAS COMPUTED THE WRONG WAY. The old arithmetic split
+ * accounts by balance SIGN — positive is an asset, negative a liability:
+ *
+ *     const assets = ACCOUNTS.filter((a) => a.balance > 0)...
+ *
+ * Plaid does not sign balances that way. A credit card or loan carries a
+ * POSITIVE balance meaning the amount OWED, so every debt would have counted
+ * as an asset and net worth would be overstated by the whole of it. The
+ * fixture hid this by hand-signing its own numbers.
+ *
+ * financialOverviewApi.getNetWorth already classifies by accountType exactly
+ * as the web dashboard does, and its docblock records this same conclusion.
+ * The screen uses it rather than recomputing.
  */
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,104 +35,70 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-
-interface Account {
-  id: string;
-  name: string;
-  type: "checking" | "savings" | "credit" | "investment";
-  balance: number;
-  institution: string;
-  lastUpdated: string;
-}
-
-const ACCOUNTS: Account[] = [
-  {
-    id: "1",
-    name: "Primary Checking",
-    type: "checking",
-    balance: 4250.0,
-    institution: "Chase",
-    lastUpdated: "2 min ago",
-  },
-  {
-    id: "2",
-    name: "High-Yield Savings",
-    type: "savings",
-    balance: 12500.0,
-    institution: "Marcus",
-    lastUpdated: "1 hr ago",
-  },
-  {
-    id: "3",
-    name: "Sapphire Preferred",
-    type: "credit",
-    balance: -2340.0,
-    institution: "Chase",
-    lastUpdated: "5 min ago",
-  },
-  {
-    id: "4",
-    name: "Roth IRA",
-    type: "investment",
-    balance: 45200.0,
-    institution: "Fidelity",
-    lastUpdated: "1 day ago",
-  },
-];
-
-const RECENT_TRANSACTIONS = [
-  {
-    id: "1",
-    name: "Amazon",
-    amount: -89.99,
-    category: "Shopping",
-    date: "Today",
-  },
-  {
-    id: "2",
-    name: "Paycheck",
-    amount: 3200.0,
-    category: "Income",
-    date: "Yesterday",
-  },
-  {
-    id: "3",
-    name: "Whole Foods",
-    amount: -156.42,
-    category: "Groceries",
-    date: "Dec 4",
-  },
-  {
-    id: "4",
-    name: "Netflix",
-    amount: -15.99,
-    category: "Entertainment",
-    date: "Dec 3",
-  },
-];
-
-const BUDGET_STATUS = {
-  spent: 2450,
-  budget: 4000,
-  categories: [
-    { name: "Food & Dining", spent: 620, budget: 800, color: "#22C55E" },
-    { name: "Shopping", spent: 450, budget: 400, color: "#EF4444" },
-    { name: "Transportation", spent: 280, budget: 350, color: "#22C55E" },
-  ],
-};
+import {
+  financialOverviewApi,
+  budgetApi,
+  type NetWorthData,
+} from "../../src/services/api/financial";
+import type { Budget } from "../../src/services/api/types";
 
 export default function FinancialOverviewScreen() {
-  const netWorth = ACCOUNTS.reduce((sum, acc) => sum + acc.balance, 0);
-  const assets = ACCOUNTS.filter((a) => a.balance > 0).reduce(
-    (sum, a) => sum + a.balance,
-    0,
-  );
-  const liabilities = Math.abs(
-    ACCOUNTS.filter((a) => a.balance < 0).reduce(
-      (sum, a) => sum + a.balance,
-      0,
-    ),
-  );
+  const [netWorthData, setNetWorthData] = useState<NetWorthData | null>(null);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const [netWorthRes, budgetRes] = await Promise.all([
+      financialOverviewApi.getNetWorth(),
+      budgetApi.getAll(),
+    ]);
+
+    if (!netWorthRes.success || !netWorthRes.data) {
+      // Not zeroes. A net worth of $0 and "we could not read your accounts"
+      // are opposite statements about someone's finances.
+      setError("We could not load your accounts.");
+      setLoading(false);
+      return;
+    }
+
+    setNetWorthData(netWorthRes.data);
+    // Budgets are secondary: their failure leaves that card empty rather
+    // than blanking the accounts the other request did return.
+    setBudgets(
+      budgetRes.success && Array.isArray(budgetRes.data?.budgets)
+        ? budgetRes.data.budgets
+        : [],
+    );
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Classified by accountType, not by balance sign. Plaid reports a credit or
+  // loan balance as POSITIVE (the amount owed), so the old sign rule counted
+  // every debt as an asset.
+  const netWorth = netWorthData?.netWorth ?? 0;
+  const assets = netWorthData?.totalAssets ?? 0;
+  const liabilities = netWorthData?.totalLiabilities ?? 0;
+
+  // One list for display: assets first, then liabilities, each already
+  // carrying its real accountType and name.
+  const accounts = [
+    ...(netWorthData?.assets ?? []).map((a) => ({ ...a, isLiability: false })),
+    ...(netWorthData?.liabilities ?? []).map((a) => ({
+      ...a,
+      isLiability: true,
+    })),
+  ];
+
+  const budgetSpent = budgets.reduce((sum, b) => sum + (b.spent ?? 0), 0);
+  const budgetTotal = budgets.reduce((sum, b) => sum + (b.limit ?? 0), 0);
 
   const getAccountIcon = (type: string) => {
     switch (type) {
@@ -248,7 +233,25 @@ export default function FinancialOverviewScreen() {
             <Text style={styles.seeAllText}>See All</Text>
           </TouchableOpacity>
         </View>
-        {ACCOUNTS.map((account) => (
+        {loading ? (
+          <Card>
+            <Text style={styles.emptyText}>Loading your accounts…</Text>
+          </Card>
+        ) : error ? (
+          <Card>
+            <Text style={styles.emptyText}>{error}</Text>
+            <TouchableOpacity onPress={load}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </Card>
+        ) : accounts.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>
+              No accounts linked yet. Link a bank to see your net worth here.
+            </Text>
+          </Card>
+        ) : null}
+        {accounts.map((account) => (
           <TouchableOpacity
             key={account.id}
             onPress={() =>
@@ -261,37 +264,53 @@ export default function FinancialOverviewScreen() {
                   style={[
                     styles.accountIcon,
                     {
-                      backgroundColor:
-                        account.balance < 0 ? "#FEE2E2" : "#DCFCE7",
+                      // By classification, not by sign: a credit balance is
+                      // positive and still a debt.
+                      backgroundColor: account.isLiability
+                        ? "#FEE2E2"
+                        : "#DCFCE7",
                     },
                   ]}
                 >
                   <Ionicons
                     name={
                       getAccountIcon(
-                        account.type,
+                        account.accountType,
                       ) as keyof typeof Ionicons.glyphMap
                     }
                     size={20}
-                    color={account.balance < 0 ? "#EF4444" : "#22C55E"}
+                    color={account.isLiability ? "#EF4444" : "#22C55E"}
                   />
                 </View>
                 <View style={styles.accountInfo}>
                   <Text style={styles.accountName}>{account.name}</Text>
-                  <Text style={styles.accountInstitution}>
-                    {account.institution} • {account.lastUpdated}
-                  </Text>
+                  {/* The subtype, which the accounts payload does carry.
+                      The fixture showed an institution and a "2 min ago"
+                      freshness stamp; neither is in NetWorthAccount, and a
+                      sync time nobody measured is the kind of detail that
+                      makes invented data convincing. */}
+                  {account.subtype ? (
+                    <Text style={styles.accountInstitution}>
+                      {account.subtype}
+                    </Text>
+                  ) : null}
                 </View>
                 <Text
                   style={[
                     styles.accountBalance,
                     {
-                      color:
-                        account.balance < 0 ? "#EF4444" : theme.colors.text,
+                      color: account.isLiability
+                        ? "#EF4444"
+                        : theme.colors.text,
                     },
                   ]}
                 >
-                  {formatCurrency(account.balance)}
+                  {/* NetWorthAccount.value is already the absolute amount for
+                      a liability, so the minus sign is applied here rather
+                      than assumed from the stored sign. */}
+                  {formatCurrency(
+                    account.isLiability ? -account.value : account.value,
+                  )}
                 </Text>
               </View>
             </Card>
@@ -308,44 +327,57 @@ export default function FinancialOverviewScreen() {
         <Card style={styles.budgetCard}>
           <View style={styles.budgetOverview}>
             <Text style={styles.budgetSpent}>
-              ${BUDGET_STATUS.spent}{" "}
-              <Text style={styles.budgetTotal}>/ ${BUDGET_STATUS.budget}</Text>
+              ${Math.round(budgetSpent)}{" "}
+              <Text style={styles.budgetTotal}>
+                / ${Math.round(budgetTotal)}
+              </Text>
             </Text>
-            <Text style={styles.budgetPercent}>
-              {Math.round((BUDGET_STATUS.spent / BUDGET_STATUS.budget) * 100)}%
-              used
-            </Text>
+            {/* No percentage when nothing is budgeted: spent/0 is Infinity,
+                and the fixture's denominator was always 4000. */}
+            {budgetTotal > 0 ? (
+              <Text style={styles.budgetPercent}>
+                {Math.round((budgetSpent / budgetTotal) * 100)}% used
+              </Text>
+            ) : null}
           </View>
           <View style={styles.budgetProgressContainer}>
             <View
               style={[
                 styles.budgetProgress,
                 {
-                  width: `${(BUDGET_STATUS.spent / BUDGET_STATUS.budget) * 100}%`,
+                  width: `${budgetTotal > 0 ? Math.min(100, (budgetSpent / budgetTotal) * 100) : 0}%`,
                 },
               ]}
             />
           </View>
-          {BUDGET_STATUS.categories.map((cat, idx) => (
-            <View
-              key={cat.name}
-              style={[
-                styles.categoryRow,
-                idx < BUDGET_STATUS.categories.length - 1 &&
-                  styles.categoryRowBorder,
-              ]}
-            >
-              <Text style={styles.categoryName}>{cat.name}</Text>
-              <Text
+          {budgets.length === 0 ? (
+            <Text style={styles.emptyText}>
+              {loading ? "Loading your budgets…" : "No budgets set yet."}
+            </Text>
+          ) : (
+            budgets.map((budget, idx) => (
+              <View
+                key={budget.id}
                 style={[
-                  styles.categoryAmount,
-                  { color: cat.spent > cat.budget ? "#EF4444" : "#22C55E" },
+                  styles.categoryRow,
+                  idx < budgets.length - 1 && styles.categoryRowBorder,
                 ]}
               >
-                ${cat.spent} / ${cat.budget}
-              </Text>
-            </View>
-          ))}
+                <Text style={styles.categoryName}>{budget.category}</Text>
+                <Text
+                  style={[
+                    styles.categoryAmount,
+                    {
+                      color:
+                        budget.spent > budget.limit ? "#EF4444" : "#22C55E",
+                    },
+                  ]}
+                >
+                  ${Math.round(budget.spent)} / ${Math.round(budget.limit)}
+                </Text>
+              </View>
+            ))
+          )}
         </Card>
 
         <View style={{ height: 40 }} />
@@ -355,6 +387,19 @@ export default function FinancialOverviewScreen() {
 }
 
 const styles = StyleSheet.create({
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    paddingVertical: theme.spacing.md,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    textAlign: "center",
+    marginTop: theme.spacing.sm,
+  },
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
   header: {

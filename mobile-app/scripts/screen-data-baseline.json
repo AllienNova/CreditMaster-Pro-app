@@ -17,17 +17,17 @@
     "app/admin/index.tsx: QUICK_ACTIONS": {
       "classification": "catalogue",
       "offline": true,
-      "why": "The admin navigation menu \u2014 titles, icons and routes for the admin sections. Product content, not user data. The METRICS fixture that shared this file WAS a fabrication and is gone; this is what remains."
+      "why": "The admin navigation menu — titles, icons and routes for the admin sections. Product content, not user data. The METRICS fixture that shared this file WAS a fabrication and is gone; this is what remains."
     },
     "app/admin/metrics.tsx: PERIODS": {
       "classification": "catalogue",
       "offline": true,
-      "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query \u2014 it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
+      "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query — it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
     },
     "app/analytics/credit-score.tsx: PERIOD_MONTHS": {
       "classification": "catalogue",
       "offline": false,
-      "why": "The period selector's label->months map. Configuration, not a measurement \u2014 flagged only because ALL maps to 120 months, which trips the magnitude heuristic. Exactly the sort of entry a human is meant to clear."
+      "why": "The period selector's label->months map. Configuration, not a measurement — flagged only because ALL maps to 120 months, which trips the magnitude heuristic. Exactly the sort of entry a human is meant to clear."
     },
     "app/analytics/reports.tsx: GENERATED_REPORTS, REPORT_TEMPLATES": {
       "classification": "fabrication",
@@ -164,11 +164,6 @@
     "app/financial/income.tsx: INCOME_HISTORY, INCOME_SOURCES": {
       "classification": "UNCLASSIFIED",
       "offline": true
-    },
-    "app/financial/overview.tsx: ACCOUNTS, BUDGET_STATUS": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Invented account balances and budget status on the financial overview. Found by the constant-OBJECT detector added 2026-08-17; the array detector could not see BUDGET_STATUS."
     },
     "app/financial/reports.tsx: REPORT_TEMPLATES, SAVED_REPORTS": {
       "classification": "catalogue",
