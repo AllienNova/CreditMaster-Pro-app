@@ -8,19 +8,19 @@
       "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/about/page.tsx: platformFeatures, securityFeatures, stats, values": {
-      "classification": "UNCLASSIFIED",
+      "classification": "catalogue",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Public about page \u2014 company values and platform features. `stats` is marketing copy and belongs to a copy review, not this gate."
     },
     "src/app/admin/audit/page.tsx: auditLogs": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Invented AUDIT LOG entries with plausible IPs, timestamps and an admin email ('user.login', 192.168.1.1, 'Successful login'). An audit log is a compliance artefact; a fabricated one is worse than an empty one."
     },
     "src/app/admin/disputes/page.tsx: disputes, stats": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Invented dispute records and operator statistics."
     },
     "src/app/admin/features/page.tsx: initialFlags": {
       "classification": "fabrication",
@@ -33,14 +33,14 @@
       "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/admin/logs/page.tsx: logs": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Invented system log entries; no request in the file."
     },
     "src/app/admin/subscriptions/page.tsx: metrics, planBreakdown, recentSubscriptions": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Invented operator metrics, plan breakdown and recent subscriptions. GET /api/admin/subscriptions returns a subscription LIST and no statistics, so the metrics have no source at all. See also SF-29 on the DELETE handler."
     },
     "src/app/admin/users/[id]/page.tsx: mockUser": {
       "classification": "fabrication",
@@ -48,14 +48,14 @@
       "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/analytics/credit-score/page.tsx: recommendations, scoreFactors, scoreHistory": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "scoreFactors asserts 'On-time payments for 24 months', 'Using 32% of available credit' and 'Average account age: 5.2 years' \u2014 the SF-16 shape \u2014 plus an invented history and recommendations. Web twin of the mobile screen fixed in rev 43."
     },
     "src/app/analytics/disputes/page.tsx: disputeStats, disputesByBureau, disputesByType, recentDisputes": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Invented dispute statistics, per-bureau and per-type breakdowns, and recent disputes."
     },
     "src/app/analytics/layout.tsx: analyticsNavItems": {
       "classification": "catalogue",
@@ -63,19 +63,19 @@
       "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/analytics/page.tsx: bureauScores, monthlyProgress, overviewStats, recentActivity": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "bureauScores presents Experian 725 (+12), Equifax 718 (+8), TransUnion 715 (+5) with update dates as the caller's own, alongside invented monthly progress, overview stats and recent activity. Web twin of the mobile reports/comparison fixed in rev 36."
     },
     "src/app/analytics/reports/page.tsx: availableReports, recentDownloads, scheduledReports": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Invented generated reports, download history and schedules \u2014 documents the user never produced. Same shape as the mobile dashboard/reports finding."
     },
     "src/app/analytics/trends/page.tsx: insights, monthlyTrends, projections, trendMetrics": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Invented monthly trends and PROJECTIONS. A projection is a forecast, and nothing here forecasts \u2014 see rev 43, where the mobile score predictions were removed for the same reason."
     },
     "src/app/api/admin/stats/route.ts: PRICE_MAP": {
       "classification": "catalogue",
@@ -93,9 +93,9 @@
       "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/budgeting/page.tsx: FEATURE_CARDS": {
-      "classification": "UNCLASSIFIED",
+      "classification": "catalogue",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "FEATURE_CARDS is the hub's navigation into the budgeting tools."
     },
     "src/app/budgeting/subscriptions/page.tsx: MONTHLY_EQUIVALENT_FACTOR": {
       "classification": "catalogue",
@@ -143,9 +143,9 @@
       "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/features/page.tsx: featureSections, platformFeatures": {
-      "classification": "UNCLASSIFIED",
+      "classification": "catalogue",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Public features page \u2014 product description."
     },
     "src/app/financial-intelligence/page.tsx: MOCK_INSIGHTS, MOCK_SNAPSHOT, QUICK_ACTIONS": {
       "classification": "fabrication",
@@ -193,9 +193,9 @@
       "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/identity/dark-web/page.tsx: BREACH_ENTRIES, EXPOSED_CATEGORIES": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "THE MOST ACTIONABLE ONE FOUND. BREACH_ENTRIES tells the user 'Your email and hashed password were included in the dump found on a dark web marketplace', with a named source and date, and affectedEmail is the placeholder user@example.com. It would drive a real person to change passwords, freeze credit or buy monitoring on the strength of nothing."
     },
     "src/app/identity/page.tsx: FEATURES, MOCK_ALERTS, RECOMMENDED_ACTIONS, SCAN_RESULTS": {
       "classification": "fabrication",
@@ -278,9 +278,9 @@
       "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/onboarding/complete/page.tsx: analysisSteps, nextSteps, quickWins": {
-      "classification": "UNCLASSIFIED",
+      "classification": "catalogue",
       "offline": false,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "analysisSteps/nextSteps/quickWins are how-to content about what happens next. The invented 675 score, 12 'errors found' and +85 on this page were removed separately in rev 46."
     },
     "src/app/onboarding/connect/page.tsx: bankOptions, bureaus, payFrequencies, whyConnect": {
       "classification": "catalogue",
@@ -303,34 +303,34 @@
       "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/page.tsx: pricing, products": {
-      "classification": "UNCLASSIFIED",
+      "classification": "catalogue",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Public landing page \u2014 `pricing` and `products` are the real product catalogue."
     },
     "src/app/profile/page.tsx: achievements, activityHistory": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Invented achievements and activity history, alongside the hardcoded 720 score and 78% completion the inline-metrics gate already records."
     },
     "src/app/recommendations/credit-cards/page.tsx: CREDIT_CARD_OFFERS": {
-      "classification": "UNCLASSIFIED",
+      "classification": "catalogue",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Third-party card offers \u2014 product content, not a claim about the caller. SHOULD come from the affiliate feed (Wave 6, Engine by MoneyLion) rather than a constant; recorded here so that wiring shrinks the list."
     },
     "src/app/recommendations/insights/page.tsx: INSIGHTS": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "INSIGHTS presents invented observations about the caller's finances."
     },
     "src/app/recommendations/loans/page.tsx: LOAN_OFFERS, LOAN_TYPE_CHIPS": {
-      "classification": "UNCLASSIFIED",
+      "classification": "catalogue",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "Third-party loan offers, same as credit-cards: product content that should come from the affiliate feed."
     },
     "src/app/recommendations/page.tsx: CATEGORY_CHIPS, QUICK_LINKS, RECOMMENDATIONS": {
-      "classification": "UNCLASSIFIED",
+      "classification": "fabrication",
       "offline": true,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "RECOMMENDATIONS is invented advice for the caller. CATEGORY_CHIPS and QUICK_LINKS in the same entry are config \u2014 a per-file key cannot split them, which is the same limitation recorded in rev 41."
     },
     "src/app/settings/connected-accounts/page.tsx: initialAccounts": {
       "classification": "fabrication",
@@ -343,9 +343,9 @@
       "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/settings/notifications/page.tsx: defaultSettings": {
-      "classification": "UNCLASSIFIED",
+      "classification": "catalogue",
       "offline": false,
-      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
+      "why": "defaultSettings is the default notification configuration, not a reading."
     },
     "src/app/settings/page.tsx: settingsSections": {
       "classification": "catalogue",
