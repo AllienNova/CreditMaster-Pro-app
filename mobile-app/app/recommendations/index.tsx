@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 interface Recommendation {
   id: string;
@@ -176,12 +177,14 @@ export default function RecommendationsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>For You</Text>
-          <TouchableOpacity style={styles.refreshButton}>
-            <Ionicons name="refresh" size={20} color={theme.colors.primary} />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader
+          title="For You"
+          right={
+            <TouchableOpacity style={styles.refreshButton}>
+              <Ionicons name="refresh" size={20} color={theme.colors.primary} />
+            </TouchableOpacity>
+          }
+        />
 
         {/* AI Summary Card */}
         <Card style={styles.summaryCard}>
@@ -364,13 +367,6 @@ export default function RecommendationsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: theme.spacing.lg,
-  },
-  title: { fontSize: 28, fontWeight: "700", color: theme.colors.text },
   refreshButton: { padding: 8 },
   summaryCard: { marginBottom: theme.spacing.lg, backgroundColor: "#F5F3FF" },
   summaryRow: { flexDirection: "row", alignItems: "flex-start" },

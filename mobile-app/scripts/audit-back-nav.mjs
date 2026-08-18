@@ -96,6 +96,45 @@ function hasBackAffordance(source) {
   return BACK_PATTERNS.some((p) => p.test(source));
 }
 
+/**
+ * Does this layout draw a native header on its OWN stack root?
+ *
+ * This is the marketplace defect as a rule rather than an anecdote. React
+ * Navigation draws no back button on the root of a stack, so a native header
+ * there is a bar with a title and nothing to press — while looking, to anyone
+ * reading the layout, exactly like working navigation.
+ *
+ * Two ways in:
+ *   screenOptions={{ headerShown: true }}          applies to EVERY screen in
+ *                                                  the stack, root included
+ *   <Stack.Screen name="index" options={{ headerShown: true ... }}>
+ *
+ * A per-screen `headerShown: true` on a NON-root screen is fine and common —
+ * that screen was pushed, so it has somewhere to go back to.
+ */
+function drawsHeaderOnStackRoot(layoutSource) {
+  // A per-screen option BEATS screenOptions, so read the root's own block
+  // first. Getting this backwards is not hypothetical: the first version of
+  // this check reported app/tax/_layout.tsx, which sets headerShown: true in
+  // screenOptions and then turns it off again for `index`. The screen was
+  // fine; the detector was wrong.
+  const rootBlock = layoutSource.match(
+    /<Stack\.Screen[^>]*name="index"[\s\S]{0,300}?\/>/,
+  );
+  if (rootBlock) {
+    if (/headerShown:\s*false/.test(rootBlock[0])) return null; // explicit opt-out
+    if (/headerShown:\s*true/.test(rootBlock[0])) {
+      return 'the "index" screen — the stack root — sets headerShown: true';
+    }
+  }
+
+  const screenOptions = layoutSource.match(/screenOptions={{([\s\S]*?)}}/);
+  if (screenOptions && /headerShown:\s*true/.test(screenOptions[1])) {
+    return "screenOptions applies headerShown to every screen, root included";
+  }
+  return null;
+}
+
 // ── Self-test ───────────────────────────────────────────────────────────────
 if (process.argv.includes("--self-test")) {
   let bad = 0;
@@ -130,10 +169,50 @@ if (process.argv.includes("--self-test")) {
       `  SELF-TEST FAIL: expected ${want ? "PASS" : "FLAG"} — ${why}`,
     );
   }
+
+  const LAYOUT_CASES = [
+    [
+      `<Stack screenOptions={{ headerShown: true, headerTintColor: "#F59E0B" }}>`,
+      true,
+      "screenOptions covers the root too — this is app/tax/_layout.tsx",
+    ],
+    [
+      `<Stack screenOptions={{ headerShown: false }}>
+         <Stack.Screen name="index" options={{ headerShown: true, title: "Marketplace" }} />`,
+      true,
+      "a native header on the named root — this is the reported marketplace defect",
+    ],
+    [
+      `<Stack screenOptions={{ headerShown: false }}>
+         <Stack.Screen name="detail" options={{ headerShown: true, title: "Detail" }} />`,
+      false,
+      "a PUSHED screen may have a native header; it has somewhere to go back to",
+    ],
+    [
+      `<Stack screenOptions={{ headerShown: false }}>`,
+      false,
+      "headers off everywhere is the app's own convention and is fine",
+    ],
+    [
+      `<Stack screenOptions={{ headerShown: true, headerTintColor: "#F59E0B" }}>
+         <Stack.Screen name="index" options={{ title: "Tax", headerShown: false }} />`,
+      false,
+      "a per-screen headerShown:false BEATS screenOptions — this is app/tax/_layout.tsx, " +
+        "which the first version of this check wrongly reported",
+    ],
+  ];
+  for (const [src, want, why] of LAYOUT_CASES) {
+    if (Boolean(drawsHeaderOnStackRoot(src)) === want) continue;
+    bad++;
+    console.log(
+      `  SELF-TEST FAIL (layout): expected ${want ? "FLAG" : "PASS"} — ${why}`,
+    );
+  }
+  const CASES_TOTAL = CASES.length + LAYOUT_CASES.length;
   console.log(
     bad === 0
-      ? `audit:back-nav self-test PASSED — ${CASES.length}/${CASES.length} cases correct.`
-      : `audit:back-nav self-test FAILED — ${bad} of ${CASES.length} wrong.`,
+      ? `audit:back-nav self-test PASSED — ${CASES_TOTAL}/${CASES_TOTAL} cases correct.`
+      : `audit:back-nav self-test FAILED — ${bad} of ${CASES_TOTAL} wrong.`,
   );
   process.exit(bad === 0 ? 0 : 1);
 }
@@ -167,6 +246,22 @@ for (const file of screens) {
   }
   if (hasBackAffordance(readFileSync(file, "utf8"))) continue;
   offenders.push(path);
+}
+
+/**
+ * The second class of finding: a stack root wearing a native header.
+ *
+ * These do NOT appear in `offenders` if the screen also happens to hold a
+ * router.back() somewhere — and that is the point of checking layouts
+ * separately. The screen reads as fine; the navigator is what is wrong.
+ */
+const rootHeaderOffenders = [];
+for (const layout of walk(APP).filter(isLayout)) {
+  const reason = drawsHeaderOnStackRoot(readFileSync(layout, "utf8"));
+  if (!reason) continue;
+  const root = join(layout, "..", "index.tsx");
+  if (!existsSync(root)) continue;
+  rootHeaderOffenders.push({ screen: rel(root), layout: rel(layout), reason });
 }
 
 const staleExemptions = Object.keys(EXEMPT).filter(
@@ -218,7 +313,27 @@ if (staleExemptions.length) {
   );
 }
 
-if (novel.length === 0 && staleExemptions.length === 0) {
+if (rootHeaderOffenders.length) {
+  console.log(
+    `\n${rootHeaderOffenders.length} stack root(s) draw a native header, which has ` +
+      `no back button:\n`,
+  );
+  for (const o of rootHeaderOffenders) {
+    console.log(`  ${o.screen}`);
+    console.log(`    ${o.layout} — ${o.reason}`);
+  }
+  console.log(
+    `\nTurn the native header off for the root and use <ScreenHeader/>, whose` +
+      `\nrouter.back() pops the PARENT navigator — which is where the user` +
+      `\nactually came from.`,
+  );
+}
+
+if (
+  novel.length === 0 &&
+  staleExemptions.length === 0 &&
+  rootHeaderOffenders.length === 0
+) {
   console.log(
     `audit:back-nav PASSED — no NEW screen without a way back.` +
       (offenders.length

@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
 import { useDisputeStore } from "../../src/store/disputeStore";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 const { width } = Dimensions.get("window");
 
@@ -47,10 +48,10 @@ export default function DisputeAnalyticsScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Dispute Analytics</Text>
-        <Text style={styles.subtitle}>Track your dispute performance</Text>
-      </View>
+      <ScreenHeader
+        title="Dispute Analytics"
+        subtitle="Track your dispute performance"
+      />
 
       {/* Summary Cards */}
       <View style={styles.summaryRow}>
@@ -175,20 +176,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: lightTheme.colors.background,
-  },
-  header: {
-    padding: 20,
-    paddingTop: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: lightTheme.colors.text,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: lightTheme.colors.textSecondary,
-    marginTop: 4,
   },
   summaryRow: {
     flexDirection: "row",

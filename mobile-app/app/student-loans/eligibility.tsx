@@ -20,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme } from "../../src/constants/theme";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import {
   useStudentLoanStore,
   selectStudentLoans,
@@ -232,8 +233,8 @@ export default function EligibilityScreen() {
           )}
 
           {/* Header */}
+          <ScreenHeader title="Federal Program Eligibility" />
           <View style={styles.header}>
-            <Text style={styles.title}>Federal Program Eligibility</Text>
             <Text style={styles.subtitle}>
               Check your eligibility for forgiveness and repayment programs
             </Text>
@@ -952,12 +953,6 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: theme.colors.text,
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,

@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 export default function AnalyticsScreen() {
   const analyticsItems = [
@@ -48,10 +49,7 @@ export default function AnalyticsScreen() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Analytics</Text>
-          <Text style={styles.subtitle}>Insights and data analysis</Text>
-        </View>
+        <ScreenHeader title="Analytics" subtitle="Insights and data analysis" />
 
         {/* Quick Stats */}
         <View style={styles.statsRow}>
@@ -100,13 +98,6 @@ export default function AnalyticsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
-  header: { marginBottom: theme.spacing.lg },
-  title: { fontSize: 28, fontWeight: "700", color: theme.colors.text },
-  subtitle: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm,
-  },
   statsRow: { flexDirection: "row", marginBottom: theme.spacing.lg },
   statCard: {
     flex: 1,

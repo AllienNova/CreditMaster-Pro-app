@@ -20,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LineChart, PieChart } from "react-native-chart-kit";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 const { width } = Dimensions.get("window");
 
@@ -718,8 +719,8 @@ export default function SpendingInsightsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <ScreenHeader title="Spending Insights" />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Spending Insights</Text>
         {analysis && (
           <View style={styles.headerStats}>
             <Text style={styles.headerStatLabel}>Total Spent</Text>
@@ -790,12 +791,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
   },
   headerStats: {
     flexDirection: "row",

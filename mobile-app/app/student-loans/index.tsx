@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme } from "../../src/constants/theme";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import {
   useStudentLoanStore,
   selectStudentLoans,
@@ -142,15 +143,17 @@ export default function StudentLoansPortfolio() {
         }
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Student Loans</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => router.push("/student-loans/add")}
-          >
-            <Ionicons name="add" size={24} color={theme.colors.primary} />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader
+          title="Student Loans"
+          right={
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => router.push("/student-loans/add")}
+            >
+              <Ionicons name="add" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
+          }
+        />
 
         {/* Error Banner */}
         {error && (
@@ -462,18 +465,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: theme.colors.textSecondary,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: theme.colors.text,
   },
   addButton: {
     padding: 8,
