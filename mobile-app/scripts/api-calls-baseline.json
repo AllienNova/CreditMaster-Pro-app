@@ -29,7 +29,6 @@
     "/user/settings/2fa/verify"
   ],
   "verbMismatch": [
-    "DELETE /financial/accounts/ ",
     "GET /tax/deductions/recommendations",
     "PATCH /notifications/preferences",
     "POST /notifications/preferences",

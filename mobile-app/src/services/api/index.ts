@@ -27,6 +27,12 @@ export { disputeApi, disputeLetterApi, disputeResourcesApi } from "./disputes";
 export {
   financialOverviewApi,
   bankAccountApi,
+  bankConnectionApi,
+  flattenConnectionsToAccounts,
+  toMobileAccountType,
+  type BankConnection,
+  type BankConnectionAccount,
+  type BankConnectionStatus,
   transactionApi,
   budgetApi,
   financialGoalsApi,

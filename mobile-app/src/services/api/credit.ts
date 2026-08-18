@@ -15,6 +15,22 @@ import type {
   PaginatedResponse,
 } from "./types";
 
+/**
+ * One bureau's connection state, as GET /api/credit-bureau/connect returns it
+ * (CreditBureauService.getBureauConnectionStatuses). Snake_case because that
+ * is what the route serialises — the service reads the bureau_connections
+ * columns straight through without renaming them.
+ */
+export interface BureauConnection {
+  bureau: "experian" | "equifax" | "transunion";
+  connected: boolean;
+  /** ISO 8601, or null when this bureau has never been pulled. */
+  last_pull_date: string | null;
+  last_score: number | null;
+  /** "sandbox" | "production" — which bureau API the server is pointed at. */
+  environment: string;
+}
+
 // Credit Score Endpoints
 export const creditScoreApi = {
   /**
@@ -160,6 +176,22 @@ export const creditMonitoringApi = {
     // /credit-monitoring/settings exports GET and PUT — there is no PATCH, so a
     // PATCH here would 405 even once the path was right.
     api.put<MonitoringStatus>("/credit-monitoring/settings", preferences),
+
+  /**
+   * Which bureaus the caller has connected, and when each was last pulled.
+   *
+   * GET on the same collection the connect/disconnect POSTs use
+   * (src/app/api/credit-bureau/connect/route.ts:19). The service answers for
+   * ALL THREE bureaus every time — a bureau with no row comes back
+   * `connected: false` rather than being omitted — so the caller never has to
+   * decide what an absent bureau means.
+   *
+   * There was no getter here at all, which is why the Connected Accounts
+   * screen showed Experian, Equifax and TransUnion as hardcoded "connected"
+   * cards: the real answer was one route away and nothing asked for it.
+   */
+  getBureauConnections: () =>
+    api.get<BureauConnection[]>("/credit-bureau/connect"),
 
   /**
    * Connect to a credit bureau.

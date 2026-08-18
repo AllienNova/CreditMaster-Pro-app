@@ -654,6 +654,52 @@ as blocking, so the number cannot grow and each entry has to be looked at once.
 30 remain UNCLASSIFIED — that is honest debt, not a gap: they need someone who
 knows the product to say which they are.
 
+## SF-14 — every bank balance is excluded from the web dashboard's assets
+
+**Severity: HIGH (correctness, live).** Found while building the connections
+surface; NOT fixed in that commit, because it belongs to a different module and
+deserves its own test.
+
+`financial-aggregation-service.ts:mapAccountFromDb` normalises an account's type
+against a closed list:
+
+```ts
+const validAccountTypes = ["savings","checking","credit","investment","loan","other"];
+const mappedType = validAccountTypes.includes(accountType) ? accountType : "other";
+```
+
+`depository` is not in that list. It is, however, exactly what Plaid writes and
+what `financial_accounts.account_type` stores — 20260731000006 says so in a
+comment on the column: *"Plaid's raw account.type
+('depository'/'credit'/'loan'/'investment'/'other') — intentionally
+unconstrained TEXT."*
+
+So every checking and savings account maps to `"other"`, and `getAccountSummary`
+buckets by the normalised value:
+
+```ts
+const checking = accounts.filter((a) => a.accountType === "checking");   // always []
+const savings  = accounts.filter((a) => a.accountType === "savings");    // always []
+const totalAssets = [...checking, ...savings, ...investment].reduce(...); // no bank money
+```
+
+`checking` and `savings` are therefore always empty, `totalSavings` is always 0,
+and `totalAssets` counts investment accounts only. Credit and loan map cleanly,
+so `totalLiabilities` is right — which makes the resulting `netWorth` wrong in
+one direction: every user's net worth is understated by their entire bank
+balance.
+
+**Why it survived.** The subtype is what distinguishes checking from savings,
+and this function never reads `account_subtype`. A mapping written against the
+five names the UI uses, rather than against the five Plaid actually sends, looks
+correct in isolation and has no failing test.
+
+**Fix sketch.** Map `depository` + subtype the way
+`mobile-app/src/services/api/financial.ts:toMobileAccountType` now does
+(`savings` subtype → savings, otherwise checking), and keep `"other"` for
+genuinely unknown types so nothing is rounded into an asset bucket. Needs a test
+per branch and a check of every `accountType ===` comparison downstream.
+
 ## Revision History
 
 | Date | Change |
@@ -666,4 +712,5 @@ knows the product to say which they are.
 | 2026-08-17 (rev 4) | Added SF-10: /api/tax/documents/upload never stores the uploaded file and never sets storage_path, while three delete paths read storage_path to remove a file that was never written (0 of 0 rows have one). Blocks /tax/documents/[id]/download — nothing to serve. |
 | 2026-08-17 (rev 5) | Added SF-11 (HIGHEST severity here): CreditBureauService.getCreditReport falls back to MockCreditBureauAdapter on any failed live call, enableFallback defaults to true, bureau clients build from empty env vars so the call always fails, and the `fallback_` tag on reference_id is read by nothing outside the service's own test. Users are shown invented accounts, creditors, statuses and scores as their own credit report — the input to the dispute-letter flow. /credit/scores/refresh deliberately not built on top of it. |
 | 2026-08-17 (rev 6) | Added SF-12: mobile-app/app/settings/billing.tsx renders a hardcoded Visa 4242, a Mastercard 5555 and three $29.00 paid invoices, and makes no network call at all — FND-016/017 reproduced in mobile, uncovered by audit:mocks which scans web src/ only. /api/payment/billing already returns the real plans, subscription, paymentMethods and invoices. |
-| 2026-08-17 (rev 7) | Added SF-13: new gate audit:screen-data finds 87 mobile screens rendering a module-level constant data set, 57 with no request in the file. 19 classified fabrication (MOCK_BILLS, MOCK_PAYMENTS, SCORE_HISTORY, CONNECTED_ACCOUNTS, admin REVENUE_DATA…), 38 catalogue, 30 unclassified. Frozen shrink-only and wired into CI. These screens make no request, so they never appeared in the tracked-API-path count. |
+| 2026-08-17 (rev 7) | Added SF-13: new gate audit:screen-data finds 87 mobile screens rendering a module-level constant data set, 57 with no request in the file. 19 classified fabrication (MOCK_BILLS, MOCK_PAYMENTS, SCORE_HISTORY, CONNECTED_ACCOUNTS, admin REVENUE_DATA…), 38 catalogue, 30 unclassified. MOCK_BILLS and CONNECTED_ACCOUNTS have since been fixed (85 entries, 17 fabrication). Frozen shrink-only and wired into CI. These screens make no request, so they never appeared in the tracked-API-path count. |
+| 2026-08-17 (rev 8) | Added SF-14: `financial-aggregation-service.mapAccountFromDb` omits `depository` from its valid-type list, so every checking and savings account normalises to "other" and is excluded from `totalAssets`/`totalSavings` — net worth understated by the user's whole bank balance. Found while building the connections surface; recorded rather than bundled into that commit. |

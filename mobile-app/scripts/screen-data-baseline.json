@@ -322,10 +322,6 @@
       "classification": "catalogue",
       "offline": true
     },
-    "app/settings/connected-accounts.tsx: CONNECTED_ACCOUNTS": {
-      "classification": "fabrication",
-      "offline": true
-    },
     "app/tax/calendar.tsx: TAX_EVENTS_2026": {
       "classification": "catalogue",
       "offline": false

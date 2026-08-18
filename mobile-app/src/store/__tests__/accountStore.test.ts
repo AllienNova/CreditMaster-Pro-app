@@ -6,17 +6,83 @@ import { act } from "@testing-library/react-native";
 import { useAccountStore, selectTotalBalance, selectSelectedAccount, selectIsLoading } from "../accountStore";
 import type { BankAccount } from "../../services/api/types";
 
-jest.mock("../../services/api", () => ({
-  bankAccountApi: {
-    getAccounts: jest.fn(),
-    getPlaidLinkToken: jest.fn(),
-    exchangePlaidToken: jest.fn(),
-    refreshAccount: jest.fn(),
-    disconnectAccount: jest.fn(),
-  },
-}));
+// flattenConnectionsToAccounts is NOT mocked: the store's job is to call it on
+// the real payload, and stubbing it would hide the shape mismatch these tests
+// exist to pin.
+jest.mock("../../services/api", () => {
+  const actual = jest.requireActual("../../services/api/financial");
+  return {
+    bankAccountApi: {
+      getAccounts: jest.fn(),
+      getPlaidLinkToken: jest.fn(),
+      exchangePlaidToken: jest.fn(),
+      refreshAccount: jest.fn(),
+    },
+    bankConnectionApi: {
+      getConnections: jest.fn(),
+      disconnect: jest.fn(),
+    },
+    flattenConnectionsToAccounts: actual.flattenConnectionsToAccounts,
+  };
+});
 
-const { bankAccountApi } = require("../../services/api");
+const { bankAccountApi, bankConnectionApi } = require("../../services/api");
+
+/**
+ * What GET /api/financial/connections actually answers with — one connection
+ * carrying its accounts, NOT a flat `{ accounts: [...] }`. The previous
+ * version of these tests mocked `{ accounts: mockAccounts }`, which is the
+ * shape the store wrongly expected, so the suite stayed green while the
+ * financial tab showed "0 connected" for every real user.
+ */
+const CONNECTIONS = [
+  {
+    id: "conn-1",
+    provider: "plaid",
+    institutionId: "ins_1",
+    institutionName: "Chase",
+    status: "active" as const,
+    errorCode: null,
+    errorMessage: null,
+    consentExpiresAt: null,
+    createdAt: "2026-07-01T00:00:00.000Z",
+    accounts: [
+      {
+        id: "acc-1",
+        accountName: "Checking",
+        accountType: "depository",
+        accountSubtype: "checking",
+        mask: "0000",
+        currentBalance: 5000,
+        currency: "USD",
+        lastSynced: "2026-07-20T12:00:00.000Z",
+      },
+    ],
+  },
+  {
+    id: "conn-2",
+    provider: "plaid",
+    institutionId: "ins_2",
+    institutionName: "Ally Bank",
+    status: "active" as const,
+    errorCode: null,
+    errorMessage: null,
+    consentExpiresAt: null,
+    createdAt: "2026-07-01T00:00:00.000Z",
+    accounts: [
+      {
+        id: "acc-2",
+        accountName: "Savings",
+        accountType: "depository",
+        accountSubtype: "savings",
+        mask: "1111",
+        currentBalance: 15000,
+        currency: "USD",
+        lastSynced: "2026-07-20T12:00:00.000Z",
+      },
+    ],
+  },
+];
 
 const mockAccounts: BankAccount[] = [
   {
@@ -71,10 +137,10 @@ describe("Account Store", () => {
   });
 
   describe("fetchAccounts", () => {
-    it("should fetch accounts successfully", async () => {
+    it("flattens the connections payload into accounts", async () => {
       bankAccountApi.getAccounts.mockResolvedValue({
         success: true,
-        data: { accounts: mockAccounts },
+        data: { connections: CONNECTIONS },
       });
 
       await act(async () => {
@@ -82,9 +148,58 @@ describe("Account Store", () => {
       });
 
       const state = useAccountStore.getState();
-      expect(state.accounts).toEqual(mockAccounts);
+      expect(state.accounts.map((a) => a.id)).toEqual(["acc-1", "acc-2"]);
       expect(state.isLoadingAccounts).toBe(false);
       expect(state.error).toBeNull();
+    });
+
+    it("takes institutionName from the CONNECTION, not the account", async () => {
+      // financial_accounts.institution_name held the ACCOUNT's name until the
+      // sync path was fixed; the connection is the only honest source.
+      bankAccountApi.getAccounts.mockResolvedValue({
+        success: true,
+        data: { connections: CONNECTIONS },
+      });
+
+      await act(async () => {
+        await useAccountStore.getState().fetchAccounts();
+      });
+
+      expect(
+        useAccountStore.getState().accounts.map((a) => a.institutionName),
+      ).toEqual(["Chase", "Ally Bank"]);
+    });
+
+    it("splits depository into checking and savings by subtype", async () => {
+      bankAccountApi.getAccounts.mockResolvedValue({
+        success: true,
+        data: { connections: CONNECTIONS },
+      });
+
+      await act(async () => {
+        await useAccountStore.getState().fetchAccounts();
+      });
+
+      expect(
+        useAccountStore.getState().accounts.map((a) => a.accountType),
+      ).toEqual(["checking", "savings"]);
+    });
+
+    it("marks accounts of a needs_attention connection as not connected", async () => {
+      bankAccountApi.getAccounts.mockResolvedValue({
+        success: true,
+        data: {
+          connections: [
+            { ...CONNECTIONS[0], status: "needs_attention" as const },
+          ],
+        },
+      });
+
+      await act(async () => {
+        await useAccountStore.getState().fetchAccounts();
+      });
+
+      expect(useAccountStore.getState().accounts[0].isConnected).toBe(false);
     });
 
     it("should handle API error response", async () => {
@@ -144,32 +259,80 @@ describe("Account Store", () => {
     });
   });
 
-  describe("disconnectAccount", () => {
-    it("should remove account from state on success", async () => {
+  describe("disconnectConnection", () => {
+    it("re-reads from the server rather than filtering locally", async () => {
+      // One connection owns several accounts, and which ones is the server's
+      // answer. The old code removed exactly one account by id — from a
+      // response it never received, because the request 405'd.
       useAccountStore.setState({
         accounts: mockAccounts,
         selectedAccountId: "acc-1",
       });
-
-      bankAccountApi.disconnectAccount.mockResolvedValue({ success: true });
+      bankConnectionApi.disconnect.mockResolvedValue({ success: true });
+      bankAccountApi.getAccounts.mockResolvedValue({
+        success: true,
+        data: { connections: [CONNECTIONS[1]] },
+      });
 
       let result = false;
       await act(async () => {
-        result = await useAccountStore.getState().disconnectAccount("acc-1");
+        result = await useAccountStore
+          .getState()
+          .disconnectConnection("conn-1");
       });
 
       expect(result).toBe(true);
-      expect(useAccountStore.getState().accounts).toHaveLength(1);
+      expect(bankAccountApi.getAccounts).toHaveBeenCalled();
+      expect(useAccountStore.getState().accounts.map((a) => a.id)).toEqual([
+        "acc-2",
+      ]);
       expect(useAccountStore.getState().selectedAccountId).toBeNull();
     });
 
-    it("should handle disconnect failure", async () => {
+    it("removes NOTHING when the provider refuses", async () => {
+      // A 502 means the bank is still connected. Dropping it from the list
+      // would show the user a disconnection that did not happen.
       useAccountStore.setState({ accounts: mockAccounts });
-      bankAccountApi.disconnectAccount.mockRejectedValue(new Error("Failed"));
+      bankConnectionApi.disconnect.mockResolvedValue({
+        success: false,
+        error: { message: "nothing was changed" },
+      });
 
       let result = true;
       await act(async () => {
-        result = await useAccountStore.getState().disconnectAccount("acc-1");
+        result = await useAccountStore
+          .getState()
+          .disconnectConnection("conn-1");
+      });
+
+      expect(result).toBe(false);
+      expect(useAccountStore.getState().accounts).toHaveLength(2);
+      expect(bankAccountApi.getAccounts).not.toHaveBeenCalled();
+    });
+
+    it("surfaces the server's message so the user knows to retry", async () => {
+      useAccountStore.setState({ accounts: mockAccounts });
+      bankConnectionApi.disconnect.mockResolvedValue({
+        success: false,
+        error: { message: "nothing was changed" },
+      });
+
+      await act(async () => {
+        await useAccountStore.getState().disconnectConnection("conn-1");
+      });
+
+      expect(useAccountStore.getState().error).toBe("nothing was changed");
+    });
+
+    it("keeps every account when the request throws", async () => {
+      useAccountStore.setState({ accounts: mockAccounts });
+      bankConnectionApi.disconnect.mockRejectedValue(new Error("Failed"));
+
+      let result = true;
+      await act(async () => {
+        result = await useAccountStore
+          .getState()
+          .disconnectConnection("conn-1");
       });
 
       expect(result).toBe(false);

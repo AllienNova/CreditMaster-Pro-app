@@ -196,7 +196,13 @@ export type AccountType =
   | "savings"
   | "credit"
   | "investment"
-  | "loan";
+  | "loan"
+  // Plaid's account.type is depository | credit | loan | investment | other,
+  // and depository splits by subtype. "other" is what an unrecognised type
+  // maps to — without it, toMobileAccountType would have to round every
+  // unknown account into one of the five above, and a loan filed as checking
+  // would be counted as an asset.
+  | "other";
 
 export interface BankAccount {
   id: string;

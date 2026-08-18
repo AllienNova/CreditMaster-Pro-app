@@ -42,12 +42,21 @@ import { plaidService } from "../plaid-service";
 function makeChain(rows: unknown[] | null, error: unknown = null) {
   const chain = {
     select: jest.fn().mockReturnThis(),
+    // syncAccounts now writes the resolved institution back onto the
+    // connection row, so the chain has to model an update as well as a read.
+    update: jest.fn().mockReturnThis(),
+    delete: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
     in: jest.fn().mockReturnThis(),
     gte: jest.fn().mockReturnThis(),
     lte: jest.fn().mockReturnThis(),
     order: jest.fn().mockResolvedValue({ data: rows, error }),
     single: jest.fn().mockResolvedValue({ data: rows?.[0] ?? null, error }),
+    // getConnectionByItemId uses .maybeSingle() — "no such connection" is an
+    // expected answer there, not the error .single() raises.
+    maybeSingle: jest
+      .fn()
+      .mockResolvedValue({ data: rows?.[0] ?? null, error }),
   };
   return chain;
 }

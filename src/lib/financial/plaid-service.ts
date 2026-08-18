@@ -133,6 +133,110 @@ export interface PlaidBalance {
   lastUpdated: Date;
 }
 
+// ---------------------------------------------------------------------------
+// Connections — the unit the user actually grants and revokes
+// ---------------------------------------------------------------------------
+//
+// A user does not connect an ACCOUNT, they connect an INSTITUTION: one Plaid
+// Item, one consent, N accounts. Revocation has the same granularity — Plaid's
+// /item/remove takes an access_token and kills the whole Item. Any UI offering
+// "disconnect this checking account" while leaving its sibling savings account
+// connected is describing something that cannot happen.
+//
+// So the read model is connection-shaped, and the delete is per connection.
+
+export type BankConnectionStatus = "active" | "needs_attention";
+
+export interface BankConnectionAccount {
+  id: string;
+  accountName: string;
+  accountType: string;
+  accountSubtype: string;
+  mask: string;
+  currentBalance: number;
+  currency: string;
+  /** ISO 8601. The real financial_accounts.last_synced, never "just now". */
+  lastSynced: string;
+}
+
+export interface BankConnection {
+  id: string;
+  provider: string;
+  institutionId: string | null;
+  institutionName: string | null;
+  status: BankConnectionStatus;
+  /**
+   * The Plaid error that put this connection in needs_attention, written by
+   * plaid-webhook-handler.handleItemError. Null when the connection is healthy
+   * — never a placeholder string.
+   */
+  errorCode: string | null;
+  errorMessage: string | null;
+  /**
+   * Written by plaid-webhook-handler.handlePendingExpiration. Its PRESENCE is
+   * the signal: Plaid only sends PENDING_EXPIRATION when consent is running
+   * out, so a non-null value means this connection needs re-authentication
+   * whether the timestamp has passed yet or not.
+   */
+  consentExpiresAt: string | null;
+  createdAt: string;
+  accounts: BankConnectionAccount[];
+}
+
+export type RemoveConnectionResult =
+  | { outcome: "removed" }
+  | { outcome: "not_found" }
+  /** Plaid refused. Nothing was changed; retrying is the right next step. */
+  | { outcome: "provider_error"; message: string }
+  /**
+   * We hold no usable credential for this connection, so we cannot ask Plaid
+   * to revoke it. Nothing was changed, and retrying will not help — this is an
+   * operator problem, not a user one.
+   */
+  | { outcome: "credential_error"; message: string };
+
+interface BankConnectionRow {
+  id: string;
+  provider: string;
+  item_id: string;
+  institution_id: string | null;
+  institution_name: string | null;
+  error_code: string | null;
+  error_message: string | null;
+  consent_expiration_time: string | null;
+  created_at: string;
+}
+
+/**
+ * Plaid's documented code for an access_token that matches no Item — the
+ * response when the Item has already been removed.
+ *
+ * Source: https://plaid.com/docs/errors/invalid-input/ — INVALID_ACCESS_TOKEN,
+ * error_type INVALID_INPUT, HTTP 400, "could not find matching access token".
+ * /item/remove itself documents NO error codes and says nothing about calling
+ * it twice, so this is the one code we are entitled to treat as "already
+ * gone"; every other failure is treated as a live Item we failed to revoke.
+ */
+const PLAID_INVALID_ACCESS_TOKEN = "INVALID_ACCESS_TOKEN";
+
+/**
+ * Pull Plaid's error_code out of a thrown SDK error.
+ *
+ * The SDK is axios-based, so a Plaid API error arrives as an AxiosError whose
+ * `response.data` is Plaid's error body. Returns null for a transport failure
+ * (no response at all), which is exactly the case that must NOT be mistaken
+ * for a successful revocation.
+ */
+function plaidErrorCode(error: unknown): string | null {
+  if (typeof error !== "object" || error === null) return null;
+  const response = (error as { response?: unknown }).response;
+  if (typeof response !== "object" || response === null) return null;
+  const data = (response as { data?: unknown }).data;
+  if (typeof data !== "object" || data === null) return null;
+  const code = (data as { error_code?: unknown }).error_code;
+  return typeof code === "string" ? code : null;
+}
+
 /**
  * Plaid Service Class
  */
@@ -252,39 +356,64 @@ class PlaidService {
   }
 
   /**
-   * Get access token for item — scoped to userId to prevent IDOR (FND-037)
+   * Resolve the connection row for one of the caller's Plaid items.
+   *
+   * Scoped by user_id, which is load-bearing rather than decorative: the
+   * service role bypasses RLS, so this filter is the only thing standing
+   * between item_id and an IDOR (FND-037).
    */
-  private async getAccessToken(itemId: string, userId: string): Promise<string> {
-    // The credential is encrypted at rest and has no readable column. Resolve
-    // the connection first — still scoped by user_id, which remains
-    // load-bearing because the service role bypasses RLS (FND-037) — then
-    // decrypt through the accessor.
-    const client = getServiceRoleClient();
-
-    const { data, error } = await client
+  private async getConnectionByItemId(
+    itemId: string,
+    userId: string,
+  ): Promise<{ id: string; institutionId: string | null } | null> {
+    const { data, error } = await getServiceRoleClient()
       .from("bank_connections")
-      .select("id")
+      .select("id, institution_id")
       .eq("provider", "plaid")
       .eq("item_id", itemId)
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
-    if (error || !data) {
-      throw new Error("Access token not found");
-    }
+    if (error || !data) return null;
+    return { id: data.id, institutionId: data.institution_id ?? null };
+  }
 
-    const { data: token, error: tokenError } = await client.rpc(
+  /**
+   * Decrypt the credential for a connection row we have already resolved.
+   *
+   * Takes a connection id rather than (itemId, userId) because every caller
+   * has already done the ownership check to get here; re-resolving would run
+   * the same query twice and invite one of the two copies to drift out of
+   * user scope.
+   */
+  private async decryptToken(connectionId: string): Promise<string> {
+    const { data: token, error } = await getServiceRoleClient().rpc(
       "get_bank_connection_token",
-      { p_connection_id: data.id, p_key: requireTokenEncryptionKey() },
+      { p_connection_id: connectionId, p_key: requireTokenEncryptionKey() },
     );
 
-    if (tokenError || !token) {
+    if (error || !token) {
       throw new Error(
-        `Failed to decrypt bank credential: ${tokenError?.message ?? "empty"}`,
+        `Failed to decrypt bank credential: ${error?.message ?? "empty"}`,
       );
     }
 
     return token as string;
+  }
+
+  /**
+   * Get access token for item — scoped to userId to prevent IDOR (FND-037)
+   */
+  private async getAccessToken(itemId: string, userId: string): Promise<string> {
+    // The credential is encrypted at rest and has no readable column. Resolve
+    // the connection first, then decrypt through the accessor.
+    const connection = await this.getConnectionByItemId(itemId, userId);
+
+    if (!connection) {
+      throw new Error("Access token not found");
+    }
+
+    return this.decryptToken(connection.id);
   }
 
   /**
@@ -313,16 +442,224 @@ class PlaidService {
   }
 
   /**
+   * Every bank connection the user holds, each with the accounts it granted.
+   *
+   * Two queries rather than a join: financial_accounts carries no enforced FK
+   * to bank_connections (20260801000020 dropped the item_id FK and the
+   * replacement connection_id was never populated until this change), so
+   * PostgREST cannot embed one in the other. Grouping happens here, on
+   * (provider, item_id) — the pair that identifies a connection at its
+   * provider and is present on every account row regardless of backfill state.
+   */
+  async listConnections(userId: string): Promise<BankConnection[]> {
+    const client = getServiceRoleClient();
+
+    const { data: connectionRows, error: connectionError } = await client
+      .from("bank_connections")
+      .select(
+        "id, provider, item_id, institution_id, institution_name, error_code, error_message, consent_expiration_time, created_at",
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true });
+
+    if (connectionError) {
+      throw new Error("Failed to fetch bank connections");
+    }
+
+    const connections = (connectionRows ?? []) as BankConnectionRow[];
+    if (connections.length === 0) return [];
+
+    const { data: accountRows, error: accountError } = await client
+      .from("financial_accounts")
+      .select(
+        "id, provider, item_id, account_name, account_type, account_subtype, mask, current_balance, currency, last_synced",
+      )
+      .eq("user_id", userId);
+
+    if (accountError) {
+      throw new Error("Failed to fetch accounts");
+    }
+
+    const accountsByConnection = new Map<string, BankConnectionAccount[]>();
+    for (const row of accountRows ?? []) {
+      const key = `${row.provider}:${row.item_id}`;
+      const list = accountsByConnection.get(key) ?? [];
+      list.push({
+        id: row.id,
+        accountName: row.account_name ?? "",
+        accountType: row.account_type ?? "",
+        accountSubtype: row.account_subtype ?? "",
+        mask: row.mask ?? "",
+        currentBalance: Number(row.current_balance ?? 0),
+        currency: row.currency ?? "USD",
+        lastSynced: row.last_synced,
+      });
+      accountsByConnection.set(key, list);
+    }
+
+    return connections.map((row) => ({
+      id: row.id,
+      provider: row.provider,
+      institutionId: row.institution_id,
+      institutionName: row.institution_name,
+      // A connection needs attention when Plaid has told us so, via either
+      // webhook. Nothing is inferred from staleness or a missing balance:
+      // "we have not heard anything" is not evidence of a problem.
+      status:
+        row.error_code || row.consent_expiration_time
+          ? "needs_attention"
+          : "active",
+      errorCode: row.error_code,
+      errorMessage: row.error_message,
+      consentExpiresAt: row.consent_expiration_time,
+      createdAt: row.created_at,
+      accounts: accountsByConnection.get(`${row.provider}:${row.item_id}`) ?? [],
+    }));
+  }
+
+  /**
+   * Revoke a bank connection: at Plaid first, then locally.
+   *
+   * ORDER IS THE WHOLE DESIGN. Plaid's /item/remove is what actually ends the
+   * consent and the subscription billing for the Item; deleting our row only
+   * ends our knowledge of it. So the remote call goes first, and a local
+   * delete happens ONLY when the consent is provably gone.
+   *
+   * If Plaid fails for any reason other than "that token matches no Item", the
+   * local row stays and the caller gets an error. Deleting it would strand a
+   * live bank consent that we would then hold no credential for and could
+   * never revoke — the user would believe they had disconnected their bank
+   * while the connection kept running.
+   */
+  async removeConnection(
+    connectionId: string,
+    userId: string,
+  ): Promise<RemoveConnectionResult> {
+    const client = getServiceRoleClient();
+
+    const { data: connection, error } = await client
+      .from("bank_connections")
+      .select("id, provider, item_id")
+      .eq("id", connectionId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    // Not found and not-yours are the same answer: a connection id must not be
+    // probeable for existence.
+    if (error || !connection) {
+      return { outcome: "not_found" };
+    }
+
+    let accessToken: string;
+    try {
+      accessToken = await this.decryptToken(connection.id);
+    } catch (credentialError) {
+      // Deliberately NOT treated as "already revoked", and deliberately NOT
+      // followed by a local delete.
+      //
+      // A decrypt failure cannot distinguish "this one ciphertext is corrupt"
+      // from "BANK_TOKEN_ENCRYPTION_KEY is currently mis-set". The second case
+      // fails for EVERY connection at once, and deleting on it would wipe every
+      // user's bank linkage across the platform because of one wrong
+      // environment variable. Refusing is the only safe answer.
+      //
+      // Logged at error level because this is an operations incident: nobody
+      // can sync or disconnect until it is fixed.
+      console.error(
+        `[PlaidService] no usable credential for connection ${connection.id} — cannot revoke at provider`,
+        credentialError,
+      );
+      return {
+        outcome: "credential_error",
+        message:
+          credentialError instanceof Error
+            ? credentialError.message
+            : "Credential unavailable",
+      };
+    }
+
+    try {
+      await getPlaidClient().itemRemove({ access_token: accessToken });
+    } catch (removeError) {
+      if (plaidErrorCode(removeError) !== PLAID_INVALID_ACCESS_TOKEN) {
+        const message =
+          removeError instanceof Error
+            ? removeError.message
+            : "Unknown provider error";
+        console.error(
+          `[PlaidService] itemRemove failed for connection ${connection.id}:`,
+          removeError,
+        );
+        return { outcome: "provider_error", message };
+      }
+      // INVALID_ACCESS_TOKEN: the Item is already gone at Plaid. Nothing left
+      // to revoke, so fall through and clean up locally. This is what makes a
+      // retry after a half-completed disconnect succeed instead of wedging.
+    }
+
+    // Accounts first. If this succeeded and the connection delete then failed,
+    // the user sees a connection with no accounts and can retry. The reverse
+    // order would leave accounts whose connection is gone — visible forever,
+    // with no row left to delete them by.
+    const { error: accountsError } = await client
+      // idor-audit: pk-owner-checked — user_id is filtered explicitly below.
+      .from("financial_accounts")
+      .delete()
+      .eq("user_id", userId)
+      .eq("provider", connection.provider)
+      .eq("item_id", connection.item_id);
+
+    if (accountsError) {
+      throw new Error(
+        `Bank consent was revoked at the provider but its accounts could not be removed: ${accountsError.message}`,
+      );
+    }
+
+    const { error: connectionError } = await client
+      // idor-audit: pk-owner-checked — filtered on both id and user_id.
+      .from("bank_connections")
+      .delete()
+      .eq("id", connection.id)
+      .eq("user_id", userId);
+
+    if (connectionError) {
+      throw new Error(
+        `Bank consent was revoked at the provider but the connection could not be removed: ${connectionError.message}`,
+      );
+    }
+
+    return { outcome: "removed" };
+  }
+
+  /**
    * Sync accounts from Plaid
    */
   async syncAccounts(itemId: string, userId: string): Promise<PlaidAccount[]> {
     try {
-      const accessToken = await this.getAccessToken(itemId, userId);
+      const connection = await this.getConnectionByItemId(itemId, userId);
+
+      if (!connection) {
+        throw new Error("Access token not found");
+      }
+
+      const accessToken = await this.decryptToken(connection.id);
       const client = getPlaidClient();
 
       const response = await client.accountsGet({
         access_token: accessToken,
       });
+
+      const institutionId = response.data.item.institution_id || "";
+      const institutionName = await this.resolveInstitutionName(institutionId);
+
+      // Persist the institution onto the connection so the connections list
+      // can label a group without re-querying Plaid, and so plaid-income-
+      // service's `item.institution_name` read stops returning null.
+      await this.storeConnectionInstitution(
+        connection.id,
+        institutionId,
+        institutionName,
+      );
 
       const accounts: PlaidAccount[] = [];
 
@@ -332,8 +669,17 @@ class PlaidService {
           itemId,
           userId,
           accountId: account.account_id,
-          institutionId: response.data.item.institution_id || "",
-          institutionName: account.name,
+          institutionId,
+          // Was `account.name` — the ACCOUNT's name written into an
+          // INSTITUTION column, so every surface reading institutionName
+          // (BankAccountsList, SavingsTracker, InvestmentPortfolio,
+          // AccountDetailsModal, FinancialDashboard) rendered "Plaid Checking"
+          // where the bank belonged, and a per-institution grouping would put
+          // each account in its own group. accountsGet does not carry the
+          // institution's name at all — only its id — so it is resolved from
+          // /institutions/get_by_id above, and left empty when unknown rather
+          // than backfilled with whatever string is nearest.
+          institutionName: institutionName ?? "",
           accountName: account.official_name || account.name,
           accountType: account.type as PlaidAccount["accountType"],
           accountSubtype: account.subtype || "",
@@ -346,7 +692,7 @@ class PlaidService {
         };
 
         // Store in database
-        await this.storeAccount(plaidAccount);
+        await this.storeAccount(plaidAccount, connection.id);
         accounts.push(plaidAccount);
       }
 
@@ -357,9 +703,69 @@ class PlaidService {
   }
 
   /**
+   * The institution's display name, or null when it cannot be determined.
+   *
+   * /accounts/get returns `item.institution_id` but never the name, so it
+   * takes a second call. A failure here must not fail the whole sync — the
+   * accounts and balances are real and useful without a label — so it degrades
+   * to null and the caller writes nothing rather than a guess.
+   */
+  private async resolveInstitutionName(
+    institutionId: string,
+  ): Promise<string | null> {
+    if (!institutionId) return null;
+
+    try {
+      const response = await getPlaidClient().institutionsGetById({
+        institution_id: institutionId,
+        country_codes: [CountryCode.Us],
+      });
+      return response.data.institution.name || null;
+    } catch (error) {
+      console.warn(
+        `[PlaidService] Could not resolve institution ${institutionId}:`,
+        error,
+      );
+      return null;
+    }
+  }
+
+  /** Write institution identity onto the connection row. */
+  private async storeConnectionInstitution(
+    connectionId: string,
+    institutionId: string,
+    institutionName: string | null,
+  ): Promise<void> {
+    if (!institutionId && !institutionName) return;
+
+    const { error } = await getServiceRoleClient()
+      // idor-audit: pk-owner-checked — connectionId came from
+      // getConnectionByItemId, which filtered on user_id.
+      .from("bank_connections")
+      .update({
+        institution_id: institutionId || null,
+        institution_name: institutionName,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", connectionId);
+
+    if (error) {
+      // Not fatal: the accounts themselves still sync. Losing the label is a
+      // cosmetic degradation, and swallowing it silently is what would make it
+      // hard to diagnose.
+      console.warn(
+        `[PlaidService] Could not store institution for connection ${connectionId}: ${error.message}`,
+      );
+    }
+  }
+
+  /**
    * Store account in database
    */
-  private async storeAccount(account: PlaidAccount): Promise<void> {
+  private async storeAccount(
+    account: PlaidAccount,
+    connectionId: string,
+  ): Promise<void> {
     // getServiceRoleClient() — see getAccounts above; financial_accounts
     // writes are service-role-only (sync-derived, never user-editable via RLS).
     const { error } = await getServiceRoleClient()
@@ -368,6 +774,13 @@ class PlaidService {
       .upsert({
       id: account.id,
       item_id: account.itemId,
+      // 20260801000020 added connection_id with ON DELETE CASCADE, but nothing
+      // ever wrote it: every row carried NULL, so the cascade was inert and
+      // the old item_id foreign key had already been dropped in the same
+      // migration. Deleting a connection would have left its accounts on the
+      // user's screen with nothing left that could remove them.
+      connection_id: connectionId,
+      provider: "plaid",
       user_id: account.userId,
       account_id: account.accountId,
       institution_id: account.institutionId,

@@ -5,6 +5,7 @@
 
 import { api } from "./client";
 import type {
+  AccountType,
   BankAccount,
   Transaction,
   Budget,
@@ -658,13 +659,144 @@ export const financialOverviewApi = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Bank connections — the unit the user actually grants and revokes
+// ---------------------------------------------------------------------------
+// A user connects an INSTITUTION, not an account: one Plaid Item, one consent,
+// N accounts. Revocation has the same granularity — /item/remove takes an
+// access_token and ends the whole Item. GET /api/financial/connections is the
+// only surface that carries the institution, the consent state, and an id that
+// can be revoked; /financial/accounts carries none of them.
+//
+// This replaces app/settings/connected-accounts.tsx's hardcoded array, which
+// showed every user three "connected" credit bureaus plus Chase, Marcus and
+// Fidelity, with a Disconnect button that filtered local state and a Reconnect
+// button that set the status to "connected" and the sync time to "Just now".
+
+export type BankConnectionStatus = "active" | "needs_attention";
+
+export interface BankConnectionAccount {
+  id: string;
+  accountName: string;
+  /** Plaid's raw type: depository | credit | loan | investment | other. */
+  accountType: string;
+  accountSubtype: string;
+  mask: string;
+  currentBalance: number;
+  currency: string;
+  /** ISO 8601 — the real last sync, never a relative phrase. */
+  lastSynced: string;
+}
+
+export interface BankConnection {
+  id: string;
+  provider: string;
+  institutionId: string | null;
+  /** Null when Plaid could not resolve it — never a plausible bank name. */
+  institutionName: string | null;
+  status: BankConnectionStatus;
+  errorCode: string | null;
+  errorMessage: string | null;
+  consentExpiresAt: string | null;
+  createdAt: string;
+  accounts: BankConnectionAccount[];
+}
+
+/**
+ * Plaid's account types are not the five the mobile UI models. `depository`
+ * splits into checking vs savings by SUBTYPE, and anything unrecognised stays
+ * "other" rather than being rounded into whichever bucket looks closest — a
+ * loan filed as checking would be counted as an asset.
+ */
+export function toMobileAccountType(
+  plaidType: string,
+  plaidSubtype: string,
+): AccountType {
+  if (plaidType === "depository") {
+    return plaidSubtype === "savings" ? "savings" : "checking";
+  }
+  if (plaidType === "credit") return "credit";
+  if (plaidType === "loan") return "loan";
+  if (plaidType === "investment") return "investment";
+  return "other";
+}
+
+/**
+ * Flatten connections into the flat account list the stores and tabs render.
+ *
+ * Every field has a real source, which is why the flattening happens here
+ * rather than off /financial/accounts: `institutionName` comes from the
+ * CONNECTION (the accounts route's own institution_name held the account's
+ * name until this change), and `isConnected` comes from the connection's
+ * webhook-derived status. Neither is answerable from an account row alone, and
+ * the previous code answered them anyway.
+ */
+export function flattenConnectionsToAccounts(
+  connections: BankConnection[],
+): BankAccount[] {
+  return connections.flatMap((connection) =>
+    connection.accounts.map((account) => {
+      const accountType = toMobileAccountType(
+        account.accountType,
+        account.accountSubtype,
+      );
+      return {
+        id: account.id,
+        // The route scopes every row to the caller, so it does not echo the
+        // owner back and there is nothing to read here. Empty, matching the
+        // `?? ""` convention used for absent ids elsewhere in this file —
+        // nothing renders it, and an invented id would be worse than none.
+        userId: "",
+        institutionName: connection.institutionName ?? "",
+        accountType,
+        type: accountType,
+        accountName: account.accountName,
+        name: account.accountName,
+        balance: account.currentBalance,
+        lastSynced: account.lastSynced,
+        isConnected: connection.status === "active",
+      };
+    }),
+  );
+}
+
+export const bankConnectionApi = {
+  /** Every bank the caller has linked, each with the accounts it granted. */
+  getConnections: () =>
+    api.get<{ connections: BankConnection[] }>("/financial/connections"),
+
+  /**
+   * Revoke a connection at the provider and remove it here.
+   *
+   * A 502 means Plaid refused and NOTHING was changed — the bank is still
+   * connected and retrying is the correct next step. Callers must not treat a
+   * failure as a removal.
+   */
+  disconnect: (connectionId: string) =>
+    api.delete<{ success: boolean }>(
+      `/financial/connections/${connectionId}`,
+    ),
+};
+
 // Bank Account Endpoints
 export const bankAccountApi = {
   /**
-   * Get all connected bank accounts
+   * Get all connected bank accounts.
+   *
+   * Reads /financial/connections and flattens, NOT /financial/accounts. Two
+   * reasons, both defects this replaces:
+   *
+   *  1. GET /api/financial/accounts answers with plaidService.getAccounts()'s
+   *     result as a bare array (`{ success, data: PlaidAccount[] }`), while
+   *     this helper declared `{ accounts: BankAccount[] }` and accountStore
+   *     read `response.data.accounts` — always undefined. The financial tab's
+   *     "N connected" therefore read 0 for every user, however many banks they
+   *     had linked.
+   *  2. Even with the shape corrected, an account row cannot answer
+   *     `institutionName` or `isConnected` honestly. The connection can.
    */
   getAccounts: () =>
-    api.get<{ accounts: BankAccount[] }>("/financial/accounts"),
+    api.get<{ connections: BankConnection[] }>("/financial/connections"),
 
   /**
    * Get single account details
@@ -707,11 +839,6 @@ export const bankAccountApi = {
   refreshAccount: (accountId: string) =>
     api.post<BankAccount>(`/financial/accounts/${accountId}/sync`),
 
-  /**
-   * Disconnect bank account
-   */
-  disconnectAccount: (accountId: string) =>
-    api.delete<{ success: boolean }>(`/financial/accounts/${accountId}`),
 };
 
 // Transaction Endpoints
