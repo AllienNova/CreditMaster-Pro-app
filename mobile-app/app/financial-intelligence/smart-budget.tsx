@@ -539,6 +539,7 @@ const Recommendations: React.FC<RecommendationsProps> = ({
  */
 export default function SmartBudgetScreen() {
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [analysis, setAnalysis] = useState<BudgetAnalysis | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -547,6 +548,7 @@ export default function SmartBudgetScreen() {
   const fetchBudgetData = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadFailed(false);
 
       // Parallel API calls
       const [analysisRes, recommendationsRes, trendsRes] = await Promise.all([
@@ -571,7 +573,12 @@ export default function SmartBudgetScreen() {
       }
     } catch (error) {
       if (__DEV__) console.error("Error fetching budget data:", error);
-      Alert.alert("Error", "Failed to load budget data. Please try again.");
+      // NOT Alert.alert. This runs on mount, and a native alert is a separate
+      // window: it covers the screen, offers only "OK" with no retry, and
+      // stays up until dismissed — it also masked every route measured after
+      // it in the device sweep. The action alerts elsewhere in this file are
+      // fine; those follow something the user did.
+      setLoadFailed(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -642,7 +649,22 @@ export default function SmartBudgetScreen() {
     }
   };
 
-  if (loading && !analysis) {
+    if (loadFailed && !analysis) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>
+            We could not load your budget.
+          </Text>
+          <TouchableOpacity onPress={fetchBudgetData}>
+            <Text style={styles.retryTextState}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+if (loading && !analysis) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -697,6 +719,12 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  retryTextState: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    marginTop: 12,
   },
   loadingContainer: {
     flex: 1,

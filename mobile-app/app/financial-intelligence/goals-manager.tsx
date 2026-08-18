@@ -697,6 +697,7 @@ const AutoSaveConfigComponent: React.FC<AutoSaveConfigProps> = ({
  */
 export default function GoalsManagerScreen() {
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -705,6 +706,7 @@ export default function GoalsManagerScreen() {
   const fetchGoals = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadFailed(false);
       const response = await fetch("/api/financial/goals");
 
       if (response.ok) {
@@ -713,7 +715,12 @@ export default function GoalsManagerScreen() {
       }
     } catch (error) {
       if (__DEV__) console.error("Error fetching goals:", error);
-      Alert.alert("Error", "Failed to load goals. Please try again.");
+      // NOT Alert.alert. This runs on mount, and a native alert is a separate
+      // window: it covers the screen, offers only "OK" with no retry, and
+      // stays up until dismissed — it also masked every route measured after
+      // it in the device sweep. The action alerts elsewhere in this file are
+      // fine; those follow something the user did.
+      setLoadFailed(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -802,7 +809,22 @@ export default function GoalsManagerScreen() {
     }
   };
 
-  if (loading && goals.length === 0) {
+    if (loadFailed && goals.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>
+            We could not load your goals.
+          </Text>
+          <TouchableOpacity onPress={fetchGoals}>
+            <Text style={styles.retryTextState}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+if (loading && goals.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -855,6 +877,12 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  retryTextState: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    marginTop: 12,
   },
   loadingContainer: {
     flex: 1,

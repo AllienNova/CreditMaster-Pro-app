@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   Dimensions,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -619,6 +618,7 @@ const Insights: React.FC<InsightsProps> = ({ insights }) => {
  */
 export default function SpendingInsightsScreen() {
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   const [analysis, setAnalysis] = useState<SpendingAnalysis | null>(null);
@@ -628,6 +628,7 @@ export default function SpendingInsightsScreen() {
       setLoading(true);
 
       // Parallel API calls
+      setLoadFailed(false);
       const [analysisRes, trendsRes, insightsRes, anomaliesRes] =
         await Promise.all([
           fetch(`/api/financial/spending/analysis?timeRange=${timeRange}`),
@@ -657,10 +658,12 @@ export default function SpendingInsightsScreen() {
       setAnalysis(combinedAnalysis);
     } catch (error) {
       if (__DEV__) console.error("Error fetching spending data:", error);
-      Alert.alert(
-        "Error",
-        "Failed to load spending insights. Please try again.",
-      );
+      // NOT Alert.alert. This runs on mount, and a native alert is a separate
+      // window: it covers the whole screen, offers only "OK" with no retry,
+      // and stays up until dismissed. It also masked every route measured
+      // after this one in the 2026-08-18 device sweep, which is how a 57-route
+      // run reported 0 FAIL over 31 screens nobody had looked at.
+      setLoadFailed(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -705,6 +708,21 @@ export default function SpendingInsightsScreen() {
       // Don't revert UI - dismissal was already applied locally
     }
   };
+
+  if (loadFailed && !analysis) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.emptyText}>
+            We could not load your spending insights.
+          </Text>
+          <TouchableOpacity onPress={fetchSpendingData}>
+            <Text style={styles.retryText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (loading && !analysis) {
     return (
@@ -774,6 +792,12 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    marginTop: 12,
   },
   loadingContainer: {
     flex: 1,
