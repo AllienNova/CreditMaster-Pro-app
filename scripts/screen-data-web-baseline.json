@@ -197,6 +197,11 @@
       "offline": true,
       "why": "Third-party loan offers, same as credit-cards: product content that should come from the affiliate feed."
     },
+    "src/app/recommendations/page.tsx: QUICK_LINKS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Navigation only — three labels, three hrefs to real sibling routes, and their icon paths. RECOMMENDATIONS and CATEGORY_CHIPS were removed in the same commit; this is what is left, and it makes no claim about the caller."
+    },
     "src/app/settings/layout.tsx: settingsNavItems": {
       "classification": "catalogue",
       "offline": false,
@@ -272,11 +277,6 @@
       "offline": true,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
-    "src/components/semantic-search/SemanticSearch.tsx: SAMPLE_RESULTS": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
-    },
     "src/components/trading/charts/DrawingToolbar.tsx: TOOLS": {
       "classification": "catalogue",
       "offline": true,
@@ -311,11 +311,6 @@
       "classification": "catalogue",
       "offline": false,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
-    },
-    "src/app/recommendations/page.tsx: QUICK_LINKS": {
-      "classification": "catalogue",
-      "offline": false,
-      "why": "Navigation only — three labels, three hrefs to real sibling routes, and their icon paths. RECOMMENDATIONS and CATEGORY_CHIPS were removed in the same commit; this is what is left, and it makes no claim about the caller."
     }
   }
 }
