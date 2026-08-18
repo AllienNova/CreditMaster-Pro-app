@@ -358,12 +358,16 @@ export default function TaxOptimizerScreen() {
             </View>
           ))}
 
-          <View style={styles.comparisonTrend}>
-            <Text style={styles.trendText}>
-              📈 Your effective tax rate has increased by{" "}
-              <Text style={styles.trendHighlight}>2.7%</Text> over 3 years
-            </Text>
-          </View>
+          {/*
+            "📈 Your effective tax rate has increased by 2.7% over 3 years"
+            lived here — a claim about this user's tax history, with no source.
+            Nothing stores three years of effective rates; the analysis this
+            screen reads describes the CURRENT year only.
+
+            It survived the earlier fix of this screen, which replaced the
+            invented income, bracket and five tips: that pass removed the
+            module-level constants and left the JSX literals.
+          */}
         </View>
       </View>
 
@@ -380,20 +384,27 @@ export default function TaxOptimizerScreen() {
               </Text>
             </View>
 
-            <View style={styles.gapDetails}>
-              <View style={styles.gapItem}>
-                <Text style={styles.gapItemLabel}>401(k) Remaining</Text>
-                <Text style={styles.gapItemValue}>$13,000</Text>
-              </View>
-              <View style={styles.gapItem}>
-                <Text style={styles.gapItemLabel}>IRA Remaining</Text>
-                <Text style={styles.gapItemValue}>$7,000</Text>
-              </View>
-              <View style={styles.gapItem}>
-                <Text style={styles.gapItemLabel}>HSA Remaining</Text>
-                <Text style={styles.gapItemValue}>$3,150</Text>
-              </View>
-            </View>
+            {/*
+              A per-account breakdown lived here — 401(k) Remaining $13,000,
+              IRA $7,000, HSA $3,150 — rendered directly BENEATH the genuinely
+              computed `retirementContributionGap` above, which is what made
+              them read as computed too.
+
+              They are not. `TaxOptimizationAnalysis` (services/api/tax.ts:
+              36-49) carries one `retirementContributionGap` and no per-account
+              split, so there is nothing to divide between 401(k), IRA and HSA.
+              "Remaining" is also a claim about what the user has ALREADY
+              contributed — $13,000 remaining of a $23,000 limit asserts they
+              have paid in $10,000 — and no contribution record exists.
+
+              Stated rather than silently dropped, because a total with no
+              breakdown reads as an oversight and an explained one does not.
+            */}
+            <Text style={styles.gapNote}>
+              We cannot break this down by account yet — that needs your
+              contributions so far for each of 401(k), IRA and HSA, and those
+              are not recorded.
+            </Text>
 
             <View style={styles.gapSuggestion}>
               <Text style={styles.gapSuggestionText}>
@@ -696,17 +707,6 @@ const styles = StyleSheet.create({
   comparisonTax: {
     color: "#DC2626",
   },
-  comparisonTrend: {
-    padding: 16,
-  },
-  trendText: {
-    fontSize: 13,
-    color: "#78716C",
-  },
-  trendHighlight: {
-    color: "#DC2626",
-    fontWeight: "600",
-  },
   gapCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
@@ -735,23 +735,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#F59E0B",
   },
-  gapDetails: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  gapItem: {
-    alignItems: "center",
-  },
-  gapItemLabel: {
-    fontSize: 11,
+  gapNote: {
+    fontSize: 13,
     color: "#9CA3AF",
-    marginBottom: 4,
-  },
-  gapItemValue: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1C1917",
+    lineHeight: 19,
   },
   gapSuggestion: {
     backgroundColor: "#F0FDF4",

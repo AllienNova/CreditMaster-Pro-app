@@ -242,3 +242,36 @@ describe("analytics/credit-score", () => {
     await waitFor(() => expect(mockGetFactors).toHaveBeenCalledTimes(2));
   });
 });
+
+describe("score predictions", () => {
+  /*
+   * A "Score Predictions" card claimed 30 Days 748 (+6 pts), 90 Days 762
+   * (+20 pts) and 6 Months 780 (+38 pts), under the note "Based on current
+   * trends and planned actions" — a methodology that does not exist. Nothing
+   * here forecasts a score; /api/ml/predict-timeline predicts DISPUTE
+   * resolution, and its own comment records that it substitutes
+   * predictDisputeSuccess because the timeline model was never built.
+   *
+   * These three survived the earlier fix of this screen, which replaced its
+   * factors and history: that pass removed the module-level constants and left
+   * the JSX literals.
+   */
+  it("no longer forecasts a score", async () => {
+    render(<CreditScoreAnalyticsScreen />);
+    await waitFor(() => expect(mockGetFactors).toHaveBeenCalled());
+    for (const invented of ["748", "762", "780", "+6 pts", "+20 pts", "+38 pts"]) {
+      expect(screen.queryByText(invented)).toBeNull();
+    }
+    expect(
+      screen.queryByText(/Based on current trends and planned actions/i),
+    ).toBeNull();
+  });
+
+  it("says a forecast is not offered, rather than dropping the section", async () => {
+    // An absent section reads as "not applicable"; a stated one reads as
+    // "we do not know".
+    render(<CreditScoreAnalyticsScreen />);
+    expect(await screen.findByText("Score Predictions")).toBeTruthy();
+    expect(screen.getByText(/We do not forecast your score/i)).toBeTruthy();
+  });
+});

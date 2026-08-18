@@ -377,30 +377,35 @@ export default function CreditScoreAnalyticsScreen() {
           </>
         )}
 
-        {/* Predictions */}
+        {/*
+          A "Score Predictions" card lived here: 30 Days 748 (+6 pts), 90 Days
+          762 (+20 pts), 6 Months 780 (+38 pts), under the note "Based on
+          current trends and planned actions".
+
+          Every figure was typed in, and the note described a methodology that
+          does not exist. Nothing in this codebase forecasts a credit score
+          over time. The nearest thing, /api/ml/predict-timeline, predicts
+          DISPUTE RESOLUTION time, and its own comment records that it
+          substitutes predictDisputeSuccess "as predictResolutionTimeline
+          doesn't exist yet".
+
+          A forecast is the one number a user is most likely to act on — hold
+          off a card application, take a loan — so it is the last one to
+          invent. The card is gone and the absence is stated, rather than
+          silently dropped: an absent section reads as "not applicable", a
+          stated one reads as "we do not know".
+
+          These three survived the earlier fix of this screen, which replaced
+          its factors and history; that pass removed the module-level constants
+          and left the JSX literals.
+        */}
         <Text style={styles.sectionTitle}>Score Predictions</Text>
         <Card style={styles.predictionCard}>
-          <View style={styles.predictionRow}>
-            <View style={styles.predictionItem}>
-              <Text style={styles.predictionLabel}>30 Days</Text>
-              <Text style={styles.predictionValue}>748</Text>
-              <Text style={styles.predictionChange}>+6 pts</Text>
-            </View>
-            <View style={styles.predictionDivider} />
-            <View style={styles.predictionItem}>
-              <Text style={styles.predictionLabel}>90 Days</Text>
-              <Text style={styles.predictionValue}>762</Text>
-              <Text style={styles.predictionChange}>+20 pts</Text>
-            </View>
-            <View style={styles.predictionDivider} />
-            <View style={styles.predictionItem}>
-              <Text style={styles.predictionLabel}>6 Months</Text>
-              <Text style={styles.predictionValue}>780</Text>
-              <Text style={styles.predictionChange}>+38 pts</Text>
-            </View>
-          </View>
           <Text style={styles.predictionNote}>
-            Based on current trends and planned actions
+            We do not forecast your score. Predicting a credit score over time
+            needs a model we have not built, and a number you might act on is
+            the last one to guess at. The trend above is what has actually been
+            recorded.
           </Text>
         </Card>
 
@@ -525,22 +530,6 @@ const styles = StyleSheet.create({
   },
   factorFill: { height: "100%", borderRadius: 2 },
   predictionCard: {},
-  predictionRow: { flexDirection: "row" },
-  predictionItem: { flex: 1, alignItems: "center" },
-  predictionLabel: { fontSize: 12, color: theme.colors.textSecondary },
-  predictionValue: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: theme.colors.text,
-    marginTop: 4,
-  },
-  predictionChange: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#22C55E",
-    marginTop: 2,
-  },
-  predictionDivider: { width: 1, backgroundColor: theme.colors.border },
   emptyText: {
     fontSize: 14,
     color: theme.colors.textSecondary,
