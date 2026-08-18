@@ -318,8 +318,66 @@ export const creditReportApi = {
     }>("/credit-bureau/analyze", { reportId }),
 };
 
+// ---------------------------------------------------------------------------
+// Rent reporting — the only payment history this product actually owns
+// ---------------------------------------------------------------------------
+// Rent reporting is a marketed credit-building feature that had tables
+// (rent_reporting_accounts, rent_payments — 20260731000022) and a complete
+// service, and no route at all. docs/qa/triage-financial.md graded it
+// UNREACHABLE. Meanwhile app/credit-builder/payments.tsx, titled "Payment
+// History", rendered a hardcoded Chase Freedom payment, a Capital One payment
+// and a Discover payment five days LATE, to every user, with no request.
+
+export type RentPaymentStatus =
+  | "pending"
+  | "on_time"
+  | "late"
+  | "missed"
+  | "partial";
+
+export interface RentPayment {
+  id: string;
+  accountId: string;
+  userId: string;
+  amount: number;
+  /** ISO 8601 — Date fields serialise to strings over HTTP. */
+  dueDate: string;
+  paidDate?: string;
+  status: RentPaymentStatus;
+  reportedToCredit: boolean;
+  reportedDate?: string;
+  bureausReported: ("equifax" | "experian" | "transunion")[];
+  createdAt: string;
+}
+
+/** Only the fields the payment screen reads; the row carries more. */
+export interface RentReportingAccount {
+  id: string;
+  provider: string;
+  status: string;
+  landlordName: string;
+  propertyAddress: string;
+  monthlyRent: number;
+}
+
+export const rentReportingApi = {
+  /**
+   * The caller's rent payments and the accounts reporting them.
+   *
+   * Deliberately does NOT carry an estimated score impact. The service can
+   * compute one — min(50, monthsReporting * 2) + 10 + 10 — but nothing
+   * measures it, and beside real payment rows a user would read it as their
+   * actual score change. The route omits it; see its header.
+   */
+  getPayments: () =>
+    api.get<{ payments: RentPayment[]; accounts: RentReportingAccount[] }>(
+      "/credit-builder/rent-payments",
+    ),
+};
+
 export default {
   scores: creditScoreApi,
   monitoring: creditMonitoringApi,
   reports: creditReportApi,
+  rentReporting: rentReportingApi,
 };

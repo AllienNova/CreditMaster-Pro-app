@@ -63,6 +63,7 @@ src/app/api/chat/financial/sessions/route.ts,GET;POST,getUser,none,withAuth,f,ba
 src/app/api/credit-builder/debts/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session; replaced a client-side fallback that invented 3 debts and ran a payoff simulation on them
 src/app/api/credit-builder/loans/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
 src/app/api/credit-builder/progress/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/credit-builder/rent-payments/route.ts,GET,withPermission,"withPermission(""credit:read"")",withPermission(credit:read),c,"added 2026-08-17 - first route into rent reporting, which had tables and a full service and no way in (docs/qa/triage-financial.md graded it UNREACHABLE). Service filters both reads on user_id; the client is service-role so that filter is load-bearing, not decorative"
 src/app/api/credit-builder/recommendations/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
 src/app/api/credit-builder/score/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
 src/app/api/credit-builder/secured-cards/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth

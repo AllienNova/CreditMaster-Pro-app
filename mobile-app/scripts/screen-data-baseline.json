@@ -114,10 +114,6 @@
       "classification": "fabrication",
       "offline": true
     },
-    "app/credit-builder/payments.tsx: MOCK_PAYMENTS": {
-      "classification": "fabrication",
-      "offline": true
-    },
     "app/credit-builder/reports/upload.tsx: BUREAUS": {
       "classification": "catalogue",
       "offline": true
