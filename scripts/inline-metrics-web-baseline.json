@@ -2,14 +2,6 @@
   "frozen": "2026-08-18",
   "why": "Screens rendering a hardcoded measurement as inline JSX text. Each must be classified `catalogue` (a price, a published rate, product copy) or `fabrication` (a number presented as this user's). /analytics told every user their score moved +45 and their dispute success was 87%, on a screen that makes no request. This list may only shrink.",
   "entries": {
-    "src/app/admin/subscriptions/page.tsx: 156, $12,324, 45%": {
-      "classification": "fabrication",
-      "why": "Client component. 'Churn Analysis: 156 Cancellations this month, $12,324 Lost MRR, 45%' — operator metrics with no query behind them."
-    },
-    "src/app/analytics/credit-score/page.tsx: 720": {
-      "classification": "fabrication",
-      "why": "Client component. 'Your Current Score 720' and '+45 points in 6 months' — addressed to the caller, hardcoded. The web twin of the mobile screen fixed in rev 43."
-    },
     "src/app/credit/factors/page.tsx: 300, 850, 35%, 30%, 15%, 10%, 10%": {
       "classification": "catalogue",
       "why": "300/850 are the ends of the credit-score scale and 35/30/15/10/10 are the published FICO factor weights. Same classification as the mobile twin."
@@ -21,10 +13,6 @@
     "src/app/credit-builder/page.tsx: +15 points, +20 points, 580, 650, +70, +25 points, +30 points, +40 points, +15 points": {
       "classification": "catalogue",
       "why": "A PUBLIC MARKETING page — server component, SEO `metadata`, Footer and signup CTAs, no state and no fetch. There is no signed-in caller for the number to be a claim ABOUT, so it is a product illustration, the same category as the landing page. I classified this `fabrication` in the first pass by reading the numbers and not the page; corrected after checking each file for metadata/hooks/fetch."
-    },
-    "src/app/credit-builder/payments/page.tsx: $1,250, +45 points, $1,425, +42 points, $1,350, +52 points": {
-      "classification": "fabrication",
-      "why": "Client component with four hooks. Three months of payments at $1,250/$1,425/$1,350 with +45/+42/+52 point gains. The mobile twin was fixed earlier this session."
     },
     "src/app/credit-builder/secured-card/page.tsx: $49, $2,500": {
       "classification": "catalogue",
@@ -53,10 +41,6 @@
     "src/app/page.tsx: 742, 738, 745, 743, $124,350, $8,420, $5,180, $3,240, 587, 742, 99.9%": {
       "classification": "catalogue",
       "why": "The public LANDING page. The block is commented {/* Score Display Mock */} in the source and sits among eight Get-Started CTAs — a product illustration on marketing copy, not a claim about a signed-in caller."
-    },
-    "src/app/profile/page.tsx: 720, 78%": {
-      "classification": "fabrication",
-      "why": "Client component with three hooks. A 720 score and 78% profile completion, both hardcoded."
     }
   }
 }
