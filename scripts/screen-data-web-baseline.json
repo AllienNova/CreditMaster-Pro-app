@@ -32,11 +32,6 @@
       "offline": true,
       "why": "scoreFactors asserts 'On-time payments for 24 months', 'Using 32% of available credit' and 'Average account age: 5.2 years' — the SF-16 shape — plus an invented history and recommendations. Web twin of the mobile screen fixed in rev 43."
     },
-    "src/app/analytics/disputes/page.tsx: disputeStats, disputesByBureau, disputesByType, recentDisputes": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Invented dispute statistics, per-bureau and per-type breakdowns, and recent disputes."
-    },
     "src/app/analytics/layout.tsx: analyticsNavItems": {
       "classification": "catalogue",
       "offline": false,
