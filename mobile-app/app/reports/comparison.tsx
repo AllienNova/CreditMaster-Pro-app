@@ -1,98 +1,66 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme, getScoreColor } from "../../src/constants/theme";
+import { useCreditStore } from "../../src/store/creditStore";
 
-const BUREAUS = [
-  {
-    id: "experian",
-    name: "Experian",
-    color: "#0066CC",
-    score: 695,
-    change: +12,
-  },
-  { id: "equifax", name: "Equifax", color: "#CC0000", score: 682, change: -5 },
-  {
-    id: "transunion",
-    name: "TransUnion",
-    color: "#00AA00",
-    score: 688,
-    change: +8,
-  },
-];
+/*
+ * BUREAUS, COMPARISON_DATA and COMPARISON_ROWS lived here.
+ *
+ * BUREAUS invented all three scores and their movements (Experian 695 +12,
+ * Equifax 682 -5, TransUnion 688 +8). COMPARISON_DATA invented nine metrics
+ * across all three bureaus — account counts, negative items, hard inquiries,
+ * collections, utilization, oldest account, average age — 27 numbers in total,
+ * none of them measured.
+ *
+ * THE SCORES ARE REAL and come from GET /credit-monitoring/scores, which
+ * returns one CreditScore per bureau.
+ *
+ * THE NINE-METRIC TABLE HAS NO CONTRACT TO READ. Those figures live inside
+ * `credit_reports.reportData`, typed `Record<string, unknown>`
+ * (src/lib/credit-repair/db-legacy.ts:27) — an untyped JSONB blob whose shape
+ * depends on whichever importer wrote it. Building a bureau-by-bureau
+ * comparison on it would mean inventing a parse contract and presenting the
+ * result as measurement, which is how the fixture got here. So the table says
+ * what is missing instead.
+ */
 
-const COMPARISON_DATA = {
-  accounts: { experian: 15, equifax: 14, transunion: 15 },
-  openAccounts: { experian: 8, equifax: 7, transunion: 8 },
-  closedAccounts: { experian: 7, equifax: 7, transunion: 7 },
-  negativeItems: { experian: 2, equifax: 3, transunion: 2 },
-  hardInquiries: { experian: 4, equifax: 3, transunion: 5 },
-  collections: { experian: 1, equifax: 1, transunion: 0 },
-  utilization: { experian: 28, equifax: 32, transunion: 28 },
-  oldestAccount: { experian: "8y 3m", equifax: "8y 3m", transunion: "8y 3m" },
-  avgAge: { experian: "4y 2m", equifax: "4y 0m", transunion: "4y 2m" },
+
+
+/** Brand colours, keyed by the bureau ids the scores route returns. */
+const BUREAU_COLOR: Record<string, string> = {
+  experian: "#0066CC",
+  equifax: "#CC0000",
+  transunion: "#00AA00",
 };
 
-const COMPARISON_ROWS = [
-  { key: "accounts", label: "Total Accounts", icon: "wallet-outline" },
-  {
-    key: "openAccounts",
-    label: "Open Accounts",
-    icon: "checkmark-circle-outline",
-  },
-  {
-    key: "closedAccounts",
-    label: "Closed Accounts",
-    icon: "close-circle-outline",
-  },
-  {
-    key: "negativeItems",
-    label: "Negative Items",
-    icon: "alert-circle-outline",
-    highlight: true,
-  },
-  { key: "hardInquiries", label: "Hard Inquiries", icon: "search-outline" },
-  {
-    key: "collections",
-    label: "Collections",
-    icon: "warning-outline",
-    highlight: true,
-  },
-  { key: "utilization", label: "Utilization %", icon: "pie-chart-outline" },
-  { key: "oldestAccount", label: "Oldest Account", icon: "time-outline" },
-  { key: "avgAge", label: "Average Age", icon: "calendar-outline" },
-];
+const BUREAU_NAME: Record<string, string> = {
+  experian: "Experian",
+  equifax: "Equifax",
+  transunion: "TransUnion",
+};
 
 export default function ComparisonScreen() {
   const router = useRouter();
-  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
+  const { scores, isLoadingScores, scoreError, fetchScores } = useCreditStore();
 
-  const getValueColor = (
-    key: string,
-    value: number | string,
-    bureauId: string,
-  ) => {
-    if (key === "negativeItems" || key === "collections") {
-      const numValue = typeof value === "number" ? value : 0;
-      if (numValue === 0) return "#4CAF50";
-      if (numValue <= 2) return "#FF9800";
-      return "#EF4444";
-    }
-    if (key === "utilization") {
-      const numValue = typeof value === "number" ? value : 0;
-      if (numValue <= 10) return "#4CAF50";
-      if (numValue <= 30) return "#FF9800";
-      return "#EF4444";
-    }
-    return lightTheme.colors.text;
-  };
+  useEffect(() => {
+    fetchScores();
+  }, [fetchScores]);
+
+  /*
+   * `selectedMetric` and `getValueColor` lived here. Both existed only to
+   * highlight and colour rows of the comparison table, which is gone — the
+   * metrics behind it have no contract to read.
+   */
 
   return (
     <View style={styles.container}>
@@ -109,104 +77,77 @@ export default function ComparisonScreen() {
       </View>
 
       <ScrollView style={styles.content}>
+        {isLoadingScores ? (
+          <View style={styles.stateBlock}>
+            <ActivityIndicator size="large" color={lightTheme.colors.primary} />
+          </View>
+        ) : null}
+
+        {scoreError ? (
+          <View style={styles.stateBlock}>
+            <Text style={styles.emptyText}>
+              We could not load your bureau scores.
+            </Text>
+            <TouchableOpacity onPress={fetchScores}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {!isLoadingScores && !scoreError && scores.length === 0 ? (
+          <View style={styles.stateBlock}>
+            <Text style={styles.emptyText}>
+              No bureau has reported a score yet.
+            </Text>
+          </View>
+        ) : null}
+
         {/* Score Cards */}
         <View style={styles.scoreCards}>
-          {BUREAUS.map((bureau) => (
+          {scores.map((s) => (
             <View
-              key={bureau.id}
-              style={[styles.scoreCard, { borderTopColor: bureau.color }]}
+              key={s.bureau}
+              style={[
+                styles.scoreCard,
+                { borderTopColor: BUREAU_COLOR[s.bureau] ?? "#888" },
+              ]}
             >
-              <Text style={[styles.bureauName, { color: bureau.color }]}>
-                {bureau.name}
+              <Text
+                style={[
+                  styles.bureauName,
+                  { color: BUREAU_COLOR[s.bureau] ?? "#888" },
+                ]}
+              >
+                {BUREAU_NAME[s.bureau] ?? s.bureau}
               </Text>
               <Text
                 style={[
                   styles.scoreValue,
-                  { color: getScoreColor(bureau.score) },
+                  { color: getScoreColor(s.score) },
                 ]}
               >
-                {bureau.score}
+                {s.score}
               </Text>
-              <View style={styles.changeRow}>
-                <Ionicons
-                  name={bureau.change >= 0 ? "arrow-up" : "arrow-down"}
-                  size={14}
-                  color={bureau.change >= 0 ? "#4CAF50" : "#EF4444"}
-                />
-                <Text
-                  style={[
-                    styles.changeText,
-                    { color: bureau.change >= 0 ? "#4CAF50" : "#EF4444" },
-                  ]}
-                >
-                  {Math.abs(bureau.change)} pts
-                </Text>
-              </View>
+              {/* A "+12 pts" movement arrow lived here. CreditScore carries no
+                  delta — the fixture invented one per bureau. A change needs
+                  two readings, and the history route is per-bureau. */}
             </View>
           ))}
         </View>
 
-        {/* Comparison Table */}
+        {/* A nine-row bureau-by-bureau comparison table lived here —
+            account counts, negative items, hard inquiries, collections,
+            utilization, oldest account, average age. Twenty-seven numbers, all
+            invented. Those figures live inside credit_reports.reportData,
+            typed Record<string, unknown>, so there is no contract to read them
+            from; building the table would mean inventing a parse and
+            presenting the result as measurement. */}
         <View style={styles.tableContainer}>
-          <View style={styles.tableHeader}>
-            <View style={styles.labelCell}>
-              <Text style={styles.headerText}>Metric</Text>
-            </View>
-            {BUREAUS.map((bureau) => (
-              <View key={bureau.id} style={styles.valueCell}>
-                <View
-                  style={[styles.bureauDot, { backgroundColor: bureau.color }]}
-                />
-              </View>
-            ))}
-          </View>
-
-          {COMPARISON_ROWS.map((row) => {
-            const data =
-              COMPARISON_DATA[row.key as keyof typeof COMPARISON_DATA];
-            return (
-              <TouchableOpacity
-                key={row.key}
-                style={[
-                  styles.tableRow,
-                  selectedMetric === row.key && styles.tableRowSelected,
-                ]}
-                onPress={() =>
-                  setSelectedMetric(selectedMetric === row.key ? null : row.key)
-                }
-              >
-                <View style={styles.labelCell}>
-                  <Ionicons
-                    name={row.icon as any}
-                    size={18}
-                    color={lightTheme.colors.textSecondary}
-                  />
-                  <Text style={styles.rowLabel}>{row.label}</Text>
-                </View>
-                {BUREAUS.map((bureau) => {
-                  const value = data[bureau.id as keyof typeof data];
-                  return (
-                    <View key={bureau.id} style={styles.valueCell}>
-                      <Text
-                        style={[
-                          styles.rowValue,
-                          { color: getValueColor(row.key, value, bureau.id) },
-                          row.highlight &&
-                            typeof value === "number" &&
-                            value > 0 &&
-                            styles.highlightValue,
-                        ]}
-                      >
-                        {typeof value === "number" && row.key === "utilization"
-                          ? `${value}%`
-                          : value}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </TouchableOpacity>
-            );
-          })}
+          <Text style={styles.emptyText}>
+            A side-by-side comparison of accounts, inquiries and utilization
+            needs your reports parsed per bureau. That is not available yet —
+            only the scores above are.
+          </Text>
         </View>
 
         {/* Discrepancy Alert */}
@@ -246,6 +187,20 @@ export default function ComparisonScreen() {
 }
 
 const styles = StyleSheet.create({
+  stateBlock: { paddingVertical: 32, alignItems: "center" },
+  emptyText: {
+    fontSize: 14,
+    color: lightTheme.colors.textSecondary,
+    textAlign: "center",
+    padding: 16,
+    lineHeight: 20,
+  },
+  retryText: {
+    fontSize: 14,
+    color: lightTheme.colors.primary,
+    fontWeight: "600",
+    marginTop: 8,
+  },
   container: { flex: 1, backgroundColor: lightTheme.colors.background },
   header: {
     flexDirection: "row",

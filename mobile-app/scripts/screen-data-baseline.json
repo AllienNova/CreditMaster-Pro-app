@@ -282,10 +282,6 @@
       "classification": "catalogue",
       "offline": true
     },
-    "app/reports/comparison.tsx: BUREAUS, COMPARISON_ROWS": {
-      "classification": "fabrication",
-      "offline": false
-    },
     "app/reports/index.tsx: REPORT_CONFIGS": {
       "classification": "catalogue",
       "offline": false
