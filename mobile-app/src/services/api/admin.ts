@@ -341,3 +341,149 @@ export const adminHealthApi = {
 };
 
 export default adminAnalyticsApi;
+
+// ---------------------------------------------------------------------------
+// Audit trail
+// ---------------------------------------------------------------------------
+// app/admin/audit.tsx rendered an AUDIT_EVENTS fixture — "User Login /
+// john@example.com / Successful login from 192.168.1.1" and four more — behind
+// a fake loading spinner, with no request. An audit trail that shows invented
+// events is worse than one that shows none: it is the record an operator would
+// consult to establish what actually happened.
+//
+// GET /api/admin/audit (withRole "admin") reads the real audit_logs table,
+// joined to profiles for the actor's name and email, and paginates.
+
+/** One audit_logs row as the route serialises it. */
+export interface AdminAuditRow {
+  id?: string;
+  action?: string;
+  resource_type?: string;
+  resource_id?: string | null;
+  ip_address?: string | null;
+  created_at?: string;
+  profiles?: { full_name?: string | null; email?: string | null } | null;
+}
+
+export interface AdminAuditResponse {
+  logs?: AdminAuditRow[];
+  total?: number;
+  page?: number;
+  totalPages?: number;
+}
+
+export interface AdminAuditEvent {
+  id: string;
+  action: string;
+  /** The actor's email, or their name, or "" — never a synthesised address. */
+  user: string;
+  /** audit_logs.resource_type — a REAL column, unlike the screen's old
+   *  four-value login|data|admin|security union, which no row could carry. */
+  resourceType: string;
+  resourceId: string;
+  ipAddress: string;
+  /** ISO 8601 from created_at. */
+  timestamp: string;
+}
+
+export function mapAdminAuditEvent(row: AdminAuditRow): AdminAuditEvent {
+  return {
+    id: row.id ?? "",
+    action: row.action ?? "",
+    // Prefer the email: it identifies the actor. user_id is a uuid the
+    // operator cannot act on, so an absent profile renders empty rather than
+    // showing a raw key or inventing a name.
+    user: row.profiles?.email ?? row.profiles?.full_name ?? "",
+    resourceType: row.resource_type ?? "",
+    resourceId: row.resource_id ?? "",
+    ipAddress: row.ip_address ?? "",
+    timestamp: row.created_at ?? "",
+  };
+}
+
+export interface AdminAuditPage {
+  events: AdminAuditEvent[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export const adminAuditApi = {
+  getAuditLog: async (page = 1): Promise<ApiResponse<AdminAuditPage>> => {
+    const res = await api.get<AdminAuditResponse>(
+      `/admin/audit?page=${page}`,
+    );
+    if (res.success && res.data) {
+      const rows = Array.isArray(res.data.logs) ? res.data.logs : [];
+      return {
+        success: true,
+        data: {
+          events: rows.map(mapAdminAuditEvent),
+          total: res.data.total ?? rows.length,
+          page: res.data.page ?? page,
+          totalPages: res.data.totalPages ?? 1,
+        },
+        timestamp: res.timestamp,
+      };
+    }
+    return {
+      success: false,
+      error: res.error,
+      message: res.message,
+      timestamp: res.timestamp,
+    };
+  },
+};
+
+// ---------------------------------------------------------------------------
+// System logs
+// ---------------------------------------------------------------------------
+// app/admin/logs.tsx rendered a LOGS fixture with a live-looking timestamp
+// column. GET /api/admin/logs answers honestly and always has:
+//
+//   { logs: [], total: 0, dataAvailable: false,
+//     message: "System logs are not yet available. A system_logs table and
+//               writer are needed to populate this view." }
+//
+// So the real work here is NOT to render log lines — there are none to render —
+// but to surface that message. Somebody already made the honest call on the
+// server; the screen was overriding it with a fixture.
+
+export interface AdminSystemLogsResponse {
+  logs?: unknown[];
+  total?: number;
+  dataAvailable?: boolean;
+  message?: string;
+}
+
+export interface AdminSystemLogs {
+  /** False until a system_logs table and writer exist. */
+  dataAvailable: boolean;
+  /** The server's own explanation. Rendered verbatim rather than paraphrased,
+   *  so the screen cannot drift from what the route actually says. */
+  message: string;
+  total: number;
+}
+
+export const adminLogsApi = {
+  getSystemLogs: async (): Promise<ApiResponse<AdminSystemLogs>> => {
+    const res = await api.get<AdminSystemLogsResponse>("/admin/logs");
+    if (res.success && res.data) {
+      return {
+        success: true,
+        data: {
+          dataAvailable: res.data.dataAvailable === true,
+          message: res.data.message ?? "",
+          total: res.data.total ?? 0,
+        },
+        timestamp: res.timestamp,
+      };
+    }
+    return {
+      success: false,
+      error: res.error,
+      message: res.message,
+      timestamp: res.timestamp,
+    };
+  },
+};

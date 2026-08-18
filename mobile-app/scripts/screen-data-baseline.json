@@ -6,10 +6,6 @@
       "classification": "catalogue",
       "offline": true
     },
-    "app/admin/audit.tsx: AUDIT_EVENTS": {
-      "classification": "fabrication",
-      "offline": true
-    },
     "app/admin/config.tsx: CONFIG_ITEMS": {
       "classification": "catalogue",
       "offline": true
@@ -19,10 +15,6 @@
       "offline": true
     },
     "app/admin/index.tsx: METRICS, QUICK_ACTIONS": {
-      "classification": "fabrication",
-      "offline": true
-    },
-    "app/admin/logs.tsx: LOGS": {
       "classification": "fabrication",
       "offline": true
     },

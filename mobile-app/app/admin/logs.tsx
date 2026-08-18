@@ -1,9 +1,31 @@
 /**
- * Fynvita Admin System Logs Screen
- * View and filter system logs
+ * Admin System Logs.
+ *
+ * WHAT THIS REPLACED. A LOGS fixture — "User john@example.com logged in
+ * successfully", warnings, errors — under the subtitle "Real-time log viewer",
+ * behind a FAKE loading spinner:
+ *
+ *   useEffect(() => { setTimeout(() => setLoading(false), 800); }, []);
+ *
+ * THE SERVER ALREADY TOLD THE TRUTH AND THE SCREEN OVERRODE IT. GET
+ * /api/admin/logs answers, and always has:
+ *
+ *   { logs: [], total: 0, dataAvailable: false,
+ *     message: "System logs are not yet available. A system_logs table and
+ *               writer are needed to populate this view." }
+ *
+ * Somebody made the honest call at the route and wrote down exactly why. The
+ * screen rendered a fixture on top of it, so an operator reading "Real-time
+ * log viewer" and seven plausible lines had no way to learn that no logging
+ * backend exists.
+ *
+ * The route's own message is now surfaced verbatim rather than paraphrased, so
+ * this copy cannot drift from what the server reports. The level filter and
+ * "Load More Logs" went with the fixture: there is nothing to filter and
+ * nothing more to load.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,114 +39,35 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-
-interface LogEntry {
-  id: string;
-  level: "info" | "warn" | "error" | "debug";
-  message: string;
-  source: string;
-  timestamp: string;
-}
-
-const LOGS: LogEntry[] = [
-  {
-    id: "1",
-    level: "info",
-    message: "User john@example.com logged in successfully",
-    source: "auth",
-    timestamp: "14:32:15",
-  },
-  {
-    id: "2",
-    level: "warn",
-    message: "Rate limit approaching for IP 192.168.1.100",
-    source: "api",
-    timestamp: "14:31:45",
-  },
-  {
-    id: "3",
-    level: "error",
-    message: "Failed to connect to credit bureau API: timeout",
-    source: "bureau",
-    timestamp: "14:30:22",
-  },
-  {
-    id: "4",
-    level: "info",
-    message: "Dispute DSP-001 created for user sarah@example.com",
-    source: "disputes",
-    timestamp: "14:28:10",
-  },
-  {
-    id: "5",
-    level: "debug",
-    message: "Cache hit for user profile: user_123",
-    source: "cache",
-    timestamp: "14:27:55",
-  },
-  {
-    id: "6",
-    level: "info",
-    message: "Payment processed: $29.99 for subscription renewal",
-    source: "billing",
-    timestamp: "14:25:30",
-  },
-  {
-    id: "7",
-    level: "warn",
-    message: "AI model response time exceeded 500ms",
-    source: "ai",
-    timestamp: "14:24:00",
-  },
-  {
-    id: "8",
-    level: "error",
-    message: "Email delivery failed: invalid recipient",
-    source: "email",
-    timestamp: "14:22:15",
-  },
-  {
-    id: "9",
-    level: "info",
-    message: "Scheduled job completed: daily_report_generation",
-    source: "jobs",
-    timestamp: "14:20:00",
-  },
-  {
-    id: "10",
-    level: "debug",
-    message: "Database query executed in 12ms",
-    source: "db",
-    timestamp: "14:18:30",
-  },
-];
+import {
+  adminLogsApi,
+  type AdminSystemLogs,
+} from "../../src/services/api/admin";
 
 export default function AdminLogsScreen() {
+  const [state, setState] = useState<AdminSystemLogs | null>(null);
   const [loading, setLoading] = useState(true);
-  const [levelFilter, setLevelFilter] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 800);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const res = await adminLogsApi.getSystemLogs();
+
+    if (!res.success || !res.data) {
+      setError("We could not reach the log service.");
+      setLoading(false);
+      return;
+    }
+
+    setState(res.data);
+    setLoading(false);
   }, []);
 
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case "info":
-        return theme.colors.primary;
-      case "warn":
-        return theme.colors.warning;
-      case "error":
-        return theme.colors.error;
-      case "debug":
-        return theme.colors.textSecondary;
-      default:
-        return theme.colors.textSecondary;
-    }
-  };
-
-  const filteredLogs = levelFilter
-    ? LOGS.filter((l) => l.level === levelFilter)
-    : LOGS;
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (loading) {
     return (
@@ -152,75 +95,50 @@ export default function AdminLogsScreen() {
           </TouchableOpacity>
           <View style={styles.headerContent}>
             <Text style={styles.title}>System Logs</Text>
-            <Text style={styles.subtitle}>Real-time log viewer</Text>
+            {/* Was "Real-time log viewer". There is no log stream behind
+                this screen and there never was. */}
+            <Text style={styles.subtitle}>Application log viewer</Text>
           </View>
-          <TouchableOpacity style={styles.refreshButton}>
+          {/* The refresh button had no handler. It re-reads now, which will
+              honestly report "still unavailable" until system_logs exists. */}
+          <TouchableOpacity
+            testID="admin-logs-refresh"
+            style={styles.refreshButton}
+            onPress={load}
+          >
             <Ionicons name="refresh" size={24} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>
 
-        {/* Filters */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterRow}
-        >
-          {["All", "info", "warn", "error", "debug"].map((level) => (
-            <TouchableOpacity
-              key={level}
-              style={[
-                styles.filterChip,
-                (levelFilter === level || (level === "All" && !levelFilter)) &&
-                  styles.filterChipActive,
-              ]}
-              onPress={() => setLevelFilter(level === "All" ? null : level)}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  (levelFilter === level ||
-                    (level === "All" && !levelFilter)) &&
-                    styles.filterTextActive,
-                ]}
-              >
-                {level.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Logs List */}
+        {/* No level filter: there are no rows to filter, and chips over an
+            empty list are the same decoration the invented categories were on
+            the audit screen. */}
         <View style={styles.logsList}>
-          {filteredLogs.map((log) => (
-            <Card key={log.id} style={styles.logCard}>
-              <View style={styles.logHeader}>
-                <View
-                  style={[
-                    styles.levelBadge,
-                    { backgroundColor: `${getLevelColor(log.level)}15` },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.levelText,
-                      { color: getLevelColor(log.level) },
-                    ]}
-                  >
-                    {log.level.toUpperCase()}
-                  </Text>
-                </View>
-                <Text style={styles.logSource}>{log.source}</Text>
-                <Text style={styles.logTime}>{log.timestamp}</Text>
-              </View>
-              <Text style={styles.logMessage}>{log.message}</Text>
+          {error ? (
+            <Card>
+              <Text style={styles.loadingText}>{error}</Text>
+              <TouchableOpacity onPress={load}>
+                <Text style={styles.retryText}>Try again</Text>
+              </TouchableOpacity>
             </Card>
-          ))}
+          ) : state && !state.dataAvailable ? (
+            <Card>
+              <Ionicons
+                name="information-circle"
+                size={24}
+                color={theme.colors.primary}
+              />
+              {/* The route's own words. Paraphrasing would let this copy drift
+                  from what the server actually reports. */}
+              <Text style={styles.loadingText}>{state.message}</Text>
+            </Card>
+          ) : state && state.total === 0 ? (
+            <Card>
+              <Text style={styles.loadingText}>No log entries recorded.</Text>
+            </Card>
+          ) : null}
         </View>
 
-        {/* Load More */}
-        <TouchableOpacity style={styles.loadMoreButton}>
-          <Text style={styles.loadMoreText}>Load More Logs</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -233,6 +151,14 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: theme.spacing.md,
     color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    textAlign: "center",
+    marginTop: theme.spacing.sm,
   },
   header: {
     flexDirection: "row",
