@@ -185,11 +185,6 @@
       "classification": "catalogue",
       "offline": true
     },
-    "app/financial/transactions.tsx: SPENDING_BY_CATEGORY, TRANSACTIONS": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "The user's own transactions and their category breakdown (Shopping $168.31, 28%). Invented spending."
-    },
     "app/help/contact.tsx: CONTACT_OPTIONS": {
       "classification": "catalogue",
       "offline": true,
