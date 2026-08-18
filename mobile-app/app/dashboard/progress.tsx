@@ -3,7 +3,7 @@
  * Milestones, achievements, and gamification
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,141 +17,67 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { useGamificationStore } from "../../src/store/gamificationStore";
 
-interface Milestone {
-  id: string;
-  title: string;
-  description: string;
-  completed: boolean;
-  date: string | null;
-  points: number;
-}
-interface Achievement {
-  id: string;
-  title: string;
-  icon: string;
-  unlocked: boolean;
-  description: string;
-}
+/*
+ * Local `Milestone` and `Achievement` types, MILESTONES and ACHIEVEMENTS lived
+ * here.
+ *
+ * Every achievement was hardcoded `unlocked: true` — "First Steps", "Dispute
+ * Master" and the rest — so every user was shown the same earned badges
+ * regardless of what they had actually done. The milestones carried completion
+ * dates ("2024-10-01") and point values for work nobody had done either. And
+ * the loading spinner was `setTimeout(() => setLoading(false), 800)`: eight
+ * hundred milliseconds over no request at all.
+ *
+ * All of it is real. `user_badges`, `badge_definitions`, `badge_progress` and
+ * `user_achievements` are real tables; GET /api/gamification/badges and
+ * /api/gamification/progress are real routes; and the mobile gamificationStore
+ * already fetches both, splitting badges into earned / inProgress / locked.
+ * Nothing needed building — only connecting.
+ */
 
-const MILESTONES: Milestone[] = [
-  {
-    id: "1",
-    title: "Upload First Credit Report",
-    description: "Get started by uploading your credit report",
-    completed: true,
-    date: "2024-10-01",
-    points: 50,
-  },
-  {
-    id: "2",
-    title: "Complete Credit Analysis",
-    description: "Let AI analyze your credit report",
-    completed: true,
-    date: "2024-10-02",
-    points: 100,
-  },
-  {
-    id: "3",
-    title: "Send First Dispute",
-    description: "Submit your first dispute letter",
-    completed: true,
-    date: "2024-10-15",
-    points: 150,
-  },
-  {
-    id: "4",
-    title: "First Successful Dispute",
-    description: "Get a negative item removed",
-    completed: true,
-    date: "2024-11-01",
-    points: 300,
-  },
-  {
-    id: "5",
-    title: "Reach 650 Credit Score",
-    description: "Improve your score to 650+",
-    completed: true,
-    date: "2024-11-15",
-    points: 500,
-  },
-  {
-    id: "6",
-    title: "Reach 700 Credit Score",
-    description: "Achieve a good credit score",
-    completed: false,
-    date: null,
-    points: 750,
-  },
-  {
-    id: "7",
-    title: "Remove 5 Negative Items",
-    description: "Successfully dispute 5 items",
-    completed: false,
-    date: null,
-    points: 1000,
-  },
-];
 
-const ACHIEVEMENTS: Achievement[] = [
-  {
-    id: "1",
-    title: "First Steps",
-    icon: "🎯",
-    unlocked: true,
-    description: "Started your credit repair journey",
-  },
-  {
-    id: "2",
-    title: "Dispute Master",
-    icon: "⚔️",
-    unlocked: true,
-    description: "Sent 3+ dispute letters",
-  },
-  {
-    id: "3",
-    title: "Score Climber",
-    icon: "📈",
-    unlocked: true,
-    description: "Increased score by 50+ points",
-  },
-  {
-    id: "4",
-    title: "Consistency King",
-    icon: "👑",
-    unlocked: false,
-    description: "Logged in 30 days in a row",
-  },
-  {
-    id: "5",
-    title: "Credit Expert",
-    icon: "🎓",
-    unlocked: false,
-    description: "Completed all education modules",
-  },
-  {
-    id: "6",
-    title: "Perfect Score",
-    icon: "💎",
-    unlocked: false,
-    description: "Reach 800+ credit score",
-  },
-];
 
 export default function DashboardProgressScreen() {
-  const [loading, setLoading] = useState(true);
-  const [milestones] = useState(MILESTONES);
-  const [achievements] = useState(ACHIEVEMENTS);
+  const {
+    earnedBadges,
+    lockedBadges,
+    inProgressBadges,
+    progress,
+    isLoadingBadges,
+    isLoadingProgress,
+    badgesError,
+    progressError,
+    fetchBadges,
+    fetchProgress,
+  } = useGamificationStore();
+
+  const load = useCallback(async () => {
+    await Promise.all([fetchBadges(), fetchProgress()]);
+  }, [fetchBadges, fetchProgress]);
 
   useEffect(() => {
-    setTimeout(() => setLoading(false), 800);
-  }, []);
+    load();
+  }, [load]);
 
-  const completedCount = milestones.filter((m) => m.completed).length;
-  const totalPoints = milestones
-    .filter((m) => m.completed)
-    .reduce((sum, m) => sum + m.points, 0);
-  const progressPercent = (completedCount / milestones.length) * 100;
+  const loading = isLoadingBadges || isLoadingProgress;
+  const error = badgesError ?? progressError;
+
+  // "Milestones" are the badges with progress toward them; "achievements" are
+  // the ones actually earned. The old screen showed both as complete for
+  // everybody.
+  const milestones = [...inProgressBadges, ...lockedBadges];
+  const completedCount = earnedBadges.length;
+  const totalBadges = completedCount + milestones.length;
+
+  // Real XP, not a points total summed from invented milestones.
+  const totalPoints = progress?.xp.totalEarned ?? 0;
+
+  // Guarded: a user with no badges at all would divide by zero here, and React
+  // Native drops a NaN width silently — the bar would simply vanish.
+  const progressPercent =
+    totalBadges > 0 ? (completedCount / totalBadges) * 100 : 0;
 
   if (loading) {
     return (
@@ -170,6 +96,19 @@ export default function DashboardProgressScreen() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
+        {error ? (
+          // A failed read and "you have earned nothing" are different
+          // statements, and this screen is about the user's own effort.
+          <Card style={styles.milestonesCard}>
+            <Text style={styles.milestoneDesc}>
+              We could not load your progress.
+            </Text>
+            <TouchableOpacity onPress={load}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </Card>
+        ) : null}
+
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -207,39 +146,35 @@ export default function DashboardProgressScreen() {
         {/* Milestones */}
         <Card style={styles.milestonesCard}>
           <Text style={styles.sectionTitle}>Milestones</Text>
+          {/* These are badges NOT yet earned — in-progress and locked. None is
+              complete by definition, so the completed branch, the completion
+              date and the "+points" credit are gone. The fixture marked every
+              one complete with a date. */}
+          {milestones.length === 0 ? (
+            <Text style={styles.milestoneDesc}>
+              Nothing in progress right now.
+            </Text>
+          ) : null}
           {milestones.map((milestone, i) => (
             <View key={milestone.id} style={styles.milestoneItem}>
-              <View
-                style={[
-                  styles.milestoneIcon,
-                  milestone.completed && styles.milestoneIconCompleted,
-                ]}
-              >
-                {milestone.completed ? (
-                  <Ionicons name="checkmark" size={16} color="#fff" />
-                ) : (
-                  <Text style={styles.milestoneNumber}>{i + 1}</Text>
-                )}
+              <View style={styles.milestoneIcon}>
+                <Text style={styles.milestoneNumber}>{i + 1}</Text>
               </View>
               <View style={styles.milestoneContent}>
                 <Text
-                  style={[
-                    styles.milestoneTitle,
-                    !milestone.completed && styles.milestoneIncomplete,
-                  ]}
+                  style={[styles.milestoneTitle, styles.milestoneIncomplete]}
                 >
-                  {milestone.title}
+                  {"name" in milestone ? milestone.name : milestone.badgeId}
                 </Text>
                 <Text style={styles.milestoneDesc}>
-                  {milestone.description}
+                  {"description" in milestone ? milestone.description : ""}
                 </Text>
-                {milestone.completed && milestone.date && (
-                  <Text style={styles.milestoneDate}>
-                    Completed {new Date(milestone.date).toLocaleDateString()}
-                  </Text>
-                )}
               </View>
-              <Text style={styles.milestonePoints}>+{milestone.points}</Text>
+              {"xpReward" in milestone ? (
+                <Text style={styles.milestonePoints}>
+                  +{milestone.xpReward}
+                </Text>
+              ) : null}
             </View>
           ))}
         </Card>
@@ -248,18 +183,20 @@ export default function DashboardProgressScreen() {
         <Card style={styles.achievementsCard}>
           <Text style={styles.sectionTitle}>Achievements</Text>
           <View style={styles.achievementsGrid}>
-            {achievements.map((achievement) => (
-              <View
-                key={achievement.id}
-                style={[
-                  styles.achievementItem,
-                  !achievement.unlocked && styles.achievementLocked,
-                ]}
-              >
-                <Text style={styles.achievementIcon}>{achievement.icon}</Text>
-                <Text style={styles.achievementTitle}>{achievement.title}</Text>
+            {/* Only badges the caller has actually EARNED. The fixture
+                hardcoded `unlocked: true` on every entry, so the locked style
+                below was unreachable and every user saw the same trophies. */}
+            {earnedBadges.length === 0 ? (
+              <Text style={styles.achievementDesc}>
+                No badges earned yet.
+              </Text>
+            ) : null}
+            {earnedBadges.map((earned) => (
+              <View key={earned.id} style={styles.achievementItem}>
+                <Text style={styles.achievementIcon}>{earned.badge.icon}</Text>
+                <Text style={styles.achievementTitle}>{earned.badge.name}</Text>
                 <Text style={styles.achievementDesc}>
-                  {achievement.description}
+                  {earned.badge.description}
                 </Text>
               </View>
             ))}
@@ -271,6 +208,12 @@ export default function DashboardProgressScreen() {
 }
 
 const styles = StyleSheet.create({
+  retryText: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontWeight: "600",
+    marginTop: 8,
+  },
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },

@@ -131,11 +131,6 @@
       "offline": false,
       "why": "FICO band definitions — 300-579 Poor, and so on. Published scoring bands: product knowledge about the scale, not a measurement of this user."
     },
-    "app/dashboard/progress.tsx: ACHIEVEMENTS, MILESTONES": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "The user's own achievements and milestones, with `unlocked: true` hardcoded. Every user is shown the same unlocked badges regardless of what they have done."
-    },
     "app/dashboard/reports.tsx: MOCK_REPORTS, REPORT_TYPES": {
       "classification": "fabrication",
       "offline": true,
