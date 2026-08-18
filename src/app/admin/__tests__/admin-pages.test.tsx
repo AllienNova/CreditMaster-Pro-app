@@ -158,7 +158,15 @@ describe("Admin Features Page", () => {
     const FeaturesPage = require("../features/page").default;
     render(<FeaturesPage />);
 
-    expect(screen.getByText(/Feature Flags/i)).toBeInTheDocument();
+    /*
+     * Scoped to the heading rather than to any text. The page's body now
+     * explains that "Fynvita reads feature flags from public.feature_flags",
+     * which made a bare /Feature Flags/i match two nodes and throw. Asserting
+     * the h1 is stricter than the substring match it replaces, not looser.
+     */
+    expect(
+      screen.getByRole("heading", { name: /Feature Flags/i, level: 1 }),
+    ).toBeInTheDocument();
   });
 });
 
