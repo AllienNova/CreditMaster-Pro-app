@@ -1,16 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { incomeApi, budgetApi } from "../../src/services/api/financial";
 
 interface BudgetCategory {
   id: string;
@@ -20,80 +22,31 @@ interface BudgetCategory {
   color: string;
 }
 
-const MONTHLY_INCOME = 5000;
+/*
+ * MONTHLY_INCOME = 5000 and MOCK_CATEGORIES lived here.
+ *
+ * Zero-based budgeting IS arithmetic against income — allocated, remaining,
+ * and the progress bar are all derived from it — so an invented salary made
+ * every number on this screen invented too, including "Every dollar has a
+ * job" over dollars nobody earned.
+ *
+ * Both have real sources. Income comes from GET /api/financial/income, whose
+ * stats.totalMonthlyIncome is computed from the caller's own income sources.
+ * The allocations are the caller's own budgets.
+ */
 
-const MOCK_CATEGORIES: BudgetCategory[] = [
-  {
-    id: "1",
-    name: "Housing",
-    allocated: 1500,
-    icon: "home-outline",
-    color: "#3B82F6",
-  },
-  {
-    id: "2",
-    name: "Food & Groceries",
-    allocated: 600,
-    icon: "restaurant-outline",
-    color: "#22C55E",
-  },
-  {
-    id: "3",
-    name: "Transportation",
-    allocated: 400,
-    icon: "car-outline",
-    color: "#F59E0B",
-  },
-  {
-    id: "4",
-    name: "Utilities",
-    allocated: 250,
-    icon: "flash-outline",
-    color: "#8B5CF6",
-  },
-  {
-    id: "5",
-    name: "Insurance",
-    allocated: 350,
-    icon: "shield-checkmark-outline",
-    color: "#EF4444",
-  },
-  {
-    id: "6",
-    name: "Savings",
-    allocated: 750,
-    icon: "wallet-outline",
-    color: "#10B981",
-  },
-  {
-    id: "7",
-    name: "Entertainment",
-    allocated: 200,
-    icon: "game-controller-outline",
-    color: "#EC4899",
-  },
-  {
-    id: "8",
-    name: "Personal Care",
-    allocated: 150,
-    icon: "heart-outline",
-    color: "#06B6D4",
-  },
-  {
-    id: "9",
-    name: "Debt Payments",
-    allocated: 500,
-    icon: "card-outline",
-    color: "#F97316",
-  },
-  {
-    id: "10",
-    name: "Miscellaneous",
-    allocated: 300,
-    icon: "ellipsis-horizontal-outline",
-    color: "#6B7280",
-  },
+/** A palette for the category rows; the amounts come from the server. */
+const CATEGORY_COLORS = [
+  "#3B82F6",
+  "#22C55E",
+  "#F59E0B",
+  "#8B5CF6",
+  "#EC4899",
+  "#14B8A6",
 ];
+
+const CATEGORY_ICON: keyof typeof Ionicons.glyphMap = "pricetag-outline";
+
 
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat("en-US", {
@@ -103,11 +56,54 @@ const formatCurrency = (amount: number): string => {
 };
 
 export default function ZeroBasedBudgetScreen() {
-  const [categories] = useState<BudgetCategory[]>(MOCK_CATEGORIES);
+  const [categories, setCategories] = useState<BudgetCategory[]>([]);
+  const [monthlyIncome, setMonthlyIncome] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    const [income, budgets] = await Promise.all([
+      incomeApi.get(),
+      budgetApi.getAll(),
+    ]);
+
+    if (!income.success || !income.data) {
+      // Income is the denominator of this whole screen. Without it there is
+      // no zero-based budget to show, so this is an error rather than a zero.
+      setError("We could not load your income.");
+      setLoading(false);
+      return;
+    }
+    setMonthlyIncome(income.data.stats?.totalMonthlyIncome ?? 0);
+
+    if (budgets.success && budgets.data) {
+      setCategories(
+        budgets.data.budgets.map((b, i) => ({
+          id: b.id,
+          name: b.category,
+          allocated: b.limit,
+          icon: CATEGORY_ICON,
+          color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+        })),
+      );
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const totalAllocated = categories.reduce((sum, cat) => sum + cat.allocated, 0);
-  const remaining = MONTHLY_INCOME - totalAllocated;
-  const allocationPercent = Math.min((totalAllocated / MONTHLY_INCOME) * 100, 100);
+  const income = monthlyIncome ?? 0;
+  const remaining = income - totalAllocated;
+  // No zero-denominator guard here on purpose. The render gates on
+  // `monthlyIncome === 0` before any of this is shown, so a divide-by-zero is
+  // unreachable — and mutation testing proved it: removing an `income > 0`
+  // guard from this line changed nothing, because no test could reach it. A
+  // guard that cannot fire is dead code with a comment claiming otherwise.
+  const allocationPercent = Math.min((totalAllocated / income) * 100, 100);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -146,11 +142,34 @@ export default function ZeroBasedBudgetScreen() {
           </Text>
         </View>
 
+        {loading ? (
+          <View style={styles.stateBlock} testID="zero-based-loading">
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        ) : error ? (
+          // Income is this screen's denominator. Showing a $0 budget after a
+          // failed read would say "you earn nothing", which is a different
+          // statement from "we could not read your income".
+          <View style={styles.stateBlock}>
+            <Text style={styles.stateText}>{error}</Text>
+            <TouchableOpacity onPress={load}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : monthlyIncome === 0 ? (
+          <View style={styles.stateBlock}>
+            <Text style={styles.stateText}>
+              No income recorded yet. Add an income source to build a
+              zero-based budget.
+            </Text>
+          </View>
+        ) : (
+          <>
         {/* Income Summary Card */}
         <Card style={styles.incomeCard}>
           <Text style={styles.incomeLabel}>Monthly Income</Text>
           <Text style={styles.incomeAmount}>
-            {formatCurrency(MONTHLY_INCOME)}
+            {formatCurrency(income)}
           </Text>
 
           {/* Allocation Progress */}
@@ -158,7 +177,7 @@ export default function ZeroBasedBudgetScreen() {
             <View style={styles.progressLabelRow}>
               <Text style={styles.progressLabel}>Allocated</Text>
               <Text style={styles.progressValue}>
-                {formatCurrency(totalAllocated)} of {formatCurrency(MONTHLY_INCOME)}
+                {formatCurrency(totalAllocated)} of {formatCurrency(income)}
               </Text>
             </View>
             <View style={styles.progressBarBackground}>
@@ -218,7 +237,8 @@ export default function ZeroBasedBudgetScreen() {
         {/* Category Allocations */}
         <Text style={styles.sectionTitle}>Category Allocations</Text>
         {categories.map((cat) => {
-          const percentValue = (cat.allocated / MONTHLY_INCOME) * 100;
+          // Reachable only when income > 0, per the render gate above.
+          const percentValue = (cat.allocated / income) * 100;
           const percent = percentValue.toFixed(1);
           return (
             <TouchableOpacity key={cat.id} activeOpacity={0.7}>
@@ -263,12 +283,30 @@ export default function ZeroBasedBudgetScreen() {
         })}
 
         <View style={styles.bottomSpacer} />
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  stateBlock: {
+    paddingVertical: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
+    alignItems: "center",
+  },
+  stateText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryText: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontWeight: "600",
+    marginTop: theme.spacing.sm,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: theme.colors.background,

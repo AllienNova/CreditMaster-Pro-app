@@ -1745,3 +1745,39 @@ export const transactionRuleApi = {
   remove: (id: string) =>
     api.delete<{ id: string }>(`/financial/transaction-rules/${id}`),
 };
+
+/**
+ * Income — GET /api/financial/income (withAuth).
+ *
+ * The route returns `{ sources, stats, countdown }` with NO { success, data }
+ * envelope, so the client passes the body through unchanged.
+ * `stats.totalMonthlyIncome` is computed from the caller's real income
+ * sources by incomeTrackingService.getMonthlyIncomeStats.
+ *
+ * Added because app/budgeting/zero-based.tsx carried `MONTHLY_INCOME = 5000`
+ * and allocated a fabricated salary across fabricated categories — and
+ * zero-based budgeting is arithmetic against that income, so every number on
+ * the screen inherited the invention.
+ */
+export interface IncomeStats {
+  totalMonthlyIncome: number;
+  expectedNextMonth: number;
+  averagePaycheck: number;
+  payFrequency: string;
+}
+
+export interface IncomeSourceSummary {
+  id: string;
+  name: string;
+  amount: number;
+  frequency: string;
+}
+
+export interface IncomeResponse {
+  sources: IncomeSourceSummary[];
+  stats: IncomeStats;
+}
+
+export const incomeApi = {
+  get: () => api.get<IncomeResponse>("/financial/income"),
+};
