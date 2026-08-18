@@ -46,7 +46,7 @@ jest.mock("../../services/api/credit", () => ({
 import CreditScoreAnalyticsScreen from "../../../app/analytics/credit-score";
 
 const FACTORS = {
-  data: [
+  factors: [
     {
       id: "credit_age",
       name: "Credit Age",
@@ -89,6 +89,44 @@ beforeEach(() => {
   mockFetchScores.mockResolvedValue(undefined);
   mockFetchScoreHistory.mockResolvedValue(undefined);
   mockGetFactors.mockResolvedValue({ success: true, data: FACTORS });
+});
+
+/**
+ * THE SHAPE THE CLIENT ACTUALLY DELIVERS.
+ *
+ * The suite below fed the screen `{ success: true, data: { data, unavailable } }`
+ * — a payload src/services/api/client.ts cannot produce. It unwraps the
+ * { success, data } envelope (client.ts:361-387) and returns ONLY the inner
+ * `data`, dropping every sibling key. The route put `unavailable` beside
+ * `data`, so it never crossed the wire, and the screen then read `.data` and
+ * `.unavailable` off what was already the factors array. Both came back
+ * undefined: an empty factor list and an empty unavailable list, on a screen
+ * about someone's credit.
+ *
+ * The route now nests both under `data`, so this is what arrives.
+ */
+describe("analytics/credit-score — against the real client envelope", () => {
+  it("renders the factors the route returns", async () => {
+    mockGetFactors.mockResolvedValue({
+      success: true,
+      data: { factors: FACTORS.factors, unavailable: FACTORS.unavailable },
+    });
+    render(<CreditScoreAnalyticsScreen />);
+    expect(await screen.findByText("Credit Age")).toBeTruthy();
+  });
+
+  it("renders what it cannot compute, and why", async () => {
+    // The distinction this screen exists to preserve: a factor that is
+    // missing reads as "not applicable", one that is listed as unavailable
+    // reads as "we do not know".
+    mockGetFactors.mockResolvedValue({
+      success: true,
+      data: { factors: FACTORS.factors, unavailable: FACTORS.unavailable },
+    });
+    render(<CreditScoreAnalyticsScreen />);
+    expect(await screen.findByText("Payment History")).toBeTruthy();
+    expect(screen.getByText(/Needs a linked credit report/)).toBeTruthy();
+  });
 });
 
 describe("analytics/credit-score", () => {

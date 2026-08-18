@@ -72,7 +72,12 @@ describe("CreditFactorsPage", () => {
     ];
 
     mockFetch.mockResolvedValueOnce(
-      createMockResponse({ success: true, data: mockFactors }),
+      createMockResponse({
+        success: true,
+        // The route nests both lists under `data`. A sibling key does not
+        // survive the mobile client's envelope unwrap, so it moved inside.
+        data: { factors: mockFactors, unavailable: [] },
+      }),
     );
 
     render(<CreditFactorsPage />);
@@ -98,7 +103,12 @@ describe("CreditFactorsPage", () => {
     ];
 
     mockFetch.mockResolvedValueOnce(
-      createMockResponse({ success: true, data: mockFactors }),
+      createMockResponse({
+        success: true,
+        // The route nests both lists under `data`. A sibling key does not
+        // survive the mobile client's envelope unwrap, so it moved inside.
+        data: { factors: mockFactors, unavailable: [] },
+      }),
     );
 
     render(<CreditFactorsPage />);
@@ -110,44 +120,56 @@ describe("CreditFactorsPage", () => {
   });
 
   it("expands factor details when clicked", async () => {
-    const mockFactors = [
-      {
-        id: "payment_history",
-        name: "Payment History",
-        impact: "positive",
-        category: "payment_history",
-        status: "good",
-        value: "98% on-time payments",
-        description: "You have a strong payment history.",
-        recommendation: "Continue making payments on time.",
-        percentImpact: 35,
-      },
-    ];
+    // NOTE ON MOCKING IN THIS FILE. The `global.fetch = mockFetch` at the top
+    // is overridden by MSW: server.listen() runs in a beforeAll, which fires
+    // AFTER this module is evaluated, so MSW wins every time. Every
+    // mockFetch.mockResolvedValueOnce fixture here was dead code answering
+    // nothing. Overriding the handler is the pattern that actually works, and
+    // it is what the error-state test below already does.
+    const { server } = require("@/__tests__/mocks/server");
+    const { rest } = require("msw");
 
-    mockFetch.mockResolvedValueOnce(
-      createMockResponse({ success: true, data: mockFactors }),
+    server.use(
+      rest.get(
+        "http://localhost/api/credit/factors",
+        (req: any, res: any, ctx: any) =>
+          res(
+            ctx.json({
+              success: true,
+              data: {
+                factors: [
+                  {
+                    id: "credit_age",
+                    name: "Credit Age",
+                    impact: "positive",
+                    category: "credit_age",
+                    status: "good",
+                    value: "7 year average across your linked accounts",
+                    description: "Your credit history length is good.",
+                    recommendation: "Keep old accounts open.",
+                    percentImpact: 15,
+                  },
+                ],
+                unavailable: [],
+              },
+            }),
+          ),
+      ),
     );
 
     render(<CreditFactorsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("Payment History")).toBeInTheDocument();
+      expect(screen.getByText("Credit Age")).toBeInTheDocument();
     });
 
-    // Click to expand
-    const factorButton = screen.getByRole("button", {
-      name: /payment history/i,
-    });
-    fireEvent.click(factorButton);
+    fireEvent.click(screen.getByRole("button", { name: /credit age/i }));
 
-    // Check for expanded content
     await waitFor(() => {
       expect(
-        screen.getByText("You have a strong payment history."),
+        screen.getByText("Your credit history length is good."),
       ).toBeInTheDocument();
-      expect(
-        screen.getByText("Continue making payments on time."),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Keep old accounts open.")).toBeInTheDocument();
     });
   });
 
@@ -197,31 +219,48 @@ describe("CreditFactorsPage", () => {
   });
 
   it("shows improvement alert for factors needing attention", async () => {
-    const mockFactors = [
-      {
-        id: "payment_history",
-        name: "Payment History",
-        impact: "negative",
-        category: "payment_history",
-        status: "poor",
-        value: "70% on-time payments",
-        description: "You have some late payments.",
-        percentImpact: 35,
-      },
-      {
-        id: "credit_utilization",
-        name: "Credit Utilization",
-        impact: "neutral",
-        category: "credit_utilization",
-        status: "fair",
-        value: "45% utilization",
-        description: "Your utilization is high.",
-        percentImpact: 30,
-      },
-    ];
+    // The two factors this route can actually compute are credit_age and
+    // credit_mix; the previous fixture used payment_history and
+    // credit_utilization, both of which it reports as uncomputable. Same
+    // assertion, factors that can really arrive.
+    const { server } = require("@/__tests__/mocks/server");
+    const { rest } = require("msw");
 
-    mockFetch.mockResolvedValueOnce(
-      createMockResponse({ success: true, data: mockFactors }),
+    server.use(
+      rest.get(
+        "http://localhost/api/credit/factors",
+        (req: any, res: any, ctx: any) =>
+          res(
+            ctx.json({
+              success: true,
+              data: {
+                factors: [
+                  {
+                    id: "credit_age",
+                    name: "Credit Age",
+                    impact: "negative",
+                    category: "credit_age",
+                    status: "poor",
+                    value: "0.6 year average across your linked accounts",
+                    description: "Your accounts are new.",
+                    percentImpact: 15,
+                  },
+                  {
+                    id: "credit_mix",
+                    name: "Credit Mix",
+                    impact: "neutral",
+                    category: "credit_mix",
+                    status: "fair",
+                    value: "1 of 3 account types",
+                    description: "You have one account type.",
+                    percentImpact: 10,
+                  },
+                ],
+                unavailable: [],
+              },
+            }),
+          ),
+      ),
     );
 
     render(<CreditFactorsPage />);

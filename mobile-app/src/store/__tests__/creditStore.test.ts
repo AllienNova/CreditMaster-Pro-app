@@ -168,21 +168,45 @@ describe("Credit Store", () => {
   });
 
   describe("fetchFactors", () => {
-    it("should fetch credit factors successfully", async () => {
-      // Source API returns array of { factor, impact (number), status }
-      // Store transforms: f.factor -> name, f.impact > 0 -> 'positive', f.status -> description
-      const mockApiFactors = [
-        { factor: "Payment History", impact: 35, status: "excellent" },
-        {
-          factor: "Credit Utilization",
-          impact: -10,
-          status: "needs_improvement",
-        },
-      ];
+    /**
+     * This block used to mock `[{ factor, impact: 35, status }]` — a shape
+     * GET /api/credit/factors has never returned. That fixture is why the bug
+     * survived: the store rebuilt each factor from `f.factor`, a NUMERIC
+     * `f.impact`, and `f.status`-as-description, and hardcoded every category
+     * to "payment_history" — one of the three the route reports as
+     * uncomputable. Against the real payload it called .map on an object,
+     * threw, and the catch swallowed it, so the store held an empty list in
+     * production while __DEV__ showed a seeded one.
+     *
+     * The fixture below is the route's actual response.
+     */
+    const ROUTE_FACTORS = [
+      {
+        id: "credit_age",
+        name: "Credit Age",
+        impact: "positive" as const,
+        category: "credit_age" as const,
+        status: "good" as const,
+        value: "8.3 year average across your linked accounts",
+        description: "Your accounts average 8.3 years.",
+        percentImpact: 15,
+      },
+      {
+        id: "credit_mix",
+        name: "Credit Mix",
+        impact: "neutral" as const,
+        category: "credit_mix" as const,
+        status: "fair" as const,
+        value: "2 of 3 account types",
+        description: "You have 2 of the three account types.",
+        percentImpact: 10,
+      },
+    ];
 
+    it("stores the factors the route sends, without rebuilding them", async () => {
       creditScoreApi.getFactors.mockResolvedValueOnce({
         success: true,
-        data: mockApiFactors,
+        data: { factors: ROUTE_FACTORS, unavailable: [] },
       });
 
       await act(async () => {
@@ -191,10 +215,28 @@ describe("Credit Store", () => {
 
       const factors = useCreditStore.getState().factors;
       expect(factors).toHaveLength(2);
-      expect(factors[0].name).toBe("Payment History");
+      expect(factors[0].name).toBe("Credit Age");
       expect(factors[0].impact).toBe("positive");
-      expect(factors[1].name).toBe("Credit Utilization");
-      expect(factors[1].impact).toBe("negative");
+      // The category the route MEASURED, not a hardcoded one. The old
+      // transform labelled every factor "payment_history", which this system
+      // cannot compute at all.
+      expect(factors[0].category).toBe("credit_age");
+      expect(factors[1].category).toBe("credit_mix");
+      // The real finding, not the status string standing in for it.
+      expect(factors[0].description).toBe("Your accounts average 8.3 years.");
+    });
+
+    it("holds nothing rather than a guess when the read fails", async () => {
+      creditScoreApi.getFactors.mockResolvedValueOnce({
+        success: false,
+        error: { message: "boom" },
+      });
+
+      await act(async () => {
+        await useCreditStore.getState().fetchFactors();
+      });
+
+      expect(useCreditStore.getState().factors).toEqual([]);
     });
   });
 

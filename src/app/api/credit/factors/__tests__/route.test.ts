@@ -104,11 +104,11 @@ describe("Credit Factors API – /api/credit/factors", () => {
 
     it("returns the two factors it can compute, from real analyses", async () => {
       const body = await (await GET(makeGet())).json();
-      expect(body.data.map((f: { id: string }) => f.id)).toEqual([
+      expect(body.data.factors.map((f: { id: string }) => f.id)).toEqual([
         "credit_age",
         "credit_mix",
       ]);
-      expect(body.data[0].value).toContain("8.3 year average");
+      expect(body.data.factors[0].value).toContain("8.3 year average");
     });
 
     it("names the three it cannot, with what would unblock each", async () => {
@@ -116,9 +116,9 @@ describe("Credit Factors API – /api/credit/factors", () => {
       // "we do not know", which is the truth.
       const body = await (await GET(makeGet())).json();
       expect(
-        body.unavailable.map((f: { id: string }) => f.id),
+        body.data.unavailable.map((f: { id: string }) => f.id),
       ).toEqual(["payment_history", "credit_utilization", "new_credit"]);
-      for (const f of body.unavailable) {
+      for (const f of body.data.unavailable) {
         expect(f.blockedBy).toEqual(expect.any(String));
         expect(f.blockedBy.length).toBeGreaterThan(0);
       }
@@ -128,7 +128,7 @@ describe("Credit Factors API – /api/credit/factors", () => {
       // An average of 0 across zero accounts is not "0 years of history".
       mockAnalyzeCreditAge.mockResolvedValue(age({ averageAge: 0 }));
       const body = await (await GET(makeGet())).json();
-      expect(body.data.map((f: { id: string }) => f.id)).toEqual(["credit_mix"]);
+      expect(body.data.factors.map((f: { id: string }) => f.id)).toEqual(["credit_mix"]);
     });
 
     it("omits credit mix entirely when no account is linked", async () => {
@@ -136,7 +136,7 @@ describe("Credit Factors API – /api/credit/factors", () => {
         mix({ installment: 0, revolving: 0 }),
       );
       const body = await (await GET(makeGet())).json();
-      expect(body.data.map((f: { id: string }) => f.id)).toEqual(["credit_age"]);
+      expect(body.data.factors.map((f: { id: string }) => f.id)).toEqual(["credit_age"]);
     });
 
     it("returns an empty factor list, not a filler one, for a new user", async () => {
@@ -145,9 +145,9 @@ describe("Credit Factors API – /api/credit/factors", () => {
         mix({ installment: 0, revolving: 0 }),
       );
       const body = await (await GET(makeGet())).json();
-      expect(body.data).toEqual([]);
+      expect(body.data.factors).toEqual([]);
       // The unavailable list still explains why the page is empty.
-      expect(body.unavailable).toHaveLength(3);
+      expect(body.data.unavailable).toHaveLength(3);
     });
 
     it("rates the mix by scored VARIETY, not by account count", async () => {
@@ -156,7 +156,7 @@ describe("Credit Factors API – /api/credit/factors", () => {
         mix({ installment: 0, revolving: 6, mortgage: 0 }),
       );
       const body = await (await GET(makeGet())).json();
-      const mixFactor = body.data.find(
+      const mixFactor = body.data.factors.find(
         (f: { id: string }) => f.id === "credit_mix",
       );
       expect(mixFactor.status).toBe("fair");

@@ -46,6 +46,36 @@ export interface BureauConnection {
 }
 
 // Credit Score Endpoints
+
+/**
+ * GET /api/credit/factors, as it actually arrives.
+ *
+ * The previous declaration was `{ factor, impact: number, status }[]` — three
+ * field names the route has never returned, and an array where it sends an
+ * object. Nothing caught it because both consumers cast around the type: the
+ * screen through `as unknown as`, the store not at all (it called .map on a
+ * non-array and swallowed the TypeError in a catch).
+ *
+ * `impact` is a STRING band, not a number, so the store's `f.impact > 0` was
+ * comparing a string to zero. Always false, so every factor it did manage to
+ * read would have rendered "neutral".
+ *
+ * CreditFactor is reused from ./types rather than redeclared here — its union
+ * already matches the route's.
+ */
+export interface UnavailableCreditFactor {
+  id: string;
+  name: string;
+  percentImpact: number;
+  /** What would have to exist for this factor to be computed. */
+  blockedBy: string;
+}
+
+export interface CreditFactorsResponse {
+  factors: CreditFactor[];
+  unavailable: UnavailableCreditFactor[];
+}
+
 export const creditScoreApi = {
   /**
    * Get all current credit scores from connected bureaus
@@ -94,10 +124,7 @@ export const creditScoreApi = {
   /**
    * Get credit score factors analysis
    */
-  getFactors: () =>
-    api.get<{ factor: string; impact: number; status: string }[]>(
-      "/credit/factors",
-    ),
+  getFactors: () => api.get<CreditFactorsResponse>("/credit/factors"),
 
   /**
    * Simulate score impact for potential actions

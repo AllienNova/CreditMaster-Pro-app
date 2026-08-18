@@ -271,20 +271,15 @@ export const useCreditStore = create<CreditState>()(
         try {
           const response = await creditScoreApi.getFactors();
           if (response.success && response.data) {
-            // Transform API response to CreditFactor[]
-            const factors: CreditFactor[] = response.data.map((f, index) => ({
-              id: `factor-${index}`,
-              name: f.factor,
-              impact:
-                f.impact > 0
-                  ? "positive"
-                  : f.impact < 0
-                    ? "negative"
-                    : "neutral",
-              category: "payment_history" as const,
-              description: f.status,
-            }));
-            set({ factors });
+            // No transform. This used to rebuild each factor from three field
+            // names the route has never sent — `f.factor`, a numeric
+            // `f.impact`, and `f.status` as the description — and hardcode
+            // every category to "payment_history", which is one of the three
+            // the route reports as UNCOMPUTABLE. It also called .map on an
+            // object, so it threw on every call and the catch below swallowed
+            // it: the store silently held an empty list in production while
+            // __DEV__ showed a seeded one.
+            set({ factors: response.data.factors });
           }
         } catch (error) {
           if (__DEV__) console.error("Failed to fetch factors:", error);

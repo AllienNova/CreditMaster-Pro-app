@@ -169,10 +169,15 @@ export const GET = withAuth(async (_request: NextRequest, user: AuthedUser) => {
       });
     }
 
+    // Both under `data`, NOT as siblings. A sibling key does not survive the
+    // envelope: the mobile client unwraps { success, data } and returns only
+    // the inner value (mobile-app/src/services/api/client.ts:361-387), so
+    // `unavailable` was dropped on every mobile call and the screen rendered
+    // an empty list where the honest "we cannot compute this, and here is
+    // why" belongs.
     return NextResponse.json({
       success: true,
-      data: factors,
-      unavailable: UNAVAILABLE,
+      data: { factors, unavailable: UNAVAILABLE },
     });
   } catch (error) {
     // No fabricated fallback. Failing to read the caller's accounts is not

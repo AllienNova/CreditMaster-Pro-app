@@ -38,6 +38,8 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { useCreditStore } from "../../src/store/creditStore";
 import { creditScoreApi } from "../../src/services/api/credit";
+import type { UnavailableCreditFactor } from "../../src/services/api/credit";
+import type { CreditFactor } from "../../src/services/api/types";
 
 /** The selector's windows, in the months the store speaks. */
 const PERIOD_MONTHS: Record<string, number> = {
@@ -62,20 +64,7 @@ const monthLabel = (iso: string): string => {
     : d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
 };
 
-interface ApiFactor {
-  id: string;
-  name: string;
-  impact: string;
-  value: string;
-  percentImpact: number;
-}
 
-interface ApiUnavailableFactor {
-  id: string;
-  name: string;
-  percentImpact: number;
-  blockedBy: string;
-}
 
 /**
  * The route's impact vocabulary is five-valued (high_positive .. high_negative),
@@ -96,8 +85,8 @@ export default function CreditScoreAnalyticsScreen() {
   const { scores, scoreHistory, fetchScores, fetchScoreHistory } =
     useCreditStore();
 
-  const [factors, setFactors] = useState<ApiFactor[]>([]);
-  const [unavailable, setUnavailable] = useState<ApiUnavailableFactor[]>([]);
+  const [factors, setFactors] = useState<CreditFactor[]>([]);
+  const [unavailable, setUnavailable] = useState<UnavailableCreditFactor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -118,12 +107,13 @@ export default function CreditScoreAnalyticsScreen() {
         return;
       }
 
-      const body = res.data as unknown as {
-        data?: ApiFactor[];
-        unavailable?: ApiUnavailableFactor[];
-      };
-      setFactors(Array.isArray(body.data) ? body.data : []);
-      setUnavailable(Array.isArray(body.unavailable) ? body.unavailable : []);
+      // No cast. The adapter now declares what the route returns, and the
+      // route nests both lists under `data` so the client's envelope unwrap
+      // cannot drop one of them.
+      setFactors(Array.isArray(res.data.factors) ? res.data.factors : []);
+      setUnavailable(
+        Array.isArray(res.data.unavailable) ? res.data.unavailable : [],
+      );
       setLoading(false);
     },
     [fetchScores, fetchScoreHistory],
@@ -323,19 +313,28 @@ export default function CreditScoreAnalyticsScreen() {
                     everyone. */}
                 <Text style={styles.factorDescription}>{factor.value}</Text>
               </View>
-              <Text style={styles.factorWeight}>{factor.percentImpact}%</Text>
+              {/* Only claim a weight when one arrived. `percentImpact` is
+                  optional on CreditFactor, and the screen's own duplicate
+                  type had declared it required — which hid the fact that a
+                  factor without one rendered "undefined%" as the label AND
+                  as the bar's width, an invalid style RN silently ignores. */}
+              {typeof factor.percentImpact === "number" ? (
+                <Text style={styles.factorWeight}>{factor.percentImpact}%</Text>
+              ) : null}
             </View>
-            <View style={styles.factorBar}>
-              <View
-                style={[
-                  styles.factorFill,
-                  {
-                    width: `${factor.percentImpact}%`,
-                    backgroundColor: getImpactColor(factor.impact),
-                  },
-                ]}
-              />
-            </View>
+            {typeof factor.percentImpact === "number" ? (
+              <View style={styles.factorBar} testID={`factor-bar-${factor.id}`}>
+                <View
+                  style={[
+                    styles.factorFill,
+                    {
+                      width: `${factor.percentImpact}%`,
+                      backgroundColor: getImpactColor(factor.impact),
+                    },
+                  ]}
+                />
+              </View>
+            ) : null}
           </Card>
         ))}
 

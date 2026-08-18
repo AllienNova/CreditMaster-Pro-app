@@ -265,12 +265,14 @@ export default function CreditFactorsPage() {
         throw new Error(data.error || "Failed to fetch factors");
       }
 
-      setFactors(data.data);
+      setFactors(data.data?.factors ?? []);
       // Factors this system cannot compute yet, each naming what would
       // populate it. Rendered rather than dropped: a missing factor reads as
       // "not applicable", an unavailable one reads as "we do not know" — and
       // the difference matters when the subject is someone's credit.
-      setUnavailable(Array.isArray(data.unavailable) ? data.unavailable : []);
+      setUnavailable(
+        Array.isArray(data.data?.unavailable) ? data.data.unavailable : [],
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       console.error("Error fetching factors:", err);
