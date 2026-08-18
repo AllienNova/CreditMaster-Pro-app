@@ -12,11 +12,6 @@
       "offline": true,
       "why": "Public about page — company values and platform features. `stats` is marketing copy and belongs to a copy review, not this gate."
     },
-    "src/app/admin/features/page.tsx: initialFlags": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
-    },
     "src/app/admin/layout.tsx: adminNavItems": {
       "classification": "catalogue",
       "offline": false,
