@@ -35,11 +35,40 @@
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "fs";
 import { join, relative } from "path";
 
-const MOBILE = process.cwd();
-const BASELINE = join(MOBILE, "scripts", "inline-metrics-baseline.json");
+/**
+ * Runs over EITHER tree. The defect is not mobile-specific — the web app has
+ * 199 pages written the same way, and SF-20 already found
+ * `credit/factors/page.tsx` holding the caller's score as `useState(742)`.
+ *
+ *   --root      directory to scan, relative to cwd   (default "app")
+ *   --baseline  where the shrink-only list lives     (default scripts/inline-metrics-baseline.json)
+ */
+const arg = (name, fallback) => {
+  const i = process.argv.indexOf(`--${name}`);
+  return i === -1 ? fallback : process.argv[i + 1];
+};
 
-/** `<Text ...>literal</Text>` with no nested element and no expression. */
-const TEXT_LITERAL = /<Text\b[^>]*>([^<>{}]+?)<\/Text>/gs;
+const CWD = process.cwd();
+const ROOT = join(CWD, arg("root", "app"));
+const BASELINE = join(CWD, arg("baseline", join("scripts", "inline-metrics-baseline.json")));
+
+/**
+ * `<Tag ...>literal</Tag>` with no nested element and no expression.
+ *
+ * Both vocabularies in one pattern: React Native renders text only inside
+ * `<Text>`, and the web app uses the ordinary HTML leaf elements. Neither tree
+ * contains the other's tags, so a single list cannot cross-match.
+ *
+ * `<div>` is included deliberately. It is the tag a hardcoded stat most often
+ * sits in on the web side, and the measurement shapes below are narrow enough
+ * that a layout div holding no number never matches.
+ */
+const TEXT_TAGS =
+  "Text|p|span|div|strong|b|em|dd|dt|td|th|li|h1|h2|h3|h4|h5|h6";
+const TEXT_LITERAL = new RegExp(
+  `<(${TEXT_TAGS})\\b[^>]*>([^<>{}]+?)</\\1>`,
+  "gs",
+);
 
 /**
  * Shapes that read as something measured rather than something written.
@@ -94,7 +123,8 @@ function findings(source) {
   const out = [];
   for (const m of source.matchAll(TEXT_LITERAL)) {
     if (inRanges(m.index, ranges)) continue;
-    const value = m[1].trim();
+    // m[1] is the tag; m[2] is the literal between the tags.
+    const value = m[2].trim();
     if (!isMeasurement(value)) continue;
     out.push({ value, line: source.slice(0, m.index).split("\n").length });
   }
@@ -113,7 +143,7 @@ function walk(dir, out = []) {
   return out;
 }
 
-const rel = (f) => relative(MOBILE, f).replace(/\\/g, "/");
+const rel = (f) => relative(CWD, f).replace(/\\/g, "/");
 
 // ── Self-test ───────────────────────────────────────────────────────────────
 if (process.argv.includes("--self-test")) {
@@ -173,6 +203,21 @@ if (process.argv.includes("--self-test")) {
     "a literal AFTER a .map is still caught — the range must close",
   );
   check(
+    values(`<p className="stat">742</p><span>87%</span><h2>$1,250</h2>`),
+    ["742", "87%", "$1,250"],
+    "the web vocabulary is read too — the same defect, different tags",
+  );
+  check(
+    values(`<div className="grid"><span>Score</span></div>`),
+    [],
+    "a layout div holding no number is not a measurement",
+  );
+  check(
+    values(`<p>Save up to 30% on your first year</p>`),
+    [],
+    "a percentage inside a SENTENCE is copy, not a standalone stat",
+  );
+  check(
     values(`<Text\n  style={styles.v}\n>\n  +45\n</Text>`),
     ["+45"],
     "the literal is found across line breaks",
@@ -180,7 +225,7 @@ if (process.argv.includes("--self-test")) {
 
   console.log(
     bad === 0
-      ? "audit:inline-metrics self-test PASSED — 12/12 cases correct."
+      ? "audit:inline-metrics self-test PASSED — 15/15 cases correct."
       : `audit:inline-metrics self-test FAILED — ${bad} wrong.`,
   );
   process.exit(bad === 0 ? 0 : 1);
@@ -188,7 +233,7 @@ if (process.argv.includes("--self-test")) {
 
 // ── Scan ────────────────────────────────────────────────────────────────────
 const offenders = [];
-for (const file of walk(join(MOBILE, "app"))) {
+for (const file of walk(ROOT)) {
   const found = findings(readFileSync(file, "utf8"));
   if (found.length) offenders.push({ file: rel(file), found });
 }
