@@ -226,6 +226,7 @@ src/app/api/financial/transactions/search/route.ts,GET,withPermission,own-rows,w
 src/app/api/gamification/achievements/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/badges/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/challenges/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/gamification/challenges/[id]/join/route.ts,POST,withAuth,withAuth,withAuth,a,join a community challenge; user id from the guard never the body; 409 on UNIQUE(user_id,challenge_id)
 src/app/api/gamification/events/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/leaderboard/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/progress/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
