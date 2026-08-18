@@ -62,10 +62,6 @@
       "classification": "catalogue",
       "offline": true
     },
-    "app/budgeting/subscriptions.tsx: MOCK_SUBSCRIPTIONS": {
-      "classification": "fabrication",
-      "offline": true
-    },
     "app/coach/goals.tsx: GOAL_TYPES": {
       "classification": "UNCLASSIFIED",
       "offline": false

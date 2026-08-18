@@ -1,4 +1,29 @@
-import React, { useState } from "react";
+/**
+ * Subscriptions — the recurring bills Fynvita has detected as subscriptions.
+ *
+ * WHAT THIS REPLACED. A MOCK_SUBSCRIPTIONS array — Netflix at $15.99, Spotify
+ * at $10.99 and the rest — shown to every user, summed into a monthly and an
+ * annual cost, with Manage and Cancel buttons beside each. The screen made no
+ * request. A user reading their annual subscription spend was reading a number
+ * about somebody who does not exist.
+ *
+ * WHERE THE DATA COMES FROM. GET /api/financial/bills, the same endpoint the
+ * three bills screens use, filtered to the two BillCategory values that mean
+ * subscription: `subscription` and `streaming`. bill-detection-service assigns
+ * those from the merchant on the user's real transactions.
+ *
+ * THE CATEGORY CHIPS WERE INVENTED TOO. "Entertainment", "Software",
+ * "Services", "Fitness", "Cloud" — none of them is a value the database can
+ * hold, so no real bill could ever have matched them. The chips are now built
+ * from the categories actually present in the user's own data.
+ *
+ * MANAGE AND CANCEL ARE GONE. Neither did anything, and neither has a route:
+ * cancelling a subscription means cancelling it with the merchant, which this
+ * app cannot do. A button that looks like it cancels a payment and does not is
+ * worse than no button.
+ */
+
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,68 +36,30 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import {
+  billsApi,
+  monthlyCost,
+  SUBSCRIPTION_BILL_CATEGORIES,
+  type BillItem,
+} from "../../src/services/api/financial";
 
-interface Subscription {
-  id: string;
-  name: string;
-  cost: number;
-  billingCycle: "monthly" | "yearly";
-  category: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}
+/** "streaming" -> "Streaming". The stored values are lower-case slugs. */
+const titleCase = (value: string): string =>
+  value ? value.charAt(0).toUpperCase() + value.slice(1) : "Uncategorised";
 
-const CATEGORIES = ["All", "Entertainment", "Software", "Services", "Fitness", "Cloud"];
-
-const MOCK_SUBSCRIPTIONS: Subscription[] = [
-  {
-    id: "1",
-    name: "Netflix",
-    cost: 15.99,
-    billingCycle: "monthly",
-    category: "Entertainment",
-    icon: "play-circle-outline",
-  },
-  {
-    id: "2",
-    name: "Spotify",
-    cost: 10.99,
-    billingCycle: "monthly",
-    category: "Entertainment",
-    icon: "musical-notes-outline",
-  },
-  {
-    id: "3",
-    name: "Disney+",
-    cost: 13.99,
-    billingCycle: "monthly",
-    category: "Entertainment",
-    icon: "star-outline",
-  },
-  {
-    id: "4",
-    name: "Adobe Creative Cloud",
-    cost: 54.99,
-    billingCycle: "monthly",
-    category: "Software",
-    icon: "color-palette-outline",
-  },
-  {
-    id: "5",
-    name: "iCloud Storage",
-    cost: 2.99,
-    billingCycle: "monthly",
-    category: "Cloud",
-    icon: "cloud-outline",
-  },
-  {
-    id: "6",
-    name: "Gym Membership",
-    cost: 24.99,
-    billingCycle: "monthly",
-    category: "Fitness",
-    icon: "barbell-outline",
-  },
-];
+/**
+ * How to render a bill's cadence. Falls back to the raw value rather than
+ * asserting "Monthly" for a frequency this screen does not recognise — the old
+ * version only knew monthly and yearly, and rendered everything else as
+ * "Yearly" by virtue of a single ternary.
+ */
+const CYCLE_LABELS: Record<string, { long: string; short: string }> = {
+  weekly: { long: "Weekly", short: "wk" },
+  biweekly: { long: "Every 2 weeks", short: "2wk" },
+  monthly: { long: "Monthly", short: "mo" },
+  quarterly: { long: "Quarterly", short: "qtr" },
+  yearly: { long: "Yearly", short: "yr" },
+};
 
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat("en-US", {
@@ -83,16 +70,58 @@ const formatCurrency = (amount: number): string => {
 
 export default function SubscriptionsScreen() {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [subscriptions, setSubscriptions] = useState<BillItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    const res = await billsApi.getBills();
+
+    if (!res.success || !res.data) {
+      // Not an empty list. "We could not load this" and "you have no
+      // subscriptions" lead a user to opposite actions.
+      setError("We could not load your subscriptions.");
+      setIsLoading(false);
+      return;
+    }
+
+    setSubscriptions(
+      res.data.bills.filter((b) =>
+        SUBSCRIPTION_BILL_CATEGORIES.includes(b.category),
+      ),
+    );
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Built from the user's own bills, not from a list of category names
+  // somebody guessed. "All" first, then whatever is actually present.
+  const categories = [
+    "All",
+    ...Array.from(new Set(subscriptions.map((s) => s.category))).sort(),
+  ];
 
   const filteredSubscriptions =
     selectedCategory === "All"
-      ? MOCK_SUBSCRIPTIONS
-      : MOCK_SUBSCRIPTIONS.filter((sub) => sub.category === selectedCategory);
+      ? subscriptions
+      : subscriptions.filter((sub) => sub.category === selectedCategory);
 
-  const totalMonthly = MOCK_SUBSCRIPTIONS.reduce((sum, sub) => {
-    return sum + (sub.billingCycle === "yearly" ? sub.cost / 12 : sub.cost);
-  }, 0);
-
+  // Only bills whose cadence we recognise can be normalised to a month. One
+  // with an unknown frequency is EXCLUDED from the total rather than counted
+  // at face value, and the count of excluded ones is shown — a yearly charge
+  // silently treated as monthly would overstate the total twelvefold.
+  const monthlyCosts = subscriptions.map(monthlyCost);
+  const totalMonthly = monthlyCosts.reduce<number>(
+    (sum, cost) => sum + (cost ?? 0),
+    0,
+  );
+  const uncostedCount = monthlyCosts.filter((c) => c === null).length;
   const totalAnnual = totalMonthly * 12;
 
   return (
@@ -136,10 +165,22 @@ export default function SubscriptionsScreen() {
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Active</Text>
               <Text style={styles.summaryAmount}>
-                {MOCK_SUBSCRIPTIONS.length}
+                {subscriptions.length}
               </Text>
             </View>
           </View>
+          {/* Said out loud rather than folded into the total. A bill whose
+              cadence we do not recognise cannot be converted to a monthly
+              figure, and quietly counting it at face value is how a yearly
+              charge ends up inflating a monthly total. */}
+          {uncostedCount > 0 && (
+            <Text style={styles.summaryNote}>
+              {uncostedCount}{" "}
+              {uncostedCount === 1 ? "subscription has" : "subscriptions have"}{" "}
+              an unknown billing cycle and {uncostedCount === 1 ? "is" : "are"}{" "}
+              not included in these totals.
+            </Text>
+          )}
         </Card>
 
         {/* Category Filters */}
@@ -149,7 +190,7 @@ export default function SubscriptionsScreen() {
           style={styles.categoryScroll}
           contentContainerStyle={styles.categoryContainer}
         >
-          {CATEGORIES.map((category) => (
+          {categories.map((category) => (
             <TouchableOpacity
               key={category}
               onPress={() => setSelectedCategory(category)}
@@ -164,45 +205,70 @@ export default function SubscriptionsScreen() {
                   selectedCategory === category && styles.categoryChipTextActive,
                 ]}
               >
-                {category}
+                {category === "All" ? "All" : titleCase(category)}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
         {/* Subscription List */}
+        {isLoading ? (
+          <Card>
+            <Text style={styles.emptyText}>Loading your subscriptions…</Text>
+          </Card>
+        ) : error ? (
+          <Card>
+            <Text style={styles.emptyText}>{error}</Text>
+            <TouchableOpacity onPress={load}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </Card>
+        ) : subscriptions.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>
+              No subscriptions detected yet. Link a bank account and Fynvita
+              will find recurring charges in your transactions.
+            </Text>
+          </Card>
+        ) : filteredSubscriptions.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>
+              No subscriptions in this category.
+            </Text>
+          </Card>
+        ) : null}
         {filteredSubscriptions.map((sub) => (
           <TouchableOpacity key={sub.id} activeOpacity={0.7}>
             <Card style={styles.subCard}>
               <View style={styles.subRow}>
                 <View style={styles.subIconContainer}>
+                  {/* One icon for every row. The fixture chose a per-brand
+                      glyph; a detected merchant string has no icon, and
+                      guessing one from the name would be decoration
+                      masquerading as recognition. */}
                   <Ionicons
-                    name={sub.icon}
+                    name="repeat"
                     size={22}
                     color={theme.colors.primary}
                   />
                 </View>
                 <View style={styles.subContent}>
-                  <Text style={styles.subName}>{sub.name}</Text>
+                  <Text style={styles.subName}>{sub.merchant}</Text>
                   <Text style={styles.subDetail}>
-                    {sub.category} &middot;{" "}
-                    {sub.billingCycle === "monthly" ? "Monthly" : "Yearly"}
+                    {titleCase(sub.category)} &middot;{" "}
+                    {CYCLE_LABELS[sub.frequency]?.long ?? "Cadence unknown"}
                   </Text>
                 </View>
                 <View style={styles.subRight}>
                   <Text style={styles.subCost}>
-                    {formatCurrency(sub.cost)}
+                    {formatCurrency(sub.amount)}
                   </Text>
-                  <Text style={styles.subCycle}>/{sub.billingCycle === "monthly" ? "mo" : "yr"}</Text>
+                  <Text style={styles.subCycle}>
+                    {CYCLE_LABELS[sub.frequency]
+                      ? `/${CYCLE_LABELS[sub.frequency].short}`
+                      : ""}
+                  </Text>
                 </View>
-              </View>
-              <View style={styles.subActions}>
-                <TouchableOpacity style={styles.manageButton}>
-                  <Text style={styles.manageButtonText}>Manage</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.cancelButton}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
               </View>
             </Card>
           </TouchableOpacity>
@@ -266,6 +332,24 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.bold,
     color: theme.colors.text,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    textAlign: "center",
+    marginTop: theme.spacing.sm,
+  },
+  summaryNote: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
+    textAlign: "center",
   },
   categoryScroll: {
     marginBottom: theme.spacing.md,

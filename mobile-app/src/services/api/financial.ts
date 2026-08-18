@@ -1450,6 +1450,13 @@ export interface BillItem {
   dueDate: string; // ISO 8601 over HTTP (Bill.nextDueDate)
   category: string;
   isAutoPay: boolean;
+  /**
+   * How often the bill recurs — the real Bill.frequency
+   * (weekly|biweekly|monthly|quarterly|yearly). Was dropped by the mapper,
+   * which made a monthly total impossible to compute honestly: a yearly
+   * subscription and a monthly one looked identical.
+   */
+  frequency: string;
 }
 
 /**
@@ -1492,8 +1499,43 @@ export function mapWebBill(raw: WebBill): BillItem {
     dueDate: raw.nextDueDate ?? "",
     category: raw.category ?? "",
     isAutoPay: raw.isAutoPay ?? false,
+    frequency: raw.frequency ?? "",
   };
 }
+
+/**
+ * A bill's cost expressed per month.
+ *
+ * Returns null for an unrecognised or absent frequency rather than assuming
+ * monthly: an unknown cadence silently treated as monthly would put a yearly
+ * charge into a monthly total at twelve times its real weight.
+ */
+export function monthlyCost(bill: BillItem): number | null {
+  switch (bill.frequency) {
+    case "weekly":
+      return (bill.amount * 52) / 12;
+    case "biweekly":
+      return (bill.amount * 26) / 12;
+    case "monthly":
+      return bill.amount;
+    case "quarterly":
+      return bill.amount / 3;
+    case "yearly":
+      return bill.amount / 12;
+    default:
+      return null;
+  }
+}
+
+/**
+ * The bill categories that describe a subscription.
+ *
+ * Both are real BillCategory values (src/lib/financial/types/bill.types.ts);
+ * bill-detection-service assigns them from the merchant. The subscriptions
+ * screen previously invented its own set — "Entertainment", "Software",
+ * "Services", "Fitness", "Cloud" — none of which the database can hold.
+ */
+export const SUBSCRIPTION_BILL_CATEGORIES = ["subscription", "streaming"];
 
 // Bills & Payments Endpoints
 export const billsApi = {

@@ -81,6 +81,7 @@ describe("billsApi.getBills", () => {
             category: "utilities",
             nextDueDate: "2026-03-20T00:00:00.000Z",
             isAutoPay: true,
+            frequency: "monthly",
             status: "active",
           },
           {
@@ -90,6 +91,7 @@ describe("billsApi.getBills", () => {
             category: "insurance",
             nextDueDate: "2026-03-25T00:00:00.000Z",
             isAutoPay: false,
+            frequency: "yearly",
             status: "active",
           },
         ],
@@ -103,6 +105,10 @@ describe("billsApi.getBills", () => {
     expect(res.data?.bills).toEqual([
       {
         id: "b1",
+        // Carried through so a monthly total can be computed. It used to be
+        // dropped by the mapper, which made a yearly and a monthly bill
+        // indistinguishable to any caller summing them.
+        frequency: "monthly",
         merchant: "Pacific Gas & Electric",
         amount: 120,
         category: "utilities",
@@ -111,6 +117,9 @@ describe("billsApi.getBills", () => {
       },
       {
         id: "b2",
+        // A different cadence from b1 on purpose: proving the field is carried
+        // per bill, not stamped from a constant.
+        frequency: "yearly",
         merchant: "State Farm",
         amount: 85,
         category: "insurance",
