@@ -218,7 +218,7 @@ export function InvestmentDashboard({
               <RecommendationsTab symbol={selectedSymbol} />
             )}
             {activeTab === "alerts" && (
-              <AlertsTab userId={userId} symbol={selectedSymbol} />
+              <AlertsTab symbol={selectedSymbol} />
             )}
           </>
         )}
@@ -226,7 +226,6 @@ export function InvestmentDashboard({
 
       {/* Alerts Panel Sidebar */}
       <AlertsPanel
-        userId={userId}
         symbol={selectedSymbol}
         isOpen={alertsPanelOpen}
         onClose={() => setAlertsPanelOpen(false)}
@@ -782,12 +781,11 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
   );
 }
 
-function AlertsTab({ userId, symbol }: { userId: string; symbol: string }) {
+function AlertsTab({ symbol }: { symbol: string }) {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold">Price Alerts</h3>
       <AlertsPanel
-        userId={userId}
         symbol={symbol}
         isOpen={true}
         onClose={() => {}}

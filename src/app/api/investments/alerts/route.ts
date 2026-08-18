@@ -198,3 +198,73 @@ export const DELETE = withAuth(
   }
   },
 );
+
+// ============================================================================
+// PATCH - Pause or resume an alert
+// ============================================================================
+
+/**
+ * Only "active" and "disabled" are accepted. "triggered" and "expired" are
+ * lifecycle states an evaluator would set — and no evaluator exists — so
+ * letting a client claim them would let the UI assert an alert had fired.
+ */
+const USER_SETTABLE_STATUSES = ["active", "disabled"] as const;
+
+export const PATCH = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
+    try {
+      const userId = user.id;
+      const body = await request.json();
+      const { id, status } = body;
+
+      if (!id) {
+        return NextResponse.json(
+          { error: "Alert ID required" },
+          { status: 400 },
+        );
+      }
+
+      if (
+        !USER_SETTABLE_STATUSES.includes(
+          status as (typeof USER_SETTABLE_STATUSES)[number],
+        )
+      ) {
+        return NextResponse.json(
+          { error: "Invalid status: expected active or disabled" },
+          { status: 400 },
+        );
+      }
+
+      const { data, error } = await supabase
+        .from("investment_alerts")
+        .update({ status })
+        .eq("id", id)
+        .eq("user_id", userId)
+        .select()
+        .maybeSingle();
+
+      if (error) {
+        // AlertsAPI error: Error updating alert
+        return NextResponse.json(
+          { error: "Failed to update alert" },
+          { status: 500 },
+        );
+      }
+
+      // The row is scoped by user_id, so "no row" means it is not this
+      // caller's alert. 404 rather than a silent success.
+      if (!data) {
+        return NextResponse.json({ error: "Alert not found" }, { status: 404 });
+      }
+
+      return NextResponse.json({ alert: data });
+    } catch (_error) {
+      // AlertsAPI error: Alerts PATCH error
+      void _error;
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 },
+      );
+    }
+  },
+);

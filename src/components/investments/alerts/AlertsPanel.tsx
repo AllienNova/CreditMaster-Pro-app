@@ -6,27 +6,65 @@
  * UI for managing price alerts:
  * - Create new alerts
  * - View active alerts
- * - Alert notifications
  * - Alert history
+ *
+ * READS /api/investments/alerts (GET/POST/DELETE/PATCH), which is auth-guarded
+ * and scoped to the caller by `user_id`. It previously called
+ * getPriceAlertService(), which kept alerts in an in-memory Map persisted to
+ * `localStorage` — so a user's alerts never left the browser they were created
+ * in, and were lost when site data was cleared.
+ *
+ * NO userId PROP. The server decides whose alerts these are; a client-supplied
+ * id would be a claim, not an identity.
+ *
+ * WHAT THIS PANEL DOES NOT CLAIM. Nothing evaluates these alerts: no cron in
+ * vercel.json touches investment_alerts, and `investment_alerts` has no
+ * triggered_at column. So there is no notifications tab, no "triggered today"
+ * count and no trigger time — an alert is saved and listed, and the panel says
+ * plainly that monitoring is not running yet.
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  PriceAlert,
-  AlertType,
-  AlertPriority,
-  AlertNotification,
-  AlertStats,
-  getPriceAlertService,
-} from "@/lib/investments/services/PriceAlertService";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
+export type AlertType =
+  | "price_above"
+  | "price_below"
+  | "percent_change"
+  | "volume_spike"
+  | "indicator_crossover"
+  | "pattern_detected";
+
+export type AlertPriority = "low" | "medium" | "high" | "critical";
+
+export interface AlertCondition {
+  targetPrice?: number;
+  direction?: "above" | "below";
+  percentChange?: number;
+  volumeMultiplier?: number;
+  indicatorType?: string;
+  crossoverType?: string;
+}
+
+/** Mirrors the projection in api/investments/alerts/route.ts. */
+export interface Alert {
+  id: string;
+  symbol: string;
+  type: AlertType;
+  status: string;
+  priority: AlertPriority;
+  condition: AlertCondition;
+  message: string | null;
+  repeatEnabled: boolean;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
 interface AlertsPanelProps {
   symbol?: string;
-  userId: string;
   currentPrice?: number;
   isOpen: boolean;
   onClose: () => void;
@@ -34,7 +72,39 @@ interface AlertsPanelProps {
   embedded?: boolean; // For embedding in dashboard without sidebar styling
 }
 
-type TabType = "active" | "create" | "notifications" | "history";
+type TabType = "active" | "create" | "history";
+
+const TABS: TabType[] = ["active", "create", "history"];
+
+const MONITORING_NOTE =
+  "Saved alerts are not monitored yet — nothing checks prices for you, so you will not be notified when one is met.";
+
+/**
+ * Rows requested per read. The route caps its result at `limit` and offers no
+ * pagination, so the panel asks for a size it knows and can therefore tell
+ * when the answer was truncated. Without this the count on screen would be a
+ * page presented as a total.
+ */
+export const ALERTS_PAGE_SIZE = 100;
+
+// ============================================================================
+// MAPPING
+// ============================================================================
+
+function toAlert(row: Record<string, unknown>): Alert {
+  return {
+    id: String(row.id ?? ""),
+    symbol: String(row.symbol ?? ""),
+    type: (row.type as AlertType) ?? "price_above",
+    status: String(row.status ?? "active"),
+    priority: (row.priority as AlertPriority) ?? "medium",
+    condition: (row.condition as AlertCondition) ?? {},
+    message: typeof row.message === "string" ? row.message : null,
+    repeatEnabled: row.repeat_enabled === true,
+    expiresAt: typeof row.expires_at === "string" ? row.expires_at : null,
+    createdAt: typeof row.created_at === "string" ? row.created_at : "",
+  };
+}
 
 // ============================================================================
 // MAIN COMPONENT
@@ -42,7 +112,6 @@ type TabType = "active" | "create" | "notifications" | "history";
 
 export function AlertsPanel({
   symbol,
-  userId,
   currentPrice,
   isOpen,
   onClose,
@@ -50,115 +119,160 @@ export function AlertsPanel({
   embedded = false,
 }: AlertsPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>("active");
-  const [alerts, setAlerts] = useState<PriceAlert[]>([]);
-  const [notifications, setNotifications] = useState<AlertNotification[]>([]);
-  const [stats, setStats] = useState<AlertStats | null>(null);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
+  /** The read failed — there is nothing trustworthy to show. */
+  const [loadError, setLoadError] = useState<string | null>(null);
+  /**
+   * One write failed. Kept apart from loadError: showing it in place of the
+   * list would make a failed delete read as "your alerts are gone".
+   */
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [truncated, setTruncated] = useState(false);
 
-  const alertService = getPriceAlertService();
+  const visible = isOpen || embedded;
 
-  // Load data
   useEffect(() => {
-    if (!isOpen && !embedded) return;
+    if (!visible) return;
+    let cancelled = false;
 
-    const userAlerts = alertService.getAlertsByUser(userId);
-    setAlerts(
-      symbol ? userAlerts.filter((a) => a.symbol === symbol) : userAlerts,
-    );
-    setNotifications(alertService.getNotifications());
-    setStats(alertService.getAlertStats(userId));
-  }, [isOpen, embedded, userId, symbol, alertService]);
+    (async () => {
+      try {
+        // The `?` precedes the interpolation so the path stays a literal —
+        // readable, and resolvable by audit:web-api.
+        const params = new URLSearchParams({
+          limit: String(ALERTS_PAGE_SIZE),
+        });
+        if (symbol) params.set("symbol", symbol);
+        const res = await fetch(`/api/investments/alerts?${params.toString()}`);
+        const json = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (!res.ok || !Array.isArray(json?.alerts)) {
+          setAlerts([]);
+          setLoadError("Your alerts could not be loaded");
+        } else {
+          const rows = (json.alerts as Record<string, unknown>[]).map(toAlert);
+          setAlerts(rows);
+          setTruncated(rows.length >= ALERTS_PAGE_SIZE);
+          setLoadError(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setAlerts([]);
+          setLoadError("We could not reach the alerts service");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
 
-  const handleDeleteAlert = useCallback(
-    (id: string) => {
-      alertService.deleteAlert(id);
-      setAlerts((prev) => prev.filter((a) => a.id !== id));
-    },
-    [alertService],
-  );
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, symbol]);
+
+  const handleDeleteAlert = useCallback(async (id: string) => {
+    setActionError(null);
+    const res = await fetch(
+      `/api/investments/alerts?id=${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    ).catch(() => null);
+
+    if (!res || !res.ok) {
+      setActionError("That alert could not be deleted. Nothing changed.");
+      return;
+    }
+    setAlerts((prev) => prev.filter((a) => a.id !== id));
+  }, []);
 
   const handleToggleAlert = useCallback(
-    (id: string) => {
-      const alert = alertService.getAlert(id);
-      if (alert) {
-        const newStatus = alert.status === "active" ? "disabled" : "active";
-        alertService.updateAlert(id, { status: newStatus });
-        setAlerts((prev) =>
-          prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a)),
-        );
-      }
-    },
-    [alertService],
-  );
+    async (id: string) => {
+      const current = alerts.find((a) => a.id === id);
+      if (!current) return;
+      const status = current.status === "active" ? "disabled" : "active";
+      setActionError(null);
 
-  const handleMarkRead = useCallback(
-    (id: string) => {
-      alertService.markNotificationRead(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      const res = await fetch("/api/investments/alerts", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      }).catch(() => null);
+
+      if (!res || !res.ok) {
+        setActionError("That alert could not be updated. Nothing changed.");
+        return;
+      }
+      setAlerts((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status } : a)),
       );
     },
-    [alertService],
+    [alerts],
   );
 
-  if (!isOpen && !embedded) return null;
+  if (!visible) return null;
+
+  const activeCount = alerts.filter((a) => a.status === "active").length;
+
+  const content = (
+    <>
+      {actionError && (
+        <p className="mb-3 text-sm text-red-400" role="alert">
+          {actionError}
+        </p>
+      )}
+      {activeTab === "active" && (
+        <ActiveAlertsList
+          alerts={alerts.filter((a) => a.status === "active")}
+          loading={loading}
+          error={loadError}
+          onDelete={handleDeleteAlert}
+          onToggle={handleToggleAlert}
+        />
+      )}
+      {activeTab === "create" && (
+        <CreateAlertForm
+          symbol={symbol || ""}
+          currentPrice={currentPrice}
+          onCreated={(alert) => setAlerts((prev) => [alert, ...prev])}
+        />
+      )}
+      {activeTab === "history" && (
+        <AlertHistory
+          alerts={alerts.filter((a) => a.status !== "active")}
+          onDelete={handleDeleteAlert}
+          onToggle={handleToggleAlert}
+        />
+      )}
+    </>
+  );
+
+  const tabs = (
+    <div className="flex border-b border-gray-700">
+      {TABS.map((tab) => (
+        <button
+          key={tab}
+          onClick={() => setActiveTab(tab)}
+          className={`flex-1 px-4 py-3 text-sm font-medium capitalize transition-colors ${
+            activeTab === tab
+              ? "text-blue-400 border-b-2 border-blue-400"
+              : "text-gray-400 dark:text-slate-500 hover:text-white"
+          }`}
+        >
+          {tab}
+        </button>
+      ))}
+    </div>
+  );
 
   // Embedded mode - no sidebar styling
   if (embedded) {
     return (
       <div className={`bg-gray-800 rounded-lg ${className}`}>
-        {/* Tabs */}
-        <div className="flex border-b border-gray-700">
-          {(["active", "create", "notifications", "history"] as TabType[]).map(
-            (tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 px-4 py-3 text-sm font-medium capitalize transition-colors ${
-                  activeTab === tab
-                    ? "text-blue-400 border-b-2 border-blue-400"
-                    : "text-gray-400 dark:text-slate-500 hover:text-white"
-                }`}
-              >
-                {tab}
-              </button>
-            ),
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="p-4">
-          {activeTab === "active" && (
-            <ActiveAlertsList
-              alerts={alerts}
-              onDelete={handleDeleteAlert}
-              onToggle={handleToggleAlert}
-            />
-          )}
-          {activeTab === "create" && symbol && (
-            <CreateAlertForm
-              symbol={symbol}
-              userId={userId}
-              currentPrice={currentPrice}
-              onCreated={(alert) => setAlerts((prev) => [alert, ...prev])}
-            />
-          )}
-          {activeTab === "create" && !symbol && (
-            <div className="p-4 text-center text-gray-500 dark:text-slate-400">
-              Please select a symbol to create an alert.
-            </div>
-          )}
-          {activeTab === "notifications" && (
-            <NotificationsList
-              notifications={notifications}
-              onMarkRead={handleMarkRead}
-            />
-          )}
-          {activeTab === "history" && (
-            <AlertHistory
-              alerts={alerts.filter((a) => a.status !== "active")}
-            />
-          )}
-        </div>
+        {tabs}
+        <p className="px-4 pt-3 text-xs text-gray-400 dark:text-slate-500">
+          {MONITORING_NOTE}
+        </p>
+        <div className="p-4">{content}</div>
       </div>
     );
   }
@@ -179,79 +293,39 @@ export function AlertsPanel({
         </h2>
         <button
           onClick={onClose}
+          title="Close alerts"
           className="text-gray-400 dark:text-slate-500 hover:text-white transition-colors"
         ></button>
       </div>
 
-      {/* Stats Bar */}
-      {stats && (
+      {/*
+        Counted from the alerts the route returned — which is a page, not the
+        account. "Total" would assert a number nobody counted.
+      */}
+      {!loading && !loadError && (
         <div className="flex items-center gap-4 px-4 py-2 bg-gray-800/50 border-b border-gray-700 text-sm">
-          <span className="text-green-400">● {stats.activeAlerts} Active</span>
-          <span className="text-yellow-400">{stats.triggeredToday} Today</span>
+          <span className="text-green-400">● {activeCount} Active</span>
           <span className="text-gray-400 dark:text-slate-500">
-            {stats.totalAlerts} Total
+            {alerts.length} shown
           </span>
+          {truncated && (
+            <span className="text-yellow-400">more not shown</span>
+          )}
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex border-b border-gray-700">
-        {(["active", "create", "notifications", "history"] as TabType[]).map(
-          (tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? "text-blue-400 border-b-2 border-blue-400"
-                  : "text-gray-400 dark:text-slate-500 hover:text-white"
-              }`}
-            >
-              {tab === "active" && ""}
-              {tab === "create" && ""}
-              {tab === "notifications" &&
-                `(${notifications.filter((n) => !n.read).length})`}
-              {tab === "history" && ""}
-              <span className="ml-1 capitalize">{tab}</span>
-            </button>
-          ),
-        )}
-      </div>
+      {tabs}
+
+      <p className="px-4 pt-3 text-xs text-gray-400 dark:text-slate-500">
+        {MONITORING_NOTE}
+      </p>
 
       {/* Content */}
       <div
         className="flex-1 overflow-y-auto p-4"
-        style={{ height: "calc(100% - 140px)" }}
+        style={{ height: "calc(100% - 180px)" }}
       >
-        {activeTab === "active" && (
-          <ActiveAlertsList
-            alerts={alerts.filter((a) => a.status === "active")}
-            onDelete={handleDeleteAlert}
-            onToggle={handleToggleAlert}
-          />
-        )}
-        {activeTab === "create" && (
-          <CreateAlertForm
-            symbol={symbol || ""}
-            userId={userId}
-            currentPrice={currentPrice}
-            onCreated={(alert) => setAlerts((prev) => [alert, ...prev])}
-          />
-        )}
-        {activeTab === "notifications" && (
-          <NotificationsList
-            notifications={notifications}
-            onMarkRead={(id) => {
-              alertService.markNotificationRead(id);
-              setNotifications((prev) =>
-                prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-              );
-            }}
-          />
-        )}
-        {activeTab === "history" && (
-          <AlertHistory alerts={alerts.filter((a) => a.status !== "active")} />
-        )}
+        {content}
       </div>
     </div>
   );
@@ -262,22 +336,45 @@ export function AlertsPanel({
 // ============================================================================
 
 interface ActiveAlertsListProps {
-  alerts: PriceAlert[];
+  alerts: Alert[];
+  loading: boolean;
+  error: string | null;
   onDelete: (id: string) => void;
   onToggle: (id: string) => void;
 }
 
 function ActiveAlertsList({
   alerts,
+  loading,
+  error,
   onDelete,
   onToggle,
 }: ActiveAlertsListProps) {
+  if (loading) {
+    return (
+      <div className="text-center py-8 text-gray-400 dark:text-slate-500">
+        <p>Loading your alerts…</p>
+      </div>
+    );
+  }
+
+  // An empty list is a fact about the account; a failed read is a fact about
+  // the request. Saying "no alerts" after a failure would state the first
+  // when only the second is known.
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-400">
+        <p>{error}</p>
+      </div>
+    );
+  }
+
   if (alerts.length === 0) {
     return (
       <div className="text-center py-8 text-gray-400 dark:text-slate-500">
         <div className="text-4xl mb-2"></div>
         <p>No active alerts</p>
-        <p className="text-sm mt-1">Create an alert to get notified</p>
+        <p className="text-sm mt-1">Create an alert to keep it on record</p>
       </div>
     );
   }
@@ -301,7 +398,7 @@ function ActiveAlertsList({
 // ============================================================================
 
 interface AlertCardProps {
-  alert: PriceAlert;
+  alert: Alert;
   onDelete: () => void;
   onToggle: () => void;
 }
@@ -355,17 +452,25 @@ function AlertCard({ alert, onDelete, onToggle }: AlertCardProps) {
           <span className={`text-xs ${getPriorityColor(alert.priority)}`}>
             {alert.priority.toUpperCase()}
           </span>
+          {/*
+            aria-label, not title: the emoji is this button's only content, so
+            without it the accessible name is "⏸️".
+          */}
           <button
             onClick={onToggle}
             className="text-gray-400 dark:text-slate-500 hover:text-yellow-400 transition-colors"
-            title="Pause alert"
+            aria-label={
+              alert.status === "active"
+                ? `Pause alert for ${alert.symbol}`
+                : `Resume alert for ${alert.symbol}`
+            }
           >
             ⏸️
           </button>
           <button
             onClick={onDelete}
             className="text-gray-400 dark:text-slate-500 hover:text-red-400 transition-colors"
-            title="Delete alert"
+            aria-label={`Delete alert for ${alert.symbol}`}
           ></button>
         </div>
       </div>
@@ -377,7 +482,11 @@ function AlertCard({ alert, onDelete, onToggle }: AlertCardProps) {
       )}
 
       <div className="mt-2 flex items-center gap-3 text-xs text-gray-500 dark:text-slate-400">
-        <span>Created: {new Date(alert.createdAt).toLocaleDateString()}</span>
+        {alert.createdAt && (
+          <span>
+            Created: {new Date(alert.createdAt).toLocaleDateString()}
+          </span>
+        )}
         {alert.repeatEnabled && <span>Repeating</span>}
         {alert.expiresAt && (
           <span>Expires: {new Date(alert.expiresAt).toLocaleDateString()}</span>
@@ -393,14 +502,12 @@ function AlertCard({ alert, onDelete, onToggle }: AlertCardProps) {
 
 interface CreateAlertFormProps {
   symbol: string;
-  userId: string;
   currentPrice?: number;
-  onCreated: (alert: PriceAlert) => void;
+  onCreated: (alert: Alert) => void;
 }
 
 function CreateAlertForm({
   symbol,
-  userId,
   currentPrice,
   onCreated,
 }: CreateAlertFormProps) {
@@ -413,53 +520,80 @@ function CreateAlertForm({
   const [message, setMessage] = useState("");
   const [repeatEnabled, setRepeatEnabled] = useState(false);
   const [symbolInput, setSymbolInput] = useState(symbol);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const alertService = getPriceAlertService();
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
+    setSaveError(null);
 
-    const alert = alertService.createAlert({
-      userId,
-      symbol: symbolInput.toUpperCase(),
-      type: alertType,
-      priority,
-      condition: {
-        targetPrice: alertType.includes("price")
-          ? parseFloat(targetPrice)
-          : undefined,
-        direction:
-          alertType === "price_above"
-            ? "above"
-            : alertType === "price_below"
-              ? "below"
+    try {
+      const res = await fetch("/api/investments/alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symbol: symbolInput.toUpperCase(),
+          type: alertType,
+          priority,
+          condition: {
+            targetPrice: alertType.includes("price")
+              ? parseFloat(targetPrice)
               : undefined,
-        percentChange:
-          alertType === "percent_change"
-            ? parseFloat(percentChange)
-            : undefined,
-        volumeMultiplier: alertType === "volume_spike" ? 2 : undefined,
-      },
-      message: message || undefined,
-      repeatEnabled,
-      cooldownMinutes: repeatEnabled ? 60 : 0,
-    });
+            direction:
+              alertType === "price_above"
+                ? "above"
+                : alertType === "price_below"
+                  ? "below"
+                  : undefined,
+            percentChange:
+              alertType === "percent_change"
+                ? parseFloat(percentChange)
+                : undefined,
+            volumeMultiplier: alertType === "volume_spike" ? 2 : undefined,
+          },
+          message: message || undefined,
+          repeatEnabled,
+          cooldownMinutes: repeatEnabled ? 60 : 0,
+        }),
+      });
 
-    onCreated(alert);
+      const json = await res.json().catch(() => null);
 
-    // Reset form
-    setTargetPrice(currentPrice?.toString() || "");
-    setMessage("");
+      // The list must only gain a row the server actually stored.
+      if (!res.ok || !json?.alert) {
+        setSaveError("Your alert could not be saved. Nothing was stored.");
+        return;
+      }
+
+      onCreated(toAlert(json.alert as Record<string, unknown>));
+      setTargetPrice(currentPrice?.toString() || "");
+      setMessage("");
+    } catch {
+      setSaveError("We could not reach the alerts service. Nothing was saved.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {saveError && (
+        <p className="text-sm text-red-400" role="alert">
+          {saveError}
+        </p>
+      )}
+
       {/* Symbol */}
       <div>
-        <label className="block text-sm text-gray-400 dark:text-slate-500 mb-1">
+        <label
+          htmlFor="alert-symbol"
+          className="block text-sm text-gray-400 dark:text-slate-500 mb-1"
+        >
           Symbol
         </label>
         <input
+          id="alert-symbol"
           type="text"
           value={symbolInput}
           onChange={(e) => setSymbolInput(e.target.value)}
@@ -471,10 +605,14 @@ function CreateAlertForm({
 
       {/* Alert Type */}
       <div>
-        <label className="block text-sm text-gray-400 dark:text-slate-500 mb-1">
+        <label
+          htmlFor="alert-type"
+          className="block text-sm text-gray-400 dark:text-slate-500 mb-1"
+        >
           Alert Type
         </label>
         <select
+          id="alert-type"
           value={alertType}
           onChange={(e) => setAlertType(e.target.value as AlertType)}
           className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white"
@@ -490,7 +628,10 @@ function CreateAlertForm({
       {/* Price Target (for price alerts) */}
       {(alertType === "price_above" || alertType === "price_below") && (
         <div>
-          <label className="block text-sm text-gray-400 dark:text-slate-500 mb-1">
+          <label
+            htmlFor="alert-target-price"
+            className="block text-sm text-gray-400 dark:text-slate-500 mb-1"
+          >
             Target Price
           </label>
           <div className="relative">
@@ -498,6 +639,7 @@ function CreateAlertForm({
               $
             </span>
             <input
+              id="alert-target-price"
               type="number"
               step="0.01"
               value={targetPrice}
@@ -518,11 +660,15 @@ function CreateAlertForm({
       {/* Percent Change */}
       {alertType === "percent_change" && (
         <div>
-          <label className="block text-sm text-gray-400 dark:text-slate-500 mb-1">
+          <label
+            htmlFor="alert-percent-change"
+            className="block text-sm text-gray-400 dark:text-slate-500 mb-1"
+          >
             Percent Change
           </label>
           <div className="relative">
             <input
+              id="alert-percent-change"
               type="number"
               step="0.1"
               value={percentChange}
@@ -571,10 +717,14 @@ function CreateAlertForm({
 
       {/* Message */}
       <div>
-        <label className="block text-sm text-gray-400 dark:text-slate-500 mb-1">
+        <label
+          htmlFor="alert-note"
+          className="block text-sm text-gray-400 dark:text-slate-500 mb-1"
+        >
           Note (optional)
         </label>
         <input
+          id="alert-note"
           type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -603,65 +753,12 @@ function CreateAlertForm({
       {/* Submit */}
       <button
         type="submit"
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded transition-colors"
+        disabled={saving}
+        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-medium py-3 rounded transition-colors"
       >
-        Create Alert
+        {saving ? "Saving…" : "Create Alert"}
       </button>
     </form>
-  );
-}
-
-// ============================================================================
-// NOTIFICATIONS LIST
-// ============================================================================
-
-interface NotificationsListProps {
-  notifications: AlertNotification[];
-  onMarkRead: (id: string) => void;
-}
-
-function NotificationsList({
-  notifications,
-  onMarkRead,
-}: NotificationsListProps) {
-  if (notifications.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-400 dark:text-slate-500">
-        <div className="text-4xl mb-2"></div>
-        <p>No notifications</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      {notifications.map((notif) => (
-        <div
-          key={notif.id}
-          onClick={() => onMarkRead(notif.id)}
-          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-            notif.read
-              ? "bg-gray-800/50 border-gray-700"
-              : "bg-gray-800 border-blue-500/30 hover:border-blue-500/50"
-          }`}
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              {!notif.read && (
-                <span className="w-2 h-2 bg-blue-500 rounded-full" />
-              )}
-              <span className="font-medium text-white">{notif.title}</span>
-            </div>
-            <span className="text-xs text-gray-500 dark:text-slate-400">
-              {formatTimeAgo(notif.timestamp)}
-            </span>
-          </div>
-          <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">
-            {notif.message}
-          </p>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -670,10 +767,18 @@ function NotificationsList({
 // ============================================================================
 
 interface AlertHistoryProps {
-  alerts: PriceAlert[];
+  alerts: Alert[];
+  onDelete: (id: string) => void;
+  onToggle: (id: string) => void;
 }
 
-function AlertHistory({ alerts }: AlertHistoryProps) {
+/**
+ * Pausing moves an alert out of the active list and into here. Without these
+ * controls that is a one-way door: no screen could resume or remove it.
+ * "Resume" is offered only for `disabled` — an expired or triggered alert is
+ * not something the user switched off.
+ */
+function AlertHistory({ alerts, onDelete, onToggle }: AlertHistoryProps) {
   if (alerts.length === 0) {
     return (
       <div className="text-center py-8 text-gray-400 dark:text-slate-500">
@@ -711,41 +816,35 @@ function AlertHistory({ alerts }: AlertHistoryProps) {
                     `Below $${alert.condition.targetPrice?.toFixed(2)}`}
                 </span>
               </div>
-              <span
-                className={`text-xs px-2 py-1 rounded ${badge.color} text-white`}
-              >
-                {badge.label}
-              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-xs px-2 py-1 rounded ${badge.color} text-white`}
+                >
+                  {badge.label}
+                </span>
+                {alert.status === "disabled" && (
+                  <button
+                    onClick={() => onToggle(alert.id)}
+                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                    aria-label={`Resume alert for ${alert.symbol}`}
+                  >
+                    Resume
+                  </button>
+                )}
+                <button
+                  onClick={() => onDelete(alert.id)}
+                  className="text-xs text-gray-400 dark:text-slate-500 hover:text-red-400 transition-colors"
+                  aria-label={`Delete alert for ${alert.symbol}`}
+                >
+                  Remove
+                </button>
+              </div>
             </div>
-            {alert.triggeredAt && (
-              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-                Triggered: {new Date(alert.triggeredAt).toLocaleString()}
-              </p>
-            )}
           </div>
         );
       })}
     </div>
   );
-}
-
-// ============================================================================
-// UTILITY
-// ============================================================================
-
-function formatTimeAgo(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - new Date(date).getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
 }
 
 export default AlertsPanel;
