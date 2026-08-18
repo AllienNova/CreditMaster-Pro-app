@@ -157,10 +157,10 @@
       "offline": true,
       "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
-    "src/app/marketplace/consolidation/page.tsx: mockOptions": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
+    "src/app/marketplace/consolidation/page.tsx: LOAN_TYPES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Three filter options (all / personal / debt_consolidation) passed straight to GET /api/affiliate/offers as its `subType` parameter. Configuration, not a claim about the caller. Replaces mockOptions, which invented lender offers naming real institutions with specific terms — 'SoFi, APR 8.99% – 25.81%', 'Marcus by Goldman Sachs, 6.99% – 28.99%' — over a route that honestly returns nothing because the MoneyLion product catalogue is never fetched (task #105)."
     },
     "src/app/marketplace/education/page.tsx: mockArticles, mockCourses": {
       "classification": "fabrication",
