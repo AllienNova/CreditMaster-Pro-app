@@ -647,12 +647,38 @@ Tracked API paths measure whether a screen's request has a backing route. These
 will. A mobile app can reach 232 of 232 routes with every gate green while a
 third of its screens show data nobody fetched.
 
-### Not done
+### Not done at the time
 
-No screen fixed in this pass. The gate is frozen at 87 entries and wired into CI
-as blocking, so the number cannot grow and each entry has to be looked at once.
-30 remain UNCLASSIFIED — that is honest debt, not a gap: they need someone who
-knows the product to say which they are.
+No screen fixed in that pass. The gate was frozen at 87 entries and wired into
+CI as blocking, so the number could not grow and each entry had to be looked at
+once. 30 remained UNCLASSIFIED, described then as "needing someone who knows the
+product to say which they are."
+
+### Update — that claim was wrong, and worth correcting
+
+Every remaining UNCLASSIFIED entry was classified by READING IT. None needed
+product knowledge; they needed someone to open the file. The baseline now stands
+at 75 entries, 62 catalogue and 13 fabrication, with **zero unclassified**.
+
+The pile was not neutral debt. Five fabrications were sitting in it:
+
+| Screen | What it invents |
+|---|---|
+| `dashboard/progress.tsx` | ACHIEVEMENTS and MILESTONES with `unlocked: true` hardcoded — every user shown the same earned badges |
+| `financial/income.tsx` | six months of the user's gross and net income, and their income sources |
+| `financial/transactions.tsx` | the user's transactions and category breakdown (Shopping $168.31, 28%) |
+| `investments/analyze/fundamental.tsx` | peer comparison (AAPL 85, MSFT 78) and revenue breakdown, for whatever ticker was opened |
+| `investments/analyze/technical.tsx` | "Bullish Flag, confidence 78, target 188.5", moving averages, oscillators, support and resistance — actionable trading signals nobody computed |
+
+The last two belong to SF-17's family and are blocked on the same audit.
+
+**The lesson is about the shape of the claim, not the count.** "This needs product
+knowledge" reads like a decision waiting on someone, and it postponed five live
+fabrications for the length of a sweep. Two of the catalogue entries also carry
+smaller problems that only reading found: `help/contact.tsx` still lists
+`support@creditpro.com`, a pre-rebrand address, and `credit-repair/cards.tsx`
+embeds `approval: excellent|good` — a per-user likelihood presented as a
+property of the card — inside an otherwise legitimate product catalogue.
 
 ## SF-14 — every bank balance is excluded from the web dashboard's assets
 
@@ -957,3 +983,4 @@ from the declaration so the budget sums to what is actually applied.
 | 2026-08-17 (rev 11) | Added SF-16: `/api/credit/factors` has zero data access and returns five hardcoded factors telling every caller they have "98% on-time payments"; `_user` is unused and the route's own comment claims it reads the database. Reachable from both primary navs and two mobile buttons. Added a fourth audit:mocks detector for routes that fabricate as their PRIMARY path (no data access + constant data set) — the previous three all assumed a fallback shape and could not see this. Two routes match across 351; the other is /api/disputes/reasons, an allowlisted catalogue. |
 | 2026-08-17 (rev 12) | Added SF-17: extended audit:screen-data to detect constant OBJECTS (brace-counted), gated on a measurement heuristic — decimals or values >= 100 — so label and colour maps do not drown the signal. Found `WEEKLY_SUMMARY` (fixed in the same commit) plus invented PRICE_TARGETS/RISK_ASSESSMENT/ANALYST_CONSENSUS/INSIDER_TRADES on two investment-analysis screens, and ACCOUNTS/BUDGET_STATUS on financial/overview. The investment ones are actionable advice attached to a real ticker; baselined, not fixed, pending an audit of whether any market-data source is real (cf. SF-07). |
 | 2026-08-17 (rev 13) | Audited the market-data path for SF-17 and found it REAL — marketDataService throws ALL_PROVIDERS_FAILED rather than fabricating, and SF-07's randomness is confined to PaperTradingEngine. But added SF-18: AIRecommendationEngine's composite drops the unused `pattern` weight (0.15) and the route supplies neither fundamental nor sentiment data, so both fall to a placeholder 50. Maximum achievable composite is 60 against a `buy` threshold of 65 — the engine can never recommend buying, for any symbol, under any conditions. This blocks the SF-17 screen fix and needs an owner decision on renormalising vs supplying the missing inputs. |
+| 2026-08-17 (rev 14) | Classified all 26 remaining UNCLASSIFIED screen-data entries by reading them; none needed product knowledge, correcting SF-13's original claim. Baseline now 75 entries — 62 catalogue, 13 fabrication, zero unclassified. Five fabrications were hiding in that pile: dashboard/progress (achievements marked unlocked for everyone), financial/income (invented earnings), financial/transactions (invented spending), and investments/analyze/{fundamental,technical} (peer comparisons and trading signals for any ticker — SF-17's family). Also surfaced: a pre-rebrand support@creditpro.com address, and a per-user `approval` prediction embedded in the secured-card catalogue. |

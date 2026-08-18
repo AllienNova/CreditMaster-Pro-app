@@ -17,17 +17,17 @@
     "app/admin/index.tsx: QUICK_ACTIONS": {
       "classification": "catalogue",
       "offline": true,
-      "why": "The admin navigation menu — titles, icons and routes for the admin sections. Product content, not user data. The METRICS fixture that shared this file WAS a fabrication and is gone; this is what remains."
+      "why": "The admin navigation menu \u2014 titles, icons and routes for the admin sections. Product content, not user data. The METRICS fixture that shared this file WAS a fabrication and is gone; this is what remains."
     },
     "app/admin/metrics.tsx: PERIODS": {
       "classification": "catalogue",
       "offline": true,
-      "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query — it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
+      "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query \u2014 it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
     },
     "app/analytics/credit-score.tsx: PERIOD_MONTHS": {
       "classification": "catalogue",
       "offline": false,
-      "why": "The period selector's label->months map. Configuration, not a measurement — flagged only because ALL maps to 120 months, which trips the magnitude heuristic. Exactly the sort of entry a human is meant to clear."
+      "why": "The period selector's label->months map. Configuration, not a measurement \u2014 flagged only because ALL maps to 120 months, which trips the magnitude heuristic. Exactly the sort of entry a human is meant to clear."
     },
     "app/analytics/reports.tsx: GENERATED_REPORTS, REPORT_TEMPLATES": {
       "classification": "fabrication",
@@ -46,12 +46,14 @@
       "offline": true
     },
     "app/coach/goals.tsx: GOAL_TYPES": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The goal types the product offers (emergency_fund, debt_payoff...), each with a label and icon. Options to choose from, identical for every user."
     },
     "app/coach/recommendations.tsx: FILTER_OPTIONS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Filter chips mapped to the RecommendationType union. UI configuration."
     },
     "app/credit-builder/authorized-user.tsx: BENEFITS, REQUIREMENTS": {
       "classification": "catalogue",
@@ -78,8 +80,9 @@
       "offline": true
     },
     "app/credit-builder/index.tsx: TOOL_CATEGORIES": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The credit-builder tool menu, grouped by category. Navigation content."
     },
     "app/credit-builder/loan.tsx: CREDIT_IMPACT_DATA, HOW_IT_WORKS": {
       "classification": "catalogue",
@@ -106,44 +109,52 @@
       "offline": true
     },
     "app/credit-repair/cards.tsx: CARDS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "A catalogue of real card PRODUCTS to apply for \u2014 Discover it Secured, Capital One Quicksilver \u2014 with issuer, APR and annual fee. Not the user's own cards. CAVEAT: each row carries `approval: excellent|good`, which is a per-user likelihood presented as a property of the card. That field is a fabrication inside an otherwise legitimate catalogue, and the APRs are real-world facts that go stale with no refresh path."
     },
     "app/credit-repair/index.tsx: TOOLS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The credit-repair tool menu \u2014 Dispute Center and siblings, each with a route. Navigation content."
     },
     "app/credit/history.tsx: DATE_RANGES": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The 3M/6M/1Y range selector and the month count each maps to. UI configuration."
     },
     "app/credit/score-detail.tsx: SCORE_RANGES": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "FICO band definitions \u2014 300-579 Poor, and so on. Published scoring bands: product knowledge about the scale, not a measurement of this user."
     },
     "app/dashboard/progress.tsx: ACHIEVEMENTS, MILESTONES": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "The user's own achievements and milestones, with `unlocked: true` hardcoded. Every user is shown the same unlocked badges regardless of what they have done."
     },
     "app/dashboard/reports.tsx: REPORT_TYPES": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The report types the product can generate, with descriptions. A menu of what is on offer."
     },
     "app/dispute/create.tsx: BUREAUS, DISPUTE_TYPES": {
       "classification": "catalogue",
       "offline": false
     },
     "app/dispute/templates.tsx: CATEGORIES": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Template filter chips (All / Inquiries / ...). UI configuration."
     },
     "app/dispute/use-template.tsx: BUREAUS": {
       "classification": "catalogue",
       "offline": false
     },
     "app/documents/index.tsx: FILTER_TYPES": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Document-type filter chips keyed off Document['type']. UI configuration."
     },
     "app/financial-intelligence/index.tsx: QUICK_ACTIONS": {
       "classification": "catalogue",
@@ -154,40 +165,47 @@
       "offline": true
     },
     "app/financial/holdings.tsx: ASSET_TYPES": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The asset types a holding can be (stock, etf, crypto). Options, not holdings."
     },
     "app/financial/income.tsx: INCOME_HISTORY, INCOME_SOURCES": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "The user's income: six months of gross and net figures (Jul 6800/5200 ...) and their income sources. Invented earnings."
     },
     "app/financial/reports.tsx: REPORT_TEMPLATES, SAVED_REPORTS": {
       "classification": "catalogue",
       "offline": true
     },
     "app/financial/transactions.tsx: SPENDING_BY_CATEGORY, TRANSACTIONS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "The user's own transactions and their category breakdown (Shopping $168.31, 28%). Invented spending."
     },
     "app/help/contact.tsx: CONTACT_OPTIONS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Support channels. Product content. NOTE: carries support@creditpro.com \u2014 a pre-rebrand address that should be Fynvita's. Stale content, not a fabrication."
     },
     "app/help/faq.tsx: FAQ_ITEMS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "FAQ questions and answers. Editorial content, identical for every user."
     },
     "app/help/guides.tsx: GUIDES": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Educational guides. Editorial content."
     },
     "app/identity/index.tsx: FEATURES": {
       "classification": "catalogue",
       "offline": false
     },
     "app/investments/analyze/fundamental.tsx: PEER_COMPARISON, REVENUE_BREAKDOWN": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Hardcoded peer comparison (AAPL 85, MSFT 78, GOOGL 72) and revenue breakdown, rendered for whichever ticker the user opened. Same family as SF-17."
     },
     "app/investments/analyze/recommendation.tsx: PRICE_PROJECTION, PRICE_TARGETS, RISK_ASSESSMENT, RISK_FACTORS, SCORE_BREAKDOWN": {
       "classification": "fabrication",
@@ -200,20 +218,24 @@
       "why": "Invented market sentiment for a real ticker: 32 buy / 8 hold / 2 sell analyst consensus, named insider trades, institutional activity and news items. Same class as the recommendation screen and equally actionable."
     },
     "app/investments/analyze/technical.tsx: CHART_PATTERNS, MOVING_AVERAGES, OSCILLATORS, PRICE_DATA, SUPPORT_RESISTANCE": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Invented technical analysis for a real ticker: 'Bullish Flag, confidence 78, target 188.5', moving averages, oscillators, support and resistance levels. Actionable trading signals nobody computed. Same family as SF-17, and blocked on the same audit."
     },
     "app/loans/programs.tsx: FEDERAL_PROGRAMS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The real federal student-loan repayment programs (Income-Driven Repayment and siblings). Public facts about the programs, not a claim about this user's eligibility \u2014 contrast SF-11's fabricated per-user eligibility flags."
     },
     "app/marketplace/calculators.tsx: CALCULATOR_OPTIONS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The calculators on offer. Navigation content."
     },
     "app/marketplace/index.tsx: SERVICES": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The marketplace service menu, each with a route. Navigation content."
     },
     "app/monitoring/alerts.tsx: FILTERS": {
       "classification": "catalogue",
@@ -236,20 +258,24 @@
       "offline": false
     },
     "app/onboarding/goals.tsx: GOALS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The goals a new user can pick during onboarding. Options presented, not goals held."
     },
     "app/onboarding/index.tsx: ONBOARDING_SLIDES": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Onboarding carousel copy. Editorial content."
     },
     "app/profile/help.tsx: CONTACT_OPTIONS, FAQ_ITEMS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Support channels and FAQ content on the profile tab. Editorial; duplicates app/help/* and is worth deduplicating, but neither copy fabricates."
     },
     "app/profile/settings.tsx: SETTINGS_SECTIONS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The settings menu structure. Navigation content."
     },
     "app/profile/subscription.tsx: PLANS": {
       "classification": "catalogue",
