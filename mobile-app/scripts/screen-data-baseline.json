@@ -73,10 +73,6 @@
       "classification": "catalogue",
       "offline": true
     },
-    "app/credit-builder/goals.tsx: RECOMMENDED_ACTIONS, SAMPLE_GOALS, SCORE_HISTORY": {
-      "classification": "fabrication",
-      "offline": true
-    },
     "app/credit-builder/goodwill.tsx: LETTER_TEMPLATES": {
       "classification": "catalogue",
       "offline": true
