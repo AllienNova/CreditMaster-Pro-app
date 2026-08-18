@@ -1,9 +1,25 @@
 /**
- * Fynvita Dispute Analytics Screen
- * Dispute success rates and patterns analysis
+ * Dispute Analytics — counts over the caller's OWN disputes.
+ *
+ * WHAT THIS REPLACED. Three fixtures with no request: 24 disputes of which 18
+ * successful, a per-type table topped by "Late Payments 8, 87% success", and
+ * six months of filed/resolved bars. Every user saw the same imagined dispute
+ * history — including users who had never filed one, who were shown a 75%
+ * success rate they had no part in.
+ *
+ * WHERE THE DATA COMES FROM. There is no aggregates endpoint and none is
+ * needed: GET /api/disputes returns the caller's disputes, user-scoped
+ * server-side, and every figure here is a count over that list.
+ * summarizeDisputes does the arithmetic in one testable place
+ * (services/api/disputes.ts) rather than inside this component.
+ *
+ * A SUCCESS RATE OVER NOTHING IS NOT ZERO. A type with no decided dispute
+ * gets a null rate and renders "—", not "0%": zero reads as "we tried and
+ * failed" when the truth is "still open". The count travels beside every rate
+ * so a reader can see that a 100% is 1 of 1.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,56 +32,62 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import {
+  disputeApi,
+  summarizeDisputes,
+  type DisputeAnalytics,
+} from "../../src/services/api/disputes";
 
-interface DisputeStats {
-  total: number;
-  successful: number;
-  pending: number;
-  rejected: number;
-}
+/** How many disputes to pull for the aggregates. */
+const ANALYTICS_PAGE_SIZE = 200;
 
-interface DisputeByType {
-  type: string;
-  count: number;
-  successRate: number;
-}
-
-interface MonthlyData {
-  month: string;
-  filed: number;
-  resolved: number;
-}
-
-const DISPUTE_STATS: DisputeStats = {
-  total: 24,
-  successful: 18,
-  pending: 4,
-  rejected: 2,
-};
-
-const DISPUTES_BY_TYPE: DisputeByType[] = [
-  { type: "Late Payments", count: 8, successRate: 87 },
-  { type: "Collections", count: 6, successRate: 75 },
-  { type: "Inquiries", count: 5, successRate: 100 },
-  { type: "Account Errors", count: 3, successRate: 67 },
-  { type: "Identity Errors", count: 2, successRate: 50 },
-];
-
-const MONTHLY_DATA: MonthlyData[] = [
-  { month: "Jul", filed: 4, resolved: 3 },
-  { month: "Aug", filed: 5, resolved: 4 },
-  { month: "Sep", filed: 3, resolved: 5 },
-  { month: "Oct", filed: 6, resolved: 4 },
-  { month: "Nov", filed: 4, resolved: 5 },
-  { month: "Dec", filed: 2, resolved: 3 },
-];
+/** Pixels per dispute in the monthly bars — the fixture's implicit scale. */
+const BAR_UNIT_HEIGHT = 15;
 
 export default function DisputeAnalyticsScreen() {
   const [selectedPeriod, setSelectedPeriod] = useState("6M");
   const periods = ["1M", "3M", "6M", "1Y", "ALL"];
-  const successRate = Math.round(
-    (DISPUTE_STATS.successful / DISPUTE_STATS.total) * 100,
-  );
+
+  const [analytics, setAnalytics] = useState<DisputeAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const res = await disputeApi.getAll({ limit: ANALYTICS_PAGE_SIZE });
+
+    if (!res.success || !res.data) {
+      // Not zeroes. "You have filed no disputes" and "we could not read your
+      // disputes" lead to opposite actions.
+      setError("We could not load your dispute history.");
+      setLoading(false);
+      return;
+    }
+
+    setAnalytics(summarizeDisputes(res.data.items ?? []));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const stats = analytics?.stats ?? {
+    total: 0,
+    successful: 0,
+    pending: 0,
+    rejected: 0,
+  };
+  const byType = analytics?.byType ?? [];
+  const monthly = analytics?.monthly ?? [];
+
+  // Null, not 0, when nothing has been filed. The old expression divided by
+  // DISPUTE_STATS.total, which the fixture guaranteed was 24 — so the NaN
+  // this produces for a real new user was never reachable.
+  const successRate =
+    stats.total > 0 ? Math.round((stats.successful / stats.total) * 100) : null;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -88,29 +110,34 @@ export default function DisputeAnalyticsScreen() {
         {/* Success Rate */}
         <Card style={styles.successCard}>
           <View style={styles.successCircle}>
-            <Text style={styles.successValue}>{successRate}%</Text>
+            {/* "—" when nothing has been filed. The old expression divided
+                by a fixture that was always 24, so the NaN a real new user
+                would have produced was never reachable. */}
+            <Text style={styles.successValue}>
+              {successRate === null ? "—" : `${successRate}%`}
+            </Text>
             <Text style={styles.successLabel}>Success Rate</Text>
           </View>
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{DISPUTE_STATS.total}</Text>
+              <Text style={styles.statValue}>{stats.total}</Text>
               <Text style={styles.statLabel}>Total</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: "#22C55E" }]}>
-                {DISPUTE_STATS.successful}
+                {stats.successful}
               </Text>
               <Text style={styles.statLabel}>Successful</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: "#F59E0B" }]}>
-                {DISPUTE_STATS.pending}
+                {stats.pending}
               </Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: "#EF4444" }]}>
-                {DISPUTE_STATS.rejected}
+                {stats.rejected}
               </Text>
               <Text style={styles.statLabel}>Rejected</Text>
             </View>
@@ -161,14 +188,14 @@ export default function DisputeAnalyticsScreen() {
             </View>
           </View>
           <View style={styles.chart}>
-            {MONTHLY_DATA.map((data, index) => (
-              <View key={index} style={styles.chartColumn}>
+            {monthly.map((data) => (
+              <View key={data.month} style={styles.chartColumn}>
                 <View style={styles.barGroup}>
                   <View
                     style={[
                       styles.bar,
                       {
-                        height: data.filed * 15,
+                        height: data.filed * BAR_UNIT_HEIGHT,
                         backgroundColor: theme.colors.primary,
                       },
                     ]}
@@ -177,7 +204,7 @@ export default function DisputeAnalyticsScreen() {
                     style={[
                       styles.bar,
                       {
-                        height: data.resolved * 15,
+                        height: data.resolved * BAR_UNIT_HEIGHT,
                         backgroundColor: "#22C55E",
                       },
                     ]}
@@ -189,13 +216,38 @@ export default function DisputeAnalyticsScreen() {
           </View>
         </Card>
 
+        {loading ? (
+          <Card>
+            <Text style={styles.emptyText}>Loading your disputes…</Text>
+          </Card>
+        ) : error ? (
+          <Card>
+            <Text style={styles.emptyText}>{error}</Text>
+            <TouchableOpacity onPress={load}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </Card>
+        ) : stats.total === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>
+              You have not filed any disputes yet. Once you do, their outcomes
+              appear here.
+            </Text>
+          </Card>
+        ) : null}
+
         {/* By Type */}
         <Text style={styles.sectionTitle}>Success by Type</Text>
-        {DISPUTES_BY_TYPE.map((item, index) => (
-          <Card key={index} style={styles.typeCard}>
+        {byType.map((item) => (
+          <Card key={item.type} style={styles.typeCard}>
             <View style={styles.typeHeader}>
               <Text style={styles.typeName}>{item.type}</Text>
-              <Text style={styles.typeCount}>{item.count} disputes</Text>
+              {/* Both numbers: a 100% rate over one decided dispute should
+                  not look like a track record. */}
+              <Text style={styles.typeCount}>
+                {item.count} {item.count === 1 ? "dispute" : "disputes"}
+                {item.resolved > 0 ? ` · ${item.resolved} decided` : ""}
+              </Text>
             </View>
             <View style={styles.typeProgress}>
               <View style={styles.progressBar}>
@@ -203,13 +255,17 @@ export default function DisputeAnalyticsScreen() {
                   style={[
                     styles.progressFill,
                     {
-                      width: `${item.successRate}%`,
+                      // 0-width bar for an undecided type, and no colour
+                      // claim either — "0%" would read as a loss.
+                      width: `${item.successRate ?? 0}%`,
                       backgroundColor:
-                        item.successRate >= 75
-                          ? "#22C55E"
-                          : item.successRate >= 50
-                            ? "#F59E0B"
-                            : "#EF4444",
+                        item.successRate === null
+                          ? theme.colors.borderLight
+                          : item.successRate >= 75
+                            ? "#22C55E"
+                            : item.successRate >= 50
+                              ? "#F59E0B"
+                              : "#EF4444",
                     },
                   ]}
                 />
@@ -218,16 +274,20 @@ export default function DisputeAnalyticsScreen() {
                 style={[
                   styles.typeRate,
                   {
+                    // Neutral for an undecided type. Colouring "—" red would
+                    // state a failure that has not happened.
                     color:
-                      item.successRate >= 75
-                        ? "#22C55E"
-                        : item.successRate >= 50
-                          ? "#F59E0B"
-                          : "#EF4444",
+                      item.successRate === null
+                        ? theme.colors.textSecondary
+                        : item.successRate >= 75
+                          ? "#22C55E"
+                          : item.successRate >= 50
+                            ? "#F59E0B"
+                            : "#EF4444",
                   },
                 ]}
               >
-                {item.successRate}%
+                {item.successRate === null ? "—" : `${item.successRate}%`}
               </Text>
             </View>
           </Card>
@@ -320,6 +380,19 @@ const styles = StyleSheet.create({
   barGroup: { flexDirection: "row", alignItems: "flex-end" },
   bar: { width: 12, marginHorizontal: 2, borderRadius: 3 },
   barLabel: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 6 },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    paddingVertical: theme.spacing.md,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    textAlign: "center",
+    marginTop: theme.spacing.sm,
+  },
   sectionTitle: {
     fontSize: 15,
     fontWeight: "600",

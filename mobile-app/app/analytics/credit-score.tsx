@@ -48,12 +48,18 @@ const PERIOD_MONTHS: Record<string, number> = {
   ALL: 120,
 };
 
-/** "2026-08-17T..." -> "Aug". The chart labels points by month. */
+/**
+ * "2026-08-17T..." -> "Aug", in UTC.
+ *
+ * timeZone matters: toLocaleDateString defaults to the device's zone, so a
+ * score dated the 1st at 00:00 UTC labels as the previous month for every
+ * user west of UTC. The stored timestamps are UTC.
+ */
 const monthLabel = (iso: string): string => {
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
     ? ""
-    : d.toLocaleDateString("en-US", { month: "short" });
+    : d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
 };
 
 interface ApiFactor {

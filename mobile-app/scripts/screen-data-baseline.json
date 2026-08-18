@@ -24,10 +24,6 @@
       "offline": true,
       "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query — it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
     },
-    "app/analytics/disputes.tsx: DISPUTES_BY_TYPE, MONTHLY_DATA": {
-      "classification": "fabrication",
-      "offline": true
-    },
     "app/analytics/reports.tsx: GENERATED_REPORTS, REPORT_TEMPLATES": {
       "classification": "fabrication",
       "offline": true
