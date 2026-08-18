@@ -27,6 +27,10 @@ export default function CoachLayout() {
         name="index"
         options={{
           title: "AI Financial Coach",
+        // headerShown: false — this is the stack ROOT, and React Navigation
+        // draws no back button on a root. Leaving the default on gave a
+        // titled bar with nothing to press, above the screen's own header.
+          headerShown: false,
         }}
       />
       <Stack.Screen

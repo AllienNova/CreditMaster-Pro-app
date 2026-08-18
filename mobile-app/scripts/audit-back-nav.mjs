@@ -134,7 +134,7 @@ function effectiveHeaderShown(layoutSource, screenName) {
   // declared options and were reported as trapped when they were not.
   const literal = screenName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const own = layoutSource.match(
-    new RegExp(`<Stack\\.Screen[^>]*name="${literal}"[\\s\\S]{0,400}?/>`),
+    new RegExp(`<Stack\\.Screen[^>]*name="${literal}"[\\s\\S]{0,1200}?/>`),
   );
   if (own) {
     if (/headerShown:\s*false/.test(own[0])) return false;
@@ -146,6 +146,55 @@ function effectiveHeaderShown(layoutSource, screenName) {
     if (/headerShown:\s*true/.test(screenOptions[1])) return true;
   }
   return true; // the library default
+}
+
+/**
+ * A route file that only redirects. There is nothing to be stuck ON.
+ *
+ * app/credit/index.tsx is eight lines: `return <Redirect href="/(tabs)/credit" />`.
+ * A back control there would be drawn and unmounted in the same frame.
+ * Deliberately narrow — a screen that renders a Redirect AND real content is
+ * not this, and still needs a way back.
+ */
+function isRedirectOnly(source) {
+  return (
+    /return\s*\(?\s*<Redirect\b[^>]*\/>\s*\)?;/.test(source) &&
+    !/StyleSheet\.create/.test(source)
+  );
+}
+
+/**
+ * `export { default } from "../documents"` — the route is real, but its JSX
+ * lives somewhere else, so scanning this file finds nothing and reports a
+ * screen that is perfectly navigable.
+ *
+ * The target supplies the JSX; the re-export's OWN position supplies the
+ * layout. That distinction is not academic: app/investments/index.tsx
+ * re-exports app/(tabs)/investments.tsx, and a TAB ROOT correctly has no back
+ * control of its own — so reaching /investments as a pushed route really does
+ * strand the user, and it stays flagged.
+ */
+function reExportTarget(screenPath, source) {
+  const m = source.match(/export \{ default \} from ["']([^"']+)["']/);
+  if (!m) return null;
+  const base = join(MOBILE, screenPath, "..", m[1]);
+  for (const candidate of [`${base}.tsx`, join(base, "index.tsx")]) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+/**
+ * A screen can set its OWN navigator options by rendering <Stack.Screen>
+ * inside itself, and that beats the layout. app/dashboard/spending.tsx does
+ * exactly this. Reading only layouts misses the channel entirely.
+ */
+function screenSetsOwnHeaderShown(source) {
+  const inline = source.match(/<Stack\.Screen\s+options={{([\s\S]*?)}}\s*\/>/);
+  if (!inline) return null;
+  if (/headerShown:\s*true/.test(inline[1])) return true;
+  if (/headerShown:\s*false/.test(inline[1])) return false;
+  return null;
 }
 
 /** The nearest _layout.tsx at or above a screen, and whether it owns the root. */
@@ -183,8 +232,13 @@ function drawsHeaderOnStackRoot(layoutSource) {
   // this check reported app/tax/_layout.tsx, which sets headerShown: true in
   // screenOptions and then turns it off again for `index`. The screen was
   // fine; the detector was wrong.
+  // The cap is generous on purpose. At 300 it stopped matching the moment a
+  // block carried an explanatory comment, and the check silently fell through
+  // to "the layout never sets headerShown" — reporting six roots I had just
+  // fixed. A length limit that quietly changes the verdict is worse than no
+  // limit; this one only exists to stop a runaway match.
   const rootBlock = layoutSource.match(
-    /<Stack\.Screen[^>]*name="index"[\s\S]{0,300}?\/>/,
+    /<Stack\.Screen[^>]*name="index"[\s\S]{0,1200}?\/>/,
   );
   if (rootBlock) {
     if (/headerShown:\s*false/.test(rootBlock[0])) return null; // explicit opt-out
@@ -196,6 +250,19 @@ function drawsHeaderOnStackRoot(layoutSource) {
   const screenOptions = layoutSource.match(/screenOptions={{([\s\S]*?)}}/);
   if (screenOptions && /headerShown:\s*true/.test(screenOptions[1])) {
     return "screenOptions applies headerShown to every screen, root included";
+  }
+  if (screenOptions && /headerShown:\s*false/.test(screenOptions[1])) {
+    return null;
+  }
+
+  // Saying NOTHING about headerShown is saying `true` — the library default,
+  // per native-stack@7.13.0 types.d.ts:234. app/coach/_layout.tsx sets
+  // headerStyle, headerTintColor and headerTitleStyle and never mentions
+  // headerShown, so its root renders a titled bar with nothing to press. An
+  // earlier version of this check only looked for an EXPLICIT true and walked
+  // straight past it.
+  if (/<Stack\b/.test(layoutSource)) {
+    return "the layout never sets headerShown, so the default (true) applies to its root";
   }
   return null;
 }
@@ -235,6 +302,42 @@ if (process.argv.includes("--self-test")) {
     );
   }
 
+  const SHAPE_CASES = [
+    [
+      screenSetsOwnHeaderShown(`<Stack.Screen options={{ title: "Spending", headerShown: true }} />`),
+      true,
+      "a screen may turn its own header ON, beating the layout",
+    ],
+    [
+      screenSetsOwnHeaderShown(`<Stack.Screen options={{ title: "Spending", headerStyle: {} }} />`),
+      null,
+      "configuring a header WITHOUT headerShown decides nothing — the layout " +
+        "still wins, which is why three dashboard screens rendered no header " +
+        "at all despite setting a title and a headerRight button",
+    ],
+    [
+      isRedirectOnly(`export default function CreditIndex() {
+         return <Redirect href="/(tabs)/credit" />;
+       }`),
+      true,
+      "a redirect stub has nothing to be stuck on — app/credit/index.tsx",
+    ],
+    [
+      isRedirectOnly(`export default function Screen() {
+         if (!user) return <Redirect href="/login" />;
+         return <View style={styles.c} />;
+       }
+       const styles = StyleSheet.create({ c: {} });`),
+      false,
+      "a redirect GUARD in front of real content is not a redirect stub",
+    ],
+  ];
+  for (const [got, want, why] of SHAPE_CASES) {
+    if (got === want) continue;
+    bad++;
+    console.log(`  SELF-TEST FAIL (shape): ${why}`);
+  }
+
   const LAYOUT_CASES = [
     [
       `<Stack screenOptions={{ headerShown: true, headerTintColor: "#F59E0B" }}>`,
@@ -259,6 +362,30 @@ if (process.argv.includes("--self-test")) {
       "headers off everywhere is the app's own convention and is fine",
     ],
     [
+      `<Stack screenOptions={{ headerTintColor: colors.text }}>
+         <Stack.Screen
+           name="index"
+           options={{
+             title: "Credit Builder",
+             // A long comment block here is exactly what broke the previous
+             // version of this check: the match was capped at 300 characters,
+             // the block outgrew it, and the root reported as unfixed after
+             // being fixed. Padding this case past that old limit on purpose.
+             // ---------------------------------------------------------------
+             headerShown: false,
+           }}
+         />`,
+      false,
+      "a long options block must not slip past the matcher and flip the verdict",
+    ],
+    [
+      `<Stack screenOptions={{ headerTintColor: colors.text, headerTitleStyle: { fontWeight: "600" } }}>
+         <Stack.Screen name="index" options={{ title: "AI Financial Coach" }} />`,
+      true,
+      "styling the header without mentioning headerShown leaves the default ON — " +
+        "this is app/coach/_layout.tsx, and its root has a title with no back button",
+    ],
+    [
       `<Stack screenOptions={{ headerShown: true, headerTintColor: "#F59E0B" }}>
          <Stack.Screen name="index" options={{ title: "Tax", headerShown: false }} />`,
       false,
@@ -273,7 +400,7 @@ if (process.argv.includes("--self-test")) {
       `  SELF-TEST FAIL (layout): expected ${want ? "FLAG" : "PASS"} — ${why}`,
     );
   }
-  const CASES_TOTAL = CASES.length + LAYOUT_CASES.length;
+  const CASES_TOTAL = CASES.length + LAYOUT_CASES.length + SHAPE_CASES.length;
   console.log(
     bad === 0
       ? `audit:back-nav self-test PASSED — ${CASES_TOTAL}/${CASES_TOTAL} cases correct.`
@@ -303,6 +430,8 @@ const screens = walk(APP).filter((f) => !isLayout(f));
 const offenders = [];
 /** Screens whose back button is drawn by the navigator, not by their own JSX. */
 const nativeHeaderBack = [];
+/** Route files that only redirect — there is nothing to be stuck on. */
+const redirectOnly = [];
 const exemptUsed = new Set();
 
 for (const file of screens) {
@@ -311,7 +440,25 @@ for (const file of screens) {
     exemptUsed.add(path);
     continue;
   }
-  if (hasBackAffordance(readFileSync(file, "utf8"))) continue;
+
+  let source = readFileSync(file, "utf8");
+  if (isRedirectOnly(source)) {
+    redirectOnly.push(path);
+    continue;
+  }
+
+  // Judge a re-export on the JSX it actually renders.
+  const target = reExportTarget(path, source);
+  if (target) source = readFileSync(target, "utf8");
+
+  if (hasBackAffordance(source)) continue;
+
+  // The screen's own inline options win over its layout.
+  const ownHeader = screenSetsOwnHeaderShown(source);
+  if (ownHeader === true) {
+    nativeHeaderBack.push(path);
+    continue;
+  }
 
   // A native header on a PUSHED screen is a real back button. Only the root
   // of a stack gets one drawn without a back control, and that case is
@@ -398,7 +545,8 @@ const fixed = [...baselined].filter((b) => !offenders.includes(b));
 console.log(
   `audit:back-nav — ${screens.length} screen(s), ` +
     `${Object.keys(EXEMPT).length} exempt by name, ` +
-    `${nativeHeaderBack.length} with a native header back button`,
+    `${nativeHeaderBack.length} with a native header back button, ` +
+    `${redirectOnly.length} redirect-only`,
 );
 
 if (staleExemptions.length) {

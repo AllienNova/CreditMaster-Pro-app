@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/hooks/useTheme";
 import { useCoachStore } from "../../src/store";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 export default function CoachDashboardScreen() {
   const router = useRouter();
@@ -61,6 +62,8 @@ export default function CoachDashboardScreen() {
         />
       }
     >
+      <ScreenHeader title="AI Financial Coach" />
+
       {/* Coach Message */}
       <View style={[styles.coachCard, { backgroundColor: colors.primary }]}>
         <View style={styles.coachHeader}>
