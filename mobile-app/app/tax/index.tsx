@@ -24,6 +24,7 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTaxStore } from "../../src/store/taxStore";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 const { width } = Dimensions.get("window");
 
@@ -106,12 +107,7 @@ export default function TaxOptimizationScreen() {
   };
 
   if (isLoadingAnalysis && !analysis) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#F59E0B" />
-        <Text style={styles.loadingText}>Analyzing your tax situation...</Text>
-      </View>
-    );
+    return <ScreenLoading title="Tax Optimization" message="Analyzing your tax situation..." />;
   }
 
   if (error && !analysis) {

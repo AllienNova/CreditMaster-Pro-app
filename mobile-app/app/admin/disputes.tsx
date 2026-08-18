@@ -33,6 +33,7 @@ import {
 } from "../../src/services/api/admin";
 import type { AdminDispute } from "../../src/services/api/admin";
 import { toArray } from "../../src/store/toArray";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 // Humanize a real DB status/enum value for display: "under_review" -> "Under Review".
 // Presentation only — the underlying value stays the real status.
@@ -99,14 +100,7 @@ export default function AdminDisputesScreen() {
 
   // First load only: keep any existing rows on screen while a refresh is in flight.
   if (loading && disputes.length === 0 && !error) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer} testID="admin-disputes-loading">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading disputes...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="All Disputes" message="Loading disputes..." testID="admin-disputes-loading" />;
   }
 
   if (error && disputes.length === 0) {

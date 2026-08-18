@@ -30,6 +30,7 @@ import { ScreenError } from "../../src/components/ScreenError";
 import { creditRepairApi } from "../../src/services/api/creditRepair";
 import type { CreditAccount } from "../../src/services/api/creditRepair";
 import { toArray } from "../../src/store/toArray";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 const getAgeColor = (years: number) => {
   if (years >= 7) return "#22C55E";
@@ -81,14 +82,7 @@ export default function CreditAgeScreen() {
   const newestMonths = hasAges ? Math.min(...knownMonths) : null;
 
   if (loading && accounts.length === 0) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="age-loading">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Loading accounts...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="Credit Age" message="Loading accounts..." testID="age-loading" />;
   }
 
   // Was an icon, a message and a button — three nodes, no title and no way

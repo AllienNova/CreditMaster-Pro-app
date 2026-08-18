@@ -39,6 +39,7 @@ import {
   adminAuditApi,
   type AdminAuditEvent,
 } from "../../src/services/api/admin";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 /** "credit_report" -> "Credit report". resource_type is a lower_snake slug. */
 const prettyResource = (value: string): string =>
@@ -104,14 +105,7 @@ export default function AdminAuditScreen() {
     : events;
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading audit trail...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="Audit Trail" message="Loading audit trail..." />;
   }
 
   return (

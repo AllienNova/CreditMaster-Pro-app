@@ -42,6 +42,7 @@ import type {
   SpendingPatternKind,
   SpendingSeverity,
 } from "../../src/services/api/financial";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 type Period = "7d" | "30d" | "90d";
 const PERIOD_DAYS: Record<Period, number> = { "7d": 7, "30d": 30, "90d": 90 };
@@ -173,14 +174,7 @@ export default function SpendingAnalysisScreen() {
     (analysis.categories.length > 0 || analysis.patterns.length > 0);
 
   if (loading && !analysis) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="insights-spending-loading">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Analyzing your spending...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="Spending Analysis" message="Analyzing your spending..." testID="insights-spending-loading" />;
   }
 
   if (error && !analysis) {

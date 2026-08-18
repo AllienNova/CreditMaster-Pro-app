@@ -43,6 +43,7 @@ import {
   adminLogsApi,
   type AdminSystemLogs,
 } from "../../src/services/api/admin";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 export default function AdminLogsScreen() {
   const [state, setState] = useState<AdminSystemLogs | null>(null);
@@ -70,14 +71,7 @@ export default function AdminLogsScreen() {
   }, [load]);
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading logs...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="System Logs" message="Loading logs..." />;
   }
 
   return (

@@ -32,6 +32,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { userAnalyticsApi } from "../../src/services/api/user";
 import type { UserAnalytics } from "../../src/services/api/user";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 export default function DashboardAnalyticsScreen() {
   const [loading, setLoading] = useState(true);
@@ -73,14 +74,7 @@ export default function DashboardAnalyticsScreen() {
   };
 
   if (loading && !data) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="dashboard-analytics-loading">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Loading analytics...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="Credit Analytics" message="Loading analytics..." testID="dashboard-analytics-loading" />;
   }
 
   if (error && !data) {

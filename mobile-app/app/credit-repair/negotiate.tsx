@@ -32,6 +32,7 @@ import type {
   NegotiationDebt,
   NegotiationStatus,
 } from "../../src/services/api/creditRepair";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 // updatedAt arrives as an ISO string; render a compact locale date.
 function formatDate(iso?: string): string {
@@ -98,14 +99,7 @@ export default function NegotiateScreen() {
   );
 
   if (loading && debts.length === 0) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="credit-repair-negotiate-loading">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Loading negotiations...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="Debt Negotiation" message="Loading negotiations..." testID="credit-repair-negotiate-loading" />;
   }
 
   if (error && debts.length === 0) {

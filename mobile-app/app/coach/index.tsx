@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/hooks/useTheme";
 import { useCoachStore } from "../../src/store";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 export default function CoachDashboardScreen() {
   const router = useRouter();
@@ -37,19 +38,7 @@ export default function CoachDashboardScreen() {
   };
 
   if (dashboardLoading && !dashboard) {
-    return (
-      <View
-        style={[
-          styles.loadingContainer,
-          { backgroundColor: colors.background },
-        ]}
-      >
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-          Loading your coach...
-        </Text>
-      </View>
-    );
+    return <ScreenLoading title="AI Financial Coach" message="Loading your coach..." />;
   }
 
   return (

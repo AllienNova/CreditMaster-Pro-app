@@ -35,6 +35,7 @@ import type {
   ServiceHealthStatus,
   SystemHealth,
 } from "../../src/services/api/admin";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 // Overall headline per status. "All Systems Operational" appears ONLY when the
 // route's worst-component-wins overall is genuinely `healthy` (every probe
@@ -108,14 +109,7 @@ export default function AdminHealthScreen() {
   };
 
   if (loading && !health) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="admin-health-loading">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Checking system health...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="System Health" message="Checking system health..." testID="admin-health-loading" />;
   }
 
   if (error && !health) {

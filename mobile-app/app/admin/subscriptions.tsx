@@ -38,6 +38,7 @@ import {
   adminSubscriptionsApi,
   type AdminSubscription,
 } from "../../src/services/api/admin";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 export default function AdminSubscriptionsScreen() {
   const [subs, setSubs] = useState<AdminSubscription[]>([]);
@@ -114,14 +115,7 @@ export default function AdminSubscriptionsScreen() {
   const activeCount = active.length;
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading subscriptions...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="Subscriptions" message="Loading subscriptions..." />;
   }
 
   return (
