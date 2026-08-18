@@ -198,6 +198,15 @@ export default function TemplatesScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={lightTheme.colors.primary} />
         </View>
+      ) : error ? (
+        // The list used to fall back to LOCAL_TEMPLATES here, so a failed read
+        // showed built-in letters as though the server had answered.
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={fetchTemplates}>
+            <Text style={styles.retryText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <ScrollView
           style={styles.templatesList}
@@ -347,6 +356,17 @@ const styles = StyleSheet.create({
   categoryChipActive: { backgroundColor: lightTheme.colors.primary },
   categoryText: { fontSize: 13, color: lightTheme.colors.textSecondary },
   categoryTextActive: { color: "#FFFFFF", fontWeight: "600" },
+  errorText: {
+    fontSize: 14,
+    color: lightTheme.colors.error,
+    textAlign: "center",
+  },
+  retryText: {
+    fontSize: 14,
+    color: lightTheme.colors.primary,
+    fontWeight: "600",
+    marginTop: 8,
+  },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   templatesList: { flex: 1, padding: 16 },
   resultsText: {
