@@ -126,7 +126,8 @@ function AnalysisResults({ results }: { results: AnalysisResult[] }) {
   return (
     <div className="space-y-6">
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Two columns, not three: the third tile was the invented one. */}
+      <div className="grid grid-cols-2 gap-4">
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 text-center">
           <p className="text-3xl font-bold text-gray-900 dark:text-white">
             {results.flatMap((r) => r.items).length}
@@ -141,12 +142,20 @@ function AnalysisResults({ results }: { results: AnalysisResult[] }) {
             Disputable
           </p>
         </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 text-center">
-          <p className="text-3xl font-bold text-blue-600">+45</p>
-          <p className="text-sm text-gray-500 dark:text-slate-400">
-            Potential Points
-          </p>
-        </div>
+        {/*
+          A third tile read "+45 / Potential Points". It sat between two
+          COMPUTED tiles — the one above renders {totalDisputable} — which is
+          what made an invented number read as another measurement. The same
+          shape as the retirement figures on /tax/optimizer, where a hardcoded
+          breakdown sat under a real total.
+
+          Removed rather than estimated. Turning "items you could dispute" into
+          "points you would gain" needs a model of how a bureau will respond to
+          each item, and no such model exists here; the nearest thing,
+          /api/ml/predict-timeline, predicts dispute RESOLUTION TIME and its own
+          comment records that it substitutes a different model because the one
+          it names was never built.
+        */}
       </div>
 
       {/* Results by Category */}

@@ -6,6 +6,62 @@
       "classification": "UNCLASSIFIED",
       "offline": false
     },
+    "src/app/about/page.tsx: platformFeatures, securityFeatures, stats, values": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/admin/audit/page.tsx: auditLogs": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/admin/disputes/page.tsx: disputes, stats": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/admin/features/page.tsx: initialFlags": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/admin/layout.tsx: adminNavItems": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/admin/logs/page.tsx: logs": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/admin/subscriptions/page.tsx: metrics, planBreakdown, recentSubscriptions": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/admin/users/[id]/page.tsx: mockUser": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/analytics/credit-score/page.tsx: recommendations, scoreFactors, scoreHistory": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/analytics/disputes/page.tsx: disputeStats, disputesByBureau, disputesByType, recentDisputes": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/analytics/layout.tsx: analyticsNavItems": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/analytics/page.tsx: bureauScores, monthlyProgress, overviewStats, recentActivity": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/analytics/reports/page.tsx: availableReports, recentDownloads, scheduledReports": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/analytics/trends/page.tsx: insights, monthlyTrends, projections, trendMetrics": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
     "src/app/api/admin/stats/route.ts: PRICE_MAP": {
       "classification": "UNCLASSIFIED",
       "offline": true
@@ -30,6 +86,10 @@
       "classification": "UNCLASSIFIED",
       "offline": true
     },
+    "src/app/credit-builder/simulator/page.tsx: commonGoals": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
     "src/app/credit/factors/page.tsx: SCORE_RANGES": {
       "classification": "UNCLASSIFIED",
       "offline": false
@@ -42,11 +102,23 @@
       "classification": "UNCLASSIFIED",
       "offline": true
     },
+    "src/app/dashboard/settings/transaction-rules/page.tsx: mockRules": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/dashboard/subscriptions/page.tsx: mockSubscriptions": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
     "src/app/experts/page.tsx: MOCK_EXPERTS": {
       "classification": "UNCLASSIFIED",
       "offline": true
     },
-    "src/app/financial-intelligence/page.tsx: MOCK_SNAPSHOT, QUICK_ACTIONS": {
+    "src/app/features/page.tsx: featureSections, platformFeatures": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/financial-intelligence/page.tsx: MOCK_INSIGHTS, MOCK_SNAPSHOT, QUICK_ACTIONS": {
       "classification": "UNCLASSIFIED",
       "offline": false
     },
@@ -62,6 +134,26 @@
       "classification": "UNCLASSIFIED",
       "offline": true
     },
+    "src/app/help/contact/page.tsx: contactMethods": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/help/faq/page.tsx: faqCategories, faqs": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/help/guides/page.tsx: categories, guides": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/help/layout.tsx: helpNavItems": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/help/page.tsx: categories, popularArticles, quickLinks": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
     "src/app/identity/dark-web/page.tsx: BREACH_ENTRIES, EXPOSED_CATEGORIES": {
       "classification": "UNCLASSIFIED",
       "offline": true
@@ -73,6 +165,10 @@
     "src/app/insights/alerts/page.tsx: MOCK_ALERTS": {
       "classification": "UNCLASSIFIED",
       "offline": true
+    },
+    "src/app/investments/add-holding/page.tsx: assetTypes": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
     },
     "src/app/investments/layout.tsx: NAV_ITEMS": {
       "classification": "UNCLASSIFIED",
@@ -90,7 +186,67 @@
       "classification": "UNCLASSIFIED",
       "offline": false
     },
+    "src/app/leaderboard/page.tsx: tabs": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/marketplace/analysis/page.tsx: mockResults": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
     "src/app/marketplace/auto-loans/page.tsx: SCORE_TIERS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/marketplace/community/page.tsx: mockPosts, mockStories": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/marketplace/consolidation/page.tsx: mockOptions": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/marketplace/education/page.tsx: mockArticles, mockCourses": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/marketplace/layout.tsx: marketplaceCategories": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/marketplace/monitoring/page.tsx: mockAlerts, mockMonitoringServices, mockScores": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/marketplace/page.tsx: categories": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/onboarding/complete/page.tsx: analysisSteps, nextSteps, quickWins": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/onboarding/connect/page.tsx: bankOptions, bureaus, payFrequencies, whyConnect": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/onboarding/goals/page.tsx: goalCategories, scoreRanges, timeframes": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/onboarding/layout.tsx: steps": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/onboarding/page.tsx: features, socialProof, testimonials": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/page.tsx: pricing, products": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/profile/page.tsx: achievements, activityHistory": {
       "classification": "UNCLASSIFIED",
       "offline": true
     },
@@ -110,6 +266,22 @@
       "classification": "UNCLASSIFIED",
       "offline": true
     },
+    "src/app/settings/connected-accounts/page.tsx: initialAccounts": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/settings/layout.tsx: settingsNavItems": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/settings/notifications/page.tsx: defaultSettings": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/settings/page.tsx: settingsSections": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
     "src/app/trading/strategies/page.tsx: CATEGORIES": {
       "classification": "UNCLASSIFIED",
       "offline": false
@@ -122,9 +294,17 @@
       "classification": "UNCLASSIFIED",
       "offline": false
     },
+    "src/components/financial/QuickActionsBar.tsx: quickActions": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
     "src/components/financial/SubscriptionCancellationWizard.tsx: OUTCOME_OPTIONS": {
       "classification": "UNCLASSIFIED",
       "offline": false
+    },
+    "src/components/gamification/ProgressRing.tsx: sizeConfig": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
     },
     "src/components/image-generator/ImageGenerator.tsx: SIZE_OPTIONS": {
       "classification": "UNCLASSIFIED",
@@ -142,6 +322,14 @@
       "classification": "UNCLASSIFIED",
       "offline": true
     },
+    "src/components/onboarding/ImpactCalculator.tsx: scoreRangeValues": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/components/persona/CreditScoreSimulator.tsx: scenarios": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
     "src/components/semantic-search/SemanticSearch.tsx: SAMPLE_RESULTS": {
       "classification": "UNCLASSIFIED",
       "offline": true
@@ -155,6 +343,22 @@
       "offline": true
     },
     "src/components/trading/mode/ModePermissionsCard.tsx: PERMISSION_ITEMS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/components/ui/BottomNav.tsx: navItems": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/components/ui/Footer.tsx: footerColumns": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/components/ui/Header.tsx: navLinks": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/components/ui/MobileNav.tsx: navItems": {
       "classification": "UNCLASSIFIED",
       "offline": false
     }

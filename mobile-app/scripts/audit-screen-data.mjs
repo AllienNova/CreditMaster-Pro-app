@@ -77,7 +77,7 @@ function walk(dir, out = []) {
  * SCREAMING_CASE name keeps it to deliberate module constants rather than any
  * local array.
  */
-const CONST_DATA = /(?:^|\n)(?:export\s+)?const\s+([A-Z][A-Z0-9_]*)\s*(?::[^=\n]+)?=\s*\[\s*\{/g;
+const CONST_DATA = /(?:^|\n)(?:export\s+)?const\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*(?::[^=\n]+)?=\s*\[\s*\{/g;
 
 /**
  * A module-level constant OBJECT — the blind spot the array detector had.
@@ -101,7 +101,7 @@ const CONST_DATA = /(?:^|\n)(?:export\s+)?const\s+([A-Z][A-Z0-9_]*)\s*(?::[^=\n]
  * judgement the array detector makes with `[{` rather than `[`.
  */
 const CONST_OBJECT_HEAD =
-  /(?:^|\n)(?:export\s+)?const\s+([A-Z][A-Z0-9_]*)\s*(?::[^=\n]+)?=\s*\{/g;
+  /(?:^|\n)(?:export\s+)?const\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*(?::[^=\n]+)?=\s*\{/g;
 
 const MIN_OBJECT_KEYS = 3;
 
@@ -203,6 +203,17 @@ function isRendered(source, name) {
     // useState, so it never matched, and the screen then mapped over the STATE
     // variable rather than the constant.
     `useState\\s*(?:<[^>]*>)?\\s*\\(\\s*${name}\\s*\\)` +
+      // `setResults(mockResults)` — a SETTER, not the initialiser. The
+      // useState gap above was closed for the initialiser only, and
+      // src/app/marketplace/analysis/page.tsx seeds through the setter
+      // instead: `useState<AnalysisResult[]>([])` and then
+      // `setResults(mockResults)` on upload. Its mockResults invents a whole
+      // credit report — "Late payment on Chase card", "Collection account -
+      // Medical debt $450" — and the first web run of this gate did not see
+      // it. Narrow on purpose: `set` + an uppercase letter is the React
+      // setter convention, so an arbitrary call taking the constant does not
+      // match.
+      `|set[A-Z]\\w*\\(\\s*${name}\\s*\\)` +
       `|${name}\\.map\\(|${name}\\.filter\\(|${name}\\.find\\(|\\{${name}\\}`,
   ).test(source);
 }
@@ -236,9 +247,45 @@ if (process.argv.includes("--self-test")) {
   let bad = 0;
   const cases = [
     ["const BILLS = [{ amount: 1 }];\nBILLS.map(x => x)", "BILLS", true, "a rendered data set is flagged"],
+    [
+      'const M = [{ a: 1 }];\nconst [r, setR] = useState<T[]>([]);\nsetR(M)',
+      "M",
+      true,
+      "seeded through a SETTER, not the initialiser — this is how " +
+        "marketplace/analysis hid a whole invented credit report",
+    ],
+    [
+      "const M = [{ a: 1 }];\nsend(M)",
+      "M",
+      false,
+      "an ordinary call taking the constant is not rendering it — only the " +
+        "set<Name> setter convention counts",
+    ],
     ["const TABS = [\"a\", \"b\"];\nTABS.map(x => x)", "TABS", false, "an array of STRINGS is config, not data"],
     ["const BILLS = [{ a: 1 }];", "BILLS", false, "declared but never rendered"],
-    ["const bills = [{ a: 1 }];\nbills.map(x => x)", "bills", false, "lower-case local, not a module constant"],
+    // SCOPE, not case, is what separates a module constant from a local, and
+    // the `(?:^|\n)const` anchor already enforces it: an in-function
+    // declaration is indented and never matches. Case was a second filter on
+    // top, and it was wrong — `mockResults` in
+    // src/app/marketplace/analysis/page.tsx is module-level, camelCase, and
+    // invents a whole credit report ("Late payment on Chase card",
+    // "Collection account - Medical debt $450"). `scoreFactors` in
+    // src/app/analytics/credit-score/page.tsx is the same shape. The case that
+    // used to sit here asserted "lower-case local" over a fixture at column 0,
+    // so it never tested scope at all.
+    [
+      "function C() {\n  const bills = [{ a: 1 }];\n  return bills.map(x => x);\n}",
+      "bills",
+      false,
+      "an INDENTED declaration is a local inside a component, not a module constant",
+    ],
+    [
+      "const mockResults = [{ a: 1 }];\nmockResults.map(x => x)",
+      "mockResults",
+      true,
+      "module-level and camelCase is still a module constant — this is the " +
+        "real marketplace/analysis shape the case-based filter missed",
+    ],
     ["const B = [{ a: 1 }];\nuseState(B)", "B", true, "useState(NAME) counts as rendering"],
     [
       "const MOCK_REPORTS = [{ a: 1 }];\nconst [r] = useState<Report[]>(MOCK_REPORTS)",
@@ -270,8 +317,8 @@ if (process.argv.includes("--self-test")) {
       [], "declared but never read renders nothing"],
     [`const NESTED = { a: { x: 1 }, b: 250.5, c: 3 };\nNESTED.a`,
       ["NESTED"], "brace-counted, so a nested object does not truncate the body"],
-    [`const lower = { a: 1, b: 2, c: 3 };\nlower.a`,
-      [], "lower-case local, not a module constant"],
+    [`function C() {\n  const lower = { a: 1, b: 2, c: 3 };\n  return lower.a;\n}`,
+      [], "an INDENTED object declaration is a local, not a module constant"],
     [`const MAP = { a: 1, b: 2, c: 3 };\nMAP["a"]`,
       [], "small whole numbers are configuration, not measurement"],
     [`const PERIOD_MONTHS = { "1M": 1, "3M": 3, "6M": 6, "1Y": 12 };\nPERIOD_MONTHS["1M"]`,
