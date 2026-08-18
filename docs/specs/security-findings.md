@@ -964,6 +964,144 @@ Either changes investment advice for every user, so neither is a change to make
 unilaterally. The `pattern` weight also needs a decision: use it, or remove it
 from the declaration so the budget sums to what is actually applied.
 
+## SF-28 — the investment analysis surface is 85 calls to Math.random()
+
+**Severity: CRITICAL (fabricated investment information served to authenticated
+users).** Found while checking whether SF-18's "supply the missing inputs"
+repair was viable. It is not, and the reason is larger than SF-18.
+
+`src/lib/investments/ai-stock-analyst.ts` contains **85 `Math.random()` call
+sites across 19 methods**, and backs five live routes:
+
+- `GET /api/investments/analyze/[symbol]`
+- `GET /api/investments/analyze/[symbol]/recommendation`
+- `GET /api/investments/analyze/[symbol]/fundamental`
+- `GET /api/investments/analyze/[symbol]/sentiment`
+- `GET /api/investments/analyze/[symbol]/technical`
+
+All five are `withAuth`, so this reaches any signed-in user.
+
+### Two different defects, and the second is the serious one
+
+**1. Quotes and history are a silent mock FALLBACK.** `getStockQuote` (:271)
+calls the real `marketDataService`, and on any throw returns a fully invented
+quote — price, volume, avgVolume, marketCap, peRatio, eps, dividend,
+dividendYield (:299-323). `getHistoricalData` (:331) does the same with a
+random-walk OHLCV series (:366-397). Both fall back to `getSimulatedBasePrice`
+(:403): ten hardcoded prices (AAPL 175, TSLA 250, NVDA 480, ...) and, for every
+other ticker, `100 + Math.random() * 200`.
+
+This is the SF-11 shape — try live, catch, fabricate, tell nobody — and the
+catch is not hypothetical. Neither `POLYGON_API_KEY` nor
+`ALPHA_VANTAGE_API_KEY` appears in `.env.local`, `.env` or `.env.example`. Both
+clients keep an empty key behind a guard that no longer does anything:
+
+```ts
+this.apiKey = apiKey || process.env.POLYGON_API_KEY || "";
+if (!this.apiKey) {
+  // Polygon: API key not configured        <- the warning was removed,
+}                                           //  the empty `if` was left
+```
+(`src/lib/integrations/polygon.ts:109-113`; `alpha-vantage.ts` is identical.)
+
+Both providers therefore call out with an empty key and fail,
+`marketDataService.getQuote` throws `ALL_PROVIDERS_FAILED`
+(`market-data-service.ts:178-183`), and the analyst catches it. **On this
+configuration the fallback is not an edge case; it is the only path.**
+
+Both fallbacks also claim a provenance tag they do not set: `// Fallback with
+estimated data tagged as source: 'estimated'` (:299) and `// Fallback:
+synthetic data tagged source: 'synthetic'` (:366). Neither returned object has
+a `source` field at all. The convention exists in a different module
+(`services/SentimentAnalysisService.ts:909`), which is presumably where the
+comment came from.
+
+**2. Fundamentals, sentiment, peers, fair value and risk have NO real branch.**
+These are not fallbacks. There is no live path to fall back FROM:
+
+| Method | What it invents |
+|---|---|
+| `getValuationMetrics` (:1027) | priceToBook, priceToSales, evToEbitda, evToRevenue |
+| `getProfitabilityMetrics` (:1039) | grossMargin, operatingMargin, netMargin, ROE, ROA — **takes no arguments at all**, so it is not even symbol-dependent |
+| `getGrowthMetrics` (:1050), `getFinancialHealthMetrics` (:1062), `getDividendMetrics` (:1074) | the rest of the fundamentals |
+| `getPeerComparison` (:1088) | the peer table |
+| `calculateFairValue` (:1139) | a **fair value and upside** for the stock |
+| `assessRisk` (:1416) | the risk assessment |
+| `performSentimentAnalysis` (:1209) and its five helpers (:1227-1375) | overall sentiment, news, social, analyst consensus, insider activity, institutional activity |
+
+`getNewsSentiment` (:1238) is the worst of them. It generates an article count,
+positive/negative counts, and then **headlines attributed to named news
+organisations, with constructed URLs**:
+
+```ts
+title: `${symbol} Reports Strong Quarterly Results`,
+source: "Reuters",
+url: `https://reuters.com/${symbol.toLowerCase()}`,
+```
+
+A second entry is attributed to Bloomberg. These are not real articles, the
+URLs do not resolve to them, and the story is always positive.
+
+### The route documentation describes a system that does not exist
+
+`sentiment/route.ts:1-18` advertises "News sentiment from major financial news
+sources", "Social media sentiment (Twitter, Reddit, StockTwits)", "Analyst
+ratings and consensus", "Insider trading activity", "Institutional ownership
+changes". There is no news client, no social client, and no analyst or
+ownership data source anywhere in the module.
+
+### The test suite is green over it, and pins it
+
+`src/lib/investments/__tests__/ai-stock-analyst.test.ts:253-257`:
+
+```ts
+const fairValue = result.data?.fundamental?.fairValue;
+expect(fairValue?.value).toBeGreaterThan(0);
+expect(fairValue?.method).toBe("dcf");
+```
+
+Any positive random number satisfies the first assertion, and the second
+asserts the value is labelled **"dcf"** — discounted cash flow, a specific
+valuation methodology — over a number no cash flow was used to produce. The
+test does not miss the fabrication; it encodes it as correct.
+
+### Correction to rev 13
+
+Rev 13 recorded that "the market-data path for SF-17 is REAL —
+marketDataService throws ALL_PROVIDERS_FAILED rather than fabricating". That is
+true of `marketDataService` and false of the path. Every screen reaches market
+data through `aiStockAnalyst`, which catches exactly that throw and fabricates.
+Auditing the module that behaves correctly said nothing about the caller that
+does not.
+
+### What this does to SF-18
+
+SF-18 offered two repairs for the unreachable-`buy` ceiling. **Option 2
+("supply the missing inputs") is now disqualified**: `performFundamentalAnalysis`
+and `performSentimentAnalysis` return random numbers, so wiring them in would
+feed randomness into a recommendation instead of a placeholder 50. The owner
+decision narrows to renormalising over what is genuinely supplied — which, on
+this configuration, is a technical score computed from a random walk.
+
+### What this does to the four blocked mobile screens
+
+`investments/analyze/{fundamental,recommendation,sentiment,technical}` carry
+baselined fabrications and were held back pending SF-18. They must stay held
+back for a stronger reason: **the routes they would be wired to fabricate too.**
+Wiring them would relocate the fabrication behind HTTP, where it acquires the
+appearance of having been sourced — the same reason `dispute/strategies` was
+left unwired and `/credit/factors` was rebuilt before use.
+
+### Not fixed, and why
+
+The repair is a product decision, not a mechanical one. Either market data is
+purchased and these surfaces are built on it, or the surfaces are withdrawn
+until it is. Deleting 85 random calls without deciding which of those is
+happening would leave five routes returning nothing, and choosing between them
+is not mine to make. Recorded with evidence; recommended action is to withdraw
+the five routes and the four screens behind a flag until a market-data provider
+is configured, because a signed-in user can reach a fabricated fair value today.
+
 ## Revision History
 
 | Date | Change |
@@ -1008,3 +1146,4 @@ from the declaration so the budget sums to what is actually applied.
 | 2026-08-18 (rev 36) | Fixed SF-13's `reports/comparison`. BUREAUS invented all three scores AND their movements (Experian 695 +12, Equifax 682 -5, TransUnion 688 +8); COMPARISON_DATA invented nine metrics across three bureaus — 27 numbers, none measured. Scores now come from GET /credit-monitoring/scores. The movement arrows are gone: `CreditScore` carries no delta, and a change needs two readings from a per-bureau history route this screen does not call. **The nine-metric table is removed rather than wired, and that is the finding:** those figures live inside `credit_reports.reportData`, typed `Record<string, unknown>` (db-legacy.ts:27) — an untyped JSONB blob whose shape depends on whichever importer wrote it. Building a bureau-by-bureau comparison on it would mean inventing a parse contract and presenting the result as measurement, which is exactly how the fixture arrived. The screen now states that per-bureau report parsing is unavailable. Removed with it: `selectedMetric` and `getValueColor`, which existed only to highlight and colour rows of that table. |
 
 | 2026-08-18 (rev 37) | Fixed SF-13's `credit-builder/pay-for-delete`. MOCK_COLLECTIONS presented invented debts as the user's own — "ABC Collections, originally Medical Center, $1,250, opened 2023-06-15" — and the screen then computed a settlement offer at 40% of the selected balance, so it produced a specific dollar figure to pay on a debt nobody owed. **Nothing was wired in its place, and that is the finding:** a user's collection accounts come from a parsed credit report, and that data sits in `credit_reports.reportData`, typed `Record<string, unknown>` (db-legacy.ts:27) — the same untyped JSONB blob that blocked the bureau comparison in rev 36. The only `tradelines` table in the schema is the MARKETPLACE one (tradelines for sale), not the caller's accounts. The screen now states that the list is unavailable and why. Removed with the list: `selectedCollection`, `offerAmount`, the `TextInput` and the twelve styles that served only the picker and the calculator. **The STEPS guide and the negotiation tips STAY, and are reclassified in the screen-data baseline from `fabrication` to `catalogue`** — a six-step explanation of how pay-for-delete works is product content about the strategy, not a claim about this user, which is the line that classification draws. Mutation-verified: reintroducing an "ABC Collections" row and a "$1,250" balance fails two of the five pinning tests; reverted exact. |
+| 2026-08-18 (rev 38) | Added SF-28 (CRITICAL, NOT FIXED — a product decision, recorded with evidence). `src/lib/investments/ai-stock-analyst.ts` holds **85 `Math.random()` call sites across 19 methods** and backs five live `withAuth` routes (`/api/investments/analyze/[symbol]` + its recommendation/fundamental/sentiment/technical children). Two distinct defects. **(1) Quotes and history are a silent mock fallback** — `getStockQuote` (:271) and `getHistoricalData` (:331) call the real `marketDataService`, catch any throw, and return invented price/volume/marketCap/peRatio/eps and a random-walk OHLCV series seeded from `getSimulatedBasePrice` (:403 — ten hardcoded tickers, else `100 + Math.random() * 200`). Neither `POLYGON_API_KEY` nor `ALPHA_VANTAGE_API_KEY` is configured, and both clients keep an empty key behind an `if (!this.apiKey) { }` whose warning was deleted (`polygon.ts:109-113`), so both providers fail, `marketDataService` throws `ALL_PROVIDERS_FAILED`, and the fallback is the ONLY path on this configuration. Both fallback comments claim a `source: 'estimated'`/`'synthetic'` tag that neither returned object carries — the convention lives in a different module. **(2) Fundamentals, sentiment, peers, fair value and risk have no real branch at all** — `getValuationMetrics`, `getProfitabilityMetrics` (which takes NO arguments, so it is not even symbol-dependent), `getGrowthMetrics`, `getFinancialHealthMetrics`, `getDividendMetrics`, `getPeerComparison`, `calculateFairValue` (a fair value and upside for the stock), `assessRisk`, and the whole sentiment family. `getNewsSentiment` (:1238) fabricates headlines **attributed to Reuters and Bloomberg with constructed URLs**. The sentiment route's own doc comment advertises Twitter/Reddit/StockTwits, analyst ratings, insider activity and institutional ownership; none of those clients exist. The unit test at `ai-stock-analyst.test.ts:253-257` asserts `fairValue.value > 0` and `method === "dcf"` — satisfied by any positive random number, so the suite is green over the fabrication and encodes it as correct. **Corrects rev 13**, which recorded the market-data path as REAL: that was true of `marketDataService` and false of the path, because every screen reaches it through the analyst that catches its throw. **Disqualifies SF-18's option 2** (supplying fundamental/sentiment inputs would feed randomness into the composite) and gives a stronger reason to keep the four `investments/analyze/*` screens unwired: the routes fabricate too, so wiring them would relocate the fabrication behind HTTP where it looks sourced. |
