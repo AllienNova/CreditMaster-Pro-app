@@ -36,6 +36,7 @@
     "test:money": "jest --testPathPatterns='\\.money\\.test\\.'",
     "audit:money": "node scripts/audit-money.mjs --self-test && node scripts/audit-money.mjs",
     "audit:mocks": "node scripts/audit-mocks.mjs --self-test && node scripts/audit-mocks.mjs",
+    "audit:screen-data": "node mobile-app/scripts/audit-screen-data.mjs --self-test && node mobile-app/scripts/audit-screen-data.mjs --roots src/app,src/components --baseline scripts/screen-data-web-baseline.json",
     "audit:inline-metrics": "node mobile-app/scripts/audit-inline-metrics.mjs --self-test && node mobile-app/scripts/audit-inline-metrics.mjs --root src/app --baseline scripts/inline-metrics-web-baseline.json",
     "test:no-mock-fallback": "jest --testPathPatterns='\\.no-mock-fallback\\.test\\.'",
     "test:compliance": "jest --testPathPatterns='\\.compliance\\.test\\.'",

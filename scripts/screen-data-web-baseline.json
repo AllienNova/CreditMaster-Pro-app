@@ -1,0 +1,162 @@
+{
+  "frozen": "2026-08-17",
+  "why": "Screens rendering a module-level constant data set. Each must be classified `catalogue` (product content: plans offered, bureaus, filter chips) or `fabrication` (invented user data that must be replaced by a real read). UNCLASSIFIED entries are debt someone has not looked at yet. This list may only shrink.",
+  "entries": {
+    "src/app/(pages)/subscriptions/page.tsx: FILTER_TABS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/api/admin/stats/route.ts: PRICE_MAP": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/api/credit/factors/route.ts: AGE_BANDS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/api/investments/portfolio/performance/route.ts: PERIOD_DAYS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/budgeting/page.tsx: FEATURE_CARDS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/budgeting/subscriptions/page.tsx: MONTHLY_EQUIVALENT_FACTOR": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/credit-builder/goals/page.tsx: MOCK_ACTIVE_GOALS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/credit/factors/page.tsx: SCORE_RANGES": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/credit/goodwill-letters/page.tsx: LETTER_TEMPLATES": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/credit/secured-cards/page.tsx: GOALS, MOCK_RECOMMENDATIONS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/experts/page.tsx: MOCK_EXPERTS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/financial-intelligence/page.tsx: MOCK_SNAPSHOT, QUICK_ACTIONS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/financial/crypto/page.tsx: MOCK_WALLETS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/financial/real-estate/page.tsx: MOCK_PROPERTIES": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/goals/shared/page.tsx: MOCK_GOALS, TEMPLATES": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/identity/dark-web/page.tsx: BREACH_ENTRIES, EXPOSED_CATEGORIES": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/identity/page.tsx: FEATURES, MOCK_ALERTS, RECOMMENDED_ACTIONS, SCAN_RESULTS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/insights/alerts/page.tsx: MOCK_ALERTS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/investments/layout.tsx: NAV_ITEMS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/investments/performance/page.tsx: TIME_PERIODS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/investments/rebalance/page.tsx: MOCK_ALLOCATIONS, MOCK_TRADES": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/investments/research/page.tsx: POPULAR_SYMBOLS, TAB_ITEMS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/app/marketplace/auto-loans/page.tsx: SCORE_TIERS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/recommendations/credit-cards/page.tsx: CREDIT_CARD_OFFERS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/recommendations/insights/page.tsx: INSIGHTS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/recommendations/loans/page.tsx: LOAN_OFFERS, LOAN_TYPE_CHIPS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/recommendations/page.tsx: CATEGORY_CHIPS, QUICK_LINKS, RECOMMENDATIONS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/app/trading/strategies/page.tsx: CATEGORIES": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/components/brand/registry.ts: BRAND_ASSETS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/components/documents/DocumentUpload.tsx: STEPS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/components/financial/SubscriptionCancellationWizard.tsx: OUTCOME_OPTIONS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/components/image-generator/ImageGenerator.tsx: SIZE_OPTIONS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    },
+    "src/components/investments/charts/AdvancedChartContainer.tsx: CHART_TYPES, TIMEFRAMES": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/components/investments/rebalance/AllocationConfigPanel.tsx: PORTFOLIO_MODELS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/components/investments/rebalance/RebalanceHistoryPanel.tsx: TIME_FILTERS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/components/semantic-search/SemanticSearch.tsx: SAMPLE_RESULTS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/components/trading/charts/DrawingToolbar.tsx: TOOLS": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/components/trading/charts/TradingChartContainer.tsx: CHART_TYPES, INDICATOR_OPTIONS, TIMEFRAMES": {
+      "classification": "UNCLASSIFIED",
+      "offline": true
+    },
+    "src/components/trading/mode/ModePermissionsCard.tsx: PERMISSION_ITEMS": {
+      "classification": "UNCLASSIFIED",
+      "offline": false
+    }
+  }
+}

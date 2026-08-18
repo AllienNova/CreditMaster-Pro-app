@@ -185,6 +185,16 @@ jobs:
       - name: audit:inline-metrics (web) - no hardcoded measurement in JSX
         run: npm run audit:inline-metrics
 
+      # BLOCKING: the web tree had NO equivalent of the mobile screen-data
+      # gate. audit:mocks watches API responses; nothing watched a page's own
+      # constants. src/app/analytics/credit-score/page.tsx kept a scoreFactors
+      # list asserting "On-time payments for 24 months" and "Using 32% of
+      # available credit" - the SF-16 shape, unwatched. 39 entries, all
+      # UNCLASSIFIED: that is debt nobody has looked at yet, stated as such
+      # rather than pre-judged. Shrink-only.
+      - name: audit:screen-data (web) - no unreviewed constant data set
+        run: npm run audit:screen-data
+
       # BLOCKING: a link pointing at a route that does not exist is a 404 for a
       # real user. The dogfood sweep enumerates routes from the filesystem and
       # cannot find these - the bad link is never in its input.

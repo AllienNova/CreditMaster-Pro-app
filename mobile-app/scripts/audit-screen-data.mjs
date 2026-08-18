@@ -34,8 +34,29 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "fs";
 import { join, relative } from "path";
 
-const MOBILE = process.cwd();
-const BASELINE = join(MOBILE, "scripts", "screen-data-baseline.json");
+/**
+ * Runs over EITHER tree.
+ *
+ * The web app has 199 pages and no equivalent of this gate: `audit:mocks`
+ * watches API RESPONSES and nothing watched a page's own constants. That is
+ * how `src/app/analytics/credit-score/page.tsx` kept a `scoreFactors` list
+ * asserting "On-time payments for 24 months" and "Using 32% of available
+ * credit" — the SF-16 shape, on the web side, unwatched.
+ *
+ *   --roots     comma-separated dirs to scan, relative to cwd
+ *               (default "app,src/hooks" — the mobile layout)
+ *   --baseline  where the shrink-only list lives
+ */
+const arg = (name, fallback) => {
+  const i = process.argv.indexOf(`--${name}`);
+  return i === -1 ? fallback : process.argv[i + 1];
+};
+
+const CWD = process.cwd();
+const ROOTS = arg("roots", "app,src/hooks")
+  .split(",")
+  .map((r) => join(CWD, r.trim()));
+const BASELINE = join(CWD, arg("baseline", join("scripts", "screen-data-baseline.json")));
 
 function walk(dir, out = []) {
   if (!existsSync(dir)) return out;
@@ -188,7 +209,7 @@ function isRendered(source, name) {
 
 function findings() {
   const out = [];
-  for (const file of [...walk(join(MOBILE, "app")), ...walk(join(MOBILE, "src", "hooks"))]) {
+  for (const file of ROOTS.flatMap((r) => walk(r))) {
     const source = readFileSync(file, "utf8");
     const rendered = [
       ...[...source.matchAll(CONST_DATA)]
@@ -200,7 +221,7 @@ function findings() {
     ];
     if (rendered.length === 0) continue;
     out.push({
-      file: relative(MOBILE, file).replace(/\\/g, "/"),
+      file: relative(CWD, file).replace(/\\/g, "/"),
       constants: [...new Set(rendered)].sort(),
       offline: !FETCHES.test(source),
     });
