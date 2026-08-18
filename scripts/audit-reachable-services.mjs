@@ -30,20 +30,28 @@
  * A service flagged here is a CANDIDATE for review, not proof of dead code.
  * Exposing one means adding a route; deleting one needs a named owner.
  *
- * THE BIGGEST LIMITATION, and it means this audit UNDER-reports:
- * reachability is MODULE-level, not SYMBOL-level. Importing a barrel marks
- * everything that barrel re-exports as reachable, whether or not the specific
- * symbol is ever used. Measured example: routes import `@/lib/gamification`
- * for getAchievementService and getCommunityChallengesService, which marks
- * shared-goals-service and financial-journey-service reachable too —
- * `getSharedGoalsService` and `getFinancialJourneyService` are called nowhere
- * under src/app.
+ * IT ASKS ABOUT USE, NOT LOADING — and the distinction is load-bearing.
+ * At runtime a barrel doing `export * from "./heavy"` really does load
+ * ./heavy, so MODULE-level reachability is correct about loading. But the
+ * question here is whether a FEATURE is exposed, and a service whose module is
+ * loaded while none of its functions are ever imported is exactly the stranded
+ * case worth finding. So a named import follows only the symbols it names,
+ * resolved through barrel re-exports to the file that defines them.
  *
- * So a service ABSENT from this report is not proven live; a service PRESENT
- * in it is strong evidence of being stranded. The error runs one way on
- * purpose: a false "unreachable" would fail CI for working code, which is
- * worse than missing a stranded one. Symbol-level resolution is the fix and is
- * tracked separately.
+ * The first version of this audit was module-level and it cost a real
+ * discovery: /goals/shared kept its fabricated "Dream Home Down Payment" for
+ * hours after this gate existed, because routes import `@/lib/gamification`
+ * for two OTHER services and the barrel re-exports shared-goals as well.
+ * Switching to symbol-level took the count from 33 to 36 and surfaced
+ * affiliate-service (38 db calls), pctt-trading-service and
+ * trailing-stop-service — each hand-verified as having no symbol referenced
+ * anywhere under src/app.
+ *
+ * `import * as ns`, default imports and side-effect imports still traverse the
+ * whole module, because they genuinely can reach anything in it. That keeps
+ * the error running one way: the audit would rather miss a stranded service
+ * than accuse a working one, since a false "unreachable" fails CI for code
+ * that is fine.
  *
  * Usage:
  *   node scripts/audit-reachable-services.mjs --self-test
@@ -161,6 +169,177 @@ export function reachableFrom(entryFiles, { srcDir = SRC, readFile } = {}) {
   return seen;
 }
 
+// ---------------------------------------------------------------------------
+// Symbol-level resolution
+// ---------------------------------------------------------------------------
+
+/**
+ * The imports a file makes, split by whether they name specific symbols.
+ *
+ * `import { a, b } from "m"` and `export { a } from "m"` name symbols, so the
+ * importer uses only those. `import * as ns`, a default import and a bare
+ * side-effect import can reach anything in the module, so they are treated as
+ * whole-module and traversed conservatively.
+ */
+export function extractImports(source) {
+  const named = new Map(); // specifier -> Set(symbol)
+  const whole = new Set();
+
+  const addNamed = (specifier, clause) => {
+    const set = named.get(specifier) ?? new Set();
+    for (const part of clause.split(",")) {
+      // `foo as bar` — the DEFINING module knows it as `foo`.
+      const symbol = part.trim().split(/\s+as\s+/)[0].replace(/^type\s+/, "").trim();
+      if (symbol && symbol !== "*") set.add(symbol);
+    }
+    named.set(specifier, set);
+  };
+
+  for (const m of source.matchAll(
+    /\b(?:import|export)\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["']([^"']+)["']/g,
+  )) {
+    addNamed(m[2], m[1]);
+  }
+  // import * as ns / default import / export * / side-effect / dynamic
+  for (const m of source.matchAll(
+    /\bimport\s+(?:\*\s*as\s+\w+|\w+)\s*(?:,\s*\{[^}]*\}\s*)?from\s*["']([^"']+)["']/g,
+  )) {
+    whole.add(m[1]);
+  }
+  for (const m of source.matchAll(/\bexport\s*\*\s*from\s*["']([^"']+)["']/g)) {
+    whole.add(m[1]);
+  }
+  for (const m of source.matchAll(/\bimport\s*["']([^"']+)["']/g)) {
+    whole.add(m[1]);
+  }
+  for (const m of source.matchAll(/\bimport\s*\(\s*["']([^"']+)["']\s*\)/g)) {
+    whole.add(m[1]);
+  }
+  return { named, whole };
+}
+
+/**
+ * Where each of a module's exported symbols is actually defined.
+ *
+ * Follows `export { a } from "./x"` and `export * from "./x"` so that a symbol
+ * pulled from a barrel resolves to the file that really implements it. Cycles
+ * are guarded with a visiting set; a barrel importing itself would otherwise
+ * spin.
+ */
+export function buildExportMap(file, { srcDir = SRC, read, cache, visiting } = {}) {
+  const readFile = read ?? ((f) => fs.readFileSync(f, "utf8"));
+  const memo = cache ?? new Map();
+  const active = visiting ?? new Set();
+  if (memo.has(file)) return memo.get(file);
+  if (active.has(file)) return new Map(); // cycle
+  active.add(file);
+
+  const map = new Map();
+  let source = "";
+  try {
+    source = readFile(file);
+  } catch {
+    memo.set(file, map);
+    active.delete(file);
+    return map;
+  }
+
+  // Locally defined exports.
+  for (const m of source.matchAll(
+    /\bexport\s+(?:async\s+)?(?:const|let|var|function|class|interface|type|enum)\s+(\w+)/g,
+  )) {
+    map.set(m[1], file);
+  }
+  // `export { a, b }` with no `from` — defined here.
+  for (const m of source.matchAll(/\bexport\s*\{([^}]*)\}\s*(?!from)/g)) {
+    for (const part of m[1].split(",")) {
+      const symbol = part.trim().split(/\s+as\s+/).pop()?.trim();
+      if (symbol) map.set(symbol, file);
+    }
+  }
+  // `export { a } from "./x"` — a lives in ./x (or wherever ./x got it).
+  for (const m of source.matchAll(
+    /\bexport\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["']([^"']+)["']/g,
+  )) {
+    const target = resolveSpecifier(m[2], file, { srcDir });
+    if (!target) continue;
+    const inner = buildExportMap(target, { srcDir, read: readFile, cache: memo, visiting: active });
+    for (const part of m[1].split(",")) {
+      const original = part.trim().split(/\s+as\s+/)[0].replace(/^type\s+/, "").trim();
+      const exposed = part.trim().split(/\s+as\s+/).pop()?.trim() ?? original;
+      if (original) map.set(exposed, inner.get(original) ?? target);
+    }
+  }
+  // `export * from "./x"` — everything ./x exports, at ./x's own definitions.
+  for (const m of source.matchAll(/\bexport\s*\*\s*from\s*["']([^"']+)["']/g)) {
+    const target = resolveSpecifier(m[1], file, { srcDir });
+    if (!target) continue;
+    const inner = buildExportMap(target, { srcDir, read: readFile, cache: memo, visiting: active });
+    for (const [symbol, definedIn] of inner) {
+      if (!map.has(symbol)) map.set(symbol, definedIn);
+    }
+  }
+
+  active.delete(file);
+  memo.set(file, map);
+  return map;
+}
+
+/**
+ * Modules whose code is actually USED from the given entry points.
+ *
+ * This is deliberately a different question from `reachableFrom`. At runtime a
+ * barrel doing `export * from "./heavy"` really does load ./heavy, so
+ * module-level reachability is correct about LOADING. But the question this
+ * audit asks is whether a feature is exposed, and a service whose module is
+ * loaded but whose functions are never imported is exactly the stranded case
+ * we are hunting. So: named imports follow only the symbols they name.
+ *
+ * `import * as ns`, default imports and side-effect imports still traverse the
+ * whole module, because they genuinely can reach anything in it.
+ */
+export function usedFrom(entryFiles, { srcDir = SRC, readFile } = {}) {
+  const read = readFile ?? ((f) => fs.readFileSync(f, "utf8"));
+  const exportCache = new Map();
+  const used = new Set();
+  const queue = [...entryFiles];
+
+  while (queue.length > 0) {
+    const file = queue.pop();
+    if (used.has(file)) continue;
+    used.add(file);
+
+    let source;
+    try {
+      source = read(file);
+    } catch {
+      continue;
+    }
+
+    const { named, whole } = extractImports(source);
+
+    for (const [specifier, symbols] of named) {
+      const target = resolveSpecifier(specifier, file, { srcDir });
+      if (!target) continue;
+      const exports = buildExportMap(target, {
+        srcDir,
+        read,
+        cache: exportCache,
+      });
+      for (const symbol of symbols) {
+        const definedIn = exports.get(symbol) ?? target;
+        if (!used.has(definedIn)) queue.push(definedIn);
+      }
+    }
+
+    for (const specifier of whole) {
+      const target = resolveSpecifier(specifier, file, { srcDir });
+      if (target && !used.has(target)) queue.push(target);
+    }
+  }
+  return used;
+}
+
 /** How many times a module talks to the database. */
 export function countDbCalls(source) {
   return (source.match(/supabase|\.from\(/g) ?? []).length;
@@ -256,6 +435,99 @@ function selfTest() {
     fs.statSync = originalStat;
   }
 
+  /*
+   * SYMBOL-LEVEL resolution. This is the case the module-level version got
+   * wrong, and it cost a real discovery: /goals/shared kept its fabricated
+   * data for hours after the gate existed, because routes import the
+   * gamification barrel for TWO services and the barrel re-exports four.
+   */
+  const barrelFiles = {
+    "/src/app/api/quests/route.ts": `import { getAchievementService } from "@/lib/gamification";`,
+    "/src/lib/gamification/index.ts": `
+      export { getAchievementService } from "./achievement-service";
+      export { getSharedGoalsService } from "./shared-goals-service";
+      export * from "./journey-service";
+    `,
+    "/src/lib/gamification/achievement-service.ts": `export function getAchievementService() {}`,
+    "/src/lib/gamification/shared-goals-service.ts": `export function getSharedGoalsService() {}`,
+    "/src/lib/gamification/journey-service.ts": `export function getJourneyService() {}`,
+  };
+  const hasBarrel = (p) =>
+    Object.prototype.hasOwnProperty.call(barrelFiles, p);
+  const realExists = fs.existsSync;
+  const realStat = fs.statSync;
+  fs.existsSync = (p) => hasBarrel(p) || realExists(p);
+  fs.statSync = (p) => (hasBarrel(p) ? { isFile: () => true } : realStat(p));
+  try {
+    const opts = {
+      srcDir: "/src",
+      readFile: (f) => barrelFiles[f] ?? "",
+    };
+    const used = usedFrom(["/src/app/api/quests/route.ts"], opts);
+    check(
+      "named barrel import reaches the service it names",
+      used.has("/src/lib/gamification/achievement-service.ts"),
+      true,
+    );
+    check(
+      "named barrel import does NOT reach a sibling it never names",
+      used.has("/src/lib/gamification/shared-goals-service.ts"),
+      false,
+    );
+    check(
+      "nor one the barrel exports with a star",
+      used.has("/src/lib/gamification/journey-service.ts"),
+      false,
+    );
+
+    // The old behaviour, kept for comparison, must still say everything.
+    const loaded = reachableFrom(["/src/app/api/quests/route.ts"], opts);
+    check(
+      "module-level still reports the sibling as loaded",
+      loaded.has("/src/lib/gamification/shared-goals-service.ts"),
+      true,
+    );
+
+    const exports = buildExportMap("/src/lib/gamification/index.ts", {
+      srcDir: "/src",
+      read: (f) => barrelFiles[f] ?? "",
+    });
+    check(
+      "export-map resolves a re-exported symbol to its defining file",
+      exports.get("getSharedGoalsService"),
+      "/src/lib/gamification/shared-goals-service.ts",
+    );
+    check(
+      "export-map follows `export *` to the defining file",
+      exports.get("getJourneyService"),
+      "/src/lib/gamification/journey-service.ts",
+    );
+  } finally {
+    fs.existsSync = realExists;
+    fs.statSync = realStat;
+  }
+
+  check(
+    "named import extraction",
+    [...extractImports(`import { a, b } from "m";`).named.get("m")],
+    ["a", "b"],
+  );
+  check(
+    "aliased import resolves to the ORIGINAL name",
+    [...extractImports(`import { a as z } from "m";`).named.get("m")],
+    ["a"],
+  );
+  check(
+    "namespace import is whole-module",
+    [...extractImports(`import * as ns from "m";`).whole],
+    ["m"],
+  );
+  check(
+    "default import is whole-module",
+    [...extractImports(`import d from "m";`).whole],
+    ["m"],
+  );
+
   const failed = cases.filter((c) => !c.ok);
   for (const c of failed) {
     console.error(
@@ -289,8 +561,10 @@ function main() {
     baselineIdx !== -1 ? path.resolve(args[baselineIdx + 1]) : null;
   const freeze = args.includes("--freeze-baseline");
 
-  const reachableFromApi = reachableFrom(walk(API_ROOT));
-  const reachableFromApp = reachableFrom(walk(APP_ROOT));
+  // usedFrom, not reachableFrom: see the header. A service whose module is
+  // merely loaded through a barrel is not an exposed feature.
+  const reachableFromApi = usedFrom(walk(API_ROOT));
+  const reachableFromApp = usedFrom(walk(APP_ROOT));
 
   /*
    * "contains service", not "ends in Service.ts". The narrower pattern missed

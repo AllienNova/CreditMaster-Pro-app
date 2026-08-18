@@ -1,6 +1,6 @@
 {
   "frozen": "2026-08-18",
-  "why": "Database-backed services under src/lib that no file under src/app/api can reach, following the import graph through barrels and service-to-service chains. Each is either a route to add (the feature works, expose it) or a deletion to propose (the feature is dead). UNREVIEWED entries are debt nobody has looked at yet. This list may only shrink.",
+  "why": "Database-backed services under src/lib whose exported symbols nothing under src/app/api imports, following the import graph through barrel re-exports and service-to-service chains. Resolution is SYMBOL-level: a route importing a barrel does not count as using every service that barrel re-exports, because the question is whether a FEATURE is exposed, not whether a module gets loaded. Each entry is either a route to add (the feature works, expose it) or a deletion to propose (the feature is dead). UNREVIEWED entries are debt nobody has looked at yet. This list may only shrink. Namespace, default and side-effect imports still count as whole-module, so the audit errs toward missing a stranded service rather than accusing a working one.",
   "entries": {
     "src/lib/gamification/points-rewards-service.ts": {
       "dbCalls": 52,
@@ -37,6 +37,12 @@
       "reachableFromPage": false,
       "verdict": "UNREVIEWED",
       "why": ""
+    },
+    "src/lib/commerce/affiliate/affiliate-service.ts": {
+      "dbCalls": 38,
+      "reachableFromPage": false,
+      "verdict": "NEEDS-DECISION",
+      "why": "REVEALED by the switch to symbol-level resolution, 2026-08-18. 38 db calls. Routes import @/lib/commerce/affiliate for `commissionCalculator`, which lives in commission-calculator.ts, so the barrel is loaded but affiliateService itself is referenced nowhere under src/app (hand-verified). Compounds task #103: the affiliate stack is more stranded than the payout finding alone suggested."
     },
     "src/lib/financial/auto-save-rules-service.ts": {
       "dbCalls": 35,
@@ -163,6 +169,18 @@
       "reachableFromPage": true,
       "verdict": "NEEDS-DECISION",
       "why": "Reached from a PAGE but not from any route. Same shape as auth-service."
+    },
+    "src/lib/trading/pctt/pctt-trading-service.ts": {
+      "dbCalls": 11,
+      "reachableFromPage": false,
+      "verdict": "NEEDS-DECISION",
+      "why": "REVEALED by symbol-level resolution. No symbol (createPCTTTradingService, PCTTTradingService, DEFAULT_TRADING_CONFIG) referenced under src/app. Relates to the open trading decisions, tasks #83/#84/#86."
+    },
+    "src/lib/trading/risk/trailing-stop-service.ts": {
+      "dbCalls": 9,
+      "reachableFromPage": false,
+      "verdict": "NEEDS-DECISION",
+      "why": "REVEALED by symbol-level resolution. Neither trailingStopService nor TrailingStopService referenced under src/app. Risk control for a trading path that is itself undecided."
     },
     "src/lib/financial/currency-service.ts": {
       "dbCalls": 6,
