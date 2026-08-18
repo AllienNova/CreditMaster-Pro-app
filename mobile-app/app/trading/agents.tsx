@@ -138,137 +138,119 @@ function formatLatency(ms: number): string {
 }
 
 // ============================================================================
-// MOCK DATA (used when API is unavailable)
+// DERIVING AGENT STATS FROM THE CALLER'S OWN RUNS
 // ============================================================================
 
-const MOCK_AGENTS: AgentInfo[] = [
-  {
-    name: "Sentiment Agent",
-    type: "sentiment",
-    status: "active",
-    model: "gpt-4o-mini",
-    lastRun: new Date(Date.now() - 120000).toISOString(),
-    avgLatencyMs: 850,
-    totalRuns: 1247,
-    successRate: 0.97,
-    latestOutput: {
-      summary:
-        "Overall market sentiment is cautiously bullish. Tech sector showing strong positive momentum. Social media sentiment score: 0.72.",
-      confidence: 0.78,
-      timestamp: new Date(Date.now() - 120000).toISOString(),
-    },
-    circuitBreaker: { state: "closed", failures: 0 },
-  },
-  {
-    name: "Regime Confirmation",
-    type: "regime-confirmation",
-    status: "active",
-    model: "claude-sonnet-4-6",
-    lastRun: new Date(Date.now() - 300000).toISOString(),
-    avgLatencyMs: 1200,
-    totalRuns: 856,
-    successRate: 0.99,
-    latestOutput: {
-      summary:
-        "Current regime: TRENDING (bullish). Confidence in regime stability: HIGH. Volatility regime: LOW. Suggested position sizing: 1.2x normal.",
-      confidence: 0.92,
-      timestamp: new Date(Date.now() - 300000).toISOString(),
-    },
-    circuitBreaker: { state: "closed", failures: 0 },
-  },
-  {
-    name: "Earnings Agent",
-    type: "earnings",
-    status: "idle",
-    model: "gpt-4o",
-    lastRun: new Date(Date.now() - 3600000).toISOString(),
-    avgLatencyMs: 2100,
-    totalRuns: 312,
-    successRate: 0.95,
-    latestOutput: {
-      summary:
-        "Next earnings: AAPL (Feb 28), NVDA (Mar 5). AAPL expected beat probability: 68%. Pre-earnings volatility expansion expected.",
-      confidence: 0.71,
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-    },
-    circuitBreaker: { state: "closed", failures: 0 },
-  },
-  {
-    name: "Consensus Arbiter",
-    type: "consensus-arbiter",
-    status: "active",
-    model: "claude-sonnet-4-6",
-    lastRun: new Date(Date.now() - 180000).toISOString(),
-    avgLatencyMs: 450,
-    totalRuns: 2103,
-    successRate: 0.98,
-    latestOutput: {
-      summary:
-        "5/7 agents agree on bullish AAPL. Consensus score: 0.82. Disagreement from News agent (neutral). Recommendation: PROCEED with position.",
-      confidence: 0.85,
-      timestamp: new Date(Date.now() - 180000).toISOString(),
-    },
-    circuitBreaker: { state: "closed", failures: 0 },
-  },
-  {
-    name: "Signal Explainer",
-    type: "signal-explainer",
-    status: "active",
-    model: "claude-sonnet-4-6",
-    lastRun: new Date(Date.now() - 60000).toISOString(),
-    avgLatencyMs: 680,
-    totalRuns: 1890,
-    successRate: 0.96,
-    latestOutput: {
-      summary:
-        "AAPL long signal triggered by PCTT trendline breakout confirmed by volume surge. Entry at $189.50 near support. R:R = 1:2.8.",
-      confidence: 0.88,
-      timestamp: new Date(Date.now() - 60000).toISOString(),
-    },
-    circuitBreaker: { state: "closed", failures: 0 },
-  },
-  {
-    name: "Risk Narrative",
-    type: "risk-narrative",
-    status: "active",
-    model: "gpt-4o-mini",
-    lastRun: new Date(Date.now() - 90000).toISOString(),
-    avgLatencyMs: 520,
-    totalRuns: 1654,
-    successRate: 0.97,
-    latestOutput: {
-      summary:
-        "Portfolio heat: 32% (safe). Max drawdown today: -0.8%. No correlated position clusters detected. Risk level: LOW.",
-      confidence: 0.91,
-      timestamp: new Date(Date.now() - 90000).toISOString(),
-    },
-    circuitBreaker: { state: "closed", failures: 0 },
-  },
-  {
-    name: "News Impact",
-    type: "news-impact",
-    status: "error",
-    model: "gpt-4o",
-    lastRun: new Date(Date.now() - 600000).toISOString(),
-    avgLatencyMs: 3200,
-    totalRuns: 445,
-    successRate: 0.82,
-    latestOutput: {
-      summary:
-        "Fed rate decision tomorrow. Market pricing 85% hold. Tech earnings season ongoing. No major geopolitical events.",
-      confidence: 0.65,
-      timestamp: new Date(Date.now() - 600000).toISOString(),
-    },
-    circuitBreaker: { state: "half-open", failures: 3, lastFailure: new Date(Date.now() - 600000).toISOString() },
-  },
-];
+/** One row of trading_agent_logs (20260226_trading_modes_compliance.sql:98). */
+interface AgentLog {
+  agent_type: string;
+  decision?: unknown;
+  confidence?: number;
+  model?: string;
+  latency_ms?: number;
+  validation_passed?: boolean;
+  created_at?: string;
+}
 
-const MOCK_SUMMARY = {
-  totalAgents: 7,
-  activeAgents: 5,
-  errorAgents: 1,
-  avgSuccessRate: 0.95,
+const AGENT_LABELS: Record<string, string> = {
+  sentiment: "Sentiment",
+  regime_confirmation: "Regime confirmation",
+  news_impact: "News impact",
+  signal_explainer: "Signal explainer",
+  risk_narrative: "Risk narrative",
+  earnings_analysis: "Earnings analysis",
+  consensus_arbiter: "Consensus arbiter",
 };
+
+/** Minutes after which an agent with no run is no longer "active". */
+const ACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function summaryTextFrom(decision: unknown): string {
+  if (typeof decision === "string") return decision;
+  if (decision && typeof decision === "object") {
+    const record = decision as Record<string, unknown>;
+    for (const key of ["summary", "rationale", "explanation", "narrative"]) {
+      if (typeof record[key] === "string") return record[key] as string;
+    }
+  }
+  return "";
+}
+
+/**
+ * Group the caller's real logs into per-agent stats.
+ *
+ * Every figure below is counted from rows this user actually produced. The
+ * screen previously showed MOCK_AGENTS: totalRuns 1247, successRate 0.97,
+ * avgLatencyMs 850, and a latestOutput asserting an analysis that never ran.
+ *
+ * `validationRate` is deliberately NOT called a success rate. The column is
+ * `validation_passed` — whether the model's output parsed and satisfied its
+ * schema. It says nothing about whether the call was right about the market,
+ * and labelling it "success" on a trading screen would imply it did.
+ */
+function agentsFromLogs(logs: AgentLog[], now: number): AgentInfo[] {
+  const byType = new Map<string, AgentLog[]>();
+  for (const log of logs) {
+    const list = byType.get(log.agent_type) ?? [];
+    list.push(log);
+    byType.set(log.agent_type, list);
+  }
+
+  return [...byType.entries()]
+    .map(([type, runs]) => {
+      const sorted = [...runs].sort((a, b) =>
+        String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")),
+      );
+      const latest = sorted[0];
+      const withLatency = runs.filter(
+        (r) => typeof r.latency_ms === "number",
+      );
+      const validated = runs.filter((r) => r.validation_passed === true).length;
+      const lastRunAt = latest?.created_at
+        ? new Date(latest.created_at).getTime()
+        : 0;
+      const summary = summaryTextFrom(latest?.decision);
+
+      return {
+        name: AGENT_LABELS[type] ?? type,
+        type,
+        status:
+          lastRunAt > 0 && now - lastRunAt < ACTIVE_WINDOW_MS
+            ? ("active" as AgentStatus)
+            : ("idle" as AgentStatus),
+        model: latest?.model ?? "",
+        lastRun: latest?.created_at,
+        avgLatencyMs: withLatency.length
+          ? Math.round(
+              withLatency.reduce((sum, r) => sum + (r.latency_ms ?? 0), 0) /
+                withLatency.length,
+            )
+          : undefined,
+        totalRuns: runs.length,
+        successRate: runs.length ? validated / runs.length : 0,
+        latestOutput: summary
+          ? {
+              summary,
+              confidence: latest?.confidence,
+              timestamp: latest?.created_at ?? "",
+            }
+          : undefined,
+      };
+    })
+    .sort((a, b) => b.totalRuns - a.totalRuns);
+}
+
+function summaryFrom(agents: AgentInfo[]): AgentsResponse["summary"] {
+  const validationRates = agents.map((a) => a.successRate);
+  return {
+    totalAgents: agents.length,
+    activeAgents: agents.filter((a) => a.status === "active").length,
+    errorAgents: agents.filter((a) => a.status === "error").length,
+    avgSuccessRate: validationRates.length
+      ? validationRates.reduce((sum, r) => sum + r, 0) / validationRates.length
+      : 0,
+  };
+}
 
 // ============================================================================
 // SUB-COMPONENTS
@@ -308,7 +290,7 @@ function SummaryCard({ summary }: { summary: AgentsResponse["summary"] }) {
           <Text style={[styles.summaryValue, { color: theme.colors.primary }]}>
             {(summary.avgSuccessRate * 100).toFixed(0)}%
           </Text>
-          <Text style={styles.summaryLabel}>Success</Text>
+          <Text style={styles.summaryLabel}>Validated</Text>
         </View>
       </View>
     </View>
@@ -362,7 +344,8 @@ function AgentCard({
           </Text>
         </View>
         <View style={styles.agentStat}>
-          <Text style={styles.agentStatLabel}>Success</Text>
+          {/* `validation_passed`, not a trading outcome — see agentsFromLogs. */}
+          <Text style={styles.agentStatLabel}>Validated</Text>
           <Text
             style={[
               styles.agentStatValue,
@@ -457,25 +440,37 @@ export default function AgentInsightsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchAgents = useCallback(async () => {
+    setError(null);
     try {
       const res = await fetch(`${API_BASE}/api/trading/agents`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.data?.agents) {
-          setAgents(json.data.agents);
-          setSummary(json.data.summary);
-          return;
-        }
+      const json = res.ok ? await res.json().catch(() => null) : null;
+
+      // The route returns `data.logs` (route.ts:101), never `data.agents`.
+      // The old code tested for `data.agents`, so the real branch could never
+      // be taken and every user fell through to the mock.
+      const logs = Array.isArray(json?.data?.logs)
+        ? (json.data.logs as AgentLog[])
+        : null;
+
+      if (!logs) {
+        setAgents([]);
+        setSummary(null);
+        setError(
+          "We could not load your agent activity. Nothing is shown in its place — pull to refresh in a moment.",
+        );
+        return;
       }
-      // Fallback to mock data
-      setAgents(MOCK_AGENTS);
-      setSummary(MOCK_SUMMARY);
+
+      const derived = agentsFromLogs(logs, Date.now());
+      setAgents(derived);
+      setSummary(summaryFrom(derived));
     } catch {
-      // API not available — use mock data
-      setAgents(MOCK_AGENTS);
-      setSummary(MOCK_SUMMARY);
+      setAgents([]);
+      setSummary(null);
+      setError("We could not reach the trading service.");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -513,16 +508,36 @@ export default function AgentInsightsScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
       }
     >
+      {error && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorTitle}>Agent activity is unavailable</Text>
+          <Text style={styles.errorBody}>{error}</Text>
+        </View>
+      )}
+
       {/* Summary */}
-      {summary && <SummaryCard summary={summary} />}
+      {summary && agents.length > 0 && <SummaryCard summary={summary} />}
 
       {/* Section Title */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>AI Agents</Text>
+        {/* Agents that have RUN for this user, not a configured roster —
+            the roster count came from the mock. */}
         <Text style={styles.sectionSubtitle}>
-          {agents.length} agents configured
+          {agents.length === 1 ? "1 agent has run" : `${agents.length} agents have run`}
         </Text>
       </View>
+
+      {!error && agents.length === 0 && (
+        <View style={styles.emptyCard}>
+          <Text style={styles.errorTitle}>No agent runs recorded</Text>
+          <Text style={styles.errorBody}>
+            These figures are counted from your own agent runs. Once an agent
+            runs for you, its latency, validation rate and latest output appear
+            here.
+          </Text>
+        </View>
+      )}
 
       {/* Agent Cards */}
       {agents.map((agent) => (
@@ -605,6 +620,31 @@ const styles = StyleSheet.create({
   },
 
   // Section
+  errorBanner: {
+    backgroundColor: "#FEF3C7",
+    borderColor: "#FCD34D",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  emptyCard: {
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  errorBody: {
+    fontSize: 13,
+    color: theme.colors.textMuted,
+  },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

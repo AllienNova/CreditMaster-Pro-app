@@ -332,11 +332,6 @@
       "classification": "catalogue",
       "offline": false
     },
-    "app/trading/agents.tsx: MOCK_AGENTS": {
-      "classification": "fabrication",
-      "offline": false,
-      "why": "Invented agent telemetry presented as operational fact: totalRuns 1247, successRate 0.97, avgLatencyMs 850, lastRun two minutes ago — and a latestOutput asserting an analysis that never ran ('market sentiment is cautiously bullish... Social media sentiment score: 0.72'). Related to #83/#84: the agent layer is prompt-and-parse and has no selection surface."
-    },
     "app/trading/index.tsx: QUICK_ACTIONS": {
       "classification": "catalogue",
       "offline": false
