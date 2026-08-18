@@ -43,6 +43,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 
+import {
+  PRICE_CADENCE,
+  listFeatures,
+  readBureaus,
+} from "@/lib/marketplace/product-features";
+
 type BureauKey = "experian" | "equifax" | "transunion";
 
 const BUREAU_LABELS: Record<BureauKey, string> = {
@@ -98,45 +104,9 @@ const SEVERITY_CLASSES: Record<string, string> = {
   low: "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300",
 };
 
-const PRICE_CADENCE: Record<string, string> = {
-  monthly: "/ month",
-  yearly: "/ year",
-  one_time: "one-time",
-};
-
-/** `disputes_per_month` -> `Disputes per month`. */
-function humanizeKey(key: string): string {
-  const spaced = key.replace(/[_-]+/g, " ").trim();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
-
-/**
- * Turns one feature entry into a line, or null when it says nothing. A `false`
- * boolean is dropped rather than rendered as "No" — the product declined the
- * feature, and listing it under "Included" would read as the opposite.
- */
-function describeFeature(key: string, value: unknown): string | null {
-  if (typeof value === "boolean") return value ? humanizeKey(key) : null;
-  if (typeof value === "number" || typeof value === "string") {
-    return `${humanizeKey(key)}: ${value}`;
-  }
-  if (Array.isArray(value) && value.length > 0) {
-    return `${humanizeKey(key)}: ${value.join(", ")}`;
-  }
-  return null;
-}
-
 function mapProductToService(
   product: Record<string, unknown>,
 ): MonitoringService {
-  const raw = product.features;
-  const features =
-    raw && typeof raw === "object" && !Array.isArray(raw)
-      ? (raw as Record<string, unknown>)
-      : {};
-
-  const bureaus = features.bureaus;
-
   return {
     id: String(product.id ?? product.name ?? ""),
     name: String(product.name ?? ""),
@@ -146,11 +116,8 @@ function mapProductToService(
     priceType: String(product.priceType ?? ""),
     rating: Number(product.rating ?? 0),
     reviewCount: Number(product.reviewCount ?? 0),
-    bureaus: Array.isArray(bureaus) ? bureaus.map(String) : null,
-    included: Object.entries(features)
-      .filter(([key]) => key !== "bureaus")
-      .map(([key, value]) => describeFeature(key, value))
-      .filter((line): line is string => line !== null),
+    bureaus: readBureaus(product.features),
+    included: listFeatures(product.features, { omit: ["bureaus"] }),
   };
 }
 
