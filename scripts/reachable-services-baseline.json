@@ -1,6 +1,6 @@
 {
   "frozen": "2026-08-18",
-  "why": "Database-backed services under src/lib that no file under src/app/api can reach, following the import graph through barrels and service-to-service chains. Each is either a route to add (the feature works, expose it) or a deletion to propose (the feature is dead). UNREVIEWED entries are debt nobody has looked at yet. This list may only shrink. IMPORTANT — THIS COUNT UNDER-REPORTS: reachability is MODULE-level, not SYMBOL-level, so importing a barrel marks everything it re-exports as reachable even when the specific symbol is never used. Measured example: getSharedGoalsService and getFinancialJourneyService are called nowhere under src/app, but the gamification barrel is imported for two OTHER services, so neither appears here. A service absent from this file is therefore NOT proven live; a service present in it is strong evidence of being stranded. The error runs one way deliberately — a false 'unreachable' would fail CI for working code.",
+  "why": "Database-backed services under src/lib that no file under src/app/api can reach, following the import graph through barrels and service-to-service chains. Each is either a route to add (the feature works, expose it) or a deletion to propose (the feature is dead). UNREVIEWED entries are debt nobody has looked at yet. This list may only shrink.",
   "entries": {
     "src/lib/gamification/points-rewards-service.ts": {
       "dbCalls": 52,

@@ -229,6 +229,7 @@ src/app/api/gamification/events/route.ts,POST,getUser,none,withAuth,f,bare sessi
 src/app/api/gamification/leaderboard/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/progress/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/quests/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/goals/shared/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-18 - new route exposing shared-goals-service which nothing called; getUserGoals takes user.id from the guard never the request - returning another user's goal would leak members' contribution amounts
 src/app/api/health/route.ts,GET,none,none,PUBLIC,f,health check - genuinely public
 src/app/api/investments/alerts/route.ts,DELETE;GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
 src/app/api/investments/allocation-analysis/route.ts,GET;POST,none,none,withAuth,e,unauthenticated - wrap in withAuth
