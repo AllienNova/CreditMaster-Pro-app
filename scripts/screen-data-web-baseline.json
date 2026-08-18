@@ -37,10 +37,10 @@
       "offline": false,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
-    "src/app/analytics/reports/page.tsx: availableReports, recentDownloads, scheduledReports": {
-      "classification": "fabrication",
+    "src/app/analytics/reports/page.tsx: REPORT_TYPES": {
+      "classification": "catalogue",
       "offline": true,
-      "why": "Invented generated reports, download history and schedules — documents the user never produced. Same shape as the mobile dashboard/reports finding."
+      "why": "Six report types (name, description, icon) describing what the reports feature will cover. Product content, no claim about the caller. The `lastGenerated` field was stripped — it dated each type as a document the user had already produced. scheduledReports and recentDownloads were removed outright: no generated-reports, report-schedules or download-history table exists in any migration, and generation is not offered because POST /api/analytics/reports composes the all-zeros AnalyticsEngine stub (task #99)."
     },
     "src/app/analytics/trends/page.tsx: insights, monthlyTrends, projections, trendMetrics": {
       "classification": "fabrication",
