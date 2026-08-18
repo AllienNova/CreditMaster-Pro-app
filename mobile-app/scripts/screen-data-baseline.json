@@ -17,22 +17,22 @@
     "app/admin/index.tsx: QUICK_ACTIONS": {
       "classification": "catalogue",
       "offline": true,
-      "why": "The admin navigation menu \u2014 titles, icons and routes for the admin sections. Product content, not user data. The METRICS fixture that shared this file WAS a fabrication and is gone; this is what remains."
+      "why": "The admin navigation menu — titles, icons and routes for the admin sections. Product content, not user data. The METRICS fixture that shared this file WAS a fabrication and is gone; this is what remains."
     },
     "app/admin/metrics.tsx: PERIODS": {
       "classification": "catalogue",
       "offline": true,
-      "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query \u2014 it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
+      "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query — it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
     },
     "app/admin/settings.tsx: INITIAL_FLAGS": {
       "classification": "fabrication",
       "offline": true,
-      "why": "An ADMIN screen showing feature flags that are invented. An operator toggling these believes they are changing the platform; nothing is read and nothing is written. Same family as the five admin screens already fixed. (INITIAL_CONFIG beside it is a single object below the detector's three-key data floor for its shape, so only the flags array is tracked here \u2014 both are fabricated.)"
+      "why": "An ADMIN screen showing feature flags that are invented. An operator toggling these believes they are changing the platform; nothing is read and nothing is written. Same family as the five admin screens already fixed. (INITIAL_CONFIG beside it is a single object below the detector's three-key data floor for its shape, so only the flags array is tracked here — both are fabricated.)"
     },
     "app/analytics/credit-score.tsx: PERIOD_MONTHS": {
       "classification": "catalogue",
       "offline": false,
-      "why": "The period selector's label->months map. Configuration, not a measurement \u2014 flagged only because ALL maps to 120 months, which trips the magnitude heuristic. Exactly the sort of entry a human is meant to clear."
+      "why": "The period selector's label->months map. Configuration, not a measurement — flagged only because ALL maps to 120 months, which trips the magnitude heuristic. Exactly the sort of entry a human is meant to clear."
     },
     "app/analytics/reports.tsx: GENERATED_REPORTS, REPORT_TEMPLATES": {
       "classification": "fabrication",
@@ -41,7 +41,7 @@
     "app/analytics/trends.tsx: PERIOD_MONTHS": {
       "classification": "catalogue",
       "offline": false,
-      "why": "The period selector's label->months map, identical to the one in analytics/credit-score.tsx. Configuration, not a measurement \u2014 flagged only because ALL: 120 crosses the detector's >=100 magnitude heuristic. Drives the `days` argument to the history route; it is not rendered."
+      "why": "The period selector's label->months map, identical to the one in analytics/credit-score.tsx. Configuration, not a measurement — flagged only because ALL: 120 crosses the detector's >=100 magnitude heuristic. Drives the `days` argument to the history route; it is not rendered."
     },
     "app/billing/invoices.tsx: FILTERS": {
       "classification": "catalogue",
@@ -128,12 +128,12 @@
     "app/credit-repair/cards.tsx: CARDS": {
       "classification": "catalogue",
       "offline": true,
-      "why": "A catalogue of real card PRODUCTS to apply for \u2014 Discover it Secured, Capital One Quicksilver \u2014 with issuer, APR and annual fee. Not the user's own cards. CAVEAT: each row carries `approval: excellent|good`, which is a per-user likelihood presented as a property of the card. That field is a fabrication inside an otherwise legitimate catalogue, and the APRs are real-world facts that go stale with no refresh path."
+      "why": "A catalogue of real card PRODUCTS to apply for — Discover it Secured, Capital One Quicksilver — with issuer, APR and annual fee. Not the user's own cards. CAVEAT: each row carries `approval: excellent|good`, which is a per-user likelihood presented as a property of the card. That field is a fabrication inside an otherwise legitimate catalogue, and the APRs are real-world facts that go stale with no refresh path."
     },
     "app/credit-repair/index.tsx: TOOLS": {
       "classification": "catalogue",
       "offline": false,
-      "why": "The credit-repair tool menu \u2014 Dispute Center and siblings, each with a route. Navigation content."
+      "why": "The credit-repair tool menu — Dispute Center and siblings, each with a route. Navigation content."
     },
     "app/credit/history.tsx: DATE_RANGES": {
       "classification": "catalogue",
@@ -143,7 +143,7 @@
     "app/credit/score-detail.tsx: SCORE_RANGES": {
       "classification": "catalogue",
       "offline": false,
-      "why": "FICO band definitions \u2014 300-579 Poor, and so on. Published scoring bands: product knowledge about the scale, not a measurement of this user."
+      "why": "FICO band definitions — 300-579 Poor, and so on. Published scoring bands: product knowledge about the scale, not a measurement of this user."
     },
     "app/dashboard/progress.tsx: ACHIEVEMENTS, MILESTONES": {
       "classification": "fabrication",
@@ -213,7 +213,7 @@
     "app/help/contact.tsx: CONTACT_OPTIONS": {
       "classification": "catalogue",
       "offline": true,
-      "why": "Support channels. Product content. NOTE: carries support@creditpro.com \u2014 a pre-rebrand address that should be Fynvita's. Stale content, not a fabrication."
+      "why": "Support channels. Product content. NOTE: carries support@creditpro.com — a pre-rebrand address that should be Fynvita's. Stale content, not a fabrication."
     },
     "app/help/faq.tsx: FAQ_ITEMS": {
       "classification": "catalogue",
@@ -228,11 +228,6 @@
     "app/identity/index.tsx: FEATURES": {
       "classification": "catalogue",
       "offline": false
-    },
-    "app/insights/alerts.tsx: MOCK_ALERTS": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Invents a FRAUD ALERT: 'Suspicious Activity Detected - unusual transaction pattern on your credit card ending in 4532', priority critical, with a Review Activity action. It tells a user they may have been defrauded, names a card fragment they do not have, and routes them to security. The highest-consequence fabrication found so far."
     },
     "app/investments/analyze/fundamental.tsx: PEER_COMPARISON, REVENUE_BREAKDOWN": {
       "classification": "fabrication",
@@ -257,7 +252,7 @@
     "app/loans/programs.tsx: FEDERAL_PROGRAMS": {
       "classification": "catalogue",
       "offline": false,
-      "why": "The real federal student-loan repayment programs (Income-Driven Repayment and siblings). Public facts about the programs, not a claim about this user's eligibility \u2014 contrast SF-11's fabricated per-user eligibility flags."
+      "why": "The real federal student-loan repayment programs (Income-Driven Repayment and siblings). Public facts about the programs, not a claim about this user's eligibility — contrast SF-11's fabricated per-user eligibility flags."
     },
     "app/marketplace/calculators.tsx: CALCULATOR_OPTIONS": {
       "classification": "catalogue",

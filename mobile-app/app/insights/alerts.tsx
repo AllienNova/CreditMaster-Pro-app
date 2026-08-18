@@ -3,7 +3,7 @@
  * AI-powered proactive alerts for financial events
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { creditMonitoringApi } from "../../src/services/api/credit";
+import { budgetApi } from "../../src/services/api/financial";
+import type { BudgetOverviewAlert } from "../../src/services/api/financial";
+import type { CreditMonitoringAlert } from "../../src/services/api/types";
 
 type AlertType =
   | "unusual_spending"
@@ -46,89 +50,6 @@ interface Alert {
   createdAt: Date;
 }
 
-const MOCK_ALERTS: Alert[] = [
-  {
-    id: "1",
-    type: "fraud_suspected",
-    priority: "critical",
-    title: "Suspicious Activity Detected",
-    message:
-      "Unusual transaction pattern detected on your credit card ending in 4532",
-    actionRoute: "/settings/security",
-    actionLabel: "Review Activity",
-    data: { amount: 847.99, merchant: "Unknown Merchant", location: "Foreign" },
-    status: "pending",
-    createdAt: new Date(Date.now() - 30 * 60 * 1000),
-  },
-  {
-    id: "2",
-    type: "bill_due",
-    priority: "high",
-    title: "Bill Due Tomorrow",
-    message: "Your electricity bill of $142.50 is due tomorrow",
-    actionRoute: "/financial/bills",
-    actionLabel: "Pay Now",
-    data: { billName: "Electric Company", amount: 142.5 },
-    status: "pending",
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-  },
-  {
-    id: "3",
-    type: "budget_exceeded",
-    priority: "high",
-    title: "Budget Exceeded",
-    message: "Your Dining Out budget has exceeded the limit by $45.00",
-    actionRoute: "/financial/budgets",
-    actionLabel: "Adjust Budget",
-    data: { category: "Dining Out", spent: 345, budget: 300, overage: 45 },
-    status: "pending",
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-  },
-  {
-    id: "4",
-    type: "unusual_spending",
-    priority: "medium",
-    title: "Unusual Spending Pattern",
-    message: "Your shopping spending is 85% higher than your monthly average",
-    actionRoute: "/insights/spending",
-    actionLabel: "View Details",
-    data: {
-      category: "Shopping",
-      currentSpending: 650,
-      average: 350,
-      percentIncrease: 85,
-    },
-    status: "read",
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-  },
-  {
-    id: "5",
-    type: "credit_change",
-    priority: "medium",
-    title: "Credit Score Update",
-    message: "Your credit score increased by 15 points to 742",
-    actionRoute: "/(tabs)/credit",
-    actionLabel: "View Score",
-    data: { currentScore: 742, previousScore: 727, change: 15 },
-    status: "read",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: "6",
-    type: "savings_opportunity",
-    priority: "low",
-    title: "Savings Opportunity",
-    message: "You could save $35/month by switching your streaming services",
-    actionRoute: "/financial/bills",
-    actionLabel: "Review",
-    data: {
-      potentialSavings: 35,
-      subscriptions: ["Netflix", "Hulu", "Disney+"],
-    },
-    status: "pending",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-  },
-];
 
 const ALERT_TYPE_CONFIG: Record<
   AlertType,
@@ -145,10 +66,62 @@ const ALERT_TYPE_CONFIG: Record<
   fraud_suspected: { icon: "shield", color: "#DC2626" },
 };
 
+/**
+ * Namespacing, so the screen can tell a row from a derivation.
+ *
+ * A credit-monitoring alert is a stored row with an id the PATCH accepts. A
+ * budget alert is computed from a category being over budget and has no id at
+ * all, so it cannot be acknowledged. Without the prefix, marking one read
+ * would PATCH an alert id that does not exist.
+ */
+const CREDIT_ALERT_PREFIX = "credit:";
+
+/** Credit-monitoring severities map onto this screen's priorities one-to-one. */
+function fromCreditAlert(a: CreditMonitoringAlert): Alert {
+  return {
+    id: `${CREDIT_ALERT_PREFIX}${a.id}`,
+    // The route's union is credit-specific: new_account, score_change,
+    // inquiry, address_change, fraud_alert, derogatory. Only fraud_alert has a
+    // counterpart in this screen's wider set; the rest render as a credit
+    // change rather than being forced into a spending shape they are not.
+    type: a.alertType === "fraud_alert" ? "fraud_suspected" : "credit_change",
+    priority: a.severity,
+    title: a.title,
+    message: a.message ?? a.description,
+    actionRoute: "/credit/monitoring",
+    actionLabel: "View monitoring",
+    data: a.data ?? {},
+    status: a.acknowledged ? "read" : "pending",
+    createdAt: new Date(a.createdAt),
+  };
+}
+
+/**
+ * A budget alert carries a category, a severity and a message — no id and no
+ * timestamp. Rendered with what it has rather than padded out.
+ */
+function fromBudgetAlert(a: BudgetOverviewAlert, index: number): Alert {
+  return {
+    id: `budget:${a.category}:${index}`,
+    type: "budget_exceeded",
+    priority: a.severity,
+    title: a.category,
+    message: a.message,
+    actionRoute: "/financial/budgets",
+    actionLabel: "View budgets",
+    data: {},
+    status: "pending",
+    // Derived at read time, so "now" is the honest stamp: it is when the
+    // condition was observed, not when a row was written.
+    createdAt: new Date(),
+  };
+}
+
 export default function SmartAlertsScreen() {
-  const [alerts, setAlerts] = useState<Alert[]>(MOCK_ALERTS);
-  const [loading, setLoading] = useState(false);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "read">("all");
   const [priorityFilter, setPriorityFilter] = useState<"all" | AlertPriority>(
     "all",
@@ -166,13 +139,56 @@ export default function SmartAlertsScreen() {
     (a) => a.priority === "critical" && a.status === "pending",
   ).length;
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setRefreshing(false);
+  const load = useCallback(async () => {
+    setError(null);
+
+    // Two independent real sources. Either failing must not hide the other,
+    // so neither gates the other and each contributes what it has.
+    const [credit, budget] = await Promise.all([
+      creditMonitoringApi.getAlerts(),
+      budgetApi.getBudgetSummary(),
+    ]);
+
+    const next: Alert[] = [];
+    if (credit.success && credit.data) {
+      next.push(...credit.data.items.map(fromCreditAlert));
+    }
+    if (budget.success && budget.data) {
+      next.push(...budget.data.alerts.map(fromBudgetAlert));
+    }
+
+    // Both failing is a FAILED READ, a different statement from having no
+    // alerts — and on this screen the difference is whether the user believes
+    // nothing is wrong.
+    if (!credit.success && !budget.success) {
+      setError("We could not load your alerts.");
+    }
+    setAlerts(next);
+    setLoading(false);
   }, []);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const onRefresh = useCallback(async () => {
+    // This used to be `await new Promise(r => setTimeout(r, 1000))` — a
+    // spinner over no request at all.
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
+
+  /**
+   * Only credit-monitoring alerts can be acknowledged: they are ROWS with an
+   * id the PATCH accepts. A budget alert is DERIVED from a category being over
+   * budget, so there is nothing to mark — it goes when the spending does.
+   */
+  const isAcknowledgeable = (id: string) => id.startsWith(CREDIT_ALERT_PREFIX);
+
   const handleDismiss = (alertId: string) => {
+    // Local by design: no endpoint records a dismissal. Saying so beats
+    // mark-read's old behaviour of implying the server was told.
     setAlerts((prev) =>
       prev.map((a) =>
         a.id === alertId ? { ...a, status: "dismissed" as AlertStatus } : a,
@@ -180,7 +196,15 @@ export default function SmartAlertsScreen() {
     );
   };
 
-  const handleMarkRead = (alertId: string) => {
+  const handleMarkRead = async (alertId: string) => {
+    if (!isAcknowledgeable(alertId)) return;
+    const res = await creditMonitoringApi.acknowledgeAlert(
+      alertId.slice(CREDIT_ALERT_PREFIX.length),
+    );
+    // Reflect it only if the server took it. The previous version set state
+    // unconditionally, so an alert marked itself read and came back on the
+    // next load with no error shown.
+    if (!res.success) return;
     setAlerts((prev) =>
       prev.map((a) =>
         a.id === alertId ? { ...a, status: "read" as AlertStatus } : a,
@@ -188,10 +212,14 @@ export default function SmartAlertsScreen() {
     );
   };
 
-  const handleMarkAllRead = () => {
+  const handleMarkAllRead = async () => {
+    const res = await creditMonitoringApi.acknowledgeAllAlerts();
+    if (!res.success) return;
     setAlerts((prev) =>
       prev.map((a) =>
-        a.status === "pending" ? { ...a, status: "read" as AlertStatus } : a,
+        a.status === "pending" && isAcknowledgeable(a.id)
+          ? { ...a, status: "read" as AlertStatus }
+          : a,
       ),
     );
   };
@@ -351,7 +379,22 @@ export default function SmartAlertsScreen() {
         )}
 
         {/* Alerts List */}
-        {filteredAlerts.length === 0 ? (
+        {error ? (
+          // "You're all caught up" and "we could not read your alerts" are
+          // opposite statements about someone's credit. The empty state below
+          // must never stand in for a failed read.
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="cloud-offline-outline"
+              size={48}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.emptyTitle}>{error}</Text>
+            <TouchableOpacity onPress={load}>
+              <Text style={styles.secondaryActionText}>Try again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : filteredAlerts.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons
               name="notifications-off"
