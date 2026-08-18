@@ -207,6 +207,18 @@ jobs:
       - name: audit:reachability - every page is reachable by clicking
         run: npm run audit:reachability
 
+      # BLOCKING: the server-side counterpart of audit:reachability. A
+      # database-backed service that no route can reach is a feature that
+      # landed complete and stayed dark - and the screen that should have
+      # shown it fills the silence with a constant. Both /financial/crypto and
+      # /financial/real-estate reached production that way: working services
+      # (33 and 27 db calls), real tables, no route, and a hardcoded $45,230
+      # wallet on screen. This walks the import graph from src/app/api so
+      # barrels and service-to-service chains resolve; a filename grep called
+      # 44 services orphaned and was wrong in both directions.
+      - name: audit:reachable-services - no service is stranded without a route
+        run: npm run audit:reachable-services
+
       # BLOCKING: the mobile counterpart, audit:api, has existed for months;
       # the web app had nothing checking what a page ASKS THE SERVER for. Twelve
       # absent endpoints shipped that way - each a 404 for every user, none
