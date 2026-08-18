@@ -152,10 +152,10 @@
       "offline": false,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
-    "src/app/investments/rebalance/page.tsx: MOCK_ALLOCATIONS, MOCK_TRADES": {
-      "classification": "fabrication",
+    "src/app/investments/rebalance/page.tsx: RISK_OPTIONS": {
+      "classification": "catalogue",
       "offline": true,
-      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
+      "why": "The five RiskTolerance values from asset-allocation.types.ts:23, as selector options. Configuration, not a claim about the caller — the page asks which one applies rather than assuming, because nothing on the account records it and the target model depends on it."
     },
     "src/app/investments/research/page.tsx: POPULAR_SYMBOLS, TAB_ITEMS": {
       "classification": "catalogue",
