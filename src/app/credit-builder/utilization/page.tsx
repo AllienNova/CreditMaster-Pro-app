@@ -7,9 +7,10 @@
  * Features interactive sliders, real-time calculations, and AI recommendations.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { useCreditAccounts } from "@/hooks/useCreditAccounts";
 
 interface Card {
   id: string;
@@ -22,32 +23,37 @@ interface Card {
 
 export default function UtilizationOptimizerPage() {
   const { user, loading: authLoading } = useAuth();
-  const [cards, setCards] = useState<Card[]>([
-    {
-      id: "1",
-      name: "Chase Freedom",
-      balance: 1500,
-      limit: 5000,
-      utilization: 30,
-      status: "good",
-    },
-    {
-      id: "2",
-      name: "Capital One",
-      balance: 2800,
-      limit: 4000,
-      utilization: 70,
-      status: "danger",
-    },
-    {
-      id: "3",
-      name: "Discover it",
-      balance: 500,
-      limit: 3000,
-      utilization: 16.7,
-      status: "good",
-    },
-  ]);
+  // The reader's OWN cards, via useCreditAccounts ->
+  // GET /api/credit-repair/accounts (credit_accounts, permission-gated).
+  // This was a useState initialiser holding "Chase Freedom, balance 1500,
+  // limit 5000" and friends, so the utilisation percentages, the score
+  // impact and every recommendation below were computed from balances
+  // nobody had read. Invisible to audit:screen-data until da4323a.
+  const { accounts, loading: loadingCards, error: cardsError } =
+    useCreditAccounts();
+  const [cards, setCards] = useState<Card[]>([]);
+
+  // Only revolving accounts have a limit to be utilised against; a loan has
+  // none, and dividing by it would be a number about nothing.
+  useEffect(() => {
+    setCards(
+      accounts
+        .filter((account) => account.creditLimit !== null && account.creditLimit > 0)
+        .map((account) => {
+          const limit = account.creditLimit as number;
+          const utilization = Math.round((account.balance / limit) * 100);
+          return {
+            id: account.id,
+            name: account.creditorName,
+            balance: account.balance,
+            limit,
+            utilization,
+            status:
+              utilization <= 30 ? "good" : utilization <= 50 ? "warning" : "danger",
+          } as Card;
+        }),
+    );
+  }, [accounts]);
   const [monthlyBudget, setMonthlyBudget] = useState(800);
 
   if (authLoading) {
@@ -63,7 +69,11 @@ export default function UtilizationOptimizerPage() {
 
   const totalBalance = cards.reduce((sum, card) => sum + card.balance, 0);
   const totalLimit = cards.reduce((sum, card) => sum + card.limit, 0);
-  const currentUtilization = (totalBalance / totalLimit) * 100;
+  // Guarded: with no revolving accounts totalLimit is 0, and the old
+  // expression produced NaN (or Infinity with a balance). That was
+  // unreachable while the cards were hardcoded and is reachable now.
+  const currentUtilization =
+    totalLimit > 0 ? (totalBalance / totalLimit) * 100 : 0;
   const optimalUtilization = 10;
 
   const updateCardBalance = (id: string, newBalance: number) => {
@@ -126,7 +136,36 @@ export default function UtilizationOptimizerPage() {
 
       {/* Score Impact Banner */}
       <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {cardsError && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-amber-200 dark:border-amber-900/50">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              Your cards could not be loaded
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              {cardsError}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!cardsError && !loadingCards && cards.length === 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              No revolving accounts on your report
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              Utilisation is balance against credit limit, so it only applies to
+              cards and lines of credit. We found none on your report, and the
+              figures below stay at zero rather than being filled in with an
+              example.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">

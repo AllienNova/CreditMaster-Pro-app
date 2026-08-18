@@ -317,11 +317,6 @@
       "offline": true,
       "why": "useState initialiser holding the reader's credit accounts (\"Chase Freedom\", opened dates) with no request in the file. Credit age is computed from them, so the whole screen is derived from invented history."
     },
-    "src/app/credit-builder/utilization/page.tsx: cards": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "useState initialiser holding the reader's cards — \"Chase Freedom, balance 1500, limit 5000\" — with no request. Utilisation percentages are computed from balances nobody read."
-    },
     "src/app/credit-builder/mix/page.tsx: accountTypes": {
       "classification": "fabrication",
       "offline": true,
