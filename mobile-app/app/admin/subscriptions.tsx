@@ -1,9 +1,26 @@
 /**
- * Fynvita Admin Subscriptions Management Screen
- * Manage user subscriptions and billing
+ * Admin Subscriptions — the real subscriptions table.
+ *
+ * WHAT THIS REPLACED. A SUBSCRIPTIONS fixture naming john@example.com on a
+ * "pro" plan at $29.99, sarah@example.com on "enterprise" at $99.99, and four
+ * more — behind a FAKE loading spinner:
+ *
+ *   useEffect(() => { setTimeout(() => setLoading(false), 800); }, []);
+ *
+ * The MRR and active-subscription counts on the header were sums over that
+ * fixture, so an operator read a revenue figure computed from invented rows.
+ *
+ * GET /api/admin/subscriptions (withRole "admin") reads the real subscriptions
+ * table, joined to profiles and enriched with each user's auth email.
+ *
+ * THE PLAN CHIPS WERE INVENTED. free | basic | pro | enterprise — this product
+ * sells Free, Standard, Pro, Family Duo, Family and Family Plus. There is no
+ * "basic" and no "enterprise" tier, so two chips could never match and four
+ * real tiers had no chip at all. They are now built from the plans actually
+ * present in the data.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,74 +34,38 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-
-interface Subscription {
-  id: string;
-  user: string;
-  plan: "free" | "basic" | "pro" | "enterprise";
-  status: "active" | "cancelled" | "past_due";
-  amount: number;
-  nextBilling: string;
-}
-
-const SUBSCRIPTIONS: Subscription[] = [
-  {
-    id: "SUB-001",
-    user: "john@example.com",
-    plan: "pro",
-    status: "active",
-    amount: 29.99,
-    nextBilling: "2024-12-15",
-  },
-  {
-    id: "SUB-002",
-    user: "sarah@example.com",
-    plan: "enterprise",
-    status: "active",
-    amount: 99.99,
-    nextBilling: "2024-12-20",
-  },
-  {
-    id: "SUB-003",
-    user: "mike@example.com",
-    plan: "basic",
-    status: "past_due",
-    amount: 9.99,
-    nextBilling: "2024-12-01",
-  },
-  {
-    id: "SUB-004",
-    user: "emily@example.com",
-    plan: "pro",
-    status: "cancelled",
-    amount: 29.99,
-    nextBilling: "-",
-  },
-  {
-    id: "SUB-005",
-    user: "david@example.com",
-    plan: "free",
-    status: "active",
-    amount: 0,
-    nextBilling: "-",
-  },
-  {
-    id: "SUB-006",
-    user: "lisa@example.com",
-    plan: "pro",
-    status: "active",
-    amount: 29.99,
-    nextBilling: "2024-12-18",
-  },
-];
+import {
+  adminSubscriptionsApi,
+  type AdminSubscription,
+} from "../../src/services/api/admin";
 
 export default function AdminSubscriptionsScreen() {
+  const [subs, setSubs] = useState<AdminSubscription[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [planFilter, setPlanFilter] = useState<string | null>(null);
 
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 800);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const res = await adminSubscriptionsApi.getSubscriptions();
+
+    if (!res.success || !res.data) {
+      // No empty-list fallback: an operator seeing zero subscriptions would
+      // conclude something very different from "we could not read the table".
+      setError("We could not load subscriptions.");
+      setLoading(false);
+      return;
+    }
+
+    setSubs(res.data);
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const getPlanColor = (plan: string) => {
     switch (plan) {
@@ -114,14 +95,23 @@ export default function AdminSubscriptionsScreen() {
     }
   };
 
+  // Built from the plans actually present, not from a list of tier names
+  // somebody guessed.
+  const plans = Array.from(
+    new Set(subs.map((s) => s.plan).filter(Boolean)),
+  ).sort();
+
   const filteredSubs = planFilter
-    ? SUBSCRIPTIONS.filter((s) => s.plan === planFilter)
-    : SUBSCRIPTIONS;
-  const totalMRR = SUBSCRIPTIONS.filter((s) => s.status === "active").reduce(
-    (sum, s) => sum + s.amount,
-    0,
-  );
-  const activeCount = SUBSCRIPTIONS.filter((s) => s.status === "active").length;
+    ? subs.filter((s) => s.plan === planFilter)
+    : subs;
+
+  const active = subs.filter((s) => s.status === "active");
+  // Rows carrying no amount are EXCLUDED from MRR rather than counted as 0,
+  // and the count of excluded ones is shown. A subscription whose price we do
+  // not have is not a subscription worth nothing.
+  const totalMRR = active.reduce((sum, s) => sum + (s.amount ?? 0), 0);
+  const unpricedCount = active.filter((s) => s.amount === null).length;
+  const activeCount = active.length;
 
   if (loading) {
     return (
@@ -177,11 +167,37 @@ export default function AdminSubscriptionsScreen() {
             ]}
           >
             <Text style={[styles.statValue, { color: theme.colors.warning }]}>
-              {SUBSCRIPTIONS.filter((s) => s.status === "past_due").length}
+              {subs.filter((s) => s.status === "past_due").length}
             </Text>
             <Text style={styles.statLabel}>Past Due</Text>
           </Card>
         </View>
+
+        {/* Said out loud rather than folded into MRR. A subscription whose
+            price we do not have is not a subscription worth nothing. */}
+        {unpricedCount > 0 && (
+          <Text style={styles.loadingText}>
+            {unpricedCount} active{" "}
+            {unpricedCount === 1 ? "subscription has" : "subscriptions have"} no
+            recorded amount and {unpricedCount === 1 ? "is" : "are"} excluded
+            from MRR.
+          </Text>
+        )}
+
+        {error ? (
+          <Card>
+            <Text style={styles.loadingText}>{error}</Text>
+            <TouchableOpacity onPress={load}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </Card>
+        ) : subs.length === 0 ? (
+          <Card>
+            <Text style={styles.loadingText}>
+              No subscriptions recorded yet.
+            </Text>
+          </Card>
+        ) : null}
 
         {/* Filters */}
         <ScrollView
@@ -189,7 +205,7 @@ export default function AdminSubscriptionsScreen() {
           showsHorizontalScrollIndicator={false}
           style={styles.filterRow}
         >
-          {["All", "free", "basic", "pro", "enterprise"].map((plan) => (
+          {["All", ...plans].map((plan) => (
             <TouchableOpacity
               key={plan}
               style={[
@@ -226,7 +242,7 @@ export default function AdminSubscriptionsScreen() {
                   <Text
                     style={[styles.planText, { color: getPlanColor(sub.plan) }]}
                   >
-                    {sub.plan.toUpperCase()}
+                    {sub.plan ? sub.plan.toUpperCase() : "—"}
                   </Text>
                 </View>
                 <View
@@ -241,7 +257,7 @@ export default function AdminSubscriptionsScreen() {
                       { color: getStatusColor(sub.status) },
                     ]}
                   >
-                    {sub.status.replace("_", " ")}
+                    {sub.status ? sub.status.replace(/_/g, " ") : "—"}
                   </Text>
                 </View>
               </View>
@@ -250,12 +266,18 @@ export default function AdminSubscriptionsScreen() {
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Amount</Text>
                   <Text style={styles.detailValue}>
-                    ${sub.amount.toFixed(2)}/mo
+                    {/* "—" rather than "$0.00": one states we have no price,
+                        the other states the price is nothing. */}
+                    {sub.amount === null ? "—" : `$${sub.amount.toFixed(2)}/mo`}
                   </Text>
                 </View>
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Next Billing</Text>
-                  <Text style={styles.detailValue}>{sub.nextBilling}</Text>
+                  <Text style={styles.detailValue}>
+                    {sub.nextBilling
+                      ? new Date(sub.nextBilling).toLocaleDateString()
+                      : "—"}
+                  </Text>
                 </View>
               </View>
             </Card>
@@ -273,6 +295,14 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: theme.spacing.md,
     color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    textAlign: "center",
+    marginTop: theme.spacing.sm,
   },
   header: {
     flexDirection: "row",

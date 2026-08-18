@@ -487,3 +487,141 @@ export const adminLogsApi = {
     };
   },
 };
+
+// ---------------------------------------------------------------------------
+// Platform stats (admin home)
+// ---------------------------------------------------------------------------
+// app/admin/index.tsx rendered a METRICS fixture: "Total Users 12,458 +12%",
+// "Monthly Revenue $245,890 +15%", and four more, with no request. An operator
+// opening the admin home was reading a brochure.
+//
+// GET /api/admin/stats (withRole "admin") counts the real tables.
+//
+// WHAT THE ROUTE CANNOT ANSWER, and is therefore not offered here: the old
+// screen's "Avg Score Improvement" and "Support Tickets" have no source
+// anywhere in this codebase — no table, no route, no service. And only ONE of
+// the six change percentages is real: userGrowth. The other five were
+// decoration, and a green "+15%" beside a revenue figure is a claim about a
+// trend nobody measured.
+
+export interface AdminPlatformStats {
+  totalUsers: number;
+  activeSubscriptions: number;
+  totalDisputes: number;
+  resolvedDisputes: number;
+  monthlyRevenue: number;
+  /** Percent change in users over the period — the ONLY real trend here. */
+  userGrowth: number;
+}
+
+export const adminStatsApi = {
+  getStats: async (): Promise<ApiResponse<AdminPlatformStats>> => {
+    const res = await api.get<Partial<AdminPlatformStats>>("/admin/stats");
+    if (res.success && res.data) {
+      return {
+        success: true,
+        data: {
+          totalUsers: res.data.totalUsers ?? 0,
+          activeSubscriptions: res.data.activeSubscriptions ?? 0,
+          totalDisputes: res.data.totalDisputes ?? 0,
+          resolvedDisputes: res.data.resolvedDisputes ?? 0,
+          monthlyRevenue: res.data.monthlyRevenue ?? 0,
+          userGrowth: res.data.userGrowth ?? 0,
+        },
+        timestamp: res.timestamp,
+      };
+    }
+    return {
+      success: false,
+      error: res.error,
+      message: res.message,
+      timestamp: res.timestamp,
+    };
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Subscriptions (admin)
+// ---------------------------------------------------------------------------
+// app/admin/subscriptions.tsx rendered a SUBSCRIPTIONS fixture naming
+// john@example.com on a "pro" plan at $29.99 and others. GET
+// /api/admin/subscriptions reads the real subscriptions table, joined to
+// profiles and enriched with each user's auth email.
+
+export interface AdminSubscriptionRow {
+  id?: string;
+  user_email?: string;
+  plan?: string;
+  plan_name?: string;
+  tier?: string;
+  status?: string;
+  amount?: number;
+  amount_cents?: number;
+  current_period_end?: string | null;
+  created_at?: string;
+}
+
+export interface AdminSubscriptionsResponse {
+  subscriptions?: AdminSubscriptionRow[];
+  total?: number;
+}
+
+export interface AdminSubscription {
+  id: string;
+  user: string;
+  plan: string;
+  status: string;
+  /** Dollars. Null when the row carries no amount — see mapAdminSubscription. */
+  amount: number | null;
+  /** ISO 8601, or "" when the row has no period end. */
+  nextBilling: string;
+}
+
+export function mapAdminSubscription(
+  row: AdminSubscriptionRow,
+): AdminSubscription {
+  // amount_cents is the canonical money column; `amount` is tolerated for
+  // rows written before it existed. Null rather than 0 when neither is
+  // present: "$0.00" states a price, "—" states that we do not have one.
+  const amount =
+    typeof row.amount_cents === "number"
+      ? row.amount_cents / 100
+      : typeof row.amount === "number"
+        ? row.amount
+        : null;
+
+  return {
+    id: row.id ?? "",
+    user: row.user_email ?? "Unknown",
+    // The route may name the plan in any of three columns depending on when
+    // the row was written. None of them is invented if all are absent.
+    plan: row.plan ?? row.plan_name ?? row.tier ?? "",
+    status: row.status ?? "",
+    amount,
+    nextBilling: row.current_period_end ?? "",
+  };
+}
+
+export const adminSubscriptionsApi = {
+  getSubscriptions: async (): Promise<ApiResponse<AdminSubscription[]>> => {
+    const res = await api.get<AdminSubscriptionsResponse>(
+      "/admin/subscriptions",
+    );
+    if (res.success && res.data) {
+      const rows = Array.isArray(res.data.subscriptions)
+        ? res.data.subscriptions
+        : [];
+      return {
+        success: true,
+        data: rows.map(mapAdminSubscription),
+        timestamp: res.timestamp,
+      };
+    }
+    return {
+      success: false,
+      error: res.error,
+      message: res.message,
+      timestamp: res.timestamp,
+    };
+  },
+};

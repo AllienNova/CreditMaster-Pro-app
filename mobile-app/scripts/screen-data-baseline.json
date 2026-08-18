@@ -14,15 +14,12 @@
       "classification": "catalogue",
       "offline": true
     },
-    "app/admin/index.tsx: METRICS, QUICK_ACTIONS": {
-      "classification": "fabrication",
-      "offline": true
+    "app/admin/index.tsx: QUICK_ACTIONS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The admin navigation menu \u2014 titles, icons and routes for the admin sections. Product content, not user data. The METRICS fixture that shared this file WAS a fabrication and is gone; this is what remains."
     },
     "app/admin/metrics.tsx: DISPUTE_DATA, REVENUE_DATA": {
-      "classification": "fabrication",
-      "offline": true
-    },
-    "app/admin/subscriptions.tsx: SUBSCRIPTIONS": {
       "classification": "fabrication",
       "offline": true
     },
