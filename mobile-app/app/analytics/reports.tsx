@@ -1,9 +1,40 @@
 /**
- * Fynvita Analytics Reports Screen
- * Generate and view detailed analytics reports
+ * Analytics Reports.
+ *
+ * THREE CLAIMS REMOVED, ALL ABOUT THINGS THE READER SUPPOSEDLY HAD OR HAD ASKED
+ * FOR.
+ *
+ * 1. `GENERATED_REPORTS` listed files — "Credit Score Summary - Dec 2024,
+ *    2.4 MB", "Dispute History - Q4 2024, 1.8 MB" — with Download and Share
+ *    buttons for documents that were nowhere.
+ *
+ * 2. `handleGenerate` promised delivery: "Credit Score Summary will be ready in
+ *    approximately 2 min", then spun a spinner for 2 s. No request was made and
+ *    nothing was ever going to be ready. `handleDownload` said "Downloading
+ *    ..." for a file that did not exist.
+ *
+ * 3. The Scheduled Reports card stated a schedule the reader never set —
+ *    "Monthly Credit Summary, every 1st of the month" — written inline in JSX.
+ *    That is the fabrication shape audit:screen-data cannot see at all
+ *    (task #100): it is not a module constant, so no run of that gate would
+ *    ever have reported it. Nothing in the schema stores a report schedule.
+ *
+ * WHY NONE OF IT IS WIRED INSTEAD. There is nowhere for a generated report to
+ * live and nothing that produces one:
+ *
+ *   - no generated-reports table exists in any migration
+ *   - documents.type is CHECK-constrained to 'credit_report', 'id',
+ *     'proof_of_address', 'supporting_doc' (001_initial_schema.sql:41)
+ *   - POST /api/analytics/reports persists nothing and is backed by
+ *     AnalyticsEngine, whose getUserAnalytics returns hardcoded zeros under
+ *     the comment "In production, fetch from database" (task #99)
+ *
+ * REPORT_TEMPLATES stays: it describes the kinds of report the feature will
+ * produce, which is true, and it is the surface to wire the day there is
+ * something behind it.
  */
 
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -26,13 +57,6 @@ interface ReportTemplate {
   estimatedTime: string;
 }
 
-interface GeneratedReport {
-  id: string;
-  name: string;
-  generatedAt: string;
-  size: string;
-  type: "pdf" | "excel" | "csv";
-}
 
 const REPORT_TEMPLATES: ReportTemplate[] = [
   {
@@ -72,69 +96,23 @@ const REPORT_TEMPLATES: ReportTemplate[] = [
   },
 ];
 
-const GENERATED_REPORTS: GeneratedReport[] = [
-  {
-    id: "1",
-    name: "Credit Score Summary - Dec 2024",
-    generatedAt: "Dec 1, 2024",
-    size: "2.4 MB",
-    type: "pdf",
-  },
-  {
-    id: "2",
-    name: "Dispute History - Q4 2024",
-    generatedAt: "Nov 15, 2024",
-    size: "1.8 MB",
-    type: "pdf",
-  },
-  {
-    id: "3",
-    name: "Financial Overview - Nov 2024",
-    generatedAt: "Nov 1, 2024",
-    size: "3.2 MB",
-    type: "excel",
-  },
-];
 
-const getTypeIcon = (
-  type: GeneratedReport["type"],
-): keyof typeof Ionicons.glyphMap => {
-  const icons: Record<GeneratedReport["type"], keyof typeof Ionicons.glyphMap> =
-    {
-      pdf: "document",
-      excel: "grid",
-      csv: "list",
-    };
-  return icons[type];
-};
 
-const getTypeColor = (type: GeneratedReport["type"]): string => {
-  const colors: Record<GeneratedReport["type"], string> = {
-    pdf: "#EF4444",
-    excel: "#22C55E",
-    csv: "#3B82F6",
-  };
-  return colors[type];
-};
 
 export default function AnalyticsReportsScreen() {
-  const [generating, setGenerating] = useState<string | null>(null);
-
+  /**
+   * Report generation is not connected, and this says so.
+   *
+   * It used to promise delivery — "Credit Score Summary will be ready in
+   * approximately 2 min" — and spin a spinner for 2 s. No request was made and
+   * nothing was ever going to be ready. handleDownload and handleShare went
+   * with it: both claimed to act on files that did not exist.
+   */
   const handleGenerate = (template: ReportTemplate) => {
-    setGenerating(template.id);
     Alert.alert(
-      "Generating Report",
-      `${template.name} will be ready in approximately ${template.estimatedTime}.`,
+      "Report generation is not available yet",
+      `We cannot generate your ${template.name} yet. When we can, it will appear here — we would rather say so than promise you a file that is not coming.`,
     );
-    setTimeout(() => setGenerating(null), 2000);
-  };
-
-  const handleDownload = (report: GeneratedReport) => {
-    Alert.alert("Download", `Downloading ${report.name}...`);
-  };
-
-  const handleShare = (report: GeneratedReport) => {
-    Alert.alert("Share", `Share ${report.name}?`);
   };
 
   return (
@@ -174,90 +152,40 @@ export default function AnalyticsReportsScreen() {
                 </Text>
               </View>
             </View>
+            {/* No in-flight state: nothing is generated, so a spinner would
+                be the same promise the old handler made. */}
             <TouchableOpacity
-              style={[
-                styles.generateButton,
-                generating === template.id && styles.generatingButton,
-              ]}
+              style={styles.generateButton}
               onPress={() => handleGenerate(template)}
-              disabled={generating === template.id}
             >
-              {generating === template.id ? (
-                <Text style={styles.generateButtonText}>Generating...</Text>
-              ) : (
-                <>
-                  <Ionicons name="create" size={16} color="#fff" />
-                  <Text style={styles.generateButtonText}>Generate</Text>
-                </>
-              )}
+              <Ionicons name="create" size={16} color="#fff" />
+              <Text style={styles.generateButtonText}>Generate</Text>
             </TouchableOpacity>
           </Card>
         ))}
 
         {/* Recent Reports */}
         <Text style={styles.sectionTitle}>Recent Reports</Text>
-        {GENERATED_REPORTS.map((report) => (
-          <Card key={report.id} style={styles.reportCard}>
-            <View style={styles.reportRow}>
-              <View
-                style={[
-                  styles.reportIcon,
-                  { backgroundColor: `${getTypeColor(report.type)}15` },
-                ]}
-              >
-                <Ionicons
-                  name={getTypeIcon(report.type)}
-                  size={20}
-                  color={getTypeColor(report.type)}
-                />
-              </View>
-              <View style={styles.reportInfo}>
-                <Text style={styles.reportName}>{report.name}</Text>
-                <Text style={styles.reportMeta}>
-                  {report.generatedAt} • {report.size}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.reportActions}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => handleDownload(report)}
-              >
-                <Ionicons
-                  name="download"
-                  size={18}
-                  color={theme.colors.primary}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => handleShare(report)}
-              >
-                <Ionicons name="share" size={18} color={theme.colors.primary} />
-              </TouchableOpacity>
-            </View>
-          </Card>
-        ))}
+        <Card style={styles.reportCard}>
+          <Text style={styles.reportName}>No reports generated yet</Text>
+          <Text style={styles.reportMeta}>
+            Report generation is not available yet. When it is, the reports you
+            generate will be listed here with their real size and date.
+          </Text>
+        </Card>
 
         {/* Schedule Reports */}
+        {/* The card here used to state a schedule the reader never set —
+            "Monthly Credit Summary, Every 1st of the month" — written inline
+            in JSX, which is the fabrication shape audit:screen-data cannot
+            see at all (task #100). Nothing stores a report schedule. */}
         <Text style={styles.sectionTitle}>Scheduled Reports</Text>
         <Card style={styles.scheduleCard}>
-          <View style={styles.scheduleRow}>
-            <Ionicons name="time" size={20} color={theme.colors.primary} />
-            <View style={styles.scheduleInfo}>
-              <Text style={styles.scheduleName}>Monthly Credit Summary</Text>
-              <Text style={styles.scheduleFrequency}>
-                Every 1st of the month
-              </Text>
-            </View>
-            <TouchableOpacity>
-              <Ionicons
-                name="settings"
-                size={20}
-                color={theme.colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.scheduleName}>No scheduled reports</Text>
+          <Text style={styles.scheduleFrequency}>
+            Scheduling is not available yet, so nothing is running on a
+            schedule for you.
+          </Text>
         </Card>
         <TouchableOpacity style={styles.addScheduleButton}>
           <Ionicons name="add" size={20} color={theme.colors.primary} />

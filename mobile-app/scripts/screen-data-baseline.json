@@ -29,10 +29,6 @@
       "offline": false,
       "why": "The period selector's label->months map. Configuration, not a measurement — flagged only because ALL maps to 120 months, which trips the magnitude heuristic. Exactly the sort of entry a human is meant to clear."
     },
-    "app/analytics/reports.tsx: GENERATED_REPORTS, REPORT_TEMPLATES": {
-      "classification": "fabrication",
-      "offline": true
-    },
     "app/analytics/trends.tsx: PERIOD_MONTHS": {
       "classification": "catalogue",
       "offline": false,
@@ -344,6 +340,11 @@
       "classification": "catalogue",
       "offline": true,
       "why": "The kinds of report the feature will produce — name, description and icon per type. Product copy about a capability, not a claim about this user. MOCK_REPORTS, which listed documents the reader supposedly had, was removed in the same commit; this is what is left."
+    },
+    "app/analytics/reports.tsx: REPORT_TEMPLATES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The kinds of report the feature will produce — name, description, icon and estimated time per kind. A true statement of intent and the surface to wire when generation exists. GENERATED_REPORTS, which listed files the reader supposedly had, was removed in the same commit."
     }
   }
 }
