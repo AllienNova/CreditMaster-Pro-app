@@ -233,6 +233,17 @@ jobs:
         working-directory: mobile-app
         run: npm run audit:back-nav
 
+      # BLOCKING: a screen must not redeclare a shared API type with different
+      # fields. This is how two fabrications survived a typecheck -
+      # financial/income declared `taxWithheld` REQUIRED (the server has no
+      # such field) and financial/transactions used `name`/`account` where the
+      # server sends `merchantName`/`accountId`. A local type that describes
+      # the FIXTURE is satisfied by the fixture and never compared to the
+      # route. Frozen at 5, shrink-only.
+      - name: audit:shadow-types (mobile) - no screen redefines an API type
+        working-directory: mobile-app
+        run: npm run audit:shadow-types
+
       # BLOCKING: the mobile inverse of audit:links. The tab bar holds nine
       # destinations against 232 screens, so 131 of them - the whole of trading,
       # tax, the marketplace and rewards - could only be opened by typing a deep
