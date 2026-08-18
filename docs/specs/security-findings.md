@@ -1102,6 +1102,79 @@ is not mine to make. Recorded with evidence; recommended action is to withdraw
 the five routes and the four screens behind a flag until a market-data provider
 is configured, because a signed-in user can reach a fabricated fair value today.
 
+## SF-29 — admin "cancel subscription" never tells Stripe
+
+**Severity: HIGH (money, live).** Found while checking whether
+`/admin/subscriptions`' churn figures had a source. They do not — but the route
+underneath has a worse problem.
+
+`DELETE /api/admin/subscriptions` (`src/app/api/admin/subscriptions/route.ts:82-120`)
+takes a `stripe_subscription_id`, and:
+
+```ts
+// In production, this would call Stripe API to cancel subscription
+// stripe.subscriptions.cancel(subscriptionId);
+...
+const { error } = await supabase
+  .from("subscriptions")
+  .update({ status: "canceled", cancel_at_period_end: true })
+  .eq("stripe_subscription_id", subscriptionId);
+...
+return NextResponse.json({ success: true });
+```
+
+The Stripe call is a comment. The route marks the row canceled locally and
+reports success.
+
+**The consequence is that the customer keeps paying and loses the product.**
+Fynvita reads entitlement from its own database, so access stops immediately;
+Stripe has been told nothing, so billing continues at the next renewal. The
+admin sees "success", the customer sees a cancelled account and another
+charge.
+
+### The contrast is inside this repo
+
+The user-facing path does it correctly.
+`subscriptionService.cancelSubscription` (`src/lib/subscriptions/subscription-service.ts:246-274`)
+calls Stripe FIRST and then writes back **Stripe's own** answer:
+
+```ts
+const stripeSubscription = await stripeService.cancelSubscription(
+  subscription.stripeSubscriptionId, immediately,
+);
+const updateData = {
+  status: stripeSubscription.status,
+  cancel_at_period_end: stripeSubscription.cancel_at_period_end,
+};
+```
+
+`/api/addons/cancel:36` likewise calls `stripeService.cancelSubscription`. The
+admin route is the only one that skips it.
+
+### The hardcoded pair is also self-contradictory
+
+`status: "canceled"` means the subscription has ENDED; `cancel_at_period_end:
+true` means it is still running and will stop at the end of the period. Both
+at once describes no real Stripe state, which is what you get from writing an
+outcome instead of reading one. The correct path cannot produce this pair,
+because it copies whichever one Stripe actually returned.
+
+### Not fixed — the repair is one line, the semantics are the owner's
+
+Routing this through `subscriptionService.cancelSubscription` is small. Which
+argument to pass is not:
+
+- `immediately: false` — the customer keeps the period they have already paid
+  for, and billing stops at renewal. This is what an admin "cancel" usually
+  means, and it matches what the contradictory pair half-says.
+- `immediately: true` — access and billing stop now, which may owe a refund.
+
+Choosing wrong moves real money in one direction or the other, so it is not
+mine to choose. **Until it is chosen, the admin surface should not report
+success for an action it did not perform** — the same principle applied to the
+mobile admin settings screen in rev 28, where destructive buttons that did
+nothing were changed to say so.
+
 ## Revision History
 
 | Date | Change |
@@ -1156,3 +1229,4 @@ is configured, because a signed-in user can reach a fabricated fair value today.
 | 2026-08-18 (rev 45) | **CORRECTS rev 39 and the dogfood commit.** The Expo-client-error marker added there keyed on a screen printing "HTTP <code>", and I cleared it by grepping `app/` and `src/` for that literal and finding nothing. The grep could not have found it: `src/services/api/client.ts:335` builds the message as `` `HTTP ${response.status}` ``, so it is CONSTRUCTED and never appears as a literal anywhere. Every screen whose request 404s therefore renders "HTTP 404" of its own accord, and the marker read that as Expo Go failing to load a bundle. `/reports` was reported NOT MEASURED while rendering 34 elements. Fixed by adding the discriminator the text alone could not provide: Expo Go's error screen IS the whole window and carries three or four nodes, while an app error state sits inside the app's own chrome and carries many more, so the marker now requires ≤ 6 elements as well as the text. Verified against the three known cases: `/reports` 27 el ok, `/tax` 67 el ok, `/student-loans` 67 el ok. **This also corrects two claims I made from the earlier run:** `/tax` is NOT hung in Metro — it renders 67 elements and the earlier persistent failure was the same Expo Go artefact clearing on a later run; and `/student-loans`, which the interrupted sweep reported as a confirmed crash ("Something went wrong"), renders 67 elements on re-test, so that crash is at most intermittent and is not established. The full 232-route sweep was stopped 18 routes in and restarted against the corrected gate rather than allowed to finish on wrong verdicts. |
 | 2026-08-18 (rev 46) | **CORRECTS rev 44's classifications, which I got wrong on five of eleven.** Fixed `/onboarding/complete` first — it congratulated every new user on a **675** credit score captioned "Based on Experian data", **12** "Items to Dispute" captioned "Errors & negative items found", and **+85** "Potential Points", at the moment a new user has the most reason to believe us. The captions were worse than the numbers: one attributes an invented score to a named bureau, the other asserts twelve specific problems on a report nobody had pulled. Replaced with what actually happens next, because at that point in onboarding a bureau connection may not exist and the first pull certainly has not happened. **"12" was below the gate's threshold** — bare integers under 100 are counters — so the gate flagged 675 and +85 and never saw the claim about twelve errors; it was found by reading the block the gate pointed at. **Then the correction.** Re-checking each of the eleven for `metadata` / hooks / fetch showed that FIVE are public MARKETING pages — `/credit`, `/invest`, `/financial-hub`, `/loans`, `/credit-builder` — server components with SEO metadata, a Footer and signup CTAs, no state and no fetch. There is no signed-in caller for those numbers to be a claim *about*; they are product illustrations, the same category as the landing page I had already classified correctly. I marked them `fabrication` by reading the numbers and not the page, in a single batch pass — the same shortcut that put `QUICK_STATS` inside an entry marked `catalogue` in rev 41. The honest count is **10 catalogue / 5 fabrication**, not 5/11. The five real ones are all client components addressed to a caller: `/analytics/credit-score` ("Your Current Score 720", "+45 points in 6 months"), `/profile` (720, 78%), `/credit-builder/payments` (three months of payments with point gains — the mobile twin was fixed this session), `/admin/subscriptions` ("156 Cancellations this month, $12,324 Lost MRR"), `/marketplace/analysis` (+45). **One new finding, different in kind:** `/invest`'s illustration shows "+$12,456.78 today", "+2.3%" and "+4.2%" for an INVESTING product on a public page. That is a performance-advertising question rather than a fabrication one, and it belongs with SF-28 and the registration question in the owner's pile, not in this gate's. |
 | 2026-08-18 (rev 47) | **The web tree had no equivalent of `audit:screen-data`, and 39 pages were in its blind spot.** `audit:mocks` watches API RESPONSES and `audit:inline-metrics` (rev 44) watches numbers typed into JSX; nothing watched a page's own module-level constants. `src/app/analytics/credit-score/page.tsx` shows what that cost: alongside the hardcoded 720 the inline gate caught, it holds a `scoreFactors` list asserting "On-time payments for 24 months", "Using 32% of available credit" and "Average account age: 5.2 years" — the SF-16 shape, on the web side, unwatched by anything. Parameterised the mobile gate with `--roots`/`--baseline` (same treatment as rev 44, one implementation for both trees; mobile's count unchanged at 67 catalogue / 6 fabrication, which is the check that nothing regressed) and pointed it at `src/app` and `src/components`. **39 screens render a constant data set, 26 of them with NO request in the file.** Frozen shrink-only and wired into CI as blocking. **All 39 are recorded UNCLASSIFIED on purpose.** Classifying them is a per-file judgement about whether a constant is product content or a claim about the caller, and I got that judgement wrong on five of eleven entries in rev 44 by batch-reading the numbers instead of the pages. UNCLASSIFIED states the truth — this is debt nobody has looked at yet — rather than a verdict I have not earned. |
+| 2026-08-18 (rev 48) | Added SF-29 (HIGH, money, live, NOT FIXED — the semantics are an owner decision). Found while checking whether `/admin/subscriptions`' churn figures ("156 Cancellations this month, $12,324 Lost MRR") had a source. They do not — `GET /api/admin/subscriptions` returns a subscription LIST, not statistics — but the DELETE handler on the same route is the bigger problem: it marks a subscription canceled in the database and **never calls Stripe**, the call being a comment (`// stripe.subscriptions.cancel(subscriptionId);`). Because entitlement is read from Fynvita's own database, the customer loses access immediately while Stripe keeps billing at renewal. The contrast is inside the repo: `subscriptionService.cancelSubscription` calls Stripe first and writes back Stripe's own `status` and `cancel_at_period_end`, and `/api/addons/cancel` does the same; the admin route is the only one that skips it. The hardcoded pair it writes instead — `status: "canceled"` AND `cancel_at_period_end: true` — describes no real Stripe state, since one means ended and the other means still running; the correct path cannot produce it because it copies what Stripe returned. Recorded rather than fixed: routing through the service is one line, but choosing `immediately` true or false moves real money in one direction or the other. |
