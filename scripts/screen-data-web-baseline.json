@@ -311,6 +311,51 @@
       "classification": "catalogue",
       "offline": false,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/credit-builder/age/page.tsx: accounts": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "useState initialiser holding the reader's credit accounts (\"Chase Freedom\", opened dates) with no request in the file. Credit age is computed from them, so the whole screen is derived from invented history."
+    },
+    "src/app/credit-builder/utilization/page.tsx: cards": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "useState initialiser holding the reader's cards — \"Chase Freedom, balance 1500, limit 5000\" — with no request. Utilisation percentages are computed from balances nobody read."
+    },
+    "src/app/credit-builder/mix/page.tsx: accountTypes": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "useState initialiser describing which account types the reader HAS, with no request. Credit-mix advice is derived from it."
+    },
+    "src/app/credit-builder/freeze/page.tsx: bureaus": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The three credit bureaus and their contact routes. A fixed, public list — Experian, Equifax, TransUnion — not a claim about the caller. The file makes three real requests for the freeze actions themselves."
+    },
+    "src/app/dashboard/chat/page.tsx: messages": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "A single opening greeting from the assistant listing what it can help with, seeded into the transcript. An opening line, not a fabricated conversation history; the file makes a real request for every subsequent turn. Same verdict as mobile's INITIAL_MESSAGES."
+    },
+    "src/app/disputes/wizard/page.tsx: items": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "HIGH HARM. useState initialiser pre-populating the dispute wizard with items supposedly on the reader's report — \"Capital One - Late payment March 2023\" — with no request in the file. Someone could file a dispute over an entry that does not exist on their report."
+    },
+    "src/app/tax/scenarios/page.tsx: scenarios": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Named what-if templates (Baseline, \"Max 401(k)\" at 13000, \"Max All Retirement\") that the reader edits. Scenario PRESETS, not a statement about this person's taxes — the figures are contribution limits, not their contributions."
+    },
+    "src/components/credit-repair/PaymentTimingOptimizer.tsx: cards": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "useState initialiser holding the reader's cards, with no request in the file. Timing advice is computed from balances and statement dates nobody read."
+    },
+    "src/components/credit-repair/UtilizationOptimizer.tsx: cards": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "useState initialiser holding the reader's cards, with no request in the file. The twin of PaymentTimingOptimizer; both feed utilisation advice from invented balances."
     }
   }
 }

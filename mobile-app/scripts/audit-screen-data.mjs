@@ -174,6 +174,33 @@ function looksMeasured(body) {
   });
 }
 
+/**
+ * A data set seeded through a useState INITIALISER.
+ *
+ * This is the blind spot that outlived the whole sweep. CONST_DATA requires
+ * `const NAME = [{`, and nothing matched
+ *
+ *     const [accounts, setAccounts] = useState<Account[]>([
+ *       { name: "Chase Freedom", balance: 3500, apr: 18.99 },
+ *       ...
+ *     ]);
+ *
+ * in src/app/credit-builder/payments/page.tsx, which showed every reader a
+ * payoff plan for $11,300 of debt they did not owe. It was found by reading
+ * the file, not by any gate, which is exactly what a gate is for.
+ *
+ * `isRendered` is not consulted here: state IS rendered by definition — the
+ * component holds it precisely to show it. The name captured is the state
+ * variable, so the baseline key reads `accounts` rather than an anonymous
+ * initialiser.
+ */
+const USESTATE_DATA =
+  /const\s*\[\s*([A-Za-z_$][\w$]*)\s*,\s*set[\w$]*\s*\]\s*=\s*useState\s*(?:<[^>]*>)?\s*\(\s*\[\s*\{/g;
+
+function useStateDataSets(source) {
+  return [...source.matchAll(USESTATE_DATA)].map((m) => m[1]);
+}
+
 function constantObjects(source) {
   const out = [];
   for (const m of source.matchAll(CONST_OBJECT_HEAD)) {
@@ -246,6 +273,8 @@ function findings() {
       // Constant OBJECTS too — see CONST_OBJECT_HEAD. A fabrication does not
       // have to be plural.
       ...constantObjects(source),
+      // Data seeded through a useState INITIALISER — see USESTATE_DATA.
+      ...useStateDataSets(source),
     ];
     if (rendered.length === 0) continue;
     out.push({
@@ -318,6 +347,26 @@ if (process.argv.includes("--self-test")) {
       false,
       "a line-broken PROPERTY access is not rendering — only a method call counts",
     ],
+    [
+      'const [accounts, setAccounts] = useState<Account[]>([\n  { name: "Chase Freedom", balance: 3500 },\n]);',
+      "accounts",
+      true,
+      "a data set seeded through a useState INITIALISER — the shape that hid " +
+        "$11,300 of invented debt in credit-builder/payments from every run",
+    ],
+    [
+      "const [count, setCount] = useState(0);",
+      "count",
+      false,
+      "a scalar useState is not a data set",
+    ],
+    [
+      "const [rows, setRows] = useState<Row[]>([]);",
+      "rows",
+      false,
+      "an EMPTY useState initialiser is the correct shape — it is what a " +
+        "screen that fetches its data looks like",
+    ],
     ["const B = [{ a: 1 }];\nuseState(B)", "B", true, "useState(NAME) counts as rendering"],
     [
       "const MOCK_REPORTS = [{ a: 1 }];\nconst [r] = useState<Report[]>(MOCK_REPORTS)",
@@ -332,7 +381,12 @@ if (process.argv.includes("--self-test")) {
   ];
   for (const [src, name, want, why] of cases) {
     const declared = [...src.matchAll(CONST_DATA)].map((m) => m[1]).includes(name);
-    const got = declared && isRendered(src, name);
+    // The verdict must cover EVERY detector, or a case written for one of them
+    // fails for the wrong reason. It used to run only the CONST_DATA path.
+    const got =
+      (declared && isRendered(src, name)) ||
+      constantObjects(src).includes(name) ||
+      useStateDataSets(src).includes(name);
     if (got === want) continue;
     bad++;
     console.log(`  SELF-TEST FAIL: ${JSON.stringify(src)} -> ${got}, expected ${want} (${why})`);

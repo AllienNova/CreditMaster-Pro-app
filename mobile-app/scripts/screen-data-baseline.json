@@ -345,6 +345,16 @@
       "classification": "catalogue",
       "offline": true,
       "why": "The kinds of report the feature will produce — name, description, icon and estimated time per kind. A true statement of intent and the surface to wire when generation exists. GENERATED_REPORTS, which listed files the reader supposedly had, was removed in the same commit."
+    },
+    "app/settings/notifications.tsx: groups": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The notification categories the app offers and their toggle labels, seeded into state so the switches are controlled. Settings the reader edits, not a claim about them. NOTE: with no request in the file, whatever they toggle is not persisted — that is a separate defect from fabrication and is not what this gate decides."
+    },
+    "app/tax/scenarios.tsx: scenarios": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Named what-if templates the reader edits (contribution limits, not their contributions). Same verdict as the web twin src/app/tax/scenarios/page.tsx."
     }
   }
 }
