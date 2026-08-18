@@ -68,14 +68,21 @@ const CRASH_MARKERS = [
  * written anywhere because it is CONSTRUCTED. `/reports` was reported NOT
  * MEASURED while rendering 34 elements.
  *
- * The discriminator is the element count. Expo Go's error screen is the whole
- * window and carries three or four nodes; an app error state sits inside the
- * app's own chrome and carries many more. Six is comfortably above the one and
- * below the other.
+ * THE ELEMENT COUNT IS NOT A DISCRIMINATOR EITHER, and that was the second
+ * wrong answer. `/credit-builder/age` renders exactly `HTTP 500` + `Try Again`
+ * in FOUR nodes — its own error state, from a real 500 — which is
+ * indistinguishable from Expo Go's `HTTP 404` + `Try Again` in four nodes.
+ * `/documents` is five. The app and the client draw the same screen.
+ *
+ * So this no longer claims to know which. A reading of this shape is reported
+ * as AMBIGUOUS: it is surfaced as a problem, so it can never be a silent pass,
+ * but it is not asserted to be the harness's fault or the app's. Deciding
+ * needs the thing this script cannot currently do — assert ARRIVAL by looking
+ * for a marker only the expected screen renders.
  */
 const CLIENT_ERROR = /^HTTP \d{3}$/;
 const CLIENT_ERROR_MAX_ELEMENTS = 6;
-const isClientError = (screen) =>
+const isHttpErrorScreen = (screen) =>
   screen.elements <= CLIENT_ERROR_MAX_ELEMENTS &&
   screen.texts.some((t) => CLIENT_ERROR.test(t.trim()));
 
@@ -241,7 +248,7 @@ for (const route of routes) {
 
   // Expo Go failed to load the bundle. Not a result about this route.
   let clientError = false;
-  if (isClientError(screen)) {
+  if (isHttpErrorScreen(screen)) {
     relaunch();
     sh("xcrun", ["simctl", "openurl", UDID, `exp://${HOST}:8081/--/${path}`]);
     sleep(SETTLE_MS + 4000);
@@ -249,7 +256,7 @@ for (const route of routes) {
     const retriedAlert = dismissAlert(retried);
     if (retriedAlert) alerted = alerted ?? retriedAlert;
     screen = retriedAlert ? readScreen() : retried;
-    clientError = isClientError(screen);
+    clientError = isHttpErrorScreen(screen);
   }
 
   // One retry: the first navigation to a route can race Metro's on-demand
@@ -321,7 +328,11 @@ for (const route of routes) {
   if (alerted) problems.push(`alert: ${alerted}`);
   // Surfaced as a problem so it is never silently counted as a pass, but it is
   // a statement about Expo Go, not about the screen. NOT MEASURED, not FAILED.
-  if (clientError) problems.push("expo-client-error: route was NOT measured");
+  if (clientError)
+    problems.push(
+      "http-error-screen: AMBIGUOUS — Expo Go failing to load the bundle and " +
+        "the app's own HTTP error state render identically",
+    );
   // Judge on TEXT, not element count.
   //
   // An element-count floor misreads screens whose content is aggregated into a
