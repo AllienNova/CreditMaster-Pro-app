@@ -138,11 +138,6 @@
       "offline": true,
       "why": "MOCK_REPORTS invents documents the user never generated - 'Credit Analysis Report - December 2024', 2.4 MB, dated - and offers them for download. Nothing stores generated reports: there is no table, and the only user-facing generation is GET /api/financial/export, which streams a file and keeps nothing. REPORT_TYPES alongside it is a genuine catalogue."
     },
-    "app/dashboard/spending.tsx: mockBudgets, mockCategories, mockMonthlyTrend": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "The caller's own spending: budgets, category totals and a monthly trend, with no request in the file. Claims about this user's money."
-    },
     "app/dashboard/subscriptions.tsx: mockSubscriptions": {
       "classification": "fabrication",
       "offline": true,
