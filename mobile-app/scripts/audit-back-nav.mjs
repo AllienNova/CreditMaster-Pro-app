@@ -3,13 +3,27 @@
  * audit:back-nav — every pushed screen must offer a way back.
  *
  * WHY. A device screenshot of /marketplace showed a screen with a title and no
- * way out. Counting: 72 of 238 screens had no back affordance. Ten are tab
- * roots and two are auth entries, which correctly have none. The rest were
- * screens a user could reach and then be stuck on.
+ * way out.
  *
- * The cause was structural. There was no shared header component, so 166
- * screens hand-rolled the same fifteen-line block and sixty left the first
- * half out. A block copied by hand that many times gets copied wrong.
+ * THE FIRST COUNT WAS WRONG, and the correction is the interesting part. A
+ * text scan for router.back() said 72 of 238 screens had no way back. That
+ * assumed no screen has a native header, which is true app-wide — but only
+ * app-wide. app/_layout.tsx sets headerShown: false in screenOptions; a nested
+ * group layout starts its OWN Stack, and one that merely styles the header
+ * leaves the library default in place. Verified against the installed source:
+ * @react-navigation/native-stack@7.13.0 types.d.ts:234, "the header is shown
+ * by default". So every pushed screen under app/coach, app/trading,
+ * app/investments and six other groups already had a working back button.
+ *
+ * The honest figures, once layout inheritance is modelled:
+ *   238  screens
+ *    15  exempt by name (tab roots, auth entries)
+ *    40  back button drawn by the navigator, not by their own JSX
+ *    18  genuinely with no way back
+ *
+ * Eighteen, not sixty. The defect is real and was worth a component and a
+ * gate; the scale of it was my error, made by trusting a grep over a source
+ * read.
  *
  * WHAT COUNTS AS A WAY BACK.
  *   <ScreenHeader ...>          the shared component, which renders one unless
@@ -94,6 +108,57 @@ const isLayout = (path) => /_layout\.tsx$/.test(path);
 
 function hasBackAffordance(source) {
   return BACK_PATTERNS.some((p) => p.test(source));
+}
+
+/**
+ * The effective `headerShown` for one screen under one layout.
+ *
+ * VERIFIED, NOT ASSUMED. @react-navigation/native-stack@7.13.0,
+ * lib/typescript/src/types.d.ts:234 — "Whether to show the header. The header
+ * is shown by default. Setting this to `false` hides the header."
+ *
+ * This matters more than it sounds. app/_layout.tsx sets headerShown: false
+ * app-wide, so it is easy to assume no screen has a native header. But a
+ * nested group layout starts its OWN Stack, and one that only styles the
+ * header — app/coach/_layout.tsx sets headerStyle, headerTintColor and
+ * nothing else — leaves the default in place. Every pushed screen in that
+ * group already has a working native back button.
+ *
+ * Precedence: the screen's own options, then the layout's screenOptions,
+ * then the library default.
+ */
+function effectiveHeaderShown(layoutSource, screenName) {
+  // Escape first. Expo Router route names carry brackets — "document/[id]",
+  // "analyze/[symbol]" — and an unescaped [id] is a regex CHARACTER CLASS
+  // matching "i" or "d". Both screens silently failed to match their own
+  // declared options and were reported as trapped when they were not.
+  const literal = screenName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const own = layoutSource.match(
+    new RegExp(`<Stack\\.Screen[^>]*name="${literal}"[\\s\\S]{0,400}?/>`),
+  );
+  if (own) {
+    if (/headerShown:\s*false/.test(own[0])) return false;
+    if (/headerShown:\s*true/.test(own[0])) return true;
+  }
+  const screenOptions = layoutSource.match(/screenOptions={{([\s\S]*?)}}\s*>/);
+  if (screenOptions) {
+    if (/headerShown:\s*false/.test(screenOptions[1])) return false;
+    if (/headerShown:\s*true/.test(screenOptions[1])) return true;
+  }
+  return true; // the library default
+}
+
+/** The nearest _layout.tsx at or above a screen, and whether it owns the root. */
+function nearestLayout(screenPath) {
+  let dir = join(MOBILE, screenPath, "..");
+  while (dir.startsWith(APP) || dir === APP) {
+    const candidate = join(dir, "_layout.tsx");
+    if (existsSync(candidate)) return candidate;
+    const parent = join(dir, "..");
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
 }
 
 /**
@@ -220,12 +285,12 @@ if (process.argv.includes("--self-test")) {
 /**
  * Shrink-only baseline, same contract as audit:screen-data and audit:api.
  *
- * 70 screens have no way back today. Failing the build on all of them at once
- * gets the gate switched off within a day, and there is no safe mechanical
- * fix: the 70 use 27 different header shapes and 21 have no header container
- * at all, so most of the `styles.*Header` matches are CARD headers inside
- * content. A script that injected a back control by pattern would put one in
- * the middle of a card.
+ * The remaining screens have no way back today. Failing the build on all of
+ * them at once gets a gate switched off within a day, and there is no safe
+ * mechanical fix: they use many different header shapes and most have no
+ * header container at all, so the `styles.*Header` matches are largely CARD
+ * headers inside content. A script that injected a back control by pattern
+ * would put one in the middle of a card.
  *
  * So the existing set is recorded and may only ever shrink; anything NEW fails
  * immediately. Each screen gets fixed by hand, with its header placed where it
@@ -236,6 +301,8 @@ const BASELINE = join(MOBILE, "scripts", "back-nav-baseline.json");
 // ── Scan ────────────────────────────────────────────────────────────────────
 const screens = walk(APP).filter((f) => !isLayout(f));
 const offenders = [];
+/** Screens whose back button is drawn by the navigator, not by their own JSX. */
+const nativeHeaderBack = [];
 const exemptUsed = new Set();
 
 for (const file of screens) {
@@ -245,6 +312,31 @@ for (const file of screens) {
     continue;
   }
   if (hasBackAffordance(readFileSync(file, "utf8"))) continue;
+
+  // A native header on a PUSHED screen is a real back button. Only the root
+  // of a stack gets one drawn without a back control, and that case is
+  // reported separately below.
+  const layout = nearestLayout(path);
+  if (layout) {
+    // A layout names a screen by its path RELATIVE TO THE LAYOUT, not by its
+    // filename: app/_layout.tsx declares name="document/[id]", and
+    // app/investments/_layout.tsx declares name="analyze/[symbol]". Deriving
+    // the name from the basename alone missed both of those per-screen
+    // options and reported two screens that have a native back button.
+    const layoutDir = rel(join(layout, ".."));
+    const name = path.slice(layoutDir.length + 1).replace(/\.tsx$/, "");
+    const isStackRoot = name === "index";
+    const isTabs = /<Tabs\b/.test(readFileSync(layout, "utf8"));
+    if (
+      !isStackRoot &&
+      !isTabs &&
+      effectiveHeaderShown(readFileSync(layout, "utf8"), name)
+    ) {
+      nativeHeaderBack.push(path);
+      continue;
+    }
+  }
+
   offenders.push(path);
 }
 
@@ -283,9 +375,13 @@ if (process.argv.includes("--freeze-baseline")) {
         frozen: "2026-08-17",
         why:
           "Screens with no way back, recorded so the count can only shrink. " +
-          "Reported from a device screenshot of /marketplace. There is no safe " +
-          "mechanical fix — 27 different header shapes, 21 with no header " +
-          "container — so each is fixed by hand. Anything NEW fails the gate.",
+          "Reported from a device screenshot of /marketplace. These are the " +
+          "screens left AFTER modelling layout inheritance: a nested group " +
+          "layout that only styles the header leaves the native one on, and " +
+          "those pushed screens already have a back button (verified against " +
+          "native-stack@7.13.0 types.d.ts:234). Each remaining one is fixed " +
+          "by hand — the header shapes vary too much to script. Anything NEW " +
+          "fails the gate.",
         screens: offenders.sort(),
       },
       null,
@@ -301,7 +397,8 @@ const fixed = [...baselined].filter((b) => !offenders.includes(b));
 
 console.log(
   `audit:back-nav — ${screens.length} screen(s), ` +
-    `${Object.keys(EXEMPT).length} exempt by name`,
+    `${Object.keys(EXEMPT).length} exempt by name, ` +
+    `${nativeHeaderBack.length} with a native header back button`,
 );
 
 if (staleExemptions.length) {

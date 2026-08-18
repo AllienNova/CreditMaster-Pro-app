@@ -221,11 +221,13 @@ jobs:
 
       # BLOCKING: every pushed screen must offer a way back. Reported from a
       # device screenshot of /marketplace - a title, and nothing to press.
-      # 72 of 238 screens had no back affordance; ten are tab roots and two are
-      # auth entries, which correctly have none. The cause was structural: no
-      # shared header component, so 166 screens hand-rolled the same block and
-      # sixty left the first half out. Frozen at 69, shrink-only: a NEW screen
-      # without a way back fails here.
+      # Of 238 screens: 15 exempt by name (tab roots, auth entries), 40 have a
+      # back button drawn by the navigator, and 18 genuinely have none. The
+      # first count said 72, by scanning for router.back() and assuming no
+      # screen has a native header - true app-wide, but a nested group layout
+      # starts its own Stack and one that only styles the header leaves the
+      # library default on (native-stack@7.13.0 types.d.ts:234). Frozen at 18,
+      # shrink-only: a NEW screen without a way back fails here.
       - name: audit:back-nav (mobile) - no screen traps the user
         working-directory: mobile-app
         run: npm run audit:back-nav
