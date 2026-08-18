@@ -27,11 +27,6 @@
       "offline": false,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
-    "src/app/admin/logs/page.tsx: logs": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Invented system log entries; no request in the file."
-    },
     "src/app/admin/subscriptions/page.tsx: metrics, planBreakdown, recentSubscriptions": {
       "classification": "fabrication",
       "offline": true,
