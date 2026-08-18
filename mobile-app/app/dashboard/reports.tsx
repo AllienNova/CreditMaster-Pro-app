@@ -1,6 +1,34 @@
 /**
- * Fynvita Reports Dashboard Screen
- * Generate and view credit reports
+ * Reports Dashboard.
+ *
+ * WHAT THIS SCREEN CLAIMED, AND WHAT IT DID WHEN TAPPED.
+ *
+ * `MOCK_REPORTS` listed documents the reader supposedly had — "Credit
+ * Analysis Report - December 2024, 2.4 MB", "Dispute Progress Summary -
+ * November 2024, 1.8 MB" — each with a Share button for a file that was
+ * nowhere.
+ *
+ * `handleGenerate` was worse, because it answered an action the user took: it
+ * waited 2 s on a setTimeout, invented a file with a `Math.random()` size,
+ * pushed it into the list, and alerted "Your Credit Analysis has been
+ * generated successfully." Nothing was generated. No request was made. A
+ * passive fabrication misinforms; this one told the user their instruction had
+ * succeeded.
+ *
+ * WHY IT IS NOT WIRED INSTEAD. There is nowhere for a generated report to
+ * live, and nothing that produces one:
+ *
+ *   - no generated-reports table exists in any migration
+ *   - `documents.type` is CHECK-constrained to 'credit_report', 'id',
+ *     'proof_of_address', 'supporting_doc' (001_initial_schema.sql:41), so a
+ *     generated report cannot be stored as a document either
+ *   - POST /api/analytics/reports persists nothing, and is backed by
+ *     AnalyticsEngine, whose getUserAnalytics returns hardcoded zeros under
+ *     the comment "In production, fetch from database" (task #99)
+ *
+ * So generation now says it is not available. The report-type catalogue stays:
+ * it describes what the feature will produce, which is true, and it is the
+ * surface to wire the day there is something behind it.
  */
 
 import React, { useState } from "react";
@@ -27,36 +55,6 @@ interface Report {
   size: string;
 }
 
-const MOCK_REPORTS: Report[] = [
-  {
-    id: "1",
-    name: "Credit Analysis Report - December 2024",
-    type: "analysis",
-    generatedAt: "2024-12-01",
-    size: "2.4 MB",
-  },
-  {
-    id: "2",
-    name: "Dispute Progress Summary - November 2024",
-    type: "disputes",
-    generatedAt: "2024-11-30",
-    size: "1.8 MB",
-  },
-  {
-    id: "3",
-    name: "Monthly Credit Score Report - November 2024",
-    type: "score",
-    generatedAt: "2024-11-15",
-    size: "1.2 MB",
-  },
-  {
-    id: "4",
-    name: "Credit Improvement Plan",
-    type: "plan",
-    generatedAt: "2024-10-20",
-    size: "3.1 MB",
-  },
-];
 
 const REPORT_TYPES = [
   {
@@ -86,27 +84,27 @@ const REPORT_TYPES = [
 ];
 
 export default function ReportsScreen() {
-  const [reports, setReports] = useState<Report[]>(MOCK_REPORTS);
+  // Empty, and it stays empty: nothing persists a generated report. The
+  // setter is kept because handleDelete still uses it and will be correct
+  // the day generation is wired; it simply cannot run while the list is
+  // empty. See the header note.
+  const [reports, setReports] = useState<Report[]>([]);
   const [generating, setGenerating] = useState<string | null>(null);
 
-  const handleGenerate = (type: string, name: string) => {
-    setGenerating(type);
-    // Simulate report generation
-    setTimeout(() => {
-      const newReport: Report = {
-        id: Date.now().toString(),
-        name: `${name} - ${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
-        type: type as Report["type"],
-        generatedAt: new Date().toISOString().split("T")[0],
-        size: `${(Math.random() * 3 + 1).toFixed(1)} MB`,
-      };
-      setReports((prev) => [newReport, ...prev]);
-      setGenerating(null);
-      Alert.alert(
-        "Report Generated",
-        `Your ${name} has been generated successfully.`,
-      );
-    }, 2000);
+  /**
+   * Report generation is NOT connected, and this says so.
+   *
+   * What this used to do: wait 2 s on a setTimeout, invent a file with a
+   * `Math.random()` size, push it into the list, and alert "Your {name} has
+   * been generated successfully." Nothing was generated and no request was
+   * made — the user was told a document existed, shown it in a list, and
+   * offered a Share button for a file that was never anywhere.
+   */
+  const handleGenerate = (_type: string, name: string) => {
+    Alert.alert(
+      "Report generation is not available yet",
+      `We cannot generate your ${name} yet. When we can, it will appear here — we would rather tell you that than show you a report we did not produce.`,
+    );
   };
 
   const handleShare = async (report: Report) => {
@@ -290,6 +288,11 @@ export default function ReportsScreen() {
                 color={theme.colors.textSecondary}
               />
               <Text style={styles.emptyText}>No reports generated yet</Text>
+              {/* "Not yet" on its own implies you could generate one now. */}
+              <Text style={styles.emptySubtext}>
+                Report generation is not available yet. When it is, the reports
+                you generate will be listed here.
+              </Text>
             </View>
           )}
         </Card>
@@ -388,4 +391,11 @@ const styles = StyleSheet.create({
 
   emptyState: { alignItems: "center", padding: 40 },
   emptyText: { fontSize: 14, color: theme.colors.textSecondary, marginTop: 12 },
+  emptySubtext: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginTop: 6,
+    textAlign: "center",
+    paddingHorizontal: 16,
+  },
 });

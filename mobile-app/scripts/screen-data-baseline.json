@@ -133,11 +133,6 @@
       "offline": false,
       "why": "FICO band definitions — 300-579 Poor, and so on. Published scoring bands: product knowledge about the scale, not a measurement of this user."
     },
-    "app/dashboard/reports.tsx: MOCK_REPORTS, REPORT_TYPES": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "MOCK_REPORTS invents documents the user never generated - 'Credit Analysis Report - December 2024', 2.4 MB, dated - and offers them for download. Nothing stores generated reports: there is no table, and the only user-facing generation is GET /api/financial/export, which streams a file and keeps nothing. REPORT_TYPES alongside it is a genuine catalogue."
-    },
     "app/dashboard/subscriptions.tsx: mockSubscriptions": {
       "classification": "fabrication",
       "offline": true,
@@ -344,6 +339,11 @@
       "classification": "catalogue",
       "offline": false,
       "why": "Written coaching content (the 50/30/20 rule and its steps) plus a single opening greeting from the coach with suggested prompts. Product copy we authored; neither asserts anything about this user, and INITIAL_MESSAGES is an opening line, not a fabricated conversation history."
+    },
+    "app/dashboard/reports.tsx: REPORT_TYPES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The kinds of report the feature will produce — name, description and icon per type. Product copy about a capability, not a claim about this user. MOCK_REPORTS, which listed documents the reader supposedly had, was removed in the same commit; this is what is left."
     }
   }
 }
