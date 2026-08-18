@@ -14,7 +14,6 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
-import { Card } from "../../src/components/Card";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 export default function AnalyticsScreen() {
@@ -51,17 +50,19 @@ export default function AnalyticsScreen() {
         {/* Header */}
         <ScreenHeader title="Analytics" subtitle="Insights and data analysis" />
 
-        {/* Quick Stats */}
-        <View style={styles.statsRow}>
-          <Card style={styles.statCard}>
-            <Text style={styles.statValue}>+45</Text>
-            <Text style={styles.statLabel}>Score Change</Text>
-          </Card>
-          <Card style={styles.statCard}>
-            <Text style={styles.statValue}>87%</Text>
-            <Text style={styles.statLabel}>Dispute Success</Text>
-          </Card>
-        </View>
+        {/*
+          A "Quick Stats" row lived here telling EVERY user their score had
+          moved +45 and their dispute success rate was 87% — two numbers with
+          no source, on a screen that makes no request at all.
+
+          Not replaced with a real read. This is a navigation hub, and both
+          figures already have a screen that computes them from the caller's
+          own data: /analytics/credit-score for score movement and
+          /analytics/disputes for dispute outcomes. Duplicating them here would
+          mean a second calculation to keep in agreement with the first, which
+          is how transactions ended up with a chart that disagreed with its own
+          list.
+        */}
 
         {/* Analytics Items */}
         <View style={styles.analyticsSection}>
@@ -98,15 +99,6 @@ export default function AnalyticsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
-  statsRow: { flexDirection: "row", marginBottom: theme.spacing.lg },
-  statCard: {
-    flex: 1,
-    marginHorizontal: 4,
-    alignItems: "center",
-    paddingVertical: theme.spacing.lg,
-  },
-  statValue: { fontSize: 28, fontWeight: "700", color: theme.colors.primary },
-  statLabel: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 4 },
   analyticsSection: { marginTop: theme.spacing.md },
   analyticsItem: {
     flexDirection: "row",

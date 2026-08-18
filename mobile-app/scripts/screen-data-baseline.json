@@ -42,9 +42,10 @@
       "classification": "catalogue",
       "offline": true
     },
-    "app/budgeting/index.tsx: FEATURES, QUICK_STATS": {
+    "app/budgeting/index.tsx: FEATURES": {
       "classification": "catalogue",
-      "offline": true
+      "offline": true,
+      "why": "FEATURES is the list of budgeting tools this hub links to \u2014 product content. QUICK_STATS, which shared this entry, invented the caller's bill/subscription/save-rule COUNTS and is gone; a per-file key could not carry one catalogue and one fabrication, which is how it sat inside an entry marked safe."
     },
     "app/chat/index.tsx: INITIAL_MESSAGES": {
       "classification": "catalogue",

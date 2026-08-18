@@ -6,14 +6,6 @@
       "classification": "fabrication",
       "why": "Predicted FUTURE scores presented as analysis: 30 Days 748 (+6 pts), 90 Days 762 (+20 pts), 6 Months 780 (+38 pts). Nothing predicts a score, and these survived the rev-79 fix of this same screen because that fix removed the module-level constants and left the JSX literals."
     },
-    "app/analytics/index.tsx: +45, 87%": {
-      "classification": "fabrication",
-      "why": "'+45 Score Change' and '87% Dispute Success' on a hub screen that makes NO request. The screen audit:screen-data could never flag, and the reason this gate exists."
-    },
-    "app/budgeting/index.tsx: $5,000, $3,245, $1,755": {
-      "classification": "fabrication",
-      "why": "A whole Monthly Overview - Income $5,000, Expenses $3,245, Remaining $1,755 - identical for every user, on a screen with no API import at all."
-    },
     "app/credit/factors.tsx: 35%, 30%, 15%, 10%, 10%": {
       "classification": "catalogue",
       "why": "The five FICO factor weights (35/30/15/10/10). Published, universal, and not a claim about the caller."

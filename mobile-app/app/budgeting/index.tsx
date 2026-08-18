@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import {
+  budgetApi,
+  type BudgetOverviewData,
+} from "../../src/services/api/financial";
 
 interface FeatureItem {
   title: string;
@@ -52,13 +56,47 @@ const FEATURES: FeatureItem[] = [
   },
 ];
 
-const QUICK_STATS = [
-  { label: "Total Bills", value: "5", icon: "receipt-outline" as keyof typeof Ionicons.glyphMap },
-  { label: "Subscriptions", value: "6", icon: "repeat-outline" as keyof typeof Ionicons.glyphMap },
-  { label: "Save Rules", value: "4", icon: "shield-checkmark-outline" as keyof typeof Ionicons.glyphMap },
-];
+/*
+ * QUICK_STATS lived here: "Total Bills 5", "Subscriptions 6", "Save Rules 4".
+ *
+ * Those are counts of the CALLER's own bills, subscriptions and save rules,
+ * not product content — and the screen-data baseline had this file classified
+ * `catalogue`, because one baseline key covers both constants in it and the
+ * other one, FEATURES, genuinely is a catalogue. A per-file entry cannot carry
+ * two classifications, and that is how an invented count sat inside an entry
+ * marked safe.
+ *
+ * Gone rather than wired: each count already has a screen that owns it, listed
+ * in FEATURES directly above. Three more fetches on a hub screen would be
+ * three more numbers to keep in agreement with the screens that compute them.
+ */
 
 export default function BudgetingIndexScreen() {
+  const [summary, setSummary] = useState<BudgetOverviewData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const loadSummary = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    const res = await budgetApi.getBudgetSummary();
+    // A failed read and an empty budget are different things and must not
+    // render the same, or "you have no budget" becomes the message for an
+    // outage.
+    if (res.success && res.data) setSummary(res.data);
+    else setError(true);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
+
+  const formatCurrency = (amount: number) => {
+    const prefix = amount < 0 ? "-" : "";
+    return `${prefix}$${Math.abs(amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -77,35 +115,82 @@ export default function BudgetingIndexScreen() {
           }
         />
 
-        {/* Budget Overview Card */}
+        {/*
+          This card read Income $5,000 / Expenses $3,245 / Remaining $1,755
+          with a bar hardcoded to 64.9%, identical for every user, on a screen
+          that imported no API at all.
+
+          It now reads GET /api/financial/budgets/summary through
+          budgetApi.getBudgetSummary(), which already existed. The labels
+          changed from Income/Expenses to Budgeted/Spent because that is what
+          the summary MEASURES: income is not part of a budget summary, and
+          labelling `totalBudgeted` "Income" would be a second fabrication
+          wearing the first one's clothes.
+        */}
         <Card style={styles.overviewCard}>
           <Text style={styles.overviewTitle}>Monthly Overview</Text>
-          <View style={styles.overviewRow}>
-            <View style={styles.overviewItem}>
-              <Text style={styles.overviewLabel}>Income</Text>
-              <Text style={[styles.overviewAmount, { color: theme.colors.success }]}>
-                $5,000
+          {error ? (
+            <>
+              <Text style={styles.stateText}>
+                We could not load your budget summary.
               </Text>
-            </View>
-            <View style={styles.overviewDivider} />
-            <View style={styles.overviewItem}>
-              <Text style={styles.overviewLabel}>Expenses</Text>
-              <Text style={[styles.overviewAmount, { color: theme.colors.error }]}>
-                $3,245
+              <TouchableOpacity onPress={loadSummary}>
+                <Text style={styles.retryText}>Try again</Text>
+              </TouchableOpacity>
+            </>
+          ) : loading ? (
+            <Text style={styles.stateText}>Loading…</Text>
+          ) : !summary || summary.totalBudgeted === 0 ? (
+            <Text style={styles.stateText}>
+              You have not set a budget yet. Set one in Smart Budget below and
+              this fills in.
+            </Text>
+          ) : (
+            <>
+              <View style={styles.overviewRow}>
+                <View style={styles.overviewItem}>
+                  <Text style={styles.overviewLabel}>Budgeted</Text>
+                  <Text
+                    style={[styles.overviewAmount, { color: theme.colors.success }]}
+                  >
+                    {formatCurrency(summary.totalBudgeted)}
+                  </Text>
+                </View>
+                <View style={styles.overviewDivider} />
+                <View style={styles.overviewItem}>
+                  <Text style={styles.overviewLabel}>Spent</Text>
+                  <Text
+                    style={[styles.overviewAmount, { color: theme.colors.error }]}
+                  >
+                    {formatCurrency(summary.totalSpent)}
+                  </Text>
+                </View>
+                <View style={styles.overviewDivider} />
+                <View style={styles.overviewItem}>
+                  <Text style={styles.overviewLabel}>Remaining</Text>
+                  <Text
+                    style={[styles.overviewAmount, { color: theme.colors.primary }]}
+                  >
+                    {formatCurrency(summary.totalRemaining)}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.progressBarBackground}>
+                {/* Clamped: spending past the budget would otherwise render a
+                    bar wider than its track. */}
+                <View
+                  testID="budget-progress"
+                  style={[
+                    styles.progressBarFill,
+                    { width: `${Math.min(100, Math.max(0, summary.percentUsed))}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressText}>
+                {summary.percentUsed.toFixed(1)}% of budget used
               </Text>
-            </View>
-            <View style={styles.overviewDivider} />
-            <View style={styles.overviewItem}>
-              <Text style={styles.overviewLabel}>Remaining</Text>
-              <Text style={[styles.overviewAmount, { color: theme.colors.primary }]}>
-                $1,755
-              </Text>
-            </View>
-          </View>
-          <View style={styles.progressBarBackground}>
-            <View style={[styles.progressBarFill, { width: "64.9%" }]} />
-          </View>
-          <Text style={styles.progressText}>64.9% of budget used</Text>
+            </>
+          )}
         </Card>
 
         {/* Feature Cards */}
@@ -146,22 +231,6 @@ export default function BudgetingIndexScreen() {
           </TouchableOpacity>
         ))}
 
-        {/* Quick Stats */}
-        <Text style={styles.sectionTitle}>Quick Stats</Text>
-        <View style={styles.statsRow}>
-          {QUICK_STATS.map((stat) => (
-            <Card key={stat.label} style={styles.statCard}>
-              <Ionicons
-                name={stat.icon}
-                size={24}
-                color={theme.colors.primary}
-              />
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-            </Card>
-          ))}
-        </View>
-
         <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
@@ -179,6 +248,17 @@ const styles = StyleSheet.create({
   },
   settingsButton: {
     padding: theme.spacing.sm,
+  },
+  stateText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    lineHeight: 20,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    marginTop: 8,
   },
   overviewCard: {
     marginBottom: theme.spacing.lg,
@@ -264,27 +344,6 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.sm,
     color: theme.colors.textSecondary,
     marginTop: 2,
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  statCard: {
-    flex: 1,
-    marginHorizontal: 4,
-    alignItems: "center",
-    paddingVertical: theme.spacing.md,
-  },
-  statValue: {
-    fontSize: theme.fontSize.xl,
-    fontWeight: theme.fontWeight.bold,
-    color: theme.colors.text,
-    marginTop: theme.spacing.sm,
-  },
-  statLabel: {
-    fontSize: theme.fontSize.xs,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
   },
   bottomSpacer: {
     height: theme.spacing.xxl,
