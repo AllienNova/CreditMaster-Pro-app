@@ -6,7 +6,14 @@ import type { AuthedUser } from "@/lib/auth/api-guard";
 /**
  * GET /api/credit-builder/recommendations
  *
- * Returns AI-powered personalized recommendations for credit building
+ * Returns personalized credit-building recommendations, derived from the
+ * caller's own credit-builder score: getRecommendedActions computes their weak
+ * categories and getDefaultActions branches on them.
+ *
+ * NOT AI-powered, despite what this comment used to say. The service made a
+ * billable AI call and discarded the response — see the note in
+ * credit-builder-service.ts:getRecommendedActions. The actions carry
+ * `aiGenerated: false`, which was always the honest signal.
  */
 export const GET = withAuth(async (_request: NextRequest, user: AuthedUser) => {
   try {

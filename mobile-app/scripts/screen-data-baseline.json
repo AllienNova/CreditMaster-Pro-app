@@ -287,10 +287,6 @@
       "classification": "catalogue",
       "offline": true
     },
-    "app/recommendations/index.tsx: AI_RECOMMENDATIONS, CATEGORIES": {
-      "classification": "fabrication",
-      "offline": true
-    },
     "app/recommendations/loans.tsx: LOAN_OFFERS, LOAN_TYPES": {
       "classification": "catalogue",
       "offline": true

@@ -432,3 +432,39 @@ export default {
   reports: creditReportApi,
   rentReporting: rentReportingApi,
 };
+
+/**
+ * Credit-builder recommendations — GET /api/credit-builder/recommendations.
+ *
+ * Personalised from the caller's own credit-builder score: the service
+ * computes their weak categories and branches the action list on them. NOT AI
+ * generated, and the payload says so — every action carries
+ * `aiGenerated: false`. The route used to claim otherwise while discarding a
+ * billable AI response; see the note in credit-builder-service.ts.
+ *
+ * The response has NO { success, data } envelope: it is
+ * `{ success, recommendations }`, so the client passes the body through and
+ * `res.data.recommendations` is the list.
+ */
+export interface CreditBuilderAction {
+  id: string;
+  type: "quick_win" | "short_term" | "long_term";
+  category: "payment" | "utilization" | "age" | "mix" | "inquiry";
+  title: string;
+  description: string;
+  impact: "low" | "medium" | "high";
+  /** Estimated points increase. */
+  pointsImpact: number;
+  timeframe: string;
+  difficulty: "easy" | "medium" | "hard";
+  completed: boolean;
+  aiGenerated: boolean;
+  reasoning?: string;
+}
+
+export const creditBuilderRecommendationsApi = {
+  getAll: () =>
+    api.get<{ recommendations: CreditBuilderAction[] }>(
+      "/credit-builder/recommendations",
+    ),
+};

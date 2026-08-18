@@ -5,7 +5,6 @@
     "app/admin/users.tsx: UserProfile",
     "app/dashboard/subscriptions.tsx: Subscription",
     "app/financial-intelligence/ai-coach.tsx: Recommendation",
-    "app/financial-intelligence/smart-budget.tsx: Recommendation",
-    "app/recommendations/index.tsx: Recommendation"
+    "app/financial-intelligence/smart-budget.tsx: Recommendation"
   ]
 }

@@ -3,12 +3,13 @@
  * AI-generated recommendations with priority ranking and impact estimation
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
 import { router } from "expo-router";
@@ -17,132 +18,75 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { creditBuilderRecommendationsApi } from "../../src/services/api/credit";
+import type { CreditBuilderAction } from "../../src/services/api/credit";
 
-interface Recommendation {
-  id: string;
-  title: string;
-  description: string;
-  category: "credit" | "debt" | "savings" | "protection";
-  priority: "high" | "medium" | "low";
-  impact: number; // Score impact points
-  timeframe: string;
-  action: string;
-  route: string;
-}
+/*
+ * A local `Recommendation` interface and an AI_RECOMMENDATIONS array lived
+ * here.
+ *
+ * The interface SHADOWED the shared `Recommendation` in
+ * src/services/api/types.ts with different fields — it had `category`,
+ * `impact`, `timeframe`, `action` and `route`; the shared one has `userId`,
+ * `type`, `potentialImpact`, `actionUrl`, `expiresAt` and `dismissed`. That
+ * mismatch is exactly what audit:shadow-types now catches, and it is why an
+ * invented list typechecked: the local type described the fixture, so nothing
+ * could compare this screen to a route.
+ *
+ * The real source is GET /api/credit-builder/recommendations, which derives
+ * actions from the caller's own credit-builder score. It is NOT AI generated —
+ * every action carries `aiGenerated: false`, and the service used to make a
+ * billable AI call and throw the response away.
+ */
 
-const AI_RECOMMENDATIONS: Recommendation[] = [
-  {
-    id: "1",
-    title: "Pay Down Credit Card Balance",
-    description:
-      "Reduce your Chase card balance by $500 to lower utilization to 25%",
-    category: "credit",
-    priority: "high",
-    impact: 25,
-    timeframe: "30 days",
-    action: "View Strategy",
-    route: "/credit-builder/utilization",
-  },
-  {
-    id: "2",
-    title: "Dispute Incorrect Late Payment",
-    description:
-      "We found a late payment on your Experian report that may be inaccurate",
-    category: "credit",
-    priority: "high",
-    impact: 40,
-    timeframe: "45 days",
-    action: "Start Dispute",
-    route: "/dispute/new",
-  },
-  {
-    id: "3",
-    title: "Become Authorized User",
-    description: "Ask a family member to add you to their oldest credit card",
-    category: "credit",
-    priority: "medium",
-    impact: 20,
-    timeframe: "60 days",
-    action: "Learn More",
-    route: "/credit-builder/authorized-user",
-  },
-  {
-    id: "4",
-    title: "Set Up Autopay",
-    description: "Enable autopay on 3 accounts to ensure on-time payments",
-    category: "credit",
-    priority: "medium",
-    impact: 15,
-    timeframe: "Ongoing",
-    action: "Set Up",
-    route: "/credit-builder/payments",
-  },
-  {
-    id: "5",
-    title: "Freeze Your Credit",
-    description: "Protect against identity theft by freezing at all 3 bureaus",
-    category: "protection",
-    priority: "medium",
-    impact: 0,
-    timeframe: "Immediate",
-    action: "Freeze Now",
-    route: "/credit-builder/freeze",
-  },
-  {
-    id: "6",
-    title: "Apply for Secured Card",
-    description:
-      "Build credit history with a secured card - high approval odds",
-    category: "credit",
-    priority: "low",
-    impact: 10,
-    timeframe: "90 days",
-    action: "View Cards",
-    route: "/credit-builder/secured-card",
-  },
-  {
-    id: "7",
-    title: "Consolidate High-Interest Debt",
-    description:
-      "Save $1,200/year by consolidating 3 cards into a personal loan",
-    category: "debt",
-    priority: "medium",
-    impact: 5,
-    timeframe: "30 days",
-    action: "Compare Loans",
-    route: "/recommendations/loans",
-  },
-  {
-    id: "8",
-    title: "Build Emergency Fund",
-    description:
-      "Start with $500 to avoid future credit damage from emergencies",
-    category: "savings",
-    priority: "low",
-    impact: 0,
-    timeframe: "90 days",
-    action: "Set Goal",
-    route: "/financial/goals",
-  },
-];
 
-const CATEGORIES = [
-  { id: "all", label: "All", icon: "apps" },
-  { id: "credit", label: "Credit", icon: "trending-up" },
-  { id: "debt", label: "Debt", icon: "card" },
-  { id: "savings", label: "Savings", icon: "wallet" },
-  { id: "protection", label: "Protection", icon: "shield" },
-];
+
+/*
+ * A fixed CATEGORIES list lived here — credit / debt / savings / protection.
+ * The service's categories are payment / utilization / age / mix / inquiry, so
+ * every one of those chips filtered the list to nothing. They are derived from
+ * the caller's own actions now.
+ */
 
 export default function RecommendationsScreen() {
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [recs, setRecs] = useState<CreditBuilderAction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    const res = await creditBuilderRecommendationsApi.getAll();
+    if (!res.success || !res.data) {
+      setError("We could not load your recommendations.");
+      setLoading(false);
+      return;
+    }
+    setRecs(res.data.recommendations ?? []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  /**
+   * Chips from the caller's OWN action categories. The fixed list was
+   * credit/debt/savings/protection; the service's categories are
+   * payment/utilization/age/mix/inquiry, so every chip filtered to nothing.
+   */
+  const categories = ["all", ...new Set(recs.map((r) => r.category))];
+
   const filteredRecs =
     selectedCategory === "all"
-      ? AI_RECOMMENDATIONS
-      : AI_RECOMMENDATIONS.filter((r) => r.category === selectedCategory);
-  const totalImpact = AI_RECOMMENDATIONS.filter(
-    (r) => r.priority === "high",
-  ).reduce((sum, r) => sum + r.impact, 0);
+      ? recs
+      : recs.filter((r) => r.category === selectedCategory);
+
+  const highPriority = recs.filter((r) => r.impact === "high");
+  // `pointsImpact` is the estimated points increase. The old screen summed a
+  // field it called `impact`, which on the real payload is a low/medium/high
+  // band, not a number.
+  const totalImpact = highPriority.reduce((sum, r) => sum + r.pointsImpact, 0);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -193,10 +137,13 @@ export default function RecommendationsScreen() {
               <Ionicons name="sparkles" size={24} color="#8B5CF6" />
             </View>
             <View style={styles.summaryContent}>
-              <Text style={styles.summaryTitle}>AI Analysis Complete</Text>
+              {/* Not "AI Analysis Complete": these come from the caller's own
+                  credit-builder score, and every action carries
+                  aiGenerated: false. */}
+              <Text style={styles.summaryTitle}>Based on your credit profile</Text>
               <Text style={styles.summaryText}>
                 Based on your credit profile, we found{" "}
-                {AI_RECOMMENDATIONS.length} personalized recommendations
+                {recs.length} personalized recommendations
               </Text>
             </View>
           </View>
@@ -207,7 +154,7 @@ export default function RecommendationsScreen() {
             </View>
             <View style={styles.impactItem}>
               <Text style={styles.impactValue}>
-                {AI_RECOMMENDATIONS.filter((r) => r.priority === "high").length}
+                {highPriority.length}
               </Text>
               <Text style={styles.impactLabel}>High Priority</Text>
             </View>
@@ -220,52 +167,70 @@ export default function RecommendationsScreen() {
           showsHorizontalScrollIndicator={false}
           style={styles.categoryScroll}
         >
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <TouchableOpacity
-              key={cat.id}
+              key={cat}
+              testID={`category-chip-${cat}`}
               style={[
                 styles.categoryChip,
-                selectedCategory === cat.id && styles.categoryChipActive,
+                selectedCategory === cat && styles.categoryChipActive,
               ]}
-              onPress={() => setSelectedCategory(cat.id)}
+              onPress={() => setSelectedCategory(cat)}
             >
-              <Ionicons
-                name={cat.icon as keyof typeof Ionicons.glyphMap}
-                size={16}
-                color={
-                  selectedCategory === cat.id
-                    ? "#fff"
-                    : theme.colors.textSecondary
-                }
-              />
+              {/* No per-category icon: the fixed list carried one, the
+                  server's categories do not. The label is the category. */}
               <Text
                 style={[
-                  styles.categoryChipText,
-                  selectedCategory === cat.id && styles.categoryChipTextActive,
+                  styles.categoryLabel,
+                  selectedCategory === cat && styles.categoryLabelActive,
                 ]}
               >
-                {cat.label}
+                {cat}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
         {/* Recommendations List */}
+        {loading ? (
+          <View style={styles.stateBlock} testID="recs-loading">
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        ) : null}
+
+        {error ? (
+          <View style={styles.stateBlock}>
+            <Text style={styles.stateText}>{error}</Text>
+            <TouchableOpacity onPress={load}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {!loading && !error && recs.length === 0 ? (
+          <View style={styles.stateBlock}>
+            <Text style={styles.stateText}>
+              No recommendations yet. They are derived from your credit-builder
+              score, so link an account to get started.
+            </Text>
+          </View>
+        ) : null}
+
         <Text style={styles.sectionTitle}>
           {filteredRecs.length} Recommendations
         </Text>
+        {/* Rendered as a View, not a TouchableOpacity: the payload has no
+            route or actionUrl to navigate to. The fixture invented one per
+            item, so every card looked tappable and none of the targets were
+            real. */}
         {filteredRecs.map((rec) => (
-          <TouchableOpacity
-            key={rec.id}
-            onPress={() => router.push(rec.route as never)}
-            activeOpacity={0.7}
-          >
+          <View key={rec.id}>
             <Card style={styles.recCard}>
               <View style={styles.recHeader}>
                 <View
                   style={[
                     styles.recIcon,
-                    { backgroundColor: `${getPriorityColor(rec.priority)}15` },
+                    { backgroundColor: `${getPriorityColor(rec.impact)}15` },
                   ]}
                 >
                   <Ionicons
@@ -275,7 +240,7 @@ export default function RecommendationsScreen() {
                       ) as keyof typeof Ionicons.glyphMap
                     }
                     size={20}
-                    color={getPriorityColor(rec.priority)}
+                    color={getPriorityColor(rec.impact)}
                   />
                 </View>
                 <View style={styles.recContent}>
@@ -285,17 +250,17 @@ export default function RecommendationsScreen() {
                       style={[
                         styles.priorityBadge,
                         {
-                          backgroundColor: `${getPriorityColor(rec.priority)}20`,
+                          backgroundColor: `${getPriorityColor(rec.impact)}20`,
                         },
                       ]}
                     >
                       <Text
                         style={[
                           styles.priorityText,
-                          { color: getPriorityColor(rec.priority) },
+                          { color: getPriorityColor(rec.impact) },
                         ]}
                       >
-                        {rec.priority.toUpperCase()}
+                        {rec.impact.toUpperCase()}
                       </Text>
                     </View>
                   </View>
@@ -304,10 +269,15 @@ export default function RecommendationsScreen() {
               </View>
               <View style={styles.recFooter}>
                 <View style={styles.recStats}>
-                  {rec.impact > 0 && (
+                  {/* `pointsImpact` is the estimated points increase.
+                      `impact` is a low/medium/high band and was being
+                      rendered as "+high pts" against a real payload. */}
+                  {rec.pointsImpact > 0 && (
                     <View style={styles.recStat}>
                       <Ionicons name="trending-up" size={14} color="#22C55E" />
-                      <Text style={styles.recStatText}>+{rec.impact} pts</Text>
+                      <Text style={styles.recStatText}>
+                        +{rec.pointsImpact} pts
+                      </Text>
                     </View>
                   )}
                   <View style={styles.recStat}>
@@ -319,17 +289,22 @@ export default function RecommendationsScreen() {
                     <Text style={styles.recStatText}>{rec.timeframe}</Text>
                   </View>
                 </View>
-                <TouchableOpacity style={styles.actionButton}>
-                  <Text style={styles.actionButtonText}>{rec.action}</Text>
+                {/* An "action" call-to-action button lived here, labelled from
+                    `rec.action` — a field the payload does not have, and one
+                    that pointed at `rec.route`, which it also does not have.
+                    The difficulty IS on the payload and is the honest detail
+                    to show instead. */}
+                <View style={styles.recStat}>
                   <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color={theme.colors.primary}
+                    name="barbell-outline"
+                    size={14}
+                    color={theme.colors.textSecondary}
                   />
-                </TouchableOpacity>
+                  <Text style={styles.recStatText}>{rec.difficulty}</Text>
+                </View>
               </View>
             </Card>
-          </TouchableOpacity>
+          </View>
         ))}
 
         {/* Quick Links */}
@@ -365,6 +340,21 @@ export default function RecommendationsScreen() {
 }
 
 const styles = StyleSheet.create({
+  stateBlock: { paddingVertical: 32, alignItems: "center" },
+  stateText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    paddingHorizontal: 24,
+  },
+  retryText: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontWeight: "600",
+    marginTop: 8,
+  },
+  categoryLabel: { fontSize: 13, color: theme.colors.textSecondary },
+  categoryLabelActive: { color: "#FFFFFF", fontWeight: "600" },
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
   refreshButton: { padding: 8 },
