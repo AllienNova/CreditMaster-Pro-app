@@ -433,10 +433,16 @@ for (const route of routes) {
   if (alerted) problems.push(`alert: ${alerted}`);
   // Surfaced as a problem so it is never silently counted as a pass, but it is
   // a statement about Expo Go, not about the screen. NOT MEASURED, not FAILED.
-  if (clientError)
+  // THE ARRIVAL CHECK RESOLVES THE AMBIGUITY. Expo Go's bundle-load failure
+  // cannot render the app's own screen title — it never loaded the app. So a
+  // reading that carries the expected title is the APP's error state, however
+  // small and however much it looks like the client's. Only report the
+  // ambiguity when arrival could not be confirmed.
+  if (clientError && arrived !== true)
     problems.push(
       "http-error-screen: AMBIGUOUS — Expo Go failing to load the bundle and " +
-        "the app's own HTTP error state render identically",
+        "the app's own HTTP error state render identically, and this screen's " +
+        "title is not present to tell them apart",
     );
   // Judge on TEXT, not element count.
   //

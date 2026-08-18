@@ -26,6 +26,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { ScreenError } from "../../src/components/ScreenError";
 import { creditRepairApi } from "../../src/services/api/creditRepair";
 import type { CreditAccount } from "../../src/services/api/creditRepair";
 import { toArray } from "../../src/store/toArray";
@@ -90,21 +91,17 @@ export default function CreditAgeScreen() {
     );
   }
 
+  // Was an icon, a message and a button — three nodes, no title and no way
+  // back. A user could not tell which screen had failed, and the device sweep
+  // could not confirm the route because there was no title to look for.
   if (error && accounts.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="age-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.stateText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={load}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="Credit Age"
+        message={error}
+        onRetry={load}
+        testID="age-error"
+      />
     );
   }
 
