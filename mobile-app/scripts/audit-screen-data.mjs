@@ -214,7 +214,24 @@ function isRendered(source, name) {
       // setter convention, so an arbitrary call taking the constant does not
       // match.
       `|set[A-Z]\\w*\\(\\s*${name}\\s*\\)` +
-      `|${name}\\.map\\(|${name}\\.filter\\(|${name}\\.find\\(|\\{${name}\\}`,
+      // A method call on the constant. The whitespace here is the point:
+      // `${name}\\.filter\\(` required the dot on the SAME line, and Prettier
+      // breaks a chain across lines the moment it exceeds the print width —
+      //
+      //     const filteredCards = mockCards
+      //       .filter((c) => !showNoFeeOnly || c.annualFee === 0)
+      //
+      // so src/app/marketplace/secured-cards/page.tsx went unreported by every
+      // run of this gate: full sweep, directory-scoped, and copied into an
+      // isolated probe. Its mockCards quoted APRs and deposit ranges for named
+      // products ("Discover it Secured, 28.24% APR"). One line break was the
+      // whole of it — nothing to do with the alias it was assigned to, which
+      // is what I first blamed.
+      //
+      // The verb list is wider than map/filter/find for the same reason: a
+      // chain can start with any of them.
+      `|${name}\\s*\\.\\s*(?:map|filter|find|flatMap|slice|sort|reduce|some|every|forEach|concat|at)\\s*\\(` +
+      `|\\{${name}\\}`,
   ).test(source);
 }
 
@@ -285,6 +302,21 @@ if (process.argv.includes("--self-test")) {
       true,
       "module-level and camelCase is still a module constant — this is the " +
         "real marketplace/analysis shape the case-based filter missed",
+    ],
+    [
+      "const mockCards = [{ a: 1 }];\nconst f = mockCards\n  .filter(c => c)\n  .sort((a, b) => 0);\nf.map(x => x)",
+      "mockCards",
+      true,
+      "a chain BROKEN ACROSS LINES by Prettier — `${name}\\.filter\\(` needed " +
+        "the dot on the same line, and that alone hid " +
+        "src/app/marketplace/secured-cards/page.tsx from every run of this " +
+        "gate while it quoted APRs for named products",
+    ],
+    [
+      "const ROWS = [{ a: 1 }];\nconst n = ROWS\n  .length;",
+      "ROWS",
+      false,
+      "a line-broken PROPERTY access is not rendering — only a method call counts",
     ],
     ["const B = [{ a: 1 }];\nuseState(B)", "B", true, "useState(NAME) counts as rendering"],
     [
