@@ -107,19 +107,40 @@ describe("Credit Store", () => {
 
   describe("fetchScoreHistory", () => {
     it("should fetch score history successfully", async () => {
-      const mockHistoryScores = [
-        { date: "2024-02-01", score: 710, bureau: "experian" as const },
-        { date: "2024-01-01", score: 700, bureau: "experian" as const },
-      ];
+      // The route answers { bureau, scores: [{ date, score }] } ASCENDING by
+      // score_date — not the bare, descending CreditScore[] this test used to
+      // mock. That shape never came back from the server, because the call
+      // sent `?months=` and the route requires `bureau`, so it 400'd every
+      // time and the store swallowed it.
+      useCreditStore.setState({
+        scores: [
+          {
+            id: "s1",
+            userId: "u1",
+            bureau: "experian" as const,
+            score: 710,
+            date: "2024-02-01",
+          },
+        ],
+      });
 
       creditScoreApi.getHistory.mockResolvedValueOnce({
         success: true,
-        data: mockHistoryScores,
+        data: {
+          bureau: "experian",
+          scores: [
+            { date: "2024-01-01", score: 700 },
+            { date: "2024-02-01", score: 710 },
+          ],
+        },
       });
 
       await act(async () => {
         await useCreditStore.getState().fetchScoreHistory(6);
       });
+
+      // 6 months -> the days the route actually reads.
+      expect(creditScoreApi.getHistory).toHaveBeenCalledWith("experian", 180);
 
       const history = useCreditStore.getState().scoreHistory;
       expect(history).not.toBeNull();
@@ -127,6 +148,22 @@ describe("Credit Store", () => {
       expect(history!.averageScore).toBe(705);
       expect(history!.highestScore).toBe(710);
       expect(history!.lowestScore).toBe(700);
+      // Ascending source: the FIRST point starts the period. The previous
+      // code read those two backwards.
+      expect(history!.periodStart).toBe("2024-01-01");
+      expect(history!.periodEnd).toBe("2024-02-01");
+    });
+
+    it("does not call the route at all when no bureau has reported", async () => {
+      // The route requires a bureau and answers 400 without one. Asking
+      // anyway would spend a request to be told what state already knows.
+      useCreditStore.setState({ scores: [] });
+
+      await act(async () => {
+        await useCreditStore.getState().fetchScoreHistory(6);
+      });
+
+      expect(creditScoreApi.getHistory).not.toHaveBeenCalled();
     });
   });
 

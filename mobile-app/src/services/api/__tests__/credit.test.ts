@@ -89,17 +89,25 @@ describe("Credit Score API", () => {
         data: mockHistory,
       });
 
-      await creditScoreApi.getHistory(6);
+      await creditScoreApi.getHistory("experian", 180);
 
-      expect(api.get).toHaveBeenCalledWith("/credit-monitoring/history?months=6");
+      // The route reads `bureau` and `days`. It reads no `months` at all, and
+      // answers 400 without a bureau — so the previous assertion here
+      // (`?months=6`, and a second case with NO params) was pinning a call
+      // that failed every single time it was made.
+      expect(api.get).toHaveBeenCalledWith(
+        "/credit-monitoring/history?bureau=experian&days=180",
+      );
     });
 
-    it("should fetch score history without params", async () => {
+    it("defaults to a year when no window is given", async () => {
       (api.get as jest.Mock).mockResolvedValueOnce({ success: true, data: {} });
 
-      await creditScoreApi.getHistory();
+      await creditScoreApi.getHistory("transunion");
 
-      expect(api.get).toHaveBeenCalledWith("/credit-monitoring/history");
+      expect(api.get).toHaveBeenCalledWith(
+        "/credit-monitoring/history?bureau=transunion&days=365",
+      );
     });
   });
 

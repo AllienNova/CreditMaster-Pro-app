@@ -17,16 +17,12 @@
     "app/admin/index.tsx: QUICK_ACTIONS": {
       "classification": "catalogue",
       "offline": true,
-      "why": "The admin navigation menu \u2014 titles, icons and routes for the admin sections. Product content, not user data. The METRICS fixture that shared this file WAS a fabrication and is gone; this is what remains."
+      "why": "The admin navigation menu — titles, icons and routes for the admin sections. Product content, not user data. The METRICS fixture that shared this file WAS a fabrication and is gone; this is what remains."
     },
     "app/admin/metrics.tsx: PERIODS": {
       "classification": "catalogue",
       "offline": true,
-      "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query \u2014 it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
-    },
-    "app/analytics/credit-score.tsx: SCORE_FACTORS, SCORE_HISTORY": {
-      "classification": "fabrication",
-      "offline": true
+      "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query — it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
     },
     "app/analytics/disputes.tsx: DISPUTES_BY_TYPE, MONTHLY_DATA": {
       "classification": "fabrication",

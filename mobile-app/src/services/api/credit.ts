@@ -21,6 +21,20 @@ import type {
  * is what the route serialises — the service reads the bureau_connections
  * columns straight through without renaming them.
  */
+export type BureauName = "experian" | "equifax" | "transunion";
+
+/** GET /api/credit-monitoring/history -> creditMonitoringService.getScoreHistory. */
+export interface ScoreHistoryPoint {
+  /** ISO 8601 — a Date over HTTP. */
+  date: string;
+  score: number;
+}
+
+export interface ScoreHistoryResponse {
+  bureau: string;
+  scores: ScoreHistoryPoint[];
+}
+
 export interface BureauConnection {
   bureau: "experian" | "equifax" | "transunion";
   connected: boolean;
@@ -60,11 +74,21 @@ export const creditScoreApi = {
   },
 
   /**
-   * Get credit score history
+   * Credit score history for ONE bureau.
+   *
+   * TWO THINGS WERE WRONG HERE. The route requires `bureau` and answers
+   * `400 Bureau is required` without it (credit-monitoring/history/route.ts:22);
+   * this sent `?months=` instead, which the route does not read at all. So
+   * every call 400'd, and creditStore.fetchScoreHistory swallowed it.
+   *
+   * And the shape was wrong even had it worked: the route returns
+   * `{ bureau, scores: [{ date, score }] }`, not a CreditScore[].
+   *
+   * `days`, not months — again what the route actually reads.
    */
-  getHistory: (months?: number) =>
-    api.get<CreditScore[]>(
-      `/credit-monitoring/history${months ? `?months=${months}` : ""}`,
+  getHistory: (bureau: BureauName, days = 365) =>
+    api.get<ScoreHistoryResponse>(
+      `/credit-monitoring/history?bureau=${bureau}&days=${days}`,
     ),
 
   /**

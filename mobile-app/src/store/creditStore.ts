@@ -141,6 +141,9 @@ const initialState = {
   alertError: null as string | null,
 };
 
+/** The route takes days; the store's callers speak months. */
+const DAYS_PER_MONTH = 30;
+
 export const useCreditStore = create<CreditState>()(
   persist(
     (set, get) => ({
@@ -203,26 +206,53 @@ export const useCreditStore = create<CreditState>()(
           set({ scoreHistory: devSeed().seedScoreHistory, isLoadingScores: false });
           return;
         }
+        // The route requires a bureau and answers 400 without one. Take it
+        // from the scores already in state rather than guessing: asking for a
+        // bureau the user has no score with returns an empty series, which
+        // reads as "no history" when the truth is "not connected".
+        //
+        // This call used to send `?months=`, a parameter the route does not
+        // read, so it 400'd every time and the catch below swallowed it —
+        // leaving the screen with no history and no error either.
+        const bureau = get().scores[0]?.bureau;
+        if (!bureau) {
+          set({ isLoadingScores: false });
+          return;
+        }
+
         try {
-          const response = await creditScoreApi.getHistory(months);
+          const response = await creditScoreApi.getHistory(
+            bureau,
+            Math.round(months * DAYS_PER_MONTH),
+          );
           if (response.success && response.data) {
-            // Convert array to history format
-            const scores = response.data;
+            const points = Array.isArray(response.data.scores)
+              ? response.data.scores
+              : [];
             const history: CreditScoreHistory = {
-              history: scores.map((s) => ({
-                date: s.date,
-                score: s.score,
-                bureau: s.bureau,
+              history: points.map((point) => ({
+                date: point.date,
+                score: point.score,
+                bureau,
               })),
-              averageScore:
-                scores.reduce((sum, s) => sum + s.score, 0) /
-                (scores.length || 1),
-              highestScore: Math.max(...scores.map((s) => s.score), 0),
-              lowestScore: Math.min(...scores.map((s) => s.score), 850),
+              averageScore: points.length
+                ? points.reduce((sum, p) => sum + p.score, 0) / points.length
+                : 0,
+              // Guarded: Math.max() of an empty list is -Infinity, and the
+              // old seeds (0 / 850) reported a real-looking range for a user
+              // with no history at all.
+              highestScore: points.length
+                ? Math.max(...points.map((p) => p.score))
+                : 0,
+              lowestScore: points.length
+                ? Math.min(...points.map((p) => p.score))
+                : 0,
               trend: "stable",
-              periodStart:
-                scores[scores.length - 1]?.date || new Date().toISOString(),
-              periodEnd: scores[0]?.date || new Date().toISOString(),
+              // The route returns ascending by score_date, so the FIRST point
+              // starts the period. The previous code read it backwards.
+              periodStart: points[0]?.date ?? new Date().toISOString(),
+              periodEnd:
+                points[points.length - 1]?.date ?? new Date().toISOString(),
             };
             set({ scoreHistory: history, isLoadingScores: false });
           } else {
