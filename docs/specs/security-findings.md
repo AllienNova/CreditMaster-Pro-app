@@ -700,6 +700,44 @@ correct in isolation and has no failing test.
 genuinely unknown types so nothing is rounded into an asset bucket. Needs a test
 per branch and a check of every `accountType ===` comparison downstream.
 
+## SF-15 — auto-save-rules-service.ts is written against two tables that do not exist
+
+**Severity: MEDIUM (dead code, live trap).** Found while wiring the auto-save
+screen. NOT a runtime outage today, because nothing imports the module — which
+is exactly what makes it dangerous: it is the obvious-looking backend for a
+feature someone will wire next.
+
+`src/lib/financial/auto-save-rules-service.ts` queries two tables:
+
+```
+auto_save_rules
+save_transfers
+```
+
+Neither appears in any migration. Both are named only in a COMMENT in
+`20260731000012_savings_goals_cluster.sql` (lines 21-22), listing tables that
+migration does *not* create. The real table is `savings_rules`, and it has a
+different shape:
+
+| | auto-save-rules-service expects | savings_rules actually has |
+|---|---|---|
+| type values | 7 (`round_up`…`windfall_capture`) | 5, CHECKed (`round_up`, `percentage`, `fixed`, `surplus`, `goal_based`) |
+| status values | 3 (`active`/`paused`/`disabled`) | 4, CHECKed (`active`/`paused`/`completed`/`cancelled`) |
+| transfers | a `save_transfers` table | no such table |
+
+So the module is not merely unreachable — every call would fail with
+`42P01 undefined_table`. It also carries `executeTransfer`, which moves money.
+
+**The live one is `savings-automation-service.ts`**, which reads `savings_rules`
+and is already exposed at `GET /api/financial/savings?type=rules` and
+`PATCH|DELETE /api/financial/savings/rules/[id]`. The mobile auto-save screen is
+now wired to that.
+
+**Recommendation:** DELETE `auto-save-rules-service.ts`. It is a duplicate of a
+working service, written against a schema that was never created, and its
+presence invites someone to build on it. Deletion needs owner approval per the
+standing rule, so it is recorded here rather than done.
+
 ## Revision History
 
 | Date | Change |
@@ -715,3 +753,4 @@ per branch and a check of every `accountType ===` comparison downstream.
 | 2026-08-17 (rev 7) | Added SF-13: new gate audit:screen-data finds 87 mobile screens rendering a module-level constant data set, 57 with no request in the file. 19 classified fabrication (MOCK_BILLS, MOCK_PAYMENTS, SCORE_HISTORY, CONNECTED_ACCOUNTS, admin REVENUE_DATA…), 38 catalogue, 30 unclassified. MOCK_BILLS and CONNECTED_ACCOUNTS have since been fixed (85 entries, 17 fabrication). Frozen shrink-only and wired into CI. These screens make no request, so they never appeared in the tracked-API-path count. |
 | 2026-08-17 (rev 8) | Added SF-14: `financial-aggregation-service.mapAccountFromDb` omits `depository` from its valid-type list, so every checking and savings account normalises to "other" and is excluded from `totalAssets`/`totalSavings` — net worth understated by the user's whole bank balance. Found while building the connections surface; recorded rather than bundled into that commit. |
 | 2026-08-17 (rev 9) | SF-14 fixed: `normalizeAccountType` reads Plaid's type AND subtype, so depository accounts land in checking/savings instead of "other". The integration test's seed was corrected from the already-normalised `"checking"` — a value no sync path writes, and the reason the suite stayed green through the bug — to Plaid's real `depository` + subtype. Reverting the fix turns that live-DB test red. |
+| 2026-08-17 (rev 10) | Added SF-15: `auto-save-rules-service.ts` queries `auto_save_rules` and `save_transfers`; neither table exists in any migration, and the real `savings_rules` has a narrower CHECK on both type and status. Dead code against a schema that was never created, carrying an `executeTransfer` that moves money. The live service is `savings-automation-service.ts`, already exposed at /api/financial/savings. DELETE recommended; owner approval required. |

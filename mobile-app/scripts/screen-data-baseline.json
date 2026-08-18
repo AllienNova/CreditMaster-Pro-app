@@ -54,10 +54,6 @@
       "classification": "catalogue",
       "offline": true
     },
-    "app/budgeting/auto-save.tsx: MOCK_RULES": {
-      "classification": "fabrication",
-      "offline": true
-    },
     "app/budgeting/index.tsx: FEATURES, QUICK_STATS": {
       "classification": "catalogue",
       "offline": true

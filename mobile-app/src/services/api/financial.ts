@@ -1537,6 +1537,88 @@ export function monthlyCost(bill: BillItem): number | null {
  */
 export const SUBSCRIPTION_BILL_CATEGORIES = ["subscription", "streaming"];
 
+// ---------------------------------------------------------------------------
+// Savings automation rules
+// ---------------------------------------------------------------------------
+// app/budgeting/auto-save.tsx rendered a MOCK_RULES array — a "Purchase
+// Round-Up" saving $45 a month, a "Paycheck Percentage", and so on — with
+// toggles that only flipped local state. A user reading it believed money was
+// being set aside automatically. Nothing was.
+//
+// GET /api/financial/savings?type=rules has existed the whole time, reading
+// the real savings_rules table through savingsAutomationService.getRules.
+//
+// NOTE FOR ANYONE WIRING MORE OF THIS: there is a SECOND service,
+// src/lib/financial/auto-save-rules-service.ts, whose name makes it look like
+// the right one. It queries `auto_save_rules` and `save_transfers`, and
+// NEITHER TABLE EXISTS in any migration — the real table is `savings_rules`
+// with a different column set and a narrower type CHECK. That module is dead
+// against a schema that was never created; every call would fail with
+// undefined_table. Use savings-automation-service, which is what the route
+// already does.
+
+export type SavingsRuleType =
+  | "round_up"
+  | "percentage"
+  | "fixed"
+  | "surplus"
+  | "goal_based";
+
+export type SavingsRuleStatus = "active" | "paused" | "completed" | "cancelled";
+
+export interface SavingsRuleConfig {
+  roundUpTo?: number;
+  roundUpMultiplier?: number;
+  percentageOfIncome?: number;
+  percentageOfTransaction?: number;
+  fixedAmount?: number;
+  surplusThreshold?: number;
+  surplusPercentage?: number;
+}
+
+export interface SavingsRule {
+  id: string;
+  name: string;
+  type: SavingsRuleType;
+  frequency: string;
+  status: SavingsRuleStatus;
+  config: SavingsRuleConfig;
+  /** CUMULATIVE, not monthly — savings_rules.total_saved. */
+  totalSaved: number;
+  transferCount: number;
+  lastTriggeredAt?: string;
+  createdAt: string;
+}
+
+export const savingsRulesApi = {
+  /** The caller's automation rules, from the real savings_rules table. */
+  getRules: async (): Promise<ApiResponse<{ rules: SavingsRule[] }>> => {
+    const res = await api.get<{ rules: SavingsRule[] }>(
+      "/financial/savings?type=rules",
+    );
+    if (res.success && res.data) {
+      return {
+        success: true,
+        data: { rules: Array.isArray(res.data.rules) ? res.data.rules : [] },
+      };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
+   * Pause or resume a rule.
+   *
+   * The route reads `action: "toggle"` from the body and calls
+   * toggleRuleStatus, which is user-scoped server-side. The screen's old
+   * toggle changed a local flag and nothing else, so a user who paused a
+   * savings rule saw it pause and it never did.
+   */
+  toggleRule: (ruleId: string) =>
+    api.patch<{ rule: SavingsRule }>(`/financial/savings/rules/${ruleId}`, {
+      action: "toggle",
+    }),
+};
+
 // Bills & Payments Endpoints
 export const billsApi = {
   /**
