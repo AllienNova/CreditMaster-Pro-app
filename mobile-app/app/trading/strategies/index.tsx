@@ -22,6 +22,7 @@ import { Card } from "../../../src/components/Card";
 import api from "../../../src/services/api/client";
 import type { ApiResponse } from "../../../src/services/api/types";
 import { toArray } from "../../../src/store/toArray";
+import { ScreenHeader } from "../../../src/components/ScreenHeader";
 
 type RiskLevel = "low" | "medium" | "high";
 
@@ -214,6 +215,7 @@ export default function StrategiesListScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={["bottom"]}>
+        <ScreenHeader title="Strategies" />
         <View style={styles.centerState}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading strategies...</Text>
@@ -226,6 +228,7 @@ export default function StrategiesListScreen() {
   if (error) {
     return (
       <SafeAreaView style={styles.container} edges={["bottom"]}>
+        <ScreenHeader title="Strategies" />
         <View style={styles.centerState}>
           <Ionicons
             name="alert-circle-outline"
@@ -246,6 +249,8 @@ export default function StrategiesListScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
+      <ScreenHeader title="Strategies" />
+
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>

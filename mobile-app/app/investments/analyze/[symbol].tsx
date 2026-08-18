@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../../src/constants/theme";
 import { Card } from "../../../src/components/Card";
+import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import {
   useInvestmentStore,
   selectCurrentRecommendation,
@@ -122,6 +123,7 @@ export default function StockAnalysisScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
+      <ScreenHeader title={paramSymbol ?? "Analysis"} />
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}

@@ -226,8 +226,9 @@ jobs:
       # first count said 72, by scanning for router.back() and assuming no
       # screen has a native header - true app-wide, but a nested group layout
       # starts its own Stack and one that only styles the header leaves the
-      # library default on (native-stack@7.13.0 types.d.ts:234). Frozen at 18,
-      # shrink-only: a NEW screen without a way back fails here.
+      # library default on (native-stack@7.13.0 types.d.ts:234).
+      # The baseline is now EMPTY: every screen has a way back, so any screen
+      # that loses one fails this step immediately.
       - name: audit:back-nav (mobile) - no screen traps the user
         working-directory: mobile-app
         run: npm run audit:back-nav

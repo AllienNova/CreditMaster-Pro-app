@@ -23,6 +23,7 @@ import {
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTaxStore } from "../../src/store/taxStore";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 const { width } = Dimensions.get("window");
 
@@ -136,13 +137,13 @@ export default function TaxOptimizationScreen() {
       }
     >
       {/* Header */}
+      <ScreenHeader title="Tax Optimization" />
       <LinearGradient
         colors={["#F59E0B", "#EA580C"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
       >
-        <Text style={styles.headerTitle}>Tax Optimization</Text>
         <Text style={styles.headerSubtitle}>AI-Powered Tax Savings</Text>
 
         {/* Potential Savings Card */}
@@ -441,11 +442,6 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 24,
     paddingHorizontal: 20,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#FFFFFF",
   },
   headerSubtitle: {
     fontSize: 16,

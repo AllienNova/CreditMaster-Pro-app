@@ -80,6 +80,12 @@ const EXEMPT = {
   "app/index.tsx": "App entry — decides where to send the user.",
   "app/onboarding/index.tsx":
     "Onboarding carousel entry; leaving it is Skip, not Back.",
+  "app/onboarding/complete.tsx":
+    "Terminal screen of the onboarding flow. The way out is Get Started, forward into the app; sending someone back into a wizard they just finished is not a fix.",
+  "app/handoff.tsx":
+    "Deep-link trampoline for fynvita://continue. Every path ends in router.replace after 900ms — an allowed route to its destination, a rejected one to the dashboard — so there is no state in which it stays on screen.",
+  "app/investments/index.tsx":
+    "Never renders. It and app/(tabs)/investments.tsx both resolve to /investments, a route group is not part of the url, and the tab wins; this file re-exports it so which one wins stops mattering.",
 };
 
 const BACK_PATTERNS = [

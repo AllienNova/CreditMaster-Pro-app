@@ -11,6 +11,7 @@ import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 interface FeatureItem {
   title: string;
@@ -62,21 +63,19 @@ export default function BudgetingIndexScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.headerTitle}>Smart Budgeting</Text>
-            <Text style={styles.headerSubtitle}>
-              AI-powered tools to master your money
-            </Text>
-          </View>
-          <TouchableOpacity style={styles.settingsButton}>
-            <Ionicons
-              name="settings-outline"
-              size={24}
-              color={theme.colors.text}
-            />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader
+          title="Smart Budgeting"
+          subtitle="AI-powered tools to master your money"
+          right={
+            <TouchableOpacity style={styles.settingsButton}>
+              <Ionicons
+                name="settings-outline"
+                size={24}
+                color={theme.colors.text}
+              />
+            </TouchableOpacity>
+          }
+        />
 
         {/* Budget Overview Card */}
         <Card style={styles.overviewCard}>
@@ -177,22 +176,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: theme.spacing.md,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: theme.spacing.lg,
-  },
-  headerTitle: {
-    fontSize: theme.fontSize.xxl,
-    fontWeight: theme.fontWeight.bold,
-    color: theme.colors.text,
-  },
-  headerSubtitle: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
   },
   settingsButton: {
     padding: theme.spacing.sm,
