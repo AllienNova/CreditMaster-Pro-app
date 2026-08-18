@@ -149,10 +149,6 @@
       "classification": "catalogue",
       "offline": false
     },
-    "app/financial/accounts.tsx: ACCOUNTS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
-    },
     "app/financial/budgets.tsx: BUDGET_CATEGORIES, RECOMMENDATIONS": {
       "classification": "catalogue",
       "offline": true

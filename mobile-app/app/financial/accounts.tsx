@@ -1,9 +1,32 @@
 /**
- * Fynvita Accounts Screen
- * All linked financial accounts with balances
+ * Accounts — every linked account, with the same net worth the overview shows.
+ *
+ * WHAT THIS REPLACED. An ACCOUNTS fixture: Primary Checking at Chase with
+ * $8,542.50, "2 min ago", status connected, and more. No request.
+ *
+ * IT CARRIED THE SAME SIGN BUG as financial/overview, which is why they are
+ * being fixed together:
+ *
+ *     const totalAssets = ACCOUNTS.filter((a) => a.balance > 0)...
+ *     const totalLiabilities = ACCOUNTS.filter((a) => a.balance < 0)...
+ *
+ * Plaid reports a credit or loan balance as POSITIVE — the amount owed — so
+ * against a real payload every debt would be counted as an asset. Found by
+ * sweeping for the pattern after fixing the overview; this was the third
+ * occurrence, and the two screens link to each other, so they would have
+ * disagreed in the same wrong direction.
+ *
+ * financialOverviewApi.getNetWorth classifies by accountType exactly as the
+ * web dashboard does. Both screens now read it, so "See All" cannot lead to a
+ * different number.
+ *
+ * STATUS AND AVAILABLE BALANCE ARE GONE. NetWorthAccount carries neither, and
+ * a per-account "connected / needs attention" badge is a claim about a bank
+ * connection that this payload cannot make. Connection state lives on
+ * settings/connected-accounts, which reads the connections route built for it.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,141 +39,85 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import {
+  financialOverviewApi,
+  type NetWorthData,
+} from "../../src/services/api/financial";
 
-interface Account {
-  id: string;
-  name: string;
-  institution: string;
-  type: "checking" | "savings" | "credit" | "investment" | "loan";
-  balance: number;
-  available?: number;
-  lastUpdated: string;
-  status: "connected" | "needs_attention" | "disconnected";
-}
-
-const ACCOUNTS: Account[] = [
-  {
-    id: "1",
-    name: "Primary Checking",
-    institution: "Chase",
-    type: "checking",
-    balance: 8542.5,
-    available: 8342.5,
-    lastUpdated: "2 min ago",
-    status: "connected",
-  },
-  {
-    id: "2",
-    name: "High-Yield Savings",
-    institution: "Marcus",
-    type: "savings",
-    balance: 25000.0,
-    lastUpdated: "5 min ago",
-    status: "connected",
-  },
-  {
-    id: "3",
-    name: "Sapphire Preferred",
-    institution: "Chase",
-    type: "credit",
-    balance: -2450.0,
-    available: 7550.0,
-    lastUpdated: "2 min ago",
-    status: "connected",
-  },
-  {
-    id: "4",
-    name: "401(k)",
-    institution: "Fidelity",
-    type: "investment",
-    balance: 85000.0,
-    lastUpdated: "1 hour ago",
-    status: "connected",
-  },
-  {
-    id: "5",
-    name: "Roth IRA",
-    institution: "Vanguard",
-    type: "investment",
-    balance: 32000.0,
-    lastUpdated: "1 day ago",
-    status: "needs_attention",
-  },
-  {
-    id: "6",
-    name: "Auto Loan",
-    institution: "Capital One",
-    type: "loan",
-    balance: -12000.0,
-    lastUpdated: "3 hours ago",
-    status: "connected",
-  },
-  {
-    id: "7",
-    name: "Student Loans",
-    institution: "Nelnet",
-    type: "loan",
-    balance: -35000.0,
-    lastUpdated: "1 week ago",
-    status: "disconnected",
-  },
-];
-
-const getTypeIcon = (type: Account["type"]): keyof typeof Ionicons.glyphMap => {
-  const icons: Record<Account["type"], keyof typeof Ionicons.glyphMap> = {
-    checking: "wallet",
-    savings: "cash",
+/**
+ * Plaid's four account types, which is what NetWorthAccount carries — not the
+ * five-name UI vocabulary the old fixture used. `checking` and `savings` were
+ * in that list and are not Plaid types at all: depository covers both, and its
+ * subtype tells them apart.
+ */
+const getTypeIcon = (
+  type: NetWorthData["assets"][number]["accountType"],
+): keyof typeof Ionicons.glyphMap => {
+  const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
+    depository: "wallet",
     credit: "card",
     investment: "trending-up",
     loan: "document-text",
   };
-  return icons[type];
+  return icons[type] ?? "wallet";
 };
 
-const getTypeColor = (type: Account["type"]): string => {
-  const colors: Record<Account["type"], string> = {
-    checking: "#3B82F6",
-    savings: "#22C55E",
+const getTypeColor = (
+  type: NetWorthData["assets"][number]["accountType"],
+): string => {
+  const colors: Record<string, string> = {
+    depository: "#3B82F6",
     credit: "#F59E0B",
     investment: "#8B5CF6",
     loan: "#EF4444",
   };
-  return colors[type];
-};
-
-const getStatusColor = (status: Account["status"]): string => {
-  const colors: Record<Account["status"], string> = {
-    connected: "#22C55E",
-    needs_attention: "#F59E0B",
-    disconnected: "#EF4444",
-  };
-  return colors[status];
+  return colors[type] ?? "#3B82F6";
 };
 
 export default function AccountsScreen() {
-  const [filter, setFilter] = useState<"all" | Account["type"]>("all");
-  const filters: Array<"all" | Account["type"]> = [
-    "all",
-    "checking",
-    "savings",
-    "credit",
-    "investment",
-    "loan",
+  const [filter, setFilter] = useState<string>("all");
+  // The types NetWorthAccount can actually hold. "checking" and "savings"
+  // were chips no real account could match.
+  const filters = ["all", "depository", "credit", "investment", "loan"];
+
+  const [data, setData] = useState<NetWorthData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const res = await financialOverviewApi.getNetWorth();
+
+    if (!res.success || !res.data) {
+      setError("We could not load your accounts.");
+      setLoading(false);
+      return;
+    }
+
+    setData(res.data);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Classified by accountType, never by sign.
+  const accounts = [
+    ...(data?.assets ?? []).map((a) => ({ ...a, isLiability: false })),
+    ...(data?.liabilities ?? []).map((a) => ({ ...a, isLiability: true })),
   ];
 
   const filteredAccounts =
-    filter === "all" ? ACCOUNTS : ACCOUNTS.filter((a) => a.type === filter);
-  const totalAssets = ACCOUNTS.filter((a) => a.balance > 0).reduce(
-    (sum, a) => sum + a.balance,
-    0,
-  );
-  const totalLiabilities = Math.abs(
-    ACCOUNTS.filter((a) => a.balance < 0).reduce(
-      (sum, a) => sum + a.balance,
-      0,
-    ),
-  );
-  const netWorth = totalAssets - totalLiabilities;
+    filter === "all"
+      ? accounts
+      : accounts.filter((a) => a.accountType === filter);
+
+  const totalAssets = data?.totalAssets ?? 0;
+  const totalLiabilities = data?.totalLiabilities ?? 0;
+  const netWorth = data?.netWorth ?? 0;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -232,9 +199,31 @@ export default function AccountsScreen() {
         </ScrollView>
 
         {/* Accounts List */}
+        {loading ? (
+          <Card>
+            <Text style={styles.emptyText}>Loading your accounts…</Text>
+          </Card>
+        ) : error ? (
+          <Card>
+            <Text style={styles.emptyText}>{error}</Text>
+            <TouchableOpacity onPress={load}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </Card>
+        ) : accounts.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>
+              No accounts linked yet. Link a bank from Settings to see them
+              here.
+            </Text>
+          </Card>
+        ) : filteredAccounts.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>No accounts of this type.</Text>
+          </Card>
+        ) : null}
         {filteredAccounts.map((account) => {
-          const color = getTypeColor(account.type);
-          const statusColor = getStatusColor(account.status);
+          const color = getTypeColor(account.accountType);
           return (
             <Card key={account.id} style={styles.accountCard}>
               <View style={styles.accountRow}>
@@ -245,7 +234,7 @@ export default function AccountsScreen() {
                   ]}
                 >
                   <Ionicons
-                    name={getTypeIcon(account.type)}
+                    name={getTypeIcon(account.accountType)}
                     size={22}
                     color={color}
                   />
@@ -253,61 +242,39 @@ export default function AccountsScreen() {
                 <View style={styles.accountInfo}>
                   <View style={styles.accountHeader}>
                     <Text style={styles.accountName}>{account.name}</Text>
-                    <View
-                      style={[
-                        styles.statusDot,
-                        { backgroundColor: statusColor },
-                      ]}
-                    />
+                    {/* No status dot. NetWorthAccount says nothing about the
+                        health of the bank connection; that lives on
+                        settings/connected-accounts, which reads the route
+                        built for it. A green dot here would be a claim this
+                        payload cannot make. */}
                   </View>
-                  <Text style={styles.accountInstitution}>
-                    {account.institution}
-                  </Text>
-                  <Text style={styles.accountUpdated}>
-                    Updated {account.lastUpdated}
-                  </Text>
+                  {account.subtype ? (
+                    <Text style={styles.accountInstitution}>
+                      {account.subtype}
+                    </Text>
+                  ) : null}
                 </View>
                 <View style={styles.accountValues}>
                   <Text
                     style={[
                       styles.accountBalance,
                       {
-                        color:
-                          account.balance >= 0 ? theme.colors.text : "#EF4444",
+                        color: account.isLiability
+                          ? "#EF4444"
+                          : theme.colors.text,
                       },
                     ]}
                   >
-                    {account.balance >= 0 ? "" : "-"}$
-                    {Math.abs(account.balance).toLocaleString()}
+                    {/* value is the absolute amount; a liability is negated
+                        here rather than read off a sign the payload does not
+                        carry. */}
+                    {account.isLiability ? "-" : ""}$
+                    {account.value.toLocaleString()}
                   </Text>
-                  {account.available !== undefined && (
-                    <Text style={styles.accountAvailable}>
-                      Available: ${account.available.toLocaleString()}
-                    </Text>
-                  )}
+                  {/* No "Available" line: the accounts payload has no
+                      available balance, and the fixture's was invented. */}
                 </View>
               </View>
-              {account.status !== "connected" && (
-                <TouchableOpacity
-                  style={[
-                    styles.statusBanner,
-                    { backgroundColor: `${statusColor}15` },
-                  ]}
-                >
-                  <Ionicons
-                    name={
-                      account.status === "needs_attention" ? "warning" : "link"
-                    }
-                    size={14}
-                    color={statusColor}
-                  />
-                  <Text style={[styles.statusText, { color: statusColor }]}>
-                    {account.status === "needs_attention"
-                      ? "Needs re-authentication"
-                      : "Reconnect account"}
-                  </Text>
-                </TouchableOpacity>
-              )}
             </Card>
           );
         })}
@@ -325,6 +292,19 @@ export default function AccountsScreen() {
 }
 
 const styles = StyleSheet.create({
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    paddingVertical: theme.spacing.md,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    textAlign: "center",
+    marginTop: theme.spacing.sm,
+  },
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
   header: {
