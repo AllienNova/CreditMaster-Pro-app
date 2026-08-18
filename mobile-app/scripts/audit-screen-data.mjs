@@ -175,7 +175,14 @@ const FETCHES =
 /** Whether the constant is actually rendered, rather than merely declared. */
 function isRendered(source, name) {
   return new RegExp(
-    `useState\\(\\s*${name}\\s*\\)|${name}\\.map\\(|${name}\\.filter\\(|${name}\\.find\\(|\\{${name}\\}`,
+    // `useState<Report[]>(MOCK_REPORTS)` — the GENERIC ARGUMENT is optional
+    // and was not allowed for. That single gap hid app/dashboard/reports.tsx's
+    // MOCK_REPORTS ("Credit Analysis Report - December 2024", 2.4 MB) for this
+    // entire sweep: the constant was seeded into state through a typed
+    // useState, so it never matched, and the screen then mapped over the STATE
+    // variable rather than the constant.
+    `useState\\s*(?:<[^>]*>)?\\s*\\(\\s*${name}\\s*\\)` +
+      `|${name}\\.map\\(|${name}\\.filter\\(|${name}\\.find\\(|\\{${name}\\}`,
   ).test(source);
 }
 
@@ -212,6 +219,12 @@ if (process.argv.includes("--self-test")) {
     ["const BILLS = [{ a: 1 }];", "BILLS", false, "declared but never rendered"],
     ["const bills = [{ a: 1 }];\nbills.map(x => x)", "bills", false, "lower-case local, not a module constant"],
     ["const B = [{ a: 1 }];\nuseState(B)", "B", true, "useState(NAME) counts as rendering"],
+    [
+      "const MOCK_REPORTS = [{ a: 1 }];\nconst [r] = useState<Report[]>(MOCK_REPORTS)",
+      "MOCK_REPORTS",
+      true,
+      "a GENERIC type argument on useState must not hide the seed — this is exactly how app/dashboard/reports.tsx's MOCK_REPORTS escaped the whole sweep",
+    ],
     // Passing the constant to a component IS rendering it — the data reaches the
     // screen either way. This case originally asserted false; the detector was
     // right and the expectation was wrong.

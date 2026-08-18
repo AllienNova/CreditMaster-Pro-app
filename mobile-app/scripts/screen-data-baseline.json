@@ -24,6 +24,11 @@
       "offline": true,
       "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query \u2014 it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
     },
+    "app/admin/settings.tsx: INITIAL_FLAGS": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "An ADMIN screen showing feature flags that are invented. An operator toggling these believes they are changing the platform; nothing is read and nothing is written. Same family as the five admin screens already fixed. (INITIAL_CONFIG beside it is a single object below the detector's three-key data floor for its shape, so only the flags array is tracked here \u2014 both are fabricated.)"
+    },
     "app/analytics/credit-score.tsx: PERIOD_MONTHS": {
       "classification": "catalogue",
       "offline": false,
@@ -45,6 +50,16 @@
     "app/budgeting/index.tsx: FEATURES, QUICK_STATS": {
       "classification": "catalogue",
       "offline": true
+    },
+    "app/budgeting/zero-based.tsx: MOCK_CATEGORIES": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "The user's own zero-based budget: MONTHLY_INCOME = 5000 beside allocations (Housing 1500, ...). Invented income and invented allocations, and the whole method is arithmetic against that income."
+    },
+    "app/chat/index.tsx: INITIAL_MESSAGES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The assistant's opening greeting and its suggested prompts. Product copy shown before any exchange, not a claim about the user."
     },
     "app/coach/goals.tsx: GOAL_TYPES": {
       "classification": "catalogue",
@@ -85,9 +100,10 @@
       "offline": false,
       "why": "The credit-builder tool menu, grouped by category. Navigation content."
     },
-    "app/credit-builder/loan.tsx: CREDIT_IMPACT_DATA, HOW_IT_WORKS": {
+    "app/credit-builder/loan.tsx: CREDIT_BUILDER_LOANS, CREDIT_IMPACT_DATA, HOW_IT_WORKS": {
       "classification": "catalogue",
-      "offline": true
+      "offline": true,
+      "why": "Third-party credit-builder products (Self, $1000 / $48 per month) plus educational content on how they work. A marketplace listing, same family as the secured-card catalogue. The terms are claims about real vendors and belong under a content review, not a data read."
     },
     "app/credit-builder/mix.tsx: CREDIT_TYPES": {
       "classification": "catalogue",
@@ -134,19 +150,29 @@
       "offline": true,
       "why": "The user's own achievements and milestones, with `unlocked: true` hardcoded. Every user is shown the same unlocked badges regardless of what they have done."
     },
-    "app/dashboard/reports.tsx: REPORT_TYPES": {
-      "classification": "catalogue",
+    "app/dashboard/reports.tsx: MOCK_REPORTS, REPORT_TYPES": {
+      "classification": "fabrication",
       "offline": true,
-      "why": "The report types the product can generate, with descriptions. A menu of what is on offer."
+      "why": "MOCK_REPORTS invents documents the user never generated - 'Credit Analysis Report - December 2024', 2.4 MB, dated - and offers them for download. Nothing stores generated reports: there is no table, and the only user-facing generation is GET /api/financial/export, which streams a file and keeps nothing. REPORT_TYPES alongside it is a genuine catalogue."
     },
     "app/dispute/create.tsx: BUREAUS, DISPUTE_TYPES": {
       "classification": "catalogue",
       "offline": false
     },
-    "app/dispute/templates.tsx: CATEGORIES": {
+    "app/dispute/new.tsx: INITIAL_MESSAGES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The dispute assistant's opening greeting. Product copy, not a claim about the user."
+    },
+    "app/dispute/strategies.tsx: LOCAL_STRATEGIES": {
+      "classification": "fabrication",
+      "offline": false,
+      "why": "Seeded into state through useState<DisputeStrategy[]>(LOCAL_STRATEGIES) - the generic form that hid it - and each strategy carries a successRate (72, ...). A success rate is a measurement about outcomes; presented before any read, it is invented evidence for choosing a dispute tactic."
+    },
+    "app/dispute/templates.tsx: CATEGORIES, LOCAL_TEMPLATES": {
       "classification": "catalogue",
       "offline": false,
-      "why": "Template filter chips (All / Inquiries / ...). UI configuration."
+      "why": "Dispute letter templates and their categories. Product content the app ships - the letters themselves - not a measurement about this user. Seeded through the same generic useState form."
     },
     "app/dispute/use-template.tsx: BUREAUS": {
       "classification": "catalogue",
@@ -202,6 +228,11 @@
     "app/identity/index.tsx: FEATURES": {
       "classification": "catalogue",
       "offline": false
+    },
+    "app/insights/alerts.tsx: MOCK_ALERTS": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Invents a FRAUD ALERT: 'Suspicious Activity Detected - unusual transaction pattern on your credit card ending in 4532', priority critical, with a Review Activity action. It tells a user they may have been defrauded, names a card fragment they do not have, and routes them to security. The highest-consequence fabrication found so far."
     },
     "app/investments/analyze/fundamental.tsx: PEER_COMPARISON, REVENUE_BREAKDOWN": {
       "classification": "fabrication",
@@ -314,6 +345,16 @@
       "classification": "catalogue",
       "offline": true
     },
+    "app/settings/notification-preferences.tsx: DEFAULT_CATEGORIES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The notification categories the app offers and their default states. Configuration the user then edits, not a measurement."
+    },
+    "app/settings/transaction-rules.tsx: INITIAL_RULES": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "The user's own transaction rules, invented - 'Coffee Shops' with matchCount 47, a count of matches that never happened. Presented as rules they created and as evidence those rules are working."
+    },
     "app/tax/calendar.tsx: TAX_EVENTS_2026": {
       "classification": "catalogue",
       "offline": false
@@ -333,6 +374,11 @@
     "app/trading/strategies/index.tsx: RISK_FILTERS": {
       "classification": "catalogue",
       "offline": true
+    },
+    "src/hooks/useCoaching.ts: INITIAL_MESSAGES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The coaching assistant's opening greeting. Product copy, not a claim about the user."
     }
   }
 }
