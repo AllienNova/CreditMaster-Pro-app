@@ -1,247 +1,279 @@
 "use client";
 
-const scoreFactors = [
-  {
-    factor: "Payment History",
-    impact: 35,
-    status: "good",
-    score: 92,
-    description: "On-time payments for 24 months",
-  },
-  {
-    factor: "Credit Utilization",
-    impact: 30,
-    status: "fair",
-    score: 68,
-    description: "Using 32% of available credit",
-  },
-  {
-    factor: "Credit Age",
-    impact: 15,
-    status: "good",
-    score: 85,
-    description: "Average account age: 5.2 years",
-  },
-  {
-    factor: "Credit Mix",
-    impact: 10,
-    status: "excellent",
-    score: 95,
-    description: "Good mix of credit types",
-  },
-  {
-    factor: "New Credit",
-    impact: 10,
-    status: "fair",
-    score: 70,
-    description: "2 inquiries in last 6 months",
-  },
-];
+/**
+ * Credit Score Analytics.
+ *
+ * WHAT THIS PAGE USED TO ASSERT, WITH NO FETCH IN THE FILE.
+ *
+ *   scoreFactors: "Payment History — impact 35, score 92, On-time payments for
+ *   24 months"; "Credit Utilization — impact 30, score 68, Using 32% of
+ *   available credit"; and three more of the same shape.
+ *   scoreHistory: a hardcoded climb.
+ *   recommendations: what to do next, keyed to the invented factors.
+ *
+ * This is the SF-16 shape on the web side: five factors that read as a reading
+ * of the caller's own file. "On-time payments for 24 months" is a statement
+ * about a stranger's payment record, and "Using 32% of available credit" is a
+ * number nobody measured.
+ *
+ * WHAT IT READS NOW.
+ *   GET /api/credit-monitoring/scores           -> { success, data: { experian?, ... } }
+ *   GET /api/credit-monitoring/history?bureau=   -> { success, data: CreditScore[] }
+ *
+ * THE FACTORS ARE REAL AND COME FROM THE SCORE ROW. `CreditScore.factors` is
+ * mapped straight off `credit_scores.factors` (credit-monitoring-service.ts:568,
+ * `row.factors ?? []`), so what renders is whatever the bureau import recorded
+ * — and nothing renders when it recorded none.
+ *
+ * TWO FIELDS ARE GONE BECAUSE THE REAL TYPE DOES NOT HAVE THEM. A ScoreFactor
+ * is `{ factor, impact: "positive" | "negative" | "neutral", description }`.
+ * The page's version had `impact` as a NUMBER (35, meaning "35% of your score")
+ * and a per-factor `score` out of 100. Neither exists in the data: the weights
+ * were invented, and `impact` was not even the same type — a number where the
+ * real field is an enum.
+ *
+ * /api/credit/factors WAS NOT USED. That route has no data access at all and
+ * returns five hardcoded factors telling every caller they have "98% on-time
+ * payments" — the original SF-16 finding. Reading it would have swapped one
+ * fabrication for another and passed the audit while doing so.
+ *
+ * recommendations are gone: they were derived from the invented factors, and
+ * nothing generates advice from a real score row.
+ */
 
-const scoreHistory = [
-  { date: "Dec 2024", experian: 725, equifax: 718, transunion: 715 },
-  { date: "Nov 2024", experian: 713, equifax: 710, transunion: 710 },
-  { date: "Oct 2024", experian: 695, equifax: 690, transunion: 688 },
-  { date: "Sep 2024", experian: 670, equifax: 665, transunion: 668 },
-  { date: "Aug 2024", experian: 650, equifax: 648, transunion: 652 },
-  { date: "Jul 2024", experian: 635, equifax: 630, transunion: 628 },
-];
+import { useState, useEffect, useCallback } from "react";
 
-const recommendations = [
-  {
-    title: "Pay down credit card balances",
-    impact: "+15-25 points",
-    priority: "high",
-    timeframe: "1-2 months",
-  },
-  {
-    title: "Avoid new credit applications",
-    impact: "+5-10 points",
-    priority: "medium",
-    timeframe: "6 months",
-  },
-  {
-    title: "Become authorized user",
-    impact: "+10-20 points",
-    priority: "medium",
-    timeframe: "1-3 months",
-  },
-];
+type BureauKey = "experian" | "equifax" | "transunion";
+
+const BUREAU_LABELS: Record<BureauKey, string> = {
+  experian: "Experian",
+  equifax: "Equifax",
+  transunion: "TransUnion",
+};
+
+const HISTORY_DAYS = 365;
+const MAX_SCORE = 850;
+
+/** Mirrors ScoreFactor in credit-monitoring-service.ts:38. */
+interface ScoreFactor {
+  factor: string;
+  impact: "positive" | "negative" | "neutral";
+  description: string;
+}
+
+interface BureauScore {
+  score: number;
+  scoreDate?: string;
+  factors?: ScoreFactor[];
+}
+
+interface HistoryPoint {
+  score: number;
+  scoreDate: string;
+}
+
+const IMPACT_CLASSES: Record<ScoreFactor["impact"], string> = {
+  positive:
+    "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+  negative: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+  neutral: "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300",
+};
+
+function formatDate(iso?: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+}
 
 export default function CreditScoreAnalyticsPage() {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "excellent":
-        return "text-emerald-600 bg-emerald-100";
-      case "good":
-        return "text-blue-600 bg-blue-100";
-      case "fair":
-        return "text-yellow-600 bg-yellow-100";
-      case "poor":
-        return "text-red-600 bg-red-100";
-      default:
-        return "text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800";
+  const [scores, setScores] = useState<Partial<Record<BureauKey, BureauScore>>>(
+    {},
+  );
+  const [history, setHistory] = useState<HistoryPoint[]>([]);
+  const [bureau, setBureau] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const res = await fetch("/api/credit-monitoring/scores");
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.data) {
+        setScores({});
+        setError(
+          "We could not load your credit score. Nothing here is filled in for you — try again in a moment.",
+        );
+        setLoading(false);
+        return;
+      }
+
+      const next = json.data as Partial<Record<BureauKey, BureauScore>>;
+      setScores(next);
+
+      const key = (Object.keys(BUREAU_LABELS) as BureauKey[]).find(
+        (k) => typeof next[k]?.score === "number",
+      );
+      if (key) {
+        setBureau(BUREAU_LABELS[key]);
+        const hRes = await fetch(
+          `/api/credit-monitoring/history?bureau=${key}&days=${HISTORY_DAYS}`,
+        );
+        const hJson = await hRes.json().catch(() => null);
+        setHistory(
+          Array.isArray(hJson?.data) ? (hJson.data as HistoryPoint[]) : [],
+        );
+      }
+    } catch {
+      setScores({});
+      setError("We could not reach the credit score service.");
     }
-  };
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const bureaus = (Object.keys(BUREAU_LABELS) as BureauKey[]).filter(
+    (key) => typeof scores[key]?.score === "number",
+  );
+  const primary = bureaus.length > 0 ? scores[bureaus[0]] : undefined;
+  const factors = primary?.factors ?? [];
+  const chart = [...history]
+    .sort(
+      (a, b) =>
+        new Date(b.scoreDate).getTime() - new Date(a.scoreDate).getTime(),
+    )
+    .slice(0, 8)
+    .reverse();
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-        Credit Score Analysis
+        Credit Score Analytics
       </h1>
 
-      {/* Current Score */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-500 dark:text-slate-400">
-              Your Current Score
-            </p>
-            <p className="text-6xl font-bold bg-gradient-to-r from-emerald-500 to-blue-500 bg-clip-text text-transparent">
-              720
-            </p>
-            <p className="text-emerald-500 mt-2">+45 points in 6 months</p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-500 dark:text-slate-400">
-              Score Range
-            </p>
-            <p className="text-lg font-semibold text-emerald-600">Good</p>
-            <p className="text-sm text-gray-400 dark:text-slate-500">670-739</p>
-          </div>
+      {error && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 mb-6 border border-amber-200 dark:border-amber-900/50">
+          <p className="font-medium text-gray-900 dark:text-white mb-1">
+            Your score is unavailable
+          </p>
+          <p className="text-sm text-gray-600 dark:text-slate-300">{error}</p>
         </div>
-        <div className="mt-6">
-          <div className="flex justify-between text-xs text-gray-500 dark:text-slate-400 mb-1">
-            <span>Poor</span>
-            <span>Fair</span>
-            <span>Good</span>
-            <span>Very Good</span>
-            <span>Excellent</span>
-          </div>
-          <div className="h-4 bg-gradient-to-r from-red-400 via-yellow-400 via-green-400 to-emerald-500 rounded-full relative">
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white dark:bg-slate-800 border-2 border-gray-800 rounded-full"
-              style={{ left: `${((720 - 300) / 550) * 100}%` }}
-            />
-          </div>
-        </div>
-      </div>
+      )}
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Score Factors */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
-          <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Score Factors
-            </h2>
+      {loading ? (
+        <div className="h-28 bg-gray-200 dark:bg-slate-700 rounded-xl mb-8 animate-pulse" />
+      ) : bureaus.length === 0 ? (
+        !error && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 mb-8 border border-gray-200 dark:border-slate-700">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              No bureau has reported a score for you yet
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">
+              Once a score is on your account, its history and the factors
+              behind it appear here.
+            </p>
           </div>
-          <div className="divide-y divide-gray-100 dark:divide-slate-700">
-            {scoreFactors.map((factor) => (
-              <div key={factor.factor} className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {factor.factor}
+        )
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          {bureaus.map((key) => (
+            <div
+              key={key}
+              className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700 text-center"
+            >
+              <p className="text-sm text-gray-500 dark:text-slate-400">
+                {BUREAU_LABELS[key]}
+              </p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                {scores[key]?.score}
+              </p>
+              {scores[key]?.scoreDate && (
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                  {formatDate(scores[key]?.scoreDate)}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-4">
+            Score history{bureau ? ` — ${bureau}` : ""}
+          </h2>
+          {chart.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              We have no score history for you yet.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {chart.map((point) => (
+                <div key={point.scoreDate} className="flex items-center gap-3">
+                  <span className="w-24 text-xs text-gray-500 dark:text-slate-400">
+                    {formatDate(point.scoreDate)}
                   </span>
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${getStatusColor(factor.status)}`}
-                  >
-                    {factor.status}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="flex-1 bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                  <div className="flex-1 h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-emerald-500 to-blue-500 h-2 rounded-full"
-                      style={{ width: `${factor.score}%` }}
+                      className="h-full bg-blue-500 rounded-full"
+                      style={{
+                        width: `${Math.min(100, (point.score / MAX_SCORE) * 100)}%`,
+                      }}
                     />
                   </div>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {factor.score}%
+                  <span className="w-10 text-sm font-medium text-gray-900 dark:text-white text-right">
+                    {point.score}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-slate-400">
-                  {factor.description} • {factor.impact}% of score
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Recommendations */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
-          <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Recommendations
-            </h2>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-slate-700">
-            {recommendations.map((rec, i) => (
-              <div key={i} className="p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {rec.title}
-                    </p>
-                    <p className="text-sm text-emerald-500">{rec.impact}</p>
-                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
-                      Timeframe: {rec.timeframe}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${rec.priority === "high" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}
-                  >
-                    {rec.priority}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Score History Table */}
-      <div className="mt-8 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Score History
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-4">
+            What is affecting your score
           </h2>
+          {factors.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Your report did not come with score factors. We will show them
+              here when a bureau provides them — we are not going to guess what
+              is on your file.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {factors.map((factor) => (
+                <li key={factor.factor}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {factor.factor}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 text-xs rounded-full capitalize ${
+                        IMPACT_CLASSES[factor.impact] ?? IMPACT_CLASSES.neutral
+                      }`}
+                    >
+                      {factor.impact}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-slate-300">
+                    {factor.description}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-slate-900">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
-                Experian
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
-                Equifax
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
-                TransUnion
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-            {scoreHistory.map((row) => (
-              <tr key={row.date}>
-                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                  {row.date}
-                </td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                  {row.experian}
-                </td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                  {row.equifax}
-                </td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                  {row.transunion}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </div>
   );
