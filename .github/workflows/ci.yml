@@ -219,6 +219,17 @@ jobs:
         working-directory: mobile-app
         run: npm run audit:screen-data
 
+      # BLOCKING: every pushed screen must offer a way back. Reported from a
+      # device screenshot of /marketplace - a title, and nothing to press.
+      # 72 of 238 screens had no back affordance; ten are tab roots and two are
+      # auth entries, which correctly have none. The cause was structural: no
+      # shared header component, so 166 screens hand-rolled the same block and
+      # sixty left the first half out. Frozen at 69, shrink-only: a NEW screen
+      # without a way back fails here.
+      - name: audit:back-nav (mobile) - no screen traps the user
+        working-directory: mobile-app
+        run: npm run audit:back-nav
+
       # BLOCKING: the mobile inverse of audit:links. The tab bar holds nine
       # destinations against 232 screens, so 131 of them - the whole of trading,
       # tax, the marketplace and rewards - could only be opened by typing a deep

@@ -29,7 +29,8 @@
     "audit:api": "node scripts/audit-api-calls.mjs --self-test && node scripts/audit-api-calls.mjs",
     "audit:reachability": "node scripts/audit-reachability.mjs",
     "audit:client-tables": "node scripts/audit-client-tables.mjs --self-test && node scripts/audit-client-tables.mjs",
-    "audit:screen-data": "node scripts/audit-screen-data.mjs --self-test && node scripts/audit-screen-data.mjs"
+    "audit:screen-data": "node scripts/audit-screen-data.mjs --self-test && node scripts/audit-screen-data.mjs",
+    "audit:back-nav": "node scripts/audit-back-nav.mjs --self-test && node scripts/audit-back-nav.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "~14.0.4",
