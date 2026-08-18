@@ -42,11 +42,6 @@
       "offline": false,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
-    "src/app/analytics/page.tsx: bureauScores, monthlyProgress, overviewStats, recentActivity": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "bureauScores presents Experian 725 (+12), Equifax 718 (+8), TransUnion 715 (+5) with update dates as the caller's own, alongside invented monthly progress, overview stats and recent activity. Web twin of the mobile reports/comparison fixed in rev 36."
-    },
     "src/app/analytics/reports/page.tsx: availableReports, recentDownloads, scheduledReports": {
       "classification": "fabrication",
       "offline": true,
