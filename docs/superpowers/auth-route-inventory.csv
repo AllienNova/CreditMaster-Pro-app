@@ -192,6 +192,7 @@ src/app/api/financial/plaid/investments/route.ts,GET;POST,validateFromHeaders,"r
 src/app/api/financial/plaid/liabilities/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/plaid/link-token/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""financial:link_accounts"")",withPermission(financial:link_accounts),c,promote inline permission check to withPermission
 src/app/api/financial/plaid/webhooks/route.ts,POST,webhook-signature,none,PUBLIC,c,Plaid webhook - signature verification stays as the auth
+src/app/api/financial/real-estate/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-18 - new route exposing the orphaned real-estate-tracking-service; getUserProperties/getPortfolioSummary take user.id from the guard never the request
 src/app/api/financial/savings/analyze/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/savings/goal-recommendations/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/savings/goals/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
