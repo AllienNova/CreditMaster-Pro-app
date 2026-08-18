@@ -34,7 +34,7 @@ import {
   statSync,
   existsSync,
 } from "fs";
-import { join, relative } from "path";
+import { join, relative, dirname } from "path";
 
 const arg = (name, fallback = null) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -253,13 +253,43 @@ function screenTitles() {
     let route = "/" + rel.replace(/\([^)]+\)\//g, "");
     route = route.replace(/\/index$/, "") || "/";
     const src = readFileSync(file, "utf8");
+    let found = null;
     for (const re of PATTERNS) {
       const m = src.match(re);
       if (m) {
-        titles.set(route, m[1].trim());
+        found = m[1].trim();
         break;
       }
     }
+
+    // FALL BACK TO THE LAYOUT'S TITLE. 67 screens draw no header of their own
+    // and rely on the NATIVE stack header, whose title is declared in the
+    // nearest _layout.tsx as `<Stack.Screen name="x" options={{ title: "Y" }}>`
+    // — and that title is rendered, so idb can read it. Reading only the
+    // screen file left 74 routes with nothing to assert against; this recovers
+    // 40 of them without touching a single screen.
+    if (!found) {
+      const name = rel.split("/").pop();
+      let dir = dirname(file);
+      while (dir.startsWith(APP)) {
+        const layout = join(dir, "_layout.tsx");
+        if (existsSync(layout)) {
+          const m = readFileSync(layout, "utf8").match(
+            new RegExp(
+              `name="${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^/]*?title:\\s*"([^"]+)"`,
+              "s",
+            ),
+          );
+          if (m) {
+            found = m[1].trim();
+            break;
+          }
+        }
+        dir = dirname(dir);
+      }
+    }
+
+    if (found) titles.set(route, found);
   }
   return titles;
 }
