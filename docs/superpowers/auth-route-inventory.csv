@@ -163,6 +163,7 @@ src/app/api/financial/credit-builder/ai-roadmap/route.ts,GET,validateFromHeaders
 src/app/api/financial/credit-repair/ai-strategy/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/credit/ai-insights/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/credit/simulator/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""credit:read"")",withPermission(credit:read),c,promote inline permission check to withPermission
+src/app/api/financial/crypto/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-18 - new route exposing the orphaned crypto-wallet-service; getUserWallets/getPortfolioSummary take user.id from the guard never the request
 src/app/api/financial/dashboard/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/debt/[id]/route.ts,PATCH;DELETE,withAuth,own-rows,withAuth,g,"added 2026-08-17 - thin over debtService.updateDebt/deleteDebt which take (debtId,userId) and filter on both. DELETE checks getDebt first because deleting 0 rows is not a Postgres error, so the service cannot report whether anything was removed"
 src/app/api/financial/debt/calculate/route.ts,POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth

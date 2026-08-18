@@ -1,515 +1,371 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+/**
+ * Crypto Portfolio.
+ *
+ * WHAT THIS PAGE USED TO SHOW EVERY VISITOR AS THEIR OWN HOLDINGS.
+ *
+ *   a Coinbase wallet worth $45,230 holding 0.35 BTC, among three wallets
+ *   a portfolio summary of $86,530 across 8 assets, up $15,230 (21.4%)
+ *   unrealised, and $2,180 (2.6%) in the last 24 hours
+ *
+ * No fetch in the file. Every figure was a claim that the reader owns crypto.
+ *
+ * THE FEATURE WAS BUILT AND UNREACHABLE. `crypto_wallets` and its holdings
+ * tables have existed since migration 20260731000082_crypto_wallet_tracking,
+ * and `crypto-wallet-service.ts` queries them in earnest — 33 database calls,
+ * including `getUserWallets` and `getPortfolioSummary`. Nothing imported that
+ * service except a barrel file and its own test: no route existed, so this
+ * screen had nothing to call and showed a constant instead. GET
+ * /api/financial/crypto was added to close that gap; it is the missing link
+ * between a working service and a screen, not new functionality.
+ *
+ * FIELDS THE PAGE USED TO SHOW THAT HAVE NO SOURCE, now gone:
+ *   - 24-hour change, at every level. `CryptoPortfolioSummary` has no
+ *     `change24h`, and neither does `CryptoHolding`. The old page showed
+ *     "+$2,180 (2.6%) today" on the summary and a 24h move per coin; nothing
+ *     computes either. Prices are stored per holding with a `lastUpdated`, and
+ *     no prior price is kept to difference against.
+ *
+ * FIELD NAMES DIFFER FROM THE OLD LOCAL TYPES, deliberately followed rather
+ * than mapped: the service says `totalValueUsd` on a wallet (the old local
+ * type said `totalValue`), `unrealizedGainLoss` on a holding (the old one said
+ * `gainLoss`), and its WalletType includes `defi`, which the old union did not.
+ */
+
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Coins,
   TrendingUp,
   TrendingDown,
-  Plus,
   RefreshCw,
   Wallet,
-  AlertCircle,
-  ExternalLink,
   PieChart,
-  ArrowUpRight,
-  ArrowDownRight,
 } from "lucide-react";
 
-type WalletType = "hot" | "cold" | "exchange";
+/** Mirrors WalletType in crypto-wallet-service.ts:18. */
+type WalletType = "hot" | "cold" | "exchange" | "defi";
 
+/** Mirrors CryptoHolding in crypto-wallet-service.ts:65. */
 interface CryptoHolding {
+  id: string;
   symbol: string;
   name: string;
   quantity: number;
-  priceUsd: number;
   valueUsd: number;
-  change24h: number;
-  costBasis: number;
-  gainLoss: number;
-  gainLossPercent: number;
+  priceUsd: number;
+  costBasis?: number;
+  unrealizedGainLoss?: number;
+  unrealizedGainLossPercent?: number;
 }
 
+/** Mirrors CryptoWallet in crypto-wallet-service.ts:39. */
 interface CryptoWallet {
   id: string;
   name: string;
   type: WalletType;
   address?: string;
   exchange?: string;
-  totalValue: number;
-  holdings: CryptoHolding[];
-  lastSync: Date;
+  isConnected?: boolean;
+  lastSync?: string;
+  holdings?: CryptoHolding[];
+  totalValueUsd: number;
 }
 
+/** Mirrors CryptoPortfolioSummary in crypto-wallet-service.ts:130. */
 interface PortfolioSummary {
   totalValue: number;
   totalCostBasis: number;
   unrealizedGainLoss: number;
   unrealizedGainLossPercent: number;
-  change24h: number;
-  change24hPercent: number;
-  totalAssets: number;
   totalWallets: number;
+  totalAssets: number;
 }
 
-const MOCK_WALLETS: CryptoWallet[] = [
-  {
-    id: "1",
-    name: "Coinbase",
-    type: "exchange",
-    exchange: "Coinbase",
-    totalValue: 45230,
-    lastSync: new Date(),
-    holdings: [
-      {
-        symbol: "BTC",
-        name: "Bitcoin",
-        quantity: 0.35,
-        priceUsd: 97500,
-        valueUsd: 34125,
-        change24h: 2.5,
-        costBasis: 28000,
-        gainLoss: 6125,
-        gainLossPercent: 21.9,
-      },
-      {
-        symbol: "ETH",
-        name: "Ethereum",
-        quantity: 2.8,
-        priceUsd: 3250,
-        valueUsd: 9100,
-        change24h: 1.8,
-        costBasis: 7500,
-        gainLoss: 1600,
-        gainLossPercent: 21.3,
-      },
-      {
-        symbol: "LINK",
-        name: "Chainlink",
-        quantity: 91,
-        priceUsd: 22,
-        valueUsd: 2005,
-        change24h: 0.8,
-        costBasis: 1800,
-        gainLoss: 205,
-        gainLossPercent: 11.4,
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "Ledger Nano",
-    type: "cold",
-    address: "0x1234...5678",
-    totalValue: 28450,
-    lastSync: new Date(Date.now() - 3600000),
-    holdings: [
-      {
-        symbol: "BTC",
-        name: "Bitcoin",
-        quantity: 0.22,
-        priceUsd: 97500,
-        valueUsd: 21450,
-        change24h: 2.5,
-        costBasis: 18000,
-        gainLoss: 3450,
-        gainLossPercent: 19.2,
-      },
-      {
-        symbol: "SOL",
-        name: "Solana",
-        quantity: 38,
-        priceUsd: 185,
-        valueUsd: 7000,
-        change24h: 5.2,
-        costBasis: 5500,
-        gainLoss: 1500,
-        gainLossPercent: 27.3,
-      },
-    ],
-  },
-  {
-    id: "3",
-    name: "MetaMask",
-    type: "hot",
-    address: "0xabcd...efgh",
-    totalValue: 12850,
-    lastSync: new Date(Date.now() - 7200000),
-    holdings: [
-      {
-        symbol: "ETH",
-        name: "Ethereum",
-        quantity: 3.2,
-        priceUsd: 3250,
-        valueUsd: 10400,
-        change24h: 1.8,
-        costBasis: 8500,
-        gainLoss: 1900,
-        gainLossPercent: 22.4,
-      },
-      {
-        symbol: "UNI",
-        name: "Uniswap",
-        quantity: 120,
-        priceUsd: 12.5,
-        valueUsd: 1500,
-        change24h: -0.5,
-        costBasis: 1200,
-        gainLoss: 300,
-        gainLossPercent: 25.0,
-      },
-      {
-        symbol: "AAVE",
-        name: "Aave",
-        quantity: 3.3,
-        priceUsd: 285,
-        valueUsd: 950,
-        change24h: 1.2,
-        costBasis: 800,
-        gainLoss: 150,
-        gainLossPercent: 18.8,
-      },
-    ],
-  },
-];
-
-const MOCK_SUMMARY: PortfolioSummary = {
-  totalValue: 86530,
-  totalCostBasis: 71300,
-  unrealizedGainLoss: 15230,
-  unrealizedGainLossPercent: 21.4,
-  change24h: 2180,
-  change24hPercent: 2.6,
-  totalAssets: 8,
-  totalWallets: 3,
+const WALLET_LABELS: Record<WalletType, string> = {
+  hot: "Hot wallet",
+  cold: "Cold storage",
+  exchange: "Exchange",
+  defi: "DeFi",
 };
 
-const getWalletIcon = (type: WalletType) => {
-  switch (type) {
-    case "exchange":
-      return Coins;
-    case "cold":
-      return Wallet;
-    case "hot":
-      return Wallet;
-    default:
-      return Wallet;
-  }
-};
-
-const getWalletColor = (type: WalletType) => {
-  switch (type) {
-    case "exchange":
-      return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
-    case "cold":
-      return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
-    case "hot":
-      return "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400";
-    default:
-      return "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300";
-  }
-};
-
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat("en-US", {
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 2,
   }).format(value);
-};
 
-const formatPercent = (value: number) => {
-  const prefix = value >= 0 ? "+" : "";
-  return `${prefix}${value.toFixed(2)}%`;
-};
+const formatPercent = (value: number) =>
+  `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 
 export default function CryptoPortfolioPage() {
-  const [wallets] = useState<CryptoWallet[]>(MOCK_WALLETS);
-  const [summary] = useState<PortfolioSummary>(MOCK_SUMMARY);
+  const [wallets, setWallets] = useState<CryptoWallet[]>([]);
+  const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Aggregate all holdings
-  const allHoldings = wallets.flatMap((w) => w.holdings);
-  const aggregatedHoldings = allHoldings
-    .reduce((acc, h) => {
-      const existing = acc.find((a) => a.symbol === h.symbol);
-      if (existing) {
-        existing.quantity += h.quantity;
-        existing.valueUsd += h.valueUsd;
-        existing.costBasis += h.costBasis;
-        existing.gainLoss = existing.valueUsd - existing.costBasis;
-        existing.gainLossPercent =
-          (existing.gainLoss / existing.costBasis) * 100;
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/financial/crypto");
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.data) {
+        setWallets([]);
+        setSummary(null);
+        setError(
+          "We could not load your crypto wallets. Nothing here is filled in for you — try again in a moment.",
+        );
       } else {
-        acc.push({ ...h });
+        setWallets(
+          Array.isArray(json.data.wallets)
+            ? (json.data.wallets as CryptoWallet[])
+            : [],
+        );
+        setSummary((json.data.summary as PortfolioSummary | undefined) ?? null);
       }
-      return acc;
-    }, [] as CryptoHolding[])
-    .sort((a, b) => b.valueUsd - a.valueUsd);
+    } catch {
+      setWallets([]);
+      setSummary(null);
+      setError("We could not reach the crypto service.");
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const visible = selectedWallet
+    ? wallets.filter((w) => w.id === selectedWallet)
+    : wallets;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                <Coins className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Crypto Portfolio
-              </h1>
-            </div>
-            <p className="text-gray-600 dark:text-slate-400">
-              Track all your cryptocurrency holdings across wallets and
-              exchanges
-            </p>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-lg">
+            <Coins className="w-6 h-6 text-amber-600 dark:text-amber-400" />
           </div>
-          <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-700 transition-colors">
-              <RefreshCw className="w-4 h-4" />
-              Sync All
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
-              <Plus className="w-4 h-4" />
-              Add Wallet
-            </button>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Crypto Portfolio
+          </h1>
         </div>
+        <p className="text-gray-600 dark:text-slate-400 mb-8">
+          The wallets you have connected, and what is in them.
+        </p>
 
-        {/* Portfolio Summary */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-orange-500 to-amber-600 rounded-xl p-6 mb-8 text-white"
-        >
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            <div>
-              <p className="text-orange-100 text-sm mb-1">
-                Total Portfolio Value
-              </p>
-              <p className="text-3xl font-bold">
-                {formatCurrency(summary.totalValue)}
-              </p>
+        {error && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 mb-6 border border-amber-200 dark:border-amber-900/50">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              Crypto is unavailable
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">{error}</p>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="space-y-4 animate-pulse">
+            {[1, 2].map((i) => (
               <div
-                className={`flex items-center gap-1 mt-1 ${summary.change24h >= 0 ? "text-green-200" : "text-red-200"}`}
-              >
-                {summary.change24h >= 0 ? (
-                  <ArrowUpRight className="w-4 h-4" />
-                ) : (
-                  <ArrowDownRight className="w-4 h-4" />
-                )}
-                <span>
-                  {formatCurrency(Math.abs(summary.change24h))} (
-                  {formatPercent(summary.change24hPercent)}) 24h
-                </span>
-              </div>
-            </div>
-            <div>
-              <p className="text-orange-100 text-sm mb-1">Unrealized P&L</p>
-              <p
-                className={`text-2xl font-bold ${summary.unrealizedGainLoss >= 0 ? "text-green-200" : "text-red-200"}`}
-              >
-                {formatCurrency(summary.unrealizedGainLoss)}
-              </p>
-              <p className="text-orange-100 text-sm mt-1">
-                {formatPercent(summary.unrealizedGainLossPercent)} all time
-              </p>
-            </div>
-            <div>
-              <p className="text-orange-100 text-sm mb-1">Cost Basis</p>
-              <p className="text-2xl font-bold">
-                {formatCurrency(summary.totalCostBasis)}
-              </p>
-              <p className="text-orange-100 text-sm mt-1">Total invested</p>
-            </div>
-            <div>
-              <p className="text-orange-100 text-sm mb-1">Assets / Wallets</p>
-              <p className="text-2xl font-bold">
-                {summary.totalAssets} / {summary.totalWallets}
-              </p>
-              <p className="text-orange-100 text-sm mt-1">
-                Unique tokens tracked
-              </p>
-            </div>
+                key={i}
+                className="h-32 bg-gray-200 dark:bg-slate-700 rounded-xl"
+              />
+            ))}
           </div>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Holdings List */}
-          <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm">
-              <div className="p-5 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-orange-500" />
-                  Holdings
-                </h2>
-              </div>
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {aggregatedHoldings.map((holding, index) => (
-                  <motion.div
-                    key={holding.symbol}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="p-4 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+        ) : wallets.length === 0 ? (
+          !error && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-10 text-center border border-gray-200 dark:border-slate-700">
+              <Wallet className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-3" />
+              <p className="font-medium text-gray-900 dark:text-white">
+                No wallets connected
+              </p>
+              <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
+                Once you connect a wallet or exchange, its holdings appear here.
+              </p>
+            </div>
+          )
+        ) : (
+          <>
+            {/* Summary — only the figures the service computes. There is no
+                24-hour change anywhere in the data, so none is shown. */}
+            {summary && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-slate-700">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    Total value
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                    {formatCurrency(summary.totalValue)}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-slate-700">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    Cost basis
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                    {formatCurrency(summary.totalCostBasis)}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-slate-700">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    Unrealised
+                  </p>
+                  <p
+                    className={`text-2xl font-bold mt-1 flex items-center gap-1 ${
+                      summary.unrealizedGainLoss >= 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-rose-600 dark:text-rose-400"
+                    }`}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-bold">
-                        {holding.symbol.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          {/*
-                            /investments/crypto/[coinId] existed with nothing
-                            linking to it — the only place a coin is listed is
-                            here, so a holding could be seen but never opened.
-                            The detail route keys on coinId, which the API
-                            addresses by lowercase symbol.
-                          */}
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
-                            <Link
-                              href={`/investments/crypto/${holding.symbol.toLowerCase()}`}
-                              className="hover:text-emerald-700 hover:underline dark:hover:text-emerald-400"
-                            >
-                              {holding.name}
-                            </Link>
-                          </h3>
-                          <span className="text-sm text-gray-500 dark:text-slate-400">
-                            {holding.symbol}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-slate-400">
-                          {holding.quantity.toFixed(4)} {holding.symbol} @{" "}
-                          {formatCurrency(holding.priceUsd)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900 dark:text-white">
-                          {formatCurrency(holding.valueUsd)}
-                        </p>
-                        <p
-                          className={`text-sm flex items-center justify-end gap-1 ${holding.change24h >= 0 ? "text-green-600" : "text-red-600"}`}
-                        >
-                          {holding.change24h >= 0 ? (
-                            <TrendingUp className="w-3 h-3" />
-                          ) : (
-                            <TrendingDown className="w-3 h-3" />
-                          )}
-                          {formatPercent(holding.change24h)}
-                        </p>
-                      </div>
-                      <div className="text-right min-w-[100px]">
-                        <p
-                          className={`font-semibold ${holding.gainLoss >= 0 ? "text-green-600" : "text-red-600"}`}
-                        >
-                          {formatCurrency(holding.gainLoss)}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-slate-400">
-                          {formatPercent(holding.gainLossPercent)}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    {summary.unrealizedGainLoss >= 0 ? (
+                      <TrendingUp className="w-5 h-5" />
+                    ) : (
+                      <TrendingDown className="w-5 h-5" />
+                    )}
+                    {formatCurrency(summary.unrealizedGainLoss)}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    {formatPercent(summary.unrealizedGainLossPercent)}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-slate-700">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    Wallets
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                    {summary.totalWallets}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    {summary.totalAssets} assets
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
 
-          {/* Wallets Sidebar */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-orange-500" />
-              Wallets
-            </h2>
-            {wallets.map((wallet, index) => {
-              const Icon = getWalletIcon(wallet.type);
-              return (
-                <motion.div
-                  key={wallet.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  onClick={() =>
-                    setSelectedWallet(
-                      selectedWallet === wallet.id ? null : wallet.id,
-                    )
-                  }
-                  className={`bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
-                    selectedWallet === wallet.id
-                      ? "ring-2 ring-orange-500"
-                      : "hover:shadow-md"
+            {wallets.length > 1 && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                <button
+                  onClick={() => setSelectedWallet(null)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                    selectedWallet === null
+                      ? "bg-blue-600 text-white"
+                      : "bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700"
                   }`}
                 >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div
-                      className={`p-2 rounded-lg ${getWalletColor(wallet.type)}`}
-                    >
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                  All wallets
+                </button>
+                {wallets.map((wallet) => (
+                  <button
+                    key={wallet.id}
+                    onClick={() => setSelectedWallet(wallet.id)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                      selectedWallet === wallet.id
+                        ? "bg-blue-600 text-white"
+                        : "bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700"
+                    }`}
+                  >
+                    {wallet.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {visible.map((wallet, index) => (
+                <motion.div
+                  key={wallet.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700"
+                >
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <h2 className="font-semibold text-gray-900 dark:text-white">
                         {wallet.name}
-                      </h3>
-                      <p className="text-xs text-gray-500 dark:text-slate-400 capitalize">
-                        {wallet.type} wallet
+                      </h2>
+                      <p className="text-sm text-gray-500 dark:text-slate-400">
+                        {WALLET_LABELS[wallet.type] ?? wallet.type}
+                        {wallet.exchange ? ` · ${wallet.exchange}` : ""}
                       </p>
                     </div>
-                    <p className="font-bold text-gray-900 dark:text-white">
-                      {formatCurrency(wallet.totalValue)}
-                    </p>
-                  </div>
-                  {wallet.address && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400 mb-2">
-                      <span className="font-mono">{wallet.address}</span>
-                      <ExternalLink className="w-3 h-3" />
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-gray-900 dark:text-white">
+                        {formatCurrency(wallet.totalValueUsd)}
+                      </p>
+                      {wallet.isConnected === false && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                          Not connected
+                        </p>
+                      )}
                     </div>
-                  )}
-                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-400">
-                    <RefreshCw className="w-3 h-3" />
-                    Last synced {new Date(wallet.lastSync).toLocaleTimeString()}
                   </div>
 
-                  {selectedWallet === wallet.id && (
-                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700 space-y-2">
-                      {wallet.holdings.map((h) => (
-                        <div
-                          key={h.symbol}
-                          className="flex justify-between text-sm"
+                  {!wallet.holdings || wallet.holdings.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-slate-400">
+                      No holdings recorded in this wallet.
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-gray-100 dark:divide-slate-700">
+                      {wallet.holdings.map((holding) => (
+                        <li
+                          key={holding.id}
+                          className="py-3 flex items-center gap-3"
                         >
-                          <span className="text-gray-600 dark:text-slate-400">
-                            {h.symbol}
-                          </span>
-                          <span className="text-gray-900 dark:text-white">
-                            {formatCurrency(h.valueUsd)}
-                          </span>
-                        </div>
+                          <PieChart className="w-4 h-4 text-gray-400 dark:text-slate-500 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900 dark:text-white">
+                              {holding.symbol}
+                              <span className="ml-2 text-sm font-normal text-gray-500 dark:text-slate-400">
+                                {holding.name}
+                              </span>
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-slate-400">
+                              {holding.quantity} @{" "}
+                              {formatCurrency(holding.priceUsd)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium text-gray-900 dark:text-white">
+                              {formatCurrency(holding.valueUsd)}
+                            </p>
+                            {typeof holding.unrealizedGainLossPercent ===
+                              "number" && (
+                              <p
+                                className={`text-xs ${
+                                  holding.unrealizedGainLossPercent >= 0
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-rose-600 dark:text-rose-400"
+                                }`}
+                              >
+                                {formatPercent(
+                                  holding.unrealizedGainLossPercent,
+                                )}
+                              </p>
+                            )}
+                          </div>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   )}
                 </motion.div>
-              );
-            })}
-
-            {/* Price Alerts */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <AlertCircle className="w-5 h-5 text-amber-500" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">
-                  Price Alerts
-                </h3>
-              </div>
-              <p className="text-sm text-gray-500 dark:text-slate-400 mb-3">
-                Set alerts when prices hit your targets
-              </p>
-              <button className="w-full py-2 text-sm text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
-                + Create Alert
-              </button>
+              ))}
             </div>
-          </div>
-        </div>
+          </>
+        )}
+
+        <button
+          onClick={load}
+          disabled={loading}
+          className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm font-medium text-gray-700 dark:text-slate-300 disabled:opacity-50"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh
+        </button>
       </div>
     </div>
   );
