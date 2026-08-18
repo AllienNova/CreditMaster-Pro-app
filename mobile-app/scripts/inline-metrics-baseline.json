@@ -1,0 +1,50 @@
+{
+  "frozen": "2026-08-18",
+  "why": "Screens rendering a hardcoded measurement as inline JSX text. Each must be classified `catalogue` (a price, a published rate, product copy) or `fabrication` (a number presented as this user's). /analytics told every user their score moved +45 and their dispute success was 87%, on a screen that makes no request. This list may only shrink.",
+  "entries": {
+    "app/analytics/credit-score.tsx: 748, +6 pts, 762, +20 pts, 780, +38 pts": {
+      "classification": "fabrication",
+      "why": "Predicted FUTURE scores presented as analysis: 30 Days 748 (+6 pts), 90 Days 762 (+20 pts), 6 Months 780 (+38 pts). Nothing predicts a score, and these survived the rev-79 fix of this same screen because that fix removed the module-level constants and left the JSX literals."
+    },
+    "app/analytics/index.tsx: +45, 87%": {
+      "classification": "fabrication",
+      "why": "'+45 Score Change' and '87% Dispute Success' on a hub screen that makes NO request. The screen audit:screen-data could never flag, and the reason this gate exists."
+    },
+    "app/budgeting/index.tsx: $5,000, $3,245, $1,755": {
+      "classification": "fabrication",
+      "why": "A whole Monthly Overview - Income $5,000, Expenses $3,245, Remaining $1,755 - identical for every user, on a screen with no API import at all."
+    },
+    "app/credit/factors.tsx: 35%, 30%, 15%, 10%, 10%": {
+      "classification": "catalogue",
+      "why": "The five FICO factor weights (35/30/15/10/10). Published, universal, and not a claim about the caller."
+    },
+    "app/credit/score-detail.tsx: 300, 579, 669, 739, 799, 850": {
+      "classification": "catalogue",
+      "why": "Credit-score band boundaries (300/579/669/739/799/850). Published scale, not this user's score."
+    },
+    "app/credit-builder/goals.tsx: +58, +10": {
+      "classification": "fabrication",
+      "why": "'+58 6 Month Gain' and '+10 Monthly Avg' - the caller's score movement, invented. Survived the rev-34 fix of this same screen for the same reason as analytics/credit-score."
+    },
+    "app/credit-builder/utilization.tsx: 100%": {
+      "classification": "catalogue",
+      "why": "Axis legend for the utilization bar: 0% / 10% ideal / 100%."
+    },
+    "app/investments/analyze/fundamental.tsx: $160.50, $180.25": {
+      "classification": "fabrication",
+      "why": "Price literals on a screen already baselined as a fabrication in screen-data; blocked behind SF-28, not fixed here."
+    },
+    "app/marketplace/calculators.tsx: 10%, 30%, 100%": {
+      "classification": "catalogue",
+      "why": "Utilization band markers 0/10/30/100% on the calculator scale."
+    },
+    "app/tax/optimizer.tsx: 2.7%, $13,000, $7,000, $3,150": {
+      "classification": "fabrication",
+      "why": "'Your effective tax rate has increased by 2.7% over 3 years' (nothing stores three years of rates) and 401(k)/IRA/HSA 'Remaining' of $13,000/$7,000/$3,150 rendered directly beneath a genuinely computed retirementContributionGap, which makes them read as computed too. Survived the rev-72 fix of this same screen."
+    },
+    "app/trading/chart.tsx: 54.32, +0.45, $175.50, $168.25, $2.35": {
+      "classification": "fabrication",
+      "why": "IndicatorPanel hardcodes a full technical read for whatever symbol is open: RSI 54.32 Neutral, MACD +0.45 Bullish, SMA20 $175.50 Above, SMA50 $168.25 Above, ATR $2.35. Trading signals, invented. Related to SF-28."
+    }
+  }
+}

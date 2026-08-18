@@ -31,7 +31,8 @@
     "audit:client-tables": "node scripts/audit-client-tables.mjs --self-test && node scripts/audit-client-tables.mjs",
     "audit:screen-data": "node scripts/audit-screen-data.mjs --self-test && node scripts/audit-screen-data.mjs",
     "audit:back-nav": "node scripts/audit-back-nav.mjs --self-test && node scripts/audit-back-nav.mjs",
-    "audit:shadow-types": "node scripts/audit-shadow-types.mjs --self-test && node scripts/audit-shadow-types.mjs"
+    "audit:shadow-types": "node scripts/audit-shadow-types.mjs --self-test && node scripts/audit-shadow-types.mjs",
+    "audit:inline-metrics": "node scripts/audit-inline-metrics.mjs --self-test && node scripts/audit-inline-metrics.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "~14.0.4",

@@ -244,6 +244,16 @@ jobs:
         working-directory: mobile-app
         run: npm run audit:shadow-types
 
+      # BLOCKING: audit:screen-data hunts module-level constant data sets, which
+      # is the shape every fabrication found by hand had taken. /analytics had
+      # none and passed it clean while telling every user their score moved +45
+      # and their dispute success rate was 87% - inline JSX literals, on a screen
+      # that makes no request. This gate reads what is BETWEEN the tags instead.
+      # Frozen at 11, shrink-only.
+      - name: audit:inline-metrics (mobile) - no hardcoded measurement in JSX
+        working-directory: mobile-app
+        run: npm run audit:inline-metrics
+
       # BLOCKING: the mobile inverse of audit:links. The tab bar holds nine
       # destinations against 232 screens, so 131 of them - the whole of trading,
       # tax, the marketplace and rewards - could only be opened by typing a deep
