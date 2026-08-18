@@ -59,12 +59,25 @@ const CRASH_MARKERS = [
  * of real text — so it passes the near-empty floor and scores as `ok`.
  *
  * `/analytics` was recorded that way in two consecutive sweeps while a fresh
- * launch renders it in 12 elements. No screen in this app prints "HTTP <code>"
- * (verified by grep over app/ and src/), so the marker is unambiguous. It is
- * a HARNESS condition: relaunch and re-navigate rather than scoring the route.
+ * launch renders it in 12 elements.
+ *
+ * THE TEXT ALONE IS NOT ENOUGH, and a grep said otherwise. `src/services/api/
+ * client.ts:335` builds its error message as `HTTP ${response.status}`, so an
+ * app screen whose request 404s renders "HTTP 404" of its own accord — and the
+ * grep that cleared this marker looked for the literal string, which is never
+ * written anywhere because it is CONSTRUCTED. `/reports` was reported NOT
+ * MEASURED while rendering 34 elements.
+ *
+ * The discriminator is the element count. Expo Go's error screen is the whole
+ * window and carries three or four nodes; an app error state sits inside the
+ * app's own chrome and carries many more. Six is comfortably above the one and
+ * below the other.
  */
 const CLIENT_ERROR = /^HTTP \d{3}$/;
-const isClientError = (screen) => screen.texts.some((t) => CLIENT_ERROR.test(t.trim()));
+const CLIENT_ERROR_MAX_ELEMENTS = 6;
+const isClientError = (screen) =>
+  screen.elements <= CLIENT_ERROR_MAX_ELEMENTS &&
+  screen.texts.some((t) => CLIENT_ERROR.test(t.trim()));
 
 function sh(cmd, args) {
   try {
