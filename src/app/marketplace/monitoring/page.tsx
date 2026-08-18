@@ -1,62 +1,61 @@
 /**
- * Credit Monitoring Hub
+ * Credit Monitoring Hub.
  *
- * Real-time credit tracking across all 3 bureaus with score dashboard,
- * history chart, alerts, and service comparison.
+ * WHAT THIS PAGE USED TO ASSERT ABOUT THE READER'S OWN CREDIT.
+ *
+ * `mockScores` gave everyone the same three bureau readings — Experian 720
+ * (+15), Equifax 715 (+8), TransUnion 718 (+12) — and `mockAlerts` told them
+ * "New Hard Inquiry: Capital One Bank checked your credit". A hard inquiry is
+ * something a person acts on: they call the bank, or they file a dispute.
+ *
+ * Both have had real routes all along:
+ *   GET /api/credit-monitoring/scores  -> { success, data: { experian?, ... } }
+ *   GET /api/credit-monitoring/alerts  -> { success, data: CreditAlert[] }
+ *
+ * THE SERVICE TABLE WAS A MOCK FALLBACK, not a missing fetch. The page already
+ * called /api/marketplace/products?category=monitoring and, when that returned
+ * nothing, quietly swapped in `mockMonitoringServices` — a comparison putting
+ * Fynvita at $29.99 against competitor products. It did at least say "Showing
+ * sample data", which is more honesty than most of the fabrications here had,
+ * but a pricing comparison is not something to sample: it is either the real
+ * catalogue or it is nothing.
+ *
+ * THE `change` FIGURES ARE GONE. A CreditScore carries a score and a date, not
+ * a delta. Deriving one needs the history route, which is a third request this
+ * page does not otherwise need; "+15" beside a score nobody differenced is
+ * exactly the shape removed from /analytics earlier today.
  */
 
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 
+type BureauKey = "experian" | "equifax" | "transunion";
+
+const BUREAU_LABELS: Record<BureauKey, string> = {
+  experian: "Experian",
+  equifax: "Equifax",
+  transunion: "TransUnion",
+};
+
+const MAX_SCORE = 850;
+
 interface BureauScore {
-  bureau: string;
   score: number;
-  change: number;
-  lastUpdated: string;
+  scoreDate?: string;
 }
 
+/** Mirrors CreditAlert in credit-monitoring-service.ts:44. */
 interface CreditAlert {
   id: string;
-  type: "inquiry" | "account" | "address" | "public_record";
+  type: string;
+  bureau?: string;
   title: string;
-  description: string;
-  date: string;
-  severity: "low" | "medium" | "high";
+  message: string;
+  severity: "low" | "medium" | "high" | "critical";
+  read: boolean;
+  createdAt: string;
 }
-
-const mockScores: BureauScore[] = [
-  { bureau: "Experian", score: 720, change: 15, lastUpdated: "2024-01-15" },
-  { bureau: "Equifax", score: 715, change: 8, lastUpdated: "2024-01-14" },
-  { bureau: "TransUnion", score: 718, change: 12, lastUpdated: "2024-01-15" },
-];
-
-const mockAlerts: CreditAlert[] = [
-  {
-    id: "1",
-    type: "inquiry",
-    title: "New Hard Inquiry",
-    description: "Capital One Bank checked your credit",
-    date: "2024-01-10",
-    severity: "medium",
-  },
-  {
-    id: "2",
-    type: "account",
-    title: "New Account Opened",
-    description: "Chase credit card account opened",
-    date: "2024-01-08",
-    severity: "low",
-  },
-  {
-    id: "3",
-    type: "address",
-    title: "Address Change Detected",
-    description: "New address reported to Experian",
-    date: "2024-01-05",
-    severity: "high",
-  },
-];
 
 interface MonitoringService {
   name: string;
@@ -67,43 +66,13 @@ interface MonitoringService {
   score: boolean;
 }
 
-// Fallback mock data for development/offline mode
-const mockMonitoringServices: MonitoringService[] = [
-  {
-    name: "Fynvita",
-    price: 29.99,
-    bureaus: 3,
-    alerts: true,
-    identity: true,
-    score: true,
-  },
-  {
-    name: "Experian",
-    price: 24.99,
-    bureaus: 1,
-    alerts: true,
-    identity: true,
-    score: true,
-  },
-  {
-    name: "Credit Karma",
-    price: 0,
-    bureaus: 2,
-    alerts: true,
-    identity: false,
-    score: true,
-  },
-  {
-    name: "myFICO",
-    price: 39.99,
-    bureaus: 3,
-    alerts: true,
-    identity: false,
-    score: true,
-  },
-];
+const SEVERITY_CLASSES: Record<string, string> = {
+  critical: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+  high: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  medium: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  low: "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300",
+};
 
-// Map API product to MonitoringService format
 function mapProductToService(
   product: Record<string, unknown>,
 ): MonitoringService {
@@ -118,259 +87,245 @@ function mapProductToService(
   };
 }
 
-function ScoreGauge({
-  score,
-  bureau,
-  change,
-}: {
-  score: number;
-  bureau: string;
-  change: number;
-}) {
-  const percentage = ((score - 300) / 550) * 100;
-  const color =
-    score >= 740
-      ? "text-green-500"
-      : score >= 670
-        ? "text-yellow-500"
-        : "text-red-500";
-
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700">
-      <h3 className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-4">
-        {bureau}
-      </h3>
-      <div className="relative w-32 h-32 mx-auto">
-        <svg className="w-full h-full transform -rotate-90">
-          <circle
-            cx="64"
-            cy="64"
-            r="56"
-            stroke="#e5e7eb"
-            strokeWidth="12"
-            fill="none"
-          />
-          <circle
-            cx="64"
-            cy="64"
-            r="56"
-            stroke="currentColor"
-            strokeWidth="12"
-            fill="none"
-            className={color}
-            strokeDasharray={`${percentage * 3.52} 352`}
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={`text-3xl font-bold ${color}`}>{score}</span>
-          <span
-            className={`text-sm ${change >= 0 ? "text-green-500" : "text-red-500"}`}
-          >
-            {change >= 0 ? "+" : ""}
-            {change}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
+function formatDate(iso?: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      });
 }
 
-function AlertCard({ alert }: { alert: CreditAlert }) {
-  const severityColors = {
-    low: "bg-blue-100 text-blue-800",
-    medium: "bg-yellow-100 text-yellow-800",
-    high: "bg-red-100 text-red-800",
-  };
-  const typeIcons = {
-    inquiry: "",
-    account: "",
-    address: "",
-    public_record: "",
-  };
-
-  return (
-    <div className="flex items-start gap-4 p-4 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
-      <span className="text-2xl">{typeIcons[alert.type]}</span>
-      <div className="flex-1">
-        <div className="flex items-center gap-2 mb-1">
-          <h4 className="font-medium text-gray-900 dark:text-white">
-            {alert.title}
-          </h4>
-          <span
-            className={`px-2 py-0.5 text-xs rounded-full ${severityColors[alert.severity]}`}
-          >
-            {alert.severity}
-          </span>
-        </div>
-        <p className="text-sm text-gray-600 dark:text-slate-300">
-          {alert.description}
-        </p>
-        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
-          {alert.date}
-        </p>
-      </div>
-    </div>
+export default function CreditMonitoringPage() {
+  const [scores, setScores] = useState<Partial<Record<BureauKey, BureauScore>>>(
+    {},
   );
-}
-
-export default function MonitoringPage() {
-  const [timeRange, setTimeRange] = useState<"6m" | "1y" | "2y">("6m");
-  const [monitoringServices, setMonitoringServices] = useState<
-    MonitoringService[]
-  >(mockMonitoringServices);
+  const [alerts, setAlerts] = useState<CreditAlert[]>([]);
+  const [services, setServices] = useState<MonitoringService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch monitoring products from API
-  const fetchMonitoringProducts = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    try {
-      const response = await fetch(
-        "/api/marketplace/products?category=monitoring",
-      );
-      const result = await response.json();
+    const body = async (r: PromiseSettledResult<Response>) =>
+      r.status === "fulfilled" && r.value.ok
+        ? await r.value.json().catch(() => null)
+        : null;
 
-      if (result.success && result.data && result.data.length > 0) {
-        setMonitoringServices(result.data.map(mapProductToService));
-      } else {
-        // Fallback to mock data
-        setMonitoringServices(mockMonitoringServices);
-        if (!result.success) {
-          setError("Unable to load from server. Showing sample data.");
-        }
-      }
-    } catch (err) {
-      console.error("Failed to fetch monitoring products:", err);
-      setMonitoringServices(mockMonitoringServices);
-      setError("Unable to load from server. Showing sample data.");
-    } finally {
-      setLoading(false);
+    const [scoresRes, alertsRes, productsRes] = await Promise.allSettled([
+      fetch("/api/credit-monitoring/scores"),
+      fetch("/api/credit-monitoring/alerts"),
+      fetch("/api/marketplace/products?category=monitoring"),
+    ]);
+    const [scoresJson, alertsJson, productsJson] = await Promise.all([
+      body(scoresRes),
+      body(alertsRes),
+      body(productsRes),
+    ]);
+
+    setScores(
+      (scoresJson?.data as Partial<Record<BureauKey, BureauScore>>) ?? {},
+    );
+    setAlerts(
+      Array.isArray(alertsJson?.data) ? (alertsJson.data as CreditAlert[]) : [],
+    );
+    /* No fallback. An empty catalogue shows as empty; it does not become a
+       price comparison we invented. */
+    setServices(
+      Array.isArray(productsJson?.data)
+        ? (productsJson.data as Record<string, unknown>[]).map(
+            mapProductToService,
+          )
+        : [],
+    );
+
+    if (!scoresJson && !alertsJson && !productsJson) {
+      setError(
+        "We could not load your monitoring data. Nothing here is estimated in its place — try again in a moment.",
+      );
     }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchMonitoringProducts();
-  }, [fetchMonitoringProducts]);
+    load();
+  }, [load]);
+
+  const bureaus = (Object.keys(BUREAU_LABELS) as BureauKey[]).filter(
+    (key) => typeof scores[key]?.score === "number",
+  );
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Credit Monitoring Hub
+          Credit Monitoring
         </h1>
         <p className="text-gray-600 dark:text-slate-300">
-          Real-time tracking across all 3 bureaus
+          Your scores across the bureaus, and what has changed
         </p>
-        {error && (
-          <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-            {error}
-          </p>
-        )}
       </div>
 
-      {/* Score Dashboard */}
+      {error && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-amber-200 dark:border-amber-900/50">
+          <p className="font-medium text-gray-900 dark:text-white mb-1">
+            Monitoring data is unavailable
+          </p>
+          <p className="text-sm text-gray-600 dark:text-slate-300">{error}</p>
+        </div>
+      )}
+
+      {/* Scores */}
       <section>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Your Credit Scores
+          Your scores
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {mockScores.map((s) => (
-            <ScoreGauge
-              key={s.bureau}
-              score={s.score}
-              bureau={s.bureau}
-              change={s.change}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Score History */}
-      <section className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Score History
-          </h2>
-          <div className="flex gap-2">
-            {(["6m", "1y", "2y"] as const).map((range) => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={`px-3 py-1 text-sm rounded-lg ${timeRange === range ? "bg-blue-600 text-white" : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200"}`}
-              >
-                {range === "6m"
-                  ? "6 Months"
-                  : range === "1y"
-                    ? "1 Year"
-                    : "2 Years"}
-              </button>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-pulse">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-28 bg-gray-200 dark:bg-slate-700 rounded-xl"
+              />
             ))}
           </div>
-        </div>
-        <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-slate-900 rounded-lg">
-          <p className="text-gray-500 dark:text-slate-400">
-            Score history chart ({timeRange})
-          </p>
-        </div>
+        ) : bureaus.length === 0 ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              No bureau has reported a score for you yet
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              Once a score is recorded on your account it appears here.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {bureaus.map((key) => (
+              <div
+                key={key}
+                className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700 text-center"
+              >
+                <p className="text-sm text-gray-500 dark:text-slate-400">
+                  {BUREAU_LABELS[key]}
+                </p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                  {scores[key]?.score}
+                </p>
+                <div className="h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden mt-3">
+                  <div
+                    className="h-full bg-blue-500 rounded-full"
+                    style={{
+                      width: `${Math.min(100, ((scores[key]?.score ?? 0) / MAX_SCORE) * 100)}%`,
+                    }}
+                  />
+                </div>
+                {scores[key]?.scoreDate && (
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
+                    Updated {formatDate(scores[key]?.scoreDate)}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Alerts */}
       <section>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Recent Alerts
+          Alerts
         </h2>
-        <div className="space-y-3">
-          {mockAlerts.map((alert) => (
-            <AlertCard key={alert.id} alert={alert} />
-          ))}
-        </div>
-      </section>
-
-      {/* Service Comparison */}
-      <section className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Monitoring Service Comparison
-        </h2>
-        {loading ? (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-600 dark:text-slate-300">
-              Loading services...
-            </span>
+        {alerts.length === 0 ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700">
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              No alerts on your account. We will tell you here when a bureau
+              reports a change.
+            </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <ul className="space-y-3">
+            {alerts.map((alert) => (
+              <li
+                key={alert.id}
+                className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700"
+              >
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {alert.title}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 text-xs rounded-full capitalize ${
+                      SEVERITY_CLASSES[alert.severity] ?? SEVERITY_CLASSES.low
+                    }`}
+                  >
+                    {alert.severity}
+                  </span>
+                  {alert.bureau && (
+                    <span className="text-xs text-gray-500 dark:text-slate-400 capitalize">
+                      {alert.bureau}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 dark:text-slate-300">
+                  {alert.message}
+                </p>
+                {alert.createdAt && (
+                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                    {formatDate(alert.createdAt)}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Service comparison */}
+      <section>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Monitoring services
+        </h2>
+        {services.length === 0 ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700">
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              We have no monitoring products to compare right now. Prices and
+              coverage are not something to show you a sample of.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-slate-700">
-                  <th className="text-left py-3 px-4">Service</th>
-                  <th className="text-center py-3 px-4">Price/mo</th>
-                  <th className="text-center py-3 px-4">Bureaus</th>
-                  <th className="text-center py-3 px-4">Alerts</th>
-                  <th className="text-center py-3 px-4">Identity</th>
+                <tr className="text-left text-gray-500 dark:text-slate-400 border-b border-gray-100 dark:border-slate-700">
+                  <th className="p-4 font-medium">Service</th>
+                  <th className="p-4 font-medium">Price</th>
+                  <th className="p-4 font-medium">Bureaus</th>
+                  <th className="p-4 font-medium">Alerts</th>
+                  <th className="p-4 font-medium">Identity</th>
+                  <th className="p-4 font-medium">Score</th>
                 </tr>
               </thead>
-              <tbody>
-                {monitoringServices.map((service) => (
-                  <tr
-                    key={service.name}
-                    className="border-b border-gray-100 dark:border-slate-700"
-                  >
-                    <td className="py-3 px-4 font-medium">{service.name}</td>
-                    <td className="text-center py-3 px-4">
-                      {service.price === 0 ? "Free" : `$${service.price}`}
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                {services.map((service) => (
+                  <tr key={service.name}>
+                    <td className="p-4 text-gray-900 dark:text-white">
+                      {service.name}
                     </td>
-                    <td className="text-center py-3 px-4">{service.bureaus}</td>
-                    <td className="text-center py-3 px-4">
-                      {service.alerts ? "" : ""}
+                    <td className="p-4 text-gray-900 dark:text-white">
+                      ${service.price.toFixed(2)}
                     </td>
-                    <td className="text-center py-3 px-4">
-                      {service.identity ? "" : ""}
+                    <td className="p-4 text-gray-900 dark:text-white">
+                      {service.bureaus}
                     </td>
+                    <td className="p-4">{service.alerts ? "Yes" : "No"}</td>
+                    <td className="p-4">{service.identity ? "Yes" : "No"}</td>
+                    <td className="p-4">{service.score ? "Yes" : "No"}</td>
                   </tr>
                 ))}
               </tbody>
