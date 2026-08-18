@@ -55,57 +55,6 @@ interface TransactionRule {
   matchCount: number;
 }
 
-// ============================================================================
-// Mock Data
-// ============================================================================
-
-const mockRules: TransactionRule[] = [
-  {
-    id: "1",
-    name: "Coffee Shops → Food & Dining",
-    description: "Categorize all coffee shop purchases",
-    conditions: [
-      { type: "merchant_contains", value: "starbucks" },
-      { type: "merchant_contains", value: "coffee" },
-    ],
-    conditionLogic: "OR",
-    actions: [{ type: "set_category", value: "Food & Dining" }],
-    isActive: true,
-    priority: 1,
-    matchCount: 47,
-  },
-  {
-    id: "2",
-    name: "Amazon → Shopping",
-    description: "All Amazon purchases are shopping",
-    conditions: [{ type: "merchant_contains", value: "amazon" }],
-    conditionLogic: "AND",
-    actions: [
-      { type: "set_category", value: "Shopping" },
-      { type: "add_tag", value: "online" },
-    ],
-    isActive: true,
-    priority: 2,
-    matchCount: 23,
-  },
-  {
-    id: "3",
-    name: "Tax Deductible Expenses",
-    description: "Mark work-related expenses as tax deductible",
-    conditions: [
-      { type: "merchant_contains", value: "office" },
-      { type: "amount_greater_than", value: 25 },
-    ],
-    conditionLogic: "AND",
-    actions: [
-      { type: "mark_tax_deductible", value: true },
-      { type: "add_tag", value: "business" },
-    ],
-    isActive: false,
-    priority: 3,
-    matchCount: 8,
-  },
-];
 
 const categories = [
   "Food & Dining",
@@ -583,40 +532,65 @@ function RuleBuilder({
 // ============================================================================
 
 export default function TransactionRulesPage() {
-  const [rules, setRules] = useState<TransactionRule[]>(mockRules);
+  const [rules, setRules] = useState<TransactionRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingRule, setEditingRule] = useState<TransactionRule | null>(null);
 
+  /*
+   * WHAT THIS REPLACED. `useState(mockRules)` seeded the list with invented
+   * rules — "Coffee Shops -> Food & Dining", matching "starbucks" — and
+   * loadData was `await new Promise(setTimeout 500)` followed by
+   * `setRules(mockRules)`: half a second of spinner over no request at all.
+   *
+   * EVERY MUTATION WAS LOCAL TOO. Save, Delete, Toggle and the reorder buttons
+   * changed React state and nothing else, so a user could build a rule, watch
+   * it appear, and lose it on refresh — believing their transactions were
+   * being categorised automatically when nothing had been written.
+   *
+   * All five now go through the real endpoints, and the list is re-read from
+   * the server after each one rather than patched locally, so what is on
+   * screen is what was actually stored.
+   */
   const loadData = useCallback(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setRules(mockRules);
+    setIsLoading(true);
+    setLoadFailed(false);
+    try {
+      const res = await fetch("/api/financial/transaction-rules");
+      if (!res.ok) throw new Error(String(res.status));
+      const json = await res.json();
+      setRules(json?.data?.rules ?? []);
+    } catch {
+      // Failing to read someone's rules is not the same as their having none.
+      setLoadFailed(true);
+    }
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
-    loadData().then(() => setIsLoading(false));
+    loadData();
   }, [loadData]);
 
-  const handleSave = (ruleData: Partial<TransactionRule>) => {
-    if (editingRule) {
-      setRules(
-        rules.map((r) =>
-          r.id === editingRule.id
-            ? ({ ...r, ...ruleData } as TransactionRule)
-            : r,
-        ),
-      );
-    } else {
-      const newRule: TransactionRule = {
-        ...(ruleData as TransactionRule),
-        id: Date.now().toString(),
-        matchCount: 0,
-        priority: rules.length,
-      };
-      setRules([...rules, newRule]);
+  const handleSave = async (ruleData: Partial<TransactionRule>) => {
+    const res = editingRule
+      ? await fetch(`/api/financial/transaction-rules/${editingRule.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(ruleData),
+        })
+      : await fetch("/api/financial/transaction-rules", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...ruleData, priority: rules.length }),
+        });
+    if (!res.ok) {
+      alert("We could not save that rule. Nothing has changed.");
+      return;
     }
     setShowBuilder(false);
     setEditingRule(null);
+    await loadData();
   };
 
   const handleEdit = (rule: TransactionRule) => {
@@ -624,34 +598,69 @@ export default function TransactionRulesPage() {
     setShowBuilder(true);
   };
 
-  const handleDelete = (ruleId: string) => {
-    setRules(rules.filter((r) => r.id !== ruleId));
+  const handleDelete = async (ruleId: string) => {
+    const res = await fetch(`/api/financial/transaction-rules/${ruleId}`, {
+      method: "DELETE",
+    });
+    // Only drop the row when the server says it is gone.
+    if (!res.ok) {
+      alert("We could not delete that rule. Nothing has changed.");
+      return;
+    }
+    await loadData();
   };
 
-  const handleToggle = (ruleId: string) => {
-    setRules(
-      rules.map((r) => (r.id === ruleId ? { ...r, isActive: !r.isActive } : r)),
-    );
+  const handleToggle = async (ruleId: string) => {
+    const rule = rules.find((r) => r.id === ruleId);
+    if (!rule) return;
+    const res = await fetch(`/api/financial/transaction-rules/${ruleId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !rule.isActive }),
+    });
+    if (!res.ok) {
+      alert("We could not change that rule. Nothing has changed.");
+      return;
+    }
+    await loadData();
+  };
+
+  /**
+   * Reordering changes `priority`, which decides which rule wins when two
+   * match the same transaction — so it has to be persisted, not just shown.
+   * Both moved rows are PATCHed and the list re-read; if either write fails
+   * the order on screen goes back to what the server holds.
+   */
+  const swapPriority = async (a: number, b: number) => {
+    const first = rules[a];
+    const second = rules[b];
+    if (!first || !second) return;
+    const results = await Promise.all([
+      fetch(`/api/financial/transaction-rules/${first.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority: b }),
+      }),
+      fetch(`/api/financial/transaction-rules/${second.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority: a }),
+      }),
+    ]);
+    if (results.some((r) => !r.ok)) {
+      alert("We could not reorder those rules. Nothing has changed.");
+    }
+    await loadData();
   };
 
   const handleMoveUp = (index: number) => {
     if (index === 0) return;
-    const newRules = [...rules];
-    [newRules[index - 1], newRules[index]] = [
-      newRules[index],
-      newRules[index - 1],
-    ];
-    setRules(newRules.map((r, i) => ({ ...r, priority: i })));
+    void swapPriority(index, index - 1);
   };
 
   const handleMoveDown = (index: number) => {
     if (index === rules.length - 1) return;
-    const newRules = [...rules];
-    [newRules[index], newRules[index + 1]] = [
-      newRules[index + 1],
-      newRules[index],
-    ];
-    setRules(newRules.map((r, i) => ({ ...r, priority: i })));
+    void swapPriority(index, index + 1);
   };
 
   const handleRefresh = useCallback(async () => {

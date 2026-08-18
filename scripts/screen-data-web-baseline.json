@@ -112,11 +112,6 @@
       "offline": true,
       "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
-    "src/app/dashboard/settings/transaction-rules/page.tsx: mockRules": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
-    },
     "src/app/dashboard/subscriptions/page.tsx: mockSubscriptions": {
       "classification": "fabrication",
       "offline": true,
