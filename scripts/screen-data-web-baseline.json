@@ -167,11 +167,6 @@
       "offline": true,
       "why": "Two navigation tiles (title, subtitle, href, icon) pointing at /identity/dark-web and /dashboard/monitoring — both real pages, both verified by audit:links. Asserts nothing about the caller. The other three constants on this page (MOCK_ALERTS, SCAN_RESULTS, RECOMMENDED_ACTIONS) were removed: they told every user a credit card had been opened in their name and their SSN used in an application. FEATURES itself lost its `badge` field, which claimed '2 found' breaches, '2/3' bureaus frozen and 'Active' $1M identity insurance, plus the three tiles that linked back to /identity itself."
     },
-    "src/app/insights/alerts/page.tsx: MOCK_ALERTS": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
-    },
     "src/app/investments/add-holding/page.tsx: assetTypes": {
       "classification": "catalogue",
       "offline": false,
