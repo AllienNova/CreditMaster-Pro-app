@@ -4,27 +4,27 @@
   "entries": {
     "src/app/admin/subscriptions/page.tsx: 156, $12,324, 45%": {
       "classification": "fabrication",
-      "why": "156 subscribers, $12,324 revenue, 45% \u2014 operator metrics with no query behind them. Same class as the admin cluster fixed on mobile."
+      "why": "Client component. 'Churn Analysis: 156 Cancellations this month, $12,324 Lost MRR, 45%' \u2014 operator metrics with no query behind them."
     },
     "src/app/analytics/credit-score/page.tsx: 720": {
       "classification": "fabrication",
-      "why": "720 as the caller's score. The web twin of the mobile screen fixed in rev 43."
+      "why": "Client component. 'Your Current Score 720' and '+45 points in 6 months' \u2014 addressed to the caller, hardcoded. The web twin of the mobile screen fixed in rev 43."
     },
     "src/app/credit/factors/page.tsx: 300, 850, 35%, 30%, 15%, 10%, 10%": {
       "classification": "catalogue",
       "why": "300/850 are the ends of the credit-score scale and 35/30/15/10/10 are the published FICO factor weights. Same classification as the mobile twin."
     },
     "src/app/credit/page.tsx: 742": {
-      "classification": "fabrication",
-      "why": "742 as the caller's score. The same constant SF-20 records in credit/factors/page.tsx as useState(742)."
+      "classification": "catalogue",
+      "why": "A PUBLIC MARKETING page \u2014 server component, SEO `metadata`, Footer and signup CTAs, no state and no fetch. There is no signed-in caller for the number to be a claim ABOUT, so it is a product illustration, the same category as the landing page. I classified this `fabrication` in the first pass by reading the numbers and not the page; corrected after checking each file for metadata/hooks/fetch."
     },
     "src/app/credit-builder/page.tsx: +15 points, +20 points, 580, 650, +70, +25 points, +30 points, +40 points, +15 points": {
-      "classification": "fabrication",
-      "why": "Per-action point gains (+15/+20/+25/+30/+40) and a 580 -> 650 (+70) journey presented as the caller's. The mobile equivalent is served by a real recommendations route; this page is not wired to it."
+      "classification": "catalogue",
+      "why": "A PUBLIC MARKETING page \u2014 server component, SEO `metadata`, Footer and signup CTAs, no state and no fetch. There is no signed-in caller for the number to be a claim ABOUT, so it is a product illustration, the same category as the landing page. I classified this `fabrication` in the first pass by reading the numbers and not the page; corrected after checking each file for metadata/hooks/fetch."
     },
     "src/app/credit-builder/payments/page.tsx: $1,250, +45 points, $1,425, +42 points, $1,350, +52 points": {
       "classification": "fabrication",
-      "why": "Three months of payments at $1,250/$1,425/$1,350 with +45/+42/+52 point gains. The mobile twin of this screen was fixed earlier this session for the same defect."
+      "why": "Client component with four hooks. Three months of payments at $1,250/$1,425/$1,350 with +45/+42/+52 point gains. The mobile twin was fixed earlier this session."
     },
     "src/app/credit-builder/secured-card/page.tsx: $49, $2,500": {
       "classification": "catalogue",
@@ -35,28 +35,24 @@
       "why": "100% is the right-hand end of the utilization axis legend."
     },
     "src/app/financial-hub/page.tsx: $124,500, $2,840, 78%, $8,234.56, -$2,150.00, $45,678.90": {
-      "classification": "fabrication",
-      "why": "$124,500 net worth, $2,840, 78%, plus three transactions at $8,234.56 / -$2,150.00 / $45,678.90. Identical for every caller."
+      "classification": "catalogue",
+      "why": "A PUBLIC MARKETING page \u2014 server component, SEO `metadata`, Footer and signup CTAs, no state and no fetch. There is no signed-in caller for the number to be a claim ABOUT, so it is a product illustration, the same category as the landing page. I classified this `fabrication` in the first pass by reading the numbers and not the page; corrected after checking each file for metadata/hooks/fetch."
     },
     "src/app/invest/page.tsx: $248,567.89, +$12,456.78, $189.45, +2.3%, $142.78, +1.8%, $378.92, -0.5%, $495.67, +4.2%": {
-      "classification": "fabrication",
-      "why": "A whole portfolio: $248,567.89 total, +$12,456.78 today, and four holdings with prices and daily moves. The web twin of the mobile trading/chart finding, and it inherits SF-28 \u2014 the analyst behind those numbers is 85 Math.random() calls."
+      "classification": "catalogue",
+      "why": "A PUBLIC MARKETING page \u2014 server component, SEO `metadata`, Footer and signup CTAs, no state and no fetch. There is no signed-in caller for the number to be a claim ABOUT, so it is a product illustration, the same category as the landing page. I classified this `fabrication` in the first pass by reading the numbers and not the page; corrected after checking each file for metadata/hooks/fetch. SEPARATELY FLAGGED: the illustration shows '+$12,456.78 today', '+2.3%' and '+4.2%' for an INVESTING product on a public page, which is a performance-advertising question rather than a fabrication one. Recorded for the owner alongside SF-28."
     },
     "src/app/loans/page.tsx: $67,840, $52,340, $12,500, $3,000": {
-      "classification": "fabrication",
-      "why": "$67,840 total debt with a $52,340 / $12,500 / $3,000 split \u2014 the caller's own liabilities, invented."
+      "classification": "catalogue",
+      "why": "A PUBLIC MARKETING page \u2014 server component, SEO `metadata`, Footer and signup CTAs, no state and no fetch. There is no signed-in caller for the number to be a claim ABOUT, so it is a product illustration, the same category as the landing page. I classified this `fabrication` in the first pass by reading the numbers and not the page; corrected after checking each file for metadata/hooks/fetch."
     },
     "src/app/marketplace/analysis/page.tsx: +45": {
       "classification": "fabrication",
-      "why": "+45 presented as a score change."
+      "why": "Client component with five hooks. +45 presented as a score change."
     },
     "src/app/not-found.tsx: 404": {
       "classification": "catalogue",
       "why": "The literal 404 in the 404 page. An HTTP status, not a measurement."
-    },
-    "src/app/onboarding/complete/page.tsx: 675, +85": {
-      "classification": "fabrication",
-      "why": "A starting score of 675 and a +85 projected gain, shown to every user finishing onboarding \u2014 before any bureau has reported anything."
     },
     "src/app/page.tsx: 742, 738, 745, 743, $124,350, $8,420, $5,180, $3,240, 587, 742, 99.9%": {
       "classification": "catalogue",
@@ -64,7 +60,7 @@
     },
     "src/app/profile/page.tsx: 720, 78%": {
       "classification": "fabrication",
-      "why": "720 score and 78% profile completion, both hardcoded."
+      "why": "Client component with three hooks. A 720 score and 78% profile completion, both hardcoded."
     }
   }
 }
