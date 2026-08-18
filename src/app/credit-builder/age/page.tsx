@@ -1,66 +1,80 @@
 "use client";
 
 /**
- * Credit Age Tracker
+ * Credit Age Tracker.
  *
- * Tracks and optimizes credit account age for score improvements.
- * Provides keep-alive strategies and closure impact calculations.
+ * THREE CLAIMS REMOVED.
+ *
+ * 1. THE ACCOUNTS. A useState initialiser named creditors and open dates, so
+ *    the average age, the oldest and newest account, and every recommendation
+ *    were computed from a credit history nobody had read. Now from
+ *    useCreditAccounts -> GET /api/credit-repair/accounts.
+ *
+ * 2. "IMPACT IF CLOSED: -25 points". A score prediction with nothing behind
+ *    it. Nothing in this app models what closing an account does to a score,
+ *    and the figure differed per account as though it had been calculated.
+ *
+ * 3. "SIMULATE CLOSURE" / "REOPEN". The button flipped an account's status in
+ *    local state. Harmless over hardcoded rows; over the reader's real
+ *    tradelines it would show an open account as closed. Status now comes from
+ *    `closed_date`, and is not editable.
+ *
+ * THE SCHEMA CHANGE THIS NEEDED. `closed_date` exists on credit_accounts but
+ * was not in ACCOUNT_SELECT, so nothing downstream could tell an open account
+ * from a closed one — which is why the screen was asserting it. Threaded
+ * through the db service, the route projection and the hook in this commit.
+ *
+ * ON UNKNOWN AGE. `ageMonths` is null when a row has no opened_date. Such an
+ * account is shown as "Unknown" and excluded from the averages, rather than
+ * folded in as 0 — a zero would drag every figure down with a number nobody
+ * recorded.
  */
 
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { useCreditAccounts } from "@/hooks/useCreditAccounts";
 
 interface Account {
   id: string;
   name: string;
   type: "credit_card" | "loan" | "mortgage";
   openDate: string;
-  ageYears: number;
+  ageYears: number | null;
   status: "open" | "closed";
-  impactIfClosed: number;
+}
+
+const MONTHS_PER_YEAR = 12;
+
+/** Bureau `account_type` values folded to the three kinds this screen shows. */
+function accountKindOf(accountType: string): Account["type"] {
+  const kind = accountType.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (kind.includes("mortgage") || kind.includes("real_estate")) return "mortgage";
+  if (kind.includes("card") || kind.includes("revolving")) return "credit_card";
+  return "loan";
 }
 
 export default function CreditAgePage() {
   const { user, loading: authLoading } = useAuth();
-  const [accounts, setAccounts] = useState<Account[]>([
-    {
-      id: "1",
-      name: "Chase Freedom",
-      type: "credit_card",
-      openDate: "2018-03-15",
-      ageYears: 6.75,
-      status: "open",
-      impactIfClosed: -25,
-    },
-    {
-      id: "2",
-      name: "Capital One Quicksilver",
-      type: "credit_card",
-      openDate: "2020-06-20",
-      ageYears: 4.5,
-      status: "open",
-      impactIfClosed: -12,
-    },
-    {
-      id: "3",
-      name: "Discover it",
-      type: "credit_card",
-      openDate: "2023-01-10",
-      ageYears: 2,
-      status: "open",
-      impactIfClosed: -5,
-    },
-    {
-      id: "4",
-      name: "Personal Loan",
-      type: "loan",
-      openDate: "2021-09-01",
-      ageYears: 3.25,
-      status: "open",
-      impactIfClosed: -8,
-    },
-  ]);
+  // The reader's OWN tradelines, via useCreditAccounts ->
+  // GET /api/credit-repair/accounts. This was a useState initialiser naming
+  // creditors and open dates, so the average age, the oldest account and
+  // every recommendation were computed from a history nobody had read.
+  // Invisible to audit:screen-data until da4323a.
+  const { accounts: tradelines, loading: loadingAccounts, error: accountsError } =
+    useCreditAccounts();
+
+  const accounts: Account[] = tradelines.map((line) => ({
+    id: line.id,
+    name: line.creditorName,
+    type: accountKindOf(line.accountType),
+    openDate: line.openedDate ?? "",
+    // ageMonths is null when the row has no opened_date; the screen shows
+    // that as unknown rather than as a brand-new account.
+    ageYears: line.ageMonths === null ? null : line.ageMonths / MONTHS_PER_YEAR,
+    // Derived from closed_date, not asserted and not toggleable.
+    status: line.closedDate ? "closed" : "open",
+  }));
 
   if (authLoading) {
     return (
@@ -74,19 +88,22 @@ export default function CreditAgePage() {
   }
 
   const openAccounts = accounts.filter((acc) => acc.status === "open");
+  // Only accounts with a known open date can contribute to an age figure. A
+  // row with no opened_date has an unknown age, and folding it in as 0 would
+  // drag every average down with a number nobody recorded.
+  const datedAges = openAccounts
+    .map((acc) => acc.ageYears)
+    .filter((years): years is number => years !== null);
   const averageAge =
-    openAccounts.length > 0
-      ? openAccounts.reduce((sum, acc) => sum + acc.ageYears, 0) /
-        openAccounts.length
+    datedAges.length > 0
+      ? datedAges.reduce((sum, years) => sum + years, 0) / datedAges.length
       : 0;
-  const oldestAccount =
-    openAccounts.length > 0
-      ? Math.max(...openAccounts.map((acc) => acc.ageYears))
-      : 0;
-  const newestAccount =
-    openAccounts.length > 0
-      ? Math.min(...openAccounts.map((acc) => acc.ageYears))
-      : 0;
+  const oldestAccount = datedAges.length > 0 ? Math.max(...datedAges) : 0;
+  // No dated account means the age figures are UNKNOWN, not zero. Rendering
+  // 0.0 would assert an average age of nothing.
+  const ageKnown = datedAges.length > 0;
+  const yrs = (value: number) => (ageKnown ? `${value.toFixed(1)} yrs` : "Unknown");
+  const newestAccount = datedAges.length > 0 ? Math.min(...datedAges) : 0;
 
   const getAgeColor = (years: number) => {
     if (years >= 7) return "text-green-600";
@@ -102,15 +119,6 @@ export default function CreditAgePage() {
     return { label: "Building", color: "bg-red-100 text-red-700" };
   };
 
-  const toggleAccountStatus = (id: string) => {
-    setAccounts(
-      accounts.map((acc) =>
-        acc.id === id
-          ? { ...acc, status: acc.status === "open" ? "closed" : "open" }
-          : acc,
-      ),
-    );
-  };
 
   const calculateProjectedAge = (monthsAhead: number) => {
     const yearsAhead = monthsAhead / 12;
@@ -139,11 +147,39 @@ export default function CreditAgePage() {
 
       {/* Summary Banner */}
       <div className="bg-gradient-to-r from-emerald-500 to-rose-500 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {accountsError && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-amber-200 dark:border-amber-900/50">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              Your accounts could not be loaded
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              {accountsError}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!accountsError && !loadingAccounts && accounts.length === 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              No accounts on your report yet
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              Credit age is measured from the tradelines on your report. We
+              found none, so the figures below stay at zero rather than being
+              filled in with an example history.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">
-                {averageAge.toFixed(1)} yrs
+                {yrs(averageAge)}
               </div>
               <div className="text-sm text-emerald-100">
                 Average Account Age
@@ -151,13 +187,13 @@ export default function CreditAgePage() {
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">
-                {oldestAccount.toFixed(1)} yrs
+                {yrs(oldestAccount)}
               </div>
               <div className="text-sm text-emerald-100">Oldest Account</div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">
-                {newestAccount.toFixed(1)} yrs
+                {yrs(newestAccount)}
               </div>
               <div className="text-sm text-emerald-100">Newest Account</div>
             </div>
@@ -244,7 +280,7 @@ export default function CreditAgePage() {
                 Average Age Progress
               </span>
               <span className="text-lg font-bold">
-                {averageAge.toFixed(1)} years
+                {ageKnown ? `${averageAge.toFixed(1)} years` : "an unknown length of time"}
               </span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-4 relative">
@@ -281,7 +317,7 @@ export default function CreditAgePage() {
               <div
                 className={`text-3xl font-bold ${getAgeColor(oldestAccount)}`}
               >
-                {oldestAccount.toFixed(1)} yrs
+                {yrs(oldestAccount)}
               </div>
               <div className="text-xs text-green-700 mt-1">
                 Keep this account open!
@@ -292,7 +328,7 @@ export default function CreditAgePage() {
                 Average Age
               </div>
               <div className={`text-3xl font-bold ${getAgeColor(averageAge)}`}>
-                {averageAge.toFixed(1)} yrs
+                {yrs(averageAge)}
               </div>
               <div className="text-xs text-blue-700 mt-1">
                 Main score factor
@@ -305,7 +341,7 @@ export default function CreditAgePage() {
               <div
                 className={`text-3xl font-bold ${getAgeColor(newestAccount)}`}
               >
-                {newestAccount.toFixed(1)} yrs
+                {yrs(newestAccount)}
               </div>
               <div className="text-xs text-blue-700 mt-1">
                 Will age naturally
@@ -322,7 +358,10 @@ export default function CreditAgePage() {
 
           <div className="space-y-4">
             {accounts.map((account) => {
-              const status = getAgeStatus(account.ageYears);
+              // Unknown age (no opened_date on the row) is shown as unknown
+              // rather than as a fresh account.
+              const years = account.ageYears;
+              const status = getAgeStatus(years ?? 0);
               return (
                 <div
                   key={account.id}
@@ -361,9 +400,9 @@ export default function CreditAgePage() {
                     </div>
                     <div className="text-right">
                       <div
-                        className={`text-3xl font-bold ${getAgeColor(account.ageYears)}`}
+                        className={`text-3xl font-bold ${getAgeColor(years ?? 0)}`}
                       >
-                        {account.ageYears.toFixed(1)} yrs
+                        {years === null ? "Unknown" : `${years.toFixed(1)} yrs`}
                       </div>
                       <span
                         className={`text-xs px-2 py-1 rounded-full ${status.color}`}
@@ -382,24 +421,16 @@ export default function CreditAgePage() {
                         <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                           <div
                             className={`h-2 rounded-full ${
-                              account.ageYears >= 7
+                              (years ?? 0) >= 7
                                 ? "bg-green-500"
-                                : account.ageYears >= 3
+                                : (years ?? 0) >= 3
                                   ? "bg-yellow-500"
                                   : "bg-red-500"
                             }`}
                             style={{
-                              width: `${Math.min(100, (account.ageYears / 10) * 100)}%`,
+                              width: `${Math.min(100, ((years ?? 0) / 10) * 100)}%`,
                             }}
                           ></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-600 dark:text-slate-300 mb-1">
-                          Impact if Closed
-                        </div>
-                        <div className="text-lg font-bold text-red-600">
-                          {account.impactIfClosed} points
                         </div>
                       </div>
                     </div>
@@ -439,18 +470,12 @@ export default function CreditAgePage() {
                         </span>
                       )}
                     </div>
-                    <button
-                      onClick={() => toggleAccountStatus(account.id)}
-                      className={`px-4 py-2 rounded-lg font-medium text-sm ${
-                        account.status === "open"
-                          ? "bg-red-100 text-red-700 hover:bg-red-200"
-                          : "bg-green-100 text-green-700 hover:bg-green-200"
-                      }`}
-                    >
-                      {account.status === "open"
-                        ? "Simulate Closure"
-                        : "Reopen"}
-                    </button>
+                    {/* "Simulate Closure" / "Reopen" flipped the account's
+                        status in local state, which over REAL tradelines would
+                        show the reader an account as closed when it is open.
+                        A closure simulator needs a score model this app does
+                        not have — the tile beside it claimed "-25 points" from
+                        nothing. */}
                   </div>
                 </div>
               );

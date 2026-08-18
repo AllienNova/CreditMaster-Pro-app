@@ -312,11 +312,6 @@
       "offline": false,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
-    "src/app/credit-builder/age/page.tsx: accounts": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "useState initialiser holding the reader's credit accounts (\"Chase Freedom\", opened dates) with no request in the file. Credit age is computed from them, so the whole screen is derived from invented history."
-    },
     "src/app/credit-builder/freeze/page.tsx: bureaus": {
       "classification": "catalogue",
       "offline": true,

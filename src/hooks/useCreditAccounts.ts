@@ -39,6 +39,8 @@ export interface CreditAccount {
   creditLimit: number | null;
   paymentStatus: string;
   openedDate: string | null;
+  /** Set when the tradeline is closed; null while it is open. */
+  closedDate: string | null;
   ageMonths: number | null;
 }
 
@@ -84,6 +86,10 @@ export function useCreditAccounts(): CreditAccountsState {
               openedDate:
                 typeof account.openedDate === "string"
                   ? account.openedDate
+                  : null,
+              closedDate:
+                typeof account.closedDate === "string"
+                  ? account.closedDate
                   : null,
               ageMonths: numOrNull(account.ageMonths),
             })),

@@ -43,6 +43,13 @@ export interface CreditAccount {
   creditLimit: number | null;
   paymentStatus: string | null;
   openedDate: string | null;
+  /**
+   * Set when the tradeline is closed. Carried because a closed account still
+   * contributes to credit age, and a screen cannot tell an open account from
+   * a closed one without it — the /credit-builder/age screen was asserting
+   * that status by hand.
+   */
+  closedDate: string | null;
 }
 
 /** Raw `credit_accounts` row (snake_case, as returned by PostgREST). */
@@ -54,10 +61,11 @@ interface CreditAccountRow {
   credit_limit: number | null;
   payment_status: string | null;
   opened_date: string | null;
+  closed_date: string | null;
 }
 
 const ACCOUNT_SELECT =
-  "id, creditor_name, account_type, balance, credit_limit, payment_status, opened_date";
+  "id, creditor_name, account_type, balance, credit_limit, payment_status, opened_date, closed_date";
 
 const DEFAULT_LIMIT = 50;
 const MONTHS_PER_YEAR = 12;
@@ -149,6 +157,7 @@ function mapAccountFromDb(row: CreditAccountRow): CreditAccount {
     creditLimit: row.credit_limit ?? null,
     paymentStatus: row.payment_status ?? null,
     openedDate: row.opened_date ?? null,
+    closedDate: row.closed_date ?? null,
   };
 }
 
