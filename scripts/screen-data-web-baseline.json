@@ -317,11 +317,6 @@
       "offline": true,
       "why": "useState initialiser holding the reader's credit accounts (\"Chase Freedom\", opened dates) with no request in the file. Credit age is computed from them, so the whole screen is derived from invented history."
     },
-    "src/app/credit-builder/mix/page.tsx: accountTypes": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "useState initialiser describing which account types the reader HAS, with no request. Credit-mix advice is derived from it."
-    },
     "src/app/credit-builder/freeze/page.tsx: bureaus": {
       "classification": "catalogue",
       "offline": true,
@@ -346,6 +341,11 @@
       "classification": "fabrication",
       "offline": true,
       "why": "useState initialiser holding the reader's cards, with no request in the file. The twin of PaymentTimingOptimizer; both feed utilisation advice from invented balances."
+    },
+    "src/app/credit-builder/mix/page.tsx: MIX_GUIDANCE": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Our published guidance on a healthy credit mix — the ideal count per category, plus which credit_accounts.account_type values map to each row, plus icon and colour. Identical for every reader and therefore not a claim about anyone. The `current` counts that sit beside it ARE per-reader and are now counted from the accounts hook, not stated here."
     }
   }
 }
