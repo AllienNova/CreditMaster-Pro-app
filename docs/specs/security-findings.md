@@ -792,6 +792,70 @@ route until then: pointing a screen at a fabricating endpoint launders a
 fixture through an HTTP call, which is worse than the fixture because it looks
 sourced.
 
+## SF-17 — two investment screens invent price targets and analyst ratings
+
+**Severity: HIGH (fabrication, live, actionable financial advice).** Found by
+extending audit:screen-data to see constant OBJECTS, not just constant arrays.
+
+### The gate blind spot that hid them
+
+audit:screen-data flagged `const NAME = [{ ... }]` — a constant ARRAY of
+objects. A fabrication does not have to be plural. `WEEKLY_SUMMARY` sat in
+`app/recommendations/insights.tsx` through this entire sweep, unflagged:
+
+```ts
+const WEEKLY_SUMMARY = {
+  totalSpent: 1245, vsLastWeek: -12,
+  topCategory: "Groceries", topCategoryAmount: 320,
+  savingsOpportunities: 3, potentialSavings: 127,
+};
+```
+
+The detector now brace-counts constant objects too. Raw, that flags every
+label and colour map in the app — 30 entries of noise, which gets a gate
+switched off within a day. The separator that works, found by looking at both
+populations: **configuration uses small whole numbers; data about a subject
+carries decimals or large values.** `PERIOD_MONTHS { "1M": 1, "3M": 3 }` is
+config; `PRICE_TARGETS { current: 180.25 }` is a measurement. That cut it to
+four, of which three are real.
+
+### What it found
+
+`app/investments/analyze/recommendation.tsx` — PRICE_PROJECTION, PRICE_TARGETS,
+RISK_ASSESSMENT, RISK_FACTORS, SCORE_BREAKDOWN. No request in the file.
+
+```ts
+const PRICE_TARGETS = { current: 180.25, entry: 175.0, target: 210.0,
+                        stopLoss: 160.0, bull: 240.0, base: 210.0, bear: 165.0 };
+const RISK_ASSESSMENT = { level: "Moderate", score: 45, volatility: 28.5,
+                          beta: 1.24, maxDrawdown: -18.5 };
+```
+
+`app/investments/analyze/sentiment.tsx` — ANALYST_CONSENSUS, ANALYST_RATINGS,
+INSIDER_TRADES, INSTITUTIONAL_ACTIVITY, NEWS_ITEMS, SENTIMENT_TREND,
+SOCIAL_SENTIMENT. Also no request.
+
+```ts
+const ANALYST_CONSENSUS = { buy: 32, hold: 8, sell: 2, avgTarget: 198.5,
+                            highTarget: 250, lowTarget: 155 };
+```
+
+`app/financial/overview.tsx` — ACCOUNTS, BUDGET_STATUS: invented balances and
+budget status.
+
+**Why this is worse than the screens fixed so far.** A fabricated bill or a
+fabricated dispute count misinforms. An invented stop-loss, beta and analyst
+consensus attached to a real ticker is advice a user can act on with their own
+money, and it carries the precision that invites acting on it — 180.25, 1.24,
+-18.5. These are rendered per-symbol, so the same numbers appear whichever
+ticker is opened.
+
+**Not fixed here.** All three are baselined `fabrication` and the gate is
+shrink-only, so they cannot grow. Whether the investment screens have any real
+source is unverified: SF-07 already established that paper trading executes at
+`100 + Math.random() * 100` when POLYGON_API_KEY is unconfigured, so the market
+data path needs its own audit before anything is wired to it.
+
 ## Revision History
 
 | Date | Change |
@@ -809,3 +873,4 @@ sourced.
 | 2026-08-17 (rev 9) | SF-14 fixed: `normalizeAccountType` reads Plaid's type AND subtype, so depository accounts land in checking/savings instead of "other". The integration test's seed was corrected from the already-normalised `"checking"` — a value no sync path writes, and the reason the suite stayed green through the bug — to Plaid's real `depository` + subtype. Reverting the fix turns that live-DB test red. |
 | 2026-08-17 (rev 10) | Added SF-15: `auto-save-rules-service.ts` queries `auto_save_rules` and `save_transfers`; neither table exists in any migration, and the real `savings_rules` has a narrower CHECK on both type and status. Dead code against a schema that was never created, carrying an `executeTransfer` that moves money. The live service is `savings-automation-service.ts`, already exposed at /api/financial/savings. DELETE recommended; owner approval required. |
 | 2026-08-17 (rev 11) | Added SF-16: `/api/credit/factors` has zero data access and returns five hardcoded factors telling every caller they have "98% on-time payments"; `_user` is unused and the route's own comment claims it reads the database. Reachable from both primary navs and two mobile buttons. Added a fourth audit:mocks detector for routes that fabricate as their PRIMARY path (no data access + constant data set) — the previous three all assumed a fallback shape and could not see this. Two routes match across 351; the other is /api/disputes/reasons, an allowlisted catalogue. |
+| 2026-08-17 (rev 12) | Added SF-17: extended audit:screen-data to detect constant OBJECTS (brace-counted), gated on a measurement heuristic — decimals or values >= 100 — so label and colour maps do not drown the signal. Found `WEEKLY_SUMMARY` (fixed in the same commit) plus invented PRICE_TARGETS/RISK_ASSESSMENT/ANALYST_CONSENSUS/INSIDER_TRADES on two investment-analysis screens, and ACCOUNTS/BUDGET_STATUS on financial/overview. The investment ones are actionable advice attached to a real ticker; baselined, not fixed, pending an audit of whether any market-data source is real (cf. SF-07). |

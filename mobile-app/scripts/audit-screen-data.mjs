@@ -58,6 +58,116 @@ function walk(dir, out = []) {
  */
 const CONST_DATA = /(?:^|\n)(?:export\s+)?const\s+([A-Z][A-Z0-9_]*)\s*(?::[^=\n]+)?=\s*\[\s*\{/g;
 
+/**
+ * A module-level constant OBJECT — the blind spot the array detector had.
+ *
+ * WEEKLY_SUMMARY sat in app/recommendations/insights.tsx for the whole of
+ * this sweep and no gate saw it:
+ *
+ *     const WEEKLY_SUMMARY = {
+ *       totalSpent: 1245, vsLastWeek: -12,
+ *       topCategory: "Groceries", topCategoryAmount: 320,
+ *       savingsOpportunities: 3, potentialSavings: 127,
+ *     };
+ *
+ * It is a data set about the user by every standard this gate applies. It is
+ * simply not an ARRAY of objects, and CONST_DATA above requires `[{`. A
+ * fabrication does not have to be plural.
+ *
+ * THREE-KEY FLOOR. `const STYLE = { flex: 1 }` and similar two-key config
+ * objects are noise. Three or more keys, SCREAMING_CASE, and actually read by
+ * the file is the line that separates a data set from a setting — the same
+ * judgement the array detector makes with `[{` rather than `[`.
+ */
+const CONST_OBJECT_HEAD =
+  /(?:^|\n)(?:export\s+)?const\s+([A-Z][A-Z0-9_]*)\s*(?::[^=\n]+)?=\s*\{/g;
+
+const MIN_OBJECT_KEYS = 3;
+
+/**
+ * The object literal starting at `open`, brace-counted.
+ *
+ * A regex like /\{[^}]*\}/ stops at the first inner `}` and would miss every
+ * nested object — which is where the interesting fabrications live.
+ */
+function objectBody(source, open) {
+  let depth = 0;
+  for (let i = open; i < source.length; i++) {
+    if (source[i] === "{") depth++;
+    else if (source[i] === "}") {
+      depth--;
+      if (depth === 0) return source.slice(open + 1, i);
+    }
+  }
+  return "";
+}
+
+/**
+ * How many keys the object declares at its OWN level.
+ *
+ * Nested objects and arrays are stripped first, so `{ a: { x: 1, y: 2 }, b: 2 }`
+ * counts 2 and not 4. The count is not line-anchored: an earlier version used
+ * /^\s*\w+\s*:/gm, which counted exactly one key in any single-line object —
+ * every one-liner slipped under the three-key floor. The self-test caught it.
+ */
+function countKeys(body) {
+  let flat = body;
+  let previous;
+  do {
+    previous = flat;
+    flat = flat.replace(/\{[^{}]*\}/g, "").replace(/\[[^[\]]*\]/g, "");
+  } while (flat !== previous);
+  return (flat.match(/[\w"']+\s*:/g) || []).length;
+}
+
+/**
+ * Does this object hold MEASUREMENTS rather than configuration?
+ *
+ * The three-key floor alone flags every label and colour map in the app —
+ * STATUS_COLORS, CYCLE_LABELS, CATEGORY_ICONS — and 30 entries of noise gets
+ * a gate switched off within a day.
+ *
+ * The separator that actually works, found by looking at both populations:
+ * configuration uses small whole numbers (a period map of 1/3/6/12, a set of
+ * hex strings), while data about a subject carries DECIMALS or LARGE values.
+ *
+ *   PERIOD_MONTHS   { "1M": 1, "3M": 3, "6M": 6 }              config
+ *   STATUS_COLORS   { active: "#22C55E", paused: "#F59E0B" }   config
+ *   PRICE_TARGETS   { current: 180.25, target: 210.0 }         measurement
+ *   RISK_ASSESSMENT { score: 45, volatility: 28.5, beta: 1.24 } measurement
+ *   WEEKLY_SUMMARY  { totalSpent: 1245, vsLastWeek: -12 }      measurement
+ *
+ * This is a heuristic and will miss a fabrication built only from small whole
+ * numbers. It is deliberately tuned to keep the flagged set small enough that
+ * every entry gets read, which is worth more than a complete list nobody
+ * looks at. The array detector above catches the plural case regardless.
+ */
+const MEASUREMENT_MAGNITUDE = 100;
+
+function looksMeasured(body) {
+  const numbers = body.match(/:\s*(-?\d+(?:\.\d+)?)/g) || [];
+  return numbers.some((raw) => {
+    const value = Number(raw.replace(/^:\s*/, ""));
+    if (Number.isNaN(value)) return false;
+    return !Number.isInteger(value) || Math.abs(value) >= MEASUREMENT_MAGNITUDE;
+  });
+}
+
+function constantObjects(source) {
+  const out = [];
+  for (const m of source.matchAll(CONST_OBJECT_HEAD)) {
+    const open = m.index + m[0].lastIndexOf("{");
+    const body = objectBody(source, open);
+    const keys = countKeys(body);
+    if (keys < MIN_OBJECT_KEYS) continue;
+    if (!looksMeasured(body)) continue;
+    // Must actually be read. A declared-but-unused constant renders nothing.
+    if (!new RegExp(`\\b${m[1]}\\.|\\{${m[1]}\\}|\\b${m[1]}\\[`).test(source)) continue;
+    out.push(m[1]);
+  }
+  return out;
+}
+
 /** Any sign the file asks the server for something. */
 const FETCHES =
   /\b(?:api|apiClient)\.(?:get|post|put|patch|delete)\s*\(|use[A-Z]\w*Store\s*\(\)|\bfetch\s*\(|use[A-Z]\w*\s*\(\s*\)/;
@@ -73,9 +183,14 @@ function findings() {
   const out = [];
   for (const file of [...walk(join(MOBILE, "app")), ...walk(join(MOBILE, "src", "hooks"))]) {
     const source = readFileSync(file, "utf8");
-    const rendered = [...source.matchAll(CONST_DATA)]
-      .map((m) => m[1])
-      .filter((name) => isRendered(source, name));
+    const rendered = [
+      ...[...source.matchAll(CONST_DATA)]
+        .map((m) => m[1])
+        .filter((name) => isRendered(source, name)),
+      // Constant OBJECTS too — see CONST_OBJECT_HEAD. A fabrication does not
+      // have to be plural.
+      ...constantObjects(source),
+    ];
     if (rendered.length === 0) continue;
     out.push({
       file: relative(MOBILE, file).replace(/\\/g, "/"),
@@ -110,6 +225,39 @@ if (process.argv.includes("--self-test")) {
     console.log(`  SELF-TEST FAIL: ${JSON.stringify(src)} -> ${got}, expected ${want} (${why})`);
   }
 
+  // Detector 2 — constant OBJECTS. Added after WEEKLY_SUMMARY sat unflagged
+  // through an entire fabrication sweep because it was not an array.
+  const objectCases = [
+    [`const WEEKLY_SUMMARY = { totalSpent: 1245, vsLastWeek: -12, topCategory: "Groceries" };\nWEEKLY_SUMMARY.totalSpent`,
+      ["WEEKLY_SUMMARY"], "three keys, SCREAMING_CASE, read, measured — a data set"],
+    [`const STYLE = { flex: 1, padding: 8 };\nSTYLE.flex`,
+      [], "two keys is a setting, not a data set"],
+    [`const SUMMARY = { a: 1, b: 2, c: 3 };`,
+      [], "declared but never read renders nothing"],
+    [`const NESTED = { a: { x: 1 }, b: 250.5, c: 3 };\nNESTED.a`,
+      ["NESTED"], "brace-counted, so a nested object does not truncate the body"],
+    [`const lower = { a: 1, b: 2, c: 3 };\nlower.a`,
+      [], "lower-case local, not a module constant"],
+    [`const MAP = { a: 1, b: 2, c: 3 };\nMAP["a"]`,
+      [], "small whole numbers are configuration, not measurement"],
+    [`const PERIOD_MONTHS = { "1M": 1, "3M": 3, "6M": 6, "1Y": 12 };\nPERIOD_MONTHS["1M"]`,
+      [], "a period lookup is configuration"],
+    [`const STATUS_COLORS = { active: "#22C55E", paused: "#F59E0B", done: "#3B82F6" };\nSTATUS_COLORS.active`,
+      [], "a colour map carries no numbers at all"],
+    [`const PRICE_TARGETS = { current: 180.25, target: 210.0, stopLoss: 160.0 };\nPRICE_TARGETS.current`,
+      ["PRICE_TARGETS"], "decimals are measurements — invented price targets"],
+    [`const SUMMARY = { totalSpent: 1245, vsLastWeek: -12, topCategory: "Groceries" };\nSUMMARY.totalSpent`,
+      ["SUMMARY"], "a large value is a measurement"],
+  ];
+  for (const [src, want, why] of objectCases) {
+    const got = constantObjects(src);
+    if (JSON.stringify(got) === JSON.stringify(want)) continue;
+    bad++;
+    console.log(
+      `  SELF-TEST FAIL (object): ${JSON.stringify(src.slice(0, 40))} -> ${JSON.stringify(got)}, expected ${JSON.stringify(want)} (${why})`,
+    );
+  }
+
   const offlineCases = [
     ['const x = 1;', true, "a file with no request is offline"],
     ['await api.get("/x")', false, "an api call is a request"],
@@ -124,7 +272,7 @@ if (process.argv.includes("--self-test")) {
     console.log(`  SELF-TEST FAIL (offline): ${JSON.stringify(src)} -> ${got}, expected ${want} (${why})`);
   }
 
-  const total = cases.length + offlineCases.length;
+  const total = cases.length + objectCases.length + offlineCases.length;
   console.log(
     bad === 0
       ? `audit:screen-data self-test PASSED — ${total}/${total} cases correct.`

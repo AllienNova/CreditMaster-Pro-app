@@ -17,12 +17,17 @@
     "app/admin/index.tsx: QUICK_ACTIONS": {
       "classification": "catalogue",
       "offline": true,
-      "why": "The admin navigation menu — titles, icons and routes for the admin sections. Product content, not user data. The METRICS fixture that shared this file WAS a fabrication and is gone; this is what remains."
+      "why": "The admin navigation menu \u2014 titles, icons and routes for the admin sections. Product content, not user data. The METRICS fixture that shared this file WAS a fabrication and is gone; this is what remains."
     },
     "app/admin/metrics.tsx: PERIODS": {
       "classification": "catalogue",
       "offline": true,
-      "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query — it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
+      "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query \u2014 it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
+    },
+    "app/analytics/credit-score.tsx: PERIOD_MONTHS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The period selector's label->months map. Configuration, not a measurement \u2014 flagged only because ALL maps to 120 months, which trips the magnitude heuristic. Exactly the sort of entry a human is meant to clear."
     },
     "app/analytics/reports.tsx: GENERATED_REPORTS, REPORT_TEMPLATES": {
       "classification": "fabrication",
@@ -160,9 +165,10 @@
       "classification": "UNCLASSIFIED",
       "offline": true
     },
-    "app/financial/overview.tsx: ACCOUNTS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+    "app/financial/overview.tsx: ACCOUNTS, BUDGET_STATUS": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Invented account balances and budget status on the financial overview. Found by the constant-OBJECT detector added 2026-08-17; the array detector could not see BUDGET_STATUS."
     },
     "app/financial/reports.tsx: REPORT_TEMPLATES, SAVED_REPORTS": {
       "classification": "catalogue",
@@ -192,13 +198,15 @@
       "classification": "UNCLASSIFIED",
       "offline": true
     },
-    "app/investments/analyze/recommendation.tsx: PRICE_PROJECTION, RISK_FACTORS, SCORE_BREAKDOWN": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+    "app/investments/analyze/recommendation.tsx: PRICE_PROJECTION, PRICE_TARGETS, RISK_ASSESSMENT, RISK_FACTORS, SCORE_BREAKDOWN": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Invented investment advice presented as analysis of a real ticker: price targets (current 180.25, target 210.0, stopLoss 160.0), a risk score, volatility 28.5, beta 1.24, maxDrawdown -18.5. A user acting on these would be trading on numbers nobody computed."
     },
-    "app/investments/analyze/sentiment.tsx: ANALYST_RATINGS, INSIDER_TRADES, NEWS_ITEMS, SENTIMENT_TREND, SOCIAL_SENTIMENT": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+    "app/investments/analyze/sentiment.tsx: ANALYST_CONSENSUS, ANALYST_RATINGS, INSIDER_TRADES, INSTITUTIONAL_ACTIVITY, NEWS_ITEMS, SENTIMENT_TREND, SOCIAL_SENTIMENT": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Invented market sentiment for a real ticker: 32 buy / 8 hold / 2 sell analyst consensus, named insider trades, institutional activity and news items. Same class as the recommendation screen and equally actionable."
     },
     "app/investments/analyze/technical.tsx: CHART_PATTERNS, MOVING_AVERAGES, OSCILLATORS, PRICE_DATA, SUPPORT_RESISTANCE": {
       "classification": "UNCLASSIFIED",
@@ -261,10 +269,6 @@
       "offline": true
     },
     "app/recommendations/index.tsx: AI_RECOMMENDATIONS, CATEGORIES": {
-      "classification": "fabrication",
-      "offline": true
-    },
-    "app/recommendations/insights.tsx: INSIGHTS": {
       "classification": "fabrication",
       "offline": true
     },

@@ -1,9 +1,31 @@
 /**
- * Fynvita Financial Insights Screen
- * Spending patterns, saving opportunities, weekly summary
+ * Financial Insights — the coaching insights derived from the caller's data.
+ *
+ * WHAT THIS REPLACED. An INSIGHTS fixture shown to every user with no
+ * request: "Dining Out Increased 45% — You spent $420 on restaurants this
+ * month, up from $290 last month", impact "-$130", tagged NEW. Precise
+ * figures about somebody who does not exist.
+ *
+ * WHERE THE DATA COMES FROM. GET /api/ai/insights ->
+ * behavioralCoach.generateInsights, which pushes an insight only when real
+ * data supports it: a top spending category that actually exists, goals
+ * genuinely past 75%, a bias score actually above 60. A user with no data
+ * gets no insights rather than a generic set.
+ *
+ * FOUR OF THE FIXTURE'S FIELDS HAVE NO SOURCE and are gone. The real
+ * CoachingInsight is { type, title, description, data? } — there is no
+ * `impact` figure, no `action` label, no `actionRoute`, and no `isNew` flag.
+ * services/api/financial.ts's mapWebInsight already recorded exactly this
+ * conclusion for this screen: "adapt the real, narrower shape at the boundary
+ * instead of faking those fields."
+ *
+ * THE FILTERS CHANGED VOCABULARY for the same reason. spending | saving |
+ * alert | tip was invented; the route's type union is observation |
+ * suggestion | warning | celebration, so no real insight could have matched a
+ * chip.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,131 +38,109 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import {
+  financialOverviewApi,
+  type Insight,
+  type InsightType,
+  type SpendingAnalysisData,
+} from "../../src/services/api/financial";
 
-interface Insight {
-  id: string;
-  type: "spending" | "saving" | "alert" | "tip";
-  title: string;
-  description: string;
-  impact: string;
-  action?: string;
-  actionRoute?: string;
-  isNew: boolean;
+const DAYS_IN_WEEK = 7;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** The window the "This Week" card describes, as the analyze route wants it. */
+function lastSevenDays(): { startDate: string; endDate: string } {
+  const end = new Date();
+  const start = new Date(end.getTime() - DAYS_IN_WEEK * MS_PER_DAY);
+  return { startDate: start.toISOString(), endDate: end.toISOString() };
 }
 
-const INSIGHTS: Insight[] = [
-  {
-    id: "1",
-    type: "spending",
-    title: "Dining Out Increased 45%",
-    description:
-      "You spent $420 on restaurants this month, up from $290 last month",
-    impact: "-$130",
-    action: "Set Budget",
-    actionRoute: "/financial/budgets",
-    isNew: true,
-  },
-  {
-    id: "2",
-    type: "saving",
-    title: "Subscription Savings Found",
-    description:
-      "We found 3 subscriptions you haven't used in 30+ days totaling $47/month",
-    impact: "+$564/yr",
-    action: "Review",
-    actionRoute: "/financial/subscriptions",
-    isNew: true,
-  },
-  {
-    id: "3",
-    type: "alert",
-    title: "Large Purchase Detected",
-    description: "A $1,250 charge at Best Buy was made yesterday",
-    impact: "Verify",
-    action: "Review",
-    actionRoute: "/financial/transactions",
-    isNew: true,
-  },
-  {
-    id: "4",
-    type: "tip",
-    title: "Credit Utilization Tip",
-    description:
-      "Paying $200 more on your Chase card would drop utilization to 25%",
-    impact: "+15 pts",
-    action: "Learn More",
-    actionRoute: "/credit-builder/utilization",
-    isNew: false,
-  },
-  {
-    id: "5",
-    type: "saving",
-    title: "Better Savings Rate Available",
-    description:
-      "Your savings account earns 0.5% APY. We found accounts offering 5.0%",
-    impact: "+$450/yr",
-    action: "Compare",
-    actionRoute: "/marketplace/savings",
-    isNew: false,
-  },
-  {
-    id: "6",
-    type: "spending",
-    title: "Gas Spending Down 20%",
-    description: "Great job! You spent $80 less on gas this month",
-    impact: "+$80",
-    isNew: false,
-  },
+/** The four values the route's CoachingInsight.type can hold. */
+const INSIGHT_FILTERS: { id: string; label: string; icon: string }[] = [
+  { id: "all", label: "All", icon: "apps" },
+  { id: "observation", label: "Observations", icon: "eye" },
+  { id: "suggestion", label: "Suggestions", icon: "bulb" },
+  { id: "warning", label: "Warnings", icon: "warning" },
+  { id: "celebration", label: "Wins", icon: "trophy" },
 ];
-
-const WEEKLY_SUMMARY = {
-  totalSpent: 1245,
-  vsLastWeek: -12,
-  topCategory: "Groceries",
-  topCategoryAmount: 320,
-  savingsOpportunities: 3,
-  potentialSavings: 127,
-};
 
 export default function InsightsScreen() {
   const [selectedFilter, setSelectedFilter] = useState("all");
-  const filters = [
-    { id: "all", label: "All", icon: "apps" },
-    { id: "spending", label: "Spending", icon: "trending-down" },
-    { id: "saving", label: "Savings", icon: "wallet" },
-    { id: "alert", label: "Alerts", icon: "warning" },
-    { id: "tip", label: "Tips", icon: "bulb" },
-  ];
+  const filters = INSIGHT_FILTERS;
+
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [weekly, setWeekly] = useState<SpendingAnalysisData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    // The "This Week" card used a WEEKLY_SUMMARY constant — $1,245 spent,
+    // -12% vs last week, Groceries $320 — that the screen-data gate never
+    // caught, because it detects a constant ARRAY of objects and this was a
+    // constant OBJECT. Its real source is the same spending-analysis route
+    // the spending screen uses, over the last seven days.
+    const [res, weeklyRes] = await Promise.all([
+      financialOverviewApi.getInsights(),
+      financialOverviewApi.getSpendingAnalysis(lastSevenDays()),
+    ]);
+
+    // Secondary: a failed weekly read leaves that card empty rather than
+    // blanking the insights the other request did return.
+    setWeekly(weeklyRes.success && weeklyRes.data ? weeklyRes.data : null);
+
+    if (!res.success || !res.data) {
+      // Not an empty list: "we could not load your insights" and "there is
+      // nothing to say about your data yet" lead to opposite actions.
+      setError("We could not load your insights.");
+      setLoading(false);
+      return;
+    }
+
+    setInsights(res.data.insights ?? []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Real, from the analyze route. Null when there is no week to compare
+  // against — the old constant was always -12.
+  const weeklyChange = weekly?.comparedToLastPeriod ?? null;
+  const topCategory = weekly?.categories?.[0] ?? null;
 
   const filteredInsights =
     selectedFilter === "all"
-      ? INSIGHTS
-      : INSIGHTS.filter((i) => i.type === selectedFilter);
+      ? insights
+      : insights.filter((i) => i.type === selectedFilter);
 
-  const getTypeIcon = (type: string) => {
+  // The route's four-value type union, not the invented spending | saving |
+  // alert | tip. No real insight could ever have matched those.
+  const getTypeIcon = (type: InsightType | string) => {
     switch (type) {
-      case "spending":
-        return "trending-down";
-      case "saving":
-        return "wallet";
-      case "alert":
-        return "warning";
-      case "tip":
+      case "observation":
+        return "eye";
+      case "suggestion":
         return "bulb";
+      case "warning":
+        return "warning";
+      case "celebration":
+        return "trophy";
       default:
         return "information-circle";
     }
   };
 
-  const getTypeColor = (type: string) => {
+  const getTypeColor = (type: InsightType | string) => {
     switch (type) {
-      case "spending":
-        return "#EF4444";
-      case "saving":
-        return "#22C55E";
-      case "alert":
+      case "warning":
         return "#F59E0B";
-      case "tip":
+      case "celebration":
+        return "#22C55E";
+      case "suggestion":
         return "#8B5CF6";
       default:
         return theme.colors.primary;
@@ -169,60 +169,56 @@ export default function InsightsScreen() {
         <Card style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
             <Text style={styles.summaryTitle}>This Week</Text>
+            {weeklyChange !== null && (
             <View
               style={[
                 styles.changeBadge,
                 {
-                  backgroundColor:
-                    WEEKLY_SUMMARY.vsLastWeek < 0 ? "#DCFCE7" : "#FEE2E2",
+                  backgroundColor: weeklyChange < 0 ? "#DCFCE7" : "#FEE2E2",
                 },
               ]}
             >
               <Ionicons
                 name={
-                  WEEKLY_SUMMARY.vsLastWeek < 0
+                  weeklyChange < 0
                     ? "trending-down"
                     : "trending-up"
                 }
                 size={14}
-                color={WEEKLY_SUMMARY.vsLastWeek < 0 ? "#22C55E" : "#EF4444"}
+                color={weeklyChange < 0 ? "#22C55E" : "#EF4444"}
               />
               <Text
                 style={[
                   styles.changeText,
                   {
                     color:
-                      WEEKLY_SUMMARY.vsLastWeek < 0 ? "#22C55E" : "#EF4444",
+                      weeklyChange < 0 ? "#22C55E" : "#EF4444",
                   },
                 ]}
               >
-                {Math.abs(WEEKLY_SUMMARY.vsLastWeek)}%
+                {Math.abs(Math.round(weeklyChange))}%
               </Text>
             </View>
+            )}
           </View>
           <Text style={styles.summaryAmount}>
-            ${WEEKLY_SUMMARY.totalSpent.toLocaleString()}
+            ${(weekly?.totalSpending ?? 0).toLocaleString()}
           </Text>
           <Text style={styles.summarySubtext}>spent this week</Text>
-          <View style={styles.summaryStats}>
-            <View style={styles.summaryStat}>
-              <Text style={styles.statLabel}>Top Category</Text>
-              <Text style={styles.statValue}>{WEEKLY_SUMMARY.topCategory}</Text>
-              <Text style={styles.statSubvalue}>
-                ${WEEKLY_SUMMARY.topCategoryAmount}
-              </Text>
+          {/* "Savings Found — 3 opportunities, +$127/mo" is gone: nothing
+              computes an opportunity count or a potential saving. Only the
+              top category has a source. */}
+          {topCategory ? (
+            <View style={styles.summaryStats}>
+              <View style={styles.summaryStat}>
+                <Text style={styles.statLabel}>Top Category</Text>
+                <Text style={styles.statValue}>{topCategory.name}</Text>
+                <Text style={styles.statSubvalue}>
+                  ${Math.round(topCategory.amount).toLocaleString()}
+                </Text>
+              </View>
             </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryStat}>
-              <Text style={styles.statLabel}>Savings Found</Text>
-              <Text style={styles.statValue}>
-                {WEEKLY_SUMMARY.savingsOpportunities} opportunities
-              </Text>
-              <Text style={[styles.statSubvalue, { color: "#22C55E" }]}>
-                +${WEEKLY_SUMMARY.potentialSavings}/mo
-              </Text>
-            </View>
-          </View>
+          ) : null}
         </Card>
 
         {/* Filter Chips */}
@@ -263,8 +259,32 @@ export default function InsightsScreen() {
 
         {/* Insights List */}
         <Text style={styles.sectionTitle}>
-          {filteredInsights.length} Insights
+          {filteredInsights.length}{" "}
+          {filteredInsights.length === 1 ? "Insight" : "Insights"}
         </Text>
+        {loading ? (
+          <Card>
+            <Text style={styles.emptyText}>Loading your insights…</Text>
+          </Card>
+        ) : error ? (
+          <Card>
+            <Text style={styles.emptyText}>{error}</Text>
+            <TouchableOpacity onPress={load}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </Card>
+        ) : insights.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>
+              No insights yet. Link an account and Fynvita will start spotting
+              patterns in your spending and goals.
+            </Text>
+          </Card>
+        ) : filteredInsights.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>No insights of this kind.</Text>
+          </Card>
+        ) : null}
         {filteredInsights.map((insight) => (
           <Card key={insight.id} style={styles.insightCard}>
             <View style={styles.insightHeader}>
@@ -285,62 +305,19 @@ export default function InsightsScreen() {
               <View style={styles.insightContent}>
                 <View style={styles.insightTitleRow}>
                   <Text style={styles.insightTitle}>{insight.title}</Text>
-                  {insight.isNew && (
-                    <View style={styles.newBadge}>
-                      <Text style={styles.newText}>NEW</Text>
-                    </View>
-                  )}
+                  {/* The NEW badge is gone with the fixture. CoachingInsight
+                      carries no first-seen timestamp, and a badge that is
+                      always on says nothing. */}
                 </View>
                 <Text style={styles.insightDescription}>
                   {insight.description}
                 </Text>
               </View>
             </View>
-            <View style={styles.insightFooter}>
-              <View
-                style={[
-                  styles.impactBadge,
-                  {
-                    backgroundColor: insight.impact.startsWith("+")
-                      ? "#DCFCE7"
-                      : insight.impact.startsWith("-")
-                        ? "#FEE2E2"
-                        : "#FEF3C7",
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.impactText,
-                    {
-                      color: insight.impact.startsWith("+")
-                        ? "#22C55E"
-                        : insight.impact.startsWith("-")
-                          ? "#EF4444"
-                          : "#F59E0B",
-                    },
-                  ]}
-                >
-                  {insight.impact}
-                </Text>
-              </View>
-              {insight.action && (
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() =>
-                    insight.actionRoute &&
-                    router.push(insight.actionRoute as never)
-                  }
-                >
-                  <Text style={styles.actionButtonText}>{insight.action}</Text>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color={theme.colors.primary}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
+            {/* The footer is gone with the fixture. It rendered an
+                `impact` figure ("-$130") and an `action` button with a route
+                — three fields the real CoachingInsight does not have. There
+                is no impact to state and nowhere the server says to go. */}
           </Card>
         ))}
 
@@ -352,6 +329,19 @@ export default function InsightsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    paddingVertical: theme.spacing.md,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    textAlign: "center",
+    marginTop: theme.spacing.sm,
+  },
   scrollView: { flex: 1, padding: theme.spacing.lg },
   header: {
     flexDirection: "row",
