@@ -179,8 +179,22 @@ const routes = readFileSync(ROUTES_FILE, "utf8")
 console.log(`sweeping ${routes.length} mobile routes on ${UDID}`);
 
 const results = [];
-/** Previous route's text, to catch a reading that is not this route's. */
-let prevSignature = null;
+/**
+ * EVERY signature seen so far, not just the previous route's.
+ *
+ * Comparing only against the previous route catches a run of consecutive
+ * repeats and nothing else. The 232-route sweep of 2026-08-18 scored 226 ok,
+ * and 26 of those routes had read back the HOME screen — `/financial/income`,
+ * `/analytics` and `/tax` among them, all three of which render 7, 12 and 67
+ * elements when navigated to on their own. They were interleaved with routes
+ * that DID navigate, so no two consecutive readings ever matched and the guard
+ * stayed silent through all 26.
+ *
+ * A repeat is not automatically wrong — two routes can legitimately render the
+ * same empty state — so a repeat is CONFIRMED the same way a crash is: relaunch,
+ * re-navigate, and keep whatever the fresh reading says.
+ */
+const seenSignatures = new Map();
 for (const route of routes) {
   const path = route === "/" ? "" : route.replace(/^\//, "");
   sh("xcrun", ["simctl", "openurl", UDID, `exp://${HOST}:8081/--/${path}`]);
@@ -275,7 +289,7 @@ for (const route of routes) {
     if (crash) relaunch();
   }
 
-  // CONFIRM a reading that is IDENTICAL to the previous route's.
+  // CONFIRM a reading that any EARLIER route has already produced.
   //
   // This is the general form of the two guards above, and it is what catches
   // the next masking window nobody has thought of yet. Two different routes
@@ -285,19 +299,22 @@ for (const route of routes) {
   // is discarded. If it does not, the screens really are identical and the
   // reading stands.
   let masked = false;
-  const signature = screen.texts.join(" ");
-  if (prevSignature !== null && signature === prevSignature) {
+  const signature = screen.texts.join(" ");
+  if (seenSignatures.has(signature) && seenSignatures.get(signature) !== route) {
     relaunch();
     sh("xcrun", ["simctl", "openurl", UDID, `exp://${HOST}:8081/--/${path}`]);
     sleep(SETTLE_MS + 2500);
     const fresh = readScreen();
     const freshAlert = dismissAlert(fresh);
     screen = freshAlert ? readScreen() : fresh;
-    masked = screen.texts.join(" ") !== signature;
+    masked = screen.texts.join(" ") !== signature;
     joined = screen.texts.join(" ");
     crash = CRASH_MARKERS.find((m) => joined.includes(m)) ?? null;
   }
-  prevSignature = screen.texts.join(" ");
+  // First route to produce a signature owns it. A later route reading the same
+  // thing is the suspicious one, and is confirmed above.
+  const finalSignature = screen.texts.join(" ");
+  if (!seenSignatures.has(finalSignature)) seenSignatures.set(finalSignature, route);
 
   const problems = [];
   if (crash) problems.push(`crash: ${crash}`);
