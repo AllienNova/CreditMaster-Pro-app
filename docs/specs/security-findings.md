@@ -738,6 +738,60 @@ working service, written against a schema that was never created, and its
 presence invites someone to build on it. Deletion needs owner approval per the
 standing rule, so it is recorded here rather than done.
 
+## SF-16 — /api/credit/factors tells every user they have 98% on-time payments
+
+**Severity: HIGH (fabrication, live, user-facing credit data).** Found while
+looking for a real source to wire the analytics/credit-score screen to.
+
+`src/app/api/credit/factors/route.ts` is 127 lines with **zero data access** —
+no Supabase client, no `.from(`, no service call. `_user` is declared and never
+read, so the route does not know or care who is asking. It returns five
+hardcoded factors:
+
+```ts
+{ name: "Payment History", status: "good", value: "98% on-time payments",
+  description: "You have a strong payment history with very few late payments." }
+{ name: "Credit Utilization", status: "fair", value: "32% utilization" }
+```
+
+Its own comment says *"fetches from database when user is authenticated"*. It
+does not.
+
+**Reachable from four surfaces**: `src/app/credit/factors/page.tsx:252`, the web
+primary nav ("Score factors"), the mobile primary nav ("Factors"), and two
+buttons on `mobile-app/app/credit/score-detail.tsx`.
+
+### Why every existing gate missed it
+
+`audit:mocks` had three detectors, and all three model the same shape — *the
+route reaches for real data and falls back to invention*: `Math.random()` in a
+handler, a catch block returning a payload, a called service that admits to
+stubbing. A route that never reaches at all has no catch block worth analysing,
+no randomness, and calls nothing. It was invisible.
+
+A fourth detector now flags a route with **no data access that returns a
+constant array of objects**. Across 351 routes it finds exactly two:
+this one, and `/api/disputes/reasons` — which is a legitimate CATALOGUE (the
+dispute reasons on offer, each with its FCRA section) and is allowlisted with
+that reason.
+
+### What an honest version could actually answer: one factor of five
+
+| Factor | Computable today? |
+|---|---|
+| Payment history | **No.** The credit report is the source and it falls back to a mock generator (SF-11). Bill payment history has no HTTP route. |
+| Credit utilization | **No.** Needs balance ÷ limit, and `financial_accounts.credit_limit` is never written — `plaid-service.storeAccount` does not set it, and 20260731000006 records it as "not yet written by any caller". |
+| Credit age | **Yes.** `creditBuilderService.analyzeCreditAge` reads `financial_accounts.opened_date`. |
+| Credit mix | Unverified — `analyzeCreditMix` exists but was not audited. |
+| New credit | **No.** No source. |
+
+**Recommendation.** Return the factors that can be computed and state plainly
+that the rest require a linked credit report — the same rule applied to the
+screens in this sweep. Do NOT wire the analytics/credit-score screen to this
+route until then: pointing a screen at a fabricating endpoint launders a
+fixture through an HTTP call, which is worse than the fixture because it looks
+sourced.
+
 ## Revision History
 
 | Date | Change |
@@ -754,3 +808,4 @@ standing rule, so it is recorded here rather than done.
 | 2026-08-17 (rev 8) | Added SF-14: `financial-aggregation-service.mapAccountFromDb` omits `depository` from its valid-type list, so every checking and savings account normalises to "other" and is excluded from `totalAssets`/`totalSavings` — net worth understated by the user's whole bank balance. Found while building the connections surface; recorded rather than bundled into that commit. |
 | 2026-08-17 (rev 9) | SF-14 fixed: `normalizeAccountType` reads Plaid's type AND subtype, so depository accounts land in checking/savings instead of "other". The integration test's seed was corrected from the already-normalised `"checking"` — a value no sync path writes, and the reason the suite stayed green through the bug — to Plaid's real `depository` + subtype. Reverting the fix turns that live-DB test red. |
 | 2026-08-17 (rev 10) | Added SF-15: `auto-save-rules-service.ts` queries `auto_save_rules` and `save_transfers`; neither table exists in any migration, and the real `savings_rules` has a narrower CHECK on both type and status. Dead code against a schema that was never created, carrying an `executeTransfer` that moves money. The live service is `savings-automation-service.ts`, already exposed at /api/financial/savings. DELETE recommended; owner approval required. |
+| 2026-08-17 (rev 11) | Added SF-16: `/api/credit/factors` has zero data access and returns five hardcoded factors telling every caller they have "98% on-time payments"; `_user` is unused and the route's own comment claims it reads the database. Reachable from both primary navs and two mobile buttons. Added a fourth audit:mocks detector for routes that fabricate as their PRIMARY path (no data access + constant data set) — the previous three all assumed a fallback shape and could not see this. Two routes match across 351; the other is /api/disputes/reasons, an allowlisted catalogue. |

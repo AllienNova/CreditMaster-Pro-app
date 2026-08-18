@@ -4,6 +4,14 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 
+interface UnavailableFactor {
+  id: string;
+  name: string;
+  percentImpact: number;
+  /** What would have to exist for this factor to be computed. */
+  blockedBy: string;
+}
+
 interface CreditFactor {
   id: string;
   name: string;
@@ -235,6 +243,7 @@ const getScoreRange = (score: number) => {
 
 export default function CreditFactorsPage() {
   const [factors, setFactors] = useState<CreditFactor[]>([]);
+  const [unavailable, setUnavailable] = useState<UnavailableFactor[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedFactor, setExpandedFactor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -257,6 +266,11 @@ export default function CreditFactorsPage() {
       }
 
       setFactors(data.data);
+      // Factors this system cannot compute yet, each naming what would
+      // populate it. Rendered rather than dropped: a missing factor reads as
+      // "not applicable", an unavailable one reads as "we do not know" — and
+      // the difference matters when the subject is someone's credit.
+      setUnavailable(Array.isArray(data.unavailable) ? data.unavailable : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       console.error("Error fetching factors:", err);
@@ -879,6 +893,40 @@ export default function CreditFactorsPage() {
               })}
             </div>
           </>
+        )}
+
+        {/* Factors we cannot compute yet.
+            The route used to return all five with invented values — "98%
+            on-time payments" for every user. Three of them have no source in
+            this system (SF-16), so they are named here with the reason
+            instead. */}
+        {!loading && !error && unavailable.length > 0 && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 mb-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+              Not yet available
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
+              These affect your score, but Fynvita cannot measure them for you
+              yet.
+            </p>
+            <ul className="space-y-3">
+              {unavailable.map((f) => (
+                <li key={f.id} className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {f.name}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">
+                      {f.blockedBy}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-sm text-gray-400 dark:text-slate-500">
+                    {f.percentImpact}% of score
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {/* Empty State */}

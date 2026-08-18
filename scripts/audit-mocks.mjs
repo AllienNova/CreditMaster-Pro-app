@@ -165,6 +165,29 @@ function inventsNothing(args) {
   return found !== null;
 }
 
+/** Any sign the handler asks for real data. */
+const DATA_ACCESS =
+  // NOT anchored on `await`. The first version of this regex required
+  // `await <service>.`, and missed a service called inside Promise.all —
+  // where there is no await on the individual call:
+  //
+  //     const [age, mix] = await Promise.all([
+  //       creditBuilderService.analyzeCreditAge(user.id),   // <- no await
+  //       creditBuilderService.analyzeCreditMix(user.id),
+  //     ]);
+  //
+  // The gate flagged that route as fabricating while it was querying two
+  // tables. Matching the call itself has no such blind spot.
+  /supabase|getServiceRoleClient|getSupabase|\.from\(|prisma|stripe\.|fetch\(|createClient|\w*[Ss]ervice\.\w+\(|await\s+\w+\.(get|list|find|query|fetch)/;
+
+/** A constant array of OBJECTS — a data set, not a config value. */
+const CONSTANT_DATASET = /(?:const|let)\s+\w+\s*(?::[^=\n]+)?=\s*\[\s*\{/;
+
+// Declared ABOVE the --self-test guard on purpose: the self-test exercises
+// these two, and leaving them below it produced a TDZ ReferenceError that
+// only fired when the self-test ran — the check meant to protect the gate
+// crashing instead of reporting.
+
 // `--self-test` pins the three bypasses an adversarial review PROVED against
 // the previous detector, plus the false positives that must stay clean. Each
 // bypass returned fabricated data to a real user while the gate said PASSED.
@@ -193,10 +216,37 @@ if (process.argv.includes("--self-test")) {
     bad++;
     console.log(`  SELF-TEST FAIL: expected ${shouldFlag ? "FLAG" : "PASS"} — ${why}`);
   }
+
+  // Detector 4 — a route that fabricates as its primary path.
+  const constantFlags = (src) =>
+    !DATA_ACCESS.test(src) && CONSTANT_DATASET.test(src);
+  const CONSTANT_CASES = [
+    [`const FACTORS = [{ name: "Payment History", value: "98% on-time" }];\nreturn NextResponse.json(FACTORS);`,
+      true, "no data access at all, returning a constant data set"],
+    [`const rows = await supabase.from("x").select("*");\nreturn NextResponse.json(rows);`,
+      false, "a real query is not a fabrication"],
+    [`const DEFAULTS = [{ a: 1 }];\nconst rows = await getServiceRoleClient().from("x").select();`,
+      false, "a constant beside a real query is not the handler's answer"],
+    [`const TABS = ["a", "b"];\nreturn NextResponse.json(TABS);`,
+      false, "an array of STRINGS is a config value, not a data set"],
+    [`const r = await plaidService.getAccounts(user.id);\nconst X = [{ a: 1 }];`,
+      false, "awaiting a service counts as data access"],
+    [`const [a, b] = await Promise.all([\n  creditBuilderService.analyzeCreditAge(id),\n  creditBuilderService.analyzeCreditMix(id),\n]);\nconst UNAVAILABLE = [{ id: "x" }];`,
+      false, "a service called inside Promise.all has no await of its own — the first version of this detector called that route a fabrication while it queried two tables"],
+  ];
+  for (const [src, shouldFlag, why] of CONSTANT_CASES) {
+    if (constantFlags(src) === shouldFlag) continue;
+    bad++;
+    console.log(
+      `  SELF-TEST FAIL (constant-route): expected ${shouldFlag ? "FLAG" : "PASS"} — ${why}`,
+    );
+  }
+
+  const totalCases = CASES.length + CONSTANT_CASES.length;
   console.log(
     bad === 0
-      ? `audit:mocks self-test PASSED — ${CASES.length}/${CASES.length} detector cases correct.`
-      : `audit:mocks self-test FAILED — ${bad} of ${CASES.length} cases wrong.`,
+      ? `audit:mocks self-test PASSED — ${totalCases}/${totalCases} detector cases correct.`
+      : `audit:mocks self-test FAILED — ${bad} of ${totalCases} cases wrong.`,
   );
   process.exit(bad === 0 ? 0 : 1);
 }
@@ -383,6 +433,54 @@ for (const [file, origin] of REACHED) {
   if (n > 0) randomInModules.set(relative(ROOT, file), { count: n, origin });
 }
 
+
+/**
+ * FOURTH DETECTOR — a route that fabricates as its PRIMARY path.
+ *
+ * THE BLIND SPOT THIS CLOSES. Detectors 1-3 all assume the route TRIES to get
+ * real data: Math.random() inside a handler, a catch block returning a payload,
+ * a service that admits to stubbing. Every one of them models "reaches for the
+ * database, falls back to invention".
+ *
+ * A route that never reaches at all is invisible to all three. It has no catch
+ * block worth analysing, no randomness, and calls no service — it just returns
+ * a constant. That is not a fallback, it is the whole handler, and it was the
+ * gate's largest hole:
+ *
+ *     src/app/api/credit/factors/route.ts — 127 lines, zero data access,
+ *     `_user` unused, returning five hardcoded factors that tell EVERY caller
+ *     they have "98% on-time payments" and "32% utilization". Its own comment
+ *     claims it "fetches from database when user is authenticated".
+ *
+ * WHAT IT CANNOT DECIDE, same as audit:screen-data on the client side: whether
+ * the constant is USER DATA (a fabrication) or a CATALOGUE (product content —
+ * the dispute reasons on offer, the letter templates). Both are constant arrays
+ * of objects returned by a route. So each one must be named here with a reason,
+ * and anything new fails.
+ */
+const CONSTANT_ROUTE_ALLOWLIST = {
+  "src/app/api/disputes/reasons/route.ts":
+    "CATALOGUE — the dispute reasons this product offers, each with its FCRA " +
+    "section. Product content, identical for every user, and correctly a " +
+    "constant. Nothing here describes anyone's account.",
+};
+
+
+function constantOnlyRoutes(files) {
+  const out = [];
+  for (const file of files) {
+    const rel = relative(ROOT, file);
+    const text = stripComments(readFileSync(file, "utf8"));
+    if (DATA_ACCESS.test(text)) continue;
+    if (!CONSTANT_DATASET.test(text)) continue;
+    if (CONSTANT_ROUTE_ALLOWLIST[rel.replace(/\\/g, "/")]) continue;
+    out.push(rel.replace(/\\/g, "/"));
+  }
+  return out;
+}
+
+const constantOffenders = constantOnlyRoutes(ROUTE_FILES);
+
 /**
  * Shrink-only baseline, same contract as audit:web-api.
  *
@@ -429,7 +527,11 @@ const total =
   randomOffenders.length +
   fallbackOffenders.length +
   newStubs.length +
-  randomRegressions.length;
+  randomRegressions.length +
+  // Detector 4. Omitting this from `total` is how the previous edit shipped a
+  // detector that computed its offenders and then exited 0 before printing
+  // them — a gate that finds a defect and reports PASS is worse than no gate.
+  constantOffenders.length;
 console.log(
   `audit:mocks — scanned ${ROUTE_FILES.length} API route(s) and ${REACHED.size} module(s) they reach`,
 );
@@ -486,7 +588,8 @@ if (total === 0) {
   process.exit(0);
 }
 
-const inRoute = randomOffenders.length + fallbackOffenders.length;
+const inRoute =
+  randomOffenders.length + fallbackOffenders.length + constantOffenders.length;
 if (inRoute) console.log(`\naudit:mocks FAILED — ${inRoute} fabrication site(s) in a route:\n`);
 
 if (randomOffenders.length) {
@@ -496,6 +599,17 @@ if (randomOffenders.length) {
 if (fallbackOffenders.length) {
   console.log("\n  catch block returning data instead of an error (silent fallback):");
   fallbackOffenders.forEach((o) => console.log(`    ${o}`));
+}
+if (constantOffenders.length) {
+  console.log(
+    "\n  route with NO data access returning a constant data set" +
+      "\n  (fabrication as the primary path — not a fallback, the whole handler):",
+  );
+  constantOffenders.forEach((o) => console.log(`    ${o}`));
+  console.log(
+    "\n  If the constant is product CONTENT rather than someone's data, add it" +
+      "\n  to CONSTANT_ROUTE_ALLOWLIST in this script with the reason.",
+  );
 }
 
 if (inRoute) {
