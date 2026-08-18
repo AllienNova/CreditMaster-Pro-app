@@ -3,364 +3,454 @@
   "why": "Screens rendering a module-level constant data set. Each must be classified `catalogue` (product content: plans offered, bureaus, filter chips) or `fabrication` (invented user data that must be replaced by a real read). UNCLASSIFIED entries are debt someone has not looked at yet. This list may only shrink.",
   "entries": {
     "src/app/(pages)/subscriptions/page.tsx: FILTER_TABS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/about/page.tsx: platformFeatures, securityFeatures, stats, values": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/admin/audit/page.tsx: auditLogs": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/admin/disputes/page.tsx: disputes, stats": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/admin/features/page.tsx: initialFlags": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/admin/layout.tsx: adminNavItems": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/admin/logs/page.tsx: logs": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/admin/subscriptions/page.tsx: metrics, planBreakdown, recentSubscriptions": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/admin/users/[id]/page.tsx: mockUser": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "fabrication",
+      "offline": false,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/analytics/credit-score/page.tsx: recommendations, scoreFactors, scoreHistory": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/analytics/disputes/page.tsx: disputeStats, disputesByBureau, disputesByType, recentDisputes": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/analytics/layout.tsx: analyticsNavItems": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/analytics/page.tsx: bureauScores, monthlyProgress, overviewStats, recentActivity": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/analytics/reports/page.tsx: availableReports, recentDownloads, scheduledReports": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/analytics/trends/page.tsx: insights, monthlyTrends, projections, trendMetrics": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/api/admin/stats/route.ts: PRICE_MAP": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/api/credit/factors/route.ts: AGE_BANDS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/api/investments/portfolio/performance/route.ts: PERIOD_DAYS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/budgeting/page.tsx: FEATURE_CARDS": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/budgeting/subscriptions/page.tsx: MONTHLY_EQUIVALENT_FACTOR": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/credit-builder/goals/page.tsx: MOCK_ACTIVE_GOALS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/credit-builder/simulator/page.tsx: commonGoals": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/credit/factors/page.tsx: SCORE_RANGES": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/credit/goodwill-letters/page.tsx: LETTER_TEMPLATES": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/credit/secured-cards/page.tsx: GOALS, MOCK_RECOMMENDATIONS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/dashboard/settings/transaction-rules/page.tsx: mockRules": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/dashboard/subscriptions/page.tsx: mockSubscriptions": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/experts/page.tsx: MOCK_EXPERTS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/features/page.tsx: featureSections, platformFeatures": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/financial-intelligence/page.tsx: MOCK_INSIGHTS, MOCK_SNAPSHOT, QUICK_ACTIONS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "fabrication",
+      "offline": false,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/financial/crypto/page.tsx: MOCK_WALLETS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/financial/real-estate/page.tsx: MOCK_PROPERTIES": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/goals/shared/page.tsx: MOCK_GOALS, TEMPLATES": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/help/contact/page.tsx: contactMethods": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/help/faq/page.tsx: faqCategories, faqs": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/help/guides/page.tsx: categories, guides": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/help/layout.tsx: helpNavItems": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/help/page.tsx: categories, popularArticles, quickLinks": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/identity/dark-web/page.tsx: BREACH_ENTRIES, EXPOSED_CATEGORIES": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/identity/page.tsx: FEATURES, MOCK_ALERTS, RECOMMENDED_ACTIONS, SCAN_RESULTS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/insights/alerts/page.tsx: MOCK_ALERTS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/investments/add-holding/page.tsx: assetTypes": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/investments/layout.tsx: NAV_ITEMS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/investments/performance/page.tsx: TIME_PERIODS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/investments/rebalance/page.tsx: MOCK_ALLOCATIONS, MOCK_TRADES": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/investments/research/page.tsx: POPULAR_SYMBOLS, TAB_ITEMS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/leaderboard/page.tsx: tabs": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/marketplace/analysis/page.tsx: mockResults": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/marketplace/auto-loans/page.tsx: SCORE_TIERS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/marketplace/community/page.tsx: mockPosts, mockStories": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/marketplace/consolidation/page.tsx: mockOptions": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/marketplace/education/page.tsx: mockArticles, mockCourses": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/marketplace/layout.tsx: marketplaceCategories": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/marketplace/monitoring/page.tsx: mockAlerts, mockMonitoringServices, mockScores": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "fabrication",
+      "offline": false,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/marketplace/page.tsx: categories": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/onboarding/complete/page.tsx: analysisSteps, nextSteps, quickWins": {
       "classification": "UNCLASSIFIED",
-      "offline": false
+      "offline": false,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/onboarding/connect/page.tsx: bankOptions, bureaus, payFrequencies, whyConnect": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/onboarding/goals/page.tsx: goalCategories, scoreRanges, timeframes": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/onboarding/layout.tsx: steps": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/onboarding/page.tsx: features, socialProof, testimonials": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/page.tsx: pricing, products": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/profile/page.tsx: achievements, activityHistory": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/recommendations/credit-cards/page.tsx: CREDIT_CARD_OFFERS": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/recommendations/insights/page.tsx: INSIGHTS": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/recommendations/loans/page.tsx: LOAN_OFFERS, LOAN_TYPE_CHIPS": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/recommendations/page.tsx: CATEGORY_CHIPS, QUICK_LINKS, RECOMMENDATIONS": {
       "classification": "UNCLASSIFIED",
-      "offline": true
+      "offline": true,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/settings/connected-accounts/page.tsx: initialAccounts": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/app/settings/layout.tsx: settingsNavItems": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/settings/notifications/page.tsx: defaultSettings": {
       "classification": "UNCLASSIFIED",
-      "offline": false
+      "offline": false,
+      "why": "Left UNCLASSIFIED deliberately: the constant names do not settle it, and deciding needs the page read. Batch-reading names instead of pages is exactly how five of eleven inline-metric entries were misclassified in rev 44."
     },
     "src/app/settings/page.tsx: settingsSections": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/app/trading/strategies/page.tsx: CATEGORIES": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/brand/registry.ts: BRAND_ASSETS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/documents/DocumentUpload.tsx: STEPS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/financial/QuickActionsBar.tsx: quickActions": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/financial/SubscriptionCancellationWizard.tsx: OUTCOME_OPTIONS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/gamification/ProgressRing.tsx: sizeConfig": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/image-generator/ImageGenerator.tsx: SIZE_OPTIONS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/investments/charts/AdvancedChartContainer.tsx: CHART_TYPES, TIMEFRAMES": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/investments/rebalance/AllocationConfigPanel.tsx: PORTFOLIO_MODELS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/investments/rebalance/RebalanceHistoryPanel.tsx: TIME_FILTERS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/onboarding/ImpactCalculator.tsx: scoreRangeValues": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/persona/CreditScoreSimulator.tsx: scenarios": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/semantic-search/SemanticSearch.tsx: SAMPLE_RESULTS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
     },
     "src/components/trading/charts/DrawingToolbar.tsx: TOOLS": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/trading/charts/TradingChartContainer.tsx: CHART_TYPES, INDICATOR_OPTIONS, TIMEFRAMES": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/trading/mode/ModePermissionsCard.tsx: PERMISSION_ITEMS": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/ui/BottomNav.tsx: navItems": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/ui/Footer.tsx: footerColumns": {
-      "classification": "UNCLASSIFIED",
-      "offline": true
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/ui/Header.tsx: navLinks": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
     "src/components/ui/MobileNav.tsx: navItems": {
-      "classification": "UNCLASSIFIED",
-      "offline": false
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role \u2014 navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     }
   }
 }
