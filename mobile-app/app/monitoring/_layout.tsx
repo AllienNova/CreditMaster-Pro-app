@@ -25,13 +25,16 @@ export default function MonitoringLayout() {
           headerShown: false,
         }}
       />
-      <Stack.Screen name="alerts" options={{ title: "Alerts" }} />
+      <Stack.Screen name="alerts" options={{ headerShown: false, title: "Alerts" }} />
       <Stack.Screen name="alert-detail" options={{ title: "Alert Details" }} />
       <Stack.Screen
         name="settings"
-        options={{ title: "Monitoring Settings" }}
+        options={{ title: "Monitoring Settings", headerShown: false }}
       />
       <Stack.Screen name="bureaus" options={{ title: "Bureau Connections" }} />
+      {/* Nested route: app/monitoring/alerts/[id].tsx has no layout of its own,
+          so it registers here under its path-relative name. */}
+      <Stack.Screen name="alerts/[id]" options={{ headerShown: false }} />
     </Stack>
   );
 }

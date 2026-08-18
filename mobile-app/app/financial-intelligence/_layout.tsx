@@ -58,6 +58,7 @@ export default function FinancialIntelligenceLayout() {
       <Stack.Screen
         name="spending-insights"
         options={{
+          headerShown: false,
           title: "Spending Insights",
         }}
       />

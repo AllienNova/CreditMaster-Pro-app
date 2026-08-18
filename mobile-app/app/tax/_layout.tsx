@@ -35,6 +35,7 @@ export default function TaxLayout() {
       <Stack.Screen
         name="scenarios"
         options={{
+          headerShown: false,
           title: "Tax Scenarios",
           headerBackTitle: "Back",
         }}
@@ -63,6 +64,7 @@ export default function TaxLayout() {
       <Stack.Screen
         name="documents"
         options={{
+          headerShown: false,
           title: "Tax Documents",
           headerBackTitle: "Back",
         }}

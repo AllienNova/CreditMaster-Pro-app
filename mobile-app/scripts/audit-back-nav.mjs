@@ -151,6 +151,23 @@ function effectiveHeaderShown(layoutSource, screenName) {
     if (/headerShown:\s*false/.test(screenOptions[1])) return false;
     if (/headerShown:\s*true/.test(screenOptions[1])) return true;
   }
+  // `screenOptions={headerOptions}` — a REFERENCED object, not an inline one.
+  //
+  // Half the layouts in this app hoist their header options into a `const` and
+  // pass the identifier. Reading only the inline form made the gate report
+  // credit-builder/index as a root drawing a native header when its layout had
+  // just turned the header off for the whole group, which is the kind of false
+  // finding that gets a gate ignored.
+  const ref = layoutSource.match(/screenOptions={(\w+)}/);
+  if (ref) {
+    const decl = layoutSource.match(
+      new RegExp(`const ${ref[1]}\\s*=\\s*{([\\s\\S]*?)\\n\\s*};`),
+    );
+    if (decl) {
+      if (/headerShown:\s*false/.test(decl[1])) return false;
+      if (/headerShown:\s*true/.test(decl[1])) return true;
+    }
+  }
   return true; // the library default
 }
 
@@ -259,6 +276,26 @@ function drawsHeaderOnStackRoot(layoutSource) {
   }
   if (screenOptions && /headerShown:\s*false/.test(screenOptions[1])) {
     return null;
+  }
+
+  // `screenOptions={headerOptions}` — a REFERENCED object, not an inline one.
+  //
+  // Half the layouts here hoist their header options into a `const` and pass
+  // the identifier, and reading only the inline form made this report
+  // credit-builder/index as a root drawing a native header at the very moment
+  // its layout had turned the header off for the whole group. A gate that
+  // reports a screen you have just fixed is a gate people learn to ignore.
+  const ref = layoutSource.match(/screenOptions={(\w+)}/);
+  if (ref) {
+    const decl = layoutSource.match(
+      new RegExp(`const ${ref[1]}\\s*=\\s*{([\\s\\S]*?)\\n\\s*};`),
+    );
+    if (decl) {
+      if (/headerShown:\s*false/.test(decl[1])) return null;
+      if (/headerShown:\s*true/.test(decl[1])) {
+        return "screenOptions applies headerShown to every screen, root included";
+      }
+    }
   }
 
   // Saying NOTHING about headerShown is saying `true` — the library default,
@@ -397,6 +434,28 @@ if (process.argv.includes("--self-test")) {
       false,
       "a per-screen headerShown:false BEATS screenOptions — this is app/tax/_layout.tsx, " +
         "which the first version of this check wrongly reported",
+    ],
+    [
+      `const headerOptions = {
+    headerShown: false,
+    headerTintColor: theme.colors.text,
+  };
+  <Stack screenOptions={headerOptions}>
+         <Stack.Screen name="index" options={{ title: "Credit Builder" }} />`,
+      false,
+      "screenOptions={headerOptions} — a REFERENCED options object turning the " +
+        "header off applies to the root too; reading only the inline form " +
+        "reported credit-builder/index as drawing a native header it does not",
+    ],
+    [
+      `const headerOptions = {
+    headerTintColor: theme.colors.text,
+  };
+  <Stack screenOptions={headerOptions}>
+         <Stack.Screen name="index" options={{ title: "Monitoring" }} />`,
+      true,
+      "a referenced options object that does NOT mention headerShown still " +
+        "leaves the default ON — the resolution must not assume false",
     ],
   ];
   for (const [src, want, why] of LAYOUT_CASES) {

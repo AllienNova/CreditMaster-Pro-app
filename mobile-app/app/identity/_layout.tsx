@@ -6,7 +6,14 @@ import { Stack } from "expo-router";
 import { lightTheme as theme } from "../../src/constants/theme";
 
 export default function IdentityLayout() {
+  /**
+   * No native header in this group: every screen draws its own header row, so
+   * a native one stacked a second title above it. See credit-builder/_layout
+   * for the full note — audit:back-nav stayed silent because two ways back is
+   * not a trap, and it took a screenshot to see.
+   */
   const headerOptions = {
+    headerShown: false,
     headerStyle: { backgroundColor: theme.colors.surface },
     headerTintColor: theme.colors.text,
     headerTitleStyle: { fontWeight: "600" as const },
@@ -19,9 +26,6 @@ export default function IdentityLayout() {
         name="index"
         options={{
           title: "Identity Protection",
-        // headerShown: false — this is the stack ROOT, and React Navigation
-        // draws no back button on a root. Leaving the default on gave a
-        // titled bar with nothing to press, above the screen's own header.
           headerShown: false,
         }}
       />

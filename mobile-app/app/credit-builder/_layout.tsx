@@ -7,7 +7,23 @@ import { Stack } from "expo-router";
 import { lightTheme as theme } from "../../src/constants/theme";
 
 export default function CreditBuilderLayout() {
+  /**
+   * No native header anywhere in this group.
+   *
+   * All 17 screens draw their own header row — a back control, a title, and in
+   * several cases an action — so a native header stacked a SECOND title above
+   * each of them. `pay-for-delete` rendered "Pay for Delete" in the native bar
+   * and "Pay-for-Delete" in its own, one above the other.
+   *
+   * The root screen was fixed for this in the back-nav pass and the other 16
+   * were not, because audit:back-nav asks whether there is a way back and two
+   * ways back is not a trap. It took a screenshot to see it.
+   *
+   * The `title` options below are inert while this is false. They are kept so
+   * the group still reads correctly if the header is ever turned back on.
+   */
   const headerOptions = {
+    headerShown: false,
     headerStyle: { backgroundColor: theme.colors.surface },
     headerTintColor: theme.colors.text,
     headerTitleStyle: { fontWeight: "600" as const },
@@ -20,10 +36,6 @@ export default function CreditBuilderLayout() {
         name="index"
         options={{
           title: "Credit Builder",
-        // headerShown: false — this is the stack ROOT, and React Navigation
-        // draws no back button on a root. Leaving the default on gave a
-        // titled bar with nothing to press, above the screen's own header.
-          headerShown: false,
         }}
       />
       <Stack.Screen name="simulator" options={{ title: "Score Simulator" }} />
