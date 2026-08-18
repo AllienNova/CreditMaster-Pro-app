@@ -117,10 +117,10 @@
       "offline": true,
       "why": "Public features page — product description."
     },
-    "src/app/financial-intelligence/page.tsx: MOCK_INSIGHTS, MOCK_SNAPSHOT, QUICK_ACTIONS": {
-      "classification": "fabrication",
+    "src/app/financial-intelligence/page.tsx: QUICK_ACTIONS": {
+      "classification": "catalogue",
       "offline": false,
-      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
+      "why": "Six navigation tiles (title, description, href, icon, gradient) linking to the /financial/* tools. Product content, not a claim about the caller. The two fabrications that shared this file — MOCK_SNAPSHOT ($124,350 net worth, \"B+\" grade) and MOCK_INSIGHTS — were removed; the page now reads /api/financial/aggregated?snapshot=true and /api/financial/ai-insights and shows an explicit unavailable state instead of substituting figures."
     },
     "src/app/financial/crypto/page.tsx: MOCK_WALLETS": {
       "classification": "fabrication",
