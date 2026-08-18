@@ -9,38 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { withRole } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
-import { SUBSCRIPTION_PLANS } from "@/lib/payment/stripe-service";
-
-/**
- * priceId -> the plan it names, for labelling rows in the admin list.
- *
- * Built from SUBSCRIPTION_PLANS — the same catalogue `tierFromPriceId`
- * (tier-mapping.ts) resolves webhook tiers from — so the admin screen and the
- * webhook cannot disagree about which plan a row is on. The client-side
- * catalogue in `src/lib/pricing.ts` reads NEXT_PUBLIC_STRIPE_* while this one
- * reads STRIPE_*; resolving in the browser could therefore label a row with a
- * different plan than the one billing assigned it.
- *
- * Unlike tierFromPriceId this does NOT throw on a miss. A single legacy price
- * ID must not 500 the whole subscription list; it surfaces as an unmapped row
- * the operator can see, which is the honest handling of "we do not recognise
- * this price".
- */
-const PLAN_BY_PRICE_ID = new Map(
-  SUBSCRIPTION_PLANS.map((plan) => [
-    plan.priceId,
-    {
-      tier: plan.id,
-      name: plan.name,
-      // price is dollars (29.99), not cents. A yearly plan is divided so the
-      // monthly figures stay addable.
-      monthlyListPrice:
-        plan.interval === "year"
-          ? Number((plan.price / 12).toFixed(2))
-          : plan.price,
-    },
-  ]),
-);
+import { lookupPlanByPriceId } from "@/lib/payment/plan-lookup";
 
 export const GET = withRole(
   "admin",
@@ -87,7 +56,7 @@ export const GET = withRole(
     // Enrich with email and the plan the price ID names
     const enrichedSubscriptions = subscriptions?.map((sub) => {
       const authUser = authUsers?.users?.find((u) => u.id === sub.user_id);
-      const plan = PLAN_BY_PRICE_ID.get(sub.stripe_price_id);
+      const plan = lookupPlanByPriceId(sub.stripe_price_id);
       return {
         ...sub,
         user_email: authUser?.email || "Unknown",

@@ -16,6 +16,7 @@ src/app/api/admin/settings/route.ts,GET;POST,requireRole,inline admin role via r
 src/app/api/admin/stats/route.ts,GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
 src/app/api/admin/subscriptions/route.ts,DELETE;GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
 src/app/api/admin/users/route.ts,GET;PATCH,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
+src/app/api/admin/users/[id]/route.ts,GET,withRole,withRole(admin),withRole(admin),a,admin member-detail read; UUID-validated id; no credit score and no dispute letter body
 src/app/api/affiliate/offers/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),f,promote inline permission check to withPermission
 src/app/api/affiliate/webhooks/route.ts,POST,webhook-signature,none,PUBLIC,f,webhook - signature verification stays as the auth
 src/app/api/ai/chat/message/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth

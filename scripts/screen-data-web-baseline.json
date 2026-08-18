@@ -17,11 +17,6 @@
       "offline": false,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
-    "src/app/admin/users/[id]/page.tsx: mockUser": {
-      "classification": "fabrication",
-      "offline": false,
-      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
-    },
     "src/app/analytics/layout.tsx: analyticsNavItems": {
       "classification": "catalogue",
       "offline": false,
