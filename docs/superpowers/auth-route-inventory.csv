@@ -124,6 +124,7 @@ src/app/api/documents/route.ts,DELETE;GET;PATCH,getUser,inline user.id ownership
 src/app/api/documents/share/route.ts,DELETE;GET;POST,validateFromHeaders,"rbac.hasPermission(""documents:share""); inline ownership check",withPermission(documents:share),c,promote inline permission check; keep ownership check
 src/app/api/documents/upload/route.ts,GET;POST,none,none,withAuth,c,unauthenticated - accepts userId from formData (IDOR) - wrap in withAuth
 src/app/api/email/unsubscribe/route.ts,GET;POST,none,token in query,PUBLIC,f,unsubscribe via signed token in email link - token is the auth; genuinely public
+src/app/api/experts/route.ts,GET,withAuth,none,withAuth,f,added 2026-08-18 - new route exposing the orphaned expert-sessions-service; directory of verified experts not per-user rows so no ownership check applies; service filters status=verified
 src/app/api/federal-programs/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - wrap in withAuth
 src/app/api/federal/check-eligibility/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""federal_programs:check_eligibility"")",withPermission(federal_programs:check_eligibility),f,promote inline permission check to withPermission
 src/app/api/federal/submit-application/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""federal_programs:submit_application"")",withPermission(federal_programs:submit_application),f,promote inline permission check to withPermission

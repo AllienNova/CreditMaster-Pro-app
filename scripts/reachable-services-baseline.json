@@ -14,12 +14,6 @@
       "verdict": "NEEDS-DECISION",
       "why": "CONFIRMED unreachable 2026-08-18 by symbol check as well as the graph: exports WeeklySummaryService and getWeeklySummaryService, and no file under src/app/api imports either. 47 database calls. Either expose it or propose deletion."
     },
-    "src/lib/services/expert-sessions-service.ts": {
-      "dbCalls": 46,
-      "reachableFromPage": false,
-      "verdict": "UNREVIEWED",
-      "why": ""
-    },
     "src/lib/commerce/affiliate/tracking-service.ts": {
       "dbCalls": 45,
       "reachableFromPage": false,
