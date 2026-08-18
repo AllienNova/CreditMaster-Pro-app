@@ -82,11 +82,6 @@
       "offline": false,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
-    "src/app/credit-builder/goals/page.tsx: MOCK_ACTIVE_GOALS": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
-    },
     "src/app/credit-builder/simulator/page.tsx: commonGoals": {
       "classification": "catalogue",
       "offline": false,
