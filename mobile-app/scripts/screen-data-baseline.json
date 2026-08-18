@@ -33,9 +33,10 @@
       "classification": "fabrication",
       "offline": true
     },
-    "app/analytics/trends.tsx: TREND_METRICS": {
-      "classification": "fabrication",
-      "offline": true
+    "app/analytics/trends.tsx: PERIOD_MONTHS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The period selector's label->months map, identical to the one in analytics/credit-score.tsx. Configuration, not a measurement \u2014 flagged only because ALL: 120 crosses the detector's >=100 magnitude heuristic. Drives the `days` argument to the history route; it is not rendered."
     },
     "app/billing/invoices.tsx: FILTERS": {
       "classification": "catalogue",

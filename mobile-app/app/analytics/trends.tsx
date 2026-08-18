@@ -1,98 +1,159 @@
 /**
- * Fynvita Trends Analytics Screen
- * Historical data analysis and trend visualization
+ * Trends — what this system can actually chart over time.
+ *
+ * WHAT WAS HERE. A TREND_METRICS constant of five metrics, each with a
+ * six-point series, presented as the user's own history: a credit score
+ * climbing 680 -> 742, utilization falling 30% -> 18%, debt falling
+ * $20,950 -> $12,450, and "On-Time Payments" flat at 100%. None of it came
+ * from anywhere. The month labels were a SEPARATE hardcoded array, so they did
+ * not even correspond to the points they sat under.
+ *
+ * WHAT IS ACTUALLY AVAILABLE. Of those five, exactly ONE has a real series:
+ *
+ *   Credit Score        REAL SERIES. GET /api/credit-monitoring/history
+ *                       returns { bureau, scores: [{ date, score }] }.
+ *   Total Debt          CURRENT VALUE ONLY. GET /api/financial/debt computes
+ *                       an overview from the caller's debts; nothing stores a
+ *                       history of it.
+ *   Credit Age          CURRENT VALUE ONLY. Computed per request from
+ *                       financial_accounts.opened_date by /api/credit/factors.
+ *   Credit Utilization  BLOCKED. Needs credit limits, and
+ *                       financial_accounts.credit_limit is never written.
+ *   On-Time Payments    BLOCKED. Needs a linked credit report.
+ *
+ * So this charts the one series it has, states the two current values as
+ * current values rather than trends, and names what blocks the rest — reusing
+ * the `unavailable` list /api/credit/factors already returns. A metric that is
+ * simply absent reads as "not applicable"; one listed with its blocker reads
+ * as "we do not know", and that difference is the whole point when the subject
+ * is someone's credit.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
-import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { useCreditStore } from "../../src/store/creditStore";
+import { creditScoreApi } from "../../src/services/api/credit";
+import { debtApi } from "../../src/services/api/financial";
+import type { UnavailableCreditFactor } from "../../src/services/api/credit";
 
-interface TrendMetric {
+/** Windows the history route accepts, in months. */
+const PERIOD_MONTHS: Record<string, number> = {
+  "1M": 1,
+  "3M": 3,
+  "6M": 6,
+  "1Y": 12,
+  ALL: 120,
+};
+
+const MIN_BAR_HEIGHT = 20;
+const BAR_RANGE = 100;
+
+/**
+ * "2026-08-17T..." -> "Aug", in UTC.
+ *
+ * timeZone matters: toLocaleDateString defaults to the device's zone, so a
+ * point dated the 1st at 00:00 UTC labels as the previous month for every user
+ * west of UTC. The stored timestamps are UTC.
+ */
+const monthLabel = (iso: string): string => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+};
+
+const money = (n: number): string =>
+  `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+
+interface CurrentValue {
   name: string;
-  current: string;
-  change: number;
-  trend: "up" | "down" | "stable";
-  data: number[];
+  value: string;
+  /** Why this is a number and not a line. */
+  note: string;
 }
 
-const TREND_METRICS: TrendMetric[] = [
-  {
-    name: "Credit Score",
-    current: "742",
-    change: 62,
-    trend: "up",
-    data: [680, 695, 702, 715, 728, 742],
-  },
-  {
-    name: "Credit Utilization",
-    current: "18%",
-    change: -12,
-    trend: "down",
-    data: [30, 28, 25, 22, 20, 18],
-  },
-  {
-    name: "Total Debt",
-    current: "$12,450",
-    change: -8500,
-    trend: "down",
-    data: [20950, 18500, 16200, 14800, 13200, 12450],
-  },
-  {
-    name: "On-Time Payments",
-    current: "100%",
-    change: 0,
-    trend: "stable",
-    data: [100, 100, 100, 100, 100, 100],
-  },
-  {
-    name: "Account Age",
-    current: "4.5 yrs",
-    change: 0.5,
-    trend: "up",
-    data: [4.0, 4.1, 4.2, 4.3, 4.4, 4.5],
-  },
-];
-
-const getTrendColor = (
-  trend: TrendMetric["trend"],
-  isPositive: boolean,
-): string => {
-  if (trend === "stable") return "#F59E0B";
-  return isPositive ? "#22C55E" : "#EF4444";
-};
-
-const isPositiveTrend = (
-  name: string,
-  trend: TrendMetric["trend"],
-): boolean => {
-  if (trend === "stable") return true;
-  const positiveUp = ["Credit Score", "On-Time Payments", "Account Age"];
-  const positiveDown = ["Credit Utilization", "Total Debt"];
-  if (positiveUp.includes(name)) return trend === "up";
-  if (positiveDown.includes(name)) return trend === "down";
-  return true;
-};
-
-export default function TrendsAnalyticsScreen() {
+export default function TrendsAnalyticsScreen(): React.ReactElement {
   const [selectedPeriod, setSelectedPeriod] = useState("6M");
-  const [selectedMetric, setSelectedMetric] = useState<TrendMetric>(
-    TREND_METRICS[0],
-  );
-  const periods = ["1M", "3M", "6M", "1Y", "ALL"];
-  const months = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const [loading, setLoading] = useState(true);
+  const [currentValues, setCurrentValues] = useState<CurrentValue[]>([]);
+  const [unavailable, setUnavailable] = useState<UnavailableCreditFactor[]>([]);
 
-  const maxValue = Math.max(...selectedMetric.data);
-  const minValue = Math.min(...selectedMetric.data);
+  const { scores, scoreHistory, fetchScores, fetchScoreHistory } =
+    useCreditStore();
+
+  const load = useCallback(
+    async (period: string) => {
+      setLoading(true);
+
+      // Scores first: the history route needs a bureau, and the store takes it
+      // from the scores already in state.
+      await fetchScores();
+      await fetchScoreHistory(PERIOD_MONTHS[period] ?? 6);
+
+      // The two secondary reads are independent of the chart. Either failing
+      // must not blank it, so neither result gates the other.
+      const [debt, factors] = await Promise.all([
+        debtApi.getOverview(),
+        creditScoreApi.getFactors(),
+      ]);
+
+      const values: CurrentValue[] = [];
+      if (debt.success && debt.data) {
+        values.push({
+          name: "Total Debt",
+          value: money(debt.data.totalDebt),
+          note: "Today's balance. Nothing records a history of this yet, so there is no line to draw.",
+        });
+      }
+      if (factors.success && factors.data) {
+        const age = factors.data.factors.find((f) => f.id === "credit_age");
+        if (age?.value) {
+          values.push({
+            name: "Credit Age",
+            value: age.value,
+            note: "Computed from your linked accounts each time you open this. It is not stored, so it cannot be charted.",
+          });
+        }
+        setUnavailable(factors.data.unavailable);
+      }
+      setCurrentValues(values);
+      setLoading(false);
+    },
+    [fetchScores, fetchScoreHistory],
+  );
+
+  useEffect(() => {
+    load(selectedPeriod);
+  }, [load, selectedPeriod]);
+
+  const points = scoreHistory?.history ?? [];
+  const currentScore = scores[0]?.score ?? null;
+
+  // Guarded on every side: an empty history makes Math.max return -Infinity,
+  // and a flat one makes the range zero, which turns every bar height into a
+  // division by zero.
+  const maxValue = points.length ? Math.max(...points.map((p) => p.score)) : 0;
+  const minValue = points.length ? Math.min(...points.map((p) => p.score)) : 0;
+  const range = maxValue - minValue;
+
+  // A single reading is not a change. Rendering "+0 pts" over one point
+  // asserts stability where there is nothing to compare.
+  const scoreChange =
+    points.length >= 2
+      ? points[points.length - 1].score - points[0].score
+      : null;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -100,21 +161,10 @@ export default function TrendsAnalyticsScreen() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
-          <Text style={styles.title}>Trends</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <ScreenHeader title="Trends" />
 
-        {/* Period Selector */}
         <View style={styles.periodSelector}>
-          {periods.map((period) => (
+          {Object.keys(PERIOD_MONTHS).map((period) => (
             <TouchableOpacity
               key={period}
               style={[
@@ -135,145 +185,98 @@ export default function TrendsAnalyticsScreen() {
           ))}
         </View>
 
-        {/* Selected Metric Chart */}
-        <Card style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>{selectedMetric.name}</Text>
-            <View style={styles.chartValue}>
-              <Text style={styles.currentValue}>{selectedMetric.current}</Text>
-              <View
-                style={[
-                  styles.changeBadge,
-                  {
-                    backgroundColor: `${getTrendColor(selectedMetric.trend, isPositiveTrend(selectedMetric.name, selectedMetric.trend))}15`,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={
-                    selectedMetric.trend === "up"
-                      ? "arrow-up"
-                      : selectedMetric.trend === "down"
-                        ? "arrow-down"
-                        : "remove"
-                  }
-                  size={12}
-                  color={getTrendColor(
-                    selectedMetric.trend,
-                    isPositiveTrend(selectedMetric.name, selectedMetric.trend),
-                  )}
-                />
-                <Text
-                  style={[
-                    styles.changeText,
-                    {
-                      color: getTrendColor(
-                        selectedMetric.trend,
-                        isPositiveTrend(
-                          selectedMetric.name,
-                          selectedMetric.trend,
-                        ),
-                      ),
-                    },
-                  ]}
-                >
-                  {selectedMetric.change > 0 ? "+" : ""}
-                  {selectedMetric.change}
-                </Text>
-              </View>
+        {loading ? (
+          <View style={styles.centerState} testID="trends-loading">
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        ) : null}
+
+        {/* The one metric with a real series. */}
+        <Card style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Credit Score</Text>
+            <Text style={styles.currentValue} testID="current-score">
+              {currentScore !== null ? currentScore : "—"}
+            </Text>
+          </View>
+
+          {scoreChange !== null ? (
+            <Text
+              testID="score-change"
+              style={[
+                styles.changeText,
+                {
+                  color:
+                    scoreChange >= 0 ? theme.colors.success : theme.colors.error,
+                },
+              ]}
+            >
+              {scoreChange >= 0 ? "+" : ""}
+              {scoreChange} pts over this period
+            </Text>
+          ) : null}
+
+          {points.length === 0 ? (
+            <Text style={styles.emptyText} testID="history-empty">
+              No score history yet for this period.
+            </Text>
+          ) : (
+            <View style={styles.chart} testID="score-chart">
+              {points.map((point, index) => (
+                <View key={`${point.date}-${index}`} style={styles.barColumn}>
+                  <View
+                    testID={`bar-${index}`}
+                    style={[
+                      styles.bar,
+                      {
+                        // range === 0 when every reading is identical. Without
+                        // this the height is 0/0 -> NaN, which React Native
+                        // drops silently, so the chart just disappears.
+                        height:
+                          range === 0
+                            ? MIN_BAR_HEIGHT
+                            : MIN_BAR_HEIGHT +
+                              ((point.score - minValue) / range) * BAR_RANGE,
+                      },
+                    ]}
+                  />
+                  <Text style={styles.barLabel}>{monthLabel(point.date)}</Text>
+                </View>
+              ))}
             </View>
-          </View>
-          <View style={styles.chart}>
-            {selectedMetric.data.map((value, index) => (
-              <View key={index} style={styles.chartBar}>
-                <View
-                  style={[
-                    styles.bar,
-                    {
-                      height: `${((value - minValue + 1) / (maxValue - minValue + 2)) * 100}%`,
-                      backgroundColor: getTrendColor(
-                        selectedMetric.trend,
-                        isPositiveTrend(
-                          selectedMetric.name,
-                          selectedMetric.trend,
-                        ),
-                      ),
-                    },
-                  ]}
-                />
-                <Text style={styles.barLabel}>{months[index]}</Text>
-              </View>
-            ))}
-          </View>
+          )}
         </Card>
 
-        {/* All Metrics */}
-        <Text style={styles.sectionTitle}>All Metrics</Text>
-        {TREND_METRICS.map((metric, index) => {
-          const positive = isPositiveTrend(metric.name, metric.trend);
-          const color = getTrendColor(metric.trend, positive);
-          return (
-            <TouchableOpacity
-              key={index}
-              onPress={() => setSelectedMetric(metric)}
-            >
-              <Card
-                style={[
-                  styles.metricCard,
-                  selectedMetric.name === metric.name &&
-                    styles.metricCardSelected,
-                ]}
-              >
-                <View style={styles.metricRow}>
-                  <View style={styles.metricInfo}>
-                    <Text style={styles.metricName}>{metric.name}</Text>
-                    <Text style={styles.metricValue}>{metric.current}</Text>
-                  </View>
-                  <View style={styles.metricTrend}>
-                    <View
-                      style={[
-                        styles.trendBadge,
-                        { backgroundColor: `${color}15` },
-                      ]}
-                    >
-                      <Ionicons
-                        name={
-                          metric.trend === "up"
-                            ? "arrow-up"
-                            : metric.trend === "down"
-                              ? "arrow-down"
-                              : "remove"
-                        }
-                        size={14}
-                        color={color}
-                      />
-                    </View>
-                    <Text style={[styles.trendText, { color }]}>
-                      {metric.change > 0 ? "+" : ""}
-                      {metric.change}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.miniChart}>
-                  {metric.data.map((value, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.miniBar,
-                        {
-                          height: `${((value - Math.min(...metric.data) + 1) / (Math.max(...metric.data) - Math.min(...metric.data) + 2)) * 100}%`,
-                          backgroundColor: color,
-                        },
-                      ]}
-                    />
-                  ))}
-                </View>
-              </Card>
-            </TouchableOpacity>
-          );
-        })}
+        {/* Real numbers that are not series. Stated as what they are. */}
+        {currentValues.map((v) => (
+          <Card key={v.name} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>{v.name}</Text>
+              <Text style={styles.currentValue}>{v.value}</Text>
+            </View>
+            <Text style={styles.noteText}>{v.note}</Text>
+          </Card>
+        ))}
 
-        <View style={{ height: 40 }} />
+        {/* What cannot be measured at all, and what would unblock it. */}
+        {unavailable.length > 0 ? (
+          <Card style={styles.card}>
+            <Text style={styles.cardTitle}>Not tracked yet</Text>
+            {unavailable.map((u) => (
+              <View key={u.id} style={styles.unavailableRow}>
+                <Ionicons
+                  name="help-circle-outline"
+                  size={18}
+                  color={theme.colors.textSecondary}
+                />
+                <View style={styles.unavailableBody}>
+                  <Text style={styles.unavailableName}>{u.name}</Text>
+                  <Text style={styles.unavailableWhy}>{u.blockedBy}</Text>
+                </View>
+              </View>
+            ))}
+          </Card>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -281,92 +284,70 @@ export default function TrendsAnalyticsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  scrollView: { flex: 1, padding: theme.spacing.lg },
-  header: {
+  scrollView: { flex: 1 },
+  periodSelector: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: theme.spacing.lg,
-  },
-  backButton: { padding: 4 },
-  title: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
-  periodSelector: { flexDirection: "row", marginBottom: theme.spacing.md },
-  periodButton: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: "center",
-    backgroundColor: theme.colors.surface,
-    marginHorizontal: 2,
-    borderRadius: 8,
-  },
-  periodButtonActive: { backgroundColor: theme.colors.primary },
-  periodText: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: theme.colors.textSecondary,
-  },
-  periodTextActive: { color: "#fff" },
-  chartCard: { marginBottom: theme.spacing.lg },
-  chartHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    paddingHorizontal: theme.spacing.lg,
+    gap: theme.spacing.sm,
     marginBottom: theme.spacing.md,
   },
-  chartTitle: { fontSize: 16, fontWeight: "600", color: theme.colors.text },
-  chartValue: { alignItems: "flex-end" },
-  currentValue: { fontSize: 24, fontWeight: "700", color: theme.colors.text },
-  changeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginTop: 4,
+  periodButton: {
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: 16,
+    backgroundColor: theme.colors.surface,
   },
-  changeText: { fontSize: 12, fontWeight: "600", marginLeft: 2 },
-  chart: { flexDirection: "row", height: 120, alignItems: "flex-end" },
-  chartBar: { flex: 1, alignItems: "center" },
-  bar: { width: "60%", borderRadius: 4 },
-  barLabel: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 6 },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
-  },
-  metricCard: { marginBottom: theme.spacing.sm },
-  metricCardSelected: { borderWidth: 2, borderColor: theme.colors.primary },
-  metricRow: {
+  periodButtonActive: { backgroundColor: theme.colors.primary },
+  periodText: { fontSize: 13, color: theme.colors.textSecondary },
+  periodTextActive: { color: "#FFFFFF", fontWeight: "600" },
+  centerState: { paddingVertical: theme.spacing.xl, alignItems: "center" },
+  card: { marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.md },
+  cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  metricInfo: {},
-  metricName: { fontSize: 14, fontWeight: "500", color: theme.colors.text },
-  metricValue: {
-    fontSize: 18,
-    fontWeight: "700",
+  cardTitle: { fontSize: 16, fontWeight: "600", color: theme.colors.text },
+  currentValue: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
+  changeText: { fontSize: 13, marginTop: theme.spacing.xs },
+  noteText: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.md,
+  },
+  chart: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    marginTop: theme.spacing.lg,
+    height: MIN_BAR_HEIGHT + BAR_RANGE + 24,
+  },
+  barColumn: { flex: 1, alignItems: "center" },
+  bar: { width: 18, borderRadius: 4, backgroundColor: theme.colors.primary },
+  barLabel: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
+  },
+  unavailableRow: {
+    flexDirection: "row",
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.md,
+  },
+  unavailableBody: { flex: 1 },
+  unavailableName: {
+    fontSize: 14,
+    fontWeight: "600",
     color: theme.colors.text,
+  },
+  unavailableWhy: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
-  metricTrend: { alignItems: "flex-end" },
-  trendBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  trendText: { fontSize: 12, fontWeight: "600", marginTop: 4 },
-  miniChart: {
-    flexDirection: "row",
-    height: 30,
-    alignItems: "flex-end",
-    marginTop: theme.spacing.sm,
-    paddingTop: theme.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-  miniBar: { flex: 1, marginHorizontal: 2, borderRadius: 2 },
 });
