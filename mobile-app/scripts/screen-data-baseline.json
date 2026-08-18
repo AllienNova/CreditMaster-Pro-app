@@ -164,11 +164,6 @@
       "offline": true,
       "why": "The dispute assistant's opening greeting. Product copy, not a claim about the user."
     },
-    "app/dispute/strategies.tsx: LOCAL_STRATEGIES": {
-      "classification": "fabrication",
-      "offline": false,
-      "why": "Seeded into state through useState<DisputeStrategy[]>(LOCAL_STRATEGIES) - the generic form that hid it - and each strategy carries a successRate (72, ...). A success rate is a measurement about outcomes; presented before any read, it is invented evidence for choosing a dispute tactic."
-    },
     "app/dispute/templates.tsx: CATEGORIES, LOCAL_TEMPLATES": {
       "classification": "catalogue",
       "offline": false,
