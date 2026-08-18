@@ -42,11 +42,6 @@
       "offline": true,
       "why": "Six report types (name, description, icon) describing what the reports feature will cover. Product content, no claim about the caller. The `lastGenerated` field was stripped — it dated each type as a document the user had already produced. scheduledReports and recentDownloads were removed outright: no generated-reports, report-schedules or download-history table exists in any migration, and generation is not offered because POST /api/analytics/reports composes the all-zeros AnalyticsEngine stub (task #99)."
     },
-    "src/app/analytics/trends/page.tsx: insights, monthlyTrends, projections, trendMetrics": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Invented monthly trends and PROJECTIONS. A projection is a forecast, and nothing here forecasts — see rev 43, where the mobile score predictions were removed for the same reason."
-    },
     "src/app/api/admin/stats/route.ts: PRICE_MAP": {
       "classification": "catalogue",
       "offline": true,
