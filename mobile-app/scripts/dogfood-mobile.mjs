@@ -178,11 +178,31 @@ const sleep = (ms) =>
  * Every failure carried an identical 71-element count, which is what gave it
  * away — 210 independent crashes do not render identically.
  */
+/**
+ * How long to wait after a relaunch before the router will accept a deep link.
+ *
+ * TWELVE SECONDS WAS NOT ENOUGH, and it cost a whole sweep. A link fired
+ * before expo-router is ready is DROPPED SILENTLY — the app stays on its
+ * initial route and the reading is the Home screen, which looks like a
+ * perfectly healthy 67-element render.
+ *
+ * Measured directly on /credit-builder/age from a clean launch:
+ *   12s wait -> 67 elements, the Home screen
+ *   18s wait ->  4 elements, the screen's own "HTTP 500" state
+ * Same route, same build, same command; only the wait differed.
+ *
+ * That is 18 of the 37 Home readings in the 2026-08-18 arrival sweep — this
+ * script being impatient, not the app being broken. The other 18 are the
+ * SF-30 path collisions, which persist at ANY wait: /credit/factors renders
+ * the Credit TAB after 17 seconds just as it does after 12.
+ */
+const RELAUNCH_SETTLE_MS = 20000;
+
 function relaunch() {
   sh("xcrun", ["simctl", "terminate", UDID, "host.exp.Exponent"]);
   sleep(2500);
   sh("xcrun", ["simctl", "openurl", UDID, `exp://${HOST}:8081`]);
-  sleep(12000);
+  sleep(RELAUNCH_SETTLE_MS);
 }
 
 /**
