@@ -226,14 +226,27 @@ export const disputeLetterApi = {
   /**
    * Generate letter using strategy
    */
+  /**
+   * POST /api/disputes/generate with mode "strategy".
+   *
+   * The declared shape used to be `{ letter, strategy, nextSteps }`. The route
+   * returns none of those three: its payload is
+   * `{ disputeLetter, mode, model, complianceReview, disputeId, timestamp }`
+   * (src/app/api/disputes/generate/route.ts:188-198). Every consumer read
+   * `data.letter` and got undefined, so the generated letter never appeared.
+   */
   generateFromStrategy: (
     strategyId: string,
     variables: Record<string, string>,
   ) =>
     api.post<{
-      letter: string;
-      strategy: DisputeStrategy;
-      nextSteps: string[];
+      disputeLetter: string;
+      mode: string;
+      model?: string;
+      complianceReview?: unknown;
+      disputeId?: string;
+      persistenceWarning?: boolean;
+      timestamp?: string;
     }>("/disputes/generate", {
       mode: "strategy",
       strategyId,
@@ -269,7 +282,9 @@ export const disputeResourcesApi = {
    * Get all available templates
    */
   getTemplates: (category?: string) =>
-    api.get<{ templates: DisputeTemplate[] }>(
+    // WebDisputeTemplate, not DisputeTemplate — the server shape. Map it with
+    // mapWebDisputeTemplate; only four field names overlap.
+    api.get<{ templates: WebDisputeTemplate[] }>(
       `/disputes/templates${category ? `?category=${category}` : ""}`,
       { enableCache: true, cacheTime: 30 * 60 * 1000 }, // Cache for 30 minutes
     ),
@@ -292,8 +307,16 @@ export const disputeResourcesApi = {
   /**
    * Get single strategy by ID
    */
+  /**
+   * The route wraps it: `data: { strategy: ... }`
+   * (src/app/api/disputes/strategies/[id]/route.ts:44-46). Declaring a bare
+   * DisputeStrategy here meant callers read `res.data.name` off an object
+   * that only has `strategy`.
+   */
   getStrategy: (strategyId: string) =>
-    api.get<DisputeStrategy>(`/disputes/strategies/${strategyId}`),
+    api.get<{ strategy: DisputeStrategy }>(
+      `/disputes/strategies/${strategyId}`,
+    ),
 
   /**
    * Get all available dispute reasons
@@ -454,4 +477,50 @@ export function summarizeDisputes(disputes: Dispute[]): DisputeAnalytics {
     .map(([month, e]) => ({ month, filed: e.filed, resolved: e.resolved }));
 
   return { stats, byType, monthly };
+}
+
+/**
+ * The dispute-templates contract, reconciled.
+ *
+ * The server and the mobile app disagreed about what a template IS. The route
+ * serves DISPUTE_TEMPLATES from src/lib/disputes/dispute-service.ts:23-31 —
+ * `{ id, name, category, description, successRate, template, variables }`.
+ * The mobile DisputeTemplate declares
+ * `{ id, name, category, scenario, successRate, tone, letterText,
+ *    requiredDocuments, placeholders, bestPractices }`.
+ *
+ * Only four names overlap. The screen rendered `tone`, `scenario` and
+ * `requiredDocuments`, none of which the server sends — it worked solely
+ * because a LOCAL_TEMPLATES fixture supplied them, and a successful fetch
+ * would have replaced them with undefined.
+ *
+ * So map what corresponds and leave the rest ABSENT rather than defaulted:
+ * `tone` is a real editorial property of a letter and inventing "formal" for
+ * every template would be a claim about the letter's voice that nothing made.
+ */
+export interface WebDisputeTemplate {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  successRate: number;
+  template: string;
+  variables: string[];
+}
+
+export function mapWebDisputeTemplate(t: WebDisputeTemplate): DisputeTemplate {
+  return {
+    id: t.id,
+    name: t.name,
+    category: t.category,
+    // `description` and `scenario` are the same idea under two names: what
+    // this letter is for.
+    scenario: t.description,
+    successRate: t.successRate,
+    letterText: t.template,
+    placeholders: t.variables ?? [],
+    // tone, requiredDocuments and bestPractices have no server source. Left
+    // undefined so the screen can omit the row instead of asserting a value.
+    requiredDocuments: [],
+  };
 }

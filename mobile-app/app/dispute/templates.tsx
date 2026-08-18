@@ -11,219 +11,29 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
-import { disputesAPI, DisputeTemplate } from "../../services/api";
+// The main client. Unlike strategies, this screen's route happens to have
+// NO { success, data } envelope, so the parallel client worked here by
+// coincidence rather than design. Moved anyway — see SF-22.
+import {
+  disputeResourcesApi,
+  mapWebDisputeTemplate,
+} from "../../src/services/api/disputes";
+import type { DisputeTemplate } from "../../src/services/api/types";
 import { toArray } from "../../src/store/toArray";
 
 // Local template data (fallback when API unavailable)
-const LOCAL_TEMPLATES: DisputeTemplate[] = [
-  {
-    id: "unauthorized_hard_inquiry",
-    name: "Unauthorized Hard Inquiry",
-    category: "inquiries",
-    scenario:
-      "A hard inquiry appears on your credit report that you did not authorize",
-    successRate: 62,
-    tone: "assertive",
-    letterText: "",
-    requiredDocuments: [
-      "Credit report showing the inquiry",
-      "Identity verification",
-    ],
-    placeholders: ["YOUR_NAME", "CREDITOR_NAME", "INQUIRY_DATE"],
-    bestPractices: [
-      "Send within 30 days of discovery",
-      "Include copy of credit report",
-    ],
-    whenToUse: [
-      "Unknown company made inquiry",
-      "Never applied for credit with this lender",
-    ],
-    whenNotToUse: [
-      "You authorized the inquiry but forgot",
-      "Pre-qualification inquiry",
-    ],
-  },
-  {
-    id: "obsolete_debt",
-    name: "Obsolete Debt Removal",
-    category: "collections",
-    scenario: "A debt older than 7 years still appears on your credit report",
-    successRate: 78,
-    tone: "legal",
-    letterText: "",
-    requiredDocuments: [
-      "Credit report showing the account",
-      "Proof of account age",
-    ],
-    placeholders: ["YOUR_NAME", "ACCOUNT_NAME", "ORIGINAL_DATE"],
-    bestPractices: [
-      "Calculate exact date of first delinquency",
-      "Cite FCRA Section 605",
-    ],
-    whenToUse: ["Debt is older than 7 years", "Account should have aged off"],
-    whenNotToUse: [
-      "Debt is within reporting period",
-      "Recent re-aging occurred",
-    ],
-  },
-  {
-    id: "mixed_credit_file",
-    name: "Mixed Credit File",
-    category: "identity",
-    scenario: "Accounts belonging to someone else appear on your credit report",
-    successRate: 71,
-    tone: "assertive",
-    letterText: "",
-    requiredDocuments: ["Credit report", "Government ID", "Proof of SSN"],
-    placeholders: ["YOUR_NAME", "YOUR_SSN_LAST_4", "WRONG_ACCOUNT"],
-    bestPractices: [
-      "Include complete identity verification",
-      "List all incorrect accounts",
-    ],
-    whenToUse: [
-      "Someone else's accounts on your report",
-      "Similar name/SSN confusion",
-    ],
-    whenNotToUse: [
-      "Accounts are yours but disputed",
-      "Joint account confusion",
-    ],
-  },
-  {
-    id: "paid_collection_reporting",
-    name: "Paid Collection Still Reporting",
-    category: "collections",
-    scenario: "A collection account shows as unpaid after you've paid it",
-    successRate: 74,
-    tone: "assertive",
-    letterText: "",
-    requiredDocuments: [
-      "Payment confirmation",
-      "Credit report",
-      "Settlement letter",
-    ],
-    placeholders: [
-      "YOUR_NAME",
-      "COLLECTION_AGENCY",
-      "PAYMENT_DATE",
-      "AMOUNT_PAID",
-    ],
-    bestPractices: [
-      "Include proof of payment",
-      "Reference original settlement terms",
-    ],
-    whenToUse: [
-      "Collection paid but still shows open",
-      "Balance shows incorrect amount",
-    ],
-    whenNotToUse: ["Payment is still processing", "Partial payment made"],
-  },
-  {
-    id: "inaccurate_payment_history",
-    name: "Inaccurate Payment History",
-    category: "accounts",
-    scenario: "Late payments are reported incorrectly on your account",
-    successRate: 58,
-    tone: "assertive",
-    letterText: "",
-    requiredDocuments: [
-      "Bank statements",
-      "Payment confirmations",
-      "Credit report",
-    ],
-    placeholders: [
-      "YOUR_NAME",
-      "CREDITOR_NAME",
-      "ACCOUNT_NUMBER",
-      "INCORRECT_MONTH",
-    ],
-    bestPractices: ["Provide bank statements showing on-time payments"],
-    whenToUse: [
-      "Payment was made on time but reported late",
-      "Wrong month marked late",
-    ],
-    whenNotToUse: ["Payment was actually late", "Grace period confusion"],
-  },
-  {
-    id: "medical_debt_under_500",
-    name: "Medical Debt Under $500",
-    category: "medical",
-    scenario: "Medical collection under $500 per new FCRA rules",
-    successRate: 85,
-    tone: "legal",
-    letterText: "",
-    requiredDocuments: ["Credit report", "Medical billing statement"],
-    placeholders: [
-      "YOUR_NAME",
-      "MEDICAL_PROVIDER",
-      "COLLECTION_AGENCY",
-      "AMOUNT",
-    ],
-    bestPractices: [
-      "Cite new FCRA medical debt rules",
-      "Verify amount is under $500",
-    ],
-    whenToUse: [
-      "Medical debt under $500",
-      "Debt went to collections after April 2023",
-    ],
-    whenNotToUse: [
-      "Medical debt over $500",
-      "Debt reported before rule change",
-    ],
-  },
-  {
-    id: "student_loan_rehabilitation",
-    name: "Student Loan Rehabilitation",
-    category: "student_loans",
-    scenario: "Completed loan rehabilitation but default still showing",
-    successRate: 82,
-    tone: "formal",
-    letterText: "",
-    requiredDocuments: [
-      "Rehabilitation completion letter",
-      "Servicer confirmation",
-    ],
-    placeholders: ["YOUR_NAME", "LOAN_SERVICER", "REHABILITATION_DATE"],
-    bestPractices: [
-      "Include official rehabilitation certificate",
-      "Request complete removal",
-    ],
-    whenToUse: [
-      "Completed 9 qualifying payments",
-      "Have rehabilitation completion letter",
-    ],
-    whenNotToUse: [
-      "Still in rehabilitation program",
-      "Consolidation not rehabilitation",
-    ],
-  },
-  {
-    id: "bankruptcy_discharge",
-    name: "Bankruptcy Discharge Verification",
-    category: "bankruptcy",
-    scenario: "Discharged debts still showing as owed post-bankruptcy",
-    successRate: 76,
-    tone: "legal",
-    letterText: "",
-    requiredDocuments: ["Bankruptcy discharge papers", "Schedule of debts"],
-    placeholders: [
-      "YOUR_NAME",
-      "CASE_NUMBER",
-      "DISCHARGE_DATE",
-      "CREDITOR_NAME",
-    ],
-    bestPractices: [
-      "Include certified copy of discharge",
-      "Reference specific account",
-    ],
-    whenToUse: [
-      "Debt was included in bankruptcy",
-      "Account shows balance after discharge",
-    ],
-    whenNotToUse: ["Debt was not discharged", "Reaffirmation agreement signed"],
-  },
-];
+/*
+ * LOCAL_TEMPLATES lived here: a second copy of the dispute-letter catalogue,
+ * ~190 lines, seeded into state and used as a silent fallback.
+ *
+ * It is gone for the same reason as the parallel API client (SF-22): the
+ * server already serves these letters from
+ * src/lib/disputes/dispute-service.ts, and a divergent second copy is how the
+ * two drift. This one had ALREADY drifted — it carried whenToUse,
+ * whenNotToUse, tone and requiredDocuments, none of which the server sends,
+ * so a successful fetch replaced rich local entries with sparser real ones
+ * and the screen rendered undefined where it used to render content.
+ */
 
 const CATEGORIES = [
   { id: "all", label: "All Templates", icon: "apps-outline" },
@@ -260,7 +70,8 @@ const getToneColor = (tone: string) => {
 export default function TemplatesScreen() {
   const router = useRouter();
   const [templates, setTemplates] =
-    useState<DisputeTemplate[]>(LOCAL_TEMPLATES);
+    useState<DisputeTemplate[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -272,12 +83,19 @@ export default function TemplatesScreen() {
   const fetchTemplates = async () => {
     setLoading(true);
     try {
-      const { data, error } = await disputesAPI.getTemplates();
-      if (data?.templates && !error) {
-        setTemplates(toArray<DisputeTemplate>(data?.templates));
+      const res = await disputeResourcesApi.getTemplates();
+      if (!res.success || !res.data?.templates) {
+        // No silent fallback. LOCAL_TEMPLATES is real product content, but
+        // showing it after a failed read tells the user the server answered.
+        setError("We could not load dispute templates.");
+        setLoading(false);
+        return;
       }
+      // Mapped, not cast. The server's template shape shares only four
+      // field names with the mobile one.
+      setTemplates(res.data.templates.map(mapWebDisputeTemplate));
     } catch {
-      // Use local templates as fallback
+      setError("We could not load dispute templates.");
     }
     setLoading(false);
   };
@@ -422,7 +240,16 @@ export default function TemplatesScreen() {
               </Text>
 
               <View style={styles.templateMeta}>
-                <View
+                {/*
+                  The tone badge rendered `template.tone` — a field the server
+                  does not send. DISPUTE_TEMPLATES carries
+                  { description, template, variables } and nothing about the
+                  letter's voice, so this showed an empty coloured pill on
+                  every real template. Rendered only when a tone actually
+                  arrives.
+                */}
+                {template.tone ? (
+                  <View
                   style={[
                     styles.toneBadge,
                     { backgroundColor: getToneColor(template.tone) + "20" },
@@ -437,6 +264,7 @@ export default function TemplatesScreen() {
                     {template.tone}
                   </Text>
                 </View>
+                ) : null}
                 <Text style={styles.docsRequired}>
                   <Ionicons
                     name="document-attach-outline"
@@ -455,12 +283,11 @@ export default function TemplatesScreen() {
               <View style={styles.whenToUse}>
                 <Text style={styles.whenToUseLabel}>Best for:</Text>
                 <Text style={styles.whenToUseText} numberOfLines={1}>
-                  {/* `whenToUse` is typed as a required array but a template may
-                      arrive without it, and `undefined[0]` throws "Cannot
-                      convert undefined value to object" — which takes the whole
-                      screen down through the ErrorBoundary. Same per-ITEM array
-                      field as requiredDocuments above. */}
-                  {template.whenToUse?.[0] ?? "any dispute"}
+                  {/* `whenToUse` came from the deleted LOCAL_TEMPLATES fixture;
+                      the server never sends it. `scenario` — mapped from the
+                      route's `description` — is the field that actually says
+                      what a letter is for. */}
+                  {template.scenario || "any dispute"}
                 </Text>
               </View>
 

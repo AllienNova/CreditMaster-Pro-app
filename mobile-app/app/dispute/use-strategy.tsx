@@ -12,7 +12,15 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
-import { disputesAPI, DisputeStrategy } from "../../services/api";
+// The main client. The parallel one does NOT unwrap { success, data }, so
+// BOTH calls on this screen returned undefined for the field they read:
+// the strategy never loaded and the generated letter never appeared.
+// See SF-22.
+import {
+  disputeResourcesApi,
+  disputeLetterApi,
+} from "../../src/services/api/disputes";
+import type { DisputeStrategy } from "../../src/services/api/types";
 
 const VARIABLE_LABELS: Record<string, string> = {
   DISPUTE_DETAILS: "Describe the disputed item",
@@ -85,9 +93,9 @@ export default function UseStrategyScreen() {
     setLoading(true);
     // try/finally — a rejection here left the screen spinning forever.
     try {
-      const { data } = await disputesAPI.getStrategy(strategyId || "");
-      if (data?.strategy) {
-        setStrategy(data.strategy);
+      const res = await disputeResourcesApi.getStrategy(strategyId || "");
+      if (res.success && res.data?.strategy) {
+        setStrategy(res.data.strategy);
         const requiredVars = getRequiredVariables(strategyId || "");
         const initial: Record<string, string> = {};
         requiredVars.forEach((v) => {
@@ -108,15 +116,26 @@ export default function UseStrategyScreen() {
     }
 
     setGenerating(true);
-    const { data, error } = await disputesAPI.generateFromStrategy(
+    const res = await disputeLetterApi.generateFromStrategy(
       strategyId || "",
       variables,
     );
 
-    if (error) {
-      Alert.alert("Error", error);
-    } else if (data) {
-      setResult({ letter: data.letter, nextSteps: data.nextSteps || [] });
+    if (!res.success || !res.data) {
+      Alert.alert("Error", res.error?.message ?? "Could not generate letter");
+    } else {
+      // `disputeLetter`, not `letter`. The old declaration promised
+      // { letter, strategy, nextSteps } and the route returns none of them,
+      // so this rendered an empty letter every time.
+      //
+      // nextSteps does not exist on the response either. The strategy's own
+      // steps are the honest source, and they are already loaded above.
+      setResult({
+        letter: res.data.disputeLetter,
+        // The strategy's own steps, rendered as text. The response has no
+        // nextSteps field — the old declaration invented one.
+        nextSteps: (strategy?.steps ?? []).map((st) => st.title),
+      });
     }
     setGenerating(false);
   };
@@ -280,12 +299,14 @@ export default function UseStrategyScreen() {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>⚖️ Legal Basis</Text>
-              {strategy.legalBasis.map((law, i) => (
-                <Text key={i} style={styles.legalItem}>
-                  • {law}
-                </Text>
-              ))}
+              {/*
+                "Legal Basis" rendered strategy.legalBasis. The server never
+                sends it — DisputeStrategyDTO is id, name, description,
+                successRate, difficulty, riskLevel, timeline, steps
+                (src/lib/disputes/strategy-dto.ts:36-46). It came from the
+                deleted LOCAL_STRATEGIES fixture, so the heading promised
+                statute citations over an empty list.
+              */}
             </View>
 
             <View style={styles.section}>

@@ -20,13 +20,15 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react-nativ
 
 const mockGetStrategies = jest.fn();
 /**
- * NOTE THE PATH. This screen does not use src/services/api like the other 98
- * — it uses mobile-app/services/api.ts, a SECOND 316-line client with its own
- * apiRequest, its own `{ data, error }` envelope (no `success`), and its own
- * default host. Three dispute screens are on it. Recorded as SF-22.
+ * The MAIN client now (SF-22 migration). This screen used to import
+ * mobile-app/services/api.ts, a parallel client that does not unwrap the
+ * { success, data } envelope — so `data.strategies` was always undefined and
+ * the screen never once rendered a server strategy.
  */
-jest.mock("../../../services/api", () => ({
-  disputesAPI: { getStrategies: (...a: unknown[]) => mockGetStrategies(...a) },
+jest.mock("../../services/api/disputes", () => ({
+  disputeResourcesApi: {
+    getStrategies: (...a: unknown[]) => mockGetStrategies(...a),
+  },
 }));
 
 // expo-router is mocked globally in jest.setup.js.
@@ -48,8 +50,8 @@ const SERVER_STRATEGY = {
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetStrategies.mockResolvedValue({
+    success: true,
     data: { strategies: [SERVER_STRATEGY] },
-    error: null,
   });
 });
 
@@ -62,7 +64,7 @@ describe("dispute/strategies", () => {
   describe("no silent fallback", () => {
     it("says so when the read fails, instead of showing built-in tactics", async () => {
       mockGetStrategies.mockResolvedValue({
-        data: null,
+        success: false,
         error: { message: "boom" },
       });
       render(<DisputeStrategiesScreen />);
@@ -87,7 +89,7 @@ describe("dispute/strategies", () => {
     it("says so when the payload has no strategies", async () => {
       // A 200 with a missing list fell through the same path as an error and
       // left the hardcoded five on screen.
-      mockGetStrategies.mockResolvedValue({ data: {}, error: null });
+      mockGetStrategies.mockResolvedValue({ success: true, data: {} });
       render(<DisputeStrategiesScreen />);
 
       expect(
@@ -97,7 +99,7 @@ describe("dispute/strategies", () => {
 
     it("retries on demand", async () => {
       mockGetStrategies.mockResolvedValueOnce({
-        data: null,
+        success: false,
         error: { message: "boom" },
       });
       render(<DisputeStrategiesScreen />);

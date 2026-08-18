@@ -10,7 +10,12 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
-import { disputesAPI, DisputeStrategy } from "../../services/api";
+// The main client (98 screens use it). The parallel mobile-app/services/api.ts
+// does NOT unwrap the { success, data } envelope, so `data.strategies` was
+// always undefined and this screen never once rendered a server strategy —
+// it fell back silently on every load. See SF-22.
+import { disputeResourcesApi } from "../../src/services/api/disputes";
+import type { DisputeStrategy } from "../../src/services/api/types";
 import { toArray } from "../../src/store/toArray";
 
 // Local strategy data (fallback when API unavailable)
@@ -61,8 +66,8 @@ export default function StrategiesScreen() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: apiError } = await disputesAPI.getStrategies();
-      if (!data?.strategies || apiError) {
+      const res = await disputeResourcesApi.getStrategies();
+      if (!res.success || !res.data?.strategies) {
         // No silent fallback. This used to keep LOCAL_STRATEGIES — five
         // strategies with success rates — so a failed read was
         // indistinguishable from a successful one, and the user chose a
@@ -72,7 +77,7 @@ export default function StrategiesScreen() {
         setLoading(false);
         return;
       }
-      setStrategies(toArray<DisputeStrategy>(data.strategies));
+      setStrategies(toArray<DisputeStrategy>(res.data.strategies));
     } catch {
       setError("We could not load dispute strategies.");
       setStrategies([]);
@@ -272,14 +277,16 @@ export default function StrategiesScreen() {
                     </View>
                   ))}
 
-                  <Text style={styles.sectionTitle}>Legal Basis:</Text>
-                  <View style={styles.legalList}>
-                    {strategy.legalBasis.map((law, i) => (
-                      <Text key={i} style={styles.legalItem}>
-                        • {law}
-                      </Text>
-                    ))}
-                  </View>
+                  {/*
+                    "Legal Basis" used to render strategy.legalBasis here. The
+                    server never sends that field — DisputeStrategyDTO carries
+                    id, name, description, successRate, difficulty, riskLevel,
+                    timeline and steps, and nothing else
+                    (src/lib/disputes/strategy-dto.ts:36-46). It existed only
+                    on the deleted LOCAL_STRATEGIES fixture, so the section is
+                    gone rather than rendering an empty list under a heading
+                    that promises statute citations.
+                  */}
 
                   <TouchableOpacity
                     style={styles.useButton}

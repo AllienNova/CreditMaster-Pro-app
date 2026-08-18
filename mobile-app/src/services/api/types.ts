@@ -156,7 +156,13 @@ export interface DisputeTemplate {
   category: string;
   scenario: string;
   successRate: number;
-  tone: "formal" | "humble" | "assertive" | "legal";
+  /**
+   * OPTIONAL because the server does not send it. DISPUTE_TEMPLATES carries
+   * { description, template, variables } and nothing about the letter's voice
+   * (src/lib/disputes/dispute-service.ts:23-31). Defaulting it to "formal"
+   * would be a claim nobody made.
+   */
+  tone?: "formal" | "humble" | "assertive" | "legal";
   letterText: string;
   requiredDocuments: string[];
   placeholders: string[];
