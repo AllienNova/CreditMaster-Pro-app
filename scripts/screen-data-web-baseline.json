@@ -207,11 +207,6 @@
       "offline": false,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
-    "src/app/marketplace/analysis/page.tsx: mockResults": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
-    },
     "src/app/marketplace/auto-loans/page.tsx: SCORE_TIERS": {
       "classification": "catalogue",
       "offline": true,
