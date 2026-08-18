@@ -12,11 +12,6 @@
       "offline": true,
       "why": "Public about page — company values and platform features. `stats` is marketing copy and belongs to a copy review, not this gate."
     },
-    "src/app/admin/audit/page.tsx: auditLogs": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Invented AUDIT LOG entries with plausible IPs, timestamps and an admin email ('user.login', 192.168.1.1, 'Successful login'). An audit log is a compliance artefact; a fabricated one is worse than an empty one."
-    },
     "src/app/admin/disputes/page.tsx: disputes, stats": {
       "classification": "fabrication",
       "offline": true,
