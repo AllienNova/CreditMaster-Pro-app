@@ -337,11 +337,6 @@
       "offline": true,
       "why": "A single opening greeting from the assistant listing what it can help with, seeded into the transcript. An opening line, not a fabricated conversation history; the file makes a real request for every subsequent turn. Same verdict as mobile's INITIAL_MESSAGES."
     },
-    "src/app/disputes/wizard/page.tsx: items": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "HIGH HARM. useState initialiser pre-populating the dispute wizard with items supposedly on the reader's report — \"Capital One - Late payment March 2023\" — with no request in the file. Someone could file a dispute over an entry that does not exist on their report."
-    },
     "src/app/tax/scenarios/page.tsx: scenarios": {
       "classification": "catalogue",
       "offline": true,
