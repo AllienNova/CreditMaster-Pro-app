@@ -12,11 +12,6 @@
       "offline": true,
       "why": "Public about page — company values and platform features. `stats` is marketing copy and belongs to a copy review, not this gate."
     },
-    "src/app/admin/disputes/page.tsx: disputes, stats": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Invented dispute records and operator statistics."
-    },
     "src/app/admin/features/page.tsx: initialFlags": {
       "classification": "fabrication",
       "offline": true,
