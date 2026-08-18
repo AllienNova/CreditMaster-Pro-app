@@ -27,7 +27,14 @@
  */
 
 import { execFileSync } from "child_process";
-import { readFileSync, writeFileSync } from "fs";
+import {
+  readFileSync,
+  writeFileSync,
+  readdirSync,
+  statSync,
+  existsSync,
+} from "fs";
+import { join, relative } from "path";
 
 const arg = (name, fallback = null) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -178,6 +185,67 @@ function relaunch() {
   sleep(12000);
 }
 
+/**
+ * ARRIVAL ASSERTION — route -> the title only that screen renders.
+ *
+ * WHY. Everything before this decides "we are on the right screen" by
+ * INFERENCE: the reading is not a crash, not near-empty, not identical to
+ * another route's. That inference has been wrong three times —
+ *
+ *   the alert window          a modal covered the app and 31 routes read it
+ *   Expo Go's error screen    identical to the app's own `HTTP 500` state
+ *   a shadowed path           /financial/income renders the Finances TAB and
+ *                             keeps doing so after a relaunch (SF-30)
+ *
+ * — and each time the reading looked perfectly healthy. A negative check
+ * ("nothing looks wrong") cannot tell you WHICH screen you are on. Only a
+ * positive one can.
+ *
+ * So: read each screen's own title out of its source, and after navigating,
+ * require that title to be on screen. 164 of 238 screens expose one through
+ * <ScreenHeader title="..."> or a styles.title/headerTitle Text. The other 74
+ * are reported as arrival-unchecked rather than silently trusted — an honest
+ * "I could not confirm this is the right screen" instead of a pass.
+ */
+function screenTitles() {
+  const titles = new Map();
+  const walkApp = (dir, out = []) => {
+    if (!existsSync(dir)) return out;
+    for (const entry of readdirSync(dir)) {
+      if ([".expo", "node_modules"].includes(entry)) continue;
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) walkApp(full, out);
+      else if (/\.tsx$/.test(entry) && !/^(_layout|\+not-found)\.tsx$/.test(entry))
+        out.push(full);
+    }
+    return out;
+  };
+  const APP = join(process.cwd(), "app");
+  const PATTERNS = [
+    /<ScreenHeader\b[^>]*?title="([^"]+)"/s,
+    /<Text style=\{styles\.title\}>\s*([^<{][^<]*?)\s*<\/Text>/s,
+    /<Text style=\{styles\.headerTitle\}>\s*([^<{][^<]*?)\s*<\/Text>/s,
+  ];
+  for (const file of walkApp(APP)) {
+    const rel = relative(APP, file).replace(/\\/g, "/").replace(/\.tsx$/, "");
+    // expo-router: (group) segments are not part of the URL, and /index is the
+    // directory itself. Mirrors how the route list is generated.
+    let route = "/" + rel.replace(/\([^)]+\)\//g, "");
+    route = route.replace(/\/index$/, "") || "/";
+    const src = readFileSync(file, "utf8");
+    for (const re of PATTERNS) {
+      const m = src.match(re);
+      if (m) {
+        titles.set(route, m[1].trim());
+        break;
+      }
+    }
+  }
+  return titles;
+}
+
+const TITLES = screenTitles();
+
 const routes = readFileSync(ROUTES_FILE, "utf8")
   .split("\n")
   .map((r) => r.trim())
@@ -323,7 +391,24 @@ for (const route of routes) {
   const finalSignature = screen.texts.join(" ");
   if (!seenSignatures.has(finalSignature)) seenSignatures.set(finalSignature, route);
 
+  // POSITIVE arrival check. See screenTitles() for why inference is not enough.
+  const expectedTitle = TITLES.get(route) ?? null;
+  // WHOLE NODE, not a substring. `includes` reported /financial/income as
+  // arrived because the Finances TAB it actually renders (SF-30) lists a row
+  // labelled "Income" — a one-word title matched the wrong screen, which is
+  // exactly the false confidence this check exists to remove.
+  const arrived =
+    expectedTitle === null
+      ? null
+      : screen.texts.some((t) => t.trim() === expectedTitle);
+
   const problems = [];
+  if (expectedTitle !== null && arrived === false) {
+    problems.push(
+      `wrong screen: "${expectedTitle}" is not on screen, so this reading is ` +
+        `not evidence about ${route}`,
+    );
+  }
   if (crash) problems.push(`crash: ${crash}`);
   if (alerted) problems.push(`alert: ${alerted}`);
   // Surfaced as a problem so it is never silently counted as a pass, but it is
@@ -351,6 +436,10 @@ for (const route of routes) {
     chars: screen.chars,
     head: screen.texts.slice(0, 6).join(" | ").slice(0, 120),
     alert: alerted,
+    expectedTitle,
+    // null when the screen exposes no title to check against — reported as
+    // unchecked rather than counted as confirmed.
+    arrived,
     // True when this route's FIRST reading was another route's screen. Kept in
     // the report because it is evidence about the harness, not the app.
     maskedFirstRead: masked,
@@ -366,7 +455,15 @@ const failing = results.filter((r) => r.problems.length);
 const maskedCount = results.filter((r) => r.maskedFirstRead).length;
 writeFileSync(OUT, JSON.stringify({ udid: UDID, tested: results.length, results }, null, 2));
 
+const confirmed = results.filter((r) => r.arrived === true && !r.problems.length);
+const unchecked = results.filter((r) => r.arrived === null && !r.problems.length);
+
 console.log(`\n${results.length} routes — ${failing.length} FAIL, ${results.length - failing.length} ok`);
+console.log(
+  `  ${confirmed.length} ARRIVAL CONFIRMED — the screen's own title was on screen\n` +
+    `  ${unchecked.length} arrival UNCHECKED — the screen exposes no title to look for,\n` +
+    `     so "ok" means only that something rendered without an error marker`,
+);
 if (maskedCount) {
   console.log(
     `${maskedCount} route(s) had their first reading MASKED by the previous ` +
