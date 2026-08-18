@@ -327,11 +327,6 @@
       "offline": true,
       "why": "RECOMMENDATIONS is invented advice for the caller. CATEGORY_CHIPS and QUICK_LINKS in the same entry are config — a per-file key cannot split them, which is the same limitation recorded in rev 41."
     },
-    "src/app/settings/connected-accounts/page.tsx: initialAccounts": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Self-declared: the author named it mock/MOCK_/SAMPLE_/initial. That is a statement in the source that the data is stand-in, not a judgement I am making about the page."
-    },
     "src/app/settings/layout.tsx: settingsNavItems": {
       "classification": "catalogue",
       "offline": false,
