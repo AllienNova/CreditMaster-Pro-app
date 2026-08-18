@@ -49,6 +49,23 @@ const CRASH_MARKERS = [
   "Console Error",
 ];
 
+/**
+ * EXPO GO's OWN error screen, which is not a result about the app at all.
+ *
+ * `exp://host:8081/--/<route>` is sometimes handled as a deep link and
+ * sometimes as a request to load a DIFFERENT project, in which case Expo Go
+ * fetches a manifest at `http://host:8081/<route>`, gets a 404, and renders a
+ * cloud-with-slash, "HTTP 404" and a Try Again button. Three or four elements
+ * of real text — so it passes the near-empty floor and scores as `ok`.
+ *
+ * `/analytics` was recorded that way in two consecutive sweeps while a fresh
+ * launch renders it in 12 elements. No screen in this app prints "HTTP <code>"
+ * (verified by grep over app/ and src/), so the marker is unambiguous. It is
+ * a HARNESS condition: relaunch and re-navigate rather than scoring the route.
+ */
+const CLIENT_ERROR = /^HTTP \d{3}$/;
+const isClientError = (screen) => screen.texts.some((t) => CLIENT_ERROR.test(t.trim()));
+
 function sh(cmd, args) {
   try {
     return execFileSync(cmd, args, { encoding: "utf8", timeout: 60000, stdio: ["ignore", "pipe", "ignore"] });
@@ -57,15 +74,31 @@ function sh(cmd, args) {
   }
 }
 
+/**
+ * A native alert's dismiss button, if one is on screen.
+ *
+ * `Alert.alert` renders a UIAlertController — a SEPARATE window. `idb ui
+ * describe-all` describes only the frontmost one, so while an alert is up the
+ * app behind it is completely invisible to this script. See MASKING below.
+ */
+const DISMISS_LABELS = ["OK", "Ok", "Dismiss", "Cancel", "Close"];
+function alertButton(tree) {
+  return (
+    tree.find(
+      (el) => el.type === "Button" && DISMISS_LABELS.includes(el.AXLabel),
+    ) ?? null
+  );
+}
+
 /** Accessibility tree → the strings a user can actually read. */
 function readScreen() {
   const raw = sh("idb", ["ui", "describe-all", "--udid", UDID]);
-  if (!raw.trim()) return { elements: 0, texts: [], chars: 0 };
+  if (!raw.trim()) return { elements: 0, texts: [], chars: 0, tree: [] };
   let tree;
   try {
     tree = JSON.parse(raw);
   } catch {
-    return { elements: 0, texts: [], chars: 0 };
+    return { elements: 0, texts: [], chars: 0, tree: [] };
   }
   const texts = tree
     .map((el) => el.AXLabel || el.AXValue || "")
@@ -74,7 +107,34 @@ function readScreen() {
     elements: tree.length,
     texts,
     chars: texts.join(" ").trim().length,
+    tree,
   };
+}
+
+/**
+ * Tap a native alert away and report what it said.
+ *
+ * An alert is a finding for the route that raised it — a screen that greets
+ * the user with "Failed to load X" has failed at something — but it must not
+ * be left up, because it masks every route measured after it.
+ */
+function dismissAlert(screen) {
+  const btn = alertButton(screen.tree);
+  if (!btn) return null;
+  const said = screen.texts
+    .filter((t) => t !== "Expo Go" && !DISMISS_LABELS.includes(t))
+    .join(" ")
+    .trim();
+  sh("idb", [
+    "ui",
+    "tap",
+    "--udid",
+    UDID,
+    String(Math.round(btn.frame.x + btn.frame.width / 2)),
+    String(Math.round(btn.frame.y + btn.frame.height / 2)),
+  ]);
+  sleep(1200);
+  return said || "(alert with no text)";
 }
 
 const sleep = (ms) =>
@@ -106,12 +166,65 @@ const routes = readFileSync(ROUTES_FILE, "utf8")
 console.log(`sweeping ${routes.length} mobile routes on ${UDID}`);
 
 const results = [];
+/** Previous route's text, to catch a reading that is not this route's. */
+let prevSignature = null;
 for (const route of routes) {
   const path = route === "/" ? "" : route.replace(/^\//, "");
   sh("xcrun", ["simctl", "openurl", UDID, `exp://${HOST}:8081/--/${path}`]);
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, SETTLE_MS);
 
   let screen = readScreen();
+
+  // DISMISS a native alert before judging anything.
+  //
+  // WITHOUT THIS THE SWEEP LIES A SECOND WAY. An `Alert.alert` is its own
+  // window, and `idb ui describe-all` describes only the frontmost one — so a
+  // single stuck alert makes every LATER route read back that alert's four
+  // elements instead of the screen. The 2026-08-18 run of the 57 changed
+  // routes reported 0 FAIL / 57 ok; in fact `/financial-intelligence/
+  // spending-insights` raised "Failed to load spending insights" and the ~28
+  // routes after it were never measured at all. Same failure mode as the
+  // ErrorBoundary bug this script already guards, through a different window.
+  let alerted = dismissAlert(screen);
+  if (alerted) screen = readScreen();
+
+  // RE-ISSUE the deep link once, and trust the reading that follows it.
+  //
+  // A navigation can simply not take effect — most often when the previous
+  // screen's fetch rejects just as the link fires and it swaps in an error
+  // state. The reading is then stable, non-empty and belongs to the previous
+  // route, so neither the near-empty guard nor the identical-signature guard
+  // sees it. That is how `/analytics` was recorded as "HTTP 404 | Try Again"
+  // twice running when a fresh launch renders it fine in 12 elements.
+  //
+  // `openurl` to a route already showing is a no-op, so this costs one settle
+  // and cannot corrupt a correct reading.
+  // The second reading always wins: it follows an explicit navigation to THIS
+  // route, so it is the one with provenance. Taking whichever reading is
+  // longer would be wrong in the opposite direction — it would keep a rich
+  // previous screen over a correctly sparse one, and /dispute/use-strategy
+  // genuinely renders four elements. A transient blank is handled by the
+  // near-empty guards below, which already exist for exactly that.
+  sh("xcrun", ["simctl", "openurl", UDID, `exp://${HOST}:8081/--/${path}`]);
+  sleep(SETTLE_MS);
+  const second = readScreen();
+  const secondAlert = dismissAlert(second);
+  if (secondAlert) alerted = alerted ?? secondAlert;
+  screen = secondAlert ? readScreen() : second;
+
+  // Expo Go failed to load the bundle. Not a result about this route.
+  let clientError = false;
+  if (isClientError(screen)) {
+    relaunch();
+    sh("xcrun", ["simctl", "openurl", UDID, `exp://${HOST}:8081/--/${path}`]);
+    sleep(SETTLE_MS + 4000);
+    const retried = readScreen();
+    const retriedAlert = dismissAlert(retried);
+    if (retriedAlert) alerted = alerted ?? retriedAlert;
+    screen = retriedAlert ? readScreen() : retried;
+    clientError = isClientError(screen);
+  }
+
   // One retry: the first navigation to a route can race Metro's on-demand
   // transform, which looks identical to a blank screen.
   if (screen.chars < 25) {
@@ -149,8 +262,36 @@ for (const route of routes) {
     if (crash) relaunch();
   }
 
+  // CONFIRM a reading that is IDENTICAL to the previous route's.
+  //
+  // This is the general form of the two guards above, and it is what catches
+  // the next masking window nobody has thought of yet. Two different routes
+  // rendering the same text to the character is either masking or two screens
+  // in the same state; a relaunch plus a fresh navigation tells them apart.
+  // If the text CHANGES after the relaunch, the first reading was masked and
+  // is discarded. If it does not, the screens really are identical and the
+  // reading stands.
+  let masked = false;
+  const signature = screen.texts.join(" ");
+  if (prevSignature !== null && signature === prevSignature) {
+    relaunch();
+    sh("xcrun", ["simctl", "openurl", UDID, `exp://${HOST}:8081/--/${path}`]);
+    sleep(SETTLE_MS + 2500);
+    const fresh = readScreen();
+    const freshAlert = dismissAlert(fresh);
+    screen = freshAlert ? readScreen() : fresh;
+    masked = screen.texts.join(" ") !== signature;
+    joined = screen.texts.join(" ");
+    crash = CRASH_MARKERS.find((m) => joined.includes(m)) ?? null;
+  }
+  prevSignature = screen.texts.join(" ");
+
   const problems = [];
   if (crash) problems.push(`crash: ${crash}`);
+  if (alerted) problems.push(`alert: ${alerted}`);
+  // Surfaced as a problem so it is never silently counted as a pass, but it is
+  // a statement about Expo Go, not about the screen. NOT MEASURED, not FAILED.
+  if (clientError) problems.push("expo-client-error: route was NOT measured");
   // Judge on TEXT, not element count.
   //
   // An element-count floor misreads screens whose content is aggregated into a
@@ -168,6 +309,10 @@ for (const route of routes) {
     elements: screen.elements,
     chars: screen.chars,
     head: screen.texts.slice(0, 6).join(" | ").slice(0, 120),
+    alert: alerted,
+    // True when this route's FIRST reading was another route's screen. Kept in
+    // the report because it is evidence about the harness, not the app.
+    maskedFirstRead: masked,
     problems,
     ok: problems.length === 0,
   });
@@ -177,7 +322,19 @@ for (const route of routes) {
 }
 
 const failing = results.filter((r) => r.problems.length);
+const maskedCount = results.filter((r) => r.maskedFirstRead).length;
 writeFileSync(OUT, JSON.stringify({ udid: UDID, tested: results.length, results }, null, 2));
 
 console.log(`\n${results.length} routes — ${failing.length} FAIL, ${results.length - failing.length} ok`);
+if (maskedCount) {
+  console.log(
+    `${maskedCount} route(s) had their first reading MASKED by the previous ` +
+      `screen and were re-measured after a relaunch.`,
+  );
+}
+console.log(
+  `\nThis sweep proves each route NAVIGATES and RENDERS. It does not prove the\n` +
+    `data shown is real: Expo Go runs a DEV build, and several stores seed data\n` +
+    `under __DEV__ without calling the API (G-031).`,
+);
 console.log(`report -> ${OUT}`);
