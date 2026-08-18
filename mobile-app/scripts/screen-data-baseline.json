@@ -24,11 +24,6 @@
       "offline": true,
       "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query — it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
     },
-    "app/admin/settings.tsx: INITIAL_FLAGS": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "An ADMIN screen showing feature flags that are invented. An operator toggling these believes they are changing the platform; nothing is read and nothing is written. Same family as the five admin screens already fixed. (INITIAL_CONFIG beside it is a single object below the detector's three-key data floor for its shape, so only the flags array is tracked here — both are fabricated.)"
-    },
     "app/analytics/credit-score.tsx: PERIOD_MONTHS": {
       "classification": "catalogue",
       "offline": false,

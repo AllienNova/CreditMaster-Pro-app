@@ -625,3 +625,28 @@ export const adminSubscriptionsApi = {
     };
   },
 };
+
+/**
+ * Platform settings — GET /api/admin/settings (withRole("admin")).
+ *
+ * READ ONLY, deliberately. The route's POST writes to a module-level `let`
+ * (src/app/api/admin/settings/route.ts:14) that does not survive a serverless
+ * instance recycle, and nothing anywhere enforces the values — no middleware
+ * or signup path reads maintenanceMode or signupsEnabled. Exposing a write
+ * here would put a working-looking control over a setting that changes
+ * nothing. Recorded as SF-26; the write comes back when there is a table and
+ * something honouring it.
+ */
+export interface PlatformSettings {
+  siteName: string;
+  supportEmail: string;
+  maxDisputesPerMonth: number;
+  aiModelDefault: string;
+  maintenanceMode: boolean;
+  signupsEnabled: boolean;
+  stripeTestMode: boolean;
+}
+
+export const adminSettingsApi = {
+  get: () => api.get<PlatformSettings>("/admin/settings"),
+};
