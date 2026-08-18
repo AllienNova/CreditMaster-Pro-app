@@ -30,6 +30,21 @@
  * A service flagged here is a CANDIDATE for review, not proof of dead code.
  * Exposing one means adding a route; deleting one needs a named owner.
  *
+ * THE BIGGEST LIMITATION, and it means this audit UNDER-reports:
+ * reachability is MODULE-level, not SYMBOL-level. Importing a barrel marks
+ * everything that barrel re-exports as reachable, whether or not the specific
+ * symbol is ever used. Measured example: routes import `@/lib/gamification`
+ * for getAchievementService and getCommunityChallengesService, which marks
+ * shared-goals-service and financial-journey-service reachable too —
+ * `getSharedGoalsService` and `getFinancialJourneyService` are called nowhere
+ * under src/app.
+ *
+ * So a service ABSENT from this report is not proven live; a service PRESENT
+ * in it is strong evidence of being stranded. The error runs one way on
+ * purpose: a false "unreachable" would fail CI for working code, which is
+ * worse than missing a stranded one. Symbol-level resolution is the fix and is
+ * tracked separately.
+ *
  * Usage:
  *   node scripts/audit-reachable-services.mjs --self-test
  *   node scripts/audit-reachable-services.mjs [--baseline <file>] [--freeze-baseline]
