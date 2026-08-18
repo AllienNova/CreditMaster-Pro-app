@@ -3,7 +3,7 @@
  * Mobile rule builder for auto-categorizing transactions.
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -25,6 +25,8 @@ import { Card } from "../../src/components/Card";
 import { BottomSheet } from "../../src/components/BottomSheet";
 import { EmptyState } from "../../src/components/EmptyState";
 import { Button } from "../../src/components/Button";
+import { transactionRuleApi } from "../../src/services/api/financial";
+import type { WebTransactionRule } from "../../src/services/api/financial";
 
 // ============================================================================
 // Types
@@ -88,29 +90,6 @@ const CATEGORIES = [
   "Uncategorized",
 ];
 
-const INITIAL_RULES: TransactionRule[] = [
-  {
-    id: "1",
-    name: "Coffee Shops",
-    conditions: [{ type: "merchant_contains", value: "coffee" }],
-    conditionLogic: "OR",
-    actions: [{ type: "set_category", value: "Food & Dining" }],
-    isActive: true,
-    matchCount: 47,
-  },
-  {
-    id: "2",
-    name: "Amazon Purchases",
-    conditions: [{ type: "merchant_contains", value: "amazon" }],
-    conditionLogic: "AND",
-    actions: [
-      { type: "set_category", value: "Shopping" },
-      { type: "add_tag", value: "online" },
-    ],
-    isActive: true,
-    matchCount: 23,
-  },
-];
 
 // ============================================================================
 // Rule Form State
@@ -433,15 +412,64 @@ function AddRuleSheet({ visible, onClose, onSave }: AddRuleSheetProps) {
 // Main Screen
 // ============================================================================
 
+/**
+ * The route's shape onto this screen's. Only the fields it renders are taken;
+ * matchCount is the REAL transaction_rules.match_count column, which is what
+ * the invented 47 was imitating.
+ */
+function fromWebRule(r: WebTransactionRule): TransactionRule {
+  return {
+    id: r.id,
+    name: r.name,
+    conditions: r.conditions as RuleCondition[],
+    conditionLogic: r.conditionLogic,
+    actions: r.actions as RuleAction[],
+    isActive: r.isActive,
+    matchCount: r.matchCount,
+  };
+}
+
 export default function TransactionRulesScreen() {
-  const [rules, setRules] = useState<TransactionRule[]>(INITIAL_RULES);
+  const [rules, setRules] = useState<TransactionRule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
 
-  const handleToggle = useCallback((id: string) => {
-    setRules((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, isActive: !r.isActive } : r)),
-    );
+  const load = useCallback(async () => {
+    setError(null);
+    const res = await transactionRuleApi.getAll();
+    if (!res.success || !res.data) {
+      // "No rules yet" and "we could not read your rules" are different
+      // statements. The screen used to make that substitution by seeding a
+      // rule the user never wrote.
+      setError("We could not load your rules.");
+      setLoading(false);
+      return;
+    }
+    setRules(res.data.rules.map(fromWebRule));
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleToggle = useCallback(
+    async (id: string) => {
+      const rule = rules.find((r) => r.id === id);
+      if (!rule) return;
+      const res = await transactionRuleApi.update(id, {
+        isActive: !rule.isActive,
+      });
+      // Reflect it only if the server took it. Flipping local state first made
+      // a failed write look identical to a successful one until reload.
+      if (!res.success) return;
+      setRules((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, isActive: !r.isActive } : r)),
+      );
+    },
+    [rules],
+  );
 
   const handleDelete = useCallback((id: string) => {
     Alert.alert("Delete Rule", "Are you sure you want to delete this rule?", [
@@ -449,19 +477,30 @@ export default function TransactionRulesScreen() {
       {
         text: "Delete",
         style: "destructive",
-        onPress: () => setRules((prev) => prev.filter((r) => r.id !== id)),
+        onPress: async () => {
+          const res = await transactionRuleApi.remove(id);
+          if (!res.success) return;
+          setRules((prev) => prev.filter((r) => r.id !== id));
+        },
       },
     ]);
   }, []);
 
   const handleSave = useCallback(
-    (data: Omit<TransactionRule, "id" | "matchCount">) => {
-      const newRule: TransactionRule = {
-        ...data,
-        id: Date.now().toString(),
-        matchCount: 0,
-      };
-      setRules((prev) => [...prev, newRule]);
+    async (data: Omit<TransactionRule, "id" | "matchCount">) => {
+      // The id used to be Date.now(). The server assigns it, and matchCount
+      // starts wherever the engine says it does — not at a number this screen
+      // picks.
+      const res = await transactionRuleApi.create({
+        name: data.name,
+        conditions: data.conditions,
+        conditionLogic: data.conditionLogic,
+        actions: data.actions,
+        isActive: data.isActive,
+      });
+      const created = res.data;
+      if (!res.success || !created) return;
+      setRules((prev) => [...prev, fromWebRule(created.rule)]);
     },
     [],
   );

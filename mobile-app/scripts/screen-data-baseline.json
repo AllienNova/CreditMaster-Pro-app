@@ -345,11 +345,6 @@
       "offline": false,
       "why": "The notification categories the app offers and their default states. Configuration the user then edits, not a measurement."
     },
-    "app/settings/transaction-rules.tsx: INITIAL_RULES": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "The user's own transaction rules, invented - 'Coffee Shops' with matchCount 47, a count of matches that never happened. Presented as rules they created and as evidence those rules are working."
-    },
     "app/tax/calendar.tsx: TAX_EVENTS_2026": {
       "classification": "catalogue",
       "offline": false

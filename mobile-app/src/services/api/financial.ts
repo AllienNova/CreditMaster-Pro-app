@@ -1680,3 +1680,68 @@ export default {
   debt: debtApi,
   bills: billsApi,
 };
+
+/**
+ * Transaction rules — GET/POST /api/financial/transaction-rules and
+ * PATCH/DELETE on {id}.
+ *
+ * The routes are new; the table (`transaction_rules`, with RLS) and
+ * transactionRulesService were already there. Only the HTTP surface was
+ * missing, which is why app/settings/transaction-rules.tsx shipped a "Coffee
+ * Shops" rule the user never wrote, carrying matchCount 47.
+ */
+export interface WebRuleCondition {
+  type: string;
+  value: string | number;
+  secondaryValue?: string | number;
+}
+
+export interface WebRuleAction {
+  type: string;
+  value: string | number | boolean;
+  metadata?: Record<string, unknown>;
+}
+
+export interface WebTransactionRule {
+  id: string;
+  name: string;
+  description?: string;
+  conditions: WebRuleCondition[];
+  conditionLogic: "AND" | "OR";
+  actions: WebRuleAction[];
+  isActive: boolean;
+  priority: number;
+  /** Real column on transaction_rules, maintained by the engine. */
+  matchCount: number;
+  lastMatchedAt?: string;
+}
+
+export interface CreateTransactionRuleInput {
+  name: string;
+  description?: string;
+  conditions: WebRuleCondition[];
+  conditionLogic: "AND" | "OR";
+  actions: WebRuleAction[];
+  isActive?: boolean;
+  priority?: number;
+}
+
+export const transactionRuleApi = {
+  getAll: () =>
+    api.get<{ rules: WebTransactionRule[] }>("/financial/transaction-rules"),
+
+  create: (input: CreateTransactionRuleInput) =>
+    api.post<{ rule: WebTransactionRule }>(
+      "/financial/transaction-rules",
+      input,
+    ),
+
+  update: (id: string, input: Partial<CreateTransactionRuleInput>) =>
+    api.patch<{ rule: WebTransactionRule }>(
+      `/financial/transaction-rules/${id}`,
+      input,
+    ),
+
+  remove: (id: string) =>
+    api.delete<{ id: string }>(`/financial/transaction-rules/${id}`),
+};
