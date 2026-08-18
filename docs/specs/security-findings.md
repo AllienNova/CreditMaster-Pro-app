@@ -851,10 +851,92 @@ money, and it carries the precision that invites acting on it — 180.25, 1.24,
 ticker is opened.
 
 **Not fixed here.** All three are baselined `fabrication` and the gate is
-shrink-only, so they cannot grow. Whether the investment screens have any real
-source is unverified: SF-07 already established that paper trading executes at
-`100 + Math.random() * 100` when POLYGON_API_KEY is unconfigured, so the market
-data path needs its own audit before anything is wired to it.
+shrink-only, so they cannot grow.
+
+**Update — the market-data path was audited and IS real.** `marketDataService
+.getStockQuote` tries Polygon, falls back to Alpha Vantage, and **throws**
+`ALL_PROVIDERS_FAILED` if both fail; there is no fabricated fallback.
+`aiStockAnalyst.getAIRecommendation` rethrows. `getSentimentAnalysis` degrades
+to an all-zero default with `confidence: 0`, which is an honest empty state
+rather than invented values. SF-07's randomness is confined to
+PaperTradingEngine and does not reach these routes.
+
+So the screens COULD be wired — except that the recommendation route has a
+separate, disqualifying defect. See SF-18.
+
+## SF-18 — the AI recommendation engine can never say "buy"
+
+**Severity: HIGH (correctness, live, provable by arithmetic).** Found while
+checking whether SF-17's investment screens could be wired to a real route.
+
+`AIRecommendationEngine.generateRecommendation` scores three components and
+combines them:
+
+```ts
+private readonly weights = {
+  technical: 0.35, fundamental: 0.3, sentiment: 0.2, pattern: 0.15,
+};
+
+const fundamentalScore = fundamentalData ? this.calculateFundamentalScore(...) : 50;
+const sentimentScore   = sentimentData   ? this.calculateSentimentScore(...)   : 50;
+
+const compositeScore =
+  technicalScore * this.weights.technical +
+  fundamentalScore * this.weights.fundamental +
+  sentimentScore * this.weights.sentiment;
+```
+
+Two things combine into a hard ceiling.
+
+**1. `pattern` (0.15) is declared and never used.** The composite sums only
+technical + fundamental + sentiment = 0.85 of the weight budget. 15% is
+silently dropped.
+
+**2. The route supplies neither fundamental nor sentiment data.**
+`src/app/api/investments/recommendations/route.ts:77` passes `undefined` for
+both, with the comments `// Fundamental data` and `// Sentiment data`. So both
+fall to the placeholder 50.
+
+The reachable range is therefore:
+
+| technicalScore | composite | action |
+|---|---|---|
+| 0 | 25.0 | strong_sell |
+| 50 | 42.5 | sell |
+| **100** | **60.0** | **hold** |
+
+against `scoreToAction`'s thresholds of strong_buy ≥ 80, buy ≥ 65, hold ≥ 45,
+sell ≥ 30.
+
+**A perfect technical score produces "hold".** The route structurally cannot
+emit `buy` or `strong_buy` for any symbol, under any market condition. Half the
+action enum is unreachable.
+
+### Why this blocks the SF-17 fix
+
+The obvious repair for the investment screens is to wire them to this route.
+That would replace an obvious fixture with a real-looking recommendation that
+is HOLD or worse for every stock a user ever looks up — sourced-looking, and
+wrong in a way far harder to notice than "iPhone 16 supercycle" appearing under
+a bank stock. Same reasoning that kept `/credit/factors` from being wired
+before it was rebuilt (SF-16), and that was right.
+
+### The fix is an owner decision, not a mechanical one
+
+Two defensible repairs, with different meanings:
+
+1. **Renormalise over the weights actually supplied.** With only technical
+   available, the composite becomes the technical score itself. Honest, and the
+   full action range becomes reachable — but every recommendation the system
+   has ever made changes.
+2. **Supply the missing inputs.** `performFundamentalAnalysis` and
+   `performSentimentAnalysis` both exist on `aiStockAnalyst`; the route simply
+   does not call them. More work, and it makes the recommendation genuinely
+   three-factor as designed.
+
+Either changes investment advice for every user, so neither is a change to make
+unilaterally. The `pattern` weight also needs a decision: use it, or remove it
+from the declaration so the budget sums to what is actually applied.
 
 ## Revision History
 
@@ -874,3 +956,4 @@ data path needs its own audit before anything is wired to it.
 | 2026-08-17 (rev 10) | Added SF-15: `auto-save-rules-service.ts` queries `auto_save_rules` and `save_transfers`; neither table exists in any migration, and the real `savings_rules` has a narrower CHECK on both type and status. Dead code against a schema that was never created, carrying an `executeTransfer` that moves money. The live service is `savings-automation-service.ts`, already exposed at /api/financial/savings. DELETE recommended; owner approval required. |
 | 2026-08-17 (rev 11) | Added SF-16: `/api/credit/factors` has zero data access and returns five hardcoded factors telling every caller they have "98% on-time payments"; `_user` is unused and the route's own comment claims it reads the database. Reachable from both primary navs and two mobile buttons. Added a fourth audit:mocks detector for routes that fabricate as their PRIMARY path (no data access + constant data set) — the previous three all assumed a fallback shape and could not see this. Two routes match across 351; the other is /api/disputes/reasons, an allowlisted catalogue. |
 | 2026-08-17 (rev 12) | Added SF-17: extended audit:screen-data to detect constant OBJECTS (brace-counted), gated on a measurement heuristic — decimals or values >= 100 — so label and colour maps do not drown the signal. Found `WEEKLY_SUMMARY` (fixed in the same commit) plus invented PRICE_TARGETS/RISK_ASSESSMENT/ANALYST_CONSENSUS/INSIDER_TRADES on two investment-analysis screens, and ACCOUNTS/BUDGET_STATUS on financial/overview. The investment ones are actionable advice attached to a real ticker; baselined, not fixed, pending an audit of whether any market-data source is real (cf. SF-07). |
+| 2026-08-17 (rev 13) | Audited the market-data path for SF-17 and found it REAL — marketDataService throws ALL_PROVIDERS_FAILED rather than fabricating, and SF-07's randomness is confined to PaperTradingEngine. But added SF-18: AIRecommendationEngine's composite drops the unused `pattern` weight (0.15) and the route supplies neither fundamental nor sentiment data, so both fall to a placeholder 50. Maximum achievable composite is 60 against a `buy` threshold of 65 — the engine can never recommend buying, for any symbol, under any conditions. This blocks the SF-17 screen fix and needs an owner decision on renormalising vs supplying the missing inputs. |
