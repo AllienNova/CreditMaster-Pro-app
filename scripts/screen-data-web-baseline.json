@@ -232,11 +232,6 @@
       "offline": true,
       "why": "Public landing page — `pricing` and `products` are the real product catalogue."
     },
-    "src/app/profile/page.tsx: achievements, activityHistory": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Invented achievements and activity history, alongside the hardcoded 720 score and 78% completion the inline-metrics gate already records."
-    },
     "src/app/recommendations/credit-cards/page.tsx: CREDIT_CARD_OFFERS": {
       "classification": "catalogue",
       "offline": true,
