@@ -104,6 +104,45 @@ export default function CreditGoalsScreen() {
     label: monthLabel(h.date),
   }));
 
+  /**
+   * The trend statistics, COMPUTED from the same series the chart draws.
+   *
+   * They were "+58 6 Month Gain" and "+10 Monthly Avg", hardcoded — the
+   * caller's score movement, invented, and they survived the earlier fix of
+   * this screen because that pass removed the module-level constants and left
+   * the JSX literals. Deriving them from `historyPoints` is what stops the
+   * chart and the numbers under it from telling different stories.
+   *
+   * Null when there is nothing to measure a change ACROSS: a single reading
+   * has no gain, and `(n - 1)` would divide by zero.
+   */
+  const trend =
+    historyPoints.length >= 2
+      ? (() => {
+          const first = historyPoints[0].value;
+          const last = historyPoints[historyPoints.length - 1].value;
+          const gain = last - first;
+          return {
+            gain,
+            perPeriod: gain / (historyPoints.length - 1),
+            periods: historyPoints.length,
+          };
+        })()
+      : null;
+
+  const signed = (n: number) => `${n > 0 ? "+" : ""}${Math.round(n)}`;
+
+  /**
+   * Chart bounds from the DATA, padded.
+   *
+   * They were minValue={580} maxValue={720}. A caller above 720 or below 580 —
+   * both entirely ordinary — had their own history drawn outside the chart.
+   */
+  const values = historyPoints.map((p) => p.value);
+  const bounds = values.length
+    ? { min: Math.max(300, Math.min(...values) - 20), max: Math.min(850, Math.max(...values) + 20) }
+    : { min: 300, max: 850 };
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
@@ -160,19 +199,34 @@ export default function CreditGoalsScreen() {
             color={theme.colors.primary}
             showDots
             showLabels
-            minValue={580}
-            maxValue={720}
+            minValue={bounds.min}
+            maxValue={bounds.max}
           />
-          <View style={styles.trendStats}>
-            <View style={styles.trendStat}>
-              <Text style={styles.trendValue}>+58</Text>
-              <Text style={styles.trendLabel}>6 Month Gain</Text>
+          {trend ? (
+            <View style={styles.trendStats}>
+              <View style={styles.trendStat}>
+                <Text testID="trend-gain" style={styles.trendValue}>
+                  {signed(trend.gain)}
+                </Text>
+                {/* The window is however many readings there are, not a fixed
+                    six months, because the history route returns what has
+                    actually been recorded. */}
+                <Text style={styles.trendLabel}>
+                  Change over {trend.periods} readings
+                </Text>
+              </View>
+              <View style={styles.trendStat}>
+                <Text testID="trend-avg" style={styles.trendValue}>
+                  {signed(trend.perPeriod)}
+                </Text>
+                <Text style={styles.trendLabel}>Average per reading</Text>
+              </View>
             </View>
-            <View style={styles.trendStat}>
-              <Text style={styles.trendValue}>+10</Text>
-              <Text style={styles.trendLabel}>Monthly Avg</Text>
-            </View>
-          </View>
+          ) : (
+            <Text style={styles.stateText}>
+              One reading so far — there is no change to measure yet.
+            </Text>
+          )}
         </Card>
 
         <Text style={styles.sectionTitle}>Your Goals</Text>

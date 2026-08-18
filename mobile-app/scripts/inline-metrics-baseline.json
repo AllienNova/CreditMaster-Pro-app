@@ -14,10 +14,6 @@
       "classification": "catalogue",
       "why": "Credit-score band boundaries (300/579/669/739/799/850). Published scale, not this user's score."
     },
-    "app/credit-builder/goals.tsx: +58, +10": {
-      "classification": "fabrication",
-      "why": "'+58 6 Month Gain' and '+10 Monthly Avg' - the caller's score movement, invented. Survived the rev-34 fix of this same screen for the same reason as analytics/credit-score."
-    },
     "app/credit-builder/utilization.tsx: 100%": {
       "classification": "catalogue",
       "why": "Axis legend for the utilization bar: 0% / 10% ideal / 100%."
