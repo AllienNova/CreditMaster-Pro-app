@@ -22,107 +22,13 @@ export const metadata: Metadata = {
 // Types
 // ---------------------------------------------------------------------------
 
-interface BreachEntry {
-  id: string;
-  source: string;
-  date: string;
-  exposedData: string[];
-  severity: "critical" | "high" | "medium" | "low";
-  affectedEmail: string;
-  description: string;
-}
-
-// ---------------------------------------------------------------------------
-// Mock Data
-// ---------------------------------------------------------------------------
-
-const BREACH_ENTRIES: BreachEntry[] = [
-  {
-    id: "br-1",
-    source: "MegaCorp Data Breach",
-    date: "2025-12-14",
-    exposedData: ["Email", "Password (hashed)", "Full Name"],
-    severity: "high",
-    affectedEmail: "user@example.com",
-    description:
-      "MegaCorp suffered a breach exposing 12M accounts. Your email and hashed password were included in the dump found on a dark web marketplace.",
-  },
-  {
-    id: "br-2",
-    source: "SocialApp Credential Leak",
-    date: "2025-08-22",
-    exposedData: ["Email", "Password (plaintext)", "Phone Number"],
-    severity: "critical",
-    affectedEmail: "user@example.com",
-    description:
-      "SocialApp credentials were leaked in plaintext on a paste site. Your password from this site may be used in credential-stuffing attacks.",
-  },
-  {
-    id: "br-3",
-    source: "RetailStore Customer DB",
-    date: "2025-05-03",
-    exposedData: ["Email", "Mailing Address"],
-    severity: "medium",
-    affectedEmail: "personal@example.com",
-    description:
-      "RetailStore customer database was compromised. Your email and mailing address were exposed but no financial data was found.",
-  },
-  {
-    id: "br-4",
-    source: "FitnessTrack API Exposure",
-    date: "2024-11-18",
-    exposedData: ["Email", "Date of Birth"],
-    severity: "low",
-    affectedEmail: "personal@example.com",
-    description:
-      "FitnessTrack had an open API that exposed user profile data. Limited personal information was accessible for a short period.",
-  },
-];
-
-const EXPOSED_CATEGORIES = [
-  { category: "Emails", count: 2, status: "exposed" as const },
-  { category: "Passwords", count: 2, status: "exposed" as const },
-  { category: "Phone Numbers", count: 1, status: "exposed" as const },
-  { category: "Addresses", count: 1, status: "exposed" as const },
-  { category: "SSN", count: 0, status: "safe" as const },
-  { category: "Financial Data", count: 0, status: "safe" as const },
-];
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function severityClasses(severity: BreachEntry["severity"]): {
-  badge: string;
-  border: string;
-} {
-  switch (severity) {
-    case "critical":
-      return {
-        badge:
-          "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-        border: "border-l-red-500",
-      };
-    case "high":
-      return {
-        badge:
-          "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-        border: "border-l-orange-500",
-      };
-    case "medium":
-      return {
-        badge:
-          "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-        border: "border-l-amber-500",
-      };
-    default:
-      return {
-        badge:
-          "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300",
-        border: "border-l-gray-400",
-      };
-  }
-}
+/*
+ * A `BreachEntry` interface, BREACH_ENTRIES, EXPOSED_CATEGORIES and a
+ * severityClasses() helper lived here. All four existed only to render the
+ * invented breach report described in DarkWebContent below, and all four are
+ * gone with it — a severity palette for severities nobody measured is not
+ * worth keeping warm.
+ */
 
 // ---------------------------------------------------------------------------
 // Loading Skeleton
@@ -175,122 +81,48 @@ function DarkWebLoadingSkeleton() {
 // ---------------------------------------------------------------------------
 
 function DarkWebContent() {
-  const totalBreaches = BREACH_ENTRIES.length;
-  const totalExposed = EXPOSED_CATEGORIES.reduce((s, c) => s + c.count, 0);
-  const criticalCount = BREACH_ENTRIES.filter(
-    (b) => b.severity === "critical" || b.severity === "high",
-  ).length;
-
+  /*
+   * This component rendered BREACH_ENTRIES and EXPOSED_CATEGORIES: a summary
+   * of "Breaches Found", "Exposed Data Points" and "High / Critical", a
+   * per-category exposed/not-found list, and a detail card per breach reading
+   *
+   *   "MegaCorp Data Breach" — 2025-12-14 — HIGH
+   *   "MegaCorp suffered a breach exposing 12M accounts. Your email and hashed
+   *    password were included in the dump found on a dark web marketplace."
+   *   Affected: user@example.com
+   *
+   * None of it was real. There is no dark-web monitoring in this codebase at
+   * all — no provider client, no route, no table. Searching for a breach
+   * source finds only `src/lib/compliance/gdpr-ccpa.ts`, which is about
+   * NOTIFYING regulators of a breach of ours, not checking whether the
+   * caller's credentials appear in someone else's dump.
+   *
+   * This is the most actionable fabrication found in the audit. A user who
+   * believes it changes passwords, freezes credit, or buys monitoring — real
+   * money and real effort, spent on nothing. `affectedEmail` was the
+   * placeholder "user@example.com", so the card was not even personalised;
+   * it simply read as the caller's own breach.
+   *
+   * The three summary tiles are gone with it: each was computed FROM the
+   * invented list (`BREACH_ENTRIES.length`, a sum over `EXPOSED_CATEGORIES`,
+   * a filter on severity), so they were fabrications one step removed — the
+   * shape that made the retirement figures on /tax/optimizer and the
+   * "Disputable" tile on /marketplace/analysis read as measurements.
+   */
   return (
-    <div className="space-y-8">
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5 text-center">
-          <p className="text-3xl font-bold text-red-600 dark:text-red-400">
-            {totalBreaches}
-          </p>
-          <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
-            Breaches Found
-          </p>
-        </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5 text-center">
-          <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
-            {totalExposed}
-          </p>
-          <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
-            Exposed Data Points
-          </p>
-        </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5 text-center">
-          <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-            {criticalCount}
-          </p>
-          <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
-            High / Critical
-          </p>
-        </div>
-      </div>
-
-      {/* Exposed Data Categories */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-          Exposed Data Categories
-        </h2>
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 divide-y divide-gray-100 dark:divide-slate-700">
-          {EXPOSED_CATEGORIES.map((cat) => (
-            <div
-              key={cat.category}
-              className="flex items-center justify-between px-5 py-3"
-            >
-              <div className="flex items-center gap-3">
-                <span
-                  className={`w-2.5 h-2.5 rounded-full ${cat.status === "exposed" ? "bg-red-500" : "bg-green-500"}`}
-                />
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {cat.category}
-                </span>
-              </div>
-              <span
-                className={`text-sm font-medium ${cat.status === "exposed" ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
-              >
-                {cat.status === "exposed"
-                  ? `${cat.count} exposed`
-                  : "Not found"}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Breach Details */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-          Breach Details
-        </h2>
-        <div className="space-y-4">
-          {BREACH_ENTRIES.map((breach) => {
-            const sc = severityClasses(breach.severity);
-            return (
-              <div
-                key={breach.id}
-                className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 border-l-4 ${sc.border} p-5`}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {breach.source}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-xs font-medium uppercase px-2 py-0.5 rounded-full ${sc.badge}`}
-                    >
-                      {breach.severity}
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-slate-500">
-                      {breach.date}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-slate-400 mb-3">
-                  {breach.description}
-                </p>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {breach.exposedData.map((d) => (
-                    <span
-                      key={d}
-                      className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 px-2 py-1 rounded"
-                    >
-                      {d}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 dark:text-slate-500">
-                  Affected: {breach.affectedEmail}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+        Dark web monitoring is not active
+      </h2>
+      <p className="text-sm text-gray-600 dark:text-slate-400">
+        We have not scanned anything for you. Fynvita is not connected to a
+        breach-monitoring provider yet, so we cannot tell you whether your
+        details appear in a leak — and we would rather say that than show you a
+        result we made up.
+      </p>
+      <p className="text-sm text-gray-600 dark:text-slate-400 mt-3">
+        If you want to check now, Have I Been Pwned is free and independent.
+      </p>
     </div>
   );
 }
