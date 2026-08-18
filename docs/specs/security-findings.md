@@ -656,9 +656,9 @@ knows the product to say which they are.
 
 ## SF-14 — every bank balance is excluded from the web dashboard's assets
 
-**Severity: HIGH (correctness, live).** Found while building the connections
-surface; NOT fixed in that commit, because it belongs to a different module and
-deserves its own test.
+**Severity: HIGH (correctness, live). FIXED — see the commit that adds
+`normalizeAccountType`.** Found while building the connections surface; fixed in
+its own commit rather than bundled into that one.
 
 `financial-aggregation-service.ts:mapAccountFromDb` normalises an account's type
 against a closed list:
@@ -714,3 +714,4 @@ per branch and a check of every `accountType ===` comparison downstream.
 | 2026-08-17 (rev 6) | Added SF-12: mobile-app/app/settings/billing.tsx renders a hardcoded Visa 4242, a Mastercard 5555 and three $29.00 paid invoices, and makes no network call at all — FND-016/017 reproduced in mobile, uncovered by audit:mocks which scans web src/ only. /api/payment/billing already returns the real plans, subscription, paymentMethods and invoices. |
 | 2026-08-17 (rev 7) | Added SF-13: new gate audit:screen-data finds 87 mobile screens rendering a module-level constant data set, 57 with no request in the file. 19 classified fabrication (MOCK_BILLS, MOCK_PAYMENTS, SCORE_HISTORY, CONNECTED_ACCOUNTS, admin REVENUE_DATA…), 38 catalogue, 30 unclassified. MOCK_BILLS and CONNECTED_ACCOUNTS have since been fixed (85 entries, 17 fabrication). Frozen shrink-only and wired into CI. These screens make no request, so they never appeared in the tracked-API-path count. |
 | 2026-08-17 (rev 8) | Added SF-14: `financial-aggregation-service.mapAccountFromDb` omits `depository` from its valid-type list, so every checking and savings account normalises to "other" and is excluded from `totalAssets`/`totalSavings` — net worth understated by the user's whole bank balance. Found while building the connections surface; recorded rather than bundled into that commit. |
+| 2026-08-17 (rev 9) | SF-14 fixed: `normalizeAccountType` reads Plaid's type AND subtype, so depository accounts land in checking/savings instead of "other". The integration test's seed was corrected from the already-normalised `"checking"` — a value no sync path writes, and the reason the suite stayed green through the bug — to Plaid's real `depository` + subtype. Reverting the fix turns that live-DB test red. |

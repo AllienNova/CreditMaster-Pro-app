@@ -114,6 +114,51 @@ const contextCache = new Map<
 >();
 const snapshotCache = new Map<string, CachedContext<FinancialSnapshot>>();
 
+/**
+ * Plaid's account type -> the six AccountSummary buckets.
+ *
+ * WHAT THIS FIXES (SF-14). The previous version validated `account_type`
+ * against ["savings","checking","credit","investment","loan","other"] and fell
+ * back to "other" for anything else. `depository` is not in that list — and
+ * `depository` is exactly what Plaid sends and what financial_accounts stores;
+ * 20260731000006 says so on the column itself: "Plaid's raw account.type
+ * ('depository'/'credit'/'loan'/'investment'/'other')".
+ *
+ * So every checking and savings account normalised to "other", and
+ * fetchAccounts buckets by the normalised value:
+ *
+ *   const checking = accounts.filter((a) => a.accountType === "checking");
+ *   const totalAssets = [...checking, ...savings, ...investment].reduce(...)
+ *
+ * `checking` and `savings` were therefore always empty, `totalSavings` always
+ * 0, and totalAssets counted investment accounts only. `credit` and `loan` map
+ * cleanly, so totalLiabilities was right — which made netWorth wrong in one
+ * direction: understated by the user's entire bank balance.
+ *
+ * The distinction between checking and savings lives in the SUBTYPE, which the
+ * old mapping never read. Unknown types still land in "other" rather than
+ * being rounded into a bucket — filing an unrecognised account as checking
+ * would silently count it as an asset.
+ *
+ * Mirrors mobile's toMobileAccountType (mobile-app/src/services/api/
+ * financial.ts); the two must agree, since both describe the same rows.
+ */
+export function normalizeAccountType(
+  plaidType: string,
+  plaidSubtype: string,
+): AccountSummary["accountType"] {
+  if (plaidType === "depository") {
+    return plaidSubtype === "savings" ? "savings" : "checking";
+  }
+  if (plaidType === "credit") return "credit";
+  if (plaidType === "loan") return "loan";
+  if (plaidType === "investment") return "investment";
+  // Includes the already-normalised names, so a row written by some other
+  // path (or a future provider) is not demoted to "other" on a round trip.
+  if (plaidType === "checking" || plaidType === "savings") return plaidType;
+  return "other";
+}
+
 // ============================================================================
 // FINANCIAL AGGREGATION SERVICE CLASS
 // ============================================================================
@@ -1650,20 +1695,10 @@ export class FinancialAggregationService {
   // ==========================================================================
 
   private mapAccountFromDb(row: Record<string, unknown>): AccountSummary {
-    const accountType = (row.account_type as string) || "checking";
-    const validAccountTypes = [
-      "savings",
-      "checking",
-      "credit",
-      "investment",
-      "loan",
-      "other",
-    ] as const;
-    const mappedType = validAccountTypes.includes(
-      accountType as (typeof validAccountTypes)[number],
-    )
-      ? (accountType as (typeof validAccountTypes)[number])
-      : "other";
+    const mappedType = normalizeAccountType(
+      (row.account_type as string) ?? "",
+      (row.account_subtype as string) ?? "",
+    );
 
     return {
       id: row.id as string,

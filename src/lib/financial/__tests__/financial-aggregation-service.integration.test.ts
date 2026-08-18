@@ -198,7 +198,14 @@ describe("FinancialAggregationService (real local Supabase)", () => {
       provider: "plaid",
       user_id: userId,
       account_id: testAccountId,
-      account_type: "checking",
+      // What Plaid ACTUALLY writes, per the column comment in
+      // 20260731000006: "Plaid's raw account.type". This used to seed
+      // "checking" — an already-normalised value no sync path produces — and
+      // that fiction is exactly why this test stayed green through SF-14,
+      // where every real `depository` row normalised to "other" and dropped
+      // out of totalAssets.
+      account_type: "depository",
+      account_subtype: "checking",
       current_balance: 5417.23,
     });
     if (accountError) {
