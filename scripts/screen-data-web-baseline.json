@@ -17,11 +17,6 @@
       "offline": false,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
     },
-    "src/app/admin/subscriptions/page.tsx: metrics, planBreakdown, recentSubscriptions": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "Invented operator metrics, plan breakdown and recent subscriptions. GET /api/admin/subscriptions returns a subscription LIST and no statistics, so the metrics have no source at all. See also SF-29 on the DELETE handler."
-    },
     "src/app/admin/users/[id]/page.tsx: mockUser": {
       "classification": "fabrication",
       "offline": false,
