@@ -181,11 +181,6 @@
       "offline": true,
       "why": "The asset types a holding can be (stock, etf, crypto). Options, not holdings."
     },
-    "app/financial/income.tsx: INCOME_HISTORY, INCOME_SOURCES": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "The user's income: six months of gross and net figures (Jul 6800/5200 ...) and their income sources. Invented earnings."
-    },
     "app/financial/reports.tsx: REPORT_TEMPLATES, SAVED_REPORTS": {
       "classification": "catalogue",
       "offline": true

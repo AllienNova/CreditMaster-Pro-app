@@ -3,12 +3,13 @@
  * Income sources, trends, and tax estimates
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
 import { router } from "expo-router";
@@ -16,64 +17,45 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { incomeApi } from "../../src/services/api/financial";
+import type { IncomeSourceSummary } from "../../src/services/api/financial";
 
-interface IncomeSource {
-  id: string;
-  name: string;
-  amount: number;
-  frequency: "weekly" | "biweekly" | "monthly" | "annual";
-  type: "salary" | "freelance" | "investment" | "rental" | "other";
-  taxWithheld: number;
-}
+/*
+ * The local `IncomeSource` interface lived here. It declared `type` and
+ * `taxWithheld` as required — two fields the server has never sent — which is
+ * how the invented withholding passed a typecheck. The screen now uses
+ * IncomeSourceSummary from the adapter, which mirrors what the route returns.
+ */
 
-const INCOME_SOURCES: IncomeSource[] = [
-  {
-    id: "1",
-    name: "Primary Job",
-    amount: 4800,
-    frequency: "monthly",
-    type: "salary",
-    taxWithheld: 960,
-  },
-  {
-    id: "2",
-    name: "Freelance Work",
-    amount: 800,
-    frequency: "monthly",
-    type: "freelance",
-    taxWithheld: 0,
-  },
-  {
-    id: "3",
-    name: "Dividend Income",
-    amount: 150,
-    frequency: "monthly",
-    type: "investment",
-    taxWithheld: 22,
-  },
-  {
-    id: "4",
-    name: "Rental Property",
-    amount: 1200,
-    frequency: "monthly",
-    type: "rental",
-    taxWithheld: 0,
-  },
-];
+/*
+ * INCOME_SOURCES and INCOME_HISTORY lived here.
+ *
+ * INCOME_SOURCES invented the user's earnings (Primary Job 4800/month) AND a
+ * `taxWithheld` figure per source. INCOME_HISTORY invented six months of gross
+ * and net (Jul 6800/5200 through Dec 6950/5300).
+ *
+ * WHAT THE SERVER ACTUALLY HAS. GET /api/financial/income returns
+ * `{ sources, stats }`. An IncomeSource is
+ * `{ id, name, amount, frequency, nextPayDate, category, isAutoDetected }`
+ * (src/lib/financial/income-tracking-service.ts:16-29) — there is NO
+ * taxWithheld field, and nothing anywhere stores a monthly income history.
+ *
+ * So gross income is real. Tax withheld, net income, the effective tax rate
+ * and the six-month trend have no source at all, and every one of them was
+ * derived from the invented number. They are gone rather than estimated: a
+ * withholding figure the user did not give us is a claim about their payslip.
+ */
 
-const INCOME_HISTORY = [
-  { month: "Jul", gross: 6800, net: 5200 },
-  { month: "Aug", gross: 7200, net: 5500 },
-  { month: "Sep", gross: 6950, net: 5300 },
-  { month: "Oct", gross: 7100, net: 5450 },
-  { month: "Nov", gross: 7500, net: 5750 },
-  { month: "Dec", gross: 6950, net: 5300 },
-];
 
-const getSourceIcon = (
-  type: IncomeSource["type"],
-): keyof typeof Ionicons.glyphMap => {
-  const icons: Record<IncomeSource["type"], keyof typeof Ionicons.glyphMap> = {
+
+/**
+ * `category` is optional on the server and free-form, so these lookups take a
+ * plain string and fall back. Casting an arbitrary category into a closed
+ * union would only move the failure to runtime, where it renders `undefined`
+ * as an icon name.
+ */
+const getSourceIcon = (type: string): keyof typeof Ionicons.glyphMap => {
+  const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
     salary: "briefcase",
     freelance: "laptop",
     investment: "trending-up",
@@ -83,8 +65,8 @@ const getSourceIcon = (
   return icons[type];
 };
 
-const getSourceColor = (type: IncomeSource["type"]): string => {
-  const colors: Record<IncomeSource["type"], string> = {
+const getSourceColor = (type: string): string => {
+  const colors: Record<string, string> = {
     salary: "#22C55E",
     freelance: "#3B82F6",
     investment: "#8B5CF6",
@@ -94,8 +76,8 @@ const getSourceColor = (type: IncomeSource["type"]): string => {
   return colors[type];
 };
 
-const getFrequencyLabel = (freq: IncomeSource["frequency"]): string => {
-  const labels: Record<IncomeSource["frequency"], string> = {
+const getFrequencyLabel = (freq: string): string => {
+  const labels: Record<string, string> = {
     weekly: "/week",
     biweekly: "/2 weeks",
     monthly: "/month",
@@ -105,23 +87,29 @@ const getFrequencyLabel = (freq: IncomeSource["frequency"]): string => {
 };
 
 export default function IncomeScreen() {
-  const [selectedPeriod, setSelectedPeriod] = useState("monthly");
-  const periods = ["weekly", "monthly", "annual"];
+  const [sources, setSources] = useState<IncomeSourceSummary[]>([]);
+  const [totalMonthlyGross, setTotalMonthlyGross] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const totalMonthlyGross = INCOME_SOURCES.reduce(
-    (sum, s) => sum + s.amount,
-    0,
-  );
-  const totalMonthlyTax = INCOME_SOURCES.reduce(
-    (sum, s) => sum + s.taxWithheld,
-    0,
-  );
-  const totalMonthlyNet = totalMonthlyGross - totalMonthlyTax;
-  const effectiveTaxRate = (
-    (totalMonthlyTax / totalMonthlyGross) *
-    100
-  ).toFixed(1);
-  const maxIncome = Math.max(...INCOME_HISTORY.map((h) => h.gross));
+  const load = useCallback(async () => {
+    setError(null);
+    const res = await incomeApi.get();
+    if (!res.success || !res.data) {
+      setError("We could not load your income.");
+      setLoading(false);
+      return;
+    }
+    setSources(res.data.sources ?? []);
+    // The server's own total, not a re-sum here: sources have different
+    // frequencies, and getMonthlyIncomeStats already normalises them.
+    setTotalMonthlyGross(res.data.stats?.totalMonthlyIncome ?? 0);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -147,109 +135,70 @@ export default function IncomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Summary Card */}
+        {loading ? (
+          <View style={styles.stateBlock}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        ) : error ? (
+          <View style={styles.stateBlock}>
+            <Text style={styles.stateText}>{error}</Text>
+            <TouchableOpacity onPress={load}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+        {/* Summary Card — gross only. Taxes, net and the effective rate were
+            all derived from an invented per-source `taxWithheld`, which the
+            server does not have. */}
         <Card style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Gross</Text>
+              <Text style={styles.summaryLabel}>Monthly gross</Text>
               <Text style={styles.summaryValue}>
                 ${totalMonthlyGross.toLocaleString()}
               </Text>
             </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Taxes</Text>
-              <Text style={[styles.summaryValue, { color: "#EF4444" }]}>
-                -${totalMonthlyTax.toLocaleString()}
-              </Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Net</Text>
-              <Text style={[styles.summaryValue, { color: "#22C55E" }]}>
-                ${totalMonthlyNet.toLocaleString()}
-              </Text>
-            </View>
           </View>
-          <View style={styles.taxRateRow}>
-            <Text style={styles.taxRateLabel}>Effective Tax Rate</Text>
-            <Text style={styles.taxRateValue}>{effectiveTaxRate}%</Text>
-          </View>
+          <Text style={styles.noteText}>
+            Take-home pay and withholding are not tracked yet — nothing records
+            what your employer withholds, so this is gross income only.
+          </Text>
         </Card>
 
-        {/* Period Selector */}
-        <View style={styles.periodSelector}>
-          {periods.map((period) => (
-            <TouchableOpacity
-              key={period}
-              style={[
-                styles.periodChip,
-                selectedPeriod === period && styles.periodChipActive,
-              ]}
-              onPress={() => setSelectedPeriod(period)}
-            >
-              <Text
-                style={[
-                  styles.periodText,
-                  selectedPeriod === period && styles.periodTextActive,
-                ]}
-              >
-                {period}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Income Trend Chart */}
-        <Card style={styles.chartCard}>
-          <Text style={styles.chartTitle}>6-Month Trend</Text>
-          <View style={styles.chartContainer}>
-            {INCOME_HISTORY.map((month) => (
-              <View key={month.month} style={styles.chartColumn}>
-                <View style={styles.barGroup}>
-                  <View
-                    style={[
-                      styles.grossBar,
-                      { height: (month.gross / maxIncome) * 70 },
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.netBar,
-                      { height: (month.net / maxIncome) * 70 },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.chartLabel}>{month.month}</Text>
-              </View>
-            ))}
-          </View>
-          <View style={styles.chartLegend}>
-            <View style={styles.legendItem}>
-              <View
-                style={[
-                  styles.legendDot,
-                  { backgroundColor: theme.colors.primary },
-                ]}
-              />
-              <Text style={styles.legendText}>Gross</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View
-                style={[styles.legendDot, { backgroundColor: "#22C55E" }]}
-              />
-              <Text style={styles.legendText}>Net</Text>
-            </View>
-          </View>
+        {/* The period selector and the 6-Month Trend chart lived here.
+            Nothing stores a monthly income history — the route returns current
+            sources and a computed monthly total, and no table records past
+            months — so both were drawing INCOME_HISTORY, six invented pairs of
+            gross and net. */}
+        <Card style={styles.summaryCard}>
+          <Text style={styles.chartTitle}>Income over time</Text>
+          <Text style={styles.noteText}>
+            Not tracked yet. Your income sources are recorded, but no history of
+            what you actually received each month is stored, so there is no
+            trend to chart.
+          </Text>
         </Card>
+
 
         {/* Income Sources */}
         <Text style={styles.sectionTitle}>Income Sources</Text>
-        {INCOME_SOURCES.map((source) => {
-          const color = getSourceColor(source.type);
-          const percent = ((source.amount / totalMonthlyGross) * 100).toFixed(
-            0,
-          );
+        {sources.length === 0 ? (
+          <Card style={styles.sourceCard}>
+            <Text style={styles.stateText}>
+              No income sources recorded yet.
+            </Text>
+          </Card>
+        ) : null}
+        {sources.map((source) => {
+          // `category` is optional on the server and often absent, so the
+          // colour and icon fall back rather than asserting a type the record
+          // does not carry.
+          const color = getSourceColor(source.category ?? "other");
+          const percent =
+            totalMonthlyGross > 0
+              ? ((source.amount / totalMonthlyGross) * 100).toFixed(0)
+              : null;
           return (
             <Card key={source.id} style={styles.sourceCard}>
               <View style={styles.sourceRow}>
@@ -257,7 +206,7 @@ export default function IncomeScreen() {
                   style={[styles.sourceIcon, { backgroundColor: `${color}15` }]}
                 >
                   <Ionicons
-                    name={getSourceIcon(source.type)}
+                    name={getSourceIcon(source.category ?? "other")}
                     size={20}
                     color={color}
                   />
@@ -265,7 +214,8 @@ export default function IncomeScreen() {
                 <View style={styles.sourceInfo}>
                   <Text style={styles.sourceName}>{source.name}</Text>
                   <Text style={styles.sourceType}>
-                    {source.type} • {percent}% of income
+                    {source.category ?? source.frequency}
+                    {percent !== null ? ` • ${percent}% of income` : ""}
                   </Text>
                 </View>
                 <View style={styles.sourceValues}>
@@ -273,18 +223,21 @@ export default function IncomeScreen() {
                     ${source.amount.toLocaleString()}
                     {getFrequencyLabel(source.frequency)}
                   </Text>
-                  {source.taxWithheld > 0 && (
-                    <Text style={styles.sourceTax}>
-                      -${source.taxWithheld} tax
-                    </Text>
-                  )}
+                  {/* per-source withholding removed: not a field the server has */}
+
                 </View>
               </View>
             </Card>
           );
         })}
 
-        {/* Tax Estimate */}
+        {/* The "Annual Tax Estimate" card lived here: estimated annual
+            income, estimated federal tax and estimated take-home. Only the
+            first was real — the other two multiplied the invented
+            per-source `taxWithheld` by twelve, so an invented withholding
+            became an invented annual tax bill. Nothing withholds, computes or
+            records tax for this user; /api/tax/* is a separate surface with
+            its own findings. */}
         <Card style={styles.taxCard}>
           <View style={styles.taxHeader}>
             <Ionicons
@@ -292,40 +245,21 @@ export default function IncomeScreen() {
               size={20}
               color={theme.colors.primary}
             />
-            <Text style={styles.taxTitle}>Annual Tax Estimate</Text>
+            <Text style={styles.taxTitle}>Annual income</Text>
           </View>
           <View style={styles.taxRow}>
-            <Text style={styles.taxLabel}>Estimated Annual Income</Text>
+            <Text style={styles.taxLabel}>Gross, at your current rate</Text>
             <Text style={styles.taxValue}>
               ${(totalMonthlyGross * 12).toLocaleString()}
             </Text>
           </View>
-          <View style={styles.taxRow}>
-            <Text style={styles.taxLabel}>Estimated Federal Tax</Text>
-            <Text style={styles.taxValue}>
-              ${(totalMonthlyTax * 12).toLocaleString()}
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.taxRow,
-              {
-                borderTopWidth: 1,
-                borderTopColor: theme.colors.border,
-                paddingTop: 8,
-              },
-            ]}
-          >
-            <Text style={[styles.taxLabel, { fontWeight: "600" }]}>
-              Estimated Take-Home
-            </Text>
-            <Text
-              style={[styles.taxValue, { color: "#22C55E", fontWeight: "600" }]}
-            >
-              ${(totalMonthlyNet * 12).toLocaleString()}
-            </Text>
-          </View>
+          <Text style={styles.noteText}>
+            Twelve times your monthly gross. It is not a tax estimate: nothing
+            here knows your withholding, filing status or deductions.
+          </Text>
         </Card>
+          </>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -334,6 +268,23 @@ export default function IncomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  stateBlock: { paddingVertical: 40, alignItems: "center" },
+  stateText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryText: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontWeight: "600",
+    marginTop: 8,
+  },
+  noteText: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 8,
+  },
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
   header: {

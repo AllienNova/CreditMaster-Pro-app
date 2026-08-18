@@ -1771,6 +1771,9 @@ export interface IncomeSourceSummary {
   name: string;
   amount: number;
   frequency: string;
+  /** Optional on the server (income-tracking-service.ts:26) — often absent. */
+  category?: string;
+  isAutoDetected?: boolean;
 }
 
 export interface IncomeResponse {
