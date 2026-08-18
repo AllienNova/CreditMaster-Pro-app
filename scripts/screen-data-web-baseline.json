@@ -192,20 +192,10 @@
       "offline": true,
       "why": "Third-party card offers — product content, not a claim about the caller. SHOULD come from the affiliate feed (Wave 6, Engine by MoneyLion) rather than a constant; recorded here so that wiring shrinks the list."
     },
-    "src/app/recommendations/insights/page.tsx: INSIGHTS": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "INSIGHTS presents invented observations about the caller's finances."
-    },
     "src/app/recommendations/loans/page.tsx: LOAN_OFFERS, LOAN_TYPE_CHIPS": {
       "classification": "catalogue",
       "offline": true,
       "why": "Third-party loan offers, same as credit-cards: product content that should come from the affiliate feed."
-    },
-    "src/app/recommendations/page.tsx: CATEGORY_CHIPS, QUICK_LINKS, RECOMMENDATIONS": {
-      "classification": "fabrication",
-      "offline": true,
-      "why": "RECOMMENDATIONS is invented advice for the caller. CATEGORY_CHIPS and QUICK_LINKS in the same entry are config — a per-file key cannot split them, which is the same limitation recorded in rev 41."
     },
     "src/app/settings/layout.tsx: settingsNavItems": {
       "classification": "catalogue",
@@ -321,6 +311,11 @@
       "classification": "catalogue",
       "offline": false,
       "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/recommendations/page.tsx: QUICK_LINKS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Navigation only — three labels, three hrefs to real sibling routes, and their icon paths. RECOMMENDATIONS and CATEGORY_CHIPS were removed in the same commit; this is what is left, and it makes no claim about the caller."
     }
   }
 }

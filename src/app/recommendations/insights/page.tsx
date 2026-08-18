@@ -1,280 +1,311 @@
+/**
+ * Insights.
+ *
+ * WHAT THIS PAGE ASSERTED ABOUT THE READER, WITH NO FETCH IN THE FILE.
+ *
+ * The constant was labelled "Mock Data" and rendered as measurements:
+ *
+ *   "Your overall credit utilization has increased from 22% to 31% over the
+ *    last 60 days"                                        confidence 94%
+ *   "Your dining and entertainment spending increased 45% this month
+ *    compared to your 3-month average"                    confidence 88%
+ *   "Your average account age has increased to 4.2 years" confidence 91%
+ *   "Your portfolio allocation has drifted 12% from your target"
+ *   "Your emergency fund currently covers 1.8 months of expenses"
+ *
+ * Every one is a number nobody computed, about accounts nobody read, and the
+ * word "detected" sat beside them. The confidence percentages made it worse: a
+ * made-up figure carrying a made-up certainty about itself.
+ *
+ * WHAT WAS ALREADY BUILT AND UNREACHABLE.
+ *
+ *   GET  /api/financial/insights?stored=true -> smartInsightsEngine
+ *   POST /api/financial/insights             -> dismiss / record an action
+ *
+ * SmartInsightsEngine reads six tables and contains no Math.random. Its
+ * `FinancialInsight` (types/insight.types.ts:43) carries a REAL `confidence`
+ * (0-100) and a `dataSource` naming what the insight was computed from — so
+ * confidence is still shown, and now it means something.
+ *
+ * WHY `stored=true`. The route can also generate insights on demand, which
+ * runs a model. A page view should not silently spend that, and an insight the
+ * reader dismissed must stay dismissed rather than being regenerated under
+ * them on the next visit.
+ *
+ * Dismiss is wired because the route has always supported it and nothing
+ * called it. An insight you cannot dismiss is a notification you cannot turn
+ * off. It removes the card only after the server confirms — hiding it first
+ * would show a dismissal that did not happen.
+ */
+
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+/** Mirrors InsightCategory in types/insight.types.ts:25. */
+const CATEGORY_LABELS: Record<string, string> = {
+  spending: "Spending",
+  savings: "Savings",
+  bills: "Bills",
+  budget: "Budget",
+  income: "Income",
+  accounts: "Accounts",
+  credit: "Credit",
+  investments: "Investments",
+  debt: "Debt",
+  goals: "Goals",
+};
 
+const PRIORITY_CLASSES: Record<string, string> = {
+  critical: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+  high: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  medium: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  low: "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300",
+  info: "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300",
+};
+
+const TREND_LABELS: Record<string, string> = {
+  up: "trending up",
+  down: "trending down",
+  stable: "steady",
+};
+
+/** Mirrors InsightAction in types/insight.types.ts:86. */
+interface InsightAction {
+  id: string;
+  label: string;
+  type: string;
+  href?: string;
+}
+
+/** Mirrors FinancialInsight in types/insight.types.ts:43. */
 interface Insight {
   id: string;
+  type: string;
+  category: string;
+  priority: string;
   title: string;
   description: string;
+  details?: string;
+  aiSummary?: string;
+  aiRecommendation?: string;
+  amount?: number;
+  percentage?: number;
+  trend?: "up" | "down" | "stable";
+  actions?: InsightAction[];
+  dismissed: boolean;
   confidence: number;
-  actionable: boolean;
-  category: string;
+  dataSource?: string[];
+  createdAt?: string;
 }
 
-// ---------------------------------------------------------------------------
-// Mock Data
-// ---------------------------------------------------------------------------
-
-const INSIGHTS: Insight[] = [
-  {
-    id: "ins-1",
-    title: "Credit Utilization Trending Up",
-    description:
-      "Your overall credit utilization has increased from 22% to 31% over the last 60 days. Keeping it below 30% is recommended for optimal credit scoring. Consider making an extra payment on your Chase card to bring it back under threshold.",
-    confidence: 94,
-    actionable: true,
-    category: "Credit",
-  },
-  {
-    id: "ins-2",
-    title: "Spending Pattern Anomaly Detected",
-    description:
-      "Your dining and entertainment spending increased 45% this month compared to your 3-month average. This may impact your ability to meet your savings goal of $500/month.",
-    confidence: 88,
-    actionable: true,
-    category: "Spending",
-  },
-  {
-    id: "ins-3",
-    title: "Optimal Time to Refinance Auto Loan",
-    description:
-      "Based on current market rates and your improved credit score, refinancing your auto loan could save approximately $1,400 over the remaining term. Your score has improved 35 points since the original loan.",
-    confidence: 82,
-    actionable: true,
-    category: "Debt",
-  },
-  {
-    id: "ins-4",
-    title: "Emergency Fund Below Target",
-    description:
-      "Your emergency fund currently covers 1.8 months of expenses, below the recommended 3-6 months. At your current savings rate, you will reach the 3-month target in approximately 14 weeks.",
-    confidence: 96,
-    actionable: true,
-    category: "Savings",
-  },
-  {
-    id: "ins-5",
-    title: "Credit Age Improving Steadily",
-    description:
-      "Your average account age has increased to 4.2 years, up from 3.8 years six months ago. This positive trend contributes to 15% of your credit score. Avoid opening new accounts unless necessary to maintain this trajectory.",
-    confidence: 91,
-    actionable: false,
-    category: "Credit",
-  },
-  {
-    id: "ins-6",
-    title: "Bill Payment Optimization Available",
-    description:
-      "By shifting your credit card payment date to align with your paycheck cycle, you could reduce the number of days your balance sits at peak utilization and potentially improve your reported utilization by 5-8%.",
-    confidence: 77,
-    actionable: true,
-    category: "Bills",
-  },
-  {
-    id: "ins-7",
-    title: "Investment Portfolio Rebalancing Needed",
-    description:
-      "Your portfolio allocation has drifted 12% from your target. US equities are over-weighted while international exposure is below target. Consider rebalancing to maintain your risk profile.",
-    confidence: 85,
-    actionable: true,
-    category: "Investments",
-  },
-  {
-    id: "ins-8",
-    title: "Tax-Loss Harvesting Opportunity",
-    description:
-      "Two holdings in your portfolio have unrealized losses that could offset $1,200 in capital gains this tax year. This is most effective before December 31.",
-    confidence: 79,
-    actionable: true,
-    category: "Taxes",
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function confidenceColor(confidence: number): string {
-  if (confidence >= 90) return "text-green-600 dark:text-green-400";
-  if (confidence >= 80) return "text-blue-600 dark:text-blue-400";
-  return "text-amber-600 dark:text-amber-400";
-}
-
-function confidenceBg(confidence: number): string {
-  if (confidence >= 90) return "bg-green-50 dark:bg-green-900/20";
-  if (confidence >= 80) return "bg-blue-50 dark:bg-blue-900/20";
-  return "bg-amber-50 dark:bg-amber-900/20";
-}
-
-function categoryColor(category: string): string {
-  switch (category) {
-    case "Credit":
-      return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
-    case "Spending":
-      return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
-    case "Debt":
-      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-    case "Savings":
-      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-    case "Bills":
-      return "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400";
-    case "Investments":
-      return "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400";
-    case "Taxes":
-      return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
-    default:
-      return "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300";
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+const currency = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
 
 export default function InsightsPage() {
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dismissing, setDismissing] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/financial/insights?stored=true");
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setInsights([]);
+        setError(
+          "We could not load your insights. Nothing is estimated in their place — try again in a moment.",
+        );
+      } else {
+        setInsights(Array.isArray(json?.data) ? (json.data as Insight[]) : []);
+      }
+    } catch {
+      setInsights([]);
+      setError("We could not reach the insights service.");
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const dismiss = useCallback(async (insightId: string) => {
+    setDismissing(insightId);
+    try {
+      const res = await fetch("/api/financial/insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ insightId, action: "dismiss" }),
+      });
+      if (res.ok) {
+        setInsights((current) =>
+          current.filter((insight) => insight.id !== insightId),
+        );
+      }
+    } catch {
+      // Left in place on failure: a dismissal that did not happen must not
+      // look like one that did.
+    }
+    setDismissing(null);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Breadcrumb */}
-        <nav className="flex mb-4" aria-label="Breadcrumb">
-          <ol className="inline-flex items-center space-x-1 md:space-x-3">
-            <li className="inline-flex items-center">
-              <Link
-                href="/recommendations"
-                className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-slate-400 dark:hover:text-white"
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                </svg>
-                Recommendations
-              </Link>
-            </li>
-            <li>
-              <div className="flex items-center">
-                <svg
-                  className="w-6 h-6 text-gray-400 dark:text-slate-500"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span className="ml-1 text-sm font-medium text-gray-500 md:ml-2 dark:text-slate-400">
-                  Insights
-                </span>
-              </div>
-            </li>
-          </ol>
-        </nav>
+    <div className="space-y-8">
+      <div className="flex items-center gap-4">
+        <Link
+          href="/recommendations"
+          className="text-gray-500 hover:text-gray-700 dark:text-slate-300 dark:hover:text-white"
+        >
+          ← Recommendations
+        </Link>
+      </div>
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Financial Insights
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-slate-400">
-            AI-generated insights based on your financial data, spending
-            patterns, and credit history.
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Insights
+        </h1>
+        <p className="text-gray-600 dark:text-slate-300">
+          What we have noticed in your accounts, bills and budgets
+        </p>
+      </div>
+
+      {error && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-amber-200 dark:border-amber-900/50">
+          <p className="font-medium text-gray-900 dark:text-white mb-1">
+            Insights are unavailable
           </p>
+          <p className="text-sm text-gray-600 dark:text-slate-300">{error}</p>
         </div>
+      )}
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5 text-center">
-            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-              {INSIGHTS.length}
-            </p>
-            <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
-              Total Insights
-            </p>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5 text-center">
-            <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-              {INSIGHTS.filter((i) => i.actionable).length}
-            </p>
-            <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
-              Actionable
-            </p>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5 text-center">
-            <p className="text-3xl font-bold text-violet-600 dark:text-violet-400">
-              {Math.round(
-                INSIGHTS.reduce((s, i) => s + i.confidence, 0) /
-                  INSIGHTS.length,
-              )}
-              %
-            </p>
-            <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
-              Avg. Confidence
-            </p>
-          </div>
-        </div>
-
-        {/* Insights List */}
-        <div className="space-y-4">
-          {INSIGHTS.map((insight) => (
+      {loading ? (
+        <div className="space-y-4 animate-pulse">
+          {[1, 2, 3].map((i) => (
             <div
-              key={insight.id}
-              className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5"
-            >
-              {/* Top row */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {insight.title}
-                  </h3>
-                  {insight.actionable && (
-                    <span className="text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">
-                      Actionable
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-xs font-medium px-2 py-0.5 rounded-full ${categoryColor(insight.category)}`}
-                  >
-                    {insight.category}
-                  </span>
-                  <span
-                    className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${confidenceBg(insight.confidence)} ${confidenceColor(insight.confidence)}`}
-                  >
-                    <svg
-                      className="w-3 h-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    {insight.confidence}%
-                  </span>
-                </div>
-              </div>
-
-              {/* Description */}
-              <p className="text-sm text-gray-600 dark:text-slate-400 leading-relaxed">
-                {insight.description}
-              </p>
-            </div>
+              key={i}
+              className="h-32 bg-gray-200 dark:bg-slate-700 rounded-xl"
+            />
           ))}
         </div>
-      </div>
+      ) : insights.length === 0 ? (
+        !error && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-8 border border-gray-200 dark:border-slate-700">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              Nothing to report yet
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              Insights come from your linked accounts, bills, budgets and
+              goals. Once there is enough there to notice something, it appears
+              here.
+            </p>
+            <Link
+              href="/financial"
+              className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+            >
+              Go to your finances
+            </Link>
+          </div>
+        )
+      ) : (
+        <div className="space-y-4">
+          {insights.map((insight) => (
+            <article
+              key={insight.id}
+              className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700"
+            >
+              <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+                <h2 className="font-semibold text-gray-900 dark:text-white">
+                  {insight.title}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2 py-0.5 text-xs rounded-full capitalize ${
+                      PRIORITY_CLASSES[insight.priority] ??
+                      PRIORITY_CLASSES.info
+                    }`}
+                  >
+                    {insight.priority}
+                  </span>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200">
+                    {CATEGORY_LABELS[insight.category] ?? insight.category}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600 dark:text-slate-300">
+                {insight.description}
+              </p>
+
+              {insight.details && (
+                <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
+                  {insight.details}
+                </p>
+              )}
+
+              {insight.aiRecommendation && (
+                <p className="text-sm text-gray-600 dark:text-slate-300 mt-2">
+                  {insight.aiRecommendation}
+                </p>
+              )}
+
+              <div className="flex items-center gap-4 flex-wrap mt-4 text-sm">
+                {typeof insight.amount === "number" && (
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {currency(insight.amount)}
+                  </span>
+                )}
+                {typeof insight.percentage === "number" && (
+                  <span className="text-gray-600 dark:text-slate-300">
+                    {insight.percentage}%
+                    {insight.trend && ` ${TREND_LABELS[insight.trend] ?? ""}`}
+                  </span>
+                )}
+                {typeof insight.confidence === "number" && (
+                  <span className="text-gray-500 dark:text-slate-400">
+                    {insight.confidence}% confidence
+                  </span>
+                )}
+              </div>
+
+              {(insight.dataSource ?? []).length > 0 && (
+                <p className="mt-3 text-xs text-gray-500 dark:text-slate-400">
+                  Worked out from: {(insight.dataSource ?? []).join(", ")}
+                </p>
+              )}
+
+              <div className="flex items-center gap-3 mt-4 flex-wrap">
+                {(insight.actions ?? [])
+                  .filter((action) => action.type === "link" && action.href)
+                  .map((action) => (
+                    <Link
+                      key={action.id}
+                      href={action.href as string}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                    >
+                      {action.label}
+                    </Link>
+                  ))}
+                <button
+                  onClick={() => dismiss(insight.id)}
+                  disabled={dismissing === insight.id}
+                  className="px-4 py-2 text-sm text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white disabled:opacity-60"
+                >
+                  {dismissing === insight.id ? "Dismissing…" : "Dismiss"}
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
