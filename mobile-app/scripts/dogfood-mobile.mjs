@@ -401,10 +401,96 @@ function redirectStubs() {
 
 const REDIRECT_STUBS = redirectStubs();
 
-const routes = readFileSync(ROUTES_FILE, "utf8")
-  .split("\n")
-  .map((r) => r.trim())
-  .filter(Boolean);
+/**
+ * THE ROUTE LIST COMES FROM THE APP, not from a file someone made once.
+ *
+ * It used to default to /tmp/mobile-routes.txt, which listed 222 of the app's
+ * 232 routes. The nine it omitted were /more and every one of the eight
+ * dynamic routes — /dispute/[id], /document/[id], /documents/[id],
+ * /reports/[id], /student-loans/[id], /trading/strategies/[id],
+ * /investments/analyze/[symbol], /monitoring/alerts/[id] — so every detail
+ * screen in the app was unmeasured while the summary still said "223 routes".
+ * A hand-made list cannot notice a route that was added after it was written;
+ * walking app/ cannot miss one.
+ *
+ * --routes still overrides, for re-running a subset.
+ */
+function collectRoutes() {
+  const APP = join(process.cwd(), "app");
+  const found = new Set();
+  const walk = (dir) => {
+    if (!existsSync(dir)) return;
+    for (const entry of readdirSync(dir)) {
+      if ([".expo", "node_modules"].includes(entry)) continue;
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!/\.tsx$/.test(entry) || /^(_layout|\+not-found)\.tsx$/.test(entry))
+        continue;
+      const rel = relative(APP, full).replace(/\\/g, "/").replace(/\.tsx$/, "");
+      let route = "/" + rel.replace(/\([^)]+\)\//g, "");
+      route = route.replace(/\/index$/, "") || "/";
+      found.add(route);
+    }
+  };
+  walk(APP);
+  return [...found].sort();
+}
+
+const isDynamic = (r) => /\[[^\]]+\]/.test(r);
+
+/**
+ * Swap [id]/[symbol] for a real row's id. A literal "[id]" URL only ever
+ * proves the not-found path, which is why the eight dynamic screens being
+ * absent from the old list was invisible rather than loud.
+ *
+ * A dynamic route with no seed is reported UNSEEDED rather than dropped, so
+ * the coverage gap stays on screen. /monitoring/alerts/[id] is currently in
+ * that state — credit_alerts holds no row for this user, and borrowing
+ * another user's id would produce a not-found that reads exactly like a
+ * broken screen.
+ */
+function expandDynamic(all, seeds) {
+  const expanded = [];
+  const unseeded = [];
+  for (const route of all) {
+    if (!isDynamic(route)) {
+      expanded.push({ route, pattern: route });
+      continue;
+    }
+    const seed = seeds[route];
+    if (seed === undefined) {
+      unseeded.push(route);
+      continue;
+    }
+    expanded.push({ route: route.replace(/\[[^\]]+\]/, seed), pattern: route });
+  }
+  return { expanded, unseeded };
+}
+
+const SEEDS_FILE = arg("seeds", join(process.cwd(), "scripts", "dogfood-seeds.json"));
+const SEEDS = existsSync(SEEDS_FILE)
+  ? JSON.parse(readFileSync(SEEDS_FILE, "utf8"))
+  : {};
+
+const allRoutes = existsSync(ROUTES_FILE) && arg("routes") !== null
+  ? readFileSync(ROUTES_FILE, "utf8").split("\n").map((r) => r.trim()).filter(Boolean)
+  : collectRoutes();
+
+const { expanded, unseeded: unseededRoutes } = expandDynamic(allRoutes, SEEDS);
+const routes = expanded.map((e) => e.route);
+const PATTERN_OF = new Map(expanded.map((e) => [e.route, e.pattern]));
+
+console.log(
+  `routes: ${allRoutes.length} in app/, ${routes.length} testable, ` +
+    `${allRoutes.filter(isDynamic).length - unseededRoutes.length} dynamic seeded, ` +
+    `${unseededRoutes.length} dynamic UNSEEDED`,
+);
+if (unseededRoutes.length) {
+  console.log(`  UNSEEDED (never measured): ${unseededRoutes.join(", ")}`);
+}
 
 console.log(`sweeping ${routes.length} mobile routes on ${UDID}`);
 
@@ -547,17 +633,21 @@ for (const route of routes) {
   if (!seenSignatures.has(finalSignature)) seenSignatures.set(finalSignature, route);
 
   // POSITIVE arrival check. See screenTitles() for why inference is not enough.
-  const expectedTitle = TITLES.get(route) ?? null;
+  // Dynamic routes were expanded to a concrete id, but TITLES / MARKERS /
+  // REDIRECT_STUBS are keyed by the source pattern ("/dispute/[id]"), so look
+  // up by pattern and fall back to the route itself for static ones.
+  const pattern = PATTERN_OF.get(route) ?? route;
+  const expectedTitle = TITLES.get(pattern) ?? null;
   // WHOLE NODE, not a substring. `includes` reported /financial/income as
   // arrived because the Finances TAB it actually renders (SF-30) lists a row
   // labelled "Income" — a one-word title matched the wrong screen, which is
   // exactly the false confidence this check exists to remove.
-  const markers = expectedTitle === null ? (MARKERS.get(route) ?? null) : null;
+  const markers = expectedTitle === null ? (MARKERS.get(pattern) ?? null) : null;
   const onScreen = (want) => screen.texts.some((t) => t.trim() === want);
 
   let arrived;
   let arrivalBy;
-  if (REDIRECT_STUBS.has(route)) {
+  if (REDIRECT_STUBS.has(pattern)) {
     // Forwards somewhere else; the destination is measured under its own name.
     arrived = null;
     arrivalBy = "redirect-stub";
@@ -622,6 +712,7 @@ for (const route of routes) {
 
   results.push({
     route,
+    pattern,
     elements: screen.elements,
     chars: screen.chars,
     head: screen.texts.slice(0, 6).join(" | ").slice(0, 120),
