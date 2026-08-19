@@ -296,6 +296,111 @@ function screenTitles() {
 
 const TITLES = screenTitles();
 
+/**
+ * FALLBACK MARKERS — for the 34 routes that declare no title at all.
+ *
+ * screenTitles() leaves those reported as arrival-UNCHECKED, which is honest
+ * but is still 34 screens nobody can say anything about. A title is not
+ * actually what the check needs: it needs a string that ONLY this screen
+ * renders. A section heading does that job just as well — /search renders
+ * "Recent Searches", /trading/strategies/[id] renders "Indicators Used", and
+ * no other screen in the app contains either.
+ *
+ * So: pull every literal <Text> out of every screen, keep the ones that occur
+ * in exactly ONE screen file, and let any of them stand as proof of arrival.
+ * Uniqueness across the corpus is the whole point — it is what makes a string
+ * diagnostic, and it is computed, so it cannot drift out of date the way a
+ * hand-written list would.
+ *
+ * STRICTLY ADDITIVE. A route that has a title keeps the title check, which is
+ * stronger: one declared string, matched whole. Markers only ever turn an
+ * UNCHECKED into a true or false — they never soften an existing assertion.
+ *
+ * ANY marker suffices, not all: most of these literals sit inside a branch
+ * (an empty state, an error state), so requiring all of them would fail every
+ * screen that rendered successfully.
+ */
+const MARKER_MIN_LEN = 8;
+const MARKERS_PER_ROUTE = 8;
+
+function screenMarkers(titles) {
+  const perFile = new Map(); // route -> Set(literal)
+  const freq = new Map(); // literal -> how many screens contain it
+  const walkApp = (dir, out = []) => {
+    if (!existsSync(dir)) return out;
+    for (const entry of readdirSync(dir)) {
+      if ([".expo", "node_modules"].includes(entry)) continue;
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) walkApp(full, out);
+      else if (/\.tsx$/.test(entry) && !/^(_layout|\+not-found)\.tsx$/.test(entry))
+        out.push(full);
+    }
+    return out;
+  };
+  const APP = join(process.cwd(), "app");
+
+  for (const file of walkApp(APP)) {
+    const rel = relative(APP, file).replace(/\\/g, "/").replace(/\.tsx$/, "");
+    let route = "/" + rel.replace(/\([^)]+\)\//g, "");
+    route = route.replace(/\/index$/, "") || "/";
+    const src = readFileSync(file, "utf8");
+    const lits = new Set();
+    // A literal Text node: no interpolation, so what the source says is what
+    // the screen renders.
+    for (const m of src.matchAll(/<Text\b[^>]*>\s*([^<{][^<]*?)\s*<\/Text>/gs)) {
+      const t = m[1].replace(/\s+/g, " ").trim();
+      if (t.length >= MARKER_MIN_LEN && !/[{}]/.test(t)) lits.add(t);
+    }
+    perFile.set(route, lits);
+    for (const t of lits) freq.set(t, (freq.get(t) ?? 0) + 1);
+  }
+
+  const markers = new Map();
+  for (const [route, lits] of perFile) {
+    if (titles.has(route)) continue; // the title is the stronger assertion
+    const unique = [...lits].filter((t) => freq.get(t) === 1);
+    if (unique.length) markers.set(route, unique.slice(0, MARKERS_PER_ROUTE));
+  }
+  return markers;
+}
+
+const MARKERS = screenMarkers(TITLES);
+
+/**
+ * Paths whose file only forwards somewhere else. They are not screens, so
+ * "did this screen render its own title" has no answer for them — the screen
+ * the user ends up on is a different route, already measured under its own
+ * name. Counted in their own bucket rather than as unchecked failures.
+ */
+function redirectStubs() {
+  const stubs = new Set();
+  const APP = join(process.cwd(), "app");
+  const walkApp = (dir, out = []) => {
+    if (!existsSync(dir)) return out;
+    for (const entry of readdirSync(dir)) {
+      if ([".expo", "node_modules"].includes(entry)) continue;
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) walkApp(full, out);
+      else if (/\.tsx$/.test(entry) && !/^(_layout|\+not-found)\.tsx$/.test(entry))
+        out.push(full);
+    }
+    return out;
+  };
+  for (const file of walkApp(APP)) {
+    const src = readFileSync(file, "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    if (!/<Redirect\b/.test(src)) continue;
+    const rel = relative(APP, file).replace(/\\/g, "/").replace(/\.tsx$/, "");
+    let route = "/" + rel.replace(/\([^)]+\)\//g, "");
+    route = route.replace(/\/index$/, "") || "/";
+    stubs.add(route);
+  }
+  return stubs;
+}
+
+const REDIRECT_STUBS = redirectStubs();
+
 const routes = readFileSync(ROUTES_FILE, "utf8")
   .split("\n")
   .map((r) => r.trim())
@@ -447,10 +552,39 @@ for (const route of routes) {
   // arrived because the Finances TAB it actually renders (SF-30) lists a row
   // labelled "Income" — a one-word title matched the wrong screen, which is
   // exactly the false confidence this check exists to remove.
-  const arrived =
-    expectedTitle === null
-      ? null
-      : screen.texts.some((t) => t.trim() === expectedTitle);
+  const markers = expectedTitle === null ? (MARKERS.get(route) ?? null) : null;
+  const onScreen = (want) => screen.texts.some((t) => t.trim() === want);
+
+  let arrived;
+  let arrivalBy;
+  if (REDIRECT_STUBS.has(route)) {
+    // Forwards somewhere else; the destination is measured under its own name.
+    arrived = null;
+    arrivalBy = "redirect-stub";
+  } else if (expectedTitle !== null) {
+    arrived = onScreen(expectedTitle);
+    arrivalBy = "title";
+  } else if (markers) {
+    // ASYMMETRIC ON PURPOSE. A declared title is authoritative, so its absence
+    // is evidence of the wrong screen. A derived marker is not: most of these
+    // literals sit inside a branch, so "not present" is as easily "that branch
+    // did not render" as "wrong screen".
+    //
+    // Measured, not assumed. Treating absence as failure marked 4 routes wrong
+    // and 3 of them had plainly arrived — /search was reading "Search |
+    // Cancel | Search stocks, transactions, help..." while being failed for
+    // not saying "Recent Searches", which only renders once you have some.
+    //
+    // So presence CONFIRMS and absence returns to UNCHECKED. This costs a real
+    // catch (/handoff was reading the Home screen), but a check that cannot
+    // tell a wrong screen from an unrendered branch must not claim it can —
+    // that false confidence is the whole reason the title check exists.
+    arrived = markers.some(onScreen) ? true : null;
+    arrivalBy = arrived ? "marker" : "marker-absent";
+  } else {
+    arrived = null;
+    arrivalBy = "no-marker";
+  }
 
   const problems = [];
   if (expectedTitle !== null && arrived === false) {
@@ -496,6 +630,7 @@ for (const route of routes) {
     // null when the screen exposes no title to check against — reported as
     // unchecked rather than counted as confirmed.
     arrived,
+    arrivalBy,
     // True when this route's FIRST reading was another route's screen. Kept in
     // the report because it is evidence about the harness, not the app.
     maskedFirstRead: masked,
@@ -513,13 +648,28 @@ writeFileSync(OUT, JSON.stringify({ udid: UDID, tested: results.length, results 
 
 const confirmed = results.filter((r) => r.arrived === true && !r.problems.length);
 const unchecked = results.filter((r) => r.arrived === null && !r.problems.length);
+const byTitle = confirmed.filter((r) => r.arrivalBy === "title");
+const byMarker = confirmed.filter((r) => r.arrivalBy === "marker");
+const stubs = unchecked.filter((r) => r.arrivalBy === "redirect-stub");
+const noMarker = unchecked.filter((r) => r.arrivalBy === "no-marker");
+const markerAbsent = unchecked.filter((r) => r.arrivalBy === "marker-absent");
 
 console.log(`\n${results.length} routes — ${failing.length} FAIL, ${results.length - failing.length} ok`);
 console.log(
-  `  ${confirmed.length} ARRIVAL CONFIRMED — the screen's own title was on screen\n` +
-    `  ${unchecked.length} arrival UNCHECKED — the screen exposes no title to look for,\n` +
-    `     so "ok" means only that something rendered without an error marker`,
+  `  ${confirmed.length} ARRIVAL CONFIRMED — ${byTitle.length} by the screen's own title, ` +
+    `${byMarker.length} by a string only that screen renders\n` +
+    `  ${unchecked.length} arrival UNCHECKED — ${stubs.length} are redirect stubs (the ` +
+    `destination is measured under its own name),\n` +
+    `     ${noMarker.length} expose nothing unique to look for, ` +
+    `${markerAbsent.length} did not render any of their own strings (which a ` +
+    `branch not taken explains as well as a wrong screen), so "ok" means only ` +
+    `that something rendered without an error marker`,
 );
+if (noMarker.length) {
+  console.log(
+    `\nnothing unique to assert against: ${noMarker.map((r) => r.route).join(", ")}`,
+  );
+}
 if (maskedCount) {
   console.log(
     `${maskedCount} route(s) had their first reading MASKED by the previous ` +
