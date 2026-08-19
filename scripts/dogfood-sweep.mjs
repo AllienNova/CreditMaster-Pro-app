@@ -122,6 +122,130 @@ function preflightSeedOwnership(meta, email) {
   process.exit(1);
 }
 
+/**
+ * ARRIVAL — did the screen render anything of its OWN?
+ *
+ * The pass/fail check above answers "nothing looks broken": HTTP 200, no
+ * console error, no error boundary, body not near-empty. A screen that renders
+ * the sidebar and header and then nothing else satisfies every one of those
+ * and is still a screen the user cannot use. The first full run scored 199 of
+ * 204 "ok" while /goals/shared showed 303 characters, all of it navigation.
+ *
+ * The chrome is not hardcoded — it is DERIVED. Any line appearing on at least
+ * CHROME_SHARE of the swept routes is, by definition, not that route's own
+ * content: "Fynvita", "Overview", "Credit", "Sign Out". Whatever survives that
+ * subtraction is the screen speaking for itself.
+ *
+ * Derived rather than listed because a hardcoded nav list rots the moment the
+ * nav changes, and it rots SILENTLY — every screen would suddenly look like it
+ * arrived. A threshold cannot rot that way.
+ *
+ * Arrival is REPORTED, not enforced: it does not feed `ok`, so this does not
+ * change what the gate blocks on. Failing a run on a metric the moment it is
+ * invented would mean triaging 204 routes before anyone can read the number.
+ */
+const CHROME_SHARE = 0.6;
+const OWN_LINES_REQUIRED = 2;
+
+/**
+ * Both entry points to the sign-in screen. /login redirecting to /auth/login
+ * is the app working, not a bounce — used by the failure check below and by
+ * the arrival check above, which must agree on what counts as an alias.
+ */
+const LOGIN_ROUTES = new Set(["/auth/login", "/login"]);
+
+export function markArrival(results) {
+  const freq = new Map();
+  for (const r of results) {
+    for (const line of r.lines ?? []) {
+      freq.set(line, (freq.get(line) ?? 0) + 1);
+    }
+  }
+  const chromeAt = Math.max(2, Math.ceil(results.length * CHROME_SHARE));
+  const chrome = new Set(
+    [...freq.entries()].filter(([, n]) => n >= chromeAt).map(([l]) => l),
+  );
+
+  for (const r of results) {
+    const own = (r.lines ?? []).filter((l) => !chrome.has(l));
+    r.ownLines = own.slice(0, 8);
+
+    // Landing somewhere else is not arriving, however rich the destination.
+    // The 12 /admin/* routes bounce to /dashboard and render the dashboard in
+    // full — plenty of non-chrome lines, none of them the admin screen's. The
+    // exception is an alias: /login IS a way of reaching /auth/login.
+    const here = (r.landedOn ?? r.route).replace(/\/$/, "");
+    const asked = r.route.replace(/\/$/, "");
+    const aliased = LOGIN_ROUTES.has(here) && LOGIN_ROUTES.has(asked);
+    if (here !== asked && !aliased) {
+      r.arrived = false;
+      r.arrivalNote = `redirected to ${r.landedOn}`;
+      continue;
+    }
+
+    // Two, not one: a single stray line is as often a timestamp or a count as
+    // it is content. Two independent lines is the cheapest signal that a
+    // screen actually rendered itself.
+    r.arrived = own.length >= OWN_LINES_REQUIRED;
+    if (!r.arrived) r.arrivalNote = "shared chrome only";
+  }
+  return chrome;
+}
+
+/**
+ * Proves the arrival check can tell the two cases apart before it is trusted
+ * on 204 real routes — the same discipline the other audit gates use.
+ */
+function selfTestArrival() {
+  const nav = ["Fynvita", "Overview", "Credit", "Financial", "Sign Out"];
+  const rows = [];
+  // Routes that all share the nav and add content of their own.
+  for (let i = 0; i < 6; i++) {
+    rows.push({
+      route: `/real-${i}`,
+      landedOn: `/real-${i}`,
+      lines: [...nav, `Heading ${i}`, `Detail ${i}`],
+    });
+  }
+  const cases = [
+    // Nav and nothing else: reached the URL, showed nothing of itself.
+    { route: "/chrome-only-a", landedOn: "/chrome-only-a", lines: [...nav], want: false },
+    { route: "/chrome-only-b", landedOn: "/chrome-only-b", lines: [...nav, "Loading"], want: false },
+    // Bounced elsewhere and rendered THAT page in full. Rich, and still not
+    // the screen that was asked for — the /admin case.
+    {
+      route: "/admin",
+      landedOn: "/dashboard?error=unauthorized",
+      lines: [...nav, "Your dashboard", "Net worth", "Recent activity"],
+      want: false,
+    },
+    // A trailing slash is the same page.
+    { route: "/real-x", landedOn: "/real-x/", lines: [...nav, "Alpha", "Beta"], want: true },
+    // /login -> /auth/login is an alias, not a bounce.
+    { route: "/login", landedOn: "/auth/login", lines: [...nav, "Welcome Back", "Email"], want: true },
+  ];
+  rows.push(...cases);
+
+  markArrival(rows);
+  const failures = [];
+  for (const r of rows) {
+    const c = cases.find((x) => x.route === r.route);
+    const expected = c ? c.want : true;
+    if (r.arrived !== expected) {
+      failures.push(
+        `${r.route}: expected arrived=${expected}, got ${r.arrived} (${r.arrivalNote ?? "-"})`,
+      );
+    }
+  }
+  if (failures.length) {
+    console.error(
+      `dogfood-sweep arrival self-test FAILED:\n  ${failures.join("\n  ")}`,
+    );
+    process.exit(1);
+  }
+  console.log(`dogfood-sweep arrival self-test PASSED — ${rows.length}/${rows.length} cases correct.`);
+}
+
 function expandDynamic(routes, seeds) {
   const expanded = [];
   const unseeded = [];
@@ -141,6 +265,7 @@ function expandDynamic(routes, seeds) {
 }
 
 async function main() {
+  selfTestArrival();
   const all = [...new Set(collectRoutes())].sort();
   const staticRoutes = all
     .filter((r) => !isDynamic(r))
@@ -270,14 +395,13 @@ async function main() {
     // /login redirecting to /auth/login is the app working, not a failure —
     // it is an alias route. Only flag a bounce from somewhere that is not
     // itself a login entry point.
-    const LOGIN_ROUTES = new Set(["/auth/login", "/login"]);
     const bouncedToLogin =
       landedOn.startsWith("/auth/login") && !LOGIN_ROUTES.has(route);
 
     // Wrapped: a page that crashes or navigates mid-evaluate throws here, and
     // an unguarded throw ended the first full run at route 108 of 197 —
     // silently truncating coverage in a tool whose entire purpose is coverage.
-    let body = { chars: 0, boundary: false, head: "" };
+    let body = { chars: 0, boundary: false, head: "", lines: [] };
     try {
       body = await page.evaluate(() => {
         const text = document.body?.innerText ?? "";
@@ -290,7 +414,23 @@ async function main() {
         /Application error|Unhandled Runtime Error|client-side exception|This page could not be found/i.test(
           text,
         );
-        return { chars: text.trim().length, boundary, head: text.trim().slice(0, 100) };
+        // Lines feed the arrival check below. Deduped and capped so a long
+        // table does not dominate the report; order is irrelevant because the
+        // check is set membership.
+        const lines = [
+          ...new Set(
+            text
+              .split("\n")
+              .map((l) => l.trim())
+              .filter((l) => l.length >= 3),
+          ),
+        ].slice(0, 150);
+        return {
+          chars: text.trim().length,
+          boundary,
+          head: text.trim().slice(0, 100),
+          lines,
+        };
       });
     } catch (e) {
       problemsFromEvaluate = `page evaluate failed: ${e.message.slice(0, 120)}`;
@@ -322,6 +462,7 @@ async function main() {
       landedOn,
       bodyChars: body.chars,
       head: body.head,
+      lines: body.lines ?? [],
       consoleErrors: uniqueConsole,
       failedRequests: uniqueFailed,
       problems,
@@ -341,6 +482,10 @@ async function main() {
   const failing = results.filter((r) => r.problems.length);
   const warning = results.filter((r) => !r.problems.length && r.failedRequests.length);
 
+  markArrival(results);
+  const arrived = results.filter((r) => r.arrived);
+  const notArrived = results.filter((r) => !r.arrived);
+
   writeFileSync(
     OUT,
     JSON.stringify(
@@ -350,6 +495,8 @@ async function main() {
         tested: results.length,
         dynamicSeeded: expanded.map((e) => e.pattern),
         dynamicUnseeded: unseeded,
+        arrived: arrived.length,
+        notArrived: notArrived.map((r) => r.route),
         results,
       },
       null,
@@ -358,6 +505,30 @@ async function main() {
   );
 
   console.log(`\n${results.length} tested — ${failing.length} FAIL, ${warning.length} WARN, ${results.length - failing.length - warning.length} ok`);
+  console.log(
+    `${arrived.length} of ${results.length} ARRIVED — rendered content of their own beyond the shared chrome`,
+  );
+  if (notArrived.length) {
+    console.log(
+      `\n${notArrived.length} did NOT arrive (nav/footer only — a screen that reaches its URL and shows nothing of itself):`,
+    );
+    for (const r of notArrived) {
+      console.log(`  ${r.route}  (${r.bodyChars} chars)${r.arrivalNote ? " — " + r.arrivalNote : ""}`);
+    }
+  }
+
+  // Arrival is a floor, not a proof: a section sub-nav is chrome too, but it
+  // appears on too few routes to cross the global threshold, so a screen
+  // showing only its section's tabs can pass. Naming the weakest arrivals
+  // keeps that limit visible instead of letting the headline imply more.
+  const weak = arrived
+    .filter((r) => (r.ownLines ?? []).length < 6 && (r.lines ?? []).length < 12)
+    .map((r) => r.route);
+  if (weak.length) {
+    console.log(
+      `\n${weak.length} arrived on very little of their own — worth a human look: ${weak.join(", ")}`,
+    );
+  }
   console.log(
     unseeded.length
       ? `${unseeded.length} dynamic routes UNMEASURED (no seed in ${SEEDS}): ${unseeded.join(", ")}`
