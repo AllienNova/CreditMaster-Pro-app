@@ -33,6 +33,11 @@ import { NextRequest } from "next/server";
 const mockGetUser = jest.fn();
 const mockProfileSingle = jest.fn();
 const mockIsFlagEnabledEdge = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
+
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...a: unknown[]) => mockResolveRoleFromDb(...a),
+}));
 
 jest.mock("@supabase/ssr", () => ({
   createServerClient: function () {
@@ -152,6 +157,10 @@ describe("middleware — /api deny-by-default (AUTH-04)", () => {
 describe("middleware — admin role resolved from profiles, not JWT claims", () => {
   beforeEach(() => {
     mockIsFlagEnabledEdge.mockResolvedValue(true);
+    // The cookie client can no longer read profiles at all (see FND-072); the
+    // role now comes from resolveRoleFromDb. Default it to a plain user so
+    // each test states the role it is actually about.
+    mockResolveRoleFromDb.mockResolvedValue("user");
   });
 
   it("denies admin page access when JWT claims admin but profiles.role is user", async () => {
@@ -164,7 +173,7 @@ describe("middleware — admin role resolved from profiles, not JWT claims", () 
         },
       },
     });
-    mockProfileSingle.mockResolvedValue({ data: { role: "user" } });
+    mockResolveRoleFromDb.mockResolvedValue("user");
 
     const res = await middleware(
       pageRequest("/admin/dashboard", { "sb-access-token": "good" }),
@@ -179,12 +188,90 @@ describe("middleware — admin role resolved from profiles, not JWT claims", () 
     mockGetUser.mockResolvedValue({
       data: { user: { id: "u1", app_metadata: {}, user_metadata: {} } },
     });
-    mockProfileSingle.mockResolvedValue({ data: { role: "admin" } });
+    mockResolveRoleFromDb.mockResolvedValue("admin");
 
     const res = await middleware(
       pageRequest("/admin/dashboard", { "sb-access-token": "good" }),
     );
 
     expect(res.status).not.toBe(307);
+  });
+
+  it("allows super_admin too", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "u1", app_metadata: {}, user_metadata: {} } },
+    });
+    mockResolveRoleFromDb.mockResolvedValue("super_admin");
+
+    const res = await middleware(
+      pageRequest("/admin/dashboard", { "sb-access-token": "good" }),
+    );
+
+    expect(res.status).not.toBe(307);
+  });
+
+  /**
+   * FND-072. The middleware used to read profiles.role with the @supabase/ssr
+   * COOKIE client — i.e. as the `authenticated` role. public.profiles grants
+   * that role no SELECT, and Postgres checks table privileges BEFORE RLS, so
+   * the query returned nothing, the role fell back to "user", and every admin
+   * was redirected to /dashboard?error=unauthorized. All 12 admin screens were
+   * dark for everyone, and the catch swallowed it so nothing was logged.
+   *
+   * Meanwhile api-guard.ts — which guards all 284 API routes — resolved the
+   * same question through resolveRoleFromDb and worked fine. One app, one
+   * question, two answers.
+   *
+   * This is the regression test for that: the cookie client is unusable here,
+   * and an admin still gets in.
+   */
+  it("admits an admin even when the cookie client cannot read profiles", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "u1", app_metadata: {}, user_metadata: {} } },
+    });
+    // What a real `authenticated` request gets today: 42501, permission denied.
+    mockProfileSingle.mockResolvedValue({
+      data: null,
+      error: { code: "42501", message: "permission denied for table profiles" },
+    });
+    mockResolveRoleFromDb.mockResolvedValue("admin");
+
+    const res = await middleware(
+      pageRequest("/admin/dashboard", { "sb-access-token": "good" }),
+    );
+
+    expect(res.status).not.toBe(307);
+  });
+
+  it("does not ask the cookie client for the role at all", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "u1", app_metadata: {}, user_metadata: {} } },
+    });
+    mockResolveRoleFromDb.mockResolvedValue("admin");
+    mockProfileSingle.mockClear();
+
+    await middleware(
+      pageRequest("/admin/dashboard", { "sb-access-token": "good" }),
+    );
+
+    // Two sources for one decision is how they drifted apart in the first
+    // place. resolveRoleFromDb is the declared single source; the middleware
+    // must not keep a second path alive beside it.
+    expect(mockProfileSingle).not.toHaveBeenCalled();
+    expect(mockResolveRoleFromDb).toHaveBeenCalledWith("u1");
+  });
+
+  it("denies when the role lookup throws, rather than failing open", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "u1", app_metadata: {}, user_metadata: {} } },
+    });
+    mockResolveRoleFromDb.mockRejectedValue(new Error("service role unset"));
+
+    const res = await middleware(
+      pageRequest("/admin/dashboard", { "sb-access-token": "good" }),
+    );
+
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("error=unauthorized");
   });
 });

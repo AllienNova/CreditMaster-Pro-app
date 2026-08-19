@@ -15,6 +15,7 @@ import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isPublicApiRoute } from "@/lib/auth/PUBLIC_ROUTES";
 import { isFlagEnabledEdge } from "@/lib/flags/edge";
+import { resolveRoleFromDb } from "@/lib/auth/resolve-role";
 import { supabaseConnectSrc } from "@/lib/security/csp";
 
 // Define public routes that don't require authentication
@@ -291,16 +292,24 @@ export async function middleware(request: NextRequest) {
     // Edge-safe @supabase/ssr cookie client) is the only source of truth.
     if (adminRoutes.some((route) => pathname.startsWith(route))) {
       try {
-        // Reuses the client and `user` resolved above — this block used to
-        // build a second client and call getUser() again, which was one
-        // redundant network round-trip on every admin page load.
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-        const role = profile?.role ?? "user";
+        // THROUGH resolveRoleFromDb, not the cookie client (FND-072).
+        //
+        // This used to query profiles with the @supabase/ssr client above —
+        // i.e. as the `authenticated` role. public.profiles grants that role
+        // no SELECT, and Postgres checks table privileges BEFORE RLS, so the
+        // query returned nothing whatever the policies said, `role` fell back
+        // to "user", and EVERY admin was redirected here. All 12 admin screens
+        // were dark for everyone, and the catch below swallowed it, so the
+        // logs showed nothing either.
+        //
+        // api-guard.ts, which guards all 284 API routes, had always resolved
+        // the same question through resolveRoleFromDb — the module that calls
+        // itself "the one trusted source for a user's authorization role" —
+        // and worked. One app, one question, two implementations, and only one
+        // of them was reachable. Consolidating on the declared source is the
+        // fix; it also drops the per-request round-trip, since that module
+        // caches for 15s.
+        const role = await resolveRoleFromDb(user.id);
 
         if (role !== "admin" && role !== "super_admin") {
           // Redirect non-admins to dashboard
@@ -309,7 +318,9 @@ export async function middleware(request: NextRequest) {
           );
         }
       } catch {
-        // Admin role check failed - redirect to dashboard
+        // Fail CLOSED: a lookup that throws must not admit anyone. Same
+        // posture as resolveRoleFromDb's own — a DB blip demotes, never
+        // escalates.
         return NextResponse.redirect(
           new URL("/dashboard?error=unauthorized", request.url),
         );
