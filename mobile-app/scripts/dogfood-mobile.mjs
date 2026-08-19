@@ -479,6 +479,57 @@ const allRoutes = existsSync(ROUTES_FILE) && arg("routes") !== null
   ? readFileSync(ROUTES_FILE, "utf8").split("\n").map((r) => r.trim()).filter(Boolean)
   : collectRoutes();
 
+/**
+ * SEED OWNERSHIP — refuse to run against the wrong user's data.
+ *
+ * The API scopes every detail screen by owner and answers not-found for
+ * someone else's row, which on screen is indistinguishable from a broken
+ * screen. The first run with seeds present had ids owned by
+ * dogios@fynvita.test while the simulator was signed in as m@t.co, and
+ * /student-loans/[id] read "Loan Not Found" and /trading/strategies/[id] read
+ * "Strategy not found" — against rows that existed and were perfectly
+ * healthy. Two findings that were not findings.
+ *
+ * The web sweep has preflighted this for a while; this one could not, because
+ * it performs no login and simply inherits whatever session Expo Go holds. It
+ * can, though, ASK: /profile renders the signed-in email, and idb can read it.
+ *
+ * Exits rather than warns, for the same reason the web sweep does: a sweep
+ * measuring the wrong user's data is worse than no sweep, because its green
+ * rows are meaningless too.
+ */
+function preflightSeedOwner() {
+  const declared = SEEDS._ownerEmail;
+  const seeded = Object.keys(SEEDS).filter((k) => !k.startsWith("_"));
+  if (!declared || !seeded.length) return;
+
+  sh("xcrun", ["simctl", "openurl", UDID, `exp://${HOST}:8081/--/profile`]);
+  sleep(SETTLE_MS + 6000);
+  const texts = readScreen().texts.map((t) => t.trim());
+  const email = texts.find((t) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t));
+
+  if (!email) {
+    console.log(
+      `  seed-owner preflight: could not read an email off /profile — ` +
+        `continuing, but the ${seeded.length} seeded route(s) are unverified ` +
+        `as to ownership.`,
+    );
+    return;
+  }
+  if (email !== declared) {
+    console.error(
+      `\nSEED OWNERSHIP MISMATCH — refusing to run.\n` +
+        `  ${SEEDS_FILE} seeds rows owned by : ${declared}\n` +
+        `  the simulator is signed in as     : ${email}\n\n` +
+        `Every scoped detail screen would answer not-found for the other user's\n` +
+        `rows, and that looks exactly like a broken screen. Either sign in as\n` +
+        `${declared}, or re-seed for ${email} and update _owner/_ownerEmail.\n`,
+    );
+    process.exit(1);
+  }
+  console.log(`  seed-owner preflight: signed in as ${email} — matches seeds.`);
+}
+
 const { expanded, unseeded: unseededRoutes } = expandDynamic(allRoutes, SEEDS);
 const routes = expanded.map((e) => e.route);
 const PATTERN_OF = new Map(expanded.map((e) => [e.route, e.pattern]));
@@ -491,6 +542,8 @@ console.log(
 if (unseededRoutes.length) {
   console.log(`  UNSEEDED (never measured): ${unseededRoutes.join(", ")}`);
 }
+
+preflightSeedOwner();
 
 console.log(`sweeping ${routes.length} mobile routes on ${UDID}`);
 
