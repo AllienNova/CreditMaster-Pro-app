@@ -214,7 +214,11 @@ incident wearing a test costume. Therefore:
 4. **Hard interlock:** the sweep aborts unless the target's Supabase host is
    `127.0.0.1`. Not a convention — an assertion, because the default dev target
    is the production project.
-5. **Rate limiting is a tested property, not an obstacle.** For each of the 50
+5. **Arrival is not the only render assertion.** Per route, additionally: no
+   console error, no unhandled rejection, no visible error-boundary text, and no
+   persistent loading affordance after settle. A screen that renders a heading
+   over a broken body, or a permanent skeleton, currently *arrives*.
+6. **Rate limiting is a tested property, not an obstacle.** For each of the 50
    rate-limited routes, assert the N+1th call in a window returns 429. Disabling
    the limiter for a run is forbidden.
 
@@ -245,19 +249,36 @@ policy, and the `GRANT` that policy requires — this catches FND-072's class
 *statically*. **M1 does not start until this diff is signed**, or every M1 finding
 is suspect in a direction nobody can see.
 
-**M1a — Endpoint sweep, read-only.** Exit: a committed report covering all 291
-GET verbs plus unauth and cross-user probes for all 578, with zero UNMEASURED
-rows. Needs no request bodies and delivers the FND-072 class immediately.
+**M1a — Endpoint sweep, genuinely read-only.** Exit: a committed report covering
+all 291 GET verbs plus an **unauthenticated** probe on all 578, with zero
+UNMEASURED rows. Both are safe and body-free: a 401 is returned before any body
+is parsed, and neither writes.
+
+**Cross-user probes do NOT belong here.** A cross-user probe on
+`DELETE /api/x/[id]` *is* a mutation attempt — and if the authz guard is broken,
+which is the thing being tested, it succeeds and destroys the other user's row.
+They also prove nothing on POST/PATCH/PUT without a valid body, because
+validation returns 400 before authz is consulted, scoring an instrument artifact
+as a result. So cross-user probes on the 287 mutating verbs move to M1b, under
+the §3 reset guarantee and the fixture corpus.
 
 **M1b — Endpoint sweep, mutating.** Entry criterion is mechanical: **every
 mutating verb has a Zod schema at its boundary**, enforced by a new
 `audit:route-schema` gate — today that is 44 of 359, so this converts ~250
 fixtures from invisible work into a countable, gateable task, and buys input
 validation as a side effect. Exit: all 287 mutating verbs exercised under the §3
-contract.
+contract, including the cross-user probes displaced from M1a, a **webhook-replay
+probe** (the same Stripe event delivered twice produces exactly one state
+change), and a **concurrent-write invariant probe** on every atomic-RPC path.
 
 **M2 — Journeys on a real session.** Exit: `npx playwright test <12 named specs>`
-exits 0. Delete both auth-bypass sites; delete the accept-error-as-pass branches;
+exits 0, **and** `npx eslint cypress/` passes a new rule banning any `oneOf`
+whose set contains both a success and a failure status. That rule is not
+cosmetic: M4 promotes the Cypress job to a deploy gate, and today 21 specs pass
+on 401, three accept 500, and `payment-subscription.cy.ts:102` accepts every
+outcome the endpoint can produce — gating deploys on that suite would make a
+worthless check load-bearing. Delete both auth-bypass sites; delete the
+accept-error-as-pass branches;
 write Stripe checkout→webhook→tier, documents upload→list→download, and
 notifications; un-skip the 9 auth-gated specs. The 12 journeys are enumerated as
 spec paths in the M2 task list, not left as a count.
@@ -273,8 +294,9 @@ tautological test files; accessibility via `AxeBuilder` on all 204 web routes
 `continue-on-error`: `deploy-production.needs: [build, e2e, mobile-test,
 endpoint-sweep, screen-sweep]`, plus a CI job that parses `ci.yml` and fails if a
 required job is missing from the deploy closure or if `continue-on-error` appears
-outside an allowlist. Entry criterion: `e2e` passes locally against a real seeded
-backend first — CI currently points Cypress at a placeholder Supabase, which is
+outside an allowlist. **Entry criteria (three, all mechanical):** (a) the M2 ESLint rule passes, so
+the Cypress suite asserts something before it gates a deploy; (b) CI secrets are
+provisioned; (c) `e2e` passes locally against a real seeded backend first — CI currently points Cypress at a placeholder Supabase, which is
 *why* everything 401s and `oneOf` passes; removing the escape hatch before
 provisioning CI secrets fails 100% on day one. Also: serve the built artifact,
 not `npm run dev`.
@@ -282,25 +304,45 @@ not `npm run dev`.
 **M5 — Autonomous loop.** Exit: one unattended run completes, produces a report
 with **zero UNMEASURED rows**, and a typed parked-queue.
 
-**Critical path:** M0 → M0.5 → M1a → M1b → M2 → M4. M3 parallelises after M0.
+**Critical path:** M0 → M0.5 → M1a → M1b → M2 → M4. M3 parallelises after M0,
+**with one exception**: M0 makes `arrived === null` a failure, so the mobile
+sweep goes red the day M0 lands (~51 nulls of 231) and stays red until M3 raises
+it. M4 must therefore either wait for M3's mobile-arrival item, or land
+`screen-sweep` as **web-blocking / mobile-reporting** with a dated conversion.
+It may not land mobile-blocking and then have the gate weakened to get a deploy
+out — that is the gate-gaming this document bans.
 
 ---
 
 ## 5. What the operator must provide
 
-### Decisions (each needs a date and a default-if-unanswered)
+### Decisions
+
+Each carries a **default-if-unanswered** so an unattended run is never blocked
+indefinitely by silence. Dates are for the operator to set; the defaults below
+are what the program will assume if a decision is still open when its milestone
+starts.
 
 - **D1 — mobile API base port.** Three conflicting `EXPO_PUBLIC_API_URL`; the one
   in the bundle (`:3001`) 500s everything and omits `/api`. *Blocks all mobile
-  data verification.* Recommend `:3100`.
+  data verification.* No port is recommended here — the right value follows from
+  D6, and the only `:3100` evidence in the repo is the *web* sweep's base URL,
+  not a mobile API base. **Default if unanswered:** whichever port D6 designates,
+  with the `/api` suffix restored.
 - **D2 — `profiles` GRANT.** Should `authenticated` `SELECT` its own row? Three
   RLS policies are dead letters until decided.
+  **Default:** leave as-is; no request path depends on it since `2265f4e`.
 - **D3 — authority to delete** 4 superseded services + 20 whose tables don't exist.
+  **Default:** do not delete; record and continue.
 - **D4 — statement/due dates (#110).** Column, or withdraw `PaymentTimingOptimizer`.
+  **Default:** withdraw the feature rather than ship a fabricated figure.
 - **D5 — mobile investments (SF-28)** and the overloaded `subscriptions` table.
+  **Default:** remove the fabricated values, leave the screens honest-but-empty.
 - **D6 — verification target.** Local-only, or a dedicated staging project?
   Note the real consequence: **local-only means Stripe and Plaid webhooks cannot
   reach the app without a tunnel** — that is the actual trade, not convenience.
+  **Default:** local-only, with webhook-dependent journeys marked UNMEASURED
+  rather than faked.
 
 ### Credentials (test/sandbox tier only)
 
@@ -397,8 +439,9 @@ if D6 funds an emulator lane; otherwise the mobile number means iOS and says so.
   that fails `next build` if any `NEXT_PUBLIC_*_BYPASS` is set outside test
   config. **Open operator question: is this flag set in any Vercel environment
   today?**
-- **The `security` CI job cannot fail** (`ci.yml:130`), so `npm audit`'s 32
-  vulnerabilities including 1 critical have never blocked anything.
+- **The `security` CI job cannot fail** (`ci.yml:130`), so `npm audit` has
+  never blocked anything. Executed 2026-08-30: **34 vulnerabilities — 1 critical,
+  19 high, 10 moderate, 4 low.** (`CLAUDE.md`'s "32" is from 2026-07-24.)
 
 ---
 
@@ -420,3 +463,14 @@ re-expressed as a `needs:` graph (P0-5); JWT minting moved M2 → M0 (P1-13);
 accessibility, Android, rate-limiting-as-property, RLS static gate, concurrency
 and webhook replay added; Authority expanded from 7 to 13 with a halt threshold
 and the five cases where parking is wrong.
+
+**Second critic pass — APPROVE WITH CONDITIONS.** Three conditions, all adopted
+above: M1a's cross-user probes were a mutation attempt that would destroy the
+other user's row precisely when the guard under test is broken (moved to M1b);
+M4 would have blocked every deploy behind M3's mobile arrival, or been weakened
+to avoid it (now stated explicitly); and M4 would have promoted the Cypress suite
+to a deploy gate without fixing the `oneOf` assertions this document proves are
+worthless (now an M2 deliverable and an M4 entry criterion). Also corrected: the
+`npm audit` count was inherited stale from `CLAUDE.md` (32 → **34**, executed),
+D1's port recommendation had no evidence behind it, and the decisions now carry
+defaults so silence cannot block an unattended run indefinitely.
