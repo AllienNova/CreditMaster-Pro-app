@@ -20,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme } from "../../src/constants/theme";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import {
   useStudentLoanStore,
   selectStudentLoans,
@@ -203,8 +204,8 @@ export default function StrategiesScreen() {
           )}
 
           {/* Header */}
+          <ScreenHeader title="AI Repayment Strategies" />
           <View style={styles.header}>
-            <Text style={styles.title}>AI Repayment Strategies</Text>
             <Text style={styles.subtitle}>
               Get personalized strategies based on your financial situation
             </Text>
@@ -673,12 +674,6 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: theme.colors.text,
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,

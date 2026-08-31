@@ -54,7 +54,9 @@ export const GET = withPermission(
  * Update a budget
  */
 export const PATCH = withPermission(
-  "financial:create_budgets",
+  // Editing an existing budget is a write, not a create. `create_budgets` is
+  // premium-only (rbac.ts), so this 403'd for every `user`-role account.
+  "financial:write",
   async (request: NextRequest, user: AuthedUser) => {
   try {
     const userId = user.id;
@@ -151,7 +153,9 @@ export const PATCH = withPermission(
  * Delete a budget
  */
 export const DELETE = withPermission(
-  "financial:create_budgets",
+  // Deleting your own budget must not be paywalled behind the premium create
+  // permission — a downgraded user could otherwise never remove their own data.
+  "financial:write",
   async (request: NextRequest, user: AuthedUser) => {
   try {
     const userId = user.id;

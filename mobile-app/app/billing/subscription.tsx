@@ -76,15 +76,23 @@ export default function SubscriptionScreen() {
   const loadSubscription = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const res = await subscriptionApi.getSubscriptionDetail();
-    if (res.success && res.data) {
-      setDetail(res.data);
-    } else {
-      setError(
-        res.error?.message ?? "Unable to load your subscription right now.",
-      );
+    // try/finally: a REJECTED request (not a { success: false } result) used to
+    // skip setLoading(false) entirely, leaving the screen on a spinner with no
+    // way out — the same defect /billing had.
+    try {
+      const res = await subscriptionApi.getSubscriptionDetail();
+      if (res.success && res.data) {
+        setDetail(res.data);
+      } else {
+        setError(
+          res.error?.message ?? "Unable to load your subscription right now.",
+        );
+      }
+    } catch {
+      setError("Unable to load your subscription right now.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -201,11 +209,11 @@ export default function SubscriptionScreen() {
     );
   }
 
-  const currentPlan = detail?.plans.find((p) => p.isCurrent) ?? null;
+  const currentPlan = detail?.plans?.find((p) => p.isCurrent) ?? null;
   const statusColor = detail
     ? (STATUS_COLORS[detail.status] ?? theme.colors.textSecondary)
     : theme.colors.textSecondary;
-  const hasPlans = (detail?.plans.length ?? 0) > 0;
+  const hasPlans = (detail?.plans?.length ?? 0) > 0;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>

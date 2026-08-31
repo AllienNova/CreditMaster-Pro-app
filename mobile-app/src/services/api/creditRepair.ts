@@ -751,6 +751,34 @@ export const creditRepairApi = {
   },
 
   /**
+   * List the current user's credit reports, newest first. Calls
+   * GET /api/credit-repair/reports (withAuth), which orders by report_date
+   * descending (credit-reports-db-service.ts:173) and answers
+   * `{ reports, latestReport, pagination }` inside the {success,data} envelope
+   * the shared client unwraps — so `res.data.reports` is the raw array.
+   *
+   * This exists because /reports/[id] had no list to be reached from: the
+   * /reports screen generates PDFs and links comparison + upload, so a stored
+   * report could only be opened by typing a deep link with an id nobody knows.
+   * Each row is adapted by the same mapWebCreditReport the detail screen uses,
+   * so a report with no score shows no score rather than a fabricated 0.
+   */
+  getReports: async (): Promise<
+    ApiResponse<{ reports: CreditReportDetail[] }>
+  > => {
+    const res = await api.get<{ reports?: WebCreditReport[] }>(
+      "/credit-repair/reports",
+    );
+    if (res.success && res.data) {
+      const reports = Array.isArray(res.data.reports)
+        ? res.data.reports.map(mapWebCreditReport)
+        : [];
+      return { success: true, data: { reports } };
+    }
+    return { success: false, error: res.error };
+  },
+
+  /**
    * Get all credit accounts (tradelines) for the current user. Calls
    * GET /api/credit-repair/accounts (withAuth); the shared client unwraps the
    * {success,data} envelope, so `res.data` is `{ accounts }`. Each account is

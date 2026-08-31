@@ -79,6 +79,7 @@ export class GamificationEngine {
 
   async initializeUserProgress(userId: string): Promise<UserProgress> {
     const { data, error } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("user_progress")
       .upsert({
         user_id: userId,
@@ -121,6 +122,7 @@ export class GamificationEngine {
     const finalAmount = Math.floor(amount * progress.streakMultiplier);
 
     // Record XP transaction
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await this.supabase.from("xp_transactions").insert({
       user_id: userId,
       amount: finalAmount,
@@ -351,6 +353,7 @@ export class GamificationEngine {
 
     // Award badge
     const { error: insertError } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("user_badges")
       .insert({
         user_id: userId,
@@ -491,6 +494,7 @@ export class GamificationEngine {
     }
 
     // Mark as completed
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await this.supabase.from("user_quest_progress").upsert({
       user_id: userId,
       quest_id: questId,

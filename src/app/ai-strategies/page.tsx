@@ -58,7 +58,17 @@ function AIStrategiesContent() {
   useEffect(() => {
     if (loanId) {
       void fetchStrategies();
+      return;
     }
+    // Without a loanId there is nothing to fetch, and nothing ever cleared the
+    // initial `loading = true` — so the page sat on the skeleton below FOREVER.
+    // That skeleton contains only animated divs and no text, so the screen was
+    // literally blank: 20KB of markup, zero readable characters. The `!loanId`
+    // empty state twenty lines down was unreachable.
+    //
+    // Found by the route sweep, which measured 0 rendered characters after a
+    // reload and a further 6s wait on an already-compiled route.
+    setLoading(false);
   }, [loanId, fetchStrategies]);
 
   const handleGenerateExecutionPlan = async (strategy: AIStrategySummary) => {

@@ -225,7 +225,7 @@ export default function LeaderboardScreen() {
             <View style={styles.userStatItem}>
               <Text style={styles.userStatLabel}>Your XP</Text>
               <Text style={[styles.userStatValue, { color: "#F59E0B" }]}>
-                {progress?.xp.totalEarned.toLocaleString() || "0"}
+                {progress?.xp?.totalEarned?.toLocaleString() || "0"}
               </Text>
             </View>
           </View>

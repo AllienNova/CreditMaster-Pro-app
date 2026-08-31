@@ -97,36 +97,15 @@ export default function DebtStrategyAnalyzer() {
       }
     } catch (err) {
       console.error("Failed to fetch debts:", err);
-      // Use mock data for demo
-      setDebts([
-        {
-          id: "1",
-          name: "Chase Credit Card",
-          type: "credit_card",
-          balance: 5000,
-          interestRate: 19.99,
-          minimumPayment: 125,
-          priority: 1,
-        },
-        {
-          id: "2",
-          name: "Discover Card",
-          type: "credit_card",
-          balance: 3000,
-          interestRate: 24.99,
-          minimumPayment: 90,
-          priority: 2,
-        },
-        {
-          id: "3",
-          name: "Personal Loan",
-          type: "personal_loan",
-          balance: 8000,
-          interestRate: 12.5,
-          minimumPayment: 250,
-          priority: 3,
-        },
-      ]);
+      /*
+       * No mock fallback. This used to seed three invented debts — "Chase
+       * Credit Card $5,000 at 19.99%", "Discover Card $3,000", and a third —
+       * whenever the fetch failed, which was ALWAYS, because
+       * /api/credit-builder/debts did not exist. The payoff simulation then ran
+       * on those numbers and told the user how long their debt would take to
+       * clear. An empty list is the honest answer.
+       */
+      setDebts([]);
     }
   };
 

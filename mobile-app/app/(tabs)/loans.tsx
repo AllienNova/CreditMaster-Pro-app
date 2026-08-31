@@ -86,7 +86,7 @@ export default function LoansScreen() {
         <Text style={styles.title}>Student Loans</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => router.push("/loans/add" as never)}
+          onPress={() => router.push("/student-loans/add" as never)}
         >
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>

@@ -14,7 +14,16 @@
 // ============================================================================
 // Supabase mock — factory is hoisted, so NO const references from outer scope
 // ============================================================================
-jest.mock("@/lib/supabase/server", () => {
+// Mocks the SERVICE-ROLE client, not "@/lib/supabase/server".
+//
+// OrderManager and PositionManager both moved off the request-scoped client:
+// `orders` and `positions` grant `authenticated` no table privilege, so every
+// query returned Postgres 42501 and the trading APIs answered 500. Mocking the
+// old module left these 110 tests calling the real service-role client (88
+// failed). The mock has to follow the module's actual dependency.
+//
+// Note `getServiceRoleClient` is SYNCHRONOUS — `createClient` was async.
+jest.mock("@/lib/supabase/service-role", () => {
   const makeMockChain = () => {
     const chain: Record<string, jest.Mock> = {};
     const methods = [
@@ -47,7 +56,7 @@ jest.mock("@/lib/supabase/server", () => {
   };
 
   return {
-    createClient: jest.fn(async () => ({
+    getServiceRoleClient: jest.fn(() => ({
       from: jest.fn(() => makeMockChain()),
     })),
   };
@@ -70,10 +79,10 @@ import {
   getPositionManager,
 } from "../positions/position-manager";
 import { OrderRequest, Fill, Order, OrderStatus } from "../orders/order-types";
-import { createClient as _createClient } from "@/lib/supabase/server";
+import { getServiceRoleClient as _getServiceRoleClient } from "@/lib/supabase/service-role";
 
 // Cast to jest.Mock so we can re-apply implementation after resetMocks
-const mockedCreateClient = _createClient as jest.Mock;
+const mockedCreateClient = _getServiceRoleClient as jest.Mock;
 
 // ============================================================================
 // Supabase chain builder — shared between factory and beforeEach
@@ -220,9 +229,10 @@ describe("OrderManager Integration Tests", () => {
   let mockFromSpy: jest.Mock;
 
   beforeEach(() => {
-    // Re-apply createClient mock (resetMocks: true clears implementations)
+    // Re-apply the client mock (resetMocks: true clears implementations).
+    // Synchronous: getServiceRoleClient() is not async.
     mockFromSpy = jest.fn(() => makeMockSupabaseChain());
-    mockedCreateClient.mockImplementation(async () => ({
+    mockedCreateClient.mockImplementation(() => ({
       from: mockFromSpy,
     }));
 
@@ -2382,29 +2392,53 @@ describe("OrderManager Integration Tests", () => {
 
   describe("getOrders() DB Query", () => {
     it("should call getOrders with no filters and return empty array", async () => {
-      const result = await orderManager.getOrders({});
+      const result = await orderManager.getOrders("user-1", {});
       expect(Array.isArray(result)).toBe(true);
     });
 
+    // IDOR guard. getOrders runs under the service role, which BYPASSES RLS, so
+    // `.eq("user_id", …)` is the only thing keeping one user's orders out of
+    // another's response. It used to be conditional (`if (filter.userId)`) —
+    // harmless while RLS was enforcing isolation underneath, an enumeration hole
+    // the moment the module moved to the service role. This asserts the filter
+    // is applied even when the caller passes no filter object at all.
+    it("scopes to the user even with an empty filter", async () => {
+      const chain = makeMockSupabaseChain();
+      mockFromSpy.mockReturnValue(chain);
+
+      await orderManager.getOrders("user-1");
+
+      expect(chain.eq).toHaveBeenCalledWith("user_id", "user-1");
+    });
+
+    it("never issues an unscoped query when other filters are present", async () => {
+      const chain = makeMockSupabaseChain();
+      mockFromSpy.mockReturnValue(chain);
+
+      await orderManager.getOrders("user-2", { symbol: "AAPL", side: "buy" });
+
+      expect(chain.eq).toHaveBeenCalledWith("user_id", "user-2");
+    });
+
     it("should call getOrders with status filter", async () => {
-      const result = await orderManager.getOrders({
+      const result = await orderManager.getOrders("user-1", {
         status: ["filled", "cancelled"],
       });
       expect(Array.isArray(result)).toBe(true);
     });
 
     it("should call getOrders with side filter", async () => {
-      const result = await orderManager.getOrders({ side: "buy" });
+      const result = await orderManager.getOrders("user-1", { side: "buy" });
       expect(Array.isArray(result)).toBe(true);
     });
 
     it("should call getOrders with symbol filter", async () => {
-      const result = await orderManager.getOrders({ symbol: "AAPL" });
+      const result = await orderManager.getOrders("user-1", { symbol: "AAPL" });
       expect(Array.isArray(result)).toBe(true);
     });
 
     it("should call getOrders with date range", async () => {
-      const result = await orderManager.getOrders({
+      const result = await orderManager.getOrders("user-1", {
         startDate: new Date("2025-01-01"),
         endDate: new Date("2025-12-31"),
       });
@@ -2412,22 +2446,22 @@ describe("OrderManager Integration Tests", () => {
     });
 
     it("should call getOrders with strategyId filter", async () => {
-      const result = await orderManager.getOrders({ strategyId: "strat-1" });
+      const result = await orderManager.getOrders("user-1", { strategyId: "strat-1" });
       expect(Array.isArray(result)).toBe(true);
     });
 
     it("should call getOrders with limit", async () => {
-      const result = await orderManager.getOrders({ limit: 10 });
+      const result = await orderManager.getOrders("user-1", { limit: 10 });
       expect(Array.isArray(result)).toBe(true);
     });
 
     it("should call getOrders with offset and limit for pagination", async () => {
-      const result = await orderManager.getOrders({ offset: 20, limit: 10 });
+      const result = await orderManager.getOrders("user-1", { offset: 20, limit: 10 });
       expect(Array.isArray(result)).toBe(true);
     });
 
     it("should call getOrders with all filters combined", async () => {
-      const result = await orderManager.getOrders({
+      const result = await orderManager.getOrders("user-1", {
         status: ["filled"],
         side: "buy",
         symbol: "AAPL",
@@ -2464,7 +2498,7 @@ describe("OrderManager Integration Tests", () => {
     });
 
     it("getOrders() queries .from(\"orders\") — not a different/missing table", async () => {
-      await orderManager.getOrders({ userId: TEST_USER_ID });
+      await orderManager.getOrders("user-1", { userId: TEST_USER_ID });
 
       expect(mockFromSpy).toHaveBeenCalledWith("orders");
     });
@@ -2501,7 +2535,7 @@ describe("OrderManager Integration Tests", () => {
       mockFromSpy.mockImplementationOnce(() => errorChain);
 
       await expect(
-        orderManager.getOrders({ userId: TEST_USER_ID }),
+        orderManager.getOrders("user-1", { userId: TEST_USER_ID }),
       ).rejects.toThrow(/Failed to fetch orders/);
     });
 
@@ -2548,7 +2582,7 @@ describe("OrderManager Integration Tests", () => {
         Promise.resolve({ data: [storedRow], error: null }).then(resolve);
       mockFromSpy.mockImplementationOnce(() => readChain);
 
-      const [readBack] = await orderManager.getOrders({ userId: TEST_USER_ID });
+      const [readBack] = await orderManager.getOrders("user-1", { userId: TEST_USER_ID });
 
       expect(readBack.id).toBe(order!.id);
       expect(readBack.symbol).toBe("RTRIP");

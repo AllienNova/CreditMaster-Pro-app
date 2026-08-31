@@ -16,7 +16,27 @@ import type {
   MonitoringStatus,
 } from "../services/api/types";
 import { pushNotificationService } from "../services/notifications/pushNotificationService";
-import { seedCreditScores, seedScoreHistory, seedCreditFactors, seedMonitoringStatus, seedAlerts } from "../data/dev-seed";
+
+/**
+ * dev-seed is loaded LAZILY, inside the `__DEV__` branch — never as a top-level
+ * import.
+ *
+ * A static import puts the module in the production graph whether or not the
+ * branch runs: Metro does not tree-shake it, so a release bundle carried the
+ * fabricated seed strings ("Your Experian score increased", "Emergency Fund",
+ * a 731 credit score). The `if (__DEV__)` guard stopped it EXECUTING but not
+ * SHIPPING — protection by build-time flag over a payload already on the
+ * device, which is the FND-064 shape.
+ *
+ * `require()` inside the guard is dead code once Metro folds `__DEV__` to
+ * false, so the module leaves the graph entirely. Verified by audit:bundle
+ * against a real `expo export`.
+ */
+function devSeed(): typeof import("../data/dev-seed") {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- deliberate: see above
+  return require("../data/dev-seed");
+}
+
 
 interface CreditState {
   // Credit Scores
@@ -121,6 +141,9 @@ const initialState = {
   alertError: null as string | null,
 };
 
+/** The route takes days; the store's callers speak months. */
+const DAYS_PER_MONTH = 30;
+
 export const useCreditStore = create<CreditState>()(
   persist(
     (set, get) => ({
@@ -129,9 +152,9 @@ export const useCreditStore = create<CreditState>()(
       fetchScores: async () => {
         set({ isLoadingScores: true, scoreError: null });
         if (__DEV__) {
-          const avgScore = seedCreditScores.length > 0 ? Math.round(seedCreditScores.reduce((sum, s) => sum + s.score, 0) / seedCreditScores.length) : null;
+          const avgScore = devSeed().seedCreditScores.length > 0 ? Math.round(devSeed().seedCreditScores.reduce((sum, s) => sum + s.score, 0) / devSeed().seedCreditScores.length) : null;
           const now = new Date().toISOString();
-          set({ scores: seedCreditScores, currentScore: avgScore, lastScoreUpdate: now, lastScoreFetch: now, isLoadingScores: false });
+          set({ scores: devSeed().seedCreditScores, currentScore: avgScore, lastScoreUpdate: now, lastScoreFetch: now, isLoadingScores: false });
           return;
         }
         try {
@@ -180,29 +203,56 @@ export const useCreditStore = create<CreditState>()(
       fetchScoreHistory: async (months = 6) => {
         set({ isLoadingScores: true });
         if (__DEV__) {
-          set({ scoreHistory: seedScoreHistory, isLoadingScores: false });
+          set({ scoreHistory: devSeed().seedScoreHistory, isLoadingScores: false });
           return;
         }
+        // The route requires a bureau and answers 400 without one. Take it
+        // from the scores already in state rather than guessing: asking for a
+        // bureau the user has no score with returns an empty series, which
+        // reads as "no history" when the truth is "not connected".
+        //
+        // This call used to send `?months=`, a parameter the route does not
+        // read, so it 400'd every time and the catch below swallowed it —
+        // leaving the screen with no history and no error either.
+        const bureau = get().scores[0]?.bureau;
+        if (!bureau) {
+          set({ isLoadingScores: false });
+          return;
+        }
+
         try {
-          const response = await creditScoreApi.getHistory(months);
+          const response = await creditScoreApi.getHistory(
+            bureau,
+            Math.round(months * DAYS_PER_MONTH),
+          );
           if (response.success && response.data) {
-            // Convert array to history format
-            const scores = response.data;
+            const points = Array.isArray(response.data.scores)
+              ? response.data.scores
+              : [];
             const history: CreditScoreHistory = {
-              history: scores.map((s) => ({
-                date: s.date,
-                score: s.score,
-                bureau: s.bureau,
+              history: points.map((point) => ({
+                date: point.date,
+                score: point.score,
+                bureau,
               })),
-              averageScore:
-                scores.reduce((sum, s) => sum + s.score, 0) /
-                (scores.length || 1),
-              highestScore: Math.max(...scores.map((s) => s.score), 0),
-              lowestScore: Math.min(...scores.map((s) => s.score), 850),
+              averageScore: points.length
+                ? points.reduce((sum, p) => sum + p.score, 0) / points.length
+                : 0,
+              // Guarded: Math.max() of an empty list is -Infinity, and the
+              // old seeds (0 / 850) reported a real-looking range for a user
+              // with no history at all.
+              highestScore: points.length
+                ? Math.max(...points.map((p) => p.score))
+                : 0,
+              lowestScore: points.length
+                ? Math.min(...points.map((p) => p.score))
+                : 0,
               trend: "stable",
-              periodStart:
-                scores[scores.length - 1]?.date || new Date().toISOString(),
-              periodEnd: scores[0]?.date || new Date().toISOString(),
+              // The route returns ascending by score_date, so the FIRST point
+              // starts the period. The previous code read it backwards.
+              periodStart: points[0]?.date ?? new Date().toISOString(),
+              periodEnd:
+                points[points.length - 1]?.date ?? new Date().toISOString(),
             };
             set({ scoreHistory: history, isLoadingScores: false });
           } else {
@@ -215,26 +265,21 @@ export const useCreditStore = create<CreditState>()(
 
       fetchFactors: async () => {
         if (__DEV__) {
-          set({ factors: seedCreditFactors });
+          set({ factors: devSeed().seedCreditFactors });
           return;
         }
         try {
           const response = await creditScoreApi.getFactors();
           if (response.success && response.data) {
-            // Transform API response to CreditFactor[]
-            const factors: CreditFactor[] = response.data.map((f, index) => ({
-              id: `factor-${index}`,
-              name: f.factor,
-              impact:
-                f.impact > 0
-                  ? "positive"
-                  : f.impact < 0
-                    ? "negative"
-                    : "neutral",
-              category: "payment_history" as const,
-              description: f.status,
-            }));
-            set({ factors });
+            // No transform. This used to rebuild each factor from three field
+            // names the route has never sent — `f.factor`, a numeric
+            // `f.impact`, and `f.status` as the description — and hardcode
+            // every category to "payment_history", which is one of the three
+            // the route reports as UNCOMPUTABLE. It also called .map on an
+            // object, so it threw on every call and the catch below swallowed
+            // it: the store silently held an empty list in production while
+            // __DEV__ showed a seeded one.
+            set({ factors: response.data.factors });
           }
         } catch (error) {
           if (__DEV__) console.error("Failed to fetch factors:", error);
@@ -277,7 +322,7 @@ export const useCreditStore = create<CreditState>()(
 
       fetchMonitoringStatus: async () => {
         if (__DEV__) {
-          set({ monitoringStatus: seedMonitoringStatus });
+          set({ monitoringStatus: devSeed().seedMonitoringStatus });
           return;
         }
         try {
@@ -295,7 +340,7 @@ export const useCreditStore = create<CreditState>()(
         set({ isLoadingAlerts: true, alertError: null });
         if (__DEV__) {
           const now = new Date().toISOString();
-          set({ alerts: seedAlerts, unreadAlertCount: seedAlerts.filter(a => !a.acknowledged).length, lastAlertFetch: now, isLoadingAlerts: false });
+          set({ alerts: devSeed().seedAlerts, unreadAlertCount: devSeed().seedAlerts.filter(a => !a.acknowledged).length, lastAlertFetch: now, isLoadingAlerts: false });
           return;
         }
         try {

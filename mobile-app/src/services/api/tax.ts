@@ -5,6 +5,11 @@
 
 import { api } from "./client";
 import type { ApiResponse } from "./types";
+import { toTaxTipViews, type ApiTaxRecommendation } from "./taxTipAdapter";
+
+// The tip shape belongs next to the mapping that produces it; re-exported here
+// so callers of taxTipsApi get the type from the same module as the API.
+export type { TaxTipView, ApiTaxRecommendation } from "./taxTipAdapter";
 
 // Types
 export interface TaxRecommendation {
@@ -357,24 +362,54 @@ export const taxTipsApi = {
   /**
    * Get personalized tax-saving tips
    */
-  getTips: () =>
-    api.get<{
-      tips: {
-        id: string;
-        title: string;
-        description: string;
-        potentialSavings: number;
-        difficulty: "easy" | "medium" | "hard";
-        category: string;
-        actionSteps: string[];
-      }[];
-    }>("/tax/tips"),
+  /**
+   * The caller's tax opportunities.
+   *
+   * Fetches /tax/recommendations. "Tips" is this screen's word for what the
+   * server calls recommendations — there is no /tax/tips route and never has
+   * been, so this returned a 404 and the screen fell back to a hardcoded list.
+   * Adding a second route would have meant two catalogues over one engine.
+   *
+   * `profileMissing` is passed through: with no stored tax profile the server
+   * returns an empty list rather than advice computed from default figures,
+   * and the screen needs to tell those two states apart.
+   */
+  getTips: async () => {
+    const response = await api.get<{
+      data?: {
+        recommendations?: ApiTaxRecommendation[];
+        profileMissing?: boolean;
+        taxYear?: number;
+      };
+    }>("/tax/recommendations");
+
+    if (!response.success || !response.data) {
+      return { ...response, data: undefined };
+    }
+
+    const payload = response.data.data ?? response.data;
+    return {
+      ...response,
+      data: {
+        tips: toTaxTipViews(
+          (payload as { recommendations?: ApiTaxRecommendation[] })
+            .recommendations,
+        ),
+        profileMissing: Boolean(
+          (payload as { profileMissing?: boolean }).profileMissing,
+        ),
+      },
+    };
+  },
 
   /**
-   * Dismiss a tip
+   * Dismiss a tip — "not for me", as distinct from /complete's "I did this".
    */
   dismissTip: (tipId: string) =>
-    api.post<{ success: boolean }>(`/tax/tips/${tipId}/dismiss`),
+    api.post<{ success: boolean }>(
+      `/tax/recommendations/${tipId}/dismiss`,
+      {},
+    ),
 };
 
 // Year-over-Year Comparison API

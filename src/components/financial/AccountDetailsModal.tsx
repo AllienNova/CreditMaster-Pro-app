@@ -62,8 +62,14 @@ export default function AccountDetailsModal({
       );
 
       if (!response.ok) {
-        // Fallback to simulated sync if endpoint not available
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        /*
+         * No simulated sync. This used to wait two seconds and then carry on as
+         * though the refresh had happened — and since the route did not exist,
+         * that is what every Sync press did: nothing, convincingly. Report the
+         * failure instead.
+         */
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || "Sync failed");
       }
 
       await fetchTransactions();

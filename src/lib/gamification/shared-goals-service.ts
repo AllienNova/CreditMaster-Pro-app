@@ -179,6 +179,7 @@ export class SharedGoalsService {
 
     // Add creator as owner
     const { error: memberError } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("shared_goal_members")
       .insert({
         id: crypto.randomUUID(),
@@ -301,6 +302,7 @@ export class SharedGoalsService {
     if (!inv || inv.status !== "pending") throw new Error("Invalid invitation");
 
     const { error: memberError } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("shared_goal_members")
       .insert({
         id: crypto.randomUUID(),

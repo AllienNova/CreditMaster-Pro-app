@@ -1,0 +1,540 @@
+#!/usr/bin/env node
+/**
+ * Systematic dogfood sweep — every page, signed in, in a real browser.
+ *
+ * WHY A BROWSER AND NOT curl. A page can return 200 and still be broken: an
+ * unhandled exception in a client component renders Next's error boundary with
+ * a 200 status, and a failed data call shows an empty state that looks like an
+ * empty account. Both are invisible to an HTTP-status sweep. This drives a real
+ * Chromium, signed in with a real session, and records what the user would
+ * actually see.
+ *
+ * WHAT IT CATCHES, per route:
+ *   - HTTP status and any redirect (a protected page bouncing to /auth/login)
+ *   - Next.js error overlay / error-boundary text in the DOM
+ *   - console errors, deduped
+ *   - failed network requests the page itself issued (4xx/5xx on its own APIs)
+ *   - whether the page rendered any content at all
+ *
+ * Usage:
+ *   node scripts/dogfood-sweep.mjs --base http://localhost:3001 \
+ *     --email <user> --password <pw> [--limit N] [--out report.json]
+ */
+
+import { chromium } from "playwright";
+import { readdirSync, statSync, writeFileSync, readFileSync, existsSync } from "fs";
+import { join } from "path";
+
+const arg = (name, fallback = null) => {
+  const i = process.argv.indexOf(`--${name}`);
+  return i === -1 ? fallback : process.argv[i + 1];
+};
+
+const BASE = arg("base", "http://localhost:3001");
+const EMAIL = arg("email");
+const PASSWORD = arg("password");
+const LIMIT = parseInt(arg("limit", "0"), 10);
+const OUT = arg("out", "dogfood-report.json");
+const SEEDS = arg("seeds", "scripts/dogfood-seeds.json");
+/**
+ * Re-run only the routes that failed or warned in a previous report.
+ *
+ * A full sweep is ~200 page loads against a dev server, and a dev server that
+ * dies partway through (OOM, or a hot-recompile triggered by editing a source
+ * file mid-run) turns every remaining route into ERR_CONNECTION_REFUSED. Those
+ * are infrastructure failures wearing a product failure's clothes, and the only
+ * honest response is to re-measure them — not to report them, and not to quietly
+ * drop them either.
+ */
+const RETRY_FROM = arg("retry-from");
+
+/** Every page route Next.js will serve, derived from the filesystem. */
+function collectRoutes(dir = "src/app", prefix = "") {
+  const routes = [];
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) {
+      // Route groups `(name)` do not appear in the URL.
+      const segment = /^\(.*\)$/.test(entry) ? "" : `/${entry}`;
+      routes.push(...collectRoutes(full, prefix + segment));
+    } else if (entry === "page.tsx" || entry === "page.js") {
+      routes.push(prefix || "/");
+    }
+  }
+  return routes;
+}
+
+const isDynamic = (r) => r.includes("[");
+
+/**
+ * Substitute real record ids into dynamic routes.
+ *
+ * Dynamic routes were previously skipped outright, which left seven pages
+ * permanently unmeasured — and that is exactly where two stacked defects were
+ * hiding on /disputes/[id]: the detail component fetched a LIST endpoint that
+ * ignores its id param, and under that, the DB mapper omitted the `timeline`
+ * array the UI maps over unguarded. A sweep that skips a route cannot find
+ * either.
+ *
+ * A pattern with no seed is REPORTED as unseeded rather than silently dropped,
+ * so the coverage gap stays visible instead of looking like a pass.
+ */
+function loadSeeds(path) {
+  if (!existsSync(path)) return { seeds: {}, meta: {} };
+  const raw = JSON.parse(readFileSync(path, "utf8"));
+  const entries = Object.entries(raw);
+  return {
+    seeds: Object.fromEntries(entries.filter(([k]) => !k.startsWith("_"))),
+    meta: Object.fromEntries(entries.filter(([k]) => k.startsWith("_"))),
+  };
+}
+
+/**
+ * Refuse to run when the seeded rows belong to someone other than the user we
+ * sign in as.
+ *
+ * These resources are scoped by owner and answer 404 — not 403, so existence is
+ * not leaked — for another user's row. A foreign seed id therefore produces a
+ * page failure that is INDISTINGUISHABLE from a broken endpoint.
+ *
+ * This is not hypothetical. The seeds were created for m@t.co (6ba6571a) and a
+ * later run signed in as dogios@fynvita.test (0ae37503). Four pages reported
+ * failures — /disputes/[id], /documents/[id], goal-detail/[id],
+ * /trading/strategies/[id] — against code that was behaving exactly right, and
+ * the only way to tell was to query the owner of each row by hand. A comment in
+ * the seeds file already warned about this and did not prevent it, so the check
+ * is mechanical now.
+ *
+ * Exits rather than warns: a sweep measuring the wrong user's data is worse
+ * than no sweep, because its green rows are meaningless too.
+ */
+function preflightSeedOwnership(meta, email) {
+  const declared = meta._ownerEmail;
+  if (!declared || !email || declared === email) return;
+  console.error(
+    `\nSEED OWNERSHIP MISMATCH — refusing to run.\n` +
+      `  ${SEEDS} seeds rows owned by : ${declared}\n` +
+      `  this run authenticates as    : ${email}\n\n` +
+      `Every scoped endpoint would answer 404 for the other user's rows, and those\n` +
+      `404s look exactly like broken routes. Either sign in as ${declared}, or\n` +
+      `re-seed for ${email} with scripts/dogfood-seed.sql and update ${SEEDS}.\n`,
+  );
+  process.exit(1);
+}
+
+/**
+ * ARRIVAL — did the screen render anything of its OWN?
+ *
+ * The pass/fail check above answers "nothing looks broken": HTTP 200, no
+ * console error, no error boundary, body not near-empty. A screen that renders
+ * the sidebar and header and then nothing else satisfies every one of those
+ * and is still a screen the user cannot use. The first full run scored 199 of
+ * 204 "ok" while /goals/shared showed 303 characters, all of it navigation.
+ *
+ * The chrome is not hardcoded — it is DERIVED. Any line appearing on at least
+ * CHROME_SHARE of the swept routes is, by definition, not that route's own
+ * content: "Fynvita", "Overview", "Credit", "Sign Out". Whatever survives that
+ * subtraction is the screen speaking for itself.
+ *
+ * Derived rather than listed because a hardcoded nav list rots the moment the
+ * nav changes, and it rots SILENTLY — every screen would suddenly look like it
+ * arrived. A threshold cannot rot that way.
+ *
+ * Arrival is REPORTED, not enforced: it does not feed `ok`, so this does not
+ * change what the gate blocks on. Failing a run on a metric the moment it is
+ * invented would mean triaging 204 routes before anyone can read the number.
+ */
+const CHROME_SHARE = 0.6;
+const OWN_LINES_REQUIRED = 2;
+
+/**
+ * Both entry points to the sign-in screen. /login redirecting to /auth/login
+ * is the app working, not a bounce — used by the failure check below and by
+ * the arrival check above, which must agree on what counts as an alias.
+ */
+const LOGIN_ROUTES = new Set(["/auth/login", "/login"]);
+
+export function markArrival(results) {
+  const freq = new Map();
+  for (const r of results) {
+    for (const line of r.lines ?? []) {
+      freq.set(line, (freq.get(line) ?? 0) + 1);
+    }
+  }
+  const chromeAt = Math.max(2, Math.ceil(results.length * CHROME_SHARE));
+  const chrome = new Set(
+    [...freq.entries()].filter(([, n]) => n >= chromeAt).map(([l]) => l),
+  );
+
+  for (const r of results) {
+    const own = (r.lines ?? []).filter((l) => !chrome.has(l));
+    r.ownLines = own.slice(0, 8);
+
+    // Landing somewhere else is not arriving, however rich the destination.
+    // The 12 /admin/* routes bounce to /dashboard and render the dashboard in
+    // full — plenty of non-chrome lines, none of them the admin screen's. The
+    // exception is an alias: /login IS a way of reaching /auth/login.
+    const here = (r.landedOn ?? r.route).replace(/\/$/, "");
+    const asked = r.route.replace(/\/$/, "");
+    const aliased = LOGIN_ROUTES.has(here) && LOGIN_ROUTES.has(asked);
+    if (here !== asked && !aliased) {
+      r.arrived = false;
+      r.arrivalNote = `redirected to ${r.landedOn}`;
+      continue;
+    }
+
+    // Two, not one: a single stray line is as often a timestamp or a count as
+    // it is content. Two independent lines is the cheapest signal that a
+    // screen actually rendered itself.
+    r.arrived = own.length >= OWN_LINES_REQUIRED;
+    if (!r.arrived) r.arrivalNote = "shared chrome only";
+  }
+  return chrome;
+}
+
+/**
+ * Proves the arrival check can tell the two cases apart before it is trusted
+ * on 204 real routes — the same discipline the other audit gates use.
+ */
+function selfTestArrival() {
+  const nav = ["Fynvita", "Overview", "Credit", "Financial", "Sign Out"];
+  const rows = [];
+  // Routes that all share the nav and add content of their own.
+  for (let i = 0; i < 6; i++) {
+    rows.push({
+      route: `/real-${i}`,
+      landedOn: `/real-${i}`,
+      lines: [...nav, `Heading ${i}`, `Detail ${i}`],
+    });
+  }
+  const cases = [
+    // Nav and nothing else: reached the URL, showed nothing of itself.
+    { route: "/chrome-only-a", landedOn: "/chrome-only-a", lines: [...nav], want: false },
+    { route: "/chrome-only-b", landedOn: "/chrome-only-b", lines: [...nav, "Loading"], want: false },
+    // Bounced elsewhere and rendered THAT page in full. Rich, and still not
+    // the screen that was asked for — the /admin case.
+    {
+      route: "/admin",
+      landedOn: "/dashboard?error=unauthorized",
+      lines: [...nav, "Your dashboard", "Net worth", "Recent activity"],
+      want: false,
+    },
+    // A trailing slash is the same page.
+    { route: "/real-x", landedOn: "/real-x/", lines: [...nav, "Alpha", "Beta"], want: true },
+    // /login -> /auth/login is an alias, not a bounce.
+    { route: "/login", landedOn: "/auth/login", lines: [...nav, "Welcome Back", "Email"], want: true },
+  ];
+  rows.push(...cases);
+
+  markArrival(rows);
+  const failures = [];
+  for (const r of rows) {
+    const c = cases.find((x) => x.route === r.route);
+    const expected = c ? c.want : true;
+    if (r.arrived !== expected) {
+      failures.push(
+        `${r.route}: expected arrived=${expected}, got ${r.arrived} (${r.arrivalNote ?? "-"})`,
+      );
+    }
+  }
+  if (failures.length) {
+    console.error(
+      `dogfood-sweep arrival self-test FAILED:\n  ${failures.join("\n  ")}`,
+    );
+    process.exit(1);
+  }
+  console.log(`dogfood-sweep arrival self-test PASSED — ${rows.length}/${rows.length} cases correct.`);
+}
+
+function expandDynamic(routes, seeds) {
+  const expanded = [];
+  const unseeded = [];
+  for (const route of routes) {
+    const seed = seeds[route];
+    if (seed === undefined) {
+      unseeded.push(route);
+      continue;
+    }
+    // Replace whichever bracket segment the route carries ([id], [symbol], …).
+    expanded.push({
+      route: route.replace(/\[[^\]]+\]/, encodeURIComponent(seed)),
+      pattern: route,
+    });
+  }
+  return { expanded, unseeded };
+}
+
+async function main() {
+  selfTestArrival();
+  const all = [...new Set(collectRoutes())].sort();
+  const staticRoutes = all
+    .filter((r) => !isDynamic(r))
+    .map((route) => ({ route, pattern: route }));
+
+  // Dynamic segments need a real id to be meaningful; a literal "[id]" URL only
+  // ever proves the 404 path. Seeded ones are now exercised for real.
+  const { seeds, meta } = loadSeeds(SEEDS);
+  preflightSeedOwnership(meta, EMAIL);
+  const { expanded, unseeded } = expandDynamic(all.filter(isDynamic), seeds);
+
+  let testable = [...staticRoutes, ...expanded];
+
+  if (RETRY_FROM) {
+    const prior = JSON.parse(readFileSync(RETRY_FROM, "utf8"));
+    const rerun = new Set(
+      prior.results
+        .filter((r) => r.problems.length || r.failedRequests.length)
+        .map((r) => r.route),
+    );
+    testable = testable.filter((t) => rerun.has(t.route));
+    console.log(`retrying ${testable.length} route(s) that failed or warned in ${RETRY_FROM}`);
+  }
+
+  const routes = LIMIT ? testable.slice(0, LIMIT) : testable;
+
+  console.log(
+    `routes: ${all.length} total, ${staticRoutes.length} static, ${expanded.length} dynamic seeded, ${unseeded.length} dynamic UNSEEDED, testing ${routes.length}`,
+  );
+  if (unseeded.length) {
+    console.log(`  unseeded (NOT measured): ${unseeded.join(", ")}`);
+  }
+
+  const browser = await chromium.launch();
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+
+  if (EMAIL && PASSWORD) {
+    // Waits for the form to be interactive rather than filling immediately.
+    // In dev, Next compiles /auth/login on first visit, so a fill fired right
+    // after domcontentloaded can hit an unhydrated page — the run then aborts
+    // with "LOGIN FAILED" even though the credentials are perfectly valid.
+    await page.goto(`${BASE}/auth/login`, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector('input[type="password"]', {
+      state: "visible",
+      timeout: 60000,
+    });
+    await page.fill('input[type="email"], input[placeholder*="@"]', EMAIL);
+    await page.fill('input[type="password"]', PASSWORD);
+    await page.click('button:has-text("Sign In")');
+
+    // Wait for the navigation away from the login page rather than a fixed
+    // sleep, with one retry: hydration can drop the very first click.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        await page.waitForURL((u) => !u.pathname.startsWith("/auth/login"), {
+          timeout: 30000,
+        });
+        break;
+      } catch {
+        if (attempt === 0) {
+          await page.click('button:has-text("Sign In")').catch(() => {});
+        }
+      }
+    }
+    const landed = page.url();
+    if (landed.includes("/auth/login")) {
+      console.error(`LOGIN FAILED — still at ${landed}. Aborting: an unauthenticated sweep would report every protected page as a false failure.`);
+      await browser.close();
+      process.exit(2);
+    }
+    console.log(`signed in, landed on ${landed}`);
+  }
+
+  const results = [];
+  for (const { route, pattern } of routes) {
+    const consoleErrors = [];
+    const failedRequests = [];
+
+    const onConsole = (m) => {
+      if (m.type() === "error") consoleErrors.push(m.text().slice(0, 300));
+    };
+    const onResponse = (r) => {
+      if (r.status() >= 400) {
+        failedRequests.push(`${r.status()} ${r.url().replace(BASE, "").slice(0, 160)}`);
+      }
+    };
+    page.on("console", onConsole);
+    page.on("response", onResponse);
+
+    let status = null;
+    let error = null;
+    let problemsFromEvaluate = null;
+    try {
+      const resp = await page.goto(`${BASE}${route}`, {
+        waitUntil: "domcontentloaded",
+        timeout: 30000,
+      });
+      status = resp?.status() ?? null;
+      // Client components fetch after paint; without this the sweep reports a
+      // clean page that is about to fail.
+      await page.waitForTimeout(2500);
+
+      // RETRY ON A NEAR-EMPTY BODY.
+      //
+      // In dev, Next compiles each route on FIRST visit, which routinely takes
+      // longer than the wait above — so the sweep measured a blank page and
+      // called it a failure. That produced seven false "near-empty body (0
+      // chars)" results in the first full run, including /trading/journal
+      // (really 430 chars) and /financial-intelligence (really 1,100).
+      //
+      // The second visit hits a compiled route, so a page that is genuinely
+      // empty stays empty and a page that was merely slow now reports its real
+      // content. Cheap, because it only fires for routes that looked broken.
+      const firstPass = await page
+        .evaluate(() => (document.body?.innerText ?? "").trim().length)
+        .catch(() => 0);
+      if (firstPass < 60) {
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
+        await page.waitForTimeout(4000);
+      }
+    } catch (e) {
+      error = e.message.slice(0, 200);
+    }
+
+    const landedOn = page.url().replace(BASE, "");
+    // /login redirecting to /auth/login is the app working, not a failure —
+    // it is an alias route. Only flag a bounce from somewhere that is not
+    // itself a login entry point.
+    const bouncedToLogin =
+      landedOn.startsWith("/auth/login") && !LOGIN_ROUTES.has(route);
+
+    // Wrapped: a page that crashes or navigates mid-evaluate throws here, and
+    // an unguarded throw ended the first full run at route 108 of 197 —
+    // silently truncating coverage in a tool whose entire purpose is coverage.
+    let body = { chars: 0, boundary: false, head: "", lines: [] };
+    try {
+      body = await page.evaluate(() => {
+        const text = document.body?.innerText ?? "";
+      // NOT `document.querySelector("nextjs-portal")`. That element is the dev
+      // TOOLS overlay and is present on every page in development, so testing
+      // for it marked all 12 smoke routes as failures — including `/`, which
+      // serves 10,338 characters of correct content. Caught by disbelieving a
+      // 12-of-12 failure rather than reporting it.
+      const boundary =
+        /Application error|Unhandled Runtime Error|client-side exception|This page could not be found/i.test(
+          text,
+        );
+        // Lines feed the arrival check below. Deduped and capped so a long
+        // table does not dominate the report; order is irrelevant because the
+        // check is set membership.
+        const lines = [
+          ...new Set(
+            text
+              .split("\n")
+              .map((l) => l.trim())
+              .filter((l) => l.length >= 3),
+          ),
+        ].slice(0, 150);
+        return {
+          chars: text.trim().length,
+          boundary,
+          head: text.trim().slice(0, 100),
+          lines,
+        };
+      });
+    } catch (e) {
+      problemsFromEvaluate = `page evaluate failed: ${e.message.slice(0, 120)}`;
+    }
+
+    page.off("console", onConsole);
+    page.off("response", onResponse);
+
+    const problems = [];
+    if (error) problems.push(`navigation: ${error}`);
+    if (problemsFromEvaluate) problems.push(problemsFromEvaluate);
+    if (status && status >= 400) problems.push(`http ${status}`);
+    if (bouncedToLogin) problems.push(`redirected to login`);
+    if (body.boundary) problems.push("error boundary rendered");
+    // 25, not 60. A legitimate empty state is short: /dashboard/notifications
+    // renders "Back / Notifications / All / Unread / No notifications yet" —
+    // 53 characters of correct UI that a 60-char floor called a failure.
+    if (body.chars < 25) problems.push(`near-empty body (${body.chars} chars)`);
+
+    const uniqueConsole = [...new Set(consoleErrors)];
+    const uniqueFailed = [...new Set(failedRequests)];
+
+    results.push({
+      route,
+      // Differs from `route` only for seeded dynamic pages, so a failure can be
+      // traced back to the source file that produced it.
+      pattern,
+      status,
+      landedOn,
+      bodyChars: body.chars,
+      head: body.head,
+      lines: body.lines ?? [],
+      consoleErrors: uniqueConsole,
+      failedRequests: uniqueFailed,
+      problems,
+      ok: problems.length === 0 && uniqueFailed.length === 0,
+    });
+
+    const mark = problems.length ? "FAIL" : uniqueFailed.length ? "WARN" : "ok  ";
+    console.log(
+      `  ${mark} ${route}${problems.length ? "  <- " + problems.join(", ") : ""}${
+        !problems.length && uniqueFailed.length ? "  <- " + uniqueFailed.length + " failed request(s)" : ""
+      }`,
+    );
+  }
+
+  await browser.close();
+
+  const failing = results.filter((r) => r.problems.length);
+  const warning = results.filter((r) => !r.problems.length && r.failedRequests.length);
+
+  markArrival(results);
+  const arrived = results.filter((r) => r.arrived);
+  const notArrived = results.filter((r) => !r.arrived);
+
+  writeFileSync(
+    OUT,
+    JSON.stringify(
+      {
+        base: BASE,
+        total: all.length,
+        tested: results.length,
+        dynamicSeeded: expanded.map((e) => e.pattern),
+        dynamicUnseeded: unseeded,
+        arrived: arrived.length,
+        notArrived: notArrived.map((r) => r.route),
+        results,
+      },
+      null,
+      2,
+    ),
+  );
+
+  console.log(`\n${results.length} tested — ${failing.length} FAIL, ${warning.length} WARN, ${results.length - failing.length - warning.length} ok`);
+  console.log(
+    `${arrived.length} of ${results.length} ARRIVED — rendered content of their own beyond the shared chrome`,
+  );
+  if (notArrived.length) {
+    console.log(
+      `\n${notArrived.length} did NOT arrive (nav/footer only — a screen that reaches its URL and shows nothing of itself):`,
+    );
+    for (const r of notArrived) {
+      console.log(`  ${r.route}  (${r.bodyChars} chars)${r.arrivalNote ? " — " + r.arrivalNote : ""}`);
+    }
+  }
+
+  // Arrival is a floor, not a proof: a section sub-nav is chrome too, but it
+  // appears on too few routes to cross the global threshold, so a screen
+  // showing only its section's tabs can pass. Naming the weakest arrivals
+  // keeps that limit visible instead of letting the headline imply more.
+  const weak = arrived
+    .filter((r) => (r.ownLines ?? []).length < 6 && (r.lines ?? []).length < 12)
+    .map((r) => r.route);
+  if (weak.length) {
+    console.log(
+      `\n${weak.length} arrived on very little of their own — worth a human look: ${weak.join(", ")}`,
+    );
+  }
+  console.log(
+    unseeded.length
+      ? `${unseeded.length} dynamic routes UNMEASURED (no seed in ${SEEDS}): ${unseeded.join(", ")}`
+      : `all ${expanded.length} dynamic routes exercised with real ids`,
+  );
+  console.log(`report -> ${OUT}`);
+}
+
+main();

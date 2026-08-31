@@ -17,17 +17,21 @@ jest.mock("@/lib/auth/jwt-validation", () => ({
 jest.mock("@/lib/auth/resolve-role", () => ({
   resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
+// The ownership read moved from createClient() (cookie-scoped, and therefore
+// blind to a bearer-token caller under RLS) to supabaseAdmin with the ownership
+// comparison done in code. These negative-auth cases are unchanged by that —
+// they assert the same 403 for the same reason — but the mock has to follow.
 jest.mock("@/lib/supabase/server", () => ({
-  createClient: () =>
-    Promise.resolve({
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            single: (...args: unknown[]) => mockSingle(...args),
-          }),
+  supabaseAdmin: {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: (...args: unknown[]) => mockSingle(...args),
+          order: () => ({ limit: () => Promise.resolve({ data: [], error: null }) }),
         }),
       }),
     }),
+  },
 }));
 jest.mock("@/lib/ai/financial-chat-engine", () => ({
   FinancialChatEngine: jest.fn().mockImplementation(() => ({

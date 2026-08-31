@@ -18,7 +18,6 @@
  */
 
 import { createClient } from "@/lib/supabase/client";
-import { getAIOrchestrator } from "@/lib/ai-orchestrator";
 import { logger } from "@/lib/monitoring/logger";
 
 // ============================================================================
@@ -389,21 +388,22 @@ class CreditBuilderService {
       .filter(([_, value]) => value < 70)
       .map(([key]) => key);
 
-    // Use AI to generate personalized recommendations
-    const aiPrompt = `Based on a user's credit builder score of ${score.overall}/100 with weak areas in: ${weakAreas.join(", ")}, generate 5 specific, actionable recommendations to improve their credit. Each recommendation should include: type (quick_win/short_term/long_term), category, title, description, impact (low/medium/high), estimated points impact, timeframe, and difficulty level.`;
-
-    try {
-      const orchestrator = getAIOrchestrator();
-      const aiResponse = await orchestrator.quickResponse(aiPrompt);
-
-      // Parse AI response and combine with default recommendations
-      const defaultActions = this.getDefaultActions(weakAreas);
-
-      return defaultActions;
-    } catch (error) {
-      // CreditBuilderService error: Error generating AI recommendations
-      return this.getDefaultActions(weakAreas);
-    }
+    // NO AI CALL HERE, and that is a correction rather than a regression.
+    //
+    // This method used to build a prompt, await orchestrator.quickResponse(),
+    // and then DISCARD the result — `aiResponse` was assigned and never read,
+    // and both the try and the catch returned getDefaultActions(weakAreas).
+    // The comment said "Parse AI response and combine with default
+    // recommendations", describing something the code did not do. Every call
+    // spent latency and money on an answer nobody looked at, while the route
+    // above it advertised "AI-powered personalized recommendations".
+    //
+    // What it returns IS personalised — getDefaultActions branches on the
+    // caller's own weak areas, computed from their real credit-builder score
+    // — it is simply rule-based, and the actions say so with
+    // `aiGenerated: false`. Restoring a genuine AI path is a separate piece of
+    // work; pretending to have one is not.
+    return this.getDefaultActions(weakAreas);
   }
 
   /**

@@ -14,6 +14,23 @@ jest.mock("@/lib/supabase/client", () => ({
 
 import { backupCodesService } from "../backup-codes";
 
+/**
+ * TESTS A SUPERSEDED MODULE. These 4 assertions pass, and they prove nothing.
+ *
+ * They mock the Supabase client, so they cannot see that `redeem_backup_code`
+ * — the RPC they assert is called — was DROPPED in migration 20260810000000.
+ * Run against a real database every case here fails immediately. The module is
+ * also unreachable: its last importer was rewired to /api/auth/backup-codes.
+ *
+ * Left in place because the module it covers is DELETE-RECOMMENDED pending
+ * owner approval, and deleting the test first would hide that. The live
+ * behaviour is covered by backup-codes-server.test.ts and proven end to end
+ * against real Postgres.
+ *
+ * This file is a worked example of the pattern in gap-analysis.md: a green test
+ * over code that cannot run.
+ */
+
 describe("BackupCodesService.verifyBackupCode (FND-010)", () => {
   beforeEach(() => {
     mockRpc.mockReset();

@@ -36,14 +36,24 @@ export default function DisputeDetail({ disputeId }: DisputeDetailProps) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/disputes?disputeId=${disputeId}`);
+      // GET /api/disputes ignores `disputeId` — it only reads status/bureau/
+      // page/limit and returns a paginated LIST, so `data.dispute` was always
+      // undefined and every dispute detail page rendered "Dispute not found".
+      // The user-scoped detail route already exists and returns { data }.
+      const response = await fetch(
+        `/api/disputes/${encodeURIComponent(disputeId)}`,
+      );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch dispute");
+        throw new Error(
+          response.status === 404
+            ? "Dispute not found"
+            : "Failed to fetch dispute",
+        );
       }
 
       const data = await response.json();
-      setDispute(data.dispute);
+      setDispute(data.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {

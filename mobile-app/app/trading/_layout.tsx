@@ -71,6 +71,7 @@ export default function TradingLayout() {
       <Stack.Screen
         name="signal-detail"
         options={{
+          headerShown: false,
           title: "Signal Detail",
         }}
       />

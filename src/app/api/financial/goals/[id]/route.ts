@@ -43,7 +43,12 @@ interface RouteParams {
  * Retrieve specific goal with detailed progress metrics
  */
 export const GET = withPermission(
-  "financial:create_goals",
+  // READ permission for a read. Was "financial:create_goals", which the `user`
+  // role does not hold (rbac.ts:106-119 — it starts at premium, :156), so every
+  // standard user got 403 "Missing required permission: financial:create_goals"
+  // when opening a goal they own. Creating a goal is a premium gate; reading one
+  // you already own is not.
+  "financial:read",
   async (request: NextRequest, user: AuthedUser) => {
     const userId = user.id;
   try {
@@ -138,7 +143,9 @@ export const GET = withPermission(
  * Update goal properties (partial updates)
  */
 export const PATCH = withPermission(
-  "financial:create_goals",
+  // Editing a goal you already own is a write, not a create. Same 403 as GET
+  // above for every `user`-role account.
+  "financial:write",
   async (request: NextRequest, user: AuthedUser) => {
     const userId = user.id;
   try {
@@ -277,7 +284,10 @@ export const PATCH = withPermission(
  * Delete goal (soft delete by setting status to 'cancelled')
  */
 export const DELETE = withPermission(
-  "financial:create_goals",
+  // Gating deletion on the PREMIUM create permission meant a user who created
+  // goals on premium and then downgraded could no longer remove their own data —
+  // the one operation that must never be paywalled.
+  "financial:write",
   async (request: NextRequest, user: AuthedUser) => {
     const userId = user.id;
   try {

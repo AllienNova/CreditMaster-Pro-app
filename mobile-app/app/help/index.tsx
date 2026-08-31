@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { openExternalUrl } from "../../src/utils/openExternalUrl";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 export default function HelpScreen() {
   const helpItems = [
@@ -57,10 +58,10 @@ export default function HelpScreen() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Help & Support</Text>
-          <Text style={styles.subtitle}>We're here to help you</Text>
-        </View>
+        <ScreenHeader
+          title="Help & Support"
+          subtitle="We're here to help you"
+        />
 
         {/* Quick Contact */}
         <Card style={styles.contactCard}>
@@ -125,13 +126,6 @@ export default function HelpScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
-  header: { marginBottom: theme.spacing.lg },
-  title: { fontSize: 28, fontWeight: "700", color: theme.colors.text },
-  subtitle: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm,
-  },
   contactCard: {
     marginBottom: theme.spacing.lg,
     paddingVertical: theme.spacing.lg,

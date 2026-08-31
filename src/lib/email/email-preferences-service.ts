@@ -7,6 +7,7 @@
 
 import crypto from "crypto";
 import { getSupabase } from "@/lib/supabase/client";
+import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -47,8 +48,34 @@ export interface UnsubscribeTokenPayload {
 // Constants
 // ---------------------------------------------------------------------------
 
-const UNSUBSCRIBE_SECRET =
-  process.env.EMAIL_UNSUBSCRIBE_SECRET || "default-unsubscribe-secret";
+const DEV_UNSUBSCRIBE_SECRET = "default-unsubscribe-secret-change-in-production";
+
+/**
+ * Resolve the unsubscribe-token signing secret.
+ *
+ * A missing `EMAIL_UNSUBSCRIBE_SECRET` previously fell back silently to a
+ * hard-coded public default, making every HMAC unsubscribe token forgeable.
+ * In production a missing secret is now a hard failure; in non-production a
+ * warning is emitted and the dev default is used so local work and tests are
+ * unblocked. Resolved lazily so importing this module never throws.
+ */
+function getUnsubscribeSecret(): string {
+  const secret = process.env.EMAIL_UNSUBSCRIBE_SECRET;
+  if (secret) return secret;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "EMAIL_UNSUBSCRIBE_SECRET environment variable is required in production",
+    );
+  }
+
+  console.warn(
+    "EMAIL_UNSUBSCRIBE_SECRET is not set — using an insecure development " +
+      "default. Set EMAIL_UNSUBSCRIBE_SECRET before deploying to production.",
+  );
+  return DEV_UNSUBSCRIBE_SECRET;
+}
+
 const UNSUBSCRIBE_TOKEN_EXPIRY_HOURS = 72;
 
 const DEFAULT_PREFERENCES: ReadonlyArray<EmailPreference> = [
@@ -302,7 +329,7 @@ export class EmailPreferencesService {
     const payloadStr = JSON.stringify(payload);
     const payloadBase64 = Buffer.from(payloadStr).toString("base64url");
     const signature = crypto
-      .createHmac("sha256", UNSUBSCRIBE_SECRET)
+      .createHmac("sha256", getUnsubscribeSecret())
       .update(payloadStr)
       .digest("base64url");
 
@@ -329,11 +356,11 @@ export class EmailPreferencesService {
 
       // Verify signature
       const expectedSignature = crypto
-        .createHmac("sha256", UNSUBSCRIBE_SECRET)
+        .createHmac("sha256", getUnsubscribeSecret())
         .update(payloadStr)
         .digest("base64url");
 
-      if (signature !== expectedSignature) {
+      if (!timingSafeEqual(signature, expectedSignature)) {
         return null;
       }
 

@@ -36,6 +36,21 @@ export type DisputeOutcome = "removed" | "updated" | "verified";
 
 export type Bureau = "experian" | "equifax" | "transunion";
 
+/**
+ * One dated step in a dispute's life.
+ *
+ * Structurally identical to `DisputeTimelineEvent` in `dispute-service.ts`, so
+ * a dispute returned by THIS service satisfies the type the dispute UI is
+ * written against. See the note on `Dispute.timeline` below.
+ */
+export interface DisputeTimelineEvent {
+  id: string;
+  date: Date;
+  status: DisputeStatus;
+  description: string;
+  automated: boolean;
+}
+
 export interface Dispute {
   id: string;
   userId: string;
@@ -50,6 +65,22 @@ export interface Dispute {
   resolvedAt?: Date;
   letterContent: string;
   notes: string | null;
+  /**
+   * REQUIRED, not optional — deliberately.
+   *
+   * `DisputeDetail` is typed against the `Dispute` in `dispute-service.ts`,
+   * where `timeline` is required, and renders `<DisputeTimeline timeline={...}>`
+   * which calls `.map` on it unguarded. This service is what actually backs
+   * `/api/disputes/[id]`, and it used to drop the field entirely — so every
+   * dispute detail page threw "Cannot read properties of undefined (reading
+   * 'map')" and rendered an error boundary instead of the dispute.
+   *
+   * Nothing caught it: the two `Dispute` interfaces are separate declarations,
+   * and the payload crosses the network as `response.json()` (`any`), so no
+   * compiler ever compared them. Making the field required here means the
+   * mapper cannot silently omit it again.
+   */
+  timeline: DisputeTimelineEvent[];
 }
 
 export interface DisputeStats {
@@ -58,6 +89,62 @@ export interface DisputeStats {
   resolved: number;
   successRate: number;
   averageResolutionDays: number;
+}
+
+/**
+ * Derive a dispute's timeline from the timestamps the row already carries.
+ *
+ * There is no dispute-events table — checked against the live schema, the only
+ * dispute-ish tables are `disputes`, `bureau_disputes` and
+ * `dispute_template_usage`. So the timeline is not stored; it is reconstructed
+ * from the dated columns, and every event below corresponds to a real non-null
+ * timestamp. Nothing is invented: a dispute that was never sent produces no
+ * "sent" event.
+ *
+ * Deliberately a module-scope function, NOT a method. `mapToDispute` is passed
+ * as a bare reference in `.map(this.mapToDispute)` (getUserDisputes), so `this`
+ * is undefined inside it — a `this.buildTimeline(...)` call would throw on
+ * every list query while working fine on single fetches.
+ */
+function buildTimeline(row: DisputeRow): DisputeTimelineEvent[] {
+  const events: DisputeTimelineEvent[] = [
+    {
+      id: `${row.id}-created`,
+      date: new Date(row.created_at),
+      status: "draft",
+      description: "Dispute created",
+      automated: false,
+    },
+  ];
+
+  if (row.sent_at) {
+    events.push({
+      id: `${row.id}-sent`,
+      date: new Date(row.sent_at),
+      status: "sent",
+      description: `Dispute letter sent to ${row.bureau}`,
+      automated: false,
+    });
+  }
+
+  if (row.resolved_at) {
+    events.push({
+      id: `${row.id}-resolved`,
+      date: new Date(row.resolved_at),
+      // `rejected` is a terminal state too; report the row's own status rather
+      // than assuming every closed dispute was resolved in the user's favour.
+      status: row.status === "rejected" ? "rejected" : "resolved",
+      description: row.outcome
+        ? `Dispute closed — item ${row.outcome}`
+        : "Dispute closed",
+      automated: false,
+    });
+  }
+
+  // `automated` is false throughout because no column records whether a step
+  // was machine-driven. False here means "not recorded as automated", not a
+  // claim that a human did it.
+  return events.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
 /**
@@ -366,6 +453,7 @@ class DisputeServiceDB {
       sentAt: row.sent_at ? new Date(row.sent_at) : undefined,
       resolvedAt: row.resolved_at ? new Date(row.resolved_at) : undefined,
       notes: row.notes,
+      timeline: buildTimeline(row),
     };
   }
 }

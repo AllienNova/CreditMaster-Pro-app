@@ -1,0 +1,13 @@
+{
+  "_comment": "Concrete ids for the mobile app's dynamic routes, so the dogfood sweep exercises them instead of skipping them. Before this file existed the sweep's route list was a hand-made /tmp file that omitted all 8 dynamic routes, so every detail screen in the app was unmeasured while the summary still read '223 routes'.",
+  "_ownership": "EVERY id here must belong to whichever user the SIMULATOR is signed in as. The API scopes by owner and answers not-found for someone else's row, which is indistinguishable from a broken screen. This is not hypothetical: the first version of this file held ids owned by dogios@fynvita.test while the simulator was signed in as m@t.co, and /student-loans/[id] and /trading/strategies/[id] both reported 'not found' against rows that existed and were perfectly healthy. The sweep now PREFLIGHTS this by reading the signed-in email off the Profile screen and refuses to run on a mismatch, because a comment did not prevent it.",
+  "_owner": "6ba6571a-b562-45fd-9247-7e94cce84cde",
+  "_ownerEmail": "m@t.co",
+  "_unseeded": "/reports/[id], /student-loans/[id] and /monitoring/alerts/[id] have no entry on purpose: credit_reports, student_loans and credit_alerts each hold ZERO rows for this user. Borrowing another user's id would produce a not-found that reads exactly like a broken screen — the very mistake described above. They are reported as UNSEEDED so the coverage gap stays visible rather than being quietly dropped or silently faked.",
+  "_reseed": "Re-seed after `supabase db reset`, or after signing the simulator in as a different user — the ids AND _ownerEmail must move together. A stale id shows up as a not-found state, not a silent pass.",
+  "/dispute/[id]": "fbee6c55-6d9c-4342-91b6-ceabdb1ca848",
+  "/document/[id]": "c8ffad26-080e-4b77-a4a0-d905ae2560bf",
+  "/documents/[id]": "c8ffad26-080e-4b77-a4a0-d905ae2560bf",
+  "/trading/strategies/[id]": "bc7f8183-c7fe-4ae3-a8a4-ad4132ba0dbf",
+  "/investments/analyze/[symbol]": "AAPL"
+}

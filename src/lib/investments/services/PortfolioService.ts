@@ -82,6 +82,7 @@ export class PortfolioService {
     const validated = PortfolioCreateSchema.parse(input);
 
     const { data, error } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("investment_portfolios")
       .insert({
         user_id: this.userId,
@@ -199,6 +200,7 @@ export class PortfolioService {
     const validated = HoldingCreateSchema.parse(input);
 
     const { data, error } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("investment_holdings")
       .insert({
         portfolio_id: validated.portfolio_id,
@@ -326,6 +328,7 @@ export class PortfolioService {
       validated.quantity * validated.price + (validated.fees || 0);
 
     const { data, error } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("investment_transactions")
       .insert({
         portfolio_id: validated.portfolio_id,

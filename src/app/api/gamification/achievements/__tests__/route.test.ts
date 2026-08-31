@@ -5,23 +5,20 @@
  */
 
 import { NextRequest } from "next/server";
-import { GET, POST } from "../route";
 
-// The route moved from a bare cookie-session read to the project's standard
-// withAuth guard (audit:auth requires it), so the guard is what must be mocked
-// now. `authenticated` is flipped per test by mockAuth() below — matching the
-// pattern already used in notifications/__tests__/ntf-3-db-persistence.test.ts.
-let authenticatedUser: { id: string; email: string } | null = null;
+// Route wrapped in withAuth (TASK-AUTH-03f); auth resolves via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidateFromHeaders = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
 
-jest.mock("@/lib/auth/api-guard", () => ({
-  withAuth:
-    (handler: (req: any, user: any) => Promise<any>) => async (req: any) => {
-      if (!authenticatedUser) {
-        const { NextResponse } = require("next/server");
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-      return handler(req, authenticatedUser);
-    },
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 
 // Mock Achievement Service
@@ -47,6 +44,8 @@ jest.mock("@/lib/gamification", () => ({
   }),
 }));
 
+import { GET, POST } from "../route";
+
 const mockUser = { id: "user-123", email: "test@example.com" };
 
 function makeRequest(
@@ -69,14 +68,37 @@ function makeRequest(
 }
 
 function mockAuth(authenticated: boolean) {
-  authenticatedUser = authenticated
-    ? { id: mockUser.id, email: mockUser.email }
-    : null;
+  if (authenticated) {
+    mockValidateFromHeaders.mockResolvedValue({ valid: true, user: mockUser });
+    mockResolveRoleFromDb.mockResolvedValue("user");
+  } else {
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+  }
 }
 
 describe("/api/gamification/achievements", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe("negative-auth", () => {
+    it("GET returns 401 when the request is not authenticated", async () => {
+      mockAuth(false);
+      const response = await GET(
+        makeRequest("/api/gamification/achievements"),
+      );
+      expect(response.status).toBe(401);
+    });
+
+    it("POST returns 401 when the request is not authenticated", async () => {
+      mockAuth(false);
+      const response = await POST(
+        makeRequest("/api/gamification/achievements", "POST", {
+          action: "award",
+        }),
+      );
+      expect(response.status).toBe(401);
+    });
   });
 
   // ======================================================================
@@ -276,398 +298,45 @@ describe("/api/gamification/achievements", () => {
   // ======================================================================
 
   describe("POST", () => {
-    it("should return 401 if user is not authenticated", async () => {
-      mockAuth(false);
-
-      const request = makeRequest(
-        "/api/gamification/achievements",
-        "POST",
-        { action: "award" },
-      );
-      const response = await POST(request);
-      const data = await response.json();
-
-      expect(response.status).toBe(401);
-      expect(data.error).toBe("Unauthorized");
-    });
-
-    it("should return 400 if action is missing", async () => {
-      mockAuth(true);
-
-      const request = makeRequest(
-        "/api/gamification/achievements",
-        "POST",
-        {},
-      );
-      const response = await POST(request);
-      const data = await response.json();
-
-      expect(response.status).toBe(400);
-      expect(data.error).toContain("Action is required");
-    });
-
-    it("should return 400 for unknown action", async () => {
-      mockAuth(true);
-
-      const request = makeRequest(
-        "/api/gamification/achievements",
-        "POST",
-        { action: "invalid" },
-      );
-      const response = await POST(request);
-      const data = await response.json();
-
-      expect(response.status).toBe(400);
-      expect(data.error).toContain("Unknown action");
-    });
-
-    // --- AWARD ---
-
-    describe("action: award", () => {
-      it("should return 400 if achievementCode is missing", async () => {
-        mockAuth(true);
-
-        const request = makeRequest(
-          "/api/gamification/achievements",
-          "POST",
-          { action: "award" },
-        );
-        const response = await POST(request);
-        const data = await response.json();
-
-        expect(response.status).toBe(400);
-        expect(data.error).toContain("achievementCode is required");
-      });
-
-      it("should award achievement successfully", async () => {
-        mockAuth(true);
-
-        const mockResult = {
-          success: true,
-          achievement: {
-            id: "ach-001",
-            code: "SAVINGS_100",
-            name: "First $100 Saved",
-            tier: "bronze",
-            category: "financial",
-          },
-          xpEarned: 50,
-        };
-
-        mockAwardAchievement.mockResolvedValue(mockResult);
-        mockCreateNotification.mockResolvedValue({});
-
-        const request = makeRequest(
-          "/api/gamification/achievements",
-          "POST",
-          {
-            action: "award",
-            achievementCode: "SAVINGS_100",
-          },
-        );
-        const response = await POST(request);
-        const data = await response.json();
-
-        expect(response.status).toBe(200);
-        expect(data.success).toBe(true);
-        expect(data.data.xpEarned).toBe(50);
-        expect(mockCreateNotification).toHaveBeenCalled();
-      });
-
-      it("should return 409 for already earned achievements", async () => {
-        mockAuth(true);
-
-        mockAwardAchievement.mockResolvedValue({
-          success: false,
-          error: "Achievement already earned",
-          alreadyEarned: true,
-        });
-
-        const request = makeRequest(
-          "/api/gamification/achievements",
-          "POST",
-          {
-            action: "award",
-            achievementCode: "SAVINGS_100",
-          },
-        );
-        const response = await POST(request);
-        const data = await response.json();
-
-        expect(response.status).toBe(409);
-        expect(data.alreadyEarned).toBe(true);
-      });
-
-      it("should return 400 for award failure", async () => {
-        mockAuth(true);
-
-        mockAwardAchievement.mockResolvedValue({
-          success: false,
-          error: "Achievement not found",
-        });
-
-        const request = makeRequest(
-          "/api/gamification/achievements",
-          "POST",
-          {
-            action: "award",
-            achievementCode: "NONEXISTENT",
-          },
-        );
-        const response = await POST(request);
-        const data = await response.json();
-
-        expect(response.status).toBe(400);
-        expect(data.error).toBe("Achievement not found");
-      });
-    });
-
-    // --- CHECK ---
-
-    describe("action: check", () => {
-      it("should return 400 if metrics is missing", async () => {
-        mockAuth(true);
-
-        const request = makeRequest(
-          "/api/gamification/achievements",
-          "POST",
-          { action: "check" },
-        );
-        const response = await POST(request);
-        const data = await response.json();
-
-        expect(response.status).toBe(400);
-        expect(data.error).toContain("metrics object is required");
-      });
-
-      it("should check achievements against metrics", async () => {
-        mockAuth(true);
-
-        const mockResults = [
-          {
-            achievementId: "ach-001",
-            achievementCode: "SAVINGS_100",
-            met: true,
-            currentValue: 150,
-            targetValue: 100,
-            progressPercent: 100,
-          },
-          {
-            achievementId: "ach-002",
-            achievementCode: "STREAK_7",
-            met: false,
-            currentValue: 3,
-            targetValue: 7,
-            progressPercent: 42,
-          },
-        ];
-
-        mockCheckAchievements.mockResolvedValue(mockResults);
-
-        const request = makeRequest(
-          "/api/gamification/achievements",
-          "POST",
-          {
-            action: "check",
-            metrics: { total_savings: 150, current_streak: 3 },
-          },
-        );
-        const response = await POST(request);
-        const data = await response.json();
-
-        expect(response.status).toBe(200);
-        expect(data.success).toBe(true);
-        expect(data.data.results).toHaveLength(2);
-        expect(data.data.summary.met).toBe(1);
-        expect(data.data.summary.unmet).toBe(1);
-      });
-    });
-
-    // --- UPDATE_PROGRESS ---
-
-    describe("action: update_progress", () => {
-      it("should return 400 if neither achievementId nor achievementCode provided", async () => {
-        mockAuth(true);
-
-        const request = makeRequest(
-          "/api/gamification/achievements",
-          "POST",
-          {
-            action: "update_progress",
-            progress: 50,
-          },
-        );
-        const response = await POST(request);
-        const data = await response.json();
-
-        expect(response.status).toBe(400);
-        expect(data.error).toContain(
-          "achievementId or achievementCode is required",
-        );
-      });
-
-      it("should return 400 if progress is missing", async () => {
-        mockAuth(true);
-
-        const request = makeRequest(
-          "/api/gamification/achievements",
-          "POST",
-          {
-            action: "update_progress",
-            achievementCode: "SAVINGS_100",
-          },
-        );
-        const response = await POST(request);
-        const data = await response.json();
-
-        expect(response.status).toBe(400);
-        expect(data.error).toContain("progress (number) is required");
-      });
-
-      it("should update progress by code", async () => {
-        mockAuth(true);
-
-        const mockUpdate = {
-          achievementId: "ach-001",
-          previousProgress: 30,
-          newProgress: 75,
-          completed: false,
-        };
-
-        mockUpdateProgressByCode.mockResolvedValue(mockUpdate);
-
-        const request = makeRequest(
-          "/api/gamification/achievements",
-          "POST",
-          {
-            action: "update_progress",
-            achievementCode: "SAVINGS_100",
-            progress: 75,
-          },
-        );
-        const response = await POST(request);
-        const data = await response.json();
-
-        expect(response.status).toBe(200);
-        expect(data.success).toBe(true);
-        expect(data.data.newProgress).toBe(75);
-        expect(mockUpdateProgressByCode).toHaveBeenCalledWith(
-          "user-123",
-          "SAVINGS_100",
-          75,
-        );
-      });
-
-      it("should update progress by id", async () => {
-        mockAuth(true);
-
-        const mockUpdate = {
-          achievementId: "ach-001",
-          previousProgress: 0,
-          newProgress: 50,
-          completed: false,
-        };
-
-        mockUpdateProgress.mockResolvedValue(mockUpdate);
-
-        const request = makeRequest(
-          "/api/gamification/achievements",
-          "POST",
-          {
-            action: "update_progress",
-            achievementId: "ach-001",
-            progress: 50,
-          },
-        );
-        const response = await POST(request);
-        const data = await response.json();
-
-        expect(response.status).toBe(200);
-        expect(data.success).toBe(true);
-        expect(mockUpdateProgress).toHaveBeenCalledWith(
-          "user-123",
-          "ach-001",
-          50,
-        );
-      });
-    });
-
-    // --- BATCH_UPDATE ---
-
-    describe("action: batch_update", () => {
-      it("should return 400 if metrics is missing", async () => {
-        mockAuth(true);
-
-        const request = makeRequest(
-          "/api/gamification/achievements",
-          "POST",
-          {
-            action: "batch_update",
-          },
-        );
-        const response = await POST(request);
-        const data = await response.json();
-
-        expect(response.status).toBe(400);
-        expect(data.error).toContain("metrics object is required");
-      });
-
-      it("should batch update progress from metrics", async () => {
-        mockAuth(true);
-
-        const mockUpdates = [
-          {
-            achievementId: "ach-001",
-            previousProgress: 0,
-            newProgress: 150,
-            completed: true,
-          },
-          {
-            achievementId: "ach-002",
-            previousProgress: 0,
-            newProgress: 3,
-            completed: false,
-          },
-        ];
-
-        mockBatchUpdateProgress.mockResolvedValue(mockUpdates);
-
-        const request = makeRequest(
-          "/api/gamification/achievements",
-          "POST",
-          {
-            action: "batch_update",
-            metrics: { total_savings: 150, current_streak: 3 },
-          },
-        );
-        const response = await POST(request);
-        const data = await response.json();
-
-        expect(response.status).toBe(200);
-        expect(data.success).toBe(true);
-        expect(data.data.updates).toHaveLength(2);
-        expect(data.data.summary.completed).toBe(1);
-      });
-    });
-
-    it("should handle server errors in POST gracefully", async () => {
-      mockAuth(true);
-
-      mockAwardAchievement.mockRejectedValue(new Error("Server error"));
-
-      const request = makeRequest(
-        "/api/gamification/achievements",
-        "POST",
-        {
-          action: "award",
-          achievementCode: "SAVINGS_100",
-        },
-      );
-      const response = await POST(request);
-      const data = await response.json();
-
-      expect(response.status).toBe(500);
-      expect(data.error).toBe("Failed to process achievement action");
-    });
+  // The POST contract CHANGED deliberately for security. It used to accept
+  // {action, achievementCode, metrics, progress} from the request body and
+  // write them through to user_achievements / xp_transactions, so any
+  // authenticated user could award themselves any achievement and its XP.
+  // The endpoint now refuses. These cases pin that refusal so it cannot be
+  // quietly re-opened; the award/check/progress logic itself is still covered
+  // by achievement-service's own unit tests.
+  beforeEach(() => mockAuth(true));
+
+  it("refuses to award an achievement from a client request", async () => {
+    const res = await POST(
+      makeRequest("/api/gamification/achievements", "POST", { action: "award", achievementCode: "SAVINGS_100000" }),
+    );
+    expect(res.status).toBe(501);
+    expect(mockAwardAchievement).not.toHaveBeenCalled();
   });
+
+  it("refuses client-supplied progress", async () => {
+    const res = await POST(
+      makeRequest("/api/gamification/achievements", "POST", { action: "update_progress", achievementId: "a1", progress: 999 }),
+    );
+    expect(res.status).toBe(501);
+    expect(mockUpdateProgress).not.toHaveBeenCalled();
+    expect(mockUpdateProgressByCode).not.toHaveBeenCalled();
+  });
+
+  it("refuses client-supplied metrics", async () => {
+    for (const action of ["check", "batch_update"]) {
+      const res = await POST(makeRequest("/api/gamification/achievements", "POST", { action, metrics: { savings: 1e9 } }));
+      expect(res.status).toBe(501);
+    }
+    expect(mockCheckAchievements).not.toHaveBeenCalled();
+    expect(mockBatchUpdateProgress).not.toHaveBeenCalled();
+  });
+
+  it("still requires authentication", async () => {
+    mockAuth(false);
+    const res = await POST(makeRequest("/api/gamification/achievements", "POST", { action: "award", achievementCode: "X" }));
+    expect(res.status).toBe(401);
+  });
+});
 });

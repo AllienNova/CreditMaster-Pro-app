@@ -26,8 +26,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { ScreenError } from "../../src/components/ScreenError";
 import { creditRepairApi } from "../../src/services/api/creditRepair";
 import type { CreditAccount } from "../../src/services/api/creditRepair";
+import { toArray } from "../../src/store/toArray";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 const getAgeColor = (years: number) => {
   if (years >= 7) return "#22C55E";
@@ -43,14 +46,20 @@ export default function CreditAgeScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await creditRepairApi.getAccounts();
-    if (res.success && res.data) {
-      setAccounts(res.data.accounts);
-      setError(null);
-    } else {
-      setError(res.error?.message ?? "Unable to load your accounts.");
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      const res = await creditRepairApi.getAccounts();
+      if (res.success && res.data) {
+        setAccounts(toArray<CreditAccount>(res?.data?.accounts));
+        setError(null);
+      } else {
+        setError(res.error?.message ?? "Unable to load your accounts.");
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -73,31 +82,20 @@ export default function CreditAgeScreen() {
   const newestMonths = hasAges ? Math.min(...knownMonths) : null;
 
   if (loading && accounts.length === 0) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="age-loading">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Loading accounts...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="Credit Age" message="Loading accounts..." testID="age-loading" />;
   }
 
+  // Was an icon, a message and a button — three nodes, no title and no way
+  // back. A user could not tell which screen had failed, and the device sweep
+  // could not confirm the route because there was no title to look for.
   if (error && accounts.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="age-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.stateText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={load}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="Credit Age"
+        message={error}
+        onRetry={load}
+        testID="age-error"
+      />
     );
   }
 

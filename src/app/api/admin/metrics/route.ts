@@ -40,9 +40,11 @@ export const GET = withRole(
       await Promise.all([
         supabase.from("profiles").select("id, created_at", { count: "exact" }),
         supabase
+          // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
           .from("disputes")
           .select("id, status, created_at", { count: "exact" }),
         supabase
+          // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
           .from("subscriptions")
           // `plan` does NOT exist on subscriptions and was never read here.
           // Selecting it errored the entire query, so activeSubscriptions and
@@ -53,6 +55,7 @@ export const GET = withRole(
           // Renamed from `payments` in 20260801000000 (ADR-0011): `payments`
           // now belongs to payment-router and holds provider-agnostic payment
           // attempts. Subscription revenue lives here, in settled invoices.
+          // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
           .from("subscription_invoices")
           .select("amount_cents, paid_at")
           .gte("paid_at", startDate.toISOString()),

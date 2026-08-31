@@ -23,6 +23,8 @@ import {
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTaxStore } from "../../src/store/taxStore";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 const { width } = Dimensions.get("window");
 
@@ -105,12 +107,7 @@ export default function TaxOptimizationScreen() {
   };
 
   if (isLoadingAnalysis && !analysis) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#F59E0B" />
-        <Text style={styles.loadingText}>Analyzing your tax situation...</Text>
-      </View>
-    );
+    return <ScreenLoading title="Tax Optimization" message="Analyzing your tax situation..." />;
   }
 
   if (error && !analysis) {
@@ -136,13 +133,13 @@ export default function TaxOptimizationScreen() {
       }
     >
       {/* Header */}
+      <ScreenHeader title="Tax Optimization" />
       <LinearGradient
         colors={["#F59E0B", "#EA580C"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
       >
-        <Text style={styles.headerTitle}>Tax Optimization</Text>
         <Text style={styles.headerSubtitle}>AI-Powered Tax Savings</Text>
 
         {/* Potential Savings Card */}
@@ -169,13 +166,13 @@ export default function TaxOptimizationScreen() {
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Effective Rate</Text>
           <Text style={styles.statValue}>
-            {formatPercent(analysis?.currentProjection.effectiveRate || 0)}
+            {formatPercent(analysis?.currentProjection?.effectiveRate || 0)}
           </Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Monthly Take-Home</Text>
           <Text style={styles.statValue}>
-            {formatCurrency(analysis?.currentProjection.monthlyTakeHome || 0)}
+            {formatCurrency(analysis?.currentProjection?.monthlyTakeHome || 0)}
           </Text>
         </View>
       </View>
@@ -441,11 +438,6 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 24,
     paddingHorizontal: 20,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#FFFFFF",
   },
   headerSubtitle: {
     fontSize: 16,

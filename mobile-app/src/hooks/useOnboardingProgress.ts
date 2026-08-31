@@ -23,6 +23,9 @@ export interface OnboardingProgress {
 const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 const STORAGE_KEY = "@onboarding_progress";
 
+/** onboarding_progress CHECKs current_step BETWEEN 1 AND 5; the server rejects anything else. */
+const LAST_STEP = 5;
+
 export function useOnboardingProgress() {
   const [progress, setProgress] = useState<OnboardingProgress>({
     current_step: 1,
@@ -139,21 +142,34 @@ export function useOnboardingProgress() {
     hasChangesRef.current = true;
   }, []);
 
-  // Complete a step
+  /**
+   * Mark a step finished and advance.
+   *
+   * `formData` is merged here rather than through a separate updateProgress()
+   * call because both would read `progress` from the same closure: the second
+   * call would overwrite the first with pre-update state, silently dropping the
+   * answers the user just typed.
+   *
+   * Resolves to whether the SERVER accepted the save. Callers should navigate
+   * regardless — saveProgress always writes to AsyncStorage first, so an
+   * offline user keeps their answers and must not be trapped in the wizard.
+   */
   const completeStep = useCallback(
-    async (stepNumber: number) => {
-      const newCompletedSteps = Array.from(
-        new Set([...progress.completed_steps, stepNumber]),
-      );
+    async (stepNumber: number, formData?: Record<string, unknown>) => {
       const newProgress = {
         ...progress,
-        completed_steps: newCompletedSteps,
-        current_step: Math.min(stepNumber + 1, 5),
+        form_data: formData
+          ? { ...progress.form_data, ...formData }
+          : progress.form_data,
+        completed_steps: Array.from(
+          new Set([...progress.completed_steps, stepNumber]),
+        ).sort((a, b) => a - b),
+        current_step: Math.min(stepNumber + 1, LAST_STEP),
         last_updated: new Date().toISOString(),
       };
 
       setProgress(newProgress);
-      await saveProgress(newProgress);
+      return saveProgress(newProgress);
     },
     [progress, saveProgress],
   );

@@ -420,6 +420,7 @@ export class BehavioralCoach {
 
     // Create session record
     const { data, error } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("ai_coaching_sessions")
       .insert({
         user_id: userId,

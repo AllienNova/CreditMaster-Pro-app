@@ -360,6 +360,7 @@ async function triggerAutonomousKillSwitch(
 ): Promise<void> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await (supabaseAdmin as any).from("circuit_breaker_events").insert({
       user_id: userId,
       breaker_type: "autonomous_kill_switch",

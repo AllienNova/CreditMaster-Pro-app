@@ -146,7 +146,7 @@ export default function NotificationPreferencesScreen() {
         const loaded = response.data;
         setCategories((prev) =>
           prev.map((cat) => {
-            const saved = loaded.categories.find((c) => c.id === cat.id);
+            const saved = loaded.categories?.find((c) => c.id === cat.id);
             if (saved) {
               return {
                 ...cat,

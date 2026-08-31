@@ -24,16 +24,86 @@ export const userProfileApi = {
   /**
    * Get current user profile
    */
-  getProfile: () => api.get<UserProfile>("/user/profile"),
+  // GET /api/profile returns { profile: {...}, stats: {...} } with snake_case
+  // keys and a single `full_name` (profile/route.ts:82-100). UserProfile here
+  // is flat camelCase with firstName/lastName split. `/user/profile` never
+  // existed, and a bare repoint would have type-checked — api.get<T> is an
+  // unchecked cast — while yielding undefined for every field on screen.
+  //
+  // The name split is lossy in one direction (the server keeps one field), so
+  // it is done in exactly one place rather than in each screen that needs a
+  // first name.
+  getProfile: async () => {
+    const res = await api.get<{
+      profile?: {
+        id?: string;
+        email?: string;
+        full_name?: string;
+        avatar_url?: string;
+        role?: string;
+        phone?: string;
+        address?: UserProfile["address"];
+        created_at?: string;
+        onboarding_completed?: boolean;
+        subscription?: { tier?: string; status?: string } | null;
+      };
+    }>("/profile");
+
+    const p = res.data?.profile;
+    const [firstName = "", ...rest] = (p?.full_name ?? "").split(" ");
+
+    return {
+      ...res,
+      data: p
+        ? ({
+            id: p.id ?? "",
+            email: p.email ?? "",
+            firstName,
+            lastName: rest.join(" "),
+            avatarUrl: p.avatar_url,
+            phone: p.phone,
+            address: p.address,
+            createdAt: p.created_at ?? "",
+            role: (p.role ?? "user") as UserProfile["role"],
+            // Server-authoritative. UserProfile has declared this field all
+            // along and the adapter never filled it, so the app fell back to
+            // reading profiles.onboarding_completed straight from the table —
+            // which the `authenticated` role has no grant on (task #65).
+            onboardingCompleted: Boolean(p.onboarding_completed),
+            subscriptionTier: (p.subscription?.tier ??
+              "free") as UserProfile["subscriptionTier"],
+            subscriptionStatus: (p.subscription?.status ??
+              "active") as UserProfile["subscriptionStatus"],
+          } as UserProfile)
+        : undefined,
+    };
+  },
 
   /**
-   * Update user profile
+   * Update user profile.
+   *
+   * PATCH /api/profile allows exactly four fields: full_name, phone, address,
+   * avatar_url (profile/route.ts:122). Anything else is dropped server-side,
+   * so the camelCase names are translated here and unsupported keys are not
+   * sent at all rather than silently ignored.
    */
   updateProfile: (
     updates: Partial<
       Omit<UserProfile, "id" | "email" | "createdAt" | "updatedAt">
     >,
-  ) => api.patch<UserProfile>("/user/profile", updates),
+  ) => {
+    const body: Record<string, unknown> = {};
+    if (updates.firstName !== undefined || updates.lastName !== undefined) {
+      body.full_name = [updates.firstName, updates.lastName]
+        .filter(Boolean)
+        .join(" ");
+    }
+    if (updates.phone !== undefined) body.phone = updates.phone;
+    if (updates.address !== undefined) body.address = updates.address;
+    if (updates.avatarUrl !== undefined) body.avatar_url = updates.avatarUrl;
+
+    return api.patch<UserProfile>("/profile", body);
+  },
 
   /**
    * Upload avatar.
@@ -100,33 +170,43 @@ export const userProfileApi = {
   /**
    * Delete account
    */
+  // GDPR Art. 17 erasure. The route is POST /api/privacy/delete and it requires
+  // the literal confirmation token: { "confirm": "DELETE" } (privacy/delete/
+  // route.ts:36,66). This sent { confirmation } to /user/delete-account, so it
+  // was a 404 — and had the path been right it would still have been rejected
+  // for the wrong key. A user asking to be forgotten was silently not forgotten.
   deleteAccount: (confirmation: string) =>
-    api.post<{ success: boolean }>("/user/delete-account", { confirmation }),
+    api.post<{ success: boolean }>("/privacy/delete", { confirm: confirmation }),
 
-  /**
-   * Get onboarding status
+  /*
+   * getOnboardingStatus and updateOnboarding are gone.
+   *
+   * They GET/PATCHed /user/onboarding, a route that has never existed, using a
+   * string-keyed step model ({ step: "profile", completed }) that matches
+   * nothing on the server — onboarding_progress stores current_step as an
+   * INTEGER 1-5 with completed_steps INT4[]. Nothing in the app called either
+   * one.
+   *
+   * The live path is useOnboardingProgress, which reads and writes
+   * /onboarding/progress and is wired into the profile, goals and connect
+   * screens. Keeping a second, differently-shaped onboarding API alongside it
+   * was one concern with two contracts, and the unused one was already wrong.
    */
-  getOnboardingStatus: () =>
-    api.get<{
-      completed: boolean;
-      steps: { step: string; completed: boolean }[];
-      currentStep: string;
-    }>("/user/onboarding"),
-
-  /**
-   * Update onboarding progress
-   */
-  updateOnboarding: (step: string, data?: Record<string, unknown>) =>
-    api.patch<{ nextStep: string; completed: boolean }>("/user/onboarding", {
-      step,
-      data,
-    }),
 
   /**
    * Complete onboarding
    */
+  /**
+   * Mark onboarding finished. POSTs /api/onboarding/complete (withAuth), which
+   * calls the complete_onboarding() SECURITY DEFINER function so
+   * onboarding_progress and profiles.onboarding_completed move together.
+   *
+   * The old path, /user/onboarding/complete, is not a route this app serves.
+   */
   completeOnboarding: () =>
-    api.post<{ success: boolean }>("/user/onboarding/complete"),
+    api.post<{ success: boolean; onboarding_completed?: boolean }>(
+      "/onboarding/complete",
+    ),
 };
 
 // ── Billing overview (real source: GET /api/payment/billing) ──────────────────
@@ -353,6 +433,45 @@ function toInvoiceStatus(status: string): InvoiceStatus {
  * field is sourced; a malformed row from the JSON boundary degrades honestly —
  * absent/invalid amount -> 0, absent/invalid date -> "" — rather than fabricating.
  */
+/** A saved card, as the billing SETTINGS screen lists them. */
+export interface PaymentMethodListView {
+  id: string;
+  type: "card";
+  last4: string;
+  brand: string;
+  expiry: string;
+  isDefault: boolean;
+}
+
+/**
+ * Every saved card, not just the default one.
+ *
+ * mapWebBilling reduces the same payload to a single `paymentMethod` because
+ * the OVERVIEW screen shows one. The settings screen lists them all, and it was
+ * listing two hardcoded constants instead — a Visa ending 4242 (Stripe's test
+ * card) and a Mastercard 5555 — while making no network call at all. See
+ * SF-12; it is FND-016/017 in mobile.
+ *
+ * An empty array stays empty. billing-data.ts returns no payment methods for a
+ * user with no Stripe customer, and "no card on file" is the true answer.
+ */
+export function mapWebPaymentMethods(
+  res: WebBillingResponse,
+): PaymentMethodListView[] {
+  const methods = Array.isArray(res.paymentMethods) ? res.paymentMethods : [];
+  return methods
+    .filter((pm) => pm && pm.id && pm.last4)
+    .map((pm) => ({
+      id: pm.id,
+      type: "card" as const,
+      last4: pm.last4,
+      // Never guess a brand; an unlabelled card is still a real card.
+      brand: pm.brand || "Card",
+      expiry: `${String(pm.expMonth).padStart(2, "0")}/${String(pm.expYear).slice(-2)}`,
+      isDefault: Boolean(pm.isDefault),
+    }));
+}
+
 export function mapWebInvoices(res: WebBillingResponse): InvoiceView[] {
   const invoices = Array.isArray(res.invoices) ? res.invoices : [];
   return invoices.map((inv) => {
@@ -375,6 +494,36 @@ export const subscriptionApi = {
    * Adapted to the mobile BillingOverview view-model by mapWebBilling; unsourced
    * fields are omitted so the screen can empty-state rather than fabricate.
    */
+  /**
+   * Everything the billing SETTINGS screen renders — all saved cards, the
+   * invoice list, and the active plan id — from the one Stripe-backed read.
+   *
+   * Composed from mapWebPaymentMethods and mapWebInvoices rather than a second
+   * adapter: /api/payment/billing already serves plans, subscription,
+   * paymentMethods and invoices whole, and a parallel mapper over the same
+   * payload is exactly the drift this codebase keeps paying for.
+   */
+  getBillingSettings: async (): Promise<
+    ApiResponse<{
+      paymentMethods: PaymentMethodListView[];
+      invoices: InvoiceView[];
+      planId: string | null;
+    }>
+  > => {
+    const res = await api.get<WebBillingResponse>("/payment/billing");
+    if (res.success && res.data) {
+      return {
+        success: true,
+        data: {
+          paymentMethods: mapWebPaymentMethods(res.data),
+          invoices: mapWebInvoices(res.data),
+          planId: res.data.subscription?.planId ?? null,
+        },
+      };
+    }
+    return { success: false, error: res.error };
+  },
+
   getBillingOverview: async (): Promise<ApiResponse<BillingOverview>> => {
     const res = await api.get<WebBillingResponse>("/payment/billing");
     if (res.success && res.data) {
@@ -429,19 +578,27 @@ export const subscriptionApi = {
       cancelSubscription: true,
     }),
 
-  /**
-   * Get current subscription
-   */
-  getCurrent: () => api.get<Subscription>("/user/subscription"),
+  // GET /api/payment/billing is the ONE billing read. It returns
+  // { plans, subscription, paymentMethods, invoices } in a single response
+  // (payment/billing/route.ts:11-15), so the four separate paths the client
+  // used — /user/subscription, /subscription/plans, /user/billing/history and
+  // /user/billing/payment-method — were four 404s asking for slices of a
+  // document that is already served whole.
+  getCurrent: async () => {
+    const res = await api.get<{ subscription: Subscription }>("/payment/billing");
+    return { ...res, data: res.data?.subscription };
+  },
 
   /**
    * Get available plans
    */
-  getPlans: () =>
-    api.get<{ plans: SubscriptionPlan[] }>("/subscription/plans", {
+  getPlans: async () => {
+    const res = await api.get<{ plans: SubscriptionPlan[] }>("/payment/billing", {
       enableCache: true,
       cacheTime: 60 * 60 * 1000,
-    }),
+    });
+    return { ...res, data: { plans: res.data?.plans ?? [] } };
+  },
 
   /**
    * Create checkout session
@@ -451,28 +608,23 @@ export const subscriptionApi = {
       priceId,
     }),
 
-  /**
-   * Upgrade subscription
-   */
-  upgrade: (planId: string) =>
-    api.post<{ success: boolean; newPlan: string }>(
-      "/user/subscription/upgrade",
-      { planId },
-    ),
+  // upgrade / cancel / reactivate were exact duplicates of updatePlan and
+  // cancelPlan above, except that those two call the REAL route and these
+  // three called /user/subscription/{upgrade,cancel,reactivate}, none of
+  // which exist. Two implementations of one operation, one working and one
+  // 404ing, is how a feature appears to work in a code review and fails in a
+  // user's hands. They now delegate; there is one implementation.
+  upgrade: (planId: string) => subscriptionApi.updatePlan(planId),
 
   /**
-   * Cancel subscription
+   * Cancel the subscription (access continues to period end).
    */
-  cancel: () =>
-    api.post<{ success: boolean; cancelAt: string }>(
-      "/user/subscription/cancel",
-    ),
+  cancel: () => subscriptionApi.cancelPlan(),
 
   /**
-   * Reactivate subscription
+   * Resume a cancelled subscription by re-selecting a plan.
    */
-  reactivate: () =>
-    api.post<{ success: boolean }>("/user/subscription/reactivate"),
+  reactivate: (planId: string) => subscriptionApi.updatePlan(planId),
 
   /**
    * Get billing history
@@ -486,15 +638,18 @@ export const subscriptionApi = {
         date: string;
         pdfUrl?: string;
       }[];
-    }>("/user/billing/history"),
+    }>("/payment/billing"),
 
-  /**
-   * Update payment method
+  /*
+   * updatePaymentMethod is gone — the last of the four billing slices named in
+   * the comment above.
+   *
+   * It POSTed /user/billing/payment-method, a route that has never existed, and
+   * had no callers. There is no endpoint for it either: stripeService
+   * .setDefaultPaymentMethod exists in the web service but nothing exposes it,
+   * and there is no detach capability at all. The billing settings screen now
+   * says so rather than mutating local state to look successful.
    */
-  updatePaymentMethod: (paymentMethodId: string) =>
-    api.post<{ success: boolean }>("/user/billing/payment-method", {
-      paymentMethodId,
-    }),
 };
 
 // The real web route (/api/notifications) returns notifications with `message`
@@ -550,11 +705,17 @@ export const notificationApi = {
   > => {
     // The web route honors ?limit= and returns { notifications, unreadCount } in
     // the web notification shape; adapt each to the mobile Notification shape.
-    const query = params?.limit ? `?limit=${params.limit}` : "";
+    // The conditional is inlined rather than hoisted into a `query` const so
+    // the query string is visible AT the call site. audit:api truncates a path
+    // at an interpolation containing "?", but `${query}` gives it nothing to
+    // go on — it fused with the literal and collapsed the whole path to a
+    // wildcard, putting a bare "/" in the tracked-debt list for a call that
+    // has always resolved. Same idiom as taxCalendarApi's
+    // `/tax/calendar${query ? `?${query}` : ""}`.
     const res = await api.get<{
       notifications: WebNotification[];
       unreadCount: number;
-    }>(`/notifications${query}`);
+    }>(`/notifications${params?.limit ? `?limit=${params.limit}` : ""}`);
     if (res.success && res.data) {
       return {
         success: true,
@@ -917,27 +1078,70 @@ export const settingsApi = {
   /**
    * Get user settings
    */
-  getAll: () =>
-    api.get<{
-      theme: "light" | "dark" | "system";
-      language: string;
-      biometricEnabled: boolean;
-      twoFactorEnabled: boolean;
-      dataSharing: boolean;
-    }>("/user/settings"),
+  // The server stores settings NESTED and snake_case:
+  //   { settings: { notifications, privacy: { share_data, analytics,
+  //     two_factor }, display: { theme, language, timezone } } }
+  // (src/app/api/settings/route.ts:18-32,39). The mobile screens want a flat
+  // camelCase object. Repointing the path alone would have type-checked —
+  // api.get<T> is an unchecked cast — and handed every field back as
+  // undefined, which is worse than the 404 it replaced. Hence a real adapter.
+  //
+  // biometricEnabled is deliberately absent from the round-trip. Biometric
+  // unlock is a property of the DEVICE, not the account (biometricService.ts
+  // keeps it in local storage); syncing it would enable Face ID on a phone
+  // that has never been unlocked with it.
+  getAll: async () => {
+    const res = await api.get<{
+      settings?: {
+        privacy?: { share_data?: boolean; two_factor?: boolean };
+        display?: { theme?: "light" | "dark" | "system"; language?: string };
+      };
+    }>("/settings");
+    const s = res.data?.settings;
+    return {
+      ...res,
+      data: {
+        theme: s?.display?.theme ?? "system",
+        language: s?.display?.language ?? "en",
+        twoFactorEnabled: s?.privacy?.two_factor ?? false,
+        dataSharing: s?.privacy?.share_data ?? false,
+      },
+    };
+  },
 
   /**
    * Update settings
    */
+  // Inverse of the adapter above. The PATCH body is validated by a zod schema
+  // that requires at least one of notifications/privacy/display and rejects
+  // unknown shapes (settings/route.ts:34-48), so the flat object the screens
+  // hold has to be regrouped before it is sent.
   update: (
     settings: Partial<{
       theme: "light" | "dark" | "system";
       language: string;
-      biometricEnabled: boolean;
       twoFactorEnabled: boolean;
       dataSharing: boolean;
     }>,
-  ) => api.patch<{ success: boolean }>("/user/settings", settings),
+  ) => {
+    const display: Record<string, unknown> = {};
+    if (settings.theme !== undefined) display.theme = settings.theme;
+    if (settings.language !== undefined) display.language = settings.language;
+
+    const privacy: Record<string, unknown> = {};
+    if (settings.twoFactorEnabled !== undefined) {
+      privacy.two_factor = settings.twoFactorEnabled;
+    }
+    if (settings.dataSharing !== undefined) {
+      privacy.share_data = settings.dataSharing;
+    }
+
+    const body: Record<string, unknown> = {};
+    if (Object.keys(display).length > 0) body.display = display;
+    if (Object.keys(privacy).length > 0) body.privacy = privacy;
+
+    return api.patch<{ success: boolean }>("/settings", body);
+  },
 
   /**
    * Enable two-factor authentication
@@ -963,8 +1167,13 @@ export const settingsApi = {
   /**
    * Export user data
    */
-  exportData: () =>
-    api.post<{ downloadUrl: string; expiresAt: string }>("/user/data-export"),
+  // GDPR Art. 20 portability. GET /api/privacy/export returns the export
+  // INLINE as { success, data } (privacy/export/route.ts:71) — there is no
+  // download URL and no POST. The old signature promised { downloadUrl,
+  // expiresAt }, which no route has ever produced; it had no callers, so the
+  // shape is corrected here rather than adapted around.
+  exportData: (format: "json" | "csv" | "xml" = "json") =>
+    api.get<Record<string, unknown>>(`/privacy/export?format=${format}`),
 };
 
 export default {

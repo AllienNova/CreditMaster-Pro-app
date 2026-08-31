@@ -1,0 +1,346 @@
+{
+  "frozen": "2026-08-17",
+  "why": "Screens rendering a module-level constant data set. Each must be classified `catalogue` (product content: plans offered, bureaus, filter chips) or `fabrication` (invented user data that must be replaced by a real read). UNCLASSIFIED entries are debt someone has not looked at yet. This list may only shrink.",
+  "entries": {
+    "src/app/(pages)/subscriptions/page.tsx: FILTER_TABS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/about/page.tsx: platformFeatures, securityFeatures, stats, values": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Public about page — company values and platform features. `stats` is marketing copy and belongs to a copy review, not this gate."
+    },
+    "src/app/admin/layout.tsx: adminNavItems": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/analytics/layout.tsx: analyticsNavItems": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/analytics/reports/page.tsx: REPORT_TYPES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Six report types (name, description, icon) describing what the reports feature will cover. Product content, no claim about the caller. The `lastGenerated` field was stripped — it dated each type as a document the user had already produced. scheduledReports and recentDownloads were removed outright: no generated-reports, report-schedules or download-history table exists in any migration, and generation is not offered because POST /api/analytics/reports composes the all-zeros AnalyticsEngine stub (task #99)."
+    },
+    "src/app/api/admin/stats/route.ts: PRICE_MAP": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/api/credit/factors/route.ts: AGE_BANDS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/api/investments/portfolio/performance/route.ts: PERIOD_DAYS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/budgeting/page.tsx: FEATURE_CARDS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "FEATURE_CARDS is the hub's navigation into the budgeting tools."
+    },
+    "src/app/budgeting/subscriptions/page.tsx: MONTHLY_EQUIVALENT_FACTOR": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/credit-builder/simulator/page.tsx: commonGoals": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/credit/factors/page.tsx: SCORE_RANGES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/credit/goodwill-letters/page.tsx: LETTER_TEMPLATES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/features/page.tsx: featureSections, platformFeatures": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Public features page — product description."
+    },
+    "src/app/financial-intelligence/page.tsx: QUICK_ACTIONS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Six navigation tiles (title, description, href, icon, gradient) linking to the /financial/* tools. Product content, not a claim about the caller. The two fabrications that shared this file — MOCK_SNAPSHOT ($124,350 net worth, \"B+\" grade) and MOCK_INSIGHTS — were removed; the page now reads /api/financial/aggregated?snapshot=true and /api/financial/ai-insights and shows an explicit unavailable state instead of substituting figures."
+    },
+    "src/app/help/contact/page.tsx: contactMethods": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/help/faq/page.tsx: faqCategories, faqs": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/help/guides/page.tsx: categories, guides": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/help/layout.tsx: helpNavItems": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/help/page.tsx: categories, popularArticles, quickLinks": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/identity/page.tsx: FEATURES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Two navigation tiles (title, subtitle, href, icon) pointing at /identity/dark-web and /dashboard/monitoring — both real pages, both verified by audit:links. Asserts nothing about the caller. The other three constants on this page (MOCK_ALERTS, SCAN_RESULTS, RECOMMENDED_ACTIONS) were removed: they told every user a credit card had been opened in their name and their SSN used in an application. FEATURES itself lost its `badge` field, which claimed '2 found' breaches, '2/3' bureaus frozen and 'Active' $1M identity insurance, plus the three tiles that linked back to /identity itself."
+    },
+    "src/app/investments/add-holding/page.tsx: assetTypes": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/investments/layout.tsx: NAV_ITEMS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/investments/performance/page.tsx: TIME_PERIODS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/investments/rebalance/page.tsx: RISK_OPTIONS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The five RiskTolerance values from asset-allocation.types.ts:23, as selector options. Configuration, not a claim about the caller — the page asks which one applies rather than assuming, because nothing on the account records it and the target model depends on it."
+    },
+    "src/app/investments/research/page.tsx: POPULAR_SYMBOLS, TAB_ITEMS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/leaderboard/page.tsx: tabs": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/marketplace/auto-loans/page.tsx: SCORE_TIERS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/marketplace/consolidation/page.tsx: LOAN_TYPES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Three filter options (all / personal / debt_consolidation) passed straight to GET /api/affiliate/offers as its `subType` parameter. Configuration, not a claim about the caller. Replaces mockOptions, which invented lender offers naming real institutions with specific terms — 'SoFi, APR 8.99% – 25.81%', 'Marcus by Goldman Sachs, 6.99% – 28.99%' — over a route that honestly returns nothing because the MoneyLion product catalogue is never fetched (task #105)."
+    },
+    "src/app/marketplace/layout.tsx: marketplaceCategories": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/marketplace/page.tsx: categories": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/onboarding/complete/page.tsx: analysisSteps, nextSteps, quickWins": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "analysisSteps/nextSteps/quickWins are how-to content about what happens next. The invented 675 score, 12 'errors found' and +85 on this page were removed separately in rev 46."
+    },
+    "src/app/onboarding/connect/page.tsx: bankOptions, bureaus, payFrequencies, whyConnect": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/onboarding/goals/page.tsx: goalCategories, scoreRanges, timeframes": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/onboarding/layout.tsx: steps": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/onboarding/page.tsx: features, socialProof, testimonials": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/page.tsx: pricing, products": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Public landing page — `pricing` and `products` are the real product catalogue."
+    },
+    "src/app/recommendations/credit-cards/page.tsx: CREDIT_CARD_OFFERS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Third-party card offers — product content, not a claim about the caller. SHOULD come from the affiliate feed (Wave 6, Engine by MoneyLion) rather than a constant; recorded here so that wiring shrinks the list."
+    },
+    "src/app/recommendations/loans/page.tsx: LOAN_OFFERS, LOAN_TYPE_CHIPS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Third-party loan offers, same as credit-cards: product content that should come from the affiliate feed."
+    },
+    "src/app/recommendations/page.tsx: QUICK_LINKS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Navigation only — three labels, three hrefs to real sibling routes, and their icon paths. RECOMMENDATIONS and CATEGORY_CHIPS were removed in the same commit; this is what is left, and it makes no claim about the caller."
+    },
+    "src/app/settings/layout.tsx: settingsNavItems": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/settings/notifications/page.tsx: defaultSettings": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "defaultSettings is the default notification configuration, not a reading."
+    },
+    "src/app/settings/page.tsx: settingsSections": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/trading/strategies/page.tsx: CATEGORIES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/brand/registry.ts: BRAND_ASSETS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/documents/DocumentUpload.tsx: STEPS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/financial/QuickActionsBar.tsx: quickActions": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/financial/SubscriptionCancellationWizard.tsx: OUTCOME_OPTIONS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/gamification/ProgressRing.tsx: sizeConfig": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/image-generator/ImageGenerator.tsx: SIZE_OPTIONS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/investments/charts/AdvancedChartContainer.tsx: CHART_TYPES, TIMEFRAMES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/investments/rebalance/AllocationConfigPanel.tsx: PORTFOLIO_MODELS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/investments/rebalance/RebalanceHistoryPanel.tsx: TIME_FILTERS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/onboarding/ImpactCalculator.tsx: scoreRangeValues": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/persona/CreditScoreSimulator.tsx: scenarios": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/trading/charts/DrawingToolbar.tsx: TOOLS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/trading/charts/TradingChartContainer.tsx: CHART_TYPES, INDICATOR_OPTIONS, TIMEFRAMES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/trading/mode/ModePermissionsCard.tsx: PERMISSION_ITEMS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/ui/BottomNav.tsx: navItems": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/ui/Footer.tsx: footerColumns": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/ui/Header.tsx: navLinks": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/components/ui/MobileNav.tsx: navItems": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Configuration or product content by role — navigation items, tab/filter/timeframe options, published bands, or written copy. Not a claim about the caller."
+    },
+    "src/app/credit-builder/freeze/page.tsx: bureaus": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The three credit bureaus and their contact routes. A fixed, public list — Experian, Equifax, TransUnion — not a claim about the caller. The file makes three real requests for the freeze actions themselves."
+    },
+    "src/app/dashboard/chat/page.tsx: messages": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "A single opening greeting from the assistant listing what it can help with, seeded into the transcript. An opening line, not a fabricated conversation history; the file makes a real request for every subsequent turn. Same verdict as mobile's INITIAL_MESSAGES."
+    },
+    "src/app/tax/scenarios/page.tsx: scenarios": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Named what-if templates (Baseline, \"Max 401(k)\" at 13000, \"Max All Retirement\") that the reader edits. Scenario PRESETS, not a statement about this person's taxes — the figures are contribution limits, not their contributions."
+    },
+    "src/components/credit-repair/PaymentTimingOptimizer.tsx: cards": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "useState initialiser holding the reader's cards, with no request in the file. Timing advice is computed from balances and statement dates nobody read."
+    },
+    "src/components/credit-repair/UtilizationOptimizer.tsx: cards": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "useState initialiser holding the reader's cards, with no request in the file. The twin of PaymentTimingOptimizer; both feed utilisation advice from invented balances."
+    },
+    "src/app/credit-builder/mix/page.tsx: MIX_GUIDANCE": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Our published guidance on a healthy credit mix — the ideal count per category, plus which credit_accounts.account_type values map to each row, plus icon and colour. Identical for every reader and therefore not a claim about anyone. The `current` counts that sit beside it ARE per-reader and are now counted from the accounts hook, not stated here."
+    }
+  }
+}

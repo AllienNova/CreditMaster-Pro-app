@@ -6,6 +6,7 @@
 
 import { create } from "zustand";
 import * as coachApi from "../services/coachApi";
+import { toArray } from "./toArray";
 import {
   Recommendation,
   FinancialGoalPlan,
@@ -106,7 +107,7 @@ export const useCoachStore = create<CoachState>((set, get) => ({
     try {
       const response = await coachApi.getRecommendations(params);
       set({
-        recommendations: response.recommendations,
+        recommendations: toArray(response?.recommendations),
         recommendationsLoading: false,
       });
     } catch (error) {
@@ -121,7 +122,7 @@ export const useCoachStore = create<CoachState>((set, get) => ({
     set({ goalsLoading: true, goalsError: null });
     try {
       const response = await coachApi.getGoals();
-      set({ goals: response.goals, goalsLoading: false });
+      set({ goals: toArray(response?.goals), goalsLoading: false });
     } catch (error) {
       set({ goalsError: "Failed to load goals", goalsLoading: false });
     }

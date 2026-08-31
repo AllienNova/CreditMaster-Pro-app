@@ -179,7 +179,7 @@ export default function AuthorizedUserScreen() {
         {/* Action Button */}
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => router.push("/help/guides/authorized-user" as never)}
+          onPress={() => router.push("/help/guides" as never)}
         >
           <Text style={styles.actionButtonText}>Read Full Guide</Text>
           <Ionicons name="arrow-forward" size={20} color="#fff" />

@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { ProgressBar } from "../../src/components/ProgressBar";
+import { toArray } from "../../src/store/toArray";
 
 type Strategy = "avalanche" | "snowball" | "hybrid" | "ai_optimized";
 
@@ -91,7 +92,7 @@ export default function DebtPayoffScreen() {
           const data = strategyResult.data || strategyResult;
 
           if (data.strategies) {
-            setStrategies(data.strategies);
+            setStrategies(toArray<StrategyComparison>(data?.strategies));
             setHasAIOptimized(
               data.strategies.some(
                 (s: StrategyComparison) => s.method === "ai_optimized",

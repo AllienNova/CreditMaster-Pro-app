@@ -3,7 +3,7 @@
  * Success screen with next steps
  */
 
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, Animated, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -48,9 +48,29 @@ export default function OnboardingCompleteScreen() {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  const [saveFailed, setSaveFailed] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  /**
+   * Persist completion. completeOnboarding() REJECTS when the write fails, and
+   * an uncaught rejection inside an effect is an unhandled promise rejection —
+   * previously unreachable because nothing entered this wizard.
+   *
+   * The failure is SURFACED rather than swallowed. A silent catch left this
+   * screen saying "You're all set!" over a database that had recorded nothing,
+   * and the only symptom was being marched through the wizard again on the
+   * next launch with no explanation.
+   */
+  const save = useCallback(() => {
+    setSaving(true);
+    completeOnboarding()
+      .then(() => setSaveFailed(false))
+      .catch(() => setSaveFailed(true))
+      .finally(() => setSaving(false));
+  }, [completeOnboarding]);
+
   useEffect(() => {
-    // Mark onboarding as complete
-    completeOnboarding();
+    save();
 
     // Animate entrance
     Animated.sequence([
@@ -66,7 +86,7 @@ export default function OnboardingCompleteScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [save]);
 
   const handleGoToDashboard = () => {
     router.replace("/(tabs)");
@@ -120,6 +140,35 @@ export default function OnboardingCompleteScreen() {
         >
           You're all set!
         </Text>
+
+        {saveFailed && (
+          <View
+            style={{
+              backgroundColor: colors.warning + "22",
+              borderRadius: borderRadius.md,
+              padding: spacing.md,
+              marginBottom: spacing.md,
+            }}
+          >
+            <Text
+              style={{ fontSize: 14, color: colors.text, marginBottom: 8 }}
+            >
+              We couldn't save that setup to your account, so you may be asked
+              to run through it again next time you open the app.
+            </Text>
+            <TouchableOpacity onPress={save} disabled={saving}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "600",
+                  color: colors.primary,
+                }}
+              >
+                {saving ? "Retrying..." : "Retry"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <Text
           style={{
             fontSize: 16,

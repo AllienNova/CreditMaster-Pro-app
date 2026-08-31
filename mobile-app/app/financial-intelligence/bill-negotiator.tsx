@@ -823,6 +823,7 @@ const SavingsDisplay: React.FC<SavingsDisplayProps> = ({
  */
 export default function BillNegotiatorScreen() {
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [bills, setBills] = useState<Bill[]>([]);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
@@ -835,6 +836,7 @@ export default function BillNegotiatorScreen() {
   const fetchBills = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadFailed(false);
       const response = await fetch("/api/financial/bills");
 
       if (response.ok) {
@@ -843,7 +845,12 @@ export default function BillNegotiatorScreen() {
       }
     } catch (error) {
       console.error("Error fetching bills:", error);
-      Alert.alert("Error", "Failed to load bills. Please try again.");
+      // NOT Alert.alert. This runs on mount, and a native alert is a separate
+      // window: it covers the screen, offers only "OK" with no retry, and
+      // stays up until dismissed — it also masked every route measured after
+      // it in the device sweep. The action alerts elsewhere in this file are
+      // fine; those follow something the user did.
+      setLoadFailed(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -920,7 +927,22 @@ export default function BillNegotiatorScreen() {
     }
   };
 
-  if (loading && bills.length === 0) {
+    if (loadFailed && bills.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>
+            We could not load your bills.
+          </Text>
+          <TouchableOpacity onPress={fetchBills}>
+            <Text style={styles.retryTextState}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+if (loading && bills.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -975,6 +997,12 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  retryTextState: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    marginTop: 12,
   },
   loadingContainer: {
     flex: 1,

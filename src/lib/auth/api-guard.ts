@@ -30,6 +30,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { type Role, isAtLeast } from "./roles";
 import { jwtValidation } from "./jwt-validation";
 import { resolveRoleFromDb } from "./resolve-role";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { rbac } from "./rbac";
 
 /**
@@ -82,6 +83,58 @@ type AuthedUserResult =
  * Fail-closed: a guard that cannot determine the role grants no access — it
  * never falls through to the handler.
  */
+/**
+ * Conditional AAL2 enforcement (G-020).
+ *
+ * MEASURED, not assumed: a token carrying `aal: "aal1"` — password verified,
+ * TOTP not yet satisfied — was accepted by every guarded route, including
+ * /api/privacy/export, a full GDPR data export. Nothing anywhere inspected
+ * assurance level, so enrolling a second factor bought a user no protection at
+ * all.
+ *
+ * The check is CONDITIONAL ON ENROLMENT by design. Rejecting every `aal1`
+ * session outright would lock out every user who never opted into MFA the
+ * moment this shipped. Rejecting only users who hold a verified factor means
+ * the rule is simply "if you enrolled a second factor, you must use it".
+ *
+ * `aal` absent is treated as satisfied: tokens predating MFA, and the legacy
+ * HS256 self-issued path, carry no such claim. Treating absent as `aal1` would
+ * reject them all.
+ *
+ * Fails CLOSED. If the factor lookup errors we cannot tell whether MFA is
+ * required, and the safe answer for an auth gate is to refuse rather than to
+ * assume the user has no factors.
+ */
+async function mfaSatisfied(
+  userId: string,
+  aal: string | undefined,
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  if (aal !== "aal1") return { ok: true };
+
+  try {
+    const { data, error } = await getServiceRoleClient().rpc(
+      "user_has_verified_mfa",
+      { p_user_id: userId },
+    );
+    if (error) throw error;
+    if (data !== true) return { ok: true };
+  } catch (error) {
+    console.error("[api-guard] MFA factor lookup failed", error);
+    return { ok: false, response: serviceUnavailable() };
+  }
+
+  return {
+    ok: false,
+    response: NextResponse.json(
+      {
+        error: "mfa_required",
+        message: "Complete multi-factor authentication to continue.",
+      },
+      { status: 403 },
+    ),
+  };
+}
+
 async function buildAuthedUser(
   id: string,
   email: string,
@@ -100,6 +153,50 @@ async function buildAuthedUser(
  * Returns 401 if not authenticated.
  */
 export function withAuth(handler: AuthenticatedHandler): RouteHandler {
+  return async (request: NextRequest) => {
+    const validation = await jwtValidation.validateFromHeaders(request);
+
+    if (!validation.valid || !validation.user?.id) {
+      return unauthorized(validation.error);
+    }
+
+    const roleResult = await buildAuthedUser(
+      validation.user.id,
+      validation.user.email,
+    );
+    if (!roleResult.ok) {
+      return roleResult.response;
+    }
+
+    const mfa = await mfaSatisfied(validation.user.id, validation.user.aal);
+    if (!mfa.ok) {
+      return mfa.response;
+    }
+
+    return handler(request, roleResult.user);
+  };
+}
+
+/**
+ * Authenticated, but EXEMPT from the AAL2 gate.
+ *
+ * There is exactly one legitimate use: the backup-code redemption endpoint. A
+ * user who has lost their authenticator is stuck at `aal1` by definition, so a
+ * recovery route guarded by `withAuth` would refuse the very request that exists
+ * to un-stick them.
+ *
+ * This is an explicit opt-out AT THE ROUTE rather than a central exempt-path
+ * list. A list is a second `PUBLIC_ROUTES.ts` — the drift in that file is what
+ * produced FND-001 — and a path string can be added by someone who never reads
+ * this comment. A named import cannot be applied by accident.
+ *
+ * Anything wrapped in this still requires a valid token and a resolved role. It
+ * relaxes the second factor, nothing else. Do not reach for it to "fix" a route
+ * returning 403 mfa_required: that response is the gate working.
+ */
+export function withAuthAllowingAal1(
+  handler: AuthenticatedHandler,
+): RouteHandler {
   return async (request: NextRequest) => {
     const validation = await jwtValidation.validateFromHeaders(request);
 
@@ -145,6 +242,11 @@ export function withPermission(
       return roleResult.response;
     }
 
+    const mfa = await mfaSatisfied(validation.user.id, validation.user.aal);
+    if (!mfa.ok) {
+      return mfa.response;
+    }
+
     if (!rbac.hasPermission(roleResult.user, permission)) {
       return NextResponse.json(
         {
@@ -182,6 +284,11 @@ export function withRole(
     );
     if (!roleResult.ok) {
       return roleResult.response;
+    }
+
+    const mfa = await mfaSatisfied(validation.user.id, validation.user.aal);
+    if (!mfa.ok) {
+      return mfa.response;
     }
 
     if (!isAtLeast(roleResult.user.role, requiredRole)) {
@@ -227,6 +334,11 @@ export function withOptionalAuth(
     );
     if (!roleResult.ok) {
       return roleResult.response;
+    }
+
+    const mfa = await mfaSatisfied(validation.user.id, validation.user.aal);
+    if (!mfa.ok) {
+      return mfa.response;
     }
 
     return handler(request, roleResult.user);

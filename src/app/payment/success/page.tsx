@@ -165,7 +165,7 @@ function PaymentSuccessContent() {
           <p>
             Need help? Visit our{" "}
             <Link
-              href="/support"
+              href="/help/contact"
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
               Support Center

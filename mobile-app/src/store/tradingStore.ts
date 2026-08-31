@@ -5,6 +5,7 @@
  */
 
 import { create } from "zustand";
+import { toArray } from "./toArray";
 import tradingApi, {
   Order,
   Position,
@@ -163,8 +164,8 @@ export const useTradingStore = create<TradingState & TradingActions>(
         const response = await tradingApi.getOrders();
         if (response.data) {
           set({
-            orders: response.data.orders,
-            openOrders: response.data.openOrders,
+            orders: toArray(response.data.orders),
+            openOrders: toArray(response.data.openOrders),
             lastUpdated: new Date().toISOString(),
           });
         }
@@ -243,8 +244,8 @@ export const useTradingStore = create<TradingState & TradingActions>(
         const response = await tradingApi.getPositions();
         if (response.data) {
           set({
-            positions: response.data.positions,
-            openPositions: response.data.openPositions,
+            positions: toArray(response.data.positions),
+            openPositions: toArray(response.data.openPositions),
             positionSummary: response.data.summary,
             lastUpdated: new Date().toISOString(),
           });
@@ -306,7 +307,7 @@ export const useTradingStore = create<TradingState & TradingActions>(
         ]);
 
         if (signalsRes.data) {
-          set({ signals: signalsRes.data.signals });
+          set({ signals: toArray(signalsRes.data?.signals) });
         }
         if (summaryRes.data) {
           set({
@@ -483,7 +484,7 @@ export const useTradingStore = create<TradingState & TradingActions>(
         const response = await tradingApi.getTradeHistory(params);
         if (response.data) {
           set({
-            tradeHistory: response.data.trades,
+            tradeHistory: toArray(response.data.trades),
             tradeStats: response.data.stats,
             lastUpdated: new Date().toISOString(),
           });

@@ -236,3 +236,87 @@ FND-026 dual payout-rail decision before wiring; closed-beta cohort; `main` bran
 `user_id`/`ip`; `settings/billing/page.tsx` hardcodes card `4242` (nav-linked UI); dead code in
 `auth-middleware.ts` (old JWT-role pattern, zero importers — delete); `dev-seed.ts` used by 6 mobile
 stores; FND-026 dual-rail and schema drift (also tracked as launch conditions above).
+
+---
+
+## Addendum 2026-08-18 — FND-072: the admin panel's role check needs a grant `profiles` does not have
+
+Found while running the full 204-route web dogfood sweep. Every `/admin/*` route redirected to
+`/dashboard?error=unauthorized` for a user whose `profiles.role` is `admin`.
+
+**Mechanism.** `src/middleware.ts:297` reads `profiles.role` with the `@supabase/ssr` cookie client —
+i.e. as the `authenticated` role. `public.profiles` grants `authenticated` only
+`REFERENCES, TRIGGER, TRUNCATE`; there is no `SELECT`. Postgres checks table privileges **before** RLS,
+so the three policies on `profiles` (`Users can view own profile`, insert, update) are never evaluated
+— they are dead letters. The query returns no row, `role` falls back to `"user"` (`middleware.ts:303`),
+and the admin is redirected. The `catch` at `:311` redirects too, so nothing is logged either way.
+
+**Evidence (local, 2026-08-18).** With a real user JWT:
+
+```
+GET /rest/v1/profiles?id=eq.<uid>&select=id,role
+{"code":"42501","message":"permission denied for table profiles",
+ "hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.profiles TO authenticated;"}
+```
+
+After a temporary `GRANT SELECT ON public.profiles TO authenticated` the same JWT returns
+`[{"id":"<uid>","role":"admin"}]` — own row only, so the existing RLS policy does its job — and all
+12 `/admin/*` routes render real content (525–1344 chars) instead of redirecting. The grant was
+reverted immediately; `information_schema.role_table_grants` was diffed before and after and is
+byte-identical.
+
+**Severity depends on an unverified fact.** `20260731000012_savings_goals_cluster.sql:27-31` records
+that *the local instance* auto-grants nothing to `anon`/`authenticated` on any table, and that prior
+sessions responded by routing call sites through `supabaseAdmin`. Whether the hosted project has the
+same gap has NOT been checked — doing so requires querying production, which was out of scope here.
+
+- If production also lacks the grant: **every admin is locked out of all 12 admin screens**, silently.
+- If production has it: the defect is latent — an undeclared coupling between the middleware and a
+  grant that this project's own hardening pattern (`20260731000009_financial_accounts_revoke_authenticated.sql`)
+  removes from other tables. Hardening `profiles` the same way would kill the admin panel with no
+  error surfaced.
+
+**Fix is a permission decision (owner-owned), not a code fix.**
+
+| Option | What it does | Trade-off |
+|---|---|---|
+| (a) `GRANT SELECT ON public.profiles TO authenticated` — **recommended** | Lets the existing own-row RLS policy work as written | The policy was authored expecting this grant; a user reads only their own row. Contradicts nothing that was deliberately decided — the `financial_accounts` revoke was an explicit decision about financial data, and no equivalent decision was recorded for `profiles`. |
+| (b) Move the middleware role lookup to a service-role client | Removes the dependency on `authenticated` privileges entirely; matches the `supabaseAdmin` pattern used elsewhere | Puts `SUPABASE_SERVICE_ROLE_KEY` in the Edge middleware bundle — a wider blast radius than one table grant. |
+
+Either way the silent `catch` at `middleware.ts:311` should log: an authorization failure caused by a
+missing privilege currently looks identical to a legitimate non-admin.
+
+### FND-072 — RESOLVED 2026-08-19 in `2265f4e`, with no permission change
+
+The options table above framed this as an owner-owned database decision. That
+framing missed the actual defect, and the fix did not need either option.
+
+`src/lib/auth/api-guard.ts:143`, which guards all 284 API routes, had always
+resolved the same question through `resolveRoleFromDb` — the module whose own
+header calls it "the one trusted source for a user's authorization role" — and
+worked fine, because that module uses a service-role client and never touches
+`authenticated` privileges. The middleware kept a **second**, cookie-client
+implementation beside it. One app, one question, two code paths, and only one
+of them reachable once the grant was missing. That divergence is the defect;
+the grant merely exposed it.
+
+So the middleware now calls `resolveRoleFromDb`. Fail-closed is preserved and
+now has a test: a lookup that throws redirects, never admits.
+
+**Proven end to end with the grants untouched.** `information_schema.role_table_grants`
+was checked before and after — `authenticated` still holds only
+`REFERENCES, TRIGGER, TRUNCATE` on `profiles`, exactly as before. All 12
+`/admin/*` routes now land on themselves with real content (525–1343 chars)
+instead of redirecting to `/dashboard?error=unauthorized`. The full web dogfood
+sweep went from **192 of 204 arrived to 204 of 204, 0 FAIL**.
+
+Tests: 13 in `src/__tests__/middleware.test.ts`, 4 of them new and red before
+the change; mutation-checked (making the `catch` fail open fails the
+fail-closed test). Full suite 18,133 pass / 0 fail, `audit:auth` 359/359.
+
+**Still open, and now genuinely separate:** whether `authenticated` should be
+able to `SELECT` its own `profiles` row. Nothing in the request path depends on
+that answer any more — both the page guard and the API guard resolve roles
+through the service-role client — but the three RLS policies on `profiles`
+remain unreachable dead letters until it is decided, and any future code that
+reads `profiles` with a cookie client will hit the same wall.

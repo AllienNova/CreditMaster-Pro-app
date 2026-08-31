@@ -28,7 +28,29 @@ import {
   SignalPerformanceSchema,
 } from "./types/trading-signals.types";
 import { Timeframe } from "./types/investment.types";
-import { createClient } from "@/lib/supabase/server";
+/**
+ * Service-role client, NOT the request-scoped `createClient()`.
+ *
+ * `trading_signals` grants `authenticated` no table privilege (deliberate — see
+ * supabase/migrations/20260731000009_financial_accounts_revoke_authenticated.sql:
+ * a missing grant fails LOUDLY with 42501 rather than silently returning zero
+ * rows), so every query here raised "permission denied for table
+ * trading_signals" and GET /api/investments/signals returned 500.
+ *
+ * This also removes a second, independent bug: three of the five call sites
+ * wrote `const supabase = createClient()` with NO `await`, against an `async`
+ * function (supabase/server.ts:26). They held a Promise, so `.from()` was
+ * undefined — hidden because each was cast `as any`. getServiceRoleClient is
+ * synchronous, so the shape is now correct by construction.
+ *
+ * The service role bypasses RLS. getSignalHistory scopes by its required
+ * `userId` argument. evaluateSignalStrength and trackSignalOutcome look up by
+ * signal id ALONE and rely on their caller's ownership gate:
+ * app/api/investments/signals/[id]/route.ts fetches getSignalHistory(user.id)
+ * and confirms the id is in that set before calling either. Do not call them
+ * from a path that has not made that check.
+ */
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { redisCache, shortRedisCache } from "@/lib/cache/redis-cache-service";
 
 // ============================================================================
@@ -1159,8 +1181,9 @@ Format as a JSON array of strings.`;
    */
   private async saveSignal(signal: TradingSignal): Promise<void> {
     try {
-      const supabase = createClient();
+      const supabase = getServiceRoleClient();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       const { error } = await (supabase as any).from("trading_signals").insert({
         id: signal.id,
         user_id: signal.userId,
@@ -1203,9 +1226,10 @@ Format as a JSON array of strings.`;
     strengthChange: "stronger" | "weaker" | "unchanged";
     recommendation: string;
   }> {
-    const supabase = createClient();
+    const supabase = getServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: signal, error } = await (supabase as any)
+      // idor-audit: pk-owner-checked — signalId is owner-resolved by the caller: signals/[id]/route.ts fetches getSignalHistory(user.id) and confirms the id is in that set before calling in
       .from("trading_signals")
       .select("*")
       .eq("id", signalId)
@@ -1258,9 +1282,10 @@ Format as a JSON array of strings.`;
     },
   ): Promise<SignalOutcome> {
     // Get the signal
-    const supabase = createClient();
+    const supabase = getServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: signal, error: signalError } = await (supabase as any)
+      // idor-audit: pk-owner-checked — signalId is owner-resolved by the caller: signals/[id]/route.ts fetches getSignalHistory(user.id) and confirms the id is in that set before calling in
       .from("trading_signals")
       .select("*")
       .eq("id", signalId)
@@ -1348,6 +1373,7 @@ Format as a JSON array of strings.`;
     // outcome was ever persisted — trackSignalOutcome returned its result
     // object to the caller while the row stayed untouched.
     const { error: outcomeError } = await (supabase as any)
+      // idor-audit: pk-owner-checked — signalId is owner-resolved by the caller: signals/[id]/route.ts fetches getSignalHistory(user.id) and confirms the id is in that set before calling in
       .from("trading_signals")
       .update({
         is_active: false,
@@ -1383,12 +1409,15 @@ Format as a JSON array of strings.`;
       return cached;
     }
 
-    const supabase = await createClient();
+    const supabase = getServiceRoleClient();
     let query = supabase
       .from("trading_signals")
       .select("*")
       .eq("user_id", userId)
-      .order("generated_at", { ascending: false });
+      // created_at, not generated_at. The latter is not a column on
+      // trading_signals, so this ORDER BY made the whole query fail with 42703
+      // and GET /api/investments/signals answered 500 for every caller.
+      .order("created_at", { ascending: false });
 
     // Apply filters
     if (filters?.symbols && filters.symbols.length > 0) {
@@ -1398,7 +1427,37 @@ Format as a JSON array of strings.`;
       query = query.in("signal_type", filters.signalTypes);
     }
     if (filters?.statuses && filters.statuses.length > 0) {
-      query = query.in("status", filters.statuses);
+      /*
+       * There is no `status` column on trading_signals, and this filter used
+       * one — so GET /api/investments/signals returned 500 "Failed to fetch
+       * signals" for every caller, with Postgres saying
+       * `column trading_signals.status does not exist`. The write side was
+       * already corrected (see trackSignalOutcome below, which sets is_active);
+       * this read was left behind.
+       *
+       * The canonical columns express the same four states:
+       *   ACTIVE    -> is_active = true
+       *   EXECUTED  -> executed_at is set
+       *   EXPIRED   -> expires_at has passed
+       *   CANCELLED -> is_active = false with no outcome recorded
+       *
+       * Only ACTIVE and EXECUTED are expressible as a single column predicate
+       * that PostgREST can AND with the other filters. EXPIRED and CANCELLED
+       * need a disjunction over two columns, which this builder cannot express
+       * without an .or() that would also loosen the user_id scope — so they are
+       * applied in memory by the caller instead of being silently dropped here.
+       */
+      const wanted = new Set(filters.statuses);
+      if (wanted.size === 1 && wanted.has(SignalStatus.ACTIVE)) {
+        query = query.eq("is_active", true);
+      } else if (wanted.size === 1 && wanted.has(SignalStatus.EXECUTED)) {
+        query = query.not("executed_at", "is", null);
+      } else if (!wanted.has(SignalStatus.ACTIVE)) {
+        // Every remaining combination excludes ACTIVE, so closed signals only.
+        query = query.eq("is_active", false);
+      }
+      // A mixed set that includes ACTIVE matches everything this column can
+      // distinguish; narrowing further would drop rows the caller asked for.
     }
     if (filters?.assetTypes && filters.assetTypes.length > 0) {
       query = query.in("asset_type", filters.assetTypes);
@@ -1410,10 +1469,10 @@ Format as a JSON array of strings.`;
       query = query.gte("strength", filters.minStrength);
     }
     if (filters?.startDate) {
-      query = query.gte("generated_at", filters.startDate.toISOString());
+      query = query.gte("created_at", filters.startDate.toISOString());
     }
     if (filters?.endDate) {
-      query = query.lte("generated_at", filters.endDate.toISOString());
+      query = query.lte("created_at", filters.endDate.toISOString());
     }
 
     // Pagination
@@ -1463,12 +1522,12 @@ Format as a JSON array of strings.`;
     const startDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
 
     // Get all signals in period
-    const supabase = await createClient();
+    const supabase = getServiceRoleClient();
     const { data: signals, error } = await supabase
       .from("trading_signals")
       .select("*")
       .eq("user_id", userId)
-      .gte("generated_at", startDate.toISOString());
+      .gte("created_at", startDate.toISOString());
 
     if (error) throw error;
 
@@ -1652,7 +1711,7 @@ Format as a JSON array of strings.`;
       aiInsights: dbSignal.ai_insights || [],
       timeframe: dbSignal.timeframe,
       expiresAt: new Date(dbSignal.expires_at),
-      generatedAt: new Date(dbSignal.generated_at),
+      generatedAt: new Date(dbSignal.created_at),
       executedAt: dbSignal.executed_at
         ? new Date(dbSignal.executed_at)
         : undefined,

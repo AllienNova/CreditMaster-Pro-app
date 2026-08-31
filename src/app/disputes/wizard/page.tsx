@@ -1,7 +1,7 @@
 "use client";
 
 import { Icon } from "@/components/ui/Icon";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
 type Step =
@@ -23,33 +23,61 @@ export default function DisputeWizardPage() {
   const [step, setStep] = useState<Step>("select-bureau");
   const [bureau, setBureau] = useState<string>("");
   const [disputeType, setDisputeType] = useState<string>("");
-  const [items, setItems] = useState<DisputeItem[]>([
-    {
-      id: "1",
-      type: "Late Payment",
-      description: "Capital One - Late payment March 2023",
-      selected: false,
-    },
-    {
-      id: "2",
-      type: "Collection",
-      description: "ABC Collections - Medical debt $450",
-      selected: false,
-    },
-    {
-      id: "3",
-      type: "Hard Inquiry",
-      description: "XYZ Lender - Unauthorized inquiry Oct 2024",
-      selected: false,
-    },
-    {
-      id: "4",
-      type: "Balance Error",
-      description: "Chase - Incorrect balance reported",
-      selected: false,
-    },
-  ]);
+  // The reader's OWN disputable items, from
+  // GET /api/credit-repair/disputable-items (withPermission, user id from the
+  // session). This was a useState initialiser holding four invented entries —
+  // "Capital One - Late payment March 2023", "ABC Collections - Medical debt
+  // $450", "XYZ Lender - Unauthorized inquiry Oct 2024" — which a reader could
+  // tick and dispute. Filing a dispute over an entry that is not on your report
+  // is a real action with real consequences.
+  const [items, setItems] = useState<DisputeItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState(true);
+  const [itemsError, setItemsError] = useState<string | null>(null);
   const [customMessage, setCustomMessage] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/credit-repair/disputable-items");
+        const json = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (!res.ok || !Array.isArray(json?.items)) {
+          setItems([]);
+          setItemsError(
+            "We could not load the items on your report. Nothing is listed here for you to dispute until we can — try again in a moment.",
+          );
+        } else {
+          setItems(
+            (json.items as Record<string, unknown>[]).map((item) => ({
+              id: String(item.id ?? ""),
+              type: String(item.type ?? "account"),
+              description: [
+                String(item.accountName ?? "Account"),
+                item.status ? String(item.status) : null,
+                typeof item.balance === "number"
+                  ? `$${item.balance.toLocaleString()}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" — "),
+              selected: false,
+            })),
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setItems([]);
+          setItemsError("We could not reach the credit-report service.");
+        }
+      } finally {
+        if (!cancelled) setLoadingItems(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const bureaus = [
     { id: "experian", name: "Experian", color: "blue", icon: "document-chart" },
@@ -236,6 +264,38 @@ export default function DisputeWizardPage() {
             <p className="text-gray-600 dark:text-slate-300 mb-6">
               Choose which items from your report to include
             </p>
+
+            {itemsError && (
+              <div className="mb-6 rounded-lg border border-amber-200 dark:border-amber-900/50 p-4">
+                <p className="font-medium text-gray-900 dark:text-white mb-1">
+                  Your report items could not be loaded
+                </p>
+                <p className="text-sm text-gray-600 dark:text-slate-300">
+                  {itemsError}
+                </p>
+              </div>
+            )}
+
+            {loadingItems && (
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-6">
+                Loading the items on your report...
+              </p>
+            )}
+
+            {/* An empty list must not read as "nothing to dispute" when the
+                load failed — the two are different facts. */}
+            {!loadingItems && !itemsError && items.length === 0 && (
+              <div className="mb-6 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
+                <p className="font-medium text-gray-900 dark:text-white mb-1">
+                  Nothing on your report is disputable right now
+                </p>
+                <p className="text-sm text-gray-600 dark:text-slate-300">
+                  We found no negative accounts or undisputed inquiries on your
+                  report. Nothing is listed here for you to dispute.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-3">
               {items.map((item) => (
                 <button

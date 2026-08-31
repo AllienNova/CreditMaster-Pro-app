@@ -17,9 +17,25 @@ export const GET = withAuth(
       supabase
         .from("profiles")
         .select(
+          /*
+           * Three corrections, all found by calling this route as a real
+           * signed-in user (it returned 500 "Failed to fetch profile"):
+           *
+           * 1. `plan` does not exist on subscriptions — Postgres answered
+           *    42703 "column subscriptions_1.plan does not exist", so this
+           *    route failed for EVERY user, not just some. The real columns
+           *    are stripe_price_id / status / current_period_end.
+           * 2. `!inner` dropped the profile entirely for anyone without a
+           *    subscription row, i.e. every free-tier account. A left join
+           *    returns the profile with an empty subscriptions array.
+           * 3. onboarding_completed was not selected, so the only
+           *    server-side way to read it did not expose it and the mobile
+           *    client was querying the table directly instead (task #65).
+           */
           `
           id, full_name, avatar_url, phone, address, created_at, role,
-          subscriptions!inner(plan, status, current_period_end)
+          onboarding_completed,
+          subscriptions(stripe_price_id, status, current_period_end)
         `,
         )
         .eq("id", user.id)
@@ -89,6 +105,10 @@ export const GET = withAuth(
         address: profile?.address,
         created_at: profile?.created_at,
         role: profile?.role || "user",
+        // Server-authoritative onboarding state. The mobile client used to
+        // read this column straight from the table, which the `authenticated`
+        // role has no grant on, so it never actually read it (task #65).
+        onboarding_completed: Boolean(profile?.onboarding_completed),
         subscription: profile?.subscriptions?.[0] || null,
       },
       stats: {

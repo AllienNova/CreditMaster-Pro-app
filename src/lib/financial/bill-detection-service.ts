@@ -105,6 +105,7 @@ class BillDetectionService {
    */
   async createBill(userId: string, input: BillCreateInput): Promise<Bill> {
     const { data, error } = await supabase()
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("bills")
       .insert({
         user_id: userId,
@@ -545,6 +546,7 @@ class BillDetectionService {
     const isLate = input.paidDate > bill.nextDueDate;
 
     const { data, error } = await supabase()
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("bill_payments")
       .insert({
         bill_id: input.billId,

@@ -156,7 +156,13 @@ export interface DisputeTemplate {
   category: string;
   scenario: string;
   successRate: number;
-  tone: "formal" | "humble" | "assertive" | "legal";
+  /**
+   * OPTIONAL because the server does not send it. DISPUTE_TEMPLATES carries
+   * { description, template, variables } and nothing about the letter's voice
+   * (src/lib/disputes/dispute-service.ts:23-31). Defaulting it to "formal"
+   * would be a claim nobody made.
+   */
+  tone?: "formal" | "humble" | "assertive" | "legal";
   letterText: string;
   requiredDocuments: string[];
   placeholders: string[];
@@ -196,7 +202,13 @@ export type AccountType =
   | "savings"
   | "credit"
   | "investment"
-  | "loan";
+  | "loan"
+  // Plaid's account.type is depository | credit | loan | investment | other,
+  // and depository splits by subtype. "other" is what an unrecognised type
+  // maps to — without it, toMobileAccountType would have to round every
+  // unknown account into one of the five above, and a loan filed as checking
+  // would be counted as an asset.
+  | "other";
 
 export interface BankAccount {
   id: string;
@@ -271,6 +283,15 @@ export interface UserProfile {
   subscriptionStatus: "active" | "canceled" | "past_due" | "trialing";
   createdAt: string;
   updatedAt: string;
+  /**
+   * Server-assigned role. GET /api/profile returns it (profile/route.ts:98)
+   * and the mobile adapter previously dropped it, so the app had no notion of
+   * an admin at all — which is why the twelve admin screens had no entry
+   * point that could be shown to the right people and hidden from everyone
+   * else. Display-gating only; every admin API enforces its own permission
+   * server-side.
+   */
+  role?: "user" | "premium" | "admin" | "super_admin";
   onboardingCompleted: boolean;
   goals?: string[];
 }

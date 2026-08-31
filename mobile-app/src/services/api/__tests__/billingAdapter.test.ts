@@ -27,6 +27,7 @@ jest.mock("../../offline-sync", () => ({ offlineSyncService: {} }));
 import {
   mapWebBilling,
   mapWebInvoices,
+  mapWebPaymentMethods,
   mapWebSubscription,
   subscriptionApi,
   type WebBillingResponse,
@@ -538,5 +539,81 @@ describe("mapWebInvoices", () => {
       invoices: undefined,
     } as unknown as WebBillingResponse;
     expect(mapWebInvoices(malformed)).toEqual([]);
+  });
+});
+
+describe("mapWebPaymentMethods — the settings screen's card LIST", () => {
+  /*
+   * app/settings/billing.tsx rendered two module constants — a Visa ending 4242
+   * (Stripe's test card) marked default, and a Mastercard 5555 — and made no
+   * network call at all, not even a useEffect. Every user was shown a card on
+   * file they did not have. SF-12; FND-016/017 in mobile, which audit:mocks
+   * never covered because it scans web src/ only.
+   *
+   * mapWebBilling reduces the same payload to ONE default card for the overview
+   * screen. This returns them all, and an empty list stays empty.
+   */
+  const CARD = {
+    id: "pm_1",
+    brand: "Visa",
+    last4: "1881",
+    expMonth: 3,
+    expYear: 2027,
+    isDefault: true,
+  };
+  const payload = (methods: unknown[]) =>
+    ({
+      plans: [],
+      subscription: { planId: "free", status: "active", cancelAtPeriodEnd: false },
+      paymentMethods: methods,
+      invoices: [],
+    }) as never;
+
+  it("maps a card, zero-padding the month and shortening the year", () => {
+    expect(mapWebPaymentMethods(payload([CARD]))[0]).toEqual({
+      id: "pm_1",
+      type: "card",
+      last4: "1881",
+      brand: "Visa",
+      expiry: "03/27",
+      isDefault: true,
+    });
+  });
+
+  it("returns EVERY card, not just the default", () => {
+    const result = mapWebPaymentMethods(
+      payload([CARD, { ...CARD, id: "pm_2", last4: "4444", isDefault: false }]),
+    );
+    expect(result.map((m) => m.last4)).toEqual(["1881", "4444"]);
+  });
+
+  it("keeps a two-digit month intact", () => {
+    expect(mapWebPaymentMethods(payload([{ ...CARD, expMonth: 12 }]))[0].expiry).toBe(
+      "12/27",
+    );
+  });
+
+  it("labels an unbranded card neutrally rather than guessing", () => {
+    expect(mapWebPaymentMethods(payload([{ ...CARD, brand: "" }]))[0].brand).toBe(
+      "Card",
+    );
+  });
+
+  it("drops an entry with no id or no last4 rather than rendering a blank card", () => {
+    const result = mapWebPaymentMethods(
+      payload([CARD, { ...CARD, id: "" }, { ...CARD, id: "pm_3", last4: "" }]),
+    );
+    expect(result).toHaveLength(1);
+  });
+
+  describe("empty stays empty", () => {
+    it.each([[[]], [null], [undefined]])("returns no cards for %j", (methods) => {
+      expect(mapWebPaymentMethods(payload(methods as never))).toEqual([]);
+    });
+
+    it("never invents a 4242", () => {
+      // The exact card that was hardcoded in the screen.
+      expect(JSON.stringify(mapWebPaymentMethods(payload([])))).not.toContain("4242");
+    });
   });
 });

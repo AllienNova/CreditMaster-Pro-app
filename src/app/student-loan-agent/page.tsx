@@ -45,15 +45,15 @@ const StudentLoanAgentPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 via-blue-600 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-lg"></span>
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-blue-700 rounded-lg flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-lg">F</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-blue-600 to-blue-600 bg-clip-text text-transparent">
-                  Agentic Credit Repair
+                <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-blue-700 bg-clip-text text-transparent">
+                  Fynvita
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-slate-400">
-                  AI-Agent Powered Platform
+                  Your Financial Vitality Platform
                 </p>
               </div>
             </div>

@@ -29,6 +29,7 @@ import {
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenError } from "../../src/components/ScreenError";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { creditRepairApi } from "../../src/services/api/creditRepair";
@@ -121,8 +122,14 @@ export default function ReportDetailScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    await fetchReport();
-    setLoading(false);
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      await fetchReport();
+    } finally {
+      setLoading(false);
+    }
   }, [fetchReport]);
 
   useEffect(() => {
@@ -148,19 +155,12 @@ export default function ReportDetailScreen() {
 
   if (error && !report) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="report-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.stateText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={load}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="Credit Report"
+        message={error}
+        onRetry={load}
+        testID="report-error"
+      />
     );
   }
 

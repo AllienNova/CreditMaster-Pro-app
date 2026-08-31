@@ -30,10 +30,12 @@ import {
 import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenError } from "../../src/components/ScreenError";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { billsApi } from "../../src/services/api/financial";
 import type { BillItem } from "../../src/services/api/financial";
+import { toArray } from "../../src/store/toArray";
 
 // Status derived from the real nextDueDate. There is intentionally no "paid":
 // payment history is not exposed over HTTP, so it has no honest source.
@@ -128,7 +130,7 @@ export default function BillsScreen() {
   const fetchBills = useCallback(async () => {
     const res = await billsApi.getBills();
     if (res.success && res.data) {
-      setBills(res.data.bills);
+      setBills(toArray<BillItem>(res?.data?.bills));
       setError(null);
     } else {
       setError(res.error?.message ?? "Unable to load bills.");
@@ -137,8 +139,14 @@ export default function BillsScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    await fetchBills();
-    setLoading(false);
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      await fetchBills();
+    } finally {
+      setLoading(false);
+    }
   }, [fetchBills]);
 
   useEffect(() => {
@@ -224,19 +232,12 @@ export default function BillsScreen() {
 
   if (error && bills.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="financial-bills-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.stateText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={load}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="Bills & Payments"
+        message={error}
+        onRetry={load}
+        testID="financial-bills-error"
+      />
     );
   }
 
@@ -263,7 +264,7 @@ export default function BillsScreen() {
           </TouchableOpacity>
           <Text style={styles.title}>Bills & Payments</Text>
           <TouchableOpacity
-            onPress={() => router.push("/financial/add-bill" as Href)}
+            onPress={() => router.push("/financial/bills" as Href)}
           >
             <Ionicons
               name="add-circle-outline"

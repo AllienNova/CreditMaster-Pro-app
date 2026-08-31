@@ -1,83 +1,179 @@
 "use client";
 
-const disputeStats = [
-  { label: "Total Disputes", value: "24", change: "+8 this month" },
-  { label: "Successful", value: "12", change: "50% success rate" },
-  { label: "Pending", value: "5", change: "Avg 18 days wait" },
-  { label: "In Progress", value: "4", change: "Response expected" },
-];
+/**
+ * Dispute Analytics.
+ *
+ * WHAT THIS PAGE USED TO ASSERT, WITH NO FETCH IN THE FILE.
+ *
+ *   "Total Disputes 24, +8 this month" · "Successful 12, 50% success rate"
+ *   "Pending 5, Avg 18 days wait" · "In Progress 4"
+ *   a per-type table: Late Payments 8 (5 successful), Collections 6, Inquiries
+ *   5, Account Errors 3, Identity Issues 2
+ *   a per-bureau table: Experian 10 disputes, 28 days average; Equifax 8, 32
+ *   days; TransUnion 6
+ *
+ * Four module-level arrays, every figure a claim about the reader's own dispute
+ * history.
+ *
+ * WHAT IT READS NOW.
+ *   GET /api/disputes/stats -> { success, data: { total, active, resolved,
+ *     successRate, avgResolutionDays } }
+ *   GET /api/disputes?limit= -> { success, data: { items: Dispute[], total } }
+ *
+ * Both are genuinely backed: dispute-service-db.ts queries the disputes table.
+ *
+ * THE BREAKDOWNS ARE DERIVED, NOT INVENTED. The real Dispute carries `bureau`,
+ * `itemType`, `status` and `outcome`, so grouping the user's own disputes by
+ * bureau and by item type is arithmetic over real rows — not a second source of
+ * truth. "Successful" means `outcome === "removed" || outcome === "updated"`,
+ * stated here because it is a judgement: a dispute the bureau "verified" closed
+ * without changing anything, so counting it as a success would flatter the
+ * number.
+ *
+ * /api/analytics WAS DELIBERATELY NOT USED, even though it exists and looks
+ * like the obvious fit. AnalyticsEngine.getDisputeAnalytics returns a hardcoded
+ * all-zeros object and ignores its userId and date arguments; the whole of
+ * analytics-engine.ts contains no supabase reference and no `.from(` call.
+ * Wiring this page to it would replace invented numbers with stub zeros
+ * presented as measurements, which is worse, because a zero reads as an honest
+ * empty account. Recorded as task #99.
+ */
 
-const disputesByType = [
-  { type: "Late Payments", total: 8, successful: 5, pending: 2, failed: 1 },
-  { type: "Collections", total: 6, successful: 3, pending: 1, failed: 2 },
-  { type: "Inquiries", total: 5, successful: 2, pending: 2, failed: 1 },
-  { type: "Account Errors", total: 3, successful: 2, pending: 0, failed: 1 },
-  { type: "Identity Issues", total: 2, successful: 0, pending: 0, failed: 2 },
-];
+import { useState, useEffect, useCallback } from "react";
 
-const disputesByBureau = [
-  { bureau: "Experian", total: 10, successful: 6, pending: 2, avgDays: 28 },
-  { bureau: "Equifax", total: 8, successful: 4, pending: 2, avgDays: 32 },
-  { bureau: "TransUnion", total: 6, successful: 2, pending: 1, avgDays: 25 },
-];
+type Bureau = "experian" | "equifax" | "transunion";
+type DisputeOutcome = "removed" | "updated" | "verified";
 
-const recentDisputes = [
-  {
-    id: "D-001",
-    type: "Late Payment",
-    bureau: "Experian",
-    status: "resolved",
-    date: "Nov 28",
-    result: "Removed",
-  },
-  {
-    id: "D-002",
-    type: "Collection",
-    bureau: "Equifax",
-    status: "pending",
-    date: "Nov 20",
-    result: "-",
-  },
-  {
-    id: "D-003",
-    type: "Inquiry",
-    bureau: "TransUnion",
-    status: "in_progress",
-    date: "Nov 15",
-    result: "-",
-  },
-  {
-    id: "D-004",
-    type: "Late Payment",
-    bureau: "Experian",
-    status: "resolved",
-    date: "Nov 10",
-    result: "Updated",
-  },
-  {
-    id: "D-005",
-    type: "Collection",
-    bureau: "Equifax",
-    status: "failed",
-    date: "Nov 5",
-    result: "Verified",
-  },
-];
+interface Dispute {
+  id: string;
+  bureau: Bureau;
+  itemType: string;
+  itemDescription: string;
+  status: "draft" | "sent" | "under_review" | "resolved" | "rejected";
+  outcome?: DisputeOutcome;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+interface DisputeStats {
+  total: number;
+  active: number;
+  resolved: number;
+  successRate: number;
+  avgResolutionDays: number;
+}
+
+const BUREAU_LABELS: Record<Bureau, string> = {
+  experian: "Experian",
+  equifax: "Equifax",
+  transunion: "TransUnion",
+};
+
+const DISPUTE_PAGE_SIZE = 100;
+
+/**
+ * A dispute counts as successful when the bureau removed or updated the item.
+ * "verified" means the bureau closed it without changing anything, so it is
+ * not a success — counting it as one is how a success rate gets flattered.
+ */
+function isSuccessful(dispute: Dispute): boolean {
+  return dispute.outcome === "removed" || dispute.outcome === "updated";
+}
+
+function isPending(dispute: Dispute): boolean {
+  return dispute.status === "sent" || dispute.status === "under_review";
+}
+
+interface Group {
+  key: string;
+  label: string;
+  total: number;
+  successful: number;
+  pending: number;
+}
+
+function groupBy(
+  disputes: Dispute[],
+  keyOf: (d: Dispute) => string,
+  labelOf: (key: string) => string,
+): Group[] {
+  const groups = new Map<string, Group>();
+  for (const dispute of disputes) {
+    const key = keyOf(dispute);
+    const group = groups.get(key) ?? {
+      key,
+      label: labelOf(key),
+      total: 0,
+      successful: 0,
+      pending: 0,
+    };
+    group.total += 1;
+    if (isSuccessful(dispute)) group.successful += 1;
+    if (isPending(dispute)) group.pending += 1;
+    groups.set(key, group);
+  }
+  return [...groups.values()].sort((a, b) => b.total - a.total);
+}
+
+function titleCase(value: string): string {
+  return value
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(" ");
+}
 
 export default function DisputeAnalyticsPage() {
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      resolved: "bg-emerald-100 text-emerald-700",
-      pending: "bg-yellow-100 text-yellow-700",
-      in_progress: "bg-blue-100 text-blue-700",
-      failed: "bg-red-100 text-red-700",
-    };
-    return (
-      <span className={`px-2 py-1 text-xs rounded-full ${styles[status]}`}>
-        {status.replace("_", " ")}
-      </span>
+  const [stats, setStats] = useState<DisputeStats | null>(null);
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    const body = async (r: PromiseSettledResult<Response>) =>
+      r.status === "fulfilled" && r.value.ok
+        ? await r.value.json().catch(() => null)
+        : null;
+
+    const [statsRes, listRes] = await Promise.allSettled([
+      fetch("/api/disputes/stats"),
+      fetch(`/api/disputes?limit=${DISPUTE_PAGE_SIZE}`),
+    ]);
+    const [statsJson, listJson] = await Promise.all([
+      body(statsRes),
+      body(listRes),
+    ]);
+
+    setStats((statsJson?.data as DisputeStats | undefined) ?? null);
+    setDisputes(
+      Array.isArray(listJson?.data?.items)
+        ? (listJson.data.items as Dispute[])
+        : [],
     );
-  };
+
+    if (!statsJson && !listJson) {
+      setError(
+        "We could not load your dispute analytics. Nothing here is estimated in its place — try again in a moment.",
+      );
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const byBureau = groupBy(
+    disputes,
+    (d) => d.bureau,
+    (key) => BUREAU_LABELS[key as Bureau] ?? titleCase(key),
+  );
+  const byType = groupBy(
+    disputes,
+    (d) => d.itemType,
+    (key) => titleCase(key),
+  );
 
   return (
     <div>
@@ -85,183 +181,109 @@ export default function DisputeAnalyticsPage() {
         Dispute Analytics
       </h1>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {disputeStats.map((stat) => (
+      {error && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 mb-6 border border-amber-200 dark:border-amber-900/50">
+          <p className="font-medium text-gray-900 dark:text-white mb-1">
+            Dispute analytics are unavailable
+          </p>
+          <p className="text-sm text-gray-600 dark:text-slate-300">{error}</p>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-pulse">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-28 bg-gray-200 dark:bg-slate-700 rounded-xl"
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[
+            { label: "Total Disputes", value: stats?.total },
+            { label: "Resolved", value: stats?.resolved },
+            { label: "Active", value: stats?.active },
+            {
+              label: "Success Rate",
+              value:
+                typeof stats?.successRate === "number"
+                  ? `${Math.round(stats.successRate)}%`
+                  : undefined,
+            },
+          ].map((tile) => (
+            <div
+              key={tile.label}
+              className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700"
+            >
+              <p className="text-sm text-gray-500 dark:text-slate-400">
+                {tile.label}
+              </p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                {tile.value ?? "—"}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {typeof stats?.avgResolutionDays === "number" &&
+        stats.avgResolutionDays > 0 && (
+          <p className="text-sm text-gray-600 dark:text-slate-300 mb-8">
+            Resolved disputes took {Math.round(stats.avgResolutionDays)} days on
+            average.
+          </p>
+        )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {[
+          { title: "By bureau", groups: byBureau },
+          { title: "By item type", groups: byType },
+        ].map((section) => (
           <div
-            key={stat.label}
+            key={section.title}
             className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700"
           >
-            <p className="text-sm text-gray-500 dark:text-slate-400">
-              {stat.label}
-            </p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
-              {stat.value}
-            </p>
-            <p className="text-sm mt-2 text-gray-400 dark:text-slate-500">
-              {stat.change}
-            </p>
+            <h2 className="font-semibold text-gray-900 dark:text-white mb-4">
+              {section.title}
+            </h2>
+            {section.groups.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-slate-400">
+                You have not filed any disputes yet.
+              </p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-500 dark:text-slate-400">
+                    <th className="pb-2 font-medium">Name</th>
+                    <th className="pb-2 font-medium text-right">Total</th>
+                    <th className="pb-2 font-medium text-right">Successful</th>
+                    <th className="pb-2 font-medium text-right">Pending</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                  {section.groups.map((group) => (
+                    <tr key={group.key}>
+                      <td className="py-2 text-gray-900 dark:text-white">
+                        {group.label}
+                      </td>
+                      <td className="py-2 text-right text-gray-900 dark:text-white">
+                        {group.total}
+                      </td>
+                      <td className="py-2 text-right text-gray-900 dark:text-white">
+                        {group.successful}
+                      </td>
+                      <td className="py-2 text-right text-gray-900 dark:text-white">
+                        {group.pending}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         ))}
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-8 mb-8">
-        {/* By Type */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
-          <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Disputes by Type
-            </h2>
-          </div>
-          <div className="p-6">
-            {disputesByType.map((item) => (
-              <div key={item.type} className="mb-4 last:mb-0">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {item.type}
-                  </span>
-                  <span className="text-sm text-gray-500 dark:text-slate-400">
-                    {item.total} total
-                  </span>
-                </div>
-                <div className="flex h-4 rounded-full overflow-hidden bg-gray-100 dark:bg-slate-800">
-                  <div
-                    className="bg-emerald-500"
-                    style={{
-                      width: `${(item.successful / item.total) * 100}%`,
-                    }}
-                  />
-                  <div
-                    className="bg-yellow-500"
-                    style={{ width: `${(item.pending / item.total) * 100}%` }}
-                  />
-                  <div
-                    className="bg-red-500"
-                    style={{ width: `${(item.failed / item.total) * 100}%` }}
-                  />
-                </div>
-                <div className="flex gap-4 mt-1 text-xs text-gray-500 dark:text-slate-400">
-                  <span>{item.successful}</span>
-                  <span>⏳ {item.pending}</span>
-                  <span>{item.failed}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* By Bureau */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
-          <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Disputes by Bureau
-            </h2>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-slate-700">
-            {disputesByBureau.map((bureau) => (
-              <div key={bureau.bureau} className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {bureau.bureau}
-                  </span>
-                  <span className="text-sm text-emerald-500">
-                    {Math.round((bureau.successful / bureau.total) * 100)}%
-                    success
-                  </span>
-                </div>
-                <div className="grid grid-cols-4 gap-2 text-center">
-                  <div className="bg-gray-50 dark:bg-slate-900 rounded p-2">
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">
-                      {bureau.total}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400">
-                      Total
-                    </p>
-                  </div>
-                  <div className="bg-emerald-50 rounded p-2">
-                    <p className="text-lg font-bold text-emerald-600">
-                      {bureau.successful}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400">
-                      Won
-                    </p>
-                  </div>
-                  <div className="bg-yellow-50 rounded p-2">
-                    <p className="text-lg font-bold text-yellow-600">
-                      {bureau.pending}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400">
-                      Pending
-                    </p>
-                  </div>
-                  <div className="bg-blue-50 rounded p-2">
-                    <p className="text-lg font-bold text-blue-600">
-                      {bureau.avgDays}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400">
-                      Avg Days
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Disputes */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Recent Disputes
-          </h2>
-        </div>
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-slate-900">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
-                ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
-                Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
-                Bureau
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
-                Result
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-            {recentDisputes.map((dispute) => (
-              <tr key={dispute.id}>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                  {dispute.id}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                  {dispute.type}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">
-                  {dispute.bureau}
-                </td>
-                <td className="px-6 py-4">{getStatusBadge(dispute.status)}</td>
-                <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">
-                  {dispute.date}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                  {dispute.result}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </div>
   );

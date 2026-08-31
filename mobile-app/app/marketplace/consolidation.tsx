@@ -241,7 +241,7 @@ export default function ConsolidationScreen() {
         {/* Calculator Link */}
         <TouchableOpacity
           style={styles.calculatorLink}
-          onPress={() => router.push("/financial/debt-payoff" as Href)}
+          onPress={() => router.push("/financial-intelligence/debt-payoff" as Href)}
         >
           <Ionicons name="calculator" size={20} color={theme.colors.primary} />
           <Text style={styles.calculatorText}>

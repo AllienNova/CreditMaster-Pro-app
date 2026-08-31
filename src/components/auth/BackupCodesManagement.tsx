@@ -1,8 +1,41 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { backupCodesService } from "@/lib/auth/backup-codes";
+import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+
+/**
+ * Calls go through /api/auth/backup-codes, not the old browser-side service.
+ *
+ * That service could not work and never had: `backup_codes` has RLS enabled
+ * with zero policies, and the redemption RPC is granted to `service_role`
+ * alone — so every read and write from the browser failed closed while this
+ * screen reported success. The codes are also generated server-side now, which
+ * is the point: client-generated entropy for a credential is not a credential.
+ *
+ * The guard reads the Authorization header only (jwt-validation.ts:68), so the
+ * bearer token is explicit rather than relying on the session cookie. Same
+ * pattern as settings/billing/page.tsx:94.
+ */
+async function authedFetch(
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) throw new Error("Your session has expired. Sign in again.");
+
+  return fetch(path, {
+    ...init,
+    headers: {
+      ...(init?.headers ?? {}),
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  });
+}
 
 export default function BackupCodesManagement() {
   const { user } = useAuth();
@@ -17,10 +50,15 @@ export default function BackupCodesManagement() {
     if (!user) return;
 
     try {
-      const count = await backupCodesService.getRemainingCodesCount(user.id);
-      setRemainingCount(count);
-    } catch (_error) {
-      // Error logged
+      // No user id in the path or body: the route derives it from the token.
+      // Passing one would be an IDOR invitation on a credential surface.
+      const res = await authedFetch("/api/auth/backup-codes");
+      if (!res.ok) return;
+      const { remaining } = await res.json();
+      setRemainingCount(typeof remaining === "number" ? remaining : 0);
+    } catch {
+      // A failed count is not worth an error banner — the generate button
+      // still works, and the count reappears on the next load.
     }
   }, [user]);
 
@@ -46,16 +84,32 @@ export default function BackupCodesManagement() {
     setSuccess(null);
 
     try {
-      const response = await backupCodesService.generateBackupCodes(user.id);
+      const res = await authedFetch("/api/auth/backup-codes", {
+        method: "POST",
+      });
 
-      if (!response.success || !response.codes) {
-        throw new Error(response.error || "Failed to generate backup codes");
+      if (res.status === 403) {
+        // The AAL2 gate: this user holds a verified factor but has not
+        // completed it this session. Minting fresh codes at aal1 would turn
+        // password-only access into a permanent MFA bypass, so it is refused.
+        throw new Error(
+          "Complete two-factor authentication before generating new backup codes.",
+        );
       }
 
-      setBackupCodes(response.codes);
+      if (!res.ok) {
+        throw new Error("Failed to generate backup codes");
+      }
+
+      const { codes } = await res.json();
+      if (!Array.isArray(codes) || codes.length === 0) {
+        throw new Error("Failed to generate backup codes");
+      }
+
+      setBackupCodes(codes);
       setShowCodes(true);
       setSuccess(
-        "Backup codes generated successfully! Save them in a secure place.",
+        "Backup codes generated. Save them now — they cannot be shown again.",
       );
       await loadRemainingCount();
     } catch (err) {

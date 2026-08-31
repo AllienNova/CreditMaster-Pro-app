@@ -5,6 +5,7 @@
  */
 
 import { create } from "zustand";
+import { toArray } from "./toArray";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { budgetApi } from "../services/api";
@@ -74,7 +75,7 @@ export const useBudgetStore = create<BudgetState>()(
           const response = await budgetApi.getAll();
           if (response.success && response.data) {
             set({
-              budgets: response.data.budgets,
+              budgets: toArray(response.data.budgets),
               isLoadingBudgets: false,
             });
           } else {

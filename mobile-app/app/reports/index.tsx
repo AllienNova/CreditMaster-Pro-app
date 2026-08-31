@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,8 @@ import { useTradingStore } from "../../src/store/tradingStore";
 import { useTaxStore } from "../../src/store/taxStore";
 import { useDebtStore } from "../../src/store/debtStore";
 import { useBudgetStore } from "../../src/store/budgetStore";
+import { creditRepairApi } from "../../src/services/api/creditRepair";
+import type { CreditReportDetail } from "../../src/services/api/creditRepair";
 
 type ReportType = "credit" | "financial" | "trading" | "tax";
 
@@ -564,6 +566,48 @@ export default function ReportsScreen() {
     }
   }, [buildCreditReportHtml, buildFinancialReportHtml, buildTradingReportHtml, buildTaxReportHtml]);
 
+  /**
+   * The user's stored credit reports.
+   *
+   * /reports/[id] renders a real report fetched from
+   * GET /api/credit-repair/reports/[id], and nothing in the app listed them —
+   * this screen generates PDFs and links comparison + upload, so a stored report
+   * could only be opened by typing a deep link containing an id the user has no
+   * way to learn. `null` means "not loaded yet"; an empty array is a real empty
+   * state, and a failed load says so rather than showing an empty list that
+   * reads as "you have no reports".
+   */
+  const [reports, setReports] = useState<CreditReportDetail[] | null>(null);
+  const [reportsError, setReportsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    creditRepairApi
+      .getReports()
+      .then((res) => {
+        if (!active) return;
+        if (res.success && res.data) {
+          setReports(res.data.reports);
+          setReportsError(null);
+        } else {
+          setReports([]);
+          setReportsError(
+            res.error?.message ?? "Could not load your credit reports.",
+          );
+        }
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setReports([]);
+        setReportsError(
+          error instanceof Error ? error.message : "Could not load your credit reports.",
+        );
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -608,6 +652,70 @@ export default function ReportsScreen() {
             </View>
           );
         })}
+
+        <View style={styles.divider} />
+
+        <Text style={styles.sectionLabel}>Your Credit Reports</Text>
+        <Text style={styles.sectionDescription}>
+          Reports on file, newest first. Tap one to see its detail.
+        </Text>
+
+        {reports === null && (
+          <ActivityIndicator
+            color={lightTheme.colors.primary}
+            style={{ marginBottom: 12 }}
+          />
+        )}
+
+        {reportsError !== null && (
+          <Text style={styles.reportsNotice}>{reportsError}</Text>
+        )}
+
+        {reports !== null && reportsError === null && reports.length === 0 && (
+          <Text style={styles.reportsNotice}>
+            No credit reports on file yet. Upload one below to get started.
+          </Text>
+        )}
+
+        {reports?.map((report) => (
+          <TouchableOpacity
+            key={report.id}
+            style={styles.actionRow}
+            onPress={() => router.push(`/reports/${report.id}`)}
+            accessibilityRole="link"
+            accessibilityLabel={`Open ${report.bureau ?? "credit"} report`}
+          >
+            <View style={styles.actionLeft}>
+              <Ionicons
+                name="document-text-outline"
+                size={22}
+                color={lightTheme.colors.primary}
+              />
+              <View>
+                <Text style={styles.actionText}>
+                  {report.bureau
+                    ? report.bureau.charAt(0).toUpperCase() + report.bureau.slice(1)
+                    : "Credit report"}
+                </Text>
+                {/* Only real values render. A report with no score shows no
+                    score line rather than a fabricated 0. */}
+                <Text style={styles.reportMeta}>
+                  {[
+                    report.reportDate ? report.reportDate.split("T")[0] : null,
+                    report.score !== undefined ? `Score ${report.score}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join("  ·  ")}
+                </Text>
+              </View>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={lightTheme.colors.textSecondary}
+            />
+          </TouchableOpacity>
+        ))}
 
         <View style={styles.divider} />
 
@@ -751,5 +859,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     color: lightTheme.colors.text,
+  },
+  reportMeta: {
+    fontSize: 13,
+    color: lightTheme.colors.textSecondary,
+    marginTop: 2,
+  },
+  reportsNotice: {
+    fontSize: 14,
+    color: lightTheme.colors.textSecondary,
+    marginBottom: 12,
+    lineHeight: 20,
   },
 });

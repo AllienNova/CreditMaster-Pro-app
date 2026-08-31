@@ -394,6 +394,7 @@ export class HealthScoreCalculator {
    * Save health score to database
    */
   async saveScore(userId: string, score: FinancialHealthScore): Promise<void> {
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await supabase.from("financial_health_scores").insert({
       user_id: userId,
       overall_score: score.overallScore,

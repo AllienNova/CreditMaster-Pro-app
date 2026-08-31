@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { withRole } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
+import { lookupPlanByPriceId } from "@/lib/payment/plan-lookup";
 
 export const GET = withRole(
   "admin",
@@ -28,6 +29,7 @@ export const GET = withRole(
     try {
     // Fetch subscriptions with user data
     const { data: subscriptions, error } = await supabase
+      // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
       .from("subscriptions")
       .select(
         `
@@ -51,12 +53,18 @@ export const GET = withRole(
     // Get auth users to merge email data
     const { data: authUsers } = await supabase.auth.admin.listUsers();
 
-    // Enrich with email data
+    // Enrich with email and the plan the price ID names
     const enrichedSubscriptions = subscriptions?.map((sub) => {
       const authUser = authUsers?.users?.find((u) => u.id === sub.user_id);
+      const plan = lookupPlanByPriceId(sub.stripe_price_id);
       return {
         ...sub,
         user_email: authUser?.email || "Unknown",
+        // null, not "free": an unrecognised price ID is a provisioning gap to
+        // show, never a silent downgrade (the bug FND-018 recorded).
+        tier: plan?.tier ?? null,
+        plan_name: plan?.name ?? null,
+        monthly_list_price: plan?.monthlyListPrice ?? null,
       };
     });
 
@@ -104,6 +112,7 @@ export const DELETE = withRole(
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { error } = await supabase
+      // idor-audit: cross-user — platform-wide admin report; spans users by definition and the route is gated by withRole("admin")
       .from("subscriptions")
       .update({ status: "canceled", cancel_at_period_end: true })
       .eq("stripe_subscription_id", subscriptionId);

@@ -45,6 +45,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     // Store challenge temporarily for verification (expires in 5 minutes)
     const challengeExpiry = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await supabase.from("webauthn_challenges").upsert(
       {
         user_id: user.id,

@@ -641,6 +641,7 @@ export class ComplianceScorer {
         auth: { autoRefreshToken: false, persistSession: false },
       });
 
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       await client.from("compliance_scores").insert({
         user_id: userId,
         signal_id: signalId,

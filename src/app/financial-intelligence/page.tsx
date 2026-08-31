@@ -30,14 +30,45 @@ import {
   Activity,
   Shield,
 } from "lucide-react";
+import type { FinancialSnapshot as ApiFinancialSnapshot } from "@/lib/financial/types/aggregated-context.types";
+
+/**
+ * Score → letter grade, matching `HealthScoreCalculatorV2.getGrade`
+ * (`src/lib/financial/health-score-calculator-v2.ts:1271`) band for band.
+ *
+ * Copied rather than imported ON PURPOSE: that module imports
+ * `getServiceRoleClient`, so importing it into this client component would
+ * pull service-role database code into the browser bundle. The bands are five
+ * lines and change rarely; the service-role key must never ship to a client.
+ *
+ * Note the codebase has no "+" grades. The old mock displayed "B+", a value
+ * this system cannot produce — a tell that nothing computed it.
+ */
+function gradeFromScore(score: number): "A" | "B" | "C" | "D" | "F" {
+  if (score >= 90) return "A";
+  if (score >= 80) return "B";
+  if (score >= 70) return "C";
+  if (score >= 60) return "D";
+  return "F";
+}
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
+/*
+ * The VIEW model this page renders. Deliberately NOT the same shape as the
+ * API's `FinancialSnapshot` (imported above as ApiFinancialSnapshot), which
+ * carries 20-odd fields including totalAssets, budgetUtilization and
+ * portfolioValue, and carries no grade or trend at all. Two different types
+ * sharing one name in two files is how a screen ends up reading a field that
+ * was never on the wire — which is exactly what happened here. The alias keeps
+ * the distinction visible at every use site.
+ */
 interface FinancialSnapshot {
   healthScore: number;
-  healthGrade: string;
+  /** Derived from healthScore — see gradeFromScore. Never sourced from the API. */
+  healthGrade: "A" | "B" | "C" | "D" | "F";
   healthTrend: "up" | "down" | "stable";
   netWorth: number;
   totalDebt: number;
@@ -135,93 +166,6 @@ const QUICK_ACTIONS: QuickAction[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Mock data (replaced by real API calls in useEffect)
-// ---------------------------------------------------------------------------
-
-const MOCK_SNAPSHOT: FinancialSnapshot = {
-  healthScore: 78,
-  healthGrade: "B+",
-  healthTrend: "up",
-  netWorth: 124_350,
-  totalDebt: 28_400,
-  monthlyIncome: 8_500,
-  monthlyExpenses: 5_200,
-  savingsRate: 38.8,
-};
-
-const MOCK_INSIGHTS: Insight[] = [
-  {
-    id: "ins-1",
-    type: "recommendation",
-    title: "Increase Emergency Fund",
-    description:
-      "You have 2.1 months of expenses saved. Aim for 3-6 months for a stronger safety net.",
-    confidence: 0.92,
-    actionable: true,
-  },
-  {
-    id: "ins-2",
-    type: "pattern",
-    title: "Dining Spend Up 23%",
-    description:
-      "Your restaurant and delivery spending has risen $180 over the past 30 days compared to your 3-month average.",
-    confidence: 0.88,
-    actionable: true,
-  },
-  {
-    id: "ins-3",
-    type: "opportunity",
-    title: "Refinance Opportunity",
-    description:
-      "Based on your credit score trend, you may qualify for a 1.2% lower rate on your auto loan, saving ~$840/year.",
-    confidence: 0.79,
-    actionable: true,
-  },
-  {
-    id: "ins-4",
-    type: "trend",
-    title: "Savings Rate Improving",
-    description:
-      "Your savings rate has steadily increased from 31% to 38.8% over the last quarter. Keep it up!",
-    confidence: 0.95,
-    actionable: false,
-  },
-  {
-    id: "ins-5",
-    type: "warning",
-    title: "Subscription Creep Detected",
-    description:
-      "3 new recurring charges totaling $47/mo were detected. Review them to avoid unnecessary spending.",
-    confidence: 0.85,
-    actionable: true,
-  },
-];
-
-const MOCK_BUDGET: BudgetSummary = {
-  totalBudgeted: 5_200,
-  totalSpent: 3_640,
-  percentUsed: 70,
-  daysRemaining: 12,
-  topCategories: [
-    { category: "Housing", budgeted: 1_800, spent: 1_800, percentUsed: 100 },
-    { category: "Groceries", budgeted: 600, spent: 480, percentUsed: 80 },
-    {
-      category: "Transportation",
-      budgeted: 400,
-      spent: 310,
-      percentUsed: 77.5,
-    },
-    { category: "Dining", budgeted: 300, spent: 340, percentUsed: 113 },
-    {
-      category: "Entertainment",
-      budgeted: 200,
-      spent: 120,
-      percentUsed: 60,
-    },
-  ],
-};
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -232,6 +176,75 @@ function formatCurrency(amount: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+/**
+ * Compact currency for the metrics row: $124,350 -> $124.4K.
+ *
+ * The four cards share one grid column, so a full-precision figure does not fit
+ * at a readable weight — it was overflowing the card, and simply truncating it
+ * produced "$124…", which is worse than useless on a financial dashboard.
+ * Compact notation is the standard answer: the magnitude stays legible and the
+ * exact figure is preserved in the `title` attribute.
+ *
+ * Values under 10,000 are left in full, because "$8.5K" is less informative
+ * than "$8,500" and there is room for it.
+ */
+function formatCompactCurrency(amount: number): string {
+  if (Math.abs(amount) < 10000) return formatCurrency(amount);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(amount);
+}
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** The subset of BudgetAnalysis this screen reads, as it arrives over JSON. */
+interface BudgetAnalysisResponse {
+  hasBudget?: boolean;
+  data?: {
+    periodEnd?: string;
+    summary?: {
+      totalBudgeted?: number;
+      totalSpent?: number;
+      percentUsed?: number;
+    };
+    categoryAnalysis?: BudgetCategory[];
+  } | null;
+}
+
+/**
+ * /api/financial/budgets/analyze returns a `BudgetAnalysis`
+ * (`src/lib/financial/types/budget.types.ts:523`): the totals live under
+ * `summary`, the per-category rows are `categoryAnalysis`, and there is no
+ * `daysRemaining` — the period is described by `periodEnd`.
+ *
+ * The old code assigned that response STRAIGHT into this screen's flatter
+ * BudgetSummary state. `Response.json()` is `any`, so the compiler had nothing
+ * to object to, and the bug only showed at runtime: a user who actually HAD a
+ * budget reached `budget.topCategories.map(...)` on `undefined` and crashed the
+ * page. Users with no budget were the ones who escaped — they got MOCK_BUDGET.
+ * Deleting the mock is what made this reachable enough to notice.
+ */
+function toBudgetSummary(body: BudgetAnalysisResponse | null): BudgetSummary | null {
+  const analysis = body?.hasBudget === false ? null : body?.data;
+  if (!analysis?.summary) return null;
+
+  const end = analysis.periodEnd ? new Date(analysis.periodEnd).getTime() : NaN;
+  const daysRemaining = Number.isNaN(end)
+    ? 0
+    : Math.max(0, Math.ceil((end - Date.now()) / MS_PER_DAY));
+
+  return {
+    totalBudgeted: analysis.summary.totalBudgeted ?? 0,
+    totalSpent: analysis.summary.totalSpent ?? 0,
+    percentUsed: analysis.summary.percentUsed ?? 0,
+    daysRemaining,
+    topCategories: analysis.categoryAnalysis ?? [],
+  };
 }
 
 function getScoreColor(score: number): string {
@@ -361,11 +374,14 @@ function HealthScoreGauge({
 function MetricCard({
   label,
   value,
+  exactValue,
   icon,
   trend,
 }: {
   label: string;
   value: string;
+  /** Full-precision figure for the tooltip when `value` is compacted. */
+  exactValue?: string;
   icon: React.ReactNode;
   trend?: "positive" | "negative" | "neutral";
 }) {
@@ -376,17 +392,28 @@ function MetricCard({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+    // `min-w-0` is the fix, not the smaller font. Grid and flex children default
+    // to `min-width: auto`, which refuses to shrink below their content — so a
+    // value like "$124,350" at text-2xl simply overflowed the card and spilled
+    // across the one next to it. Every nesting level that must be allowed to
+    // shrink needs it, which is why it appears three times here.
+    <div className="min-w-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 sm:p-5">
+      <div className="flex items-center gap-2 sm:gap-3 mb-2 min-w-0">
+        {/* shrink-0 keeps the icon square; without it the icon squashes before
+            the text does. */}
+        <div className="shrink-0 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
           {icon}
         </div>
-        <span className="text-sm font-medium text-gray-500 dark:text-slate-400">
+        <span className="min-w-0 truncate text-sm font-medium text-gray-500 dark:text-slate-400">
           {label}
         </span>
       </div>
+      {/* Steps down on narrow viewports rather than clipping. `tabular-nums`
+          keeps the four cards' digits vertically aligned. `title` preserves the
+          full value for anyone who does hit the truncation. */}
       <p
-        className={`text-2xl font-bold ${trendStyles[trend ?? "neutral"]}`}
+        title={exactValue ?? value}
+        className={`tabular-nums break-words text-xl sm:text-2xl font-bold ${trendStyles[trend ?? "neutral"]}`}
       >
         {value}
       </p>
@@ -404,57 +431,95 @@ export default function FinancialIntelligencePage() {
   const [budget, setBudget] = useState<BudgetSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  /** Set when the snapshot could not be loaded. Nothing is estimated in its place. */
+  const [error, setError] = useState<string | null>(null);
+  /** The budget route's own words when the user has no active budget. */
+  const [budgetNotice, setBudgetNotice] = useState<string | null>(null);
+  /** True when /api/financial/ai-insights served its degraded payload. */
+  const [degraded, setDegraded] = useState(false);
 
+  /*
+   * WHAT THIS REPLACED — and why it was worse than an ordinary mock.
+   *
+   * This page fetched three real routes and, on any failure OR any missing
+   * field, silently substituted MOCK_SNAPSHOT: a $124,350 net worth, $28,400
+   * of debt, an $8,500 monthly income and a "B+" health grade, rendered with
+   * nothing to mark a single digit of it as invented.
+   *
+   * The fallback was not the rare path. It was the ONLY path.
+   * /api/financial/context answers `{ success, data: context }`, and the old
+   * code read `data.netWorth` off the TOP level of that envelope — where it is
+   * always undefined — so every `??` fell through on every request, for every
+   * user, forever. The screen had never once shown a real number.
+   *
+   * Three defects, not one:
+   *   1. It read past the envelope the route actually returns.
+   *   2. It asked the wrong route. The snapshot lives on
+   *      /api/financial/aggregated?snapshot=true, which returns a real
+   *      FinancialSnapshot computed from the user's own accounts;
+   *      /financial/context returns the wider context object and never carried
+   *      these fields at its top level.
+   *   3. It answered failure with fiction.
+   *
+   * healthTrend comes from /api/financial/ai-insights (`vitality.trend`) — the
+   * only real source for it. That route sets `degraded: true` when its own
+   * upstreams fail, and this page now surfaces that instead of burying it.
+   */
   const fetchData = useCallback(async () => {
-    try {
-      // Attempt real API calls — fall back to mock data on failure so the
-      // page is always useful during development.
-      const [ctxRes, budgetRes, insightsRes] = await Promise.allSettled([
-        fetch("/api/financial/context"),
-        fetch("/api/financial/budgets/analyze?period=monthly"),
-        fetch("/api/financial/spending/insights?timeRange=30d"),
-      ]);
+    setError(null);
+    const [aggRes, budgetRes, insightsRes] = await Promise.allSettled([
+      fetch("/api/financial/aggregated?snapshot=true"),
+      fetch("/api/financial/budgets/analyze?period=monthly"),
+      fetch("/api/financial/ai-insights"),
+    ]);
 
-      if (ctxRes.status === "fulfilled" && ctxRes.value.ok) {
-        const data = await ctxRes.value.json();
-        setSnapshot({
-          healthScore: data.healthScore?.score ?? MOCK_SNAPSHOT.healthScore,
-          healthGrade: data.healthScore?.grade ?? MOCK_SNAPSHOT.healthGrade,
-          healthTrend: data.healthScore?.trend ?? MOCK_SNAPSHOT.healthTrend,
-          netWorth: data.netWorth ?? MOCK_SNAPSHOT.netWorth,
-          totalDebt: data.totalDebt ?? MOCK_SNAPSHOT.totalDebt,
-          monthlyIncome: data.monthlyIncome ?? MOCK_SNAPSHOT.monthlyIncome,
-          monthlyExpenses:
-            data.monthlyExpenses ?? MOCK_SNAPSHOT.monthlyExpenses,
-          savingsRate: data.savingsRate ?? MOCK_SNAPSHOT.savingsRate,
-        });
-      } else {
-        setSnapshot(MOCK_SNAPSHOT);
-      }
+    const body = async (r: PromiseSettledResult<Response>) =>
+      r.status === "fulfilled" && r.value.ok
+        ? await r.value.json().catch(() => null)
+        : null;
 
-      if (budgetRes.status === "fulfilled" && budgetRes.value.ok) {
-        const data = await budgetRes.value.json();
-        setBudget(data.data ?? MOCK_BUDGET);
-      } else {
-        setBudget(MOCK_BUDGET);
-      }
+    const [agg, budgetJson, insightsJson] = await Promise.all([
+      body(aggRes),
+      body(budgetRes),
+      body(insightsRes),
+    ]);
 
-      if (insightsRes.status === "fulfilled" && insightsRes.value.ok) {
-        const data = await insightsRes.value.json();
-        setInsights(
-          (data.data?.insights as Insight[] | undefined) ?? MOCK_INSIGHTS,
-        );
-      } else {
-        setInsights(MOCK_INSIGHTS);
-      }
-    } catch {
-      setSnapshot(MOCK_SNAPSHOT);
-      setBudget(MOCK_BUDGET);
-      setInsights(MOCK_INSIGHTS);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    const measured = agg?.data?.snapshot as ApiFinancialSnapshot | undefined;
+    const ai = insightsJson?.data;
+
+    if (measured) {
+      // Prefer the vitality score the insights route computed; fall back to
+      // the aggregate's own. Both are measured — neither is a stand-in.
+      const score =
+        typeof ai?.healthScore === "number" && ai.healthScore > 0
+          ? ai.healthScore
+          : measured.healthScore;
+      setSnapshot({
+        healthScore: score,
+        healthGrade: gradeFromScore(score),
+        healthTrend: ai?.healthTrend ?? "stable",
+        netWorth: measured.netWorth,
+        totalDebt: measured.totalDebt,
+        monthlyIncome: measured.monthlyIncome,
+        monthlyExpenses: measured.monthlyExpenses,
+        savingsRate: measured.savingsRate,
+      });
+    } else {
+      setSnapshot(null);
+      setError(
+        "We could not load your financial snapshot. Nothing on this page is estimated in its place — reconnect your accounts or try again.",
+      );
     }
+
+    // hasBudget:false is the route telling us the user has no budget yet. That
+    // is a real answer with its own message, not a hole to fill.
+    setBudget(toBudgetSummary(budgetJson as BudgetAnalysisResponse | null));
+    setBudgetNotice(budgetJson?.message ?? null);
+    setInsights(Array.isArray(ai?.insights) ? (ai.insights as Insight[]) : []);
+    setDegraded(insightsJson?.degraded === true);
+
+    setLoading(false);
+    setRefreshing(false);
   }, []);
 
   useEffect(() => {
@@ -528,9 +593,34 @@ export default function FinancialIntelligencePage() {
         {/* ---------------------------------------------------------------- */}
         {/* Health Score + Key Metrics                                        */}
         {/* ---------------------------------------------------------------- */}
+        {/*
+          The screen says what it does not know. Previously this space was
+          occupied by invented figures whenever a call failed, so a broken
+          backend and a healthy one looked identical to the user.
+        */}
+        {error && (
+          <div className="mb-8 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 p-4">
+            <p className="font-medium text-gray-900 dark:text-white">
+              Your financial snapshot is unavailable
+            </p>
+            <p className="mt-1 text-sm text-gray-700 dark:text-slate-300">
+              {error}
+            </p>
+          </div>
+        )}
+
+        {degraded && (
+          <div className="mb-8 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+            <p className="text-sm text-gray-700 dark:text-slate-300">
+              Insights are running in a reduced mode right now, so this list may
+              be incomplete.
+            </p>
+          </div>
+        )}
+
         {snapshot && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 md:p-8 mb-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-center">
               {/* Gauge */}
               <div className="lg:col-span-1 flex justify-center">
                 <HealthScoreGauge
@@ -541,22 +631,34 @@ export default function FinancialIntelligencePage() {
               </div>
 
               {/* Metric cards */}
-              <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* min-w-0 on the grid itself: without it this column refuses to
+                  shrink inside the lg:grid-cols-3 parent, pushing the cards
+                  wider than the container. */}
+              {/* 2x2, not 1x4. These four cards share only two of the three
+                  columns, so a single row gave each card roughly 150px of
+                  content width — narrower than "$124.4K" at a readable weight,
+                  which is why the figures overflowed and then truncated. A 2x2
+                  grid doubles the width per card and costs nothing vertically,
+                  since the gauge beside it is taller than two rows anyway. */}
+              <div className="min-w-0 lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <MetricCard
                   label="Net Worth"
-                  value={formatCurrency(snapshot.netWorth)}
+                  value={formatCompactCurrency(snapshot.netWorth)}
+                  exactValue={formatCurrency(snapshot.netWorth)}
                   icon={<Activity className="h-5 w-5" />}
                   trend="positive"
                 />
                 <MetricCard
                   label="Total Debt"
-                  value={formatCurrency(snapshot.totalDebt)}
+                  value={formatCompactCurrency(snapshot.totalDebt)}
+                  exactValue={formatCurrency(snapshot.totalDebt)}
                   icon={<CreditCard className="h-5 w-5" />}
                   trend="negative"
                 />
                 <MetricCard
                   label="Monthly Income"
-                  value={formatCurrency(snapshot.monthlyIncome)}
+                  value={formatCompactCurrency(snapshot.monthlyIncome)}
+                  exactValue={formatCurrency(snapshot.monthlyIncome)}
                   icon={<TrendingUp className="h-5 w-5" />}
                   trend="positive"
                 />
@@ -672,6 +774,32 @@ export default function FinancialIntelligencePage() {
               )}
             </div>
           </section>
+
+          {/*
+            "No budget yet" is an answer, not a gap. The route returns
+            hasBudget:false with its own copy; this used to be papered over
+            with MOCK_BUDGET, which showed a stranger's spending to a user who
+            had never created a budget.
+          */}
+          {!budget && budgetNotice && (
+            <section className="lg:col-span-2">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  Monthly Budget
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">
+                  {budgetNotice}
+                </p>
+                <Link
+                  href="/financial/smart-budget"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Create a budget
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </section>
+          )}
 
           {/* Budget Summary — narrower column */}
           {budget && (

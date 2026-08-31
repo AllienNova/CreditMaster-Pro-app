@@ -281,7 +281,7 @@ export function BackupCodeRecovery({
                   If you've lost access to your backup codes and your
                   authenticator, please{" "}
                   <a
-                    href="/support"
+                    href="/help/contact"
                     className="text-blue-400 hover:text-blue-300"
                   >
                     contact support

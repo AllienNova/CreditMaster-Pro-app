@@ -99,12 +99,37 @@ export const GET = withPermission(
       );
     }
 
-    // Analyze budget
+    // Analyze budget.
+    //
+    // "No active budget found" is an EMPTY STATE, not a server fault. The engine
+    // throws for it (smart-budget-engine.ts:174), which the catch below turned
+    // into a 500 — so every user who had not yet created a budget, i.e. every
+    // new user, got a server error and /financial/smart-budget rendered 57
+    // characters of nothing. Found by the route sweep.
+    //
+    // Answered as a successful response carrying `hasBudget: false` so the UI
+    // can show "create your first budget" instead of an error. Genuine faults
+    // still fall through to the catch.
     const smartBudgetEngine = getSmartBudgetEngine();
-    const analysis = await smartBudgetEngine.analyzeBudgetVsActual(
-      userId,
-      period,
-    );
+    let analysis;
+    try {
+      analysis = await smartBudgetEngine.analyzeBudgetVsActual(userId, period);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        /no active budget found/i.test(error.message)
+      ) {
+        const empty = NextResponse.json({
+          success: true,
+          data: null,
+          hasBudget: false,
+          message: "No active budget yet. Create one to see analysis.",
+          _meta: { period, analyzedAt: new Date().toISOString() },
+        });
+        return finalizeResponse(request, empty, startTime, userId);
+      }
+      throw error;
+    }
 
     const response = NextResponse.json({
       success: true,

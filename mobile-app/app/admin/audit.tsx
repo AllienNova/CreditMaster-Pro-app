@@ -1,9 +1,27 @@
 /**
- * Fynvita Admin Audit Trail Screen
- * Security events and activity logs
+ * Admin Audit Trail — the real audit_logs table.
+ *
+ * WHAT THIS REPLACED. An AUDIT_EVENTS fixture — "User Login /
+ * john@example.com / Successful login from 192.168.1.1" and six more — shown
+ * behind a FAKE loading spinner:
+ *
+ *   useEffect(() => { setTimeout(() => setLoading(false), 800); }, []);
+ *
+ * It simulated fetching and then rendered a constant. An audit trail that
+ * shows invented events is worse than one that shows none: it is the record an
+ * operator consults to establish what actually happened, and it would have
+ * answered confidently and wrongly.
+ *
+ * WHERE THE DATA COMES FROM. GET /api/admin/audit (withRole "admin") reads
+ * audit_logs joined to profiles, paginated.
+ *
+ * THE FILTER CHIPS WERE INVENTED. login | data | admin | security is not a
+ * column; audit_logs has `action` and `resource_type`. No real row could have
+ * matched a chip. Chips are now built from the resource_types actually
+ * present, the same way the subscriptions screen was fixed.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,126 +35,77 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import {
+  adminAuditApi,
+  type AdminAuditEvent,
+} from "../../src/services/api/admin";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
-interface AuditEvent {
-  id: string;
-  action: string;
-  user: string;
-  timestamp: string;
-  type: "login" | "data" | "admin" | "security";
-  details: string;
-}
+/** "credit_report" -> "Credit report". resource_type is a lower_snake slug. */
+const prettyResource = (value: string): string =>
+  value ? value.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()) : "Other";
 
-const AUDIT_EVENTS: AuditEvent[] = [
-  {
-    id: "1",
-    action: "User Login",
-    user: "john@example.com",
-    timestamp: "2024-12-07 14:32:15",
-    type: "login",
-    details: "Successful login from 192.168.1.1",
-  },
-  {
-    id: "2",
-    action: "Data Export",
-    user: "support@fynvita.com",
-    timestamp: "2024-12-07 14:28:00",
-    type: "data",
-    details: "Exported user report (500 records)",
-  },
-  {
-    id: "3",
-    action: "Role Change",
-    user: "support@fynvita.com",
-    timestamp: "2024-12-07 14:15:30",
-    type: "admin",
-    details: "Changed user role: sarah@example.com → Admin",
-  },
-  {
-    id: "4",
-    action: "Failed Login",
-    user: "unknown@test.com",
-    timestamp: "2024-12-07 14:10:00",
-    type: "security",
-    details: "Failed attempt from 10.0.0.5 (5th attempt)",
-  },
-  {
-    id: "5",
-    action: "Settings Update",
-    user: "support@fynvita.com",
-    timestamp: "2024-12-07 13:45:00",
-    type: "admin",
-    details: "Updated rate limit: 100 → 200 req/min",
-  },
-  {
-    id: "6",
-    action: "User Login",
-    user: "mary@example.com",
-    timestamp: "2024-12-07 13:30:00",
-    type: "login",
-    details: "Successful login from mobile app",
-  },
-  {
-    id: "7",
-    action: "Password Reset",
-    user: "tom@example.com",
-    timestamp: "2024-12-07 12:15:00",
-    type: "security",
-    details: "Password reset requested",
-  },
+/**
+ * A stable colour per resource type, chosen by hashing the string rather than
+ * from a lookup table. The old table keyed off four invented categories; a
+ * real deployment can have any number of resource types and none of them are
+ * known here at build time.
+ */
+const RESOURCE_COLORS = [
+  "#22C55E",
+  "#3B82F6",
+  "#F59E0B",
+  "#EF4444",
+  "#8B5CF6",
+  "#EC4899",
 ];
+const resourceColor = (value: string): string => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) hash = (hash * 31 + value.charCodeAt(i)) | 0;
+  return RESOURCE_COLORS[Math.abs(hash) % RESOURCE_COLORS.length];
+};
 
 export default function AdminAuditScreen() {
+  const [events, setEvents] = useState<AdminAuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string | null>(null);
 
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 800);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const res = await adminAuditApi.getAuditLog();
+
+    if (!res.success || !res.data) {
+      // An audit trail must never degrade to an empty list on failure: "no
+      // events recorded" and "we could not read the log" are opposite claims,
+      // and an operator would act on the first one.
+      setError("We could not load the audit trail.");
+      setLoading(false);
+      return;
+    }
+
+    setEvents(res.data.events);
+    setLoading(false);
   }, []);
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "login":
-        return "log-in";
-      case "data":
-        return "document-text";
-      case "admin":
-        return "settings";
-      case "security":
-        return "shield";
-      default:
-        return "ellipse";
-    }
-  };
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "login":
-        return theme.colors.success;
-      case "data":
-        return theme.colors.primary;
-      case "admin":
-        return theme.colors.warning;
-      case "security":
-        return theme.colors.error;
-      default:
-        return theme.colors.textSecondary;
-    }
-  };
+  // Built from the resource types actually present. The old chips named four
+  // categories no audit_logs row can carry.
+  const resourceTypes = Array.from(
+    new Set(events.map((e) => e.resourceType).filter(Boolean)),
+  ).sort();
 
   const filteredEvents = filter
-    ? AUDIT_EVENTS.filter((e) => e.type === filter)
-    : AUDIT_EVENTS;
+    ? events.filter((e) => e.resourceType === filter)
+    : events;
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading audit trail...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="Audit Trail" message="Loading audit trail..." />;
   }
 
   return (
@@ -164,7 +133,7 @@ export default function AdminAuditScreen() {
           showsHorizontalScrollIndicator={false}
           style={styles.filterRow}
         >
-          {["All", "login", "data", "admin", "security"].map((type) => (
+          {["All", ...resourceTypes].map((type) => (
             <TouchableOpacity
               key={type}
               style={[
@@ -181,7 +150,7 @@ export default function AdminAuditScreen() {
                     styles.filterTextActive,
                 ]}
               >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
+                {type === "All" ? "All" : prettyResource(type)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -189,34 +158,74 @@ export default function AdminAuditScreen() {
 
         {/* Events List */}
         <View style={styles.eventsList}>
+          {error ? (
+            <Card>
+              <Text style={styles.loadingText}>{error}</Text>
+              <TouchableOpacity onPress={load}>
+                <Text style={styles.retryText}>Try again</Text>
+              </TouchableOpacity>
+            </Card>
+          ) : events.length === 0 ? (
+            <Card>
+              <Text style={styles.loadingText}>
+                No audit events have been recorded yet.
+              </Text>
+            </Card>
+          ) : filteredEvents.length === 0 ? (
+            <Card>
+              <Text style={styles.loadingText}>
+                No audit events for this resource type.
+              </Text>
+            </Card>
+          ) : null}
           {filteredEvents.map((event) => (
             <Card key={event.id} style={styles.eventCard}>
               <View style={styles.eventHeader}>
                 <View
                   style={[
                     styles.typeIcon,
-                    { backgroundColor: `${getTypeColor(event.type)}15` },
+                    {
+                      backgroundColor: `${resourceColor(event.resourceType)}15`,
+                    },
                   ]}
                 >
                   <Ionicons
-                    name={
-                      getTypeIcon(event.type) as keyof typeof Ionicons.glyphMap
-                    }
+                    name="document-text"
                     size={18}
-                    color={getTypeColor(event.type)}
+                    color={resourceColor(event.resourceType)}
                   />
                 </View>
                 <View style={styles.eventInfo}>
                   <Text style={styles.eventAction}>{event.action}</Text>
-                  <Text style={styles.eventUser}>{event.user}</Text>
+                  {/* Empty when audit_logs has no profile for the actor —
+                      an opaque user_id would not help an operator, and a
+                      synthesised address would be a lie about who acted. */}
+                  {event.user ? (
+                    <Text style={styles.eventUser}>{event.user}</Text>
+                  ) : null}
                 </View>
                 <Text style={styles.eventTime}>
-                  {event.timestamp.split(" ")[1]}
+                  {event.timestamp
+                    ? new Date(event.timestamp).toLocaleTimeString()
+                    : ""}
                 </Text>
               </View>
-              <Text style={styles.eventDetails}>{event.details}</Text>
+              {/* Composed only from columns that exist. The old line read
+                  "Successful login from 192.168.1.1" — a sentence no column
+                  contains. */}
+              <Text style={styles.eventDetails}>
+                {[
+                  prettyResource(event.resourceType),
+                  event.resourceId,
+                  event.ipAddress ? `from ${event.ipAddress}` : "",
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </Text>
               <Text style={styles.eventDate}>
-                {event.timestamp.split(" ")[0]}
+                {event.timestamp
+                  ? new Date(event.timestamp).toLocaleDateString()
+                  : ""}
               </Text>
             </Card>
           ))}
@@ -233,6 +242,14 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: theme.spacing.md,
     color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    textAlign: "center",
+    marginTop: theme.spacing.sm,
   },
   header: {
     flexDirection: "row",

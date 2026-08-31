@@ -37,7 +37,7 @@ describe("useNudges — authenticated API calls", () => {
     expect(mockApi.get.mock.calls[0][0]).not.toContain("/api/");
   });
 
-  it("respondToNudge calls api.post('/ai/nudges/respond', body) — not bare fetch", async () => {
+  it("respondToNudge posts to /ai/nudges with an `action` — not /respond, not bare fetch", async () => {
     mockApi.get.mockResolvedValueOnce({
       success: true,
       data: {
@@ -65,13 +65,51 @@ describe("useNudges — authenticated API calls", () => {
       await result.current.respondToNudge("n1", "dismissed");
     });
 
+    // POST /ai/nudges IS the record-response endpoint — its own docblock says
+    // so. /ai/nudges/respond has never existed, and the server reads `action`,
+    // not `response`, so the old call 404'd on every nudge anyone answered and
+    // nothing was ever recorded. Both halves of that are pinned here.
     expect(mockApi.post).toHaveBeenCalledTimes(1);
-    expect(mockApi.post.mock.calls[0][0]).toBe("/ai/nudges/respond");
+    expect(mockApi.post.mock.calls[0][0]).toBe("/ai/nudges");
     expect(mockApi.post.mock.calls[0][1]).toEqual({
       nudgeId: "n1",
-      response: "dismissed",
+      action: "dismissed",
     });
     expect(mockApi.post.mock.calls[0][0]).not.toContain("/api/");
+  });
+
+  it("surfaces an error when the response could not be saved", async () => {
+    // The nudge is removed from the list optimistically, so a swallowed
+    // failure means it silently returns on the next launch with no record of
+    // the answer. The old catch block was empty apart from a comment.
+    mockApi.get.mockResolvedValueOnce({
+      success: true,
+      data: {
+        nudges: [
+          {
+            id: "n1",
+            nudgeType: "insight",
+            title: "T",
+            message: "M",
+            priority: 1,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      },
+    });
+    mockApi.post.mockResolvedValueOnce({
+      success: false,
+      error: { message: "not found" },
+    });
+
+    const { result } = renderHook(() => useNudges());
+    await waitFor(() => expect(mockApi.get).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      await result.current.respondToNudge("n1", "dismissed");
+    });
+
+    expect(result.current.error).toBeTruthy();
   });
 });
 

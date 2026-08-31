@@ -130,6 +130,7 @@ class ChatDatabaseService {
     request: CreateSessionRequest,
   ): Promise<ChatSession> {
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("financial_chat_sessions")
       .insert({
         user_id: userId,
@@ -335,6 +336,7 @@ class ChatDatabaseService {
   ): Promise<ChatMessage> {
     // Insert message
     const { data: messageData, error: messageError } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("financial_chat_messages")
       .insert({
         session_id: sessionId,

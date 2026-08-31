@@ -1,13 +1,43 @@
 "use client";
 
 /**
- * Payment Optimizer
+ * Payment Optimizer.
  *
- * Strategic debt payoff planner with avalanche, snowball, and custom strategies.
- * Features timeline visualization, interest savings calculator, and score projections.
+ * FOUR CLAIMS REMOVED. The page computed a real-looking plan from invented
+ * inputs, which is the most convincing kind of wrong.
+ *
+ * 1. THE DEBTS. `useState<Account[]>([...])` held "Chase Freedom $3,500 at
+ *    18.99%", "Capital One $2,800 at 24.99%" and a $5,000 personal loan, so
+ *    every reader was shown a payoff plan for $11,300 they did not owe. A
+ *    useState INITIALISER is invisible to audit:screen-data (task #100) — this
+ *    is a live instance of that blind spot, found by reading.
+ *    Now: GET /api/credit-builder/debts (debt_accounts, user-scoped by
+ *    withAuth).
+ *
+ * 2. THE SCORE PROJECTION. The planner started everyone at 650 and added 3
+ *    points per month whenever an extra payment landed, then rendered
+ *    "+{last.score - 650} Score Increase" and a per-month projected score.
+ *    Nothing models that. Both are gone, and no score is predicted anywhere on
+ *    this page now.
+ *
+ * 3. INTEREST SAVED. `const totalInterestSaved = 1250; // Simplified
+ *    calculation`. It is not computable here: the planner never accrues
+ *    interest — it subtracts payments from balances — so it has no interest
+ *    figure to save. The tile shows the reader's own monthly budget instead.
+ *
+ * 4. THE STRATEGY COMPARISON. A hardcoded table asserting Avalanche costs
+ *    "$1,250 interest, +45 points", Snowball "$1,425, +42 points". It is now
+ *    computed by running the same planner once per strategy over the reader's
+ *    real debts, and shows only Months to Payoff — the one column that both
+ *    differs between strategies and follows from what the planner does.
+ *
+ * KNOWN AND DELIBERATELY NOT PAPERED OVER: the planner ignores interest
+ * accrual entirely, so "Months to Payoff" is optimistic for any balance
+ * carrying APR. That is a real limitation of the existing calculator, left
+ * visible rather than hidden behind a plausible-looking interest column.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -23,48 +53,84 @@ interface Account {
 
 type Strategy = "avalanche" | "snowball" | "utilization";
 
+/**
+ * What each strategy is for. Copy about the METHOD, true regardless of whose
+ * debts are loaded — unlike the outcome figures that used to sit beside it.
+ */
+const STRATEGY_NOTES: {
+  id: Strategy;
+  label: string;
+  bestFor: string;
+}[] = [
+  {
+    id: "avalanche",
+    label: "Avalanche",
+    bestFor: "Paying the least interest overall",
+  },
+  {
+    id: "snowball",
+    label: "Snowball",
+    bestFor: "Clearing individual debts soonest, for momentum",
+  },
+  {
+    id: "utilization",
+    label: "Utilization",
+    bestFor: "Bringing card balances down first",
+  },
+];
+
 export default function PaymentOptimizerPage() {
   const { user, loading: authLoading } = useAuth();
-  const [accounts, setAccounts] = useState<Account[]>([
-    {
-      id: "1",
-      name: "Chase Freedom",
-      type: "credit_card",
-      balance: 3500,
-      minPayment: 105,
-      apr: 18.99,
-      dueDate: 15,
-    },
-    {
-      id: "2",
-      name: "Capital One",
-      type: "credit_card",
-      balance: 2800,
-      minPayment: 84,
-      apr: 24.99,
-      dueDate: 20,
-    },
-    {
-      id: "3",
-      name: "Personal Loan",
-      type: "loan",
-      balance: 5000,
-      minPayment: 150,
-      apr: 12.5,
-      dueDate: 1,
-    },
-    {
-      id: "4",
-      name: "Medical Bill",
-      type: "medical",
-      balance: 800,
-      minPayment: 50,
-      apr: 0,
-      dueDate: 10,
-    },
-  ]);
+  // Real debts, from GET /api/credit-builder/debts (debt_accounts, scoped to
+  // the caller by withAuth). This used to be a useState initialiser holding
+  // "Chase Freedom $3,500 at 18.99%", "Capital One $2,800 at 24.99%" and a
+  // $5,000 personal loan — so every reader was shown a payoff plan for
+  // $11,300 of debt they did not have. A useState initialiser is invisible to
+  // audit:screen-data (task #100), which is why it outlived the sweep.
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loadingDebts, setLoadingDebts] = useState(true);
+  const [debtsError, setDebtsError] = useState<string | null>(null);
   const [monthlyBudget, setMonthlyBudget] = useState(600);
   const [strategy, setStrategy] = useState<Strategy>("avalanche");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/credit-builder/debts");
+        const json = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (!res.ok || !Array.isArray(json?.debts)) {
+          setAccounts([]);
+          setDebtsError(
+            "We could not load your debts. No balances are filled in for you — try again in a moment.",
+          );
+        } else {
+          setAccounts(
+            (json.debts as Record<string, unknown>[]).map((debt) => ({
+              id: String(debt.id ?? ""),
+              name: String(debt.name ?? debt.creditorName ?? "Debt"),
+              type: (debt.type as Account["type"]) ?? "loan",
+              balance: Number(debt.balance ?? 0),
+              minPayment: Number(debt.minimumPayment ?? 0),
+              apr: Number(debt.interestRate ?? 0),
+              dueDate: Number(debt.dueDate ?? 1),
+            })),
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setAccounts([]);
+          setDebtsError("We could not reach the debts service.");
+        }
+      } finally {
+        if (!cancelled) setLoadingDebts(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (authLoading) {
     return (
@@ -77,15 +143,28 @@ export default function PaymentOptimizerPage() {
     );
   }
 
+  if (loadingDebts) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-slate-300">
+            Loading your debts...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
   const totalMinPayment = accounts.reduce(
     (sum, acc) => sum + acc.minPayment,
     0,
   );
 
-  const getSortedAccounts = () => {
+  const getSortedAccounts = (forStrategy: Strategy) => {
     const sorted = [...accounts];
-    switch (strategy) {
+    switch (forStrategy) {
       case "avalanche":
         return sorted.sort((a, b) => b.apr - a.apr);
       case "snowball":
@@ -111,15 +190,13 @@ export default function PaymentOptimizerPage() {
     month: number;
     payments: PaymentEntry[];
     remainingDebt: number;
-    score: number;
   }
 
-  const calculatePayoffPlan = () => {
-    const sorted = getSortedAccounts();
+  const calculatePayoffPlanFor = (forStrategy: Strategy) => {
+    const sorted = getSortedAccounts(forStrategy);
     const plan: PlanEntry[] = [];
     let tempAccounts = sorted.map((acc) => ({ ...acc }));
     let month = 1;
-    let currentScore = 650;
 
     while (tempAccounts.length > 0 && month <= 60) {
       const payments: PaymentEntry[] = [];
@@ -148,14 +225,10 @@ export default function PaymentOptimizerPage() {
       // Remove paid accounts
       tempAccounts = tempAccounts.filter((acc) => acc.balance > 0);
 
-      // Score projection
-      if (payments.some((p) => p.type === "extra")) currentScore += 3;
-
       plan.push({
         month,
         payments,
         remainingDebt: tempAccounts.reduce((sum, acc) => sum + acc.balance, 0),
-        score: Math.min(850, currentScore),
       });
 
       month++;
@@ -164,9 +237,18 @@ export default function PaymentOptimizerPage() {
     return plan;
   };
 
-  const plan = calculatePayoffPlan();
+  const plan = calculatePayoffPlanFor(strategy);
   const payoffMonths = plan.length;
-  const totalInterestSaved = 1250; // Simplified calculation
+
+  // The same planner, once per strategy, over the reader's real debts. This is
+  // what the comparison table shows; nothing about it is asserted.
+  const comparison = STRATEGY_NOTES.reduce<Record<Strategy, number>>(
+    (acc, entry) => {
+      acc[entry.id] = calculatePayoffPlanFor(entry.id).length;
+      return acc;
+    },
+    { avalanche: 0, snowball: 0, utilization: 0 },
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -188,6 +270,34 @@ export default function PaymentOptimizerPage() {
         </div>
       </div>
 
+      {debtsError && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-amber-200 dark:border-amber-900/50">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              Your debts could not be loaded
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              {debtsError}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!debtsError && accounts.length === 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              No debts on your account yet
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              This planner works from the debts you have recorded. Until there
+              are some, there is no payoff plan to show you — the figures below
+              stay at zero rather than being filled in with an example.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Summary Banner */}
       <div className="bg-gradient-to-r from-red-500 to-emerald-500 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -202,17 +312,26 @@ export default function PaymentOptimizerPage() {
               <div className="text-4xl font-bold mb-2">{payoffMonths}</div>
               <div className="text-sm text-red-100">Months to Payoff</div>
             </div>
+            {/* "Interest Saved $1,250" was a literal with the comment
+                "Simplified calculation". It is not computable here: the
+                planner below never accrues interest — it subtracts payments
+                from balances — so it has no interest figure to save. Showing
+                the monthly budget instead, which is the reader's own input. */}
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">
-                ${totalInterestSaved}
+                ${monthlyBudget.toLocaleString()}
               </div>
-              <div className="text-sm text-red-100">Interest Saved</div>
+              <div className="text-sm text-red-100">Monthly Budget</div>
             </div>
+            {/* The tile here read "+N Score Increase", from a projection that
+                started every reader at 650 and added 3 points per month with an
+                extra payment. Nothing models that, and no score prediction is
+                made anywhere in this page now. Debts cleared is countable. */}
             <div className="text-center">
-              <div className="text-4xl font-bold mb-2">
-                +{plan[plan.length - 1]?.score - 650 || 0}
+              <div className="text-4xl font-bold mb-2">{accounts.length}</div>
+              <div className="text-sm text-red-100">
+                {accounts.length === 1 ? "Debt Cleared" : "Debts Cleared"}
               </div>
-              <div className="text-sm text-red-100">Score Increase</div>
             </div>
           </div>
         </div>
@@ -407,7 +526,7 @@ export default function PaymentOptimizerPage() {
           </h2>
 
           <div className="space-y-4">
-            {getSortedAccounts().map((account, index) => (
+            {getSortedAccounts(strategy).map((account, index) => (
               <div
                 key={account.id}
                 className="border-2 border-gray-200 dark:border-slate-700 rounded-lg p-6"
@@ -497,9 +616,7 @@ export default function PaymentOptimizerPage() {
                     </div>
                   </div>
                 </div>
-                <div className="w-16 text-sm font-semibold text-gray-900 dark:text-white">
-                  {month.score}
-                </div>
+
               </div>
             ))}
           </div>
@@ -517,6 +634,16 @@ export default function PaymentOptimizerPage() {
             Strategy Comparison
           </h2>
 
+          {/* Computed for the reader's OWN debts by running the same planner
+              once per strategy. This table was hardcoded: Avalanche "$1,250
+              interest, +45 points", Snowball "$1,425, +42 points" — outcome
+              claims for debts nobody had read.
+
+              The interest and score columns are gone rather than refilled. The
+              planner does not accrue interest (it subtracts payments from
+              balances), so there is no interest figure to compare; and nothing
+              in this app predicts a credit score. Payoff time IS comparable,
+              and it is what actually differs between avalanche and snowball. */}
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -525,13 +652,7 @@ export default function PaymentOptimizerPage() {
                     Strategy
                   </th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-900 dark:text-white">
-                    Payoff Time
-                  </th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-900 dark:text-white">
-                    Interest Paid
-                  </th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-900 dark:text-white">
-                    Score Increase
+                    Months to Payoff
                   </th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">
                     Best For
@@ -539,51 +660,29 @@ export default function PaymentOptimizerPage() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-gray-200 dark:border-slate-700">
-                  <td className="py-4 px-4 font-medium text-gray-900 dark:text-white">
-                    Avalanche
-                  </td>
-                  <td className="text-right py-4 px-4">
-                    {payoffMonths} months
-                  </td>
-                  <td className="text-right py-4 px-4 text-green-600 font-semibold">
-                    $1,250
-                  </td>
-                  <td className="text-right py-4 px-4">+45 points</td>
-                  <td className="py-4 px-4 text-sm text-gray-600 dark:text-slate-300">
-                    Saving money
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-200 dark:border-slate-700">
-                  <td className="py-4 px-4 font-medium text-gray-900 dark:text-white">
-                    Snowball
-                  </td>
-                  <td className="text-right py-4 px-4">
-                    {payoffMonths + 2} months
-                  </td>
-                  <td className="text-right py-4 px-4">$1,425</td>
-                  <td className="text-right py-4 px-4">+42 points</td>
-                  <td className="py-4 px-4 text-sm text-gray-600 dark:text-slate-300">
-                    Motivation
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-4 px-4 font-medium text-gray-900 dark:text-white">
-                    Utilization
-                  </td>
-                  <td className="text-right py-4 px-4">
-                    {payoffMonths + 1} months
-                  </td>
-                  <td className="text-right py-4 px-4">$1,350</td>
-                  <td className="text-right py-4 px-4 text-green-600 font-semibold">
-                    +52 points
-                  </td>
-                  <td className="py-4 px-4 text-sm text-gray-600 dark:text-slate-300">
-                    Credit score
-                  </td>
-                </tr>
+                {STRATEGY_NOTES.map((entry) => (
+                  <tr
+                    key={entry.id}
+                    className="border-b border-gray-200 dark:border-slate-700"
+                  >
+                    <td className="py-4 px-4 font-medium text-gray-900 dark:text-white">
+                      {entry.label}
+                    </td>
+                    <td className="text-right py-4 px-4 text-gray-900 dark:text-white">
+                      {comparison[entry.id] > 0 ? comparison[entry.id] : "—"}
+                    </td>
+                    <td className="py-4 px-4 text-gray-600 dark:text-slate-300">
+                      {entry.bestFor}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
+            {accounts.length === 0 && (
+              <p className="mt-4 text-sm text-gray-600 dark:text-slate-300">
+                Add your debts to compare how long each strategy would take.
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -13,11 +13,11 @@ import {
   type AchievementStatus,
 } from "@/lib/gamification";
 
-// Restored 2026-08-09. It previously did a bare cookie-session read via
-// supabase.auth.getUser(), which meant it accepted neither the Bearer tokens
-// every other route takes nor the project's standard guard — audit:auth
-// flagged it as "CSV requires withAuth but the route has an unwrapped HTTP
-// verb". Now on withAuth like the other 304 routes.
+// Restored from the state immediately before deletion (b6f6efe^), not from
+// backup/pre-wipe. The backup copy was older and still used a bare
+// supabase.auth.getUser() cookie read; the live version had already been moved
+// onto withAuth. Restoring the backup silently reverted that, and eight other
+// modules lost more than a comment — see docs/specs/deleted-feature-audit.md.
 export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const { searchParams } = new URL(request.url);
@@ -67,152 +67,40 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   }
 });
 
-export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
-  try {
-    const body = await request.json();
-    const { action, achievementCode, metrics, achievementId, progress } = body;
-
-    if (!action) {
-      return NextResponse.json(
-        { error: "Action is required (award, check, update_progress, batch_update)" },
-        { status: 400 },
-      );
-    }
-
-    const service = getAchievementService();
-
-    switch (action) {
-      case "award": {
-        if (!achievementCode) {
-          return NextResponse.json(
-            { error: "achievementCode is required for award action" },
-            { status: 400 },
-          );
-        }
-
-        const result = await service.awardAchievement(user.id, achievementCode);
-
-        if (!result.success) {
-          const statusCode = result.alreadyEarned ? 409 : 400;
-          return NextResponse.json(
-            { error: result.error, alreadyEarned: result.alreadyEarned },
-            { status: statusCode },
-          );
-        }
-
-        // Create notification for awarded achievement
-        if (result.achievement && result.xpEarned !== undefined) {
-          await service.createNotification(
-            user.id,
-            result.achievement,
-            result.xpEarned,
-          );
-        }
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            achievement: result.achievement,
-            xpEarned: result.xpEarned,
-          },
-        });
-      }
-
-      case "check": {
-        if (!metrics || typeof metrics !== "object") {
-          return NextResponse.json(
-            { error: "metrics object is required for check action" },
-            { status: 400 },
-          );
-        }
-
-        const results = await service.checkAchievements(user.id, metrics);
-        const met = results.filter((r) => r.met);
-        const unmet = results.filter((r) => !r.met);
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            results,
-            summary: {
-              total: results.length,
-              met: met.length,
-              unmet: unmet.length,
-            },
-          },
-        });
-      }
-
-      case "update_progress": {
-        if (!achievementId && !achievementCode) {
-          return NextResponse.json(
-            { error: "achievementId or achievementCode is required for update_progress action" },
-            { status: 400 },
-          );
-        }
-
-        if (progress === undefined || typeof progress !== "number") {
-          return NextResponse.json(
-            { error: "progress (number) is required for update_progress action" },
-            { status: 400 },
-          );
-        }
-
-        let update;
-        if (achievementCode) {
-          update = await service.updateProgressByCode(
-            user.id,
-            achievementCode,
-            progress,
-          );
-        } else {
-          update = await service.updateProgress(
-            user.id,
-            achievementId,
-            progress,
-          );
-        }
-
-        return NextResponse.json({
-          success: true,
-          data: update,
-        });
-      }
-
-      case "batch_update": {
-        if (!metrics || typeof metrics !== "object") {
-          return NextResponse.json(
-            { error: "metrics object is required for batch_update action" },
-            { status: 400 },
-          );
-        }
-
-        const updates = await service.batchUpdateProgress(user.id, metrics);
-        const completedUpdates = updates.filter((u) => u.completed);
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            updates,
-            summary: {
-              total: updates.length,
-              completed: completedUpdates.length,
-            },
-          },
-        });
-      }
-
-      default:
-        return NextResponse.json(
-          { error: `Unknown action: ${action}. Valid actions: award, check, update_progress, batch_update` },
-          { status: 400 },
-        );
-    }
-  } catch (error) {
-    console.error("Error processing achievement action:", error);
-    return NextResponse.json(
-      { error: "Failed to process achievement action" },
-      { status: 500 },
-    );
-  }
+export const POST = withAuth(async (_request: NextRequest, _user: AuthedUser) => {
+  // ───────────────────────────────────────────────────────────────────────
+  //  DISABLED — this endpoint let any authenticated user mint achievements.
+  //
+  //  Every action took its input from the request body and wrote it straight
+  //  through to user_achievements / xp_transactions with no server-side
+  //  corroboration:
+  //
+  //    {"action":"award","achievementCode":"SAVINGS_100000"} -> granted
+  //    {"action":"update_progress","progress":999}           -> accepted
+  //    {"action":"check"|"batch_update","metrics":{...}}     -> attacker-set
+  //
+  //  So a user could award themselves any achievement and the XP attached to
+  //  it. Same class as FND-016/017 — fabricated input treated as real — and it
+  //  went live the moment this route was wired.
+  //
+  //  An achievement must be earned from a verified server-side event (a real
+  //  debt payment, a real savings deposit) with metrics computed from the
+  //  user's own rows, never from a number the client sent. That event path does
+  //  not exist yet — see docs/specs/remediation-plan.md slice S1 — so the
+  //  endpoint is closed rather than left exploitable.
+  //
+  //  The award/check/progress logic still lives in achievement-service.ts and
+  //  is unit-tested; only the client-facing trigger is removed. The previous
+  //  handler body is in git history at b1e993a if needed as a starting point.
+  //
+  //  GET is unaffected: it reads only the caller's own progress.
+  // ───────────────────────────────────────────────────────────────────────
+  return NextResponse.json(
+    {
+      error: "Not implemented",
+      message:
+        "Achievements are awarded from verified server-side events, not from client requests.",
+    },
+    { status: 501 },
+  );
 });

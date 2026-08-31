@@ -3,7 +3,7 @@
  * Select credit improvement goals
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,6 +11,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../src/hooks/useTheme";
 import { withOpacity } from "../../src/constants/theme";
 import { useAuthStore } from "../../src/store/authStore";
+import { useOnboardingProgress } from "../../src/hooks/useOnboardingProgress";
+
+const STEP = 2;
 
 const GOALS = [
   {
@@ -75,8 +78,26 @@ export default function OnboardingGoalsScreen() {
   const { colors, spacing, borderRadius, fontSize, fontWeight, iconSize } =
     useTheme();
   const { updateProfile } = useAuthStore();
+  const {
+    progress: savedProgress,
+    loading,
+    completeStep,
+  } = useOnboardingProgress();
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const hydratedRef = useRef(false);
+
+  // Restore the picks from a previous run. Async load, so not a useState
+  // initialiser — see the same note in profile.tsx.
+  useEffect(() => {
+    if (loading || hydratedRef.current) return;
+    hydratedRef.current = true;
+
+    const saved = savedProgress.form_data?.goals;
+    if (Array.isArray(saved) && saved.length > 0) {
+      setSelectedGoals(saved.filter((g): g is string => typeof g === "string"));
+    }
+  }, [loading, savedProgress.form_data]);
 
   const toggleGoal = (goalId: string) => {
     setSelectedGoals((prev) =>
@@ -90,12 +111,15 @@ export default function OnboardingGoalsScreen() {
     setIsLoading(true);
     try {
       await updateProfile({ goals: selectedGoals });
-      router.push("/onboarding/connect");
     } catch (error) {
       console.error("Failed to save goals:", error);
-    } finally {
-      setIsLoading(false);
     }
+
+    // Recorded even when updateProfile threw, so a failed write does not also
+    // cost the user the selections they made.
+    await completeStep(STEP, { goals: selectedGoals });
+    setIsLoading(false);
+    router.push("/onboarding/connect");
   };
 
   const handleSkip = () => {

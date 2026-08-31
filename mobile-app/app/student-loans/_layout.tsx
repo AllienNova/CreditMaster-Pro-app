@@ -42,12 +42,14 @@ export default function StudentLoansLayout() {
       <Stack.Screen
         name="strategies"
         options={{
+          headerShown: false,
           title: "Repayment Strategies",
         }}
       />
       <Stack.Screen
         name="eligibility"
         options={{
+          headerShown: false,
           title: "Federal Program Eligibility",
         }}
       />

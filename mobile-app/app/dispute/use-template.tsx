@@ -805,21 +805,28 @@ ${template?.requiredDocuments?.map((doc) => `- ${doc}`).join("\n") || "- Support
                     {template.successRate}% success rate
                   </Text>
                 </View>
-                <View
-                  style={[
-                    styles.toneBadge,
-                    { backgroundColor: getToneColor(template.tone) + "20" },
-                  ]}
-                >
-                  <Text
+                {/* `tone` is optional because the server does not send it —
+                    DISPUTE_TEMPLATES carries { description, template,
+                    variables } and nothing about the letter's voice. Rendered
+                    only when one actually arrives, rather than showing an
+                    empty coloured pill. */}
+                {template.tone ? (
+                  <View
                     style={[
-                      styles.toneText,
-                      { color: getToneColor(template.tone) },
+                      styles.toneBadge,
+                      { backgroundColor: getToneColor(template.tone) + "20" },
                     ]}
                   >
-                    {template.tone}
-                  </Text>
-                </View>
+                    <Text
+                      style={[
+                        styles.toneText,
+                        { color: getToneColor(template.tone) },
+                      ]}
+                    >
+                      {template.tone}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               <Text style={styles.scenario}>{template.scenario}</Text>
             </View>
@@ -931,7 +938,7 @@ ${template?.requiredDocuments?.map((doc) => `- ${doc}`).join("\n") || "- Support
               Fill in the details for your dispute letter
             </Text>
 
-            {template?.placeholders.map((placeholder) => (
+            {template?.placeholders?.map((placeholder) => (
               <View key={placeholder} style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>
                   {PLACEHOLDER_LABELS[placeholder] ||

@@ -95,6 +95,7 @@ export default function FinancialLayout() {
         name="reports"
         options={{ title: "Reports", headerShown: false }}
       />
+      <Stack.Screen name="holdings" options={{ headerShown: false }} />
     </Stack>
   );
 }

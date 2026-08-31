@@ -13,15 +13,22 @@ describe("Layout", () => {
     );
 
     // Check for the logo and brand name
-    expect(screen.getByText("Agentic Credit Repair")).toBeInTheDocument();
-    expect(screen.getByText("AI-Agent Powered Platform")).toBeInTheDocument();
+    expect(screen.getByText("Fynvita")).toBeInTheDocument();
+    expect(
+      screen.getByText("Your Financial Vitality Platform"),
+    ).toBeInTheDocument();
 
     // Check for navigation links
+    // The five product pillars, matching src/app/page.tsx so the signed-in
+    // header names the same product as the marketing site. The previous list
+    // (Credit Builder / Student Loans / Pricing) advertised Pricing to paying
+    // users and omitted Financial Wellness, Investing and Tax entirely.
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("Credit Builder")).toBeInTheDocument();
+    expect(screen.getByText("Credit Health")).toBeInTheDocument();
+    expect(screen.getByText("Financial Wellness")).toBeInTheDocument();
+    expect(screen.getByText("Investing")).toBeInTheDocument();
+    expect(screen.getByText("Tax")).toBeInTheDocument();
     expect(screen.getByText("Marketplace")).toBeInTheDocument();
-    expect(screen.getByText("Student Loans")).toBeInTheDocument();
-    expect(screen.getByText("Pricing")).toBeInTheDocument();
 
     // Check for the child component
     expect(screen.getByText("Test Child")).toBeInTheDocument();
@@ -35,7 +42,7 @@ describe("Layout", () => {
     );
 
     // Check that the header elements are not present
-    expect(screen.queryByText("Agentic Credit Repair")).not.toBeInTheDocument();
+    expect(screen.queryByText("Fynvita")).not.toBeInTheDocument();
     expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
 
     // Check that the child component is still rendered

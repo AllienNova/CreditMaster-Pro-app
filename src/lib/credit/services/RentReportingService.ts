@@ -426,6 +426,7 @@ export class RentReportingIntegrationService {
     };
 
     const { data, error } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("rent_payments")
       .insert({
         id: newPayment.id,
@@ -445,6 +446,26 @@ export class RentReportingIntegrationService {
 
     if (error) throw error;
     return this.paymentFromDb(data);
+  }
+
+  /**
+   * Every rent payment the user has, across all their reporting accounts.
+   *
+   * getPaymentHistory below needs an accountId, which a screen showing "your
+   * payment history" does not have and should not have to fetch accounts to
+   * discover. One query, filtered on user_id — which is load-bearing here, not
+   * decorative: getRentReportingService() builds this client with the service
+   * role, so it bypasses the RLS policy that would otherwise scope the read.
+   */
+  async getAllPayments(userId: string): Promise<RentPayment[]> {
+    const { data, error } = await this.supabase
+      .from("rent_payments")
+      .select("*")
+      .eq("user_id", userId)
+      .order("due_date", { ascending: false });
+
+    if (error) throw error;
+    return (data || []).map(this.paymentFromDb);
   }
 
   async getPaymentHistory(

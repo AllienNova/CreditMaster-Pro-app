@@ -143,7 +143,7 @@ const mockVitalityScore: VitalityScore = {
       impact: "high",
       estimatedPoints: 5,
       category: "Credit",
-      actionUrl: "/dashboard/credit",
+      actionUrl: "/credit",
     },
     {
       id: "2",
@@ -152,7 +152,7 @@ const mockVitalityScore: VitalityScore = {
       impact: "high",
       estimatedPoints: 8,
       category: "Savings",
-      actionUrl: "/dashboard/savings",
+      actionUrl: "/financial/savings",
     },
     {
       id: "3",
@@ -161,7 +161,7 @@ const mockVitalityScore: VitalityScore = {
       impact: "high",
       estimatedPoints: 6,
       category: "Debt",
-      actionUrl: "/dashboard/debt",
+      actionUrl: "/financial/debt",
     },
     {
       id: "4",
@@ -170,7 +170,7 @@ const mockVitalityScore: VitalityScore = {
       impact: "medium",
       estimatedPoints: 4,
       category: "Investments",
-      actionUrl: "/dashboard/investments",
+      actionUrl: "/investments",
     },
   ],
 };

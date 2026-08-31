@@ -23,13 +23,16 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenError } from "../../src/components/ScreenError";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { creditRepairApi } from "../../src/services/api/creditRepair";
+import { toArray } from "../../src/store/toArray";
 import type {
   NegotiationDebt,
   NegotiationStatus,
 } from "../../src/services/api/creditRepair";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 // updatedAt arrives as an ISO string; render a compact locale date.
 function formatDate(iso?: string): string {
@@ -48,7 +51,7 @@ export default function NegotiateScreen() {
   const fetchDebts = useCallback(async () => {
     const res = await creditRepairApi.getNegotiations();
     if (res.success && res.data) {
-      setDebts(res.data.debts);
+      setDebts(toArray<NegotiationDebt>(res?.data?.debts));
       setError(null);
     } else {
       setError(res.error?.message ?? "Unable to load negotiations.");
@@ -57,8 +60,14 @@ export default function NegotiateScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    await fetchDebts();
-    setLoading(false);
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      await fetchDebts();
+    } finally {
+      setLoading(false);
+    }
   }, [fetchDebts]);
 
   useEffect(() => {
@@ -90,31 +99,17 @@ export default function NegotiateScreen() {
   );
 
   if (loading && debts.length === 0) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="credit-repair-negotiate-loading">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Loading negotiations...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="Debt Negotiation" message="Loading negotiations..." testID="credit-repair-negotiate-loading" />;
   }
 
   if (error && debts.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="credit-repair-negotiate-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.stateText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={load}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="Debt Negotiation"
+        message={error}
+        onRetry={load}
+        testID="credit-repair-negotiate-error"
+      />
     );
   }
 

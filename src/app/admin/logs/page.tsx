@@ -1,77 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-const logs = [
-  {
-    id: 1,
-    level: "error",
-    message: "Failed to connect to Equifax API: Connection timeout",
-    source: "credit-bureau-service",
-    timestamp: "2024-12-03 10:45:23",
-    count: 12,
-  },
-  {
-    id: 2,
-    level: "warning",
-    message: "Rate limit approaching for Experian API (85%)",
-    source: "rate-limiter",
-    timestamp: "2024-12-03 10:42:15",
-    count: 1,
-  },
-  {
-    id: 3,
-    level: "error",
-    message: "Payment webhook signature verification failed",
-    source: "stripe-webhook",
-    timestamp: "2024-12-03 10:38:42",
-    count: 3,
-  },
-  {
-    id: 4,
-    level: "info",
-    message: "Database migration completed successfully",
-    source: "migration-runner",
-    timestamp: "2024-12-03 10:30:00",
-    count: 1,
-  },
-  {
-    id: 5,
-    level: "warning",
-    message: "Email delivery delayed: Queue backlog",
-    source: "email-service",
-    timestamp: "2024-12-03 10:25:18",
-    count: 45,
-  },
-  {
-    id: 6,
-    level: "error",
-    message: "User authentication failed: Invalid token",
-    source: "auth-middleware",
-    timestamp: "2024-12-03 10:20:33",
-    count: 8,
-  },
-  {
-    id: 7,
-    level: "info",
-    message: "Cache cleared for user preferences",
-    source: "cache-service",
-    timestamp: "2024-12-03 10:15:00",
-    count: 1,
-  },
-  {
-    id: 8,
-    level: "error",
-    message: "Dispute letter generation failed: AI service unavailable",
-    source: "ai-service",
-    timestamp: "2024-12-03 10:10:45",
-    count: 5,
-  },
-];
+/*
+ * WHAT THIS REPLACED. `logs` was invented system output — "Failed to connect to
+ * Equifax API: Connection timeout" seen 12 times, "Rate limit approaching for
+ * Experian API (85%)" — with sources, levels and timestamps, shown to any
+ * admin with no request made.
+ *
+ * THE ROUTE WAS ALREADY HONEST AND THE PAGE IGNORED IT. GET /api/admin/logs
+ * returns `{ logs: [], total: 0, dataAvailable: false, message: "System logs
+ * are not yet available. A system_logs table and writer are needed to populate
+ * this view." }`. Somebody had already done the hard part — admitting the
+ * capability does not exist — and the screen went on rendering a fiction over
+ * the top of it.
+ *
+ * The page now calls that route and prints what it says. When `dataAvailable`
+ * turns true it will render the real rows with no further change.
+ */
+
+interface SystemLogRow {
+  id: string | number;
+  level: string;
+  message: string;
+  source: string;
+  timestamp: string;
+  /**
+   * Optional: the invented rows carried an occurrence count, and the real row
+   * shape is not defined yet — /api/admin/logs returns an empty list until a
+   * system_logs table exists. Typed optional rather than assumed present.
+   */
+  count?: number;
+}
 
 export default function AdminLogsPage() {
   const [levelFilter, setLevelFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [logs, setLogs] = useState<SystemLogRow[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setFailed(false);
+    try {
+      const res = await fetch("/api/admin/logs");
+      if (!res.ok) throw new Error(String(res.status));
+      const json = await res.json();
+      setLogs(Array.isArray(json.logs) ? json.logs : []);
+      // The route tells us when the capability itself is missing. Show that
+      // sentence rather than an empty table, which reads as "all quiet".
+      setNotice(json.dataAvailable === false ? (json.message ?? null) : null);
+    } catch {
+      setFailed(true);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const filteredLogs = logs.filter((log) => {
     const matchesLevel = levelFilter === "all" || log.level === levelFilter;
@@ -119,15 +108,15 @@ export default function AdminLogsPage() {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-          <p className="text-sm text-red-600">Errors (24h)</p>
+          <p className="text-sm text-red-600">Errors in this view</p>
           <p className="text-3xl font-bold text-red-700">{errorCount}</p>
         </div>
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-          <p className="text-sm text-yellow-600">Warnings (24h)</p>
+          <p className="text-sm text-yellow-600">Warnings in this view</p>
           <p className="text-3xl font-bold text-yellow-700">{warningCount}</p>
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <p className="text-sm text-blue-600">Total Logs (24h)</p>
+          <p className="text-sm text-blue-600">Entries in this view</p>
           <p className="text-3xl font-bold text-blue-700">{logs.length}</p>
         </div>
       </div>
@@ -195,7 +184,7 @@ export default function AdminLogsPage() {
                   {log.source}
                 </td>
                 <td className="px-6 py-4 text-gray-500 dark:text-slate-400">
-                  {log.count > 1 ? `×${log.count}` : "-"}
+                  {typeof log.count === "number" && log.count > 1 ? `×${log.count}` : "-"}
                 </td>
                 <td className="px-6 py-4 text-gray-500 dark:text-slate-400">
                   {log.timestamp}
@@ -204,6 +193,41 @@ export default function AdminLogsPage() {
             ))}
           </tbody>
         </table>
+        {/*
+          "Not built yet", "cannot read", "nothing logged" and "your filter
+          matched nothing" are four different answers. An empty table reads as
+          the third, and until a system_logs table exists the true answer is
+          the first — which the route already says in words.
+        */}
+        {failed ? (
+          <div className="p-6 text-center">
+            <p className="text-gray-900 dark:text-white">
+              We could not load the system logs.
+            </p>
+            <button
+              onClick={load}
+              className="mt-2 text-sm text-emerald-500 hover:text-emerald-600 font-medium"
+            >
+              Try again
+            </button>
+          </div>
+        ) : loading ? (
+          <p className="p-6 text-center text-gray-500 dark:text-slate-400">
+            Loading…
+          </p>
+        ) : notice ? (
+          <p className="p-6 text-center text-gray-500 dark:text-slate-400">
+            {notice}
+          </p>
+        ) : logs.length === 0 ? (
+          <p className="p-6 text-center text-gray-500 dark:text-slate-400">
+            No log entries have been recorded.
+          </p>
+        ) : filteredLogs.length === 0 ? (
+          <p className="p-6 text-center text-gray-500 dark:text-slate-400">
+            No entries match this filter.
+          </p>
+        ) : null}
       </div>
     </div>
   );

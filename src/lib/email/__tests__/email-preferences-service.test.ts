@@ -593,6 +593,44 @@ describe("EmailPreferencesService", () => {
       expect(payload).toBeNull();
     });
 
+    it("refuses to sign with the dev default in production", () => {
+      // The signing secret used to fall back silently to a hard-coded public
+      // constant, which makes every unsubscribe token forgeable by anyone who
+      // has read the repo. Production must fail loudly instead. Tested here
+      // because the non-production warning path is what every other test in
+      // this file exercises, so the hard-failure branch was never run.
+      const prevEnv = process.env.NODE_ENV;
+      const prevSecret = process.env.EMAIL_UNSUBSCRIBE_SECRET;
+      delete process.env.EMAIL_UNSUBSCRIBE_SECRET;
+      (process.env as Record<string, string>).NODE_ENV = "production";
+
+      const svc = createService();
+      expect(() => svc.generateUnsubscribeToken("user-123")).toThrow(
+        /EMAIL_UNSUBSCRIBE_SECRET/,
+      );
+
+      (process.env as Record<string, string>).NODE_ENV = prevEnv as string;
+      if (prevSecret !== undefined) {
+        process.env.EMAIL_UNSUBSCRIBE_SECRET = prevSecret;
+      }
+    });
+
+    it("signs with the configured secret when one is set", () => {
+      const prevSecret = process.env.EMAIL_UNSUBSCRIBE_SECRET;
+      process.env.EMAIL_UNSUBSCRIBE_SECRET = "a-real-configured-secret";
+
+      const svc = createService();
+      const token = svc.generateUnsubscribeToken("user-123");
+
+      expect(svc.validateUnsubscribeToken(token)?.userId).toBe("user-123");
+
+      if (prevSecret === undefined) {
+        delete process.env.EMAIL_UNSUBSCRIBE_SECRET;
+      } else {
+        process.env.EMAIL_UNSUBSCRIBE_SECRET = prevSecret;
+      }
+    });
+
     it("rejects tokens with invalid format", () => {
       const svc = createService();
 
@@ -614,7 +652,13 @@ describe("EmailPreferencesService", () => {
       const modifiedPayloadStr = JSON.stringify(payload);
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const nodeCrypto = require("crypto") as typeof import("crypto");
-      const secret = process.env.EMAIL_UNSUBSCRIBE_SECRET || "default-unsubscribe-secret";
+      // Must match getUnsubscribeSecret() in email-preferences-service.ts:
+      // env var when set, else the non-production dev default. The forged
+      // token must carry a VALID signature so the test exercises the expiry
+      // check (not a signature mismatch).
+      const secret =
+        process.env.EMAIL_UNSUBSCRIBE_SECRET ||
+        "default-unsubscribe-secret-change-in-production";
       const modifiedBase64 = Buffer.from(modifiedPayloadStr).toString("base64url");
       const modifiedSignature = nodeCrypto
         .createHmac("sha256", secret)

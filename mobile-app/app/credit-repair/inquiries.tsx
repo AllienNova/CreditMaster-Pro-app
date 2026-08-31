@@ -24,9 +24,11 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenError } from "../../src/components/ScreenError";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { creditRepairApi } from "../../src/services/api/creditRepair";
+import { toArray } from "../../src/store/toArray";
 import type {
   CreditInquiry,
   InquiryBureau,
@@ -54,7 +56,7 @@ export default function InquiriesScreen() {
   const fetchInquiries = useCallback(async () => {
     const res = await creditRepairApi.getInquiries();
     if (res.success && res.data) {
-      setInquiries(res.data.inquiries);
+      setInquiries(toArray<CreditInquiry>(res?.data?.inquiries));
       setError(null);
     } else {
       setError(res.error?.message ?? "Unable to load inquiries.");
@@ -63,8 +65,14 @@ export default function InquiriesScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    await fetchInquiries();
-    setLoading(false);
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      await fetchInquiries();
+    } finally {
+      setLoading(false);
+    }
   }, [fetchInquiries]);
 
   useEffect(() => {
@@ -95,19 +103,12 @@ export default function InquiriesScreen() {
 
   if (error && inquiries.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="credit-repair-inquiries-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.stateText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={load}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="Credit Inquiries"
+        message={error}
+        onRetry={load}
+        testID="credit-repair-inquiries-error"
+      />
     );
   }
 

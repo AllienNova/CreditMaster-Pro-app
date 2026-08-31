@@ -23,6 +23,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { useAccountStore } from "../../src/store/accountStore";
 import Svg, { Circle } from "react-native-svg";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 const { width } = Dimensions.get("window");
 
@@ -581,12 +582,10 @@ export default function FinancialIntelligenceDashboard() {
         }
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Financial Intelligence</Text>
-          <Text style={styles.headerSubtitle}>
-            AI-Powered Financial Management
-          </Text>
-        </View>
+        <ScreenHeader
+          title="Financial Intelligence"
+          subtitle="AI-Powered Financial Management"
+        />
 
         {/* Financial Snapshot */}
         {/* Health Score Gauge */}
@@ -669,20 +668,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  header: {
-    padding: theme.spacing.lg,
-    backgroundColor: theme.colors.primary,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: theme.spacing.xs,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: "#E0E7FF",
   },
   snapshotCard: {
     margin: theme.spacing.md,

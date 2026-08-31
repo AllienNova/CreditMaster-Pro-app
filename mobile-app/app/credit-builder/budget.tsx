@@ -318,7 +318,7 @@ export default function BudgetIntegrationScreen() {
         {/* CTA */}
         <TouchableOpacity
           style={styles.ctaButton}
-          onPress={() => router.push("/financial/budget" as never)}
+          onPress={() => router.push("/financial/budgets" as never)}
         >
           <Text style={styles.ctaButtonText}>Open Full Budget Planner</Text>
           <Ionicons name="arrow-forward" size={20} color="#fff" />

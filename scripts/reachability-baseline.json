@@ -1,0 +1,14 @@
+{
+  "frozen": "2026-08-16",
+  "unreachable": [
+    "/auth/callback",
+    "/payment/cancel",
+    "/payment/success"
+  ],
+  "note": "3 of 204, all redirect targets that CORRECTLY have no click path. Every page a user can navigate to is reachable. This list should never grow; if it does, a real feature has gone dark.",
+  "why": {
+    "/auth/callback": "OAuth redirect target. The provider navigates here; there is no click path and there should not be one.",
+    "/payment/success": "Stripe return URL, reached by redirect after checkout.",
+    "/payment/cancel": "Stripe return URL, reached by redirect after an abandoned checkout."
+  }
+}

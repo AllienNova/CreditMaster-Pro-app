@@ -14,6 +14,7 @@
 
 import { useState, useEffect } from "react";
 import type { CreditRepairScore, QuickWin } from "@/lib/credit-repair";
+import { parseScoreFactors, type DisplayFactor } from "./score-factors";
 
 interface CreditRepairDashboardProps {
   userId?: string;
@@ -23,6 +24,7 @@ export default function CreditRepairDashboard({
   userId,
 }: CreditRepairDashboardProps) {
   const [score, setScore] = useState<CreditRepairScore | null>(null);
+  const [factors, setFactors] = useState<DisplayFactor[]>([]);
   const [quickWins, setQuickWins] = useState<QuickWin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +46,10 @@ export default function CreditRepairDashboard({
       if (!scoreResponse.ok) throw new Error("Failed to fetch score");
       const scoreData = await scoreResponse.json();
       setScore(scoreData.data);
+      // The route persists factors as a RECORD and returns the saved row, so
+      // what arrives here is not the ScoreFactor[] this component's type
+      // claims. Parsed rather than cast — see score-factors.ts.
+      setFactors(parseScoreFactors(scoreData.data?.factors));
 
       // Fetch quick wins
       const quickWinsResponse = await fetch("/api/credit-repair/quick-wins");
@@ -151,7 +157,7 @@ export default function CreditRepairDashboard({
 
         {/* Score Factors */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {score.factors.map((factor) => (
+          {factors.map((factor) => (
             <div
               key={factor.category}
               className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4"
@@ -160,11 +166,16 @@ export default function CreditRepairDashboard({
                 {factor.category.replace("_", " ")}
               </div>
               <div className="text-2xl font-bold text-gray-800 dark:text-slate-100">
-                {factor.currentScore}
+                {Math.round(factor.currentScore)}
               </div>
-              <div className="text-sm text-green-600">
-                +{factor.impact} points possible
-              </div>
+              {/*
+                "+N points possible" used to render here from factor.impact.
+                That field is computed by the service but DISCARDED before the
+                row is written — the persisted factors are category -> score
+                and nothing else — so the number shown was never going to be
+                real once the value came back from the database. Removed rather
+                than replaced with a guess.
+              */}
               <div className="mt-2 h-2 bg-gray-200 dark:bg-slate-700 rounded">
                 <div
                   style={{ width: `${factor.currentScore}%` }}

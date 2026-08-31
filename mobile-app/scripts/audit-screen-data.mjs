@@ -1,0 +1,528 @@
+#!/usr/bin/env node
+/**
+ * audit:screen-data — a mobile screen must not render invented data.
+ *
+ * THE GAP THIS CLOSES. audit:mocks scans web src/app/api for routes that return
+ * mock data from a catch block. It has never looked at mobile-app/, and mobile
+ * fabricates differently: not a fallback inside a handler, but a module-level
+ * constant rendered directly, with no request made at all.
+ *
+ * Every fabrication found by hand in this codebase had that exact shape:
+ *
+ *   settings/billing.tsx    a Visa ending 4242 and three $29.00 paid invoices
+ *   tax/optimizer.tsx       five tips with invented savings, and a $285,400 income
+ *   hooks/useCoaching.ts    MOCK_SESSIONS, plus five canned "AI coach" replies
+ *
+ * Each was found by a person reading the file. This finds them mechanically.
+ *
+ * WHAT IT FLAGS. A module-level `const NAME = [{ ... }]` — a constant array of
+ * OBJECTS, which is a data set rather than a config value — that the file then
+ * renders (useState(NAME), NAME.map, NAME.filter, NAME.find).
+ *
+ * WHAT IT CANNOT DECIDE. Whether that data set is a FABRICATION (the user's
+ * bills, scores, connected accounts) or a CATALOGUE (the plans on offer, the
+ * bureaus you can dispute with, a list of filter chips). Both are constant
+ * arrays of objects rendered by a screen; only a human knows which is which. So
+ * every entry must be classified in the baseline as `catalogue` or
+ * `fabrication`, and the gate fails on anything unclassified or new.
+ *
+ * A file that makes NO api/store/fetch call at all is reported separately: a
+ * screen showing user data that never asks the server for it cannot be showing
+ * the user's data.
+ */
+
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "fs";
+import { join, relative } from "path";
+
+/**
+ * Runs over EITHER tree.
+ *
+ * The web app has 199 pages and no equivalent of this gate: `audit:mocks`
+ * watches API RESPONSES and nothing watched a page's own constants. That is
+ * how `src/app/analytics/credit-score/page.tsx` kept a `scoreFactors` list
+ * asserting "On-time payments for 24 months" and "Using 32% of available
+ * credit" — the SF-16 shape, on the web side, unwatched.
+ *
+ *   --roots     comma-separated dirs to scan, relative to cwd
+ *               (default "app,src/hooks" — the mobile layout)
+ *   --baseline  where the shrink-only list lives
+ */
+const arg = (name, fallback) => {
+  const i = process.argv.indexOf(`--${name}`);
+  return i === -1 ? fallback : process.argv[i + 1];
+};
+
+const CWD = process.cwd();
+const ROOTS = arg("roots", "app,src/hooks")
+  .split(",")
+  .map((r) => join(CWD, r.trim()));
+const BASELINE = join(CWD, arg("baseline", join("scripts", "screen-data-baseline.json")));
+
+function walk(dir, out = []) {
+  if (!existsSync(dir)) return out;
+  for (const entry of readdirSync(dir)) {
+    if (["node_modules", ".expo", "coverage", "__tests__", "__mocks__"].includes(entry)) continue;
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) walk(full, out);
+    else if (/\.tsx?$/.test(entry) && !/\.(test|spec)\.tsx?$/.test(entry)) out.push(full);
+  }
+  return out;
+}
+
+/**
+ * A module-level constant array of OBJECTS.
+ *
+ * `[{` and not `[` alone: `const TABS = ["a", "b"]` is a config value, while
+ * `const BILLS = [{ amount: 120, due: "..." }]` is a data set. Requiring the
+ * SCREAMING_CASE name keeps it to deliberate module constants rather than any
+ * local array.
+ */
+const CONST_DATA = /(?:^|\n)(?:export\s+)?const\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*(?::[^=\n]+)?=\s*\[\s*\{/g;
+
+/**
+ * A module-level constant OBJECT — the blind spot the array detector had.
+ *
+ * WEEKLY_SUMMARY sat in app/recommendations/insights.tsx for the whole of
+ * this sweep and no gate saw it:
+ *
+ *     const WEEKLY_SUMMARY = {
+ *       totalSpent: 1245, vsLastWeek: -12,
+ *       topCategory: "Groceries", topCategoryAmount: 320,
+ *       savingsOpportunities: 3, potentialSavings: 127,
+ *     };
+ *
+ * It is a data set about the user by every standard this gate applies. It is
+ * simply not an ARRAY of objects, and CONST_DATA above requires `[{`. A
+ * fabrication does not have to be plural.
+ *
+ * THREE-KEY FLOOR. `const STYLE = { flex: 1 }` and similar two-key config
+ * objects are noise. Three or more keys, SCREAMING_CASE, and actually read by
+ * the file is the line that separates a data set from a setting — the same
+ * judgement the array detector makes with `[{` rather than `[`.
+ */
+const CONST_OBJECT_HEAD =
+  /(?:^|\n)(?:export\s+)?const\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*(?::[^=\n]+)?=\s*\{/g;
+
+const MIN_OBJECT_KEYS = 3;
+
+/**
+ * The object literal starting at `open`, brace-counted.
+ *
+ * A regex like /\{[^}]*\}/ stops at the first inner `}` and would miss every
+ * nested object — which is where the interesting fabrications live.
+ */
+function objectBody(source, open) {
+  let depth = 0;
+  for (let i = open; i < source.length; i++) {
+    if (source[i] === "{") depth++;
+    else if (source[i] === "}") {
+      depth--;
+      if (depth === 0) return source.slice(open + 1, i);
+    }
+  }
+  return "";
+}
+
+/**
+ * How many keys the object declares at its OWN level.
+ *
+ * Nested objects and arrays are stripped first, so `{ a: { x: 1, y: 2 }, b: 2 }`
+ * counts 2 and not 4. The count is not line-anchored: an earlier version used
+ * /^\s*\w+\s*:/gm, which counted exactly one key in any single-line object —
+ * every one-liner slipped under the three-key floor. The self-test caught it.
+ */
+function countKeys(body) {
+  let flat = body;
+  let previous;
+  do {
+    previous = flat;
+    flat = flat.replace(/\{[^{}]*\}/g, "").replace(/\[[^[\]]*\]/g, "");
+  } while (flat !== previous);
+  return (flat.match(/[\w"']+\s*:/g) || []).length;
+}
+
+/**
+ * Does this object hold MEASUREMENTS rather than configuration?
+ *
+ * The three-key floor alone flags every label and colour map in the app —
+ * STATUS_COLORS, CYCLE_LABELS, CATEGORY_ICONS — and 30 entries of noise gets
+ * a gate switched off within a day.
+ *
+ * The separator that actually works, found by looking at both populations:
+ * configuration uses small whole numbers (a period map of 1/3/6/12, a set of
+ * hex strings), while data about a subject carries DECIMALS or LARGE values.
+ *
+ *   PERIOD_MONTHS   { "1M": 1, "3M": 3, "6M": 6 }              config
+ *   STATUS_COLORS   { active: "#22C55E", paused: "#F59E0B" }   config
+ *   PRICE_TARGETS   { current: 180.25, target: 210.0 }         measurement
+ *   RISK_ASSESSMENT { score: 45, volatility: 28.5, beta: 1.24 } measurement
+ *   WEEKLY_SUMMARY  { totalSpent: 1245, vsLastWeek: -12 }      measurement
+ *
+ * This is a heuristic and will miss a fabrication built only from small whole
+ * numbers. It is deliberately tuned to keep the flagged set small enough that
+ * every entry gets read, which is worth more than a complete list nobody
+ * looks at. The array detector above catches the plural case regardless.
+ */
+const MEASUREMENT_MAGNITUDE = 100;
+
+function looksMeasured(body) {
+  const numbers = body.match(/:\s*(-?\d+(?:\.\d+)?)/g) || [];
+  return numbers.some((raw) => {
+    const value = Number(raw.replace(/^:\s*/, ""));
+    if (Number.isNaN(value)) return false;
+    return !Number.isInteger(value) || Math.abs(value) >= MEASUREMENT_MAGNITUDE;
+  });
+}
+
+/**
+ * A data set seeded through a useState INITIALISER.
+ *
+ * This is the blind spot that outlived the whole sweep. CONST_DATA requires
+ * `const NAME = [{`, and nothing matched
+ *
+ *     const [accounts, setAccounts] = useState<Account[]>([
+ *       { name: "Chase Freedom", balance: 3500, apr: 18.99 },
+ *       ...
+ *     ]);
+ *
+ * in src/app/credit-builder/payments/page.tsx, which showed every reader a
+ * payoff plan for $11,300 of debt they did not owe. It was found by reading
+ * the file, not by any gate, which is exactly what a gate is for.
+ *
+ * `isRendered` is not consulted here: state IS rendered by definition — the
+ * component holds it precisely to show it. The name captured is the state
+ * variable, so the baseline key reads `accounts` rather than an anonymous
+ * initialiser.
+ */
+const USESTATE_DATA =
+  /const\s*\[\s*([A-Za-z_$][\w$]*)\s*,\s*set[\w$]*\s*\]\s*=\s*useState\s*(?:<[^>]*>)?\s*\(\s*\[\s*\{/g;
+
+function useStateDataSets(source) {
+  return [...source.matchAll(USESTATE_DATA)].map((m) => m[1]);
+}
+
+function constantObjects(source) {
+  const out = [];
+  for (const m of source.matchAll(CONST_OBJECT_HEAD)) {
+    const open = m.index + m[0].lastIndexOf("{");
+    const body = objectBody(source, open);
+    const keys = countKeys(body);
+    if (keys < MIN_OBJECT_KEYS) continue;
+    if (!looksMeasured(body)) continue;
+    // Must actually be read. A declared-but-unused constant renders nothing.
+    if (!new RegExp(`\\b${m[1]}\\.|\\{${m[1]}\\}|\\b${m[1]}\\[`).test(source)) continue;
+    out.push(m[1]);
+  }
+  return out;
+}
+
+/** Any sign the file asks the server for something. */
+const FETCHES =
+  /\b(?:api|apiClient)\.(?:get|post|put|patch|delete)\s*\(|use[A-Z]\w*Store\s*\(\)|\bfetch\s*\(|use[A-Z]\w*\s*\(\s*\)/;
+
+/** Whether the constant is actually rendered, rather than merely declared. */
+function isRendered(source, name) {
+  return new RegExp(
+    // `useState<Report[]>(MOCK_REPORTS)` — the GENERIC ARGUMENT is optional
+    // and was not allowed for. That single gap hid app/dashboard/reports.tsx's
+    // MOCK_REPORTS ("Credit Analysis Report - December 2024", 2.4 MB) for this
+    // entire sweep: the constant was seeded into state through a typed
+    // useState, so it never matched, and the screen then mapped over the STATE
+    // variable rather than the constant.
+    `useState\\s*(?:<[^>]*>)?\\s*\\(\\s*${name}\\s*\\)` +
+      // `setResults(mockResults)` — a SETTER, not the initialiser. The
+      // useState gap above was closed for the initialiser only, and
+      // src/app/marketplace/analysis/page.tsx seeds through the setter
+      // instead: `useState<AnalysisResult[]>([])` and then
+      // `setResults(mockResults)` on upload. Its mockResults invents a whole
+      // credit report — "Late payment on Chase card", "Collection account -
+      // Medical debt $450" — and the first web run of this gate did not see
+      // it. Narrow on purpose: `set` + an uppercase letter is the React
+      // setter convention, so an arbitrary call taking the constant does not
+      // match.
+      `|set[A-Z]\\w*\\(\\s*${name}\\s*\\)` +
+      // A method call on the constant. The whitespace here is the point:
+      // `${name}\\.filter\\(` required the dot on the SAME line, and Prettier
+      // breaks a chain across lines the moment it exceeds the print width —
+      //
+      //     const filteredCards = mockCards
+      //       .filter((c) => !showNoFeeOnly || c.annualFee === 0)
+      //
+      // so src/app/marketplace/secured-cards/page.tsx went unreported by every
+      // run of this gate: full sweep, directory-scoped, and copied into an
+      // isolated probe. Its mockCards quoted APRs and deposit ranges for named
+      // products ("Discover it Secured, 28.24% APR"). One line break was the
+      // whole of it — nothing to do with the alias it was assigned to, which
+      // is what I first blamed.
+      //
+      // The verb list is wider than map/filter/find for the same reason: a
+      // chain can start with any of them.
+      `|${name}\\s*\\.\\s*(?:map|filter|find|flatMap|slice|sort|reduce|some|every|forEach|concat|at)\\s*\\(` +
+      `|\\{${name}\\}`,
+  ).test(source);
+}
+
+function findings() {
+  const out = [];
+  for (const file of ROOTS.flatMap((r) => walk(r))) {
+    const source = readFileSync(file, "utf8");
+    const rendered = [
+      ...[...source.matchAll(CONST_DATA)]
+        .map((m) => m[1])
+        .filter((name) => isRendered(source, name)),
+      // Constant OBJECTS too — see CONST_OBJECT_HEAD. A fabrication does not
+      // have to be plural.
+      ...constantObjects(source),
+      // Data seeded through a useState INITIALISER — see USESTATE_DATA.
+      ...useStateDataSets(source),
+    ];
+    if (rendered.length === 0) continue;
+    out.push({
+      file: relative(CWD, file).replace(/\\/g, "/"),
+      constants: [...new Set(rendered)].sort(),
+      offline: !FETCHES.test(source),
+    });
+  }
+  return out.sort((a, b) => a.file.localeCompare(b.file));
+}
+
+const key = (f) => `${f.file}: ${f.constants.join(", ")}`;
+
+// ── Self-test ───────────────────────────────────────────────────────────────
+if (process.argv.includes("--self-test")) {
+  let bad = 0;
+  const cases = [
+    ["const BILLS = [{ amount: 1 }];\nBILLS.map(x => x)", "BILLS", true, "a rendered data set is flagged"],
+    [
+      'const M = [{ a: 1 }];\nconst [r, setR] = useState<T[]>([]);\nsetR(M)',
+      "M",
+      true,
+      "seeded through a SETTER, not the initialiser — this is how " +
+        "marketplace/analysis hid a whole invented credit report",
+    ],
+    [
+      "const M = [{ a: 1 }];\nsend(M)",
+      "M",
+      false,
+      "an ordinary call taking the constant is not rendering it — only the " +
+        "set<Name> setter convention counts",
+    ],
+    ["const TABS = [\"a\", \"b\"];\nTABS.map(x => x)", "TABS", false, "an array of STRINGS is config, not data"],
+    ["const BILLS = [{ a: 1 }];", "BILLS", false, "declared but never rendered"],
+    // SCOPE, not case, is what separates a module constant from a local, and
+    // the `(?:^|\n)const` anchor already enforces it: an in-function
+    // declaration is indented and never matches. Case was a second filter on
+    // top, and it was wrong — `mockResults` in
+    // src/app/marketplace/analysis/page.tsx is module-level, camelCase, and
+    // invents a whole credit report ("Late payment on Chase card",
+    // "Collection account - Medical debt $450"). `scoreFactors` in
+    // src/app/analytics/credit-score/page.tsx is the same shape. The case that
+    // used to sit here asserted "lower-case local" over a fixture at column 0,
+    // so it never tested scope at all.
+    [
+      "function C() {\n  const bills = [{ a: 1 }];\n  return bills.map(x => x);\n}",
+      "bills",
+      false,
+      "an INDENTED declaration is a local inside a component, not a module constant",
+    ],
+    [
+      "const mockResults = [{ a: 1 }];\nmockResults.map(x => x)",
+      "mockResults",
+      true,
+      "module-level and camelCase is still a module constant — this is the " +
+        "real marketplace/analysis shape the case-based filter missed",
+    ],
+    [
+      "const mockCards = [{ a: 1 }];\nconst f = mockCards\n  .filter(c => c)\n  .sort((a, b) => 0);\nf.map(x => x)",
+      "mockCards",
+      true,
+      "a chain BROKEN ACROSS LINES by Prettier — `${name}\\.filter\\(` needed " +
+        "the dot on the same line, and that alone hid " +
+        "src/app/marketplace/secured-cards/page.tsx from every run of this " +
+        "gate while it quoted APRs for named products",
+    ],
+    [
+      "const ROWS = [{ a: 1 }];\nconst n = ROWS\n  .length;",
+      "ROWS",
+      false,
+      "a line-broken PROPERTY access is not rendering — only a method call counts",
+    ],
+    [
+      'const [accounts, setAccounts] = useState<Account[]>([\n  { name: "Chase Freedom", balance: 3500 },\n]);',
+      "accounts",
+      true,
+      "a data set seeded through a useState INITIALISER — the shape that hid " +
+        "$11,300 of invented debt in credit-builder/payments from every run",
+    ],
+    [
+      "const [count, setCount] = useState(0);",
+      "count",
+      false,
+      "a scalar useState is not a data set",
+    ],
+    [
+      "const [rows, setRows] = useState<Row[]>([]);",
+      "rows",
+      false,
+      "an EMPTY useState initialiser is the correct shape — it is what a " +
+        "screen that fetches its data looks like",
+    ],
+    ["const B = [{ a: 1 }];\nuseState(B)", "B", true, "useState(NAME) counts as rendering"],
+    [
+      "const MOCK_REPORTS = [{ a: 1 }];\nconst [r] = useState<Report[]>(MOCK_REPORTS)",
+      "MOCK_REPORTS",
+      true,
+      "a GENERIC type argument on useState must not hide the seed — this is exactly how app/dashboard/reports.tsx's MOCK_REPORTS escaped the whole sweep",
+    ],
+    // Passing the constant to a component IS rendering it — the data reaches the
+    // screen either way. This case originally asserted false; the detector was
+    // right and the expectation was wrong.
+    ["const B = [{ a: 1 }];\nconst x = <C data={B} />", "B", true, "a prop pass renders it too"],
+  ];
+  for (const [src, name, want, why] of cases) {
+    const declared = [...src.matchAll(CONST_DATA)].map((m) => m[1]).includes(name);
+    // The verdict must cover EVERY detector, or a case written for one of them
+    // fails for the wrong reason. It used to run only the CONST_DATA path.
+    const got =
+      (declared && isRendered(src, name)) ||
+      constantObjects(src).includes(name) ||
+      useStateDataSets(src).includes(name);
+    if (got === want) continue;
+    bad++;
+    console.log(`  SELF-TEST FAIL: ${JSON.stringify(src)} -> ${got}, expected ${want} (${why})`);
+  }
+
+  // Detector 2 — constant OBJECTS. Added after WEEKLY_SUMMARY sat unflagged
+  // through an entire fabrication sweep because it was not an array.
+  const objectCases = [
+    [`const WEEKLY_SUMMARY = { totalSpent: 1245, vsLastWeek: -12, topCategory: "Groceries" };\nWEEKLY_SUMMARY.totalSpent`,
+      ["WEEKLY_SUMMARY"], "three keys, SCREAMING_CASE, read, measured — a data set"],
+    [`const STYLE = { flex: 1, padding: 8 };\nSTYLE.flex`,
+      [], "two keys is a setting, not a data set"],
+    [`const SUMMARY = { a: 1, b: 2, c: 3 };`,
+      [], "declared but never read renders nothing"],
+    [`const NESTED = { a: { x: 1 }, b: 250.5, c: 3 };\nNESTED.a`,
+      ["NESTED"], "brace-counted, so a nested object does not truncate the body"],
+    [`function C() {\n  const lower = { a: 1, b: 2, c: 3 };\n  return lower.a;\n}`,
+      [], "an INDENTED object declaration is a local, not a module constant"],
+    [`const MAP = { a: 1, b: 2, c: 3 };\nMAP["a"]`,
+      [], "small whole numbers are configuration, not measurement"],
+    [`const PERIOD_MONTHS = { "1M": 1, "3M": 3, "6M": 6, "1Y": 12 };\nPERIOD_MONTHS["1M"]`,
+      [], "a period lookup is configuration"],
+    [`const STATUS_COLORS = { active: "#22C55E", paused: "#F59E0B", done: "#3B82F6" };\nSTATUS_COLORS.active`,
+      [], "a colour map carries no numbers at all"],
+    [`const PRICE_TARGETS = { current: 180.25, target: 210.0, stopLoss: 160.0 };\nPRICE_TARGETS.current`,
+      ["PRICE_TARGETS"], "decimals are measurements — invented price targets"],
+    [`const SUMMARY = { totalSpent: 1245, vsLastWeek: -12, topCategory: "Groceries" };\nSUMMARY.totalSpent`,
+      ["SUMMARY"], "a large value is a measurement"],
+  ];
+  for (const [src, want, why] of objectCases) {
+    const got = constantObjects(src);
+    if (JSON.stringify(got) === JSON.stringify(want)) continue;
+    bad++;
+    console.log(
+      `  SELF-TEST FAIL (object): ${JSON.stringify(src.slice(0, 40))} -> ${JSON.stringify(got)}, expected ${JSON.stringify(want)} (${why})`,
+    );
+  }
+
+  const offlineCases = [
+    ['const x = 1;', true, "a file with no request is offline"],
+    ['await api.get("/x")', false, "an api call is a request"],
+    ['await apiClient.post("/x", {})', false, "apiClient counts too"],
+    ['const s = useTaxStore()', false, "a store read is a request path"],
+    ['await fetch("/x")', false, "bare fetch counts"],
+  ];
+  for (const [src, want, why] of offlineCases) {
+    const got = !FETCHES.test(src);
+    if (got === want) continue;
+    bad++;
+    console.log(`  SELF-TEST FAIL (offline): ${JSON.stringify(src)} -> ${got}, expected ${want} (${why})`);
+  }
+
+  const total = cases.length + objectCases.length + offlineCases.length;
+  console.log(
+    bad === 0
+      ? `audit:screen-data self-test PASSED — ${total}/${total} cases correct.`
+      : `audit:screen-data self-test FAILED — ${bad} of ${total} cases wrong.`,
+  );
+  process.exit(bad === 0 ? 0 : 1);
+}
+
+// ── Baseline ────────────────────────────────────────────────────────────────
+let baseline = { frozen: null, entries: {} };
+try {
+  baseline = JSON.parse(readFileSync(BASELINE, "utf8"));
+} catch {
+  /* first run */
+}
+
+const found = findings();
+
+if (process.argv.includes("--freeze-baseline")) {
+  const entries = {};
+  for (const f of found) {
+    entries[key(f)] = baseline.entries?.[key(f)] ?? {
+      classification: "UNCLASSIFIED",
+      offline: f.offline,
+    };
+  }
+  writeFileSync(
+    BASELINE,
+    JSON.stringify(
+      {
+        frozen: baseline.frozen ?? "2026-08-17",
+        why:
+          "Screens rendering a module-level constant data set. Each must be classified " +
+          "`catalogue` (product content: plans offered, bureaus, filter chips) or " +
+          "`fabrication` (invented user data that must be replaced by a real read). " +
+          "UNCLASSIFIED entries are debt someone has not looked at yet. This list may only shrink.",
+        entries,
+      },
+      null,
+      2,
+    ) + "\n",
+  );
+  console.log(`audit:screen-data baseline frozen — ${Object.keys(entries).length} entries`);
+  process.exit(0);
+}
+
+const known = baseline.entries ?? {};
+const novel = found.filter((f) => !known[key(f)]);
+const gone = Object.keys(known).filter((k) => !found.some((f) => key(f) === k));
+
+console.log(
+  `audit:screen-data — ${found.length} screen(s) render a constant data set, ` +
+    `${found.filter((f) => f.offline).length} of them with NO request in the file`,
+);
+
+if (novel.length > 0) {
+  console.log(`\naudit:screen-data FAILED — ${novel.length} NEW constant data set(s):\n`);
+  for (const f of novel) {
+    console.log(`  ${f.file}`);
+    console.log(`      ${f.constants.join(", ")}${f.offline ? "   (no request in this file)" : ""}`);
+  }
+  console.log(
+    `\nClassify each in scripts/screen-data-baseline.json as "catalogue" or\n` +
+      `"fabrication", or replace it with a real read. A constant array of objects\n` +
+      `rendered by a screen is how every fabrication in this codebase has looked.`,
+  );
+  process.exitCode = 1;
+} else {
+  const counts = Object.values(known).reduce((acc, e) => {
+    acc[e.classification] = (acc[e.classification] || 0) + 1;
+    return acc;
+  }, {});
+  console.log(
+    `audit:screen-data PASSED — no NEW constant data sets.\n` +
+      Object.entries(counts)
+        .map(([k, n]) => `  ${n} ${k}`)
+        .join("\n"),
+  );
+}
+
+if (gone.length > 0) {
+  console.log(
+    `\n${gone.length} baselined entr(ies) are gone — run \`--freeze-baseline\` to bank it:\n` +
+      gone.map((k) => `  ${k}`).join("\n"),
+  );
+}

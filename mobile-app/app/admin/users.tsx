@@ -20,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { api } from "../../src/services/api/client";
+import { toArray } from "../../src/store/toArray";
 
 interface UserProfile {
   id: string;
@@ -70,7 +71,7 @@ export default function AdminUsersScreen() {
       );
 
       if (response.success && response.data) {
-        setUsers(response.data.users);
+        setUsers(toArray<UserProfile>(response?.data?.users));
         setTotal(response.data.total);
         setTotalPages(response.data.totalPages);
       } else {

@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
+import type { TaxTipView } from "../../src/services/api/tax";
 import {
   View,
   Text,
@@ -25,92 +26,16 @@ import { useTaxStore } from "../../src/store/taxStore";
 
 const { width } = Dimensions.get("window");
 
-// Mock tax tips data
-const TAX_TIPS = [
-  {
-    id: "1",
-    title: "Maximize Employer 401(k) Match",
-    description:
-      "You may be leaving free money on the table. Ensure you're contributing enough to get the full employer match.",
-    potentialSavings: 3200,
-    difficulty: "easy" as const,
-    category: "Retirement",
-    actionSteps: [
-      "Check your current contribution rate in HR portal",
-      "Review employer matching policy",
-      "Increase contribution to at least match threshold",
-    ],
-  },
-  {
-    id: "2",
-    title: "Consider Backdoor Roth IRA",
-    description:
-      "Your income exceeds the Roth IRA limit, but you can still contribute through the backdoor strategy.",
-    potentialSavings: 0,
-    difficulty: "medium" as const,
-    category: "Retirement",
-    actionSteps: [
-      "Open a Traditional IRA (if you don't have one)",
-      "Contribute $7,000 to Traditional IRA",
-      "Convert to Roth IRA (check for pro-rata rule)",
-    ],
-  },
-  {
-    id: "3",
-    title: "HSA Triple Tax Advantage",
-    description:
-      "If you have a high-deductible health plan, maximize your HSA for tax-free growth and withdrawals.",
-    potentialSavings: 1600,
-    difficulty: "easy" as const,
-    category: "Healthcare",
-    actionSteps: [
-      "Verify you have an HDHP",
-      "Increase HSA contribution to $4,150 (2026 limit)",
-      "Invest HSA funds for long-term growth",
-    ],
-  },
-  {
-    id: "4",
-    title: "Tax-Loss Harvesting",
-    description:
-      "Offset capital gains by selling investments at a loss. Can save thousands in taxes.",
-    potentialSavings: 2800,
-    difficulty: "medium" as const,
-    category: "Investment",
-    actionSteps: [
-      "Review portfolio for positions with unrealized losses",
-      "Sell losing positions to realize losses",
-      "Wait 31 days before repurchasing (wash sale rule)",
-      "Apply losses against gains and up to $3,000 income",
-    ],
-  },
-  {
-    id: "5",
-    title: "Charitable Giving Strategy",
-    description:
-      "Bunch charitable donations in one year to exceed the standard deduction threshold.",
-    potentialSavings: 1200,
-    difficulty: "medium" as const,
-    category: "Deductions",
-    actionSteps: [
-      "Calculate total planned donations for next 2-3 years",
-      "Consider donor-advised fund for bunching",
-      "Donate appreciated stock instead of cash",
-    ],
-  },
-];
-
-// Tax brackets for visualization
-const TAX_BRACKETS_2026 = [
-  { rate: 10, min: 0, max: 11600, label: "10%" },
-  { rate: 12, min: 11601, max: 47150, label: "12%" },
-  { rate: 22, min: 47151, max: 100525, label: "22%" },
-  { rate: 24, min: 100526, max: 191950, label: "24%" },
-  { rate: 32, min: 191951, max: 243725, label: "32%" },
-  { rate: 35, min: 243726, max: 609350, label: "35%" },
-  { rate: 37, min: 609351, max: Infinity, label: "37%" },
-];
-
+/**
+ * There is no TAX_TIPS constant any more.
+ *
+ * This screen used to seed `displayTips` with five hardcoded tips carrying
+ * invented savings ($3,200, $1,600, $2,800, $1,200) and never sync them from
+ * the store, so every user saw the same fabricated list and the same
+ * fabricated "Total Optimization Potential" summed from it. fetchTips() hit
+ * /tax/tips, which does not exist, so the real list stayed empty regardless.
+ * Tips now come from the store, which fetches /tax/recommendations.
+ */
 const difficultyColors = {
   easy: { bg: "#D1FAE5", text: "#065F46" },
   medium: { bg: "#FEF3C7", text: "#92400E" },
@@ -126,19 +51,33 @@ export default function TaxOptimizerScreen() {
     dismissTip,
     compareYears,
     yearComparisons,
+    tipsProfileMissing,
   } = useTaxStore();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAllTips, setShowAllTips] = useState(false);
-  const [displayTips, setDisplayTips] = useState(TAX_TIPS);
 
-  const taxableIncome = analysis?.currentProjection.taxableIncome || 285400;
+  const displayTips = tips;
+
+  /**
+   * null until the user's analysis loads. Taxable income used to fall back to
+   * 285400 — a specific, confident figure belonging to nobody — and the whole
+   * bracket section was computed from it. A user cannot tell invented numbers
+   * about their own finances apart from real ones, so nothing is shown until
+   * their own figures arrive.
+   */
+  const projection = analysis?.currentProjection ?? null;
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
+    // fetchAnalysis is NOT called here: it requires { taxYear, grossIncome,
+    // filingStatus, stateOfResidence } and this screen holds none of them. It
+    // populates from wherever the user entered their profile. Until then
+    // `projection` is null and the rates card asks for those details rather
+    // than inventing them — which is what the old $285,400 fallback did.
     await Promise.all([fetchTips(), compareYears([2024, 2025, 2026])]);
   };
 
@@ -157,33 +96,39 @@ export default function TaxOptimizerScreen() {
     }).format(amount);
   };
 
-  const getCurrentBracket = () => {
-    for (const bracket of TAX_BRACKETS_2026) {
-      if (taxableIncome <= bracket.max) {
-        return bracket;
-      }
-    }
-    return TAX_BRACKETS_2026[TAX_BRACKETS_2026.length - 1];
-  };
-
-  const currentBracket = getCurrentBracket();
+  /**
+   * Rates as a percentage. The engine returns 0.24 for 24%, but has also been
+   * seen to return 24 directly, so a value above 1 is treated as already-scaled
+   * rather than rendered as 2400%.
+   */
+  const formatRate = (rate: number) =>
+    `${(rate > 1 ? rate : rate * 100).toFixed(1)}%`;
 
   const handleDismissTip = (tipId: string) => {
     Alert.alert("Dismiss Tip", "Hide this tip from your recommendations?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Dismiss",
-        onPress: () => {
-          setDisplayTips((prev) => prev.filter((t) => t.id !== tipId));
+        onPress: async () => {
+          // Was a local filter only: the tip reappeared on the next launch
+          // because nothing was ever told about it. The store removes it from
+          // state only when the server accepts the dismissal.
+          const dismissed = await dismissTip(tipId);
+          if (!dismissed) {
+            Alert.alert(
+              "Could not dismiss",
+              "That tip is still in your list. Please try again.",
+            );
+          }
         },
       },
     ]);
   };
 
-  const handleTipAction = (tip: (typeof TAX_TIPS)[0]) => {
+  const handleTipAction = (tip: TaxTipView) => {
     Alert.alert(
       tip.title,
-      `Steps:\n\n${tip.actionSteps.map((s, i) => `${i + 1}. ${s}`).join("\n\n")}`,
+      `Steps:\n\n${tip.actionSteps.map((s: string, i: number) => `${i + 1}. ${s}`).join("\n\n")}`,
       [{ text: "Got It", style: "default" }],
     );
   };
@@ -222,82 +167,51 @@ export default function TaxOptimizerScreen() {
         </LinearGradient>
       </View>
 
-      {/* Tax Bracket Visualization */}
+      {/*
+        The user's real rates, straight from their analysis.
+
+        This replaced a bracket chart drawn from a hardcoded TAX_BRACKETS_2026
+        table that actually held the 2024 single-filer figures ($11,600 /
+        $47,150 / $100,525), applied to every user regardless of filing status,
+        and fed by a taxable income that defaulted to an invented $285,400. The
+        marginal rate, the bar highlight and the "$X from the next bracket"
+        line were all derived from those two wrong inputs.
+
+        federalMarginalRate and effectiveRate are computed server-side from the
+        real IRS tables for the caller's own profile, so they are shown
+        directly instead of re-derived on the client. The bracket chart can
+        come back the moment this screen has a filing status to send: both
+        /api/tax/brackets and the store's fetchBrackets already exist and take
+        { taxYear, filingStatus, taxableIncome } — nothing calls them yet.
+      */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Your Tax Bracket</Text>
-
+        <Text style={styles.sectionTitle}>Your Tax Rates</Text>
         <View style={styles.bracketCard}>
-          <View style={styles.bracketHeader}>
-            <View>
-              <Text style={styles.bracketCurrentLabel}>
-                Current Marginal Rate
-              </Text>
-              <Text style={styles.bracketCurrentRate}>
-                {currentBracket.label}
-              </Text>
+          {projection ? (
+            <View style={styles.bracketHeader}>
+              <View>
+                <Text style={styles.bracketCurrentLabel}>
+                  Current Marginal Rate
+                </Text>
+                <Text style={styles.bracketCurrentRate}>
+                  {formatRate(projection.federalMarginalRate)}
+                </Text>
+                <Text style={styles.bracketCurrentLabel}>
+                  Effective rate {formatRate(projection.effectiveRate)}
+                </Text>
+              </View>
+              <View style={styles.bracketIncomeBox}>
+                <Text style={styles.bracketIncomeLabel}>Taxable Income</Text>
+                <Text style={styles.bracketIncomeValue}>
+                  {formatCurrency(projection.taxableIncome)}
+                </Text>
+              </View>
             </View>
-            <View style={styles.bracketIncomeBox}>
-              <Text style={styles.bracketIncomeLabel}>Taxable Income</Text>
-              <Text style={styles.bracketIncomeValue}>
-                {formatCurrency(taxableIncome)}
-              </Text>
-            </View>
-          </View>
-
-          {/* Bracket Bars */}
-          <View style={styles.bracketBars}>
-            {TAX_BRACKETS_2026.map((bracket, index) => {
-              const isCurrent = bracket.rate === currentBracket.rate;
-              const isPast = bracket.rate < currentBracket.rate;
-              const barWidth = Math.min(100, (bracket.rate / 37) * 100);
-
-              return (
-                <View key={index} style={styles.bracketRow}>
-                  <Text style={styles.bracketLabel}>{bracket.label}</Text>
-                  <View style={styles.bracketBarContainer}>
-                    <View
-                      style={[
-                        styles.bracketBar,
-                        {
-                          width: `${barWidth}%`,
-                          backgroundColor: isCurrent
-                            ? "#F59E0B"
-                            : isPast
-                              ? "#FED7AA"
-                              : "#E5E7EB",
-                        },
-                      ]}
-                    />
-                    {isCurrent && (
-                      <View style={styles.currentIndicator}>
-                        <Text style={styles.currentIndicatorText}>YOU</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.bracketRange}>
-                    {bracket.max === Infinity
-                      ? `$${(bracket.min / 1000).toFixed(0)}K+`
-                      : `$${(bracket.max / 1000).toFixed(0)}K`}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-
-          {/* Bracket Tip */}
-          <View style={styles.bracketTip}>
-            <Text style={styles.bracketTipIcon}>💡</Text>
-            <Text style={styles.bracketTipText}>
-              You're{" "}
-              {formatCurrency(
-                taxableIncome > currentBracket.max
-                  ? 0
-                  : currentBracket.max - taxableIncome,
-              )}{" "}
-              away from the next bracket. Consider pre-tax contributions to stay
-              in the {currentBracket.label} bracket.
+          ) : (
+            <Text style={styles.bracketCurrentLabel}>
+              Add your income details to see your marginal and effective rates.
             </Text>
-          </View>
+          )}
         </View>
       </View>
 
@@ -312,6 +226,16 @@ export default function TaxOptimizerScreen() {
           </TouchableOpacity>
         </View>
 
+        {displayTips.length === 0 ? (
+          <View style={styles.tipCard}>
+            <Text style={styles.tipDescription}>
+              {tipsProfileMissing
+                ? "Tell us about your taxes and we'll look for opportunities."
+                : "No opportunities found for you right now."}
+            </Text>
+          </View>
+        ) : null}
+
         {(showAllTips ? displayTips : displayTips.slice(0, 3)).map((tip) => (
           <TouchableOpacity
             key={tip.id}
@@ -320,22 +244,32 @@ export default function TaxOptimizerScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.tipHeader}>
-              <View
-                style={[
-                  styles.difficultyBadge,
-                  { backgroundColor: difficultyColors[tip.difficulty].bg },
-                ]}
-              >
-                <Text
+              {/*
+                difficulty and category come from the recommendation's joined
+                strategy. When it did not come back they are absent, and the
+                chip is omitted rather than defaulted to "MEDIUM" — a guess the
+                user would read as a measurement.
+              */}
+              {tip.difficulty ? (
+                <View
                   style={[
-                    styles.difficultyText,
-                    { color: difficultyColors[tip.difficulty].text },
+                    styles.difficultyBadge,
+                    { backgroundColor: difficultyColors[tip.difficulty].bg },
                   ]}
                 >
-                  {tip.difficulty.toUpperCase()}
-                </Text>
-              </View>
-              <Text style={styles.tipCategory}>{tip.category}</Text>
+                  <Text
+                    style={[
+                      styles.difficultyText,
+                      { color: difficultyColors[tip.difficulty].text },
+                    ]}
+                  >
+                    {tip.difficulty.toUpperCase()}
+                  </Text>
+                </View>
+              ) : null}
+              {tip.category ? (
+                <Text style={styles.tipCategory}>{tip.category}</Text>
+              ) : null}
               <TouchableOpacity
                 style={styles.dismissButton}
                 onPress={() => handleDismissTip(tip.id)}
@@ -424,12 +358,16 @@ export default function TaxOptimizerScreen() {
             </View>
           ))}
 
-          <View style={styles.comparisonTrend}>
-            <Text style={styles.trendText}>
-              📈 Your effective tax rate has increased by{" "}
-              <Text style={styles.trendHighlight}>2.7%</Text> over 3 years
-            </Text>
-          </View>
+          {/*
+            "📈 Your effective tax rate has increased by 2.7% over 3 years"
+            lived here — a claim about this user's tax history, with no source.
+            Nothing stores three years of effective rates; the analysis this
+            screen reads describes the CURRENT year only.
+
+            It survived the earlier fix of this screen, which replaced the
+            invented income, bracket and five tips: that pass removed the
+            module-level constants and left the JSX literals.
+          */}
         </View>
       </View>
 
@@ -446,20 +384,27 @@ export default function TaxOptimizerScreen() {
               </Text>
             </View>
 
-            <View style={styles.gapDetails}>
-              <View style={styles.gapItem}>
-                <Text style={styles.gapItemLabel}>401(k) Remaining</Text>
-                <Text style={styles.gapItemValue}>$13,000</Text>
-              </View>
-              <View style={styles.gapItem}>
-                <Text style={styles.gapItemLabel}>IRA Remaining</Text>
-                <Text style={styles.gapItemValue}>$7,000</Text>
-              </View>
-              <View style={styles.gapItem}>
-                <Text style={styles.gapItemLabel}>HSA Remaining</Text>
-                <Text style={styles.gapItemValue}>$3,150</Text>
-              </View>
-            </View>
+            {/*
+              A per-account breakdown lived here — 401(k) Remaining $13,000,
+              IRA $7,000, HSA $3,150 — rendered directly BENEATH the genuinely
+              computed `retirementContributionGap` above, which is what made
+              them read as computed too.
+
+              They are not. `TaxOptimizationAnalysis` (services/api/tax.ts:
+              36-49) carries one `retirementContributionGap` and no per-account
+              split, so there is nothing to divide between 401(k), IRA and HSA.
+              "Remaining" is also a claim about what the user has ALREADY
+              contributed — $13,000 remaining of a $23,000 limit asserts they
+              have paid in $10,000 — and no contribution record exists.
+
+              Stated rather than silently dropped, because a total with no
+              breakdown reads as an oversight and an explained one does not.
+            */}
+            <Text style={styles.gapNote}>
+              We cannot break this down by account yet — that needs your
+              contributions so far for each of 401(k), IRA and HSA, and those
+              are not recorded.
+            </Text>
 
             <View style={styles.gapSuggestion}>
               <Text style={styles.gapSuggestionText}>
@@ -762,17 +707,6 @@ const styles = StyleSheet.create({
   comparisonTax: {
     color: "#DC2626",
   },
-  comparisonTrend: {
-    padding: 16,
-  },
-  trendText: {
-    fontSize: 13,
-    color: "#78716C",
-  },
-  trendHighlight: {
-    color: "#DC2626",
-    fontWeight: "600",
-  },
   gapCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
@@ -801,23 +735,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#F59E0B",
   },
-  gapDetails: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  gapItem: {
-    alignItems: "center",
-  },
-  gapItemLabel: {
-    fontSize: 11,
+  gapNote: {
+    fontSize: 13,
     color: "#9CA3AF",
-    marginBottom: 4,
-  },
-  gapItemValue: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1C1917",
+    lineHeight: 19,
   },
   gapSuggestion: {
     backgroundColor: "#F0FDF4",

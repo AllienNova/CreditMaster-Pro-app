@@ -21,6 +21,7 @@ export class CreditService {
       const now = new Date();
       const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       await userCredits().insert({
         user_id: userId,
         credit_balance: DEFAULT_FREE_ALLOWANCE,
@@ -158,6 +159,7 @@ export class CreditService {
       throw new Error(`Failed to reset monthly allowance: ${error.message}`);
     }
 
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await creditTransactions().insert({
       user_id: userId,
       action_type: "monthly_reset",

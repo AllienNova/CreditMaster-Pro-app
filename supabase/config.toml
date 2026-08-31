@@ -299,9 +299,29 @@ auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 max_enrolled_factors = 10
 
 # Control MFA via App Authenticator (TOTP)
+#
+# Enabled 2026-08-10 by owner decision. Two things this turns on that were
+# previously dormant:
+#
+#   1. Users can enrol a second factor at all — nobody could before, which is
+#      why the "locked out of TOTP" scenario was not reachable.
+#   2. The conditional AAL2 gate in src/lib/auth/api-guard.ts becomes LIVE for
+#      anyone who enrols. A session at aal1 belonging to a user with a verified
+#      factor is refused with 403 mfa_required.
+#
+# Supabase issues NO recovery codes of its own — "Supabase does not return
+# recovery codes" (supabase.com/docs/guides/platform/multi-factor-authentication),
+# and `mfa.unenroll` requires aal2 to remove a verified factor
+# (@supabase/auth-js types.d.ts:1012). So a user who loses their authenticator
+# cannot self-recover through any Supabase-native path. The server-side
+# backup-code flow (ADR-0012) is the ONLY recovery route and must stay working.
+#
+# THE HOSTED PROJECT IS SEPARATE. This file configures local development only;
+# production MFA is toggled in the Supabase dashboard and cannot be set from the
+# repo.
 [auth.mfa.totp]
-enroll_enabled = false
-verify_enabled = false
+enroll_enabled = true
+verify_enabled = true
 
 # Configure MFA via Phone Messaging
 [auth.mfa.phone]

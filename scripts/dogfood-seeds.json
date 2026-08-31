@@ -1,0 +1,19 @@
+{
+  "_comment": "Concrete ids for dynamic page routes, so the dogfood sweep exercises them instead of skipping them. A literal '[id]' URL only ever proves the 404 path.",
+
+  "_ownership": "EVERY id here must belong to the user the sweep AUTHENTICATES AS, or the run lies to you. The API scopes by owner and answers 404 (not 403, so existence is not leaked) for someone else's row — so a foreign id produces a WARN that looks exactly like a broken endpoint. That happened: these ids used to belong to m@t.co (6ba6571a) while the sweep ran as dogios@fynvita.test (0ae37503), and four pages reported failures while the code was correct. The sweep now PREFLIGHTS this and refuses to run on a mismatch, because a comment did not prevent it.",
+
+  "_owner": "0ae37503-d192-4bdf-acd9-cd7dc169103a",
+  "_ownerEmail": "dogios@fynvita.test",
+  "_reseed": "Re-seed after `supabase db reset` — see scripts/dogfood-seed.sql. A stale id shows up as a 404, not a silent pass. A dynamic route with no entry here is reported as UNSEEDED rather than dropped, so the coverage gap stays visible.",
+
+  "/disputes/[id]": "d0900001-0000-4000-8000-000000000001",
+  "/documents/[id]": "d0900002-0000-4000-8000-000000000002",
+  "/financial/coach/goal-detail/[id]": "d0900003-0000-4000-8000-000000000003",
+  "/investments/analyze/[symbol]": "AAPL",
+  "/investments/crypto/[coinId]": "bitcoin",
+  "/trading/strategies/[id]": "d0900004-0000-4000-8000-000000000004",
+
+  "_adminNote": "/admin/users/[id] deliberately points at a DIFFERENT user (m@t.co). An admin viewing another account is the whole point of the route, so this one is exempt from the ownership preflight.",
+  "/admin/users/[id]": "6ba6571a-b562-45fd-9247-7e94cce84cde"
+}

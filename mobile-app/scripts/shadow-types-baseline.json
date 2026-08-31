@@ -1,0 +1,10 @@
+{
+  "frozen": "2026-08-18",
+  "why": "Screens that redeclare a shared API type with DIFFERENT fields. This is how two fabrications survived a typecheck: a local type that describes the fixture rather than the wire is satisfied by the fixture and never compared to the route. Shrink-only; anything new fails.",
+  "entries": [
+    "app/admin/users.tsx: UserProfile",
+    "app/dashboard/subscriptions.tsx: Subscription",
+    "app/financial-intelligence/ai-coach.tsx: Recommendation",
+    "app/financial-intelligence/smart-budget.tsx: Recommendation"
+  ]
+}

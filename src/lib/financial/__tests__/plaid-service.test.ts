@@ -72,6 +72,12 @@ function buildChain(resolvedValue: { data: any; error: any }) {
     "order",
     "limit",
     "single",
+    // getConnectionByItemId resolves the connection with .maybeSingle(): a
+    // missing connection is an expected outcome ("not linked"), not the error
+    // .single() raises. The real PostgREST builder has always had it; this
+    // mock did not, so every syncAccounts test failed with "maybeSingle is not
+    // a function" the moment production code started using it.
+    "maybeSingle",
   ];
   for (const m of methods) {
     chain[m] = jest.fn().mockReturnValue(chain);
@@ -88,12 +94,18 @@ const mockItemPublicTokenExchange = jest.fn();
 const mockAccountsGet = jest.fn();
 const mockTransactionsGet = jest.fn();
 const mockTransactionsSync = jest.fn();
+// /accounts/get carries the institution's ID but never its NAME, so syncAccounts
+// takes a second call to resolve it. Without this in the mock the call threw,
+// was swallowed by resolveInstitutionName's catch, and every sync test ran past
+// a warning while covering none of the institution behaviour.
+const mockInstitutionsGetById = jest.fn();
 
 jest.mock("@/lib/financial/plaid-client", () => ({
   getPlaidClient: () => ({
     linkTokenCreate: mockLinkTokenCreate,
     itemPublicTokenExchange: mockItemPublicTokenExchange,
     accountsGet: mockAccountsGet,
+    institutionsGetById: mockInstitutionsGetById,
     transactionsGet: mockTransactionsGet,
     transactionsSync: mockTransactionsSync,
   }),
@@ -120,6 +132,9 @@ describe("PlaidService", () => {
       buildChain({ data: { id: "conn-default" }, error: null }),
     );
     mockRpc.mockResolvedValue({ data: null, error: null });
+    mockInstitutionsGetById.mockResolvedValue({
+      data: { institution: { institution_id: "ins_chase", name: "Chase" } },
+    });
   });
 
   // =========================================================================
@@ -549,6 +564,49 @@ describe("PlaidService", () => {
       expect(accounts[1].accountName).toBe("Chase Credit");
     });
 
+    it("puts the INSTITUTION's name in institutionName, not the account's", async () => {
+      // This read `account.name` — the account's own name written into an
+      // institution column — so BankAccountsList, SavingsTracker,
+      // InvestmentPortfolio, AccountDetailsModal and FinancialDashboard all
+      // rendered "TOTAL CHECKING" where the bank belonged.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
+      supabaseClient().from.mockImplementation((table: string) =>
+        table === "bank_connections"
+          ? tokenChain
+          : buildChain({ data: null, error: null }),
+      );
+      mockAccountsGet.mockResolvedValue(plaidSdkAccountsResponse);
+
+      const accounts = await plaidService.syncAccounts("item-abc", "user-123");
+
+      expect(accounts[0].institutionName).toBe("Chase");
+      expect(accounts[0].accountName).toBe("TOTAL CHECKING");
+      expect(mockInstitutionsGetById).toHaveBeenCalledWith(
+        expect.objectContaining({ institution_id: "ins_chase" }),
+      );
+    });
+
+    it("leaves institutionName empty when Plaid cannot name the institution", async () => {
+      // The accounts and balances are real and useful without a label, so a
+      // failed lookup must not fail the sync — and must not fall back to
+      // whatever string happens to be nearest.
+      mockInstitutionsGetById.mockRejectedValue(new Error("INSTITUTION_NOT_FOUND"));
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
+      supabaseClient().from.mockImplementation((table: string) =>
+        table === "bank_connections"
+          ? tokenChain
+          : buildChain({ data: null, error: null }),
+      );
+      mockAccountsGet.mockResolvedValue(plaidSdkAccountsResponse);
+
+      const accounts = await plaidService.syncAccounts("item-abc", "user-123");
+
+      expect(accounts).toHaveLength(2);
+      expect(accounts[0].institutionName).toBe("");
+    });
+
     it("should upsert each account to financial_accounts", async () => {
       // The credential has no readable column now: the lookup resolves the
       // connection id and the token is decrypted through the RPC.
@@ -569,6 +627,33 @@ describe("PlaidService", () => {
         (c: any[]) => c[0] === "financial_accounts",
       );
       expect(financialAccountsCalls).toHaveLength(2);
+    });
+
+    it("writes connection_id, which the ON DELETE CASCADE depends on", async () => {
+      // 20260801000020 added financial_accounts.connection_id REFERENCES
+      // bank_connections(id) ON DELETE CASCADE, and dropped the old item_id
+      // foreign key in the same migration. Nothing ever wrote the new column,
+      // so every row held NULL and the cascade was inert: deleting a
+      // connection would leave its accounts on the user's screen with no row
+      // left in the database that could remove them.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
+      const storeChain = buildChain({ data: null, error: null });
+      supabaseClient().from.mockImplementation((table: string) =>
+        table === "bank_connections" ? tokenChain : storeChain,
+      );
+      mockAccountsGet.mockResolvedValue(plaidSdkAccountsResponse);
+
+      await plaidService.syncAccounts("item-abc", "user-123");
+
+      for (const call of storeChain.upsert.mock.calls) {
+        expect(call[0]).toMatchObject({
+          connection_id: "conn-abc",
+          provider: "plaid",
+          user_id: "user-123",
+        });
+      }
+      expect(storeChain.upsert).toHaveBeenCalledTimes(2);
     });
 
     // Regression coverage: storeAccount's upsert error branch used to be an
@@ -1021,6 +1106,36 @@ describe("PlaidService", () => {
       expect(params.access_token).toBe("access-token-abc");
       expect(params.start_date).toBeTruthy();
       expect(params.end_date).toBeTruthy();
+    });
+
+    it("propagates a transaction write failure instead of reporting success", async () => {
+      // Found by an independent second-opinion review. storeTransaction had a
+      // bare `if (error) { /* comment */ }` — the upsert error was dropped, so
+      // syncTransactions resolved normally and the webhook route returned 200.
+      // Plaid treats 200 as delivered and never redelivers, so a transient DB
+      // error meant those transactions were permanently absent: balances, net
+      // worth and spending insights silently wrong, no error anywhere.
+      //
+      // The retry machinery already exists one layer up (the route returns 500
+      // on a throw, which is what makes Plaid retry). The swallow was the only
+      // break in the chain.
+      const tokenChain = buildChain({ data: { id: "conn-abc" }, error: null });
+      mockRpc.mockResolvedValue({ data: "access-token-abc", error: null });
+      const failingWrite = buildChain({
+        data: null,
+        error: { message: "connection reset" },
+      });
+
+      supabaseClient().from.mockImplementation((table: string) => {
+        if (table === "bank_connections") return tokenChain;
+        return failingWrite;
+      });
+
+      mockTransactionsGet.mockResolvedValue(plaidSdkTransactionsResponse);
+
+      await expect(
+        plaidService.syncTransactions("item-abc", "user-123"),
+      ).rejects.toThrow(/connection reset/);
     });
 
     it("should send date range in params", async () => {

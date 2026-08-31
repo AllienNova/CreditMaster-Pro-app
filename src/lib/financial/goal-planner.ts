@@ -206,20 +206,47 @@ class GoalPlanner {
           : m.achievedDate,
     }));
 
-    // Update in database - using type assertion due to missing table types
+    // PACE IS NOT LIFECYCLE, and writing one into the other's column made every
+    // call to this method fail.
+    //
+    // calculateGoalStatus returns how the goal is TRACKING — "on_track",
+    // "behind", "ahead", "not_started", "completed". financial_goals.status
+    // stores its LIFECYCLE and is constrained to active | completed | paused |
+    // cancelled. Only "completed" is a member of both sets, so every update for
+    // a goal that had not yet finished was rejected by Postgres:
+    //
+    //   ERROR: new row for relation "financial_goals" violates check
+    //   constraint "financial_goals_status_check"  (DETAIL: … on_track …)
+    //
+    // The error was swallowed — the method returns null on updateError — so the
+    // three routes that call it (goals/[id] PATCH, goals/[id]/contribute,
+    // ai/financial-coach/goals/[goalId]) reported a failure with no reason, and
+    // goal progress has never been updatable through any of them.
+    //
+    // So the lifecycle column is only written when the goal has genuinely
+    // finished; otherwise it is left alone. The pace value is still returned to
+    // the caller below, because it is useful — it just is not this column's.
+    const lifecycleUpdate =
+      status === "completed" ? { status: "completed" as const } : {};
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from("financial_goals")
       .update({
         current_amount: newAmount,
-        status,
+        ...lifecycleUpdate,
         milestones: updatedMilestones,
         updated_at: new Date().toISOString(),
       })
       .eq("id", goalId)
       .eq("user_id", userId);
 
-    if (updateError) return null;
+    if (updateError) {
+      // Logged rather than silently returned as null. The whole reason this bug
+      // survived is that the caller could not see why the write failed.
+      console.error("Failed to update goal progress:", updateError);
+      return null;
+    }
 
     return {
       ...mappedGoal,
@@ -534,6 +561,7 @@ class GoalPlanner {
   private async saveGoalToDatabase(goal: FinancialGoalPlan): Promise<void> {
     const supabase = getServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await (supabase as any).from("financial_goals").insert({
       id: goal.id,
       user_id: goal.userId,

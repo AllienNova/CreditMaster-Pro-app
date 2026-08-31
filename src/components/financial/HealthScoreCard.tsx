@@ -134,7 +134,7 @@ export default function HealthScoreCard() {
             {healthScore.trend} trend
           </div>
           <Link
-            href="/financial/health"
+            href="/financial-hub"
             className="inline-block px-4 py-2 bg-white hover:bg-white dark:bg-slate-800/30 rounded-lg text-sm font-medium transition-colors"
           >
             View Details →

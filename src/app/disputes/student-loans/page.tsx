@@ -58,7 +58,12 @@ function StudentLoanDisputesContent() {
   useEffect(() => {
     if (loanId) {
       void fetchDisputeStrategies();
+      return;
     }
+    // Same defect as /ai-strategies: with no loanId nothing cleared the initial
+    // `loading = true`, so the page sat on a text-free skeleton indefinitely and
+    // its own "no loan selected" empty state was unreachable.
+    setLoading(false);
   }, [loanId, fetchDisputeStrategies]);
 
   const handleGenerateLetter = async (strategy: DisputeStrategy) => {

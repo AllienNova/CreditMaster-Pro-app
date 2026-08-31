@@ -92,6 +92,6 @@ describe("PaydayCountdown", () => {
       name: /manage income sources/i,
     });
     expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute("href", "/dashboard/income");
+    expect(link).toHaveAttribute("href", "/financial/income");
   });
 });

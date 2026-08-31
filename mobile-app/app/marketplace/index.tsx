@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { useMarketplaceStore } from "../../src/store/marketplaceStore";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 const SERVICES = [
   {
@@ -116,9 +117,8 @@ export default function MarketplaceScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView style={styles.scrollView}>
-        {/* Header */}
+        <ScreenHeader title="Marketplace" />
         <View style={styles.header}>
-          <Text style={styles.title}>Marketplace</Text>
           <Text style={styles.subtitle}>
             Products and services to help your credit journey
           </Text>
@@ -167,11 +167,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
   header: { marginBottom: theme.spacing.xl },
-  title: { fontSize: 28, fontWeight: "700", color: theme.colors.text },
+  // `title` used to live here; ScreenHeader owns the title now.
   subtitle: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm,
   },
   servicesSection: { marginTop: theme.spacing.md },
   serviceItem: {

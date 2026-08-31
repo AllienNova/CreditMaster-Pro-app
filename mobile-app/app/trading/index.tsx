@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { useTradingStore } from "../../src/store/tradingStore";
 import { OrderEntrySheet } from "../../src/components/trading/OrderEntrySheet";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 // ============================================================================
 // TYPES
@@ -310,6 +311,7 @@ export default function TradingDashboard() {
   if (isLoading && openPositions.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
+        <ScreenHeader title="Trading" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading trading data...</Text>
@@ -328,13 +330,11 @@ export default function TradingDashboard() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
+        <ScreenHeader
+          title="Trading"
+          subtitle="Real-time portfolio management"
+        />
         <View style={styles.header}>
-          <View>
-            <Text style={styles.headerTitle}>Trading</Text>
-            <Text style={styles.headerSubtitle}>
-              Real-time portfolio management
-            </Text>
-          </View>
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={styles.headerButton}
@@ -551,16 +551,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 12,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: theme.colors.text,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
   },
   headerActions: {
     flexDirection: "row",

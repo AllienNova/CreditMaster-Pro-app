@@ -41,13 +41,21 @@ const getRiskLevelColor = (level: RiskLevel): string => {
   }
 };
 
-const formatPercent = (value: number): string => {
-  return `${(value * 100).toFixed(1)}%`;
+// Both formatters accept a possibly-absent number on purpose.
+//
+// Their parameters are typed `number`, but every caller feeds them a field off
+// `riskMetrics`, which the API may omit — and a formatter that throws takes the
+// whole screen down through the ErrorBoundary rather than rendering one blank
+// metric. Coercing here covers every call site at once, including ones added
+// later.
+const formatPercent = (value: number | null | undefined): string => {
+  return `${((value ?? 0) * 100).toFixed(1)}%`;
 };
 
-const formatCurrency = (amount: number): string => {
-  const sign = amount >= 0 ? "+" : "";
-  return `${sign}$${Math.abs(amount).toLocaleString("en-US", {
+const formatCurrency = (amount: number | null | undefined): string => {
+  const n = amount ?? 0;
+  const sign = n >= 0 ? "+" : "";
+  return `${sign}$${Math.abs(n).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -348,7 +356,7 @@ export default function RiskScreen() {
                 ]}
               >
                 <Text style={styles.riskLevelText}>
-                  {riskMetrics.riskLevel.toUpperCase()}
+                  {riskMetrics.riskLevel?.toUpperCase() ?? "UNKNOWN"}
                 </Text>
               </View>
               <View style={styles.riskBannerInfo}>
@@ -359,7 +367,7 @@ export default function RiskScreen() {
                     { color: getRiskLevelColor(riskMetrics.riskLevel) },
                   ]}
                 >
-                  {riskMetrics.riskScore.toFixed(0)}/100
+                  {(riskMetrics.riskScore ?? 0).toFixed(0)}/100
                 </Text>
               </View>
             </View>
@@ -367,7 +375,12 @@ export default function RiskScreen() {
               <View style={styles.tradingBlockedBanner}>
                 <Ionicons name="alert-circle" size={16} color="#EF4444" />
                 <Text style={styles.tradingBlockedText}>
-                  {riskMetrics.blockReasons[0] || "Trading restricted"}
+                  {/* `|| "Trading restricted"` only covers an empty FIRST
+                      element — it never runs, because indexing an absent
+                      `blockReasons` throws first ("Cannot convert undefined
+                      value to object"). The optional index is what makes the
+                      fallback reachable. */}
+                  {riskMetrics.blockReasons?.[0] || "Trading restricted"}
                 </Text>
               </View>
             )}
@@ -376,8 +389,8 @@ export default function RiskScreen() {
 
         {/* Kill Switch */}
         <KillSwitchCard
-          active={riskMetrics?.killSwitch.active || false}
-          reason={riskMetrics?.killSwitch.reason}
+          active={riskMetrics?.killSwitch?.active || false}
+          reason={riskMetrics?.killSwitch?.reason}
           onActivate={handleActivateKillSwitch}
           onDeactivate={deactivateKillSwitch}
         />
@@ -495,22 +508,22 @@ export default function RiskScreen() {
                 />
                 <MetricCard
                   title="Gross Exposure"
-                  value={`$${riskMetrics.grossExposure.toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
+                  value={`$${(riskMetrics.grossExposure ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
                   icon="expand-outline"
                 />
                 <MetricCard
                   title="Net Exposure"
-                  value={`$${riskMetrics.netExposure.toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
+                  value={`$${(riskMetrics.netExposure ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
                   icon="swap-horizontal-outline"
                 />
                 <MetricCard
                   title="Open Positions"
-                  value={riskMetrics.openPositions.toString()}
+                  value={(riskMetrics.openPositions ?? 0).toString()}
                   icon="layers-outline"
                 />
                 <MetricCard
                   title="Scale Factor"
-                  value={`${(riskMetrics.drawdownScaleFactor * 100).toFixed(0)}%`}
+                  value={`${((riskMetrics.drawdownScaleFactor ?? 0) * 100).toFixed(0)}%`}
                   subtitle="Position sizing"
                   icon="resize-outline"
                   valueColor={
@@ -533,7 +546,7 @@ export default function RiskScreen() {
                     <Text style={styles.exposureLabel}>Long Exposure</Text>
                     <Text style={[styles.exposureValue, { color: "#10B981" }]}>
                       $
-                      {riskMetrics.longExposure.toLocaleString("en-US", {
+                      {(riskMetrics.longExposure ?? 0).toLocaleString("en-US", {
                         maximumFractionDigits: 0,
                       })}
                     </Text>
@@ -542,7 +555,7 @@ export default function RiskScreen() {
                     <Text style={styles.exposureLabel}>Short Exposure</Text>
                     <Text style={[styles.exposureValue, { color: "#EF4444" }]}>
                       $
-                      {riskMetrics.shortExposure.toLocaleString("en-US", {
+                      {(riskMetrics.shortExposure ?? 0).toLocaleString("en-US", {
                         maximumFractionDigits: 0,
                       })}
                     </Text>
@@ -555,7 +568,7 @@ export default function RiskScreen() {
                         {riskMetrics.largestPosition.symbol}
                       </Text>
                       <Text style={styles.largestPositionValue}>
-                        {(riskMetrics.largestPosition.percent * 100).toFixed(1)}
+                        {((riskMetrics.largestPosition?.percent ?? 0) * 100).toFixed(1)}
                         % of portfolio
                       </Text>
                     </View>

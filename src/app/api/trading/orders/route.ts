@@ -76,9 +76,10 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
       return NextResponse.json({ success: true, data: events });
     }
 
-    // Build filter from query params. `userId` is set from the authenticated
-    // caller (never from client input) so getOrders() returns only their rows.
-    const filter: OrderFilter = { userId: user.id };
+    // Build filter from query params. User scoping is NOT in here — it is the
+    // required first argument to getOrders() below, taken from the authenticated
+    // caller and never from client input.
+    const filter: OrderFilter = {};
 
     const status = searchParams.get("status");
     if (status) {
@@ -130,9 +131,9 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
       return NextResponse.json({ success: true, data: order });
     }
 
-    // Get filtered orders — getOrders() is user-scoped via filter.userId;
-    // getOpenOrders() is in-memory and is filtered to the caller here.
-    const orders = await orderManager.getOrders(filter);
+    // Get filtered orders — getOrders() is user-scoped via its required first
+    // argument; getOpenOrders() is in-memory and is filtered to the caller here.
+    const orders = await orderManager.getOrders(user.id, filter);
     const openOrders = orderManager.getOpenOrders().filter(ownsOrder);
 
     return NextResponse.json({

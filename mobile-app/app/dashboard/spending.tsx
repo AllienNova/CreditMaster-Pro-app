@@ -1,6 +1,37 @@
 /**
- * Fynvita Mobile Spending Dashboard Screen
- * Shows spending breakdown by category with donut chart
+ * Spending Dashboard.
+ *
+ * WHAT THIS SCREEN SHOWED ABOUT THE READER'S OWN MONEY.
+ *
+ * `mockCategories`, `mockMonthlyTrend` and `mockBudgets` gave everyone the same
+ * spending: a category breakdown with per-category trends, six months of
+ * history, and budgets with amounts already spent against them. `loadData`
+ * waited 800 ms on a `setTimeout` first, so it looked like the figures had been
+ * fetched.
+ *
+ * It is reachable — `src/navigation/primary-nav.ts:59` links it and
+ * `src/components/financial/SpendingOverview.tsx:182` pushes to it — so this
+ * was live, not dead code.
+ *
+ * WHAT IT READS NOW, all of it already built and used by app/financial/
+ * spending.tsx:
+ *
+ *   financialOverviewApi.getSpendingAnalysis(range)
+ *     -> POST /api/financial/spending/analyze -> the caller's real Plaid
+ *        transactions: totalSpending, transactionCount, dailyAverage, and
+ *        per-category amount / share / period-over-period trend
+ *   financialOverviewApi.getCashFlowAnalysis(6)
+ *     -> GET /api/financial/spending/cashflow -> each month's real expenses
+ *   budgetApi.getAll()
+ *     -> GET /api/financial/budgets -> each budget's own category, limit, spent
+ *
+ * THE DAILY AVERAGE WAS ALSO WRONG BEFORE THE MOCKS. It divided by a hardcoded
+ * `daysInMonth = 31` — wrong for seven months of the year, and wrong for every
+ * period other than "month" even though the screen has week/month/year filters.
+ * The endpoint returns a real `dailyAverage`, so nothing is re-derived here.
+ *
+ * The period filter now reaches the request instead of only re-labelling the
+ * same numbers.
  */
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -18,6 +49,41 @@ import { Ionicons } from "@expo/vector-icons";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { DonutChart } from "../../src/components/charts";
 import { LineChart } from "../../src/components/charts";
+// From the declaring module rather than the barrel, matching the sibling
+// screen app/financial/spending.tsx — the barrel does not re-export
+// SpendingAnalysisRange, and a locally restated request shape is how callers
+// drift from the route they call.
+import {
+  financialOverviewApi,
+  budgetApi,
+  type SpendingAnalysisRange,
+} from "../../src/services/api/financial";
+
+/** Months of history the trend chart asks the cash-flow endpoint for. */
+const TREND_MONTHS = 6;
+
+interface SpendingTotals {
+  totalSpending: number;
+  transactionCount: number;
+  dailyAverage: number;
+}
+
+/**
+ * The screen's week/month/year filter as the date range the analyze endpoint
+ * takes. Previously the filter changed a label and nothing else — the same
+ * hardcoded figures were shown for all three.
+ */
+function rangeFor(period: "week" | "month" | "year"): SpendingAnalysisRange {
+  const end = new Date();
+  const start = new Date(end);
+  if (period === "week") start.setDate(start.getDate() - 7);
+  else if (period === "year") start.setFullYear(start.getFullYear() - 1);
+  else start.setMonth(start.getMonth() - 1);
+  return {
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10),
+  };
+}
 
 // Category colors for spending
 const CATEGORY_COLORS: Record<string, string> = {
@@ -56,81 +122,6 @@ interface BudgetItem {
   budget: number;
 }
 
-// Mock data - replace with API calls
-const mockCategories: SpendingCategory[] = [
-  {
-    label: "Food & Dining",
-    value: 847,
-    color: CATEGORY_COLORS["Food & Dining"],
-    transactionCount: 45,
-    trend: "up",
-    changePercent: 12,
-  },
-  {
-    label: "Shopping",
-    value: 623,
-    color: CATEGORY_COLORS["Shopping"],
-    transactionCount: 18,
-    trend: "down",
-    changePercent: 8,
-  },
-  {
-    label: "Transportation",
-    value: 312,
-    color: CATEGORY_COLORS["Transportation"],
-    transactionCount: 22,
-    trend: "stable",
-    changePercent: 2,
-  },
-  {
-    label: "Bills & Utilities",
-    value: 485,
-    color: CATEGORY_COLORS["Bills & Utilities"],
-    transactionCount: 6,
-    trend: "up",
-    changePercent: 5,
-  },
-  {
-    label: "Entertainment",
-    value: 234,
-    color: CATEGORY_COLORS["Entertainment"],
-    transactionCount: 12,
-    trend: "down",
-    changePercent: 15,
-  },
-  {
-    label: "Health & Fitness",
-    value: 189,
-    color: CATEGORY_COLORS["Health & Fitness"],
-    transactionCount: 8,
-    trend: "stable",
-    changePercent: 0,
-  },
-  {
-    label: "Other",
-    value: 156,
-    color: CATEGORY_COLORS["Other"],
-    transactionCount: 14,
-    trend: "up",
-    changePercent: 3,
-  },
-];
-
-const mockMonthlyTrend: MonthlySpending[] = [
-  { label: "Jul", value: 2650 },
-  { label: "Aug", value: 2890 },
-  { label: "Sep", value: 2540 },
-  { label: "Oct", value: 2780 },
-  { label: "Nov", value: 3120 },
-  { label: "Dec", value: 2846 },
-];
-
-const mockBudgets: BudgetItem[] = [
-  { category: "Food & Dining", spent: 847, budget: 800 },
-  { category: "Shopping", spent: 623, budget: 700 },
-  { category: "Transportation", spent: 312, budget: 400 },
-  { category: "Entertainment", spent: 234, budget: 300 },
-];
 
 function formatCurrency(value: number): string {
   return `$${value.toLocaleString()}`;
@@ -256,14 +247,15 @@ export default function SpendingScreen() {
   const [categories, setCategories] = useState<SpendingCategory[]>([]);
   const [monthlyTrend, setMonthlyTrend] = useState<MonthlySpending[]>([]);
   const [budgets, setBudgets] = useState<BudgetItem[]>([]);
+  const [totals, setTotals] = useState<SpendingTotals | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const totalSpending = categories.reduce((sum, cat) => sum + cat.value, 0);
-  const transactionCount = categories.reduce(
-    (sum, cat) => sum + cat.transactionCount,
-    0,
-  );
-  const daysInMonth = 31;
-  const dailyAverage = Math.round(totalSpending / daysInMonth);
+  // The endpoint returns these; they are not re-derived here. The previous
+  // daily average divided by a hardcoded `daysInMonth = 31`, which is wrong for
+  // seven months of the year and wrong for every period other than "month".
+  const totalSpending = totals?.totalSpending ?? 0;
+  const transactionCount = totals?.transactionCount ?? 0;
+  const dailyAverage = Math.round(totals?.dailyAverage ?? 0);
 
   const donutData = categories.map((cat) => ({
     value: cat.value,
@@ -272,12 +264,62 @@ export default function SpendingScreen() {
   }));
 
   const loadData = useCallback(async () => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setCategories(mockCategories);
-    setMonthlyTrend(mockMonthlyTrend);
-    setBudgets(mockBudgets);
-  }, []);
+    setError(null);
+
+    const [analysis, cashFlow, budgetRes] = await Promise.all([
+      financialOverviewApi.getSpendingAnalysis(rangeFor(selectedPeriod)),
+      financialOverviewApi.getCashFlowAnalysis(TREND_MONTHS),
+      budgetApi.getAll(),
+    ]);
+
+    if (analysis.success && analysis.data) {
+      setTotals({
+        totalSpending: analysis.data.totalSpending,
+        transactionCount: analysis.data.transactionCount,
+        dailyAverage: analysis.data.dailyAverage,
+      });
+      setCategories(
+        analysis.data.categories.map((category) => ({
+          label: category.name,
+          value: category.amount,
+          color: CATEGORY_COLORS[category.name] ?? CATEGORY_COLORS.Other,
+          transactionCount: category.transactionCount,
+          trend: category.trend,
+          changePercent: category.trendPercent,
+        })),
+      );
+    } else {
+      setTotals(null);
+      setCategories([]);
+    }
+
+    // Each month's real EXPENSES. The cash-flow endpoint also carries income;
+    // this chart is spending, so income is not folded in to make a nicer line.
+    setMonthlyTrend(
+      cashFlow.success && cashFlow.data
+        ? cashFlow.data.months.map((point) => ({
+            label: point.month,
+            value: point.expenses,
+          }))
+        : [],
+    );
+
+    setBudgets(
+      budgetRes.success && Array.isArray(budgetRes.data?.budgets)
+        ? budgetRes.data.budgets.map((budget) => ({
+            category: budget.category,
+            spent: budget.spent,
+            budget: budget.limit,
+          }))
+        : [],
+    );
+
+    if (!analysis.success && !cashFlow.success && !budgetRes.success) {
+      setError(
+        "We could not load your spending. Nothing is estimated in its place — pull to refresh in a moment.",
+      );
+    }
+  }, [selectedPeriod]);
 
   useEffect(() => {
     loadData().then(() => setLoading(false));
@@ -310,6 +352,12 @@ export default function SpendingScreen() {
       <Stack.Screen
         options={{
           title: "Spending",
+          // This screen configured a header — title, styling, on
+          // subscriptions even a headerRight button — but never set
+          // headerShown, so app/dashboard/_layout.tsx's `false` won and
+          // NONE of it rendered. Turning it on makes the declared intent
+          // real and gives a pushed screen its back button.
+          headerShown: true,
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
         }}
@@ -325,6 +373,13 @@ export default function SpendingScreen() {
           />
         }
       >
+        {error && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorTitle}>Spending is unavailable</Text>
+            <Text style={styles.errorBody}>{error}</Text>
+          </View>
+        )}
+
         {/* Period Selector */}
         <View style={styles.periodSelector}>
           {(["week", "month", "year"] as const).map((period) => (
@@ -456,6 +511,23 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: theme.colors.textSecondary,
+  },
+  errorBanner: {
+    backgroundColor: "#FEF3C7",
+    borderColor: "#FCD34D",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontWeight: "600",
+    color: "#92400E",
+    marginBottom: 4,
+  },
+  errorBody: {
+    fontSize: 13,
+    color: "#92400E",
   },
   periodSelector: {
     flexDirection: "row",

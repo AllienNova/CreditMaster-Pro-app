@@ -47,7 +47,17 @@ import {
   CoachDashboard,
 } from "../types/coach.types";
 
-const BASE_PATH = "/api/ai/financial-coach";
+/**
+ * No leading /api: the client's base URL already ends in it
+ * (services/api/client.ts builds `${API_BASE_URL}${endpoint}`), so
+ * "/api/ai/financial-coach" resolved to /api/api/ai/financial-coach and every
+ * one of the 12 calls in this file 404'd. The routes themselves all exist
+ * under src/app/api/ai/financial-coach/.
+ *
+ * The audit gate could not see this: its matcher only recognised `api.` calls,
+ * and everything here goes through the local `apiClient` wrapper below.
+ */
+const BASE_PATH = "/ai/financial-coach";
 
 // ============================================================================
 // RECOMMENDATIONS API

@@ -103,10 +103,14 @@ export default function SmartBudgetManagement() {
   const handleBudgetUpdate = useCallback(
     async (updatedBudget: Budget) => {
       try {
+        // PATCH, not PUT. The route exports GET, PATCH and DELETE — a PUT was
+        // answered 405 by Next.js and this update never reached the server.
+        // The body needs no change: Budget already carries `budgetedAmount`,
+        // which is the field the handler reads.
         const response = await fetch(
           `/api/financial/budgets/${updatedBudget.id}`,
           {
-            method: "PUT",
+            method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updatedBudget),
           },

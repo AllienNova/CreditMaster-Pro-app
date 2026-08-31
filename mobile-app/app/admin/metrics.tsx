@@ -1,9 +1,29 @@
 /**
- * Fynvita Admin Metrics Screen
- * Detailed metrics and analytics
+ * Admin Metrics — the real analytics aggregates.
+ *
+ * WHAT THIS REPLACED. Two fixtures shown to every operator with no request:
+ *
+ *   REVENUE_DATA  Basic $45,000 / Premium $125,000 / Enterprise $75,890
+ *   DISPUTE_DATA  Pending 234 / In Progress 567 / Resolved 1,234 / Rejected 89
+ *
+ * summed into a "$245,890" revenue total and a "2,124 Total" dispute count.
+ * The week/month/year selector changed neither, because there was nothing
+ * behind it to change.
+ *
+ * WHERE THE DATA COMES FROM. GET /api/admin/analytics?range= (withRole
+ * "admin") returns disputesByStatus and revenueByMonth off the real tables,
+ * and the period selector now actually drives that range.
+ *
+ * THE REVENUE BREAKDOWN CHANGED SUBJECT, DELIBERATELY. The fixture split
+ * revenue by plan tier, and no route computes that — /admin/analytics gives
+ * revenue BY MONTH and subscription COUNTS by tier, but not revenue by tier.
+ * Rather than multiply counts by a price to manufacture the old chart, the
+ * chart now shows revenue by month, which is a real series. The tier names it
+ * used were invented anyway: this product sells Free, Standard, Pro, Family
+ * Duo, Family and Family Plus — there is no "Basic" and no "Enterprise".
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,36 +37,80 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import {
+  adminAnalyticsApi,
+  type AdminAnalytics,
+  type AnalyticsRange,
+} from "../../src/services/api/admin";
+
+/**
+ * The period selector's labels, and the analytics range each one asks for.
+ * The old selector had no effect at all; these are the ranges the route
+ * accepts (src/app/api/admin/analytics/route.ts).
+ */
+const PERIODS: { label: string; range: AnalyticsRange }[] = [
+  { label: "week", range: "7d" },
+  { label: "month", range: "30d" },
+  { label: "year", range: "1y" },
+];
+
+/** A stable colour per series entry — the fixture hardcoded one per row. */
+const SERIES_COLORS = [
+  "#3B82F6",
+  "#22C55E",
+  "#F59E0B",
+  "#EF4444",
+  "#8B5CF6",
+  "#EC4899",
+];
+const seriesColor = (index: number): string =>
+  SERIES_COLORS[index % SERIES_COLORS.length];
+
+/** "in_progress" -> "In progress". Status values are lower_snake slugs. */
+const prettyStatus = (value: string): string =>
+  value ? value.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()) : "";
 
 const { width } = Dimensions.get("window");
 
-interface MetricData {
-  label: string;
-  value: number;
-  color: string;
-}
-
-const REVENUE_DATA: MetricData[] = [
-  { label: "Basic", value: 45000, color: "#3B82F6" },
-  { label: "Premium", value: 125000, color: theme.colors.primary },
-  { label: "Enterprise", value: 75890, color: "#8B5CF6" },
-];
-
-const DISPUTE_DATA: MetricData[] = [
-  { label: "Pending", value: 234, color: "#F59E0B" },
-  { label: "In Progress", value: 567, color: "#3B82F6" },
-  { label: "Resolved", value: 1234, color: "#22C55E" },
-  { label: "Rejected", value: 89, color: "#EF4444" },
-];
-
 export default function AdminMetricsScreen() {
-  const [selectedPeriod, setSelectedPeriod] = useState<
-    "week" | "month" | "year"
-  >("month");
-  const periods = ["week", "month", "year"] as const;
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("month");
+  const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const totalRevenue = REVENUE_DATA.reduce((sum, item) => sum + item.value, 0);
-  const totalDisputes = DISPUTE_DATA.reduce((sum, item) => sum + item.value, 0);
+  const periods = PERIODS.map((p) => p.label);
+
+  const load = useCallback(async (label: string) => {
+    setLoading(true);
+    setError(null);
+
+    const range =
+      PERIODS.find((p) => p.label === label)?.range ?? ("30d" as AnalyticsRange);
+    const res = await adminAnalyticsApi.getAnalytics(range);
+
+    if (!res.success || !res.data) {
+      // No zero-filled fallback: an operator reading "$0 revenue" would draw a
+      // very different conclusion from "we could not read the analytics".
+      setError("We could not load the metrics.");
+      setAnalytics(null);
+      setLoading(false);
+      return;
+    }
+
+    setAnalytics(res.data);
+    setLoading(false);
+  }, []);
+
+  // Refetches when the period changes — the selector used to change nothing.
+  useEffect(() => {
+    load(selectedPeriod);
+  }, [load, selectedPeriod]);
+
+  const revenueByMonth = analytics?.revenueByMonth ?? [];
+  const disputesByStatus = analytics?.disputesByStatus ?? [];
+
+  const totalRevenue = revenueByMonth.reduce((sum, p) => sum + p.revenue, 0);
+  const totalDisputes = disputesByStatus.reduce((sum, d) => sum + d.count, 0);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -91,29 +155,52 @@ export default function AdminMetricsScreen() {
           ))}
         </View>
 
+        {loading ? (
+          <Card>
+            <Text style={styles.chartTitle}>Loading metrics…</Text>
+          </Card>
+        ) : error ? (
+          <Card>
+            <Text style={styles.chartTitle}>{error}</Text>
+            <TouchableOpacity onPress={() => load(selectedPeriod)}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </Card>
+        ) : null}
+
         {/* Revenue Card */}
         <Card style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Revenue Breakdown</Text>
+          {/* Was "Revenue Breakdown" over invented plan tiers. Revenue by
+              tier is not computed anywhere; revenue by month is. */}
+          <Text style={styles.chartTitle}>Revenue by month</Text>
           <Text style={styles.chartTotal}>
             ${totalRevenue.toLocaleString()}
           </Text>
+          {!loading && !error && revenueByMonth.length === 0 ? (
+            <Text style={styles.emptySeriesText}>
+              No revenue recorded in this period.
+            </Text>
+          ) : null}
           <View style={styles.barChart}>
-            {REVENUE_DATA.map((item, idx) => (
-              <View key={idx} style={styles.barItem}>
+            {revenueByMonth.map((item, idx) => (
+              <View key={item.month} style={styles.barItem}>
                 <View style={styles.barContainer}>
                   <View
+                    testID={`revenue-bar-${item.month}`}
                     style={[
                       styles.bar,
                       {
-                        height: `${(item.value / totalRevenue) * 100}%`,
-                        backgroundColor: item.color,
+                        // Guarded: every month at zero revenue would divide by
+                        // zero and render NaN%.
+                        height: `${totalRevenue > 0 ? (item.revenue / totalRevenue) * 100 : 0}%`,
+                        backgroundColor: seriesColor(idx),
                       },
                     ]}
                   />
                 </View>
-                <Text style={styles.barLabel}>{item.label}</Text>
+                <Text style={styles.barLabel}>{item.month}</Text>
                 <Text style={styles.barValue}>
-                  ${(item.value / 1000).toFixed(0)}K
+                  ${(item.revenue / 1000).toFixed(1)}K
                 </Text>
               </View>
             ))}
@@ -126,20 +213,27 @@ export default function AdminMetricsScreen() {
           <Text style={styles.chartTotal}>
             {totalDisputes.toLocaleString()} Total
           </Text>
+          {!loading && !error && disputesByStatus.length === 0 ? (
+            <Text style={styles.emptySeriesText}>
+              No disputes recorded in this period.
+            </Text>
+          ) : null}
           <View style={styles.horizontalBars}>
-            {DISPUTE_DATA.map((item, idx) => (
-              <View key={idx} style={styles.horizontalBarItem}>
+            {disputesByStatus.map((item, idx) => (
+              <View key={item.status} style={styles.horizontalBarItem}>
                 <View style={styles.horizontalBarHeader}>
-                  <Text style={styles.horizontalBarLabel}>{item.label}</Text>
-                  <Text style={styles.horizontalBarValue}>{item.value}</Text>
+                  <Text style={styles.horizontalBarLabel}>
+                    {prettyStatus(item.status)}
+                  </Text>
+                  <Text style={styles.horizontalBarValue}>{item.count}</Text>
                 </View>
                 <View style={styles.horizontalBarBg}>
                   <View
                     style={[
                       styles.horizontalBar,
                       {
-                        width: `${(item.value / totalDisputes) * 100}%`,
-                        backgroundColor: item.color,
+                        width: `${totalDisputes > 0 ? (item.count / totalDisputes) * 100 : 0}%`,
+                        backgroundColor: seriesColor(idx),
                       },
                     ]}
                   />
@@ -256,6 +350,19 @@ const styles = StyleSheet.create({
   },
   periodTextActive: { color: "#fff" },
   chartCard: { marginBottom: theme.spacing.lg },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    textAlign: "center",
+    marginTop: theme.spacing.sm,
+  },
+  emptySeriesText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    marginVertical: theme.spacing.md,
+  },
   chartTitle: { fontSize: 15, fontWeight: "600", color: theme.colors.text },
   chartTotal: {
     fontSize: 24,

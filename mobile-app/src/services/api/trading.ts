@@ -735,7 +735,10 @@ export const tradingApi = {
   getPaperAccount: (
     config?: RequestConfig,
   ): Promise<ApiResponse<PaperAccount>> =>
-    api.get<PaperAccount>("/trading/paper/account", config),
+    // The account IS the collection root: src/app/api/trading/paper/route.ts
+    // documents itself as "GET - Get user's paper trading account" and returns
+    // engine.getAccount(user.id). There has never been an /account sub-route.
+    api.get<PaperAccount>("/trading/paper", config),
 
   /**
    * Reset paper trading account

@@ -25,6 +25,7 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenError } from "../../src/components/ScreenError";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import {
@@ -51,14 +52,20 @@ export default function AdminAnalyticsScreen() {
 
   const loadAnalytics = useCallback(async () => {
     setLoading(true);
-    setError(null);
-    const res = await adminAnalyticsApi.getAnalytics(range);
-    if (res.success && res.data) {
-      setData(res.data);
-    } else {
-      setError(res.error?.message ?? "Unable to load analytics right now.");
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      setError(null);
+      const res = await adminAnalyticsApi.getAnalytics(range);
+      if (res.success && res.data) {
+        setData(res.data);
+      } else {
+        setError(res.error?.message ?? "Unable to load analytics right now.");
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [range]);
 
   // Refetch on mount and whenever the selected range changes.
@@ -87,19 +94,12 @@ export default function AdminAnalyticsScreen() {
 
   if (error && !data) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="admin-analytics-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadAnalytics}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="Admin Analytics"
+        message={error}
+        onRetry={loadAnalytics}
+        testID="admin-analytics-error"
+      />
     );
   }
 

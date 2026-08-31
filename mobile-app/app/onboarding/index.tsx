@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/hooks/useTheme";
 import { withOpacity } from "../../src/constants/theme";
+import { useAuthStore } from "../../src/store/authStore";
 
 const { width } = Dimensions.get("window");
 
@@ -68,6 +69,7 @@ export default function OnboardingScreen() {
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const { colors, spacing, borderRadius, fontSize, fontWeight } = useTheme();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const handleNext = () => {
     if (currentIndex < ONBOARDING_SLIDES.length - 1) {
@@ -83,7 +85,15 @@ export default function OnboardingScreen() {
   };
 
   const handleGetStarted = () => {
-    router.replace("/(auth)/login");
+    // Signed OUT, this is the pre-auth welcome and login is the next step.
+    // Signed IN — reachable by back-navigation or a deep link — sending them
+    // to a login screen they are already past is the exact bug this carousel
+    // caused when the root index pointed its onboarding branch here.
+    //
+    // Routes to "/" rather than "/(tabs)" so the root keeps ownership of the
+    // signed-in destination; no loop, because the root only sends a visitor
+    // here when there is no user.
+    router.replace(isAuthenticated ? "/" : "/(auth)/login");
   };
 
   const renderSlide = ({ item }: { item: (typeof ONBOARDING_SLIDES)[0] }) => (

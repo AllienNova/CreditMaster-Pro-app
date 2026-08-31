@@ -5,6 +5,7 @@
  */
 
 import { create } from "zustand";
+import { toArray } from "./toArray";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { financialGoalsApi } from "../services/api";
@@ -63,7 +64,7 @@ export const useGoalStore = create<GoalState>()(
           const response = await financialGoalsApi.getAll();
           if (response.success && response.data) {
             set({
-              goals: response.data.goals,
+              goals: toArray(response.data.goals),
               isLoadingGoals: false,
             });
           } else {

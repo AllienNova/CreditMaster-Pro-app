@@ -164,6 +164,154 @@ jobs:
       - name: audit:idor - service-role queries must be owner-scoped
         run: npm run audit:idor
 
+      # BLOCKING: FND-024 sent dollars into Stripe's integer-cents field - a $50
+      # payout moved 50 cents. Every Stripe amount must derive from @/lib/money
+      # or carry a justification marker. Self-tests its own detector first.
+      - name: audit:money - Stripe amounts must be integer cents
+        run: npm run audit:money
+
+      # BLOCKING: FND-049..053 returned Math.random() and hardcoded mock objects
+      # to real users as their own financial data. Fails on fabrication in a
+      # response path, or a catch returning a payload with no failure signal.
+      - name: audit:mocks - no fabricated data in an API response
+        run: npm run audit:mocks
+
+      # BLOCKING: the web half of the mobile gate. audit:mocks watches API
+      # RESPONSES and audit:screen-data watches module-level constants; neither
+      # sees a number typed straight into JSX. 16 pages do it — /invest renders
+      # a $248,567.89 portfolio, /financial-hub a $124,500 net worth, and
+      # /loans a $67,840 debt, the same for every caller. Frozen at 16
+      # (5 catalogue / 11 fabrication), shrink-only.
+      - name: audit:inline-metrics (web) - no hardcoded measurement in JSX
+        run: npm run audit:inline-metrics
+
+      # BLOCKING: the web tree had NO equivalent of the mobile screen-data
+      # gate. audit:mocks watches API responses; nothing watched a page's own
+      # constants. src/app/analytics/credit-score/page.tsx kept a scoreFactors
+      # list asserting "On-time payments for 24 months" and "Using 32% of
+      # available credit" - the SF-16 shape, unwatched. 39 entries, all
+      # UNCLASSIFIED: that is debt nobody has looked at yet, stated as such
+      # rather than pre-judged. Shrink-only.
+      - name: audit:screen-data (web) - no unreviewed constant data set
+        run: npm run audit:screen-data
+
+      # BLOCKING: a link pointing at a route that does not exist is a 404 for a
+      # real user. The dogfood sweep enumerates routes from the filesystem and
+      # cannot find these - the bad link is never in its input.
+      - name: audit:links (web) - every internal link resolves
+        run: npm run audit:links
+
+      # BLOCKING: the inverse of audit:links. A page with no link pointing AT
+      # it is invisible to a user no matter how well it renders - 165 of 204
+      # pages were in that state because no navigation was mounted at all.
+      - name: audit:reachability - every page is reachable by clicking
+        run: npm run audit:reachability
+
+      # BLOCKING: the server-side counterpart of audit:reachability. A
+      # database-backed service that no route can reach is a feature that
+      # landed complete and stayed dark - and the screen that should have
+      # shown it fills the silence with a constant. Both /financial/crypto and
+      # /financial/real-estate reached production that way: working services
+      # (33 and 27 db calls), real tables, no route, and a hardcoded $45,230
+      # wallet on screen. This walks the import graph from src/app/api so
+      # barrels and service-to-service chains resolve; a filename grep called
+      # 44 services orphaned and was wrong in both directions.
+      - name: audit:reachable-services - no service is stranded without a route
+        run: npm run audit:reachable-services
+
+      # BLOCKING: the mobile counterpart, audit:api, has existed for months;
+      # the web app had nothing checking what a page ASKS THE SERVER for. Twelve
+      # absent endpoints shipped that way - each a 404 for every user, none
+      # failing a gate, because the page still rendered an empty state. Two were
+      # wrong paths whose destination existed one directory over.
+      - name: audit:web-api - every fetch hits a real API route
+        run: npm run audit:web-api
+
+      - name: audit:links (mobile) - every internal link resolves
+        working-directory: mobile-app
+        run: npm run audit:links
+
+      # BLOCKING: the mobile client and the web API drifted apart - 88 of the
+      # app's API calls hit 404 while the route sweep was green, because every
+      # screen catches the error and renders an empty state.
+      - name: audit:api (mobile) - every API call has a backing route
+        working-directory: mobile-app
+        run: npm run audit:api
+
+      # BLOCKING: audit:mocks has always scanned web src/app/api only, and the
+      # mobile app fabricates differently - not a catch-block fallback inside a
+      # route, but a module-level constant rendered directly with no request at
+      # all. That is the shape of every fabrication found by hand here: the Visa
+      # ending 4242 on the billing screen, the $285,400 income on the tax
+      # optimizer, MOCK_SESSIONS behind the "AI coach". Frozen at 87 entries
+      # (57 of them in files that make no request); shrink-only, and each must
+      # be classified catalogue or fabrication.
+      - name: audit:screen-data (mobile) - no screen renders invented data
+        working-directory: mobile-app
+        run: npm run audit:screen-data
+
+      # BLOCKING: every pushed screen must offer a way back. Reported from a
+      # device screenshot of /marketplace - a title, and nothing to press.
+      # Of 238 screens: 15 exempt by name (tab roots, auth entries), 40 have a
+      # back button drawn by the navigator, and 18 genuinely have none. The
+      # first count said 72, by scanning for router.back() and assuming no
+      # screen has a native header - true app-wide, but a nested group layout
+      # starts its own Stack and one that only styles the header leaves the
+      # library default on (native-stack@7.13.0 types.d.ts:234).
+      # The baseline is now EMPTY: every screen has a way back, so any screen
+      # that loses one fails this step immediately.
+      - name: audit:back-nav (mobile) - no screen traps the user
+        working-directory: mobile-app
+        run: npm run audit:back-nav
+
+      # BLOCKING: a screen must not redeclare a shared API type with different
+      # fields. This is how two fabrications survived a typecheck -
+      # financial/income declared `taxWithheld` REQUIRED (the server has no
+      # such field) and financial/transactions used `name`/`account` where the
+      # server sends `merchantName`/`accountId`. A local type that describes
+      # the FIXTURE is satisfied by the fixture and never compared to the
+      # route. Frozen at 5, shrink-only.
+      - name: audit:shadow-types (mobile) - no screen redefines an API type
+        working-directory: mobile-app
+        run: npm run audit:shadow-types
+
+      # BLOCKING: audit:screen-data hunts module-level constant data sets, which
+      # is the shape every fabrication found by hand had taken. /analytics had
+      # none and passed it clean while telling every user their score moved +45
+      # and their dispute success rate was 87% - inline JSX literals, on a screen
+      # that makes no request. This gate reads what is BETWEEN the tags instead.
+      # Frozen at 11, shrink-only.
+      - name: audit:inline-metrics (mobile) - no hardcoded measurement in JSX
+        working-directory: mobile-app
+        run: npm run audit:inline-metrics
+
+      # BLOCKING: the mobile inverse of audit:links. The tab bar holds nine
+      # destinations against 232 screens, so 131 of them - the whole of trading,
+      # tax, the marketplace and rewards - could only be opened by typing a deep
+      # link. Two remain baselined with written reasons; the list may only shrink.
+      - name: audit:reachability (mobile) - every screen is reachable by tapping
+        working-directory: mobile-app
+        run: npm run audit:reachability
+
+      # BLOCKING: the mobile suite mocks the Supabase client, so a query the
+      # database refuses at runtime passes all 1,200 tests. Six such call sites
+      # were live - onboarding could not be read or recorded, profile edits were
+      # discarded, account deletion errored - and nothing in CI saw it.
+      - name: audit:client-tables (mobile) - no client query on a privileged table
+        working-directory: mobile-app
+        run: npm run audit:client-tables
+
+  # audit:cascade is NOT wired here yet, deliberately and visibly. It needs a
+  # live Postgres to read the erasure function body, and it currently calls
+  # process.exit(0) when the database is unreachable - so adding it as-is would
+  # make it green by absence on every runner. That is worse than absent: it
+  # would read as GDPR Art. 17 coverage while proving nothing. It needs a --ci
+  # flag making DB-unreachable a failure, plus a Postgres service container,
+  # before it can block a merge honestly.
+  #
+  # audit:bundle is likewise absent: it runs a full `expo export`, which belongs
+  # in its own job with the mobile toolchain rather than a step in this one.
+
   build:
     name: Build
     runs-on: ubuntu-latest

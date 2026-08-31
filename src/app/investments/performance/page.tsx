@@ -37,8 +37,13 @@ interface PerformanceData {
   sharpeRatio: number;
   volatility: number;
   winRate: number;
-  benchmarkReturn: number;
-  alpha: number;
+  /**
+   * Absent when no benchmark series is stored, which is currently always.
+   * Optional rather than 0, because "the benchmark returned 0%" is a claim and
+   * a false one — see the note in the performance route.
+   */
+  benchmarkReturn?: number;
+  alpha?: number;
 }
 
 interface PeriodReturn {
@@ -278,15 +283,18 @@ export default function PerformancePage() {
         }
       }
 
-      // Fallback to mock data if API is not available
-      const mockData = generateMockPerformanceData(period);
-      setPerformanceData(mockData);
-      setPeriodReturns(generatePeriodReturns());
+      /*
+       * No mock fallback. generateMockPerformanceData() invented this user's
+       * returns, best and worst day, max drawdown, Sharpe ratio and alpha
+       * against a benchmark — and since /api/investments/portfolio/performance
+       * did not exist, it ran for every user, every time. Fabricated investment
+       * performance is the worst thing this app could show.
+       */
+      setPerformanceData(null);
+      setPeriodReturns([]);
     } catch {
-      // Fallback to mock data on error
-      const mockData = generateMockPerformanceData(period);
-      setPerformanceData(mockData);
-      setPeriodReturns(generatePeriodReturns());
+      setPerformanceData(null);
+      setPeriodReturns([]);
     } finally {
       setLoading(false);
     }
@@ -439,9 +447,15 @@ function SummaryCards({ data }: { data: PerformanceData }) {
     },
     {
       label: "Alpha vs Benchmark",
-      value: formatPercent(data.alpha),
-      subValue: `Benchmark: ${formatPercent(data.benchmarkReturn)}`,
-      isPositive: data.alpha >= 0,
+      // No benchmark series is stored, so alpha is unavailable rather than 0.
+      // Showing "0.00%" here would assert the portfolio exactly matched a
+      // benchmark that was never measured.
+      value: data.alpha === undefined ? "—" : formatPercent(data.alpha),
+      subValue:
+        data.benchmarkReturn === undefined
+          ? "No benchmark data"
+          : `Benchmark: ${formatPercent(data.benchmarkReturn)}`,
+      isPositive: (data.alpha ?? 0) >= 0,
     },
     {
       label: "Current Value",
@@ -813,9 +827,12 @@ function RiskMetricsCard({ data }: { data: PerformanceData }) {
     },
     {
       label: "Alpha",
-      value: formatPercent(data.alpha),
-      description: "Excess return over benchmark",
-      good: data.alpha > 0,
+      value: data.alpha === undefined ? "—" : formatPercent(data.alpha),
+      description:
+        data.alpha === undefined
+          ? "Needs a benchmark series, which is not tracked yet"
+          : "Excess return over benchmark",
+      good: (data.alpha ?? 0) > 0,
     },
     {
       label: "Win Rate",

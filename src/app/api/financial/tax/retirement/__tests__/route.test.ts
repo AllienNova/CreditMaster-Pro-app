@@ -29,10 +29,19 @@ jest.mock("@/lib/auth/jwt-validation", () => ({
 jest.mock("@/lib/auth/resolve-role", () => ({
   resolveRoleFromDb: jest.fn().mockResolvedValue("user"),
 }));
-jest.mock("@/lib/supabase/server");
+// Auto-mocked, plus an explicit supabaseAdmin: this route's local copies of
+// fetchTaxProfile / mapDatabaseToProfile were deleted in favour of the shared
+// tax-profile-repository, which reads through supabaseAdmin because the
+// cookie-scoped client returned nothing for bearer-token callers under RLS.
+// The assertions below are unchanged — including the phantom tax_accounts
+// regression, which must hold whichever client performs the read.
+jest.mock("@/lib/supabase/server", () => ({
+  createClient: jest.fn(),
+  supabaseAdmin: { from: jest.fn() },
+}));
 
 import { GET, POST } from "../route";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, supabaseAdmin } from "@/lib/supabase/server";
 
 const mockUser = { id: "user-123", email: "test@example.com" };
 
@@ -150,6 +159,7 @@ describe("/api/financial/tax/retirement", () => {
         error: { message: "no rows", code: "PGRST116" },
       });
       (createClient as jest.Mock).mockResolvedValue(client);
+      (supabaseAdmin.from as jest.Mock).mockImplementation(client.from);
 
       const response = await GET(
         createMockRequest("http://localhost:3000/api/financial/tax/retirement"),
@@ -167,6 +177,7 @@ describe("/api/financial/tax/retirement", () => {
       });
       const client = buildMockClient({ data: mockTaxProfileRow, error: null });
       (createClient as jest.Mock).mockResolvedValue(client);
+      (supabaseAdmin.from as jest.Mock).mockImplementation(client.from);
 
       const response = await GET(
         createMockRequest("http://localhost:3000/api/financial/tax/retirement"),
@@ -226,6 +237,7 @@ describe("/api/financial/tax/retirement", () => {
       });
       const client = buildMockClient({ data: mockTaxProfileRow, error: null });
       (createClient as jest.Mock).mockResolvedValue(client);
+      (supabaseAdmin.from as jest.Mock).mockImplementation(client.from);
 
       const response = await POST(
         createMockRequest("http://localhost:3000/api/financial/tax/retirement", {

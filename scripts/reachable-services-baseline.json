@@ -1,0 +1,222 @@
+{
+  "frozen": "2026-08-18",
+  "why": "Database-backed services under src/lib whose exported symbols nothing under src/app/api imports, following the import graph through barrel re-exports and service-to-service chains. Resolution is SYMBOL-level: a route importing a barrel does not count as using every service that barrel re-exports, because the question is whether a FEATURE is exposed, not whether a module gets loaded. Each entry is either a route to add (the feature works, expose it) or a deletion to propose (the feature is dead). UNREVIEWED entries are debt nobody has looked at yet. This list may only shrink. Namespace, default and side-effect imports still count as whole-module, so the audit errs toward missing a stranded service rather than accusing a working one.",
+  "entries": {
+    "src/lib/gamification/points-rewards-service.ts": {
+      "dbCalls": 52,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): points_balances, points_redemptions, points_transactions. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/ai/weekly-summary-service.ts": {
+      "dbCalls": 47,
+      "reachableFromPage": false,
+      "verdict": "NEEDS-DECISION",
+      "why": "CONFIRMED unreachable 2026-08-18 by symbol check as well as the graph: exports WeeklySummaryService and getWeeklySummaryService, and no file under src/app/api imports either. 47 database calls. Either expose it or propose deletion."
+    },
+    "src/lib/commerce/affiliate/tracking-service.ts": {
+      "dbCalls": 45,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and 1 of its 3 tables are absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): affiliate_clicks. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/gamification/accountability-partners-service.ts": {
+      "dbCalls": 44,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and 3 of its 4 tables are absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): partner_invitations, partnerships, partner_nudges. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/commerce/payouts/payout-service.ts": {
+      "dbCalls": 42,
+      "reachableFromPage": false,
+      "verdict": "NEEDS-DECISION",
+      "why": "CONFIRMED unreachable 2026-08-18, and the most consequential entry in this file. 42 database calls, instantiates Stripe, writes affiliate_payouts. The ONLY importers are barrels (payouts/index.ts, re-exported by commerce/index.ts) and no route imports either — routes import @/lib/commerce/affiliate, which is why commission-calculator and affiliate-service ARE reachable. So affiliate commissions are calculated and recorded, and the service that pays them is unreachable: money accrues, nothing can pay it out. An earlier grep appeared to show commission-calculator importing it; that match was a COMMENT stating the opposite — 'payouts are handled exclusively in payout-service.ts; this file must never write to affiliate_payouts or call a payment provider directly'. That comment also describes 'two independent payout rails', which is FND-026, listed in CLAUDE.md as an unmet launch condition. Decide the rail before wiring a route."
+    },
+    "src/lib/goals/services/ContributionSchedulerService.ts": {
+      "dbCalls": 40,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and 4 of its 5 tables are absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): scheduled_contributions, goal_contributions, contribution_schedules, bank_accounts. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/commerce/affiliate/affiliate-service.ts": {
+      "dbCalls": 38,
+      "reachableFromPage": false,
+      "verdict": "NEEDS-DECISION",
+      "why": "REVEALED by the switch to symbol-level resolution, 2026-08-18. 38 db calls. Routes import @/lib/commerce/affiliate for `commissionCalculator`, which lives in commission-calculator.ts, so the barrel is loaded but affiliateService itself is referenced nowhere under src/app (hand-verified). Compounds task #103: the affiliate stack is more stranded than the payout finding alone suggested."
+    },
+    "src/lib/financial/auto-save-rules-service.ts": {
+      "dbCalls": 35,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): auto_save_rules, save_transfers. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/financial/spending-limit-alerts-service.ts": {
+      "dbCalls": 34,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): spending_limits, spending_alerts. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/gamification/commitment-device-service.ts": {
+      "dbCalls": 34,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): commitment_contracts, commitment_check_ins, commitment_donations. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/investments/services/PortfolioRebalanceService.ts": {
+      "dbCalls": 34,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): portfolios, rebalance_alerts, rebalance_history. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/commerce/offers/disclosure-service.ts": {
+      "dbCalls": 33,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): disclosures, offer_disclosures, offers. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/commerce/offers/offer-service.ts": {
+      "dbCalls": 33,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and 5 of its 6 tables are absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): offers, offer_impressions, offer_clicks, offer_disclosures, disclosures. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/financial/alternative-asset-service.ts": {
+      "dbCalls": 31,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): alternative_assets, alternative_asset_valuations. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/gamification/anonymous-leaderboard-service.ts": {
+      "dbCalls": 30,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): leaderboard_participation, leaderboard_scores. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/auth/auth-service.ts": {
+      "dbCalls": 27,
+      "reachableFromPage": true,
+      "verdict": "NEEDS-DECISION",
+      "why": "Reached from a PAGE but not from any route. That is a different problem from a dead feature — a client component importing an auth service directly is worth its own look."
+    },
+    "src/lib/credit/services/GoodwillLetterService.ts": {
+      "dbCalls": 24,
+      "reachableFromPage": false,
+      "verdict": "SUPERSEDED",
+      "why": "CONFIRMED unreachable 2026-08-18. Its feature IS live, served by a different module: /api/credit-repair/goodwill uses negotiationService + @/lib/credit-repair/db. Storage exists; this module is a duplicate implementation with no caller. Propose deletion (owner approval required) rather than wiring a second path to the same feature."
+    },
+    "src/lib/financial/bill-calendar-service.ts": {
+      "dbCalls": 24,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and 1 of its 3 tables are absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): bill_reminders. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/financial/manual-account-service.ts": {
+      "dbCalls": 24,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): manual_accounts. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/ai/social-proof-nudges-service.ts": {
+      "dbCalls": 22,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): cohort_stats, nudge_preferences, nudge_impressions. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/auth/mfa-service.ts": {
+      "dbCalls": 22,
+      "reachableFromPage": false,
+      "verdict": "NEEDS-DECISION",
+      "why": "Likely reached through the auth stack rather than a REST route; verify before treating as dead. R-006 built server-authoritative backup codes, so MFA is live in some form."
+    },
+    "src/lib/goals/services/GoalNotificationService.ts": {
+      "dbCalls": 22,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): goal_notifications, goal_milestones, recommendation_actions, user_notification_preferences. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/email/email-preferences-service.ts": {
+      "dbCalls": 21,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): email_preferences. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/financial/savings-goal-service.ts": {
+      "dbCalls": 20,
+      "reachableFromPage": false,
+      "verdict": "NO-DB-CALLS",
+      "why": "CONFIRMED unreachable 2026-08-18. It makes no .from() database calls of its own — it is computation or a client-side cache, so \"unreachable service\" overstates it. Reclassify or delete; no route is owed."
+    },
+    "src/lib/credit/services/CreditBuilderLoanService.ts": {
+      "dbCalls": 18,
+      "reachableFromPage": false,
+      "verdict": "SUPERSEDED",
+      "why": "CONFIRMED unreachable 2026-08-18. Its feature IS live, served by a different module: /api/credit-builder/loans uses @/lib/credit-builder/credit-builder-service. Storage exists; this module is a duplicate implementation with no caller. Propose deletion (owner approval required) rather than wiring a second path to the same feature."
+    },
+    "src/lib/student-loan-service.ts": {
+      "dbCalls": 17,
+      "reachableFromPage": false,
+      "verdict": "SUPERSEDED",
+      "why": "CONFIRMED unreachable 2026-08-18. Its feature IS live, served by a different module: /api/student-loans queries supabaseAdmin directly. Storage exists; this module is a duplicate implementation with no caller. Propose deletion (owner approval required) rather than wiring a second path to the same feature."
+    },
+    "src/lib/credit/services/SecuredCardRecommendationService.ts": {
+      "dbCalls": 16,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): user_credit_profiles. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/auth/webauthn-service.ts": {
+      "dbCalls": 14,
+      "reachableFromPage": true,
+      "verdict": "NEEDS-DECISION",
+      "why": "Reached from a PAGE but not from any route. Same shape as auth-service."
+    },
+    "src/lib/trading/pctt/pctt-trading-service.ts": {
+      "dbCalls": 11,
+      "reachableFromPage": false,
+      "verdict": "NEEDS-DECISION",
+      "why": "REVEALED by symbol-level resolution. No symbol (createPCTTTradingService, PCTTTradingService, DEFAULT_TRADING_CONFIG) referenced under src/app. Relates to the open trading decisions, tasks #83/#84/#86."
+    },
+    "src/lib/trading/risk/trailing-stop-service.ts": {
+      "dbCalls": 9,
+      "reachableFromPage": false,
+      "verdict": "NEEDS-DECISION",
+      "why": "REVEALED by symbol-level resolution. Neither trailingStopService nor TrailingStopService referenced under src/app. Risk control for a trading path that is itself undecided."
+    },
+    "src/lib/financial/currency-service.ts": {
+      "dbCalls": 6,
+      "reachableFromPage": false,
+      "verdict": "NO-DB-CALLS",
+      "why": "CONFIRMED unreachable 2026-08-18. It makes no .from() database calls of its own — it is computation or a client-side cache, so \"unreachable service\" overstates it. Reclassify or delete; no route is owed."
+    },
+    "src/lib/credit-bureau/inquiry-removal-service.ts": {
+      "dbCalls": 4,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): inquiry_removal_requests. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/documents/ocr-bridge-service.ts": {
+      "dbCalls": 4,
+      "reachableFromPage": false,
+      "verdict": "NO-STORAGE",
+      "why": "CONFIRMED unreachable 2026-08-18, and every table it queries is absent from the LIVE database (checked against pg_tables on the local Supabase, not just migrations): ocr_bridge_results. Wiring a route to this would return a 500 or, worse, an empty state that reads as \"you have no data\". Exposing it requires the schema first — this is a schema decision, not a routing one."
+    },
+    "src/lib/investments/services/PriceAlertService.ts": {
+      "dbCalls": 4,
+      "reachableFromPage": false,
+      "verdict": "NO-DB-CALLS",
+      "why": "CONFIRMED unreachable 2026-08-18. It makes no .from() database calls of its own — it is computation or a client-side cache, so \"unreachable service\" overstates it. Reclassify or delete; no route is owed."
+    },
+    "src/lib/documents/document-service.ts": {
+      "dbCalls": 3,
+      "reachableFromPage": true,
+      "verdict": "SUPERSEDED",
+      "why": "CONFIRMED unreachable 2026-08-18. Its feature IS live, served by a different module: all five /api/documents routes use @/lib/documents/document-service-db. Storage exists; this module is a duplicate implementation with no caller. Propose deletion (owner approval required) rather than wiring a second path to the same feature."
+    },
+    "src/lib/documents/text-extraction-service.ts": {
+      "dbCalls": 3,
+      "reachableFromPage": false,
+      "verdict": "NO-DB-CALLS",
+      "why": "CONFIRMED unreachable 2026-08-18. It makes no .from() database calls of its own — it is computation or a client-side cache, so \"unreachable service\" overstates it. Reclassify or delete; no route is owed."
+    }
+  }
+}

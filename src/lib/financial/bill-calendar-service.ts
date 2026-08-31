@@ -650,7 +650,7 @@ export class BillCalendarService {
     reminderDate.setDate(reminderDate.getDate() - daysBefore);
 
     for (const type of reminderTypes) {
-      await supabase.from("bill_reminders").insert({
+      const { error } = await supabase.from("bill_reminders").insert({
         bill_id: billId,
         user_id: userId,
         reminder_date: reminderDate.toISOString(),
@@ -658,6 +658,18 @@ export class BillCalendarService {
         sent: false,
         created_at: new Date().toISOString(),
       });
+
+      if (error) {
+        // Non-fatal by design: createBill() must still return the created
+        // bill even if reminder scheduling fails, but a failure here must
+        // not be silently discarded either.
+        console.error("Failed to schedule bill reminder", {
+          billId,
+          userId,
+          reminderType: type,
+          error: error.message,
+        });
+      }
     }
   }
 

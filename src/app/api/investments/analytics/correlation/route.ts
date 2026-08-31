@@ -11,6 +11,7 @@ import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { TimeHorizonSchema } from "@/lib/investments/types/advanced-analytics.types";
 import { z } from "zod";
 import { rateLimit } from "@/lib/security/redis-rate-limiting";
+import { InsufficientHoldingsError } from "@/lib/investments/portfolio-analytics";
 
 // Rate limiter: 100 requests per hour per user
 const limiter = rateLimit({
@@ -85,6 +86,22 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
     });
   } catch (error) {
     console.error("Error calculating correlation matrix:", error);
+
+    // Too few holdings is the ACCOUNT's state, not a server failure — 422, so
+    // the page can say "add another holding to see correlations" instead of
+    // rendering a generic error. Checked by type; the message-substring
+    // branches below never matched this case, which is why it 500'd.
+    if (error instanceof InsufficientHoldingsError) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          reason: "insufficient_holdings",
+          required: error.required,
+          actual: error.actual,
+        },
+        { status: 422 },
+      );
+    }
 
     // Handle specific error types
     if (error instanceof Error) {

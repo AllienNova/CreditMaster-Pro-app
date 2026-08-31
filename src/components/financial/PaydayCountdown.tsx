@@ -238,7 +238,7 @@ export function PaydayCountdown({
       {/* Footer Link */}
       <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center">
         <Link
-          href="/dashboard/income"
+          href="/financial/income"
           className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
         >
           Manage income sources →

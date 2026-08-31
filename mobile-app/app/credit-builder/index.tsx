@@ -119,7 +119,7 @@ const TOOL_CATEGORIES = [
         icon: "calculator",
         title: "Payoff Calculator",
         subtitle: "Plan your debt payoff",
-        route: "/credit-builder/debt-calculator",
+        route: "/loans/calculator",
         color: "#6366F1",
         priority: "medium",
       },
@@ -258,7 +258,7 @@ export default function CreditBuilderScreen() {
           </TouchableOpacity>
           <Text style={styles.title}>Credit Builder</Text>
           <TouchableOpacity
-            onPress={() => router.push("/help/guides/credit-builder" as never)}
+            onPress={() => router.push("/help/guides" as never)}
           >
             <Ionicons
               name="help-circle-outline"

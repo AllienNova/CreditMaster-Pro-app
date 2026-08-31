@@ -59,6 +59,9 @@ export const GET = withPermission(
         creditLimit: account.creditLimit,
         paymentStatus: account.paymentStatus ?? "",
         openedDate: account.openedDate,
+        // A closed tradeline still counts toward credit age, and without
+        // this a screen cannot tell open from closed.
+        closedDate: account.closedDate,
         ageMonths: computeAgeMonths(account.openedDate),
       }));
 

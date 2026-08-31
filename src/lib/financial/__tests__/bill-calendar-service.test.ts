@@ -245,6 +245,37 @@ describe("createBill", () => {
       "Failed to create bill",
     );
   });
+
+  describe("reminder scheduling failure (bill_reminders — regression)", () => {
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      // jest.config.js sets restoreMocks: true, which fully detaches a
+      // jest.spyOn before every test — must be re-created fresh here.
+      consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+    });
+
+    it("still returns the created bill but logs the reminder failure instead of discarding it silently", async () => {
+      const row = billRow();
+      // createBill calls from("bills").insert then from("bill_reminders").insert
+      mockFromSequence(
+        { data: row, error: null },
+        { data: null, error: { message: "relation bill_reminders does not exist" } },
+      );
+
+      const result = await service.createBill(input);
+
+      expect(result.id).toBe(BILL_ID);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Failed to schedule bill reminder",
+        expect.objectContaining({
+          billId: BILL_ID,
+          userId: USER_ID,
+          error: "relation bill_reminders does not exist",
+        }),
+      );
+    });
+  });
 });
 
 // ===========================================================================

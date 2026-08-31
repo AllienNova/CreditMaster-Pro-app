@@ -769,7 +769,7 @@ export default function PricingPage() {
               Start Free Trial
             </Link>
             <Link
-              href="/demo"
+              href="/demo/asset-allocation"
               className="inline-block bg-white text-white border-2 border-white/30 px-8 py-4 rounded-lg font-bold hover:bg-white dark:bg-slate-800/20 transition-all"
             >
               Watch Demo

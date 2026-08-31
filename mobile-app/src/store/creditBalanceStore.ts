@@ -169,8 +169,16 @@ export const selectCreditError = (state: CreditBalanceState) => state.error;
  */
 export const selectIsLow = (state: CreditBalanceState): boolean => {
   if (!state.balance) return false;
-  const total = state.balance.usage.total;
-  if (total === 0) return false;
+  // `usage` is typed as required but the API may omit it, and the guard above
+  // only proves `balance` exists. Reading `.usage.total` then threw "Cannot
+  // read property 'total' of undefined" — inside a SELECTOR, so the whole
+  // /settings/credits screen went to the ErrorBoundary rather than the one
+  // widget that wanted the flag.
+  //
+  // Absent usage means there is nothing to be low against, so the honest
+  // answer is false, matching the `total === 0` case immediately below.
+  const total = state.balance.usage?.total;
+  if (!total) return false;
   return state.balance.balance / total < 0.2;
 };
 

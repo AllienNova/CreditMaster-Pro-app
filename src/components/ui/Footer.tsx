@@ -17,14 +17,14 @@ const footerColumns = [
       { href: "/features", label: "Features" },
       { href: "/help", label: "Help Center" },
       { href: "/pricing", label: "Pricing" },
-      { href: "/faq", label: "FAQ" },
+      { href: "/help/faq", label: "FAQ" },
     ],
   },
   {
     title: "Company",
     links: [
       { href: "/about", label: "About" },
-      { href: "/contact", label: "Contact" },
+      { href: "/help/contact", label: "Contact" },
     ],
   },
   {

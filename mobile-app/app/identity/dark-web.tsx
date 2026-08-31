@@ -23,6 +23,7 @@ import type {
   IdentityProtectionStatus,
   IdentityAlert,
 } from "../../src/services/api/types";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 interface Breach {
   id: string;
@@ -179,14 +180,7 @@ export default function DarkWebScreen() {
   };
 
   if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Scanning dark web data...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="Dark Web Monitoring" message="Scanning dark web data..." />;
   }
 
   if (error && identityAlerts.length === 0) {
@@ -454,7 +448,7 @@ export default function DarkWebScreen() {
             ))}
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => router.push("/identity/add-monitored" as Href)}
+              onPress={() => router.push("/identity" as Href)}
             >
               <Ionicons
                 name="add-circle"

@@ -124,6 +124,7 @@ export const PATCH = withAuth(
     );
 
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("user_settings")
       .upsert({
         user_id: user.id,

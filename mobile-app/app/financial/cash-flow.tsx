@@ -34,6 +34,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { LineChart } from "../../src/components/charts";
 import { financialOverviewApi } from "../../src/services/api/financial";
+import { toArray } from "../../src/store/toArray";
 
 interface CashFlowData {
   month: string;
@@ -54,8 +55,8 @@ export default function CashFlowScreen() {
   const fetchCashFlow = useCallback(async () => {
     const response = await financialOverviewApi.getCashFlowAnalysis(6);
     if (response.success && response.data) {
-      setData(response.data.months);
-      setRecommendations(response.data.recommendations);
+      setData(toArray<CashFlowData>(response?.data?.months));
+      setRecommendations(toArray<string>(response?.data?.recommendations));
       setError(null);
     } else {
       setError(response.error?.message ?? "Unable to load cash flow.");
@@ -64,8 +65,14 @@ export default function CashFlowScreen() {
 
   const loadCashFlowData = useCallback(async () => {
     setLoading(true);
-    await fetchCashFlow();
-    setLoading(false);
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      await fetchCashFlow();
+    } finally {
+      setLoading(false);
+    }
   }, [fetchCashFlow]);
 
   useEffect(() => {

@@ -7,7 +7,7 @@
  */
 
 import Link from "next/link";
-import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import AICreditRoadmap from "@/components/credit-builder/AICreditRoadmap";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -22,7 +22,17 @@ export const metadata = {
 };
 
 export default async function CreditBuilderDashboard() {
-  const supabase = getServiceRoleClient();
+  // Cookie-scoped server client, NOT the service-role client.
+  //
+  // This called getServiceRoleClient() and then auth.getUser(). The service-role
+  // client is constructed from a server key and carries no user session, so
+  // getUser() returned no user for EVERY visitor and this page redirected all of
+  // them to /auth/login — permanently unreachable, for everyone, regardless of
+  // whether they were signed in.
+  //
+  // Found by the route sweep, which flagged /credit-builder as "redirected to
+  // login" while holding a valid session.
+  const supabase = await createClient();
   const {
     data: { user },
     error,

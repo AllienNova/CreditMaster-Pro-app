@@ -16,8 +16,17 @@
  * Exits non-zero and prints every offender when the audit fails; exit 0 clean.
  */
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import {
+  readFileSync,
+  readdirSync,
+  statSync,
+  mkdtempSync,
+  writeFileSync,
+  rmSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join, relative, sep } from "node:path";
+import { isPublicApiRoute } from "../src/lib/auth/PUBLIC_ROUTES";
 
 const REPO_ROOT = join(__dirname, "..");
 const API_DIR = join(REPO_ROOT, "src", "app", "api");
@@ -67,14 +76,52 @@ function parseCsvLine(line: string): string[] {
   return fields;
 }
 
-/** Normalise a `proposed_guard` CSV cell to a guard kind. */
-function normalizeGuard(raw: string): GuardKind {
+/** `src/app/api/foo/[id]/route.ts` -> `/api/foo/[id]`, the URL the middleware sees. */
+function urlPathFor(relPath: string): string {
+  return (
+    "/" +
+    relPath
+      .split(sep)
+      .join("/")
+      .replace(/^src\/app\//, "")
+      .replace(/\/route\.tsx?$/, "")
+      // Next route GROUPS are organisational and absent from the URL.
+      .split("/")
+      .filter((s) => !/^\(.*\)$/.test(s))
+      .join("/")
+  );
+}
+
+/** Values this gate accepts in `proposed_guard`. Anything else is an error. */
+const KNOWN_GUARDS = ["PUBLIC", "withAuth", "withRole", "withPermission"];
+
+/** CSV cells that failed to normalise — reported as gate failures, not ignored. */
+const csvErrors: string[] = [];
+
+/**
+ * Normalise a `proposed_guard` CSV cell to a guard kind.
+ *
+ * Returns null for an unrecognised value, and the caller records it as a
+ * failure. The previous version fell through to "none" for anything it did not
+ * recognise, which made a TYPO a silent downgrade: `withPermssion` normalised
+ * to "none", the comparison at the bottom of this file evaluated
+ * `undefined < undefined` → false, and the route passed with no guard required
+ * at all. A one-character edit could unprotect any route in the inventory,
+ * and this gate is the only CI enforcement of FND-001.
+ */
+function normalizeGuard(raw: string, path: string): GuardKind | null {
   const value = raw.trim();
   if (value === "PUBLIC") return "PUBLIC";
-  if (value === "withAuth") return "withAuth";
+  // withAuthAllowingAal1 authenticates the caller exactly as withAuth does; it
+  // waives only the AAL2 step-up, because a user who has lost their
+  // authenticator is stuck at aal1 by definition. Same bar for this gate.
+  if (value === "withAuth" || value === "withAuthAllowingAal1") return "withAuth";
   if (value.startsWith("withRole")) return "withRole";
   if (value.startsWith("withPermission")) return "withPermission";
-  return "none";
+  csvErrors.push(
+    `${path}: unrecognised proposed_guard ${JSON.stringify(value)} — expected one of ${KNOWN_GUARDS.join(", ")}`,
+  );
+  return null;
 }
 
 /** Read every route's expected guard from the CSV, keyed by repo-relative path. */
@@ -87,7 +134,9 @@ function loadCsvExpectations(): Map<string, GuardKind> {
     const path = fields[0]?.trim();
     const guard = fields[4] ?? "";
     if (!path) continue;
-    expectations.set(path.split("/").join(sep), normalizeGuard(guard));
+    const kind = normalizeGuard(guard, path);
+    if (kind === null) continue; // recorded in csvErrors; reported below
+    expectations.set(path.split("/").join(sep), kind);
   }
   return expectations;
 }
@@ -121,16 +170,47 @@ function detectGuards(filePath: string): {
   hasUnwrappedVerb: boolean;
 } {
   const src = readFileSync(filePath, "utf8");
-  const exportRe =
-    /export\s+(?:const\s+(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*=|async\s+function\s+(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS))[\s\S]*?(?:withPermission|withRole|withAuth|withOptionalAuth|\()/g;
 
+  // Segment PER VERB first, then look for the guard inside each segment.
+  //
+  // The previous pattern was a single lazy `[\s\S]*?` running from an export
+  // declaration to the first `withPermission|withRole|withAuth|(` — with no
+  // boundary at the NEXT export. An adversarial review proved both failure
+  // directions by execution:
+  //
+  //   export const GET = listUsers;              // unguarded — FND-001
+  //   export const POST = withPermission(...)    // GET's match ran into this
+  //
+  // The GET match consumed the POST declaration, `segment.includes(
+  // "withPermission")` was true, and the unguarded GET was recorded as
+  // withPermission-protected. Reversing the order hid it the other way: with no
+  // `(` and no guard keyword of its own, the GET declaration never matched at
+  // all and was simply invisible. Either arrangement exits 0 on an unguarded
+  // admin route — in the only CI enforcement of FND-001.
+  const VERB_DECL =
+    /export\s+(?:const\s+(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*=|async\s+function\s+(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS))/g;
+
+  const decls = [...src.matchAll(VERB_DECL)];
   const guards: GuardKind[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = exportRe.exec(src)) !== null) {
-    const segment = match[0];
-    if (segment.includes("withPermission")) guards.push("withPermission");
-    else if (segment.includes("withRole")) guards.push("withRole");
-    else if (segment.includes("withAuth")) guards.push("withAuth");
+
+  for (let i = 0; i < decls.length; i++) {
+    const start = decls[i].index!;
+    const end = i + 1 < decls.length ? decls[i + 1].index! : src.length;
+    const segment = src.slice(start, end);
+
+    // The guard must appear in the DECLARATION HEAD — the text up to whichever
+    // comes first, the opening paren of the wrapper call or the semicolon that
+    // ends a bare assignment. Bounding here is what stops `export const GET =
+    // listUsers;` from inheriting a guard mentioned later in the file.
+    const paren = segment.indexOf("(");
+    const semi = segment.indexOf(";");
+    const bound =
+      paren === -1 ? semi : semi === -1 ? paren : Math.min(paren, semi);
+    const head = bound === -1 ? segment : segment.slice(0, bound + 1);
+
+    if (head.includes("withPermission")) guards.push("withPermission");
+    else if (head.includes("withRole")) guards.push("withRole");
+    else if (head.includes("withAuth")) guards.push("withAuth");
     else guards.push("none"); // bare handler — withOptionalAuth or unwrapped
   }
   if (guards.length === 0) {
@@ -144,6 +224,73 @@ function detectGuards(filePath: string): {
   }, guards[0]);
 
   return { strongest, hasUnwrappedVerb: guards.includes("none") };
+}
+
+/**
+ * `--self-test` pins the two CRITICAL bypasses an adversarial review proved
+ * against this gate by execution. Both left an unguarded admin route exiting 0
+ * in the only CI enforcement of FND-001, so both are asserted rather than
+ * assumed fixed. Writes a temp fixture, scans it, removes it.
+ */
+function selfTest(): void {
+  const dir = mkdtempSync(join(tmpdir(), "auth-gate-"));
+  const cases: Array<[string, string, boolean, string]> = [
+    [
+      "unguarded-before-guarded.ts",
+      `export const GET = listUsers;\nexport const POST = withPermission("users:create", async (req: Request) => {\n  return NextResponse.json({ ok: true });\n});\n`,
+      true,
+      "a paren-free unguarded GET must not inherit the NEXT export's guard",
+    ],
+    [
+      "guarded-before-unguarded.ts",
+      `export const POST = withPermission("users:create", async (req: Request) => {\n  return NextResponse.json({ ok: true });\n});\nexport const GET = listUsers;\n`,
+      true,
+      "a paren-free unguarded GET after a guarded verb must still be seen",
+    ],
+    [
+      "properly-guarded.ts",
+      `export const GET = withAuth(async (req: Request) => {\n  return NextResponse.json({ ok: true });\n});\n`,
+      false,
+      "a correctly wrapped verb must not be flagged",
+    ],
+    [
+      "bare-function.ts",
+      `export async function GET(req: Request) {\n  return NextResponse.json({ ok: true });\n}\n`,
+      true,
+      "a bare exported function is unwrapped",
+    ],
+  ];
+
+  let bad = 0;
+  for (const [name, src, wantUnwrapped, why] of cases) {
+    const file = join(dir, name);
+    writeFileSync(file, src);
+    const { hasUnwrappedVerb } = detectGuards(file);
+    if (hasUnwrappedVerb === wantUnwrapped) continue;
+    bad++;
+    console.error(`  SELF-TEST FAIL: expected hasUnwrappedVerb=${wantUnwrapped} — ${why}`);
+  }
+  rmSync(dir, { recursive: true, force: true });
+
+  // The CSV must reject values it does not recognise rather than silently
+  // treating them as "no guard required".
+  const before = csvErrors.length;
+  if (normalizeGuard("withPermssion", "typo/route.ts") !== null) {
+    bad++;
+    console.error("  SELF-TEST FAIL: a typo'd guard must not normalise to a valid kind");
+  }
+  if (csvErrors.length === before) {
+    bad++;
+    console.error("  SELF-TEST FAIL: an unrecognised guard must be recorded as an error");
+  }
+  csvErrors.length = before;
+
+  console.log(
+    bad === 0
+      ? `audit:auth self-test PASSED - ${cases.length + 2}/${cases.length + 2} detector cases correct.`
+      : `audit:auth self-test FAILED - ${bad} case(s) wrong.`,
+  );
+  process.exit(bad === 0 ? 0 : 1);
 }
 
 function main(): void {
@@ -166,7 +313,22 @@ function main(): void {
 
     if (expected === "PUBLIC") {
       // PUBLIC routes legitimately have no withAuth wrapper (signature/cron/
-      // token auth, or genuinely open). Nothing to enforce in code here.
+      // token auth, or genuinely open) — but the CSV does not get to decide
+      // that unilaterally.
+      //
+      // PUBLIC_ROUTES.ts states "the scripts/verify-auth-coverage.ts audit
+      // cross-checks the two". It did not. Until this check existed, a single
+      // CSV row flipped to PUBLIC removed a route from enforcement entirely —
+      // no code check of any kind — in the same commit that stripped its
+      // withPermission wrapper. The middleware allowlist is the thing that
+      // actually decides what is reachable pre-auth, so a PUBLIC claim must be
+      // backed by an entry there.
+      if (!isPublicApiRoute(urlPathFor(rel))) {
+        offenders.push(
+          `${rel}: CSV says PUBLIC but ${urlPathFor(rel)} is not in PUBLIC_ROUTES.ts — ` +
+            `the middleware will deny it, and no guard is enforced in code`,
+        );
+      }
       continue;
     }
 
@@ -193,6 +355,10 @@ function main(): void {
     }
   }
 
+  // A CSV cell this gate cannot parse is a gate failure, not a shrug. Silently
+  // treating it as "none" is what turned a typo into an unprotected route.
+  offenders.push(...csvErrors);
+
   const total = routeFiles.length;
   if (offenders.length > 0) {
     console.error(
@@ -207,4 +373,5 @@ function main(): void {
   );
 }
 
-main();
+if (process.argv.includes("--self-test")) selfTest();
+else main();

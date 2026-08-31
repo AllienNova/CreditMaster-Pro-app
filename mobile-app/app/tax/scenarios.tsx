@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTaxStore } from "../../src/store/taxStore";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import type {
   TaxScenarioInput,
   TaxScenarioResult,
@@ -121,8 +122,8 @@ export default function TaxScenariosScreen() {
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
+      <ScreenHeader title="What-If Scenarios" />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>What-If Scenarios</Text>
         <Text style={styles.headerSubtitle}>
           Compare tax strategies to find your optimal approach
         </Text>
@@ -410,11 +411,6 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 16,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#1C1917",
   },
   headerSubtitle: {
     fontSize: 14,

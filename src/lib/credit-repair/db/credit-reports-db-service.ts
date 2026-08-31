@@ -97,6 +97,7 @@ export async function createCreditReport(
 ): Promise<CreditReport> {
   try {
     const { data, error } = await supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("credit_reports")
       .insert({
         user_id: input.userId,

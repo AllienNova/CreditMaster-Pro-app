@@ -3,7 +3,7 @@
  * Manage subscription and payment methods
  */
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import {
+  subscriptionApi,
+  type InvoiceView,
+  type PaymentMethodListView,
+} from "../../src/services/api/user";
 
 interface PaymentMethod {
   id: string;
@@ -34,30 +39,23 @@ interface Invoice {
   status: "paid" | "pending" | "failed";
 }
 
-const PAYMENT_METHODS: PaymentMethod[] = [
-  {
-    id: "1",
-    type: "card",
-    last4: "4242",
-    brand: "Visa",
-    expiry: "12/25",
-    isDefault: true,
-  },
-  {
-    id: "2",
-    type: "card",
-    last4: "5555",
-    brand: "Mastercard",
-    expiry: "08/26",
-    isDefault: false,
-  },
-];
-
-const INVOICES: Invoice[] = [
-  { id: "1", date: "Dec 1, 2024", amount: 29.0, status: "paid" },
-  { id: "2", date: "Nov 1, 2024", amount: 29.0, status: "paid" },
-  { id: "3", date: "Oct 1, 2024", amount: 29.0, status: "paid" },
-];
+/*
+ * PAYMENT_METHODS and INVOICES are gone.
+ *
+ * They hardcoded a Visa ending 4242 (Stripe's test card) as the default
+ * method, a Mastercard 5555, and three $29.00 invoices marked paid — and this
+ * screen made no network call at all, not even a useEffect. So every user was
+ * shown a card on file they do not have and three payments they were never
+ * charged. See docs/specs/security-findings.md SF-12; it is FND-016/017, which
+ * was fixed on web, sitting untouched in mobile because audit:mocks scans web
+ * src/ only.
+ *
+ * GET /api/payment/billing returns plans, subscription, paymentMethods and
+ * invoices in one response, from Stripe. lib/payment/billing-data.ts opens with
+ * "No fabricated card numbers. No fabricated invoices. No mock state." and
+ * returns empty arrays for a user with no Stripe customer — so an empty list
+ * here means no card on file, and the screen says that.
+ */
 
 const PLANS = [
   {
@@ -95,12 +93,44 @@ const PLANS = [
 ];
 
 export default function BillingSettingsScreen() {
-  const [currentPlan] = useState("basic");
-  const [paymentMethods, setPaymentMethods] = useState(PAYMENT_METHODS);
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodListView[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceView[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSetDefault = (methodId: string) => {
-    setPaymentMethods(
-      paymentMethods.map((m) => ({ ...m, isDefault: m.id === methodId })),
+  const loadBilling = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    const res = await subscriptionApi.getBillingSettings();
+
+    if (!res.success || !res.data) {
+      // No fallback list. "We could not load your billing" and "you have no
+      // card on file" are different sentences and the user needs the right one.
+      setError("We could not load your billing details.");
+      setIsLoading(false);
+      return;
+    }
+
+    setPaymentMethods(res.data.paymentMethods);
+    setInvoices(res.data.invoices);
+    setCurrentPlan(res.data.planId);
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadBilling();
+  }, [loadBilling]);
+
+  // Both controls below used to mutate local state and look successful. There
+  // is no route for either: stripeService.setDefaultPaymentMethod exists but
+  // nothing exposes it, and there is no detach capability at all. A card the
+  // user "removed" came back on the next load. Saying so beats faking it.
+  const handleSetDefault = (_methodId: string) => {
+    Alert.alert(
+      "Not available yet",
+      "Changing your default card isn't supported in the app yet. You can manage it from the web billing page.",
     );
   };
 
@@ -114,7 +144,10 @@ export default function BillingSettingsScreen() {
           text: "Remove",
           style: "destructive",
           onPress: () =>
-            setPaymentMethods(paymentMethods.filter((m) => m.id !== methodId)),
+            Alert.alert(
+              "Not available yet",
+              "Removing a card isn't supported in the app yet. You can manage your cards from the web billing page.",
+            ),
         },
       ],
     );
@@ -198,6 +231,28 @@ export default function BillingSettingsScreen() {
 
         {/* Payment Methods */}
         <Text style={styles.sectionTitle}>Payment Methods</Text>
+        {/*
+          Three distinct states, deliberately not collapsed: still loading,
+          could not load, and genuinely no card on file. The old screen had one
+          state — a Visa 4242 — which covered all three by being wrong in all
+          three.
+        */}
+        {isLoading ? (
+          <Card>
+            <Text style={styles.emptyText}>Loading your billing details…</Text>
+          </Card>
+        ) : error ? (
+          <Card>
+            <Text style={styles.emptyText}>{error}</Text>
+            <TouchableOpacity onPress={loadBilling}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </Card>
+        ) : paymentMethods.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>No card on file.</Text>
+          </Card>
+        ) : null}
         {paymentMethods.map((method) => (
           <Card key={method.id} style={styles.methodCard}>
             <View style={styles.methodRow}>
@@ -237,8 +292,13 @@ export default function BillingSettingsScreen() {
 
         {/* Billing History */}
         <Text style={styles.sectionTitle}>Billing History</Text>
+        {!isLoading && !error && invoices.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>No payments yet.</Text>
+          </Card>
+        ) : null}
         <Card style={styles.historyCard}>
-          {INVOICES.map((invoice, index) => (
+          {invoices.map((invoice, index) => (
             <View key={invoice.id}>
               <View style={styles.invoiceRow}>
                 <Text style={styles.invoiceDate}>{invoice.date}</Text>
@@ -258,7 +318,7 @@ export default function BillingSettingsScreen() {
                   </Text>
                 </View>
               </View>
-              {index < INVOICES.length - 1 && <View style={styles.divider} />}
+              {index < invoices.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
         </Card>
@@ -270,6 +330,18 @@ export default function BillingSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    paddingVertical: 12,
+  },
+  retryText: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    textAlign: "center",
+    paddingBottom: 12,
+  },
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
   header: {

@@ -3,14 +3,14 @@
  * Set and track credit score goals
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
   TouchableOpacity,
-  TextInput,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,88 +23,125 @@ import {
 import { Card } from "../../src/components/Card";
 import { LineChart } from "../../src/components/charts";
 import { ProgressRing } from "../../src/components/ProgressRing";
+import { useCreditStore } from "../../src/store/creditStore";
+import { creditBuilderRecommendationsApi } from "../../src/services/api/credit";
+import type { CreditBuilderAction } from "../../src/services/api/credit";
 
-interface Goal {
-  id: string;
-  title: string;
-  targetScore: number;
-  currentScore: number;
-  deadline: string;
-  status: "on_track" | "at_risk" | "achieved";
-  milestones: { score: number; label: string; achieved: boolean }[];
-}
+/*
+ * A `Goal` interface, SAMPLE_GOALS, SCORE_HISTORY and RECOMMENDED_ACTIONS
+ * lived here, alongside `const currentScore = 678`.
+ *
+ * Two of the four now have real sources:
+ *   SCORE_HISTORY        GET /credit-monitoring/history, via the credit store
+ *   RECOMMENDED_ACTIONS  GET /api/credit-builder/recommendations, derived
+ *                        from the caller's own credit-builder score
+ *
+ * SAMPLE_GOALS DOES NOT, and that is a finding rather than an oversight. A
+ * credit-score goal ("reach 740 by June") has nowhere to live: `GoalType` in
+ * src/lib/financial/types/ai-coach.types.ts:92-102 covers emergency_fund,
+ * debt_payoff, savings, investment, major_purchase, retirement, education,
+ * vacation, home_down_payment and custom — all of which track a target
+ * AMOUNT, not a target SCORE. `financial_goals` stores targetAmount /
+ * currentAmount accordingly.
+ *
+ * So the screen says goal-setting is not available yet instead of showing
+ * goals nobody set, and the Add button is gone rather than opening a form
+ * that saves nowhere.
+ */
 
-const SAMPLE_GOALS: Goal[] = [
-  {
-    id: "1",
-    title: "Qualify for Prime Rates",
-    targetScore: 740,
-    currentScore: 678,
-    deadline: "2025-06-01",
-    status: "on_track",
-    milestones: [
-      { score: 680, label: "Good Credit", achieved: false },
-      { score: 700, label: "Very Good", achieved: false },
-      { score: 740, label: "Prime Rate", achieved: false },
-    ],
-  },
-  {
-    id: "2",
-    title: "Home Purchase Ready",
-    targetScore: 760,
-    currentScore: 678,
-    deadline: "2025-12-01",
-    status: "on_track",
-    milestones: [
-      { score: 700, label: "FHA Eligible", achieved: false },
-      { score: 720, label: "Conventional", achieved: false },
-      { score: 760, label: "Best Rates", achieved: false },
-    ],
-  },
-];
 
-const SCORE_HISTORY = [
-  { value: 620, label: "Jan" },
-  { value: 635, label: "Feb" },
-  { value: 648, label: "Mar" },
-  { value: 655, label: "Apr" },
-  { value: 668, label: "May" },
-  { value: 678, label: "Jun" },
-];
 
-const RECOMMENDED_ACTIONS = [
-  {
-    icon: "trending-down",
-    title: "Lower utilization to 10%",
-    impact: "+15-25 pts",
-    priority: "high",
-  },
-  {
-    icon: "time",
-    title: "Pay all bills on time",
-    impact: "+5-10 pts/mo",
-    priority: "high",
-  },
-  {
-    icon: "close-circle",
-    title: "Remove collections account",
-    impact: "+30-50 pts",
-    priority: "medium",
-  },
-  {
-    icon: "add-circle",
-    title: "Become authorized user",
-    impact: "+10-20 pts",
-    priority: "medium",
-  },
-];
+const SCORE_HISTORY_MONTHS = 6;
+
+/**
+ * "2026-08-17T..." -> "Aug", in UTC.
+ *
+ * timeZone matters: without it a reading dated the 1st at 00:00 UTC labels as
+ * the previous month for every user west of UTC.
+ */
+const monthLabel = (iso: string): string => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+};
 
 export default function CreditGoalsScreen() {
-  const [goals, setGoals] = useState(SAMPLE_GOALS);
-  const [showAddGoal, setShowAddGoal] = useState(false);
-  const [newGoalTarget, setNewGoalTarget] = useState("");
+  const [actions, setActions] = useState<CreditBuilderAction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const currentScore = 678;
+  const { scores, scoreHistory, fetchScores, fetchScoreHistory } =
+    useCreditStore();
+
+  const load = useCallback(async () => {
+    setError(null);
+    // Scores first: the history route needs a bureau, and the store takes it
+    // from the scores already in state.
+    await fetchScores();
+    await fetchScoreHistory(SCORE_HISTORY_MONTHS);
+
+    const res = await creditBuilderRecommendationsApi.getAll();
+    if (!res.success || !res.data) {
+      setError("We could not load your recommended actions.");
+      setLoading(false);
+      return;
+    }
+    setActions(res.data.recommendations ?? []);
+    setLoading(false);
+  }, [fetchScores, fetchScoreHistory]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // The caller's real current score, not a constant. Null when no bureau has
+  // reported one — which is different from a score of zero.
+  const currentScore = scores[0]?.score ?? null;
+
+  const historyPoints = (scoreHistory?.history ?? []).map((h) => ({
+    value: h.score,
+    label: monthLabel(h.date),
+  }));
+
+  /**
+   * The trend statistics, COMPUTED from the same series the chart draws.
+   *
+   * They were "+58 6 Month Gain" and "+10 Monthly Avg", hardcoded — the
+   * caller's score movement, invented, and they survived the earlier fix of
+   * this screen because that pass removed the module-level constants and left
+   * the JSX literals. Deriving them from `historyPoints` is what stops the
+   * chart and the numbers under it from telling different stories.
+   *
+   * Null when there is nothing to measure a change ACROSS: a single reading
+   * has no gain, and `(n - 1)` would divide by zero.
+   */
+  const trend =
+    historyPoints.length >= 2
+      ? (() => {
+          const first = historyPoints[0].value;
+          const last = historyPoints[historyPoints.length - 1].value;
+          const gain = last - first;
+          return {
+            gain,
+            perPeriod: gain / (historyPoints.length - 1),
+            periods: historyPoints.length,
+          };
+        })()
+      : null;
+
+  const signed = (n: number) => `${n > 0 ? "+" : ""}${Math.round(n)}`;
+
+  /**
+   * Chart bounds from the DATA, padded.
+   *
+   * They were minValue={580} maxValue={720}. A caller above 720 or below 580 —
+   * both entirely ordinary — had their own history drawn outside the chart.
+   */
+  const values = historyPoints.map((p) => p.value);
+  const bounds = values.length
+    ? { min: Math.max(300, Math.min(...values) - 20), max: Math.min(850, Math.max(...values) + 20) }
+    : { min: 300, max: 850 };
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -121,13 +158,10 @@ export default function CreditGoalsScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Credit Goals</Text>
-          <TouchableOpacity onPress={() => setShowAddGoal(true)}>
-            <Ionicons
-              name="add-circle"
-              size={28}
-              color={theme.colors.primary}
-            />
-          </TouchableOpacity>
+          {/* The Add Goal button lived here. It opened a form that saved
+              nowhere — a credit-score goal has no storage (see the note at the
+              top). A control that cannot persist is worse than no control. */}
+          <View style={{ width: 28 }} />
         </View>
 
         {/* Current Score Card */}
@@ -160,143 +194,94 @@ export default function CreditGoalsScreen() {
         <Card style={styles.chartCard}>
           <Text style={styles.sectionTitle}>Score Trend</Text>
           <LineChart
-            data={SCORE_HISTORY}
+            data={historyPoints}
             height={160}
             color={theme.colors.primary}
             showDots
             showLabels
-            minValue={580}
-            maxValue={720}
+            minValue={bounds.min}
+            maxValue={bounds.max}
           />
-          <View style={styles.trendStats}>
-            <View style={styles.trendStat}>
-              <Text style={styles.trendValue}>+58</Text>
-              <Text style={styles.trendLabel}>6 Month Gain</Text>
+          {trend ? (
+            <View style={styles.trendStats}>
+              <View style={styles.trendStat}>
+                <Text testID="trend-gain" style={styles.trendValue}>
+                  {signed(trend.gain)}
+                </Text>
+                {/* The window is however many readings there are, not a fixed
+                    six months, because the history route returns what has
+                    actually been recorded. */}
+                <Text style={styles.trendLabel}>
+                  Change over {trend.periods} readings
+                </Text>
+              </View>
+              <View style={styles.trendStat}>
+                <Text testID="trend-avg" style={styles.trendValue}>
+                  {signed(trend.perPeriod)}
+                </Text>
+                <Text style={styles.trendLabel}>Average per reading</Text>
+              </View>
             </View>
-            <View style={styles.trendStat}>
-              <Text style={styles.trendValue}>+10</Text>
-              <Text style={styles.trendLabel}>Monthly Avg</Text>
-            </View>
-          </View>
+          ) : (
+            <Text style={styles.stateText}>
+              One reading so far — there is no change to measure yet.
+            </Text>
+          )}
         </Card>
 
-        {/* Active Goals */}
         <Text style={styles.sectionTitle}>Your Goals</Text>
-        {goals.map((goal) => {
-          const progress =
-            ((goal.currentScore - 300) / (goal.targetScore - 300)) * 100;
-          const daysRemaining = Math.ceil(
-            (new Date(goal.deadline).getTime() - Date.now()) /
-              (1000 * 60 * 60 * 24),
-          );
-          const pointsNeeded = goal.targetScore - goal.currentScore;
-
-          return (
-            <Card key={goal.id} style={styles.goalCard}>
-              <View style={styles.goalHeader}>
-                <View style={styles.goalInfo}>
-                  <Text style={styles.goalTitle}>{goal.title}</Text>
-                  <Text style={styles.goalTarget}>
-                    Target: {goal.targetScore}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    goal.status === "on_track" ? styles.onTrack : styles.atRisk,
-                  ]}
-                >
-                  <Text style={styles.statusText}>
-                    {goal.status === "on_track" ? "On Track" : "At Risk"}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.progressContainer}>
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${Math.min(progress, 100)}%` },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.progressText}>{Math.round(progress)}%</Text>
-              </View>
-
-              <View style={styles.goalStats}>
-                <View style={styles.goalStat}>
-                  <Ionicons
-                    name="trending-up"
-                    size={16}
-                    color={theme.colors.primary}
-                  />
-                  <Text style={styles.goalStatText}>
-                    {pointsNeeded} pts needed
-                  </Text>
-                </View>
-                <View style={styles.goalStat}>
-                  <Ionicons
-                    name="calendar"
-                    size={16}
-                    color={theme.colors.textSecondary}
-                  />
-                  <Text style={styles.goalStatText}>
-                    {daysRemaining} days left
-                  </Text>
-                </View>
-              </View>
-
-              {/* Milestones */}
-              <View style={styles.milestones}>
-                {goal.milestones.map((milestone, idx) => (
-                  <View key={idx} style={styles.milestone}>
-                    <Ionicons
-                      name={
-                        milestone.achieved
-                          ? "checkmark-circle"
-                          : "ellipse-outline"
-                      }
-                      size={16}
-                      color={
-                        milestone.achieved
-                          ? theme.colors.success
-                          : theme.colors.border
-                      }
-                    />
-                    <Text
-                      style={[
-                        styles.milestoneText,
-                        milestone.achieved && styles.milestoneAchieved,
-                      ]}
-                    >
-                      {milestone.score} - {milestone.label}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </Card>
-          );
-        })}
+        <Card style={styles.actionCard}>
+          <Text style={styles.stateText}>
+            Setting a target score is not available yet. Goals are stored as
+            target AMOUNTS, so a score target has nowhere to live — the two
+            sections below are your real score history and the actions derived
+            from it.
+          </Text>
+        </Card>
 
         {/* Recommended Actions */}
         <Text style={styles.sectionTitle}>Recommended Actions</Text>
-        {RECOMMENDED_ACTIONS.map((action, idx) => (
+
+        {loading ? (
+          <View style={{ paddingVertical: 24, alignItems: "center" }}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        ) : null}
+
+        {error ? (
+          <Card style={styles.actionCard}>
+            <Text style={styles.stateText}>{error}</Text>
+            <TouchableOpacity onPress={load}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </Card>
+        ) : null}
+
+        {!loading && !error && actions.length === 0 ? (
+          <Card style={styles.actionCard}>
+            <Text style={styles.stateText}>
+              No actions yet. They are derived from your credit-builder score.
+            </Text>
+          </Card>
+        ) : null}
+        {actions.map((action, idx) => (
           <TouchableOpacity key={idx} activeOpacity={0.7}>
             <Card style={styles.actionCard}>
               <View style={styles.actionRow}>
                 <View
                   style={[
                     styles.actionIcon,
-                    action.priority === "high"
+                    action.impact === "high"
                       ? styles.highPriority
                       : styles.mediumPriority,
                   ]}
                 >
+                  {/* CreditBuilderAction carries no icon. One glyph for all
+                      of them beats inventing a per-item one. */}
                   <Ionicons
-                    name={action.icon as keyof typeof Ionicons.glyphMap}
+                    name="flash-outline"
                     size={20}
-                    color={action.priority === "high" ? "#22C55E" : "#F59E0B"}
+                    color={action.impact === "high" ? "#22C55E" : "#F59E0B"}
                   />
                 </View>
                 <View style={styles.actionContent}>
@@ -313,14 +298,9 @@ export default function CreditGoalsScreen() {
           </TouchableOpacity>
         ))}
 
-        {/* Add Goal CTA */}
-        <TouchableOpacity
-          style={styles.addGoalButton}
-          onPress={() => setShowAddGoal(true)}
-        >
-          <Ionicons name="add" size={24} color={theme.colors.primary} />
-          <Text style={styles.addGoalText}>Add New Goal</Text>
-        </TouchableOpacity>
+        {/* An "Add New Goal" call-to-action lived here, opening the same form
+            that saved nowhere. Removed for the same reason as the header
+            button: a credit-score goal has no storage. */}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -329,6 +309,17 @@ export default function CreditGoalsScreen() {
 }
 
 const styles = StyleSheet.create({
+  stateText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    lineHeight: 20,
+  },
+  retryText: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontWeight: "600",
+    marginTop: 8,
+  },
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
   header: {

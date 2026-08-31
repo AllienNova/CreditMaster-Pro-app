@@ -19,56 +19,18 @@ interface AnalysisResult {
   }[];
 }
 
-const mockResults: AnalysisResult[] = [
-  {
-    category: "Negative Items",
-    items: [
-      {
-        description: "Late payment on Chase card (30 days) - Jan 2023",
-        severity: "medium",
-        disputable: true,
-        recommendation: "Send goodwill letter requesting removal",
-      },
-      {
-        description: "Collection account - Medical debt $450",
-        severity: "high",
-        disputable: true,
-        recommendation:
-          "Request debt validation, may be eligible for pay-for-delete",
-      },
-    ],
-  },
-  {
-    category: "Hard Inquiries",
-    items: [
-      {
-        description: "Capital One - Dec 2023",
-        severity: "low",
-        disputable: false,
-        recommendation: "Will fall off in 2 years",
-      },
-      {
-        description: "Unknown inquiry - Nov 2023",
-        severity: "medium",
-        disputable: true,
-        recommendation: "Dispute as unauthorized inquiry",
-      },
-    ],
-  },
-  {
-    category: "Account Issues",
-    items: [
-      {
-        description: "High utilization on Discover (78%)",
-        severity: "high",
-        disputable: false,
-        recommendation: "Pay down to below 30% for score improvement",
-      },
-    ],
-  },
-];
+/*
+ * `mockResults` lived here: an invented credit report naming real creditors
+ * — "Late payment on Chase card (30 days) - Jan 2023", "Collection account -
+ * Medical debt $450", "High utilization on Discover (78%)" — presented as the
+ * analysis of whatever file the user had just "uploaded". See handleUpload.
+ */
 
-function FileUpload({ onUpload }: { onUpload: () => void }) {
+function FileUpload({
+  onUpload,
+}: {
+  onUpload: (file?: File) => void;
+}) {
   const [dragging, setDragging] = useState(false);
 
   return (
@@ -93,18 +55,22 @@ function FileUpload({ onUpload }: { onUpload: () => void }) {
         Drag and drop your PDF or paste text from your credit report
       </p>
       <div className="flex gap-4 justify-center">
-        <button
-          onClick={onUpload}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
+        <label className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
           Choose File
-        </button>
-        <button
-          onClick={onUpload}
-          className="px-6 py-2 bg-gray-100 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:bg-slate-700"
-        >
-          Paste Text
-        </button>
+          <input
+            type="file"
+            accept=".pdf,.txt"
+            className="hidden"
+            onChange={(e) => onUpload(e.target.files?.[0])}
+          />
+        </label>
+        {/*
+          A "Paste Text" button sat here. There is no paste flow — it called
+          the same handler with a click event where a File belonged, and
+          POST /api/credit-report/analyze rejects a request with no file. A
+          control that cannot do the thing is the defect, not a feature to
+          preserve; it comes back when a paste path exists.
+        */}
       </div>
       <p className="text-xs text-gray-400 dark:text-slate-500 mt-4">
         Supported: PDF, TXT • Your data is encrypted and never stored
@@ -126,7 +92,8 @@ function AnalysisResults({ results }: { results: AnalysisResult[] }) {
   return (
     <div className="space-y-6">
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Two columns, not three: the third tile was the invented one. */}
+      <div className="grid grid-cols-2 gap-4">
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 text-center">
           <p className="text-3xl font-bold text-gray-900 dark:text-white">
             {results.flatMap((r) => r.items).length}
@@ -141,12 +108,20 @@ function AnalysisResults({ results }: { results: AnalysisResult[] }) {
             Disputable
           </p>
         </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 text-center">
-          <p className="text-3xl font-bold text-blue-600">+45</p>
-          <p className="text-sm text-gray-500 dark:text-slate-400">
-            Potential Points
-          </p>
-        </div>
+        {/*
+          A third tile read "+45 / Potential Points". It sat between two
+          COMPUTED tiles — the one above renders {totalDisputable} — which is
+          what made an invented number read as another measurement. The same
+          shape as the retirement figures on /tax/optimizer, where a hardcoded
+          breakdown sat under a real total.
+
+          Removed rather than estimated. Turning "items you could dispute" into
+          "points you would gain" needs a model of how a bureau will respond to
+          each item, and no such model exists here; the nearest thing,
+          /api/ml/predict-timeline, predicts dispute RESOLUTION TIME and its own
+          comment records that it substitutes a different model because the one
+          it names was never built.
+        */}
       </div>
 
       {/* Results by Category */}
@@ -232,13 +207,48 @@ export default function AnalysisPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResult[] | null>(null);
 
-  const handleUpload = () => {
+  const [notAvailable, setNotAvailable] = useState<string | null>(null);
+
+  /*
+   * WHAT THIS REPLACED. `handleUpload` set a two-second spinner and then
+   * `setResults(mockResults)` — an invented credit report naming real
+   * creditors ("Late payment on Chase card (30 days) - Jan 2023",
+   * "Collection account - Medical debt $450") — while the file itself went
+   * nowhere, under a caption promising it was encrypted.
+   *
+   * THE ROUTE WAS ALREADY HONEST AND THE PAGE IGNORED IT.
+   * POST /api/credit-report/analyze is gated 501 with the message "Credit
+   * report analysis is not available yet. Your file was not analyzed",
+   * because no report parser exists in the codebase. Someone had already
+   * refused to fabricate on the server; the screen fabricated anyway.
+   *
+   * The file is now actually sent, so the route's validation runs and the user
+   * learns immediately if it is unacceptable — and its answer is shown as
+   * given. When a parser lands, the 501 goes away and this page renders the
+   * real analysis with no further change.
+   */
+  const handleUpload = async (file?: File) => {
     setUploaded(true);
     setAnalyzing(true);
-    setTimeout(() => {
-      setAnalyzing(false);
-      setResults(mockResults);
-    }, 2000);
+    setNotAvailable(null);
+    try {
+      const body = new FormData();
+      if (file) body.append("file", file);
+      const res = await fetch("/api/credit-report/analyze", {
+        method: "POST",
+        body,
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && Array.isArray(json?.results)) setResults(json.results);
+      else
+        setNotAvailable(
+          json?.message ??
+            "We could not analyze that report. Nothing was stored.",
+        );
+    } catch {
+      setNotAvailable("We could not reach the analysis service.");
+    }
+    setAnalyzing(false);
   };
 
   return (
@@ -259,6 +269,17 @@ export default function AnalysisPage() {
           <div className="animate-spin text-4xl mb-4"></div>
           <p className="text-gray-600 dark:text-slate-300">
             Analyzing your credit report...
+          </p>
+        </div>
+      )}
+
+      {notAvailable && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700">
+          <p className="font-medium text-gray-900 dark:text-white mb-1">
+            No analysis was produced
+          </p>
+          <p className="text-sm text-gray-600 dark:text-slate-300">
+            {notAvailable}
           </p>
         </div>
       )}

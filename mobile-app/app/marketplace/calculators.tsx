@@ -673,7 +673,7 @@ export default function CalculatorsScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickLinkCard}
-            onPress={() => router.push("/financial/budget" as never)}
+            onPress={() => router.push("/financial/budgets" as never)}
           >
             <Ionicons name="cash" size={24} color={theme.colors.primary} />
             <Text style={styles.quickLinkText}>Budget Planner</Text>

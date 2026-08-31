@@ -15,10 +15,16 @@ export default function MarketplaceLayout() {
 
   return (
     <Stack screenOptions={{ ...headerOptions, headerShown: false }}>
-      <Stack.Screen
-        name="index"
-        options={{ headerShown: true, title: "Marketplace" }}
-      />
+      {/*
+        No native header here. `index` is the ROOT of this stack, and React
+        Navigation draws no back button on a root — so `headerShown: true`
+        rendered a bar with the title and nothing to press, while the screen
+        drew its own title underneath. Two titles, no way out; that is the
+        screenshot this was reported from. The screen uses <ScreenHeader/>,
+        whose router.back() pops the PARENT navigator, which is where the
+        user actually came from.
+      */}
+      <Stack.Screen name="index" />
       <Stack.Screen name="secured-cards" options={{ title: "Secured Cards" }} />
       <Stack.Screen
         name="monitoring-services"

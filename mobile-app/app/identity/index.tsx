@@ -20,6 +20,7 @@ import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { useCreditStore } from "../../src/store/creditStore";
 import { identityProtectionApi } from "../../src/services/api/user";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import type {
   IdentityProtectionStatus,
   IdentityAlert,
@@ -296,19 +297,21 @@ export default function IdentityScreen() {
         }
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Identity Protection</Text>
-          <TouchableOpacity
-            style={styles.settingsButton}
-            onPress={() => router.push("/settings/identity" as Href)}
-          >
-            <Ionicons
-              name="settings-outline"
-              size={24}
-              color={theme.colors.text}
-            />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader
+          title="Identity Protection"
+          right={
+            <TouchableOpacity
+              style={styles.settingsButton}
+              onPress={() => router.push("/identity" as Href)}
+            >
+              <Ionicons
+                name="settings-outline"
+                size={24}
+                color={theme.colors.text}
+              />
+            </TouchableOpacity>
+          }
+        />
 
         {/* Protection Score */}
         <Card
@@ -552,13 +555,6 @@ export default function IdentityScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: theme.spacing.lg,
-  },
-  title: { fontSize: 24, fontWeight: "700", color: theme.colors.text },
   settingsButton: { padding: 4 },
   scoreCard: { marginBottom: theme.spacing.lg },
   scoreRow: {

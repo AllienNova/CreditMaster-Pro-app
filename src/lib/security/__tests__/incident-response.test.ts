@@ -380,8 +380,7 @@ describe("Incident Response — generateReport", () => {
   });
 
   it("should calculate correct counts by severity", () => {
-    const now = new Date();
-    const start = new Date(now.getTime() - 60 * 60 * 1000);
+    const start = new Date(Date.now() - 60 * 60 * 1000);
 
     service.reportIncident("AUTH_FAILURE", "LOW", { description: "T1" });
     service.reportIncident("CSRF_ATTEMPT", "LOW", { description: "T2" });
@@ -389,15 +388,18 @@ describe("Incident Response — generateReport", () => {
       description: "T3",
     });
 
-    const report = service.generateReport({ start, end: now });
+    // AFTER the incidents: generateReport filters `createdAt <= end`
+    // (incident-response.ts:299), so an `end` captured before reportIncident
+    // excludes every incident the moment the clock ticks a millisecond.
+    const end = new Date(Date.now() + 1000);
+    const report = service.generateReport({ start, end });
 
     expect(report.bySeverity.LOW).toBe(2);
     expect(report.bySeverity.CRITICAL).toBe(1);
   });
 
   it("should count open incidents correctly", () => {
-    const now = new Date();
-    const start = new Date(now.getTime() - 60 * 60 * 1000);
+    const start = new Date(Date.now() - 60 * 60 * 1000);
 
     const inc1 = service.reportIncident("AUTH_FAILURE", "LOW", {
       description: "T1",
@@ -405,7 +407,8 @@ describe("Incident Response — generateReport", () => {
     service.reportIncident("CSRF_ATTEMPT", "HIGH", { description: "T2" });
     service.updateIncidentStatus(inc1.id, "RESOLVED");
 
-    const report = service.generateReport({ start, end: now });
+    const end = new Date(Date.now() + 1000);
+    const report = service.generateReport({ start, end });
 
     // inc1 is RESOLVED, inc2 is ESCALATED (auto-escalated from HIGH)
     expect(report.openIncidents).toBe(1);
@@ -413,27 +416,27 @@ describe("Incident Response — generateReport", () => {
   });
 
   it("should calculate average resolution time", () => {
-    const now = new Date();
-    const start = new Date(now.getTime() - 60 * 60 * 1000);
+    const start = new Date(Date.now() - 60 * 60 * 1000);
 
     const inc = service.reportIncident("AUTH_FAILURE", "LOW", {
       description: "T1",
     });
     service.updateIncidentStatus(inc.id, "RESOLVED");
 
-    const report = service.generateReport({ start, end: now });
+    const end = new Date(Date.now() + 1000);
+    const report = service.generateReport({ start, end });
 
     expect(report.averageResolutionTimeMs).not.toBeNull();
     expect(report.averageResolutionTimeMs).toBeGreaterThanOrEqual(0);
   });
 
   it("should return null average resolution time when no resolved incidents", () => {
-    const now = new Date();
-    const start = new Date(now.getTime() - 60 * 60 * 1000);
+    const start = new Date(Date.now() - 60 * 60 * 1000);
 
     service.reportIncident("AUTH_FAILURE", "LOW", { description: "T1" });
 
-    const report = service.generateReport({ start, end: now });
+    const end = new Date(Date.now() + 1000);
+    const report = service.generateReport({ start, end });
 
     expect(report.averageResolutionTimeMs).toBeNull();
   });

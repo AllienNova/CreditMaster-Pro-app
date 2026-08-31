@@ -4,8 +4,30 @@
  */
 
 import { create } from "zustand";
+import { toArray } from "./toArray";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+/**
+ * dev-seed is loaded LAZILY, inside the `__DEV__` branch — never as a top-level
+ * import.
+ *
+ * A static import puts the module in the production graph whether or not the
+ * branch runs: Metro does not tree-shake it, so a release bundle carried the
+ * fabricated seed strings ("Your Experian score increased", "Emergency Fund",
+ * a 731 credit score). The `if (__DEV__)` guard stopped it EXECUTING but not
+ * SHIPPING — protection by build-time flag over a payload already on the
+ * device, which is the FND-064 shape.
+ *
+ * `require()` inside the guard is dead code once Metro folds `__DEV__` to
+ * false, so the module leaves the graph entirely. Verified by audit:bundle
+ * against a real `expo export`.
+ */
+function devSeed(): typeof import("../data/dev-seed") {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- deliberate: see above
+  return require("../data/dev-seed");
+}
+
 import {
   disputeApi,
   disputeLetterApi,
@@ -17,7 +39,6 @@ import type {
   DisputeStrategy,
   DisputeReason,
 } from "../services/api/types";
-import { seedDisputes, seedDisputeTemplates, seedDisputeStrategies, seedDisputeReasons } from "../data/dev-seed";
 
 interface DisputeState {
   // Disputes
@@ -111,7 +132,7 @@ export const useDisputeStore = create<DisputeState>()(
       fetchDisputes: async (params) => {
         set({ isLoading: true, error: null });
         if (__DEV__) {
-          set({ disputes: seedDisputes, totalDisputes: seedDisputes.length, isLoading: false });
+          set({ disputes: devSeed().seedDisputes, totalDisputes: devSeed().seedDisputes.length, isLoading: false });
           return;
         }
         try {
@@ -123,7 +144,7 @@ export const useDisputeStore = create<DisputeState>()(
           });
           if (response.success && response.data) {
             set({
-              disputes: response.data.items,
+              disputes: toArray(response.data.items),
               totalDisputes: response.data.total,
               isLoading: false,
             });
@@ -308,11 +329,11 @@ export const useDisputeStore = create<DisputeState>()(
       clearGeneratedLetter: () => set({ generatedLetter: null }),
 
       fetchTemplates: async () => {
-        if (__DEV__) { set({ templates: seedDisputeTemplates }); return; }
+        if (__DEV__) { set({ templates: devSeed().seedDisputeTemplates }); return; }
         try {
           const response = await disputeResourcesApi.getTemplates();
           if (response.success && response.data) {
-            set({ templates: response.data.templates });
+            set({ templates: toArray(response.data.templates) });
           }
         } catch (error) {
           if (__DEV__) console.error("Failed to fetch templates:", error);
@@ -320,11 +341,11 @@ export const useDisputeStore = create<DisputeState>()(
       },
 
       fetchStrategies: async () => {
-        if (__DEV__) { set({ strategies: seedDisputeStrategies }); return; }
+        if (__DEV__) { set({ strategies: devSeed().seedDisputeStrategies }); return; }
         try {
           const response = await disputeResourcesApi.getStrategies();
           if (response.success && response.data) {
-            set({ strategies: response.data.strategies });
+            set({ strategies: toArray(response.data.strategies) });
           }
         } catch (error) {
           if (__DEV__) console.error("Failed to fetch strategies:", error);
@@ -332,11 +353,11 @@ export const useDisputeStore = create<DisputeState>()(
       },
 
       fetchReasons: async () => {
-        if (__DEV__) { set({ reasons: seedDisputeReasons }); return; }
+        if (__DEV__) { set({ reasons: devSeed().seedDisputeReasons }); return; }
         try {
           const response = await disputeResourcesApi.getReasons();
           if (response.success && response.data) {
-            set({ reasons: response.data.reasons });
+            set({ reasons: toArray(response.data.reasons) });
           }
         } catch (error) {
           if (__DEV__) console.error("Failed to fetch reasons:", error);

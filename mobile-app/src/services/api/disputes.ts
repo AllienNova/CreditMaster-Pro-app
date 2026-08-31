@@ -226,14 +226,27 @@ export const disputeLetterApi = {
   /**
    * Generate letter using strategy
    */
+  /**
+   * POST /api/disputes/generate with mode "strategy".
+   *
+   * The declared shape used to be `{ letter, strategy, nextSteps }`. The route
+   * returns none of those three: its payload is
+   * `{ disputeLetter, mode, model, complianceReview, disputeId, timestamp }`
+   * (src/app/api/disputes/generate/route.ts:188-198). Every consumer read
+   * `data.letter` and got undefined, so the generated letter never appeared.
+   */
   generateFromStrategy: (
     strategyId: string,
     variables: Record<string, string>,
   ) =>
     api.post<{
-      letter: string;
-      strategy: DisputeStrategy;
-      nextSteps: string[];
+      disputeLetter: string;
+      mode: string;
+      model?: string;
+      complianceReview?: unknown;
+      disputeId?: string;
+      persistenceWarning?: boolean;
+      timestamp?: string;
     }>("/disputes/generate", {
       mode: "strategy",
       strategyId,
@@ -269,7 +282,9 @@ export const disputeResourcesApi = {
    * Get all available templates
    */
   getTemplates: (category?: string) =>
-    api.get<{ templates: DisputeTemplate[] }>(
+    // WebDisputeTemplate, not DisputeTemplate — the server shape. Map it with
+    // mapWebDisputeTemplate; only four field names overlap.
+    api.get<{ templates: WebDisputeTemplate[] }>(
       `/disputes/templates${category ? `?category=${category}` : ""}`,
       { enableCache: true, cacheTime: 30 * 60 * 1000 }, // Cache for 30 minutes
     ),
@@ -292,8 +307,16 @@ export const disputeResourcesApi = {
   /**
    * Get single strategy by ID
    */
+  /**
+   * The route wraps it: `data: { strategy: ... }`
+   * (src/app/api/disputes/strategies/[id]/route.ts:44-46). Declaring a bare
+   * DisputeStrategy here meant callers read `res.data.name` off an object
+   * that only has `strategy`.
+   */
   getStrategy: (strategyId: string) =>
-    api.get<DisputeStrategy>(`/disputes/strategies/${strategyId}`),
+    api.get<{ strategy: DisputeStrategy }>(
+      `/disputes/strategies/${strategyId}`,
+    ),
 
   /**
    * Get all available dispute reasons
@@ -310,3 +333,194 @@ export default {
   letters: disputeLetterApi,
   resources: disputeResourcesApi,
 };
+
+// ---------------------------------------------------------------------------
+// Dispute analytics — derived from the caller's OWN disputes
+// ---------------------------------------------------------------------------
+// app/analytics/disputes.tsx rendered three fixtures with no request: 24
+// disputes with 18 successful, a per-type table topped by "Late Payments 8,
+// 87% success", and six months of filed/resolved counts. Every user saw the
+// same imagined dispute history, including users who had never filed one.
+//
+// There is no aggregates endpoint, and there does not need to be: GET
+// /api/disputes returns the caller's disputes, user-scoped server-side, and
+// every figure the screen showed is a count over that list. Deriving them here
+// keeps the arithmetic in one testable place rather than inside a component.
+
+export interface DisputeStats {
+  total: number;
+  successful: number;
+  pending: number;
+  rejected: number;
+}
+
+export interface DisputeByType {
+  type: string;
+  count: number;
+  /**
+   * Resolved as a percentage of that type — null when NOTHING of that type
+   * has been decided yet. Zero would read as "we tried and failed"; null is
+   * "still open". The count travels beside it so a reader can see that a
+   * 100% is 1 of 1.
+   */
+  successRate: number | null;
+  resolved: number;
+}
+
+export interface DisputeMonthPoint {
+  /** "Aug 2026" — the real month, not a fixed six-month window. */
+  month: string;
+  filed: number;
+  resolved: number;
+}
+
+export interface DisputeAnalytics {
+  stats: DisputeStats;
+  byType: DisputeByType[];
+  monthly: DisputeMonthPoint[];
+}
+
+/**
+ * "resolved" is the only status that means the dispute finished in the user's
+ * favour. `outcome` distinguishes removed/updated/verified, but a dispute can
+ * be resolved with the item VERIFIED — which is a loss — so status alone would
+ * overcount. Where outcome is present it decides; where it is absent, a
+ * resolved dispute counts as successful, which is what the status means.
+ */
+function isSuccessful(d: Dispute): boolean {
+  if (d.status !== "resolved") return false;
+  if (!d.outcome) return true;
+  return d.outcome === "removed" || d.outcome === "updated";
+}
+
+/** Everything that has not been decided yet. */
+const OPEN_STATUSES: readonly string[] = [
+  "draft",
+  "pending",
+  "in_progress",
+  "ready",
+  "sent",
+  "under_review",
+];
+
+/**
+ * "Jun 2026" from an ISO timestamp, bucketed in UTC.
+ *
+ * timeZone: "UTC" is load-bearing. toLocaleDateString defaults to the DEVICE's
+ * zone, so a dispute created at 2026-06-01T00:00:00Z renders as "May 2026" for
+ * every user west of UTC — the whole of the Americas. The stored timestamps
+ * are UTC, so the buckets must be too, or the same dispute appears in
+ * different months depending on where the phone is.
+ */
+function monthKey(iso: string): string | null {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+export function summarizeDisputes(disputes: Dispute[]): DisputeAnalytics {
+  const stats: DisputeStats = {
+    total: disputes.length,
+    successful: disputes.filter(isSuccessful).length,
+    pending: disputes.filter((d) => OPEN_STATUSES.includes(d.status)).length,
+    rejected: disputes.filter((d) => d.status === "rejected").length,
+  };
+
+  const byTypeMap = new Map<string, { count: number; resolved: number; won: number }>();
+  for (const d of disputes) {
+    // An untyped dispute is grouped honestly rather than dropped from the
+    // table — dropping it would make the type counts fail to sum to the total.
+    const key = d.itemType || "Uncategorised";
+    const entry = byTypeMap.get(key) ?? { count: 0, resolved: 0, won: 0 };
+    entry.count += 1;
+    if (d.status === "resolved" || d.status === "rejected") entry.resolved += 1;
+    if (isSuccessful(d)) entry.won += 1;
+    byTypeMap.set(key, entry);
+  }
+
+  const byType: DisputeByType[] = [...byTypeMap.entries()]
+    .map(([type, e]) => ({
+      type,
+      count: e.count,
+      resolved: e.resolved,
+      successRate: e.resolved > 0 ? Math.round((e.won / e.resolved) * 100) : null,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // Months that actually contain activity, in order. The fixture hardcoded
+  // Jul..Dec, so a user who filed nothing still saw a six-month chart.
+  const monthMap = new Map<string, { filed: number; resolved: number; sort: number }>();
+  const bump = (iso: string | undefined, field: "filed" | "resolved") => {
+    if (!iso) return;
+    const key = monthKey(iso);
+    if (!key) return;
+    const entry = monthMap.get(key) ?? {
+      filed: 0,
+      resolved: 0,
+      sort: new Date(iso).getTime(),
+    };
+    entry[field] += 1;
+    entry.sort = Math.min(entry.sort, new Date(iso).getTime());
+    monthMap.set(key, entry);
+  };
+  for (const d of disputes) {
+    bump(d.createdAt, "filed");
+    bump(d.resolvedAt, "resolved");
+  }
+
+  const monthly: DisputeMonthPoint[] = [...monthMap.entries()]
+    .sort((a, b) => a[1].sort - b[1].sort)
+    .map(([month, e]) => ({ month, filed: e.filed, resolved: e.resolved }));
+
+  return { stats, byType, monthly };
+}
+
+/**
+ * The dispute-templates contract, reconciled.
+ *
+ * The server and the mobile app disagreed about what a template IS. The route
+ * serves DISPUTE_TEMPLATES from src/lib/disputes/dispute-service.ts:23-31 —
+ * `{ id, name, category, description, successRate, template, variables }`.
+ * The mobile DisputeTemplate declares
+ * `{ id, name, category, scenario, successRate, tone, letterText,
+ *    requiredDocuments, placeholders, bestPractices }`.
+ *
+ * Only four names overlap. The screen rendered `tone`, `scenario` and
+ * `requiredDocuments`, none of which the server sends — it worked solely
+ * because a LOCAL_TEMPLATES fixture supplied them, and a successful fetch
+ * would have replaced them with undefined.
+ *
+ * So map what corresponds and leave the rest ABSENT rather than defaulted:
+ * `tone` is a real editorial property of a letter and inventing "formal" for
+ * every template would be a claim about the letter's voice that nothing made.
+ */
+export interface WebDisputeTemplate {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  successRate: number;
+  template: string;
+  variables: string[];
+}
+
+export function mapWebDisputeTemplate(t: WebDisputeTemplate): DisputeTemplate {
+  return {
+    id: t.id,
+    name: t.name,
+    category: t.category,
+    // `description` and `scenario` are the same idea under two names: what
+    // this letter is for.
+    scenario: t.description,
+    successRate: t.successRate,
+    letterText: t.template,
+    placeholders: t.variables ?? [],
+    // tone, requiredDocuments and bestPractices have no server source. Left
+    // undefined so the screen can omit the row instead of asserting a value.
+    requiredDocuments: [],
+  };
+}

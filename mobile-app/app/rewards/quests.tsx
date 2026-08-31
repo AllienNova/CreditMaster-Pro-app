@@ -157,7 +157,7 @@ export default function QuestsScreen() {
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: "#EF4444" }]}>
-                {progress?.streak.days || 0}
+                {progress?.streak?.days || 0}
               </Text>
               <Text style={styles.statLabel}>Day Streak</Text>
             </View>
@@ -260,9 +260,9 @@ export default function QuestsScreen() {
           </View>
           <Text style={styles.bonusText}>
             You're earning{" "}
-            {((progress?.streak.multiplier || 1) * 100 - 100).toFixed(0)}% extra
+            {((progress?.streak?.multiplier || 1) * 100 - 100).toFixed(0)}% extra
             XP on all completed quests thanks to your{" "}
-            {progress?.streak.days || 0}-day streak!
+            {progress?.streak?.days || 0}-day streak!
           </Text>
         </Card>
 

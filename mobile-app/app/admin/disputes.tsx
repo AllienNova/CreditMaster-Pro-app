@@ -24,6 +24,7 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenError } from "../../src/components/ScreenError";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import {
@@ -31,6 +32,8 @@ import {
   ADMIN_DISPUTE_STATUSES,
 } from "../../src/services/api/admin";
 import type { AdminDispute } from "../../src/services/api/admin";
+import { toArray } from "../../src/store/toArray";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 // Humanize a real DB status/enum value for display: "under_review" -> "Under Review".
 // Presentation only — the underlying value stays the real status.
@@ -69,14 +72,20 @@ export default function AdminDisputesScreen() {
 
   const loadDisputes = useCallback(async () => {
     setLoading(true);
-    setError(null);
-    const res = await adminDisputesApi.getDisputes();
-    if (res.success && res.data) {
-      setDisputes(res.data);
-    } else {
-      setError(res.error?.message ?? "Unable to load disputes right now.");
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      setError(null);
+      const res = await adminDisputesApi.getDisputes();
+      if (res.success && res.data) {
+        setDisputes(toArray<AdminDispute>(res?.data));
+      } else {
+        setError(res.error?.message ?? "Unable to load disputes right now.");
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -91,31 +100,17 @@ export default function AdminDisputesScreen() {
 
   // First load only: keep any existing rows on screen while a refresh is in flight.
   if (loading && disputes.length === 0 && !error) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer} testID="admin-disputes-loading">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading disputes...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="All Disputes" message="Loading disputes..." testID="admin-disputes-loading" />;
   }
 
   if (error && disputes.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.loadingContainer} testID="admin-disputes-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadDisputes}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="All Disputes"
+        message={error}
+        onRetry={loadDisputes}
+        testID="admin-disputes-error"
+      />
     );
   }
 

@@ -33,6 +33,33 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * Portfolio Analytics Service Class
  */
+/**
+ * A portfolio does not hold enough positions for the requested analysis.
+ *
+ * NOT a server fault. A user with one holding asking for a correlation matrix
+ * is in a perfectly normal state, and the route used to answer 500 "Failed to
+ * calculate correlation matrix" — which says the product is broken when it is
+ * the account that is empty. The route matched on error message SUBSTRINGS
+ * ("not found", "no holdings", "insufficient data"); this message contained
+ * none of them, so it fell through to the 500.
+ *
+ * Typed so the route can `instanceof` it instead of sniffing prose that any
+ * reword would silently break.
+ */
+export class InsufficientHoldingsError extends Error {
+  constructor(
+    readonly portfolioId: string,
+    readonly required: number,
+    readonly actual: number,
+    analysis: string,
+  ) {
+    super(
+      `Portfolio ${portfolioId} needs at least ${required} holdings for ${analysis} (has ${actual})`,
+    );
+    this.name = "InsufficientHoldingsError";
+  }
+}
+
 export class PortfolioAnalytics {
   private readonly CACHE_TTL = 1800; // 30 minutes
 
@@ -350,8 +377,11 @@ export class PortfolioAnalytics {
 
     const holdings = await portfolioService.getHoldings(portfolioId, this.userId);
     if (holdings.length < 2) {
-      throw new Error(
-        `Portfolio ${portfolioId} needs at least 2 holdings for correlation analysis`,
+      throw new InsufficientHoldingsError(
+        portfolioId,
+        2,
+        holdings.length,
+        "correlation analysis",
       );
     }
 

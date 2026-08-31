@@ -1,208 +1,126 @@
 "use client";
 
-import { useState } from "react";
+/**
+ * Secured Card Finder.
+ *
+ * WHAT THIS PAGE USED TO DO.
+ *
+ * `MOCK_RECOMMENDATIONS` was a hardcoded list and the file contained no fetch
+ * at all. Each entry carried a `matchScore`, an `approvalLikelihood` of
+ * high/medium/low, and a `projectedScoreImpact` — claims about THE USER ("you
+ * are likely to be approved", "this will move your score by N points").
+ * Nothing computed any of them. Same shape as the `priority` badge removed
+ * from /insights/alerts: a number with no source, sitting beside real ones so
+ * it reads as measured.
+ *
+ * It also kept its own copy of the card terms. The same products are described
+ * in `credit-builder-service.ts:104` with different field names and different
+ * numbers — the page said `rewardsRate: 2` and `graduationTimeMonths: 8`, the
+ * service says `apr: 28.24` and `reporting: [...]`. Two sources of truth for
+ * the terms of somebody else's financial products, free to drift apart and
+ * away from reality.
+ *
+ * WHAT IT DOES NOW. Reads GET /api/credit-builder/secured-cards (withAuth,
+ * returns `{ success, cards }`), which is fed by that service. One source
+ * instead of two, and the invented personalisation is gone.
+ *
+ * ON `recommended` AND `aiReasoning`. Both come from the route and their
+ * provenance is mixed, so the UI frames them as Fynvita's own view rather than
+ * as analysis of the caller:
+ *   - the first card's `recommended` is the literal `true`
+ *     (credit-builder-service.ts:772);
+ *   - the second's is `userScore.overall < 60` (:793), genuinely derived from
+ *     the caller's credit-builder score;
+ *   - `aiReasoning` is a fixed string per card despite the name. No model
+ *     writes it, so it is not labelled as AI here.
+ *
+ * TWO DEAD CONTROLS ARE GONE. `selectedGoal` was read in exactly one place, to
+ * colour the selected chip; `depositAmount` was a slider that displayed its own
+ * value. Neither filtered, sorted, or was sent anywhere — picking "Rebuild
+ * Credit" or dragging the deposit changed nothing at all. The route takes no
+ * goal or deposit parameter and the cards carry no goal field, so making them
+ * work would mean inventing which card suits which goal. Same call as the
+ * "Paste Text" button on /marketplace/analysis: a control that cannot do the
+ * thing is the defect, not a feature to preserve. They return when the route
+ * accepts the parameters.
+ *
+ * STILL OPEN, and deliberately not papered over: those card terms are a
+ * constant inside a service, with no source and no "rates as of" date. APRs on
+ * real cards move. The right home is the Wave 6 affiliate feed
+ * (/api/affiliate/offers) or a maintained table. Until then the page tells the
+ * user to confirm terms with the issuer, which is true rather than reassuring.
+ */
+
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   CreditCard,
   Shield,
   Star,
   CheckCircle,
-  AlertTriangle,
-  ChevronRight,
-  ExternalLink,
   Info,
-  Sparkles,
-  Target,
   TrendingUp,
 } from "lucide-react";
 
-type CreditBuildingGoal =
-  | "first_credit"
-  | "rebuild_credit"
-  | "increase_score"
-  | "graduation_path"
-  | "maximize_rewards";
-
+/** Mirrors SecuredCard in src/lib/credit-builder/credit-builder-service.ts:104. */
 interface SecuredCard {
   id: string;
+  provider: string;
   name: string;
-  issuer: string;
+  minDeposit: number;
+  maxDeposit: number;
+  apr: number;
   annualFee: number;
-  depositMin: number;
-  depositMax: number;
-  rewardsRate?: number;
-  rewardsType?: string;
-  graduationEligible: boolean;
-  graduationTimeMonths?: number;
-  noCreditCheckRequired: boolean;
-  features: string[];
-  pros: string[];
-  cons: string[];
-  rating: number;
-  applicationUrl: string;
+  rewards?: string;
+  graduationPath: boolean;
+  creditLineIncrease: boolean;
+  reporting: string[];
+  benefits: string[];
+  recommended: boolean;
+  aiReasoning?: string;
 }
 
-interface CardRecommendation {
-  card: SecuredCard;
-  matchScore: number;
-  approvalLikelihood: "high" | "medium" | "low";
-  reasons: string[];
-  warnings?: string[];
-  projectedScoreImpact: number;
-}
-
-const MOCK_RECOMMENDATIONS: CardRecommendation[] = [
-  {
-    card: {
-      id: "discover-it-secured",
-      name: "Discover it® Secured Credit Card",
-      issuer: "Discover",
-      annualFee: 0,
-      depositMin: 200,
-      depositMax: 2500,
-      rewardsRate: 2,
-      rewardsType: "2% at gas stations and restaurants, 1% all else",
-      graduationEligible: true,
-      graduationTimeMonths: 8,
-      noCreditCheckRequired: false,
-      features: [
-        "Cashback Match first year",
-        "Free FICO score",
-        "No foreign transaction fees",
-      ],
-      pros: [
-        "Best rewards for a secured card",
-        "No annual fee",
-        "Quick graduation potential",
-      ],
-      cons: ["Requires credit check"],
-      rating: 4.8,
-      applicationUrl: "#",
-    },
-    matchScore: 95,
-    approvalLikelihood: "high",
-    reasons: [
-      "Excellent match for your goal: Path to unsecured card",
-      "Can graduate to unsecured card in ~8 months",
-      "No annual fee",
-      "Reports to all 3 credit bureaus",
-    ],
-    projectedScoreImpact: 45,
-  },
-  {
-    card: {
-      id: "capital-one-quicksilver",
-      name: "Capital One Quicksilver Secured",
-      issuer: "Capital One",
-      annualFee: 0,
-      depositMin: 200,
-      depositMax: 1000,
-      rewardsRate: 1.5,
-      rewardsType: "1.5% unlimited cashback",
-      graduationEligible: true,
-      graduationTimeMonths: 6,
-      noCreditCheckRequired: false,
-      features: ["Automatic credit line reviews", "CreditWise monitoring"],
-      pros: ["Good rewards rate", "Fast graduation possible"],
-      cons: ["Higher APR", "Lower maximum credit line"],
-      rating: 4.5,
-      applicationUrl: "#",
-    },
-    matchScore: 88,
-    approvalLikelihood: "high",
-    reasons: [
-      "Good rewards rate of 1.5%",
-      "Fast graduation possible in 6 months",
-      "No annual fee",
-    ],
-    projectedScoreImpact: 40,
-  },
-  {
-    card: {
-      id: "opensky-secured",
-      name: "OpenSky® Secured Visa®",
-      issuer: "OpenSky",
-      annualFee: 35,
-      depositMin: 200,
-      depositMax: 3000,
-      graduationEligible: false,
-      noCreditCheckRequired: true,
-      features: ["No credit check required", "No bank account required"],
-      pros: [
-        "Guaranteed approval",
-        "No bank account needed",
-        "Higher credit line available",
-      ],
-      cons: ["Annual fee", "No rewards", "No graduation path"],
-      rating: 4.0,
-      applicationUrl: "#",
-    },
-    matchScore: 75,
-    approvalLikelihood: "high",
-    reasons: [
-      "No credit check - guaranteed approval",
-      "Higher credit line available up to $3,000",
-    ],
-    warnings: ["$35 annual fee", "No graduation to unsecured card"],
-    projectedScoreImpact: 35,
-  },
-];
-
-const GOALS: { id: CreditBuildingGoal; label: string; description: string }[] =
-  [
-    {
-      id: "first_credit",
-      label: "Build First Credit",
-      description: "No credit history yet",
-    },
-    {
-      id: "rebuild_credit",
-      label: "Rebuild Credit",
-      description: "Recovering from past issues",
-    },
-    {
-      id: "graduation_path",
-      label: "Path to Unsecured",
-      description: "Want to graduate to regular card",
-    },
-    {
-      id: "maximize_rewards",
-      label: "Maximize Rewards",
-      description: "Earn while building credit",
-    },
-  ];
-
-const formatCurrency = (amount: number) => {
+function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(amount);
-};
+}
 
 export default function SecuredCardsPage() {
-  const [recommendations] =
-    useState<CardRecommendation[]>(MOCK_RECOMMENDATIONS);
-  const [selectedGoal, setSelectedGoal] =
-    useState<CreditBuildingGoal>("graduation_path");
-  const [depositAmount, setDepositAmount] = useState(500);
+  const [cards, setCards] = useState<SecuredCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const getApprovalColor = (likelihood: string) => {
-    switch (likelihood) {
-      case "high":
-        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
-      case "medium":
-        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300";
-      case "low":
-        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300";
-      default:
-        return "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200";
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const res = await fetch("/api/credit-builder/secured-cards");
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !Array.isArray(json?.cards)) {
+        setCards([]);
+        setError(
+          "We could not load card options right now. Nothing here is filled in for you — try again in a moment.",
+        );
+      } else {
+        setCards(json.cards as SecuredCard[]);
+      }
+    } catch {
+      setCards([]);
+      setError("We could not reach the card service.");
     }
-  };
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -214,249 +132,186 @@ export default function SecuredCardsPage() {
             </h1>
           </div>
           <p className="text-gray-600 dark:text-slate-400">
-            Find the best secured credit card for your credit building journey
+            Secured cards that report to the bureaus, so using one builds
+            history.
           </p>
         </div>
 
-        {/* Goal Selection */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Target className="w-5 h-5 text-blue-500" />
-            What's your goal?
-          </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {GOALS.map((goal) => (
-              <button
-                key={goal.id}
-                onClick={() => setSelectedGoal(goal.id)}
-                className={`p-4 rounded-xl border-2 text-left transition-all ${
-                  selectedGoal === goal.id
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                    : "border-gray-200 dark:border-slate-700 hover:border-blue-300"
-                }`}
-              >
-                <h3 className="font-medium text-gray-900 dark:text-white">
-                  {goal.label}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-                  {goal.description}
-                </p>
-              </button>
+        {error && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 mb-6 border border-amber-200 dark:border-amber-900/50">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              Card options are unavailable
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">{error}</p>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="space-y-4 animate-pulse">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-56 bg-gray-200 dark:bg-slate-700 rounded-xl"
+              />
             ))}
           </div>
-
-          <div className="mt-6">
-            <label
-              htmlFor="deposit"
-              className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2"
-            >
-              Available Deposit Amount
-            </label>
-            <div className="flex items-center gap-4">
-              <input
-                id="deposit"
-                type="range"
-                min="200"
-                max="3000"
-                step="100"
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(Number(e.target.value))}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
-              />
-              <span className="text-lg font-semibold text-gray-900 dark:text-white w-24 text-right">
-                {formatCurrency(depositAmount)}
-              </span>
-            </div>
+        ) : cards.length === 0 && !error ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-10 text-center border border-gray-100 dark:border-slate-700">
+            <CreditCard className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-3" />
+            <p className="font-medium text-gray-900 dark:text-white">
+              No card options yet
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
+              We have nothing to show you here at the moment.
+            </p>
           </div>
-        </div>
-
-        {/* Top Recommendation */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 mb-8 text-white"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5" />
-            <span className="text-sm font-medium text-blue-100">
-              Top Recommendation
-            </span>
-          </div>
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">
-                {recommendations[0].card.name}
-              </h2>
-              <p className="text-blue-100 mb-4">
-                {recommendations[0].card.issuer}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {recommendations[0].reasons.slice(0, 3).map((reason, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-white dark:bg-slate-800/20 rounded-full text-sm"
-                  >
-                    {reason}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="text-center mb-4">
-                <div className="text-5xl font-bold">
-                  {recommendations[0].matchScore}
-                </div>
-                <div className="text-blue-200 text-sm">Match Score</div>
-              </div>
-              <a
-                href={recommendations[0].card.applicationUrl}
-                className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+        ) : (
+          <div className="space-y-4">
+            {cards.map((card, index) => (
+              <motion.div
+                key={card.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border p-6 ${
+                  card.recommended
+                    ? "border-blue-300 dark:border-blue-800"
+                    : "border-gray-100 dark:border-slate-700"
+                }`}
               >
-                Apply Now
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* All Recommendations */}
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          All Recommended Cards
-        </h2>
-        <div className="space-y-4">
-          {recommendations.map((rec, index) => (
-            <motion.div
-              key={rec.card.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden"
-            >
-              <div className="p-6">
-                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {rec.card.name}
-                      </h3>
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${getApprovalColor(rec.approvalLikelihood)}`}
-                      >
-                        {rec.approvalLikelihood.charAt(0).toUpperCase() +
-                          rec.approvalLikelihood.slice(1)}{" "}
-                        Approval
-                      </span>
-                      {rec.card.noCreditCheckRequired && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded text-xs font-medium">
-                          No Credit Check
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-gray-500 dark:text-slate-400 text-sm mb-4">
-                      {rec.card.issuer}
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {card.name}
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">
+                      {card.provider}
                     </p>
-
-                    {/* Key Info Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-slate-400">
-                          Annual Fee
-                        </p>
-                        <p className="font-semibold text-gray-900 dark:text-white">
-                          {rec.card.annualFee === 0
-                            ? "$0"
-                            : formatCurrency(rec.card.annualFee)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-slate-400">
-                          Deposit
-                        </p>
-                        <p className="font-semibold text-gray-900 dark:text-white">
-                          {formatCurrency(rec.card.depositMin)} -{" "}
-                          {formatCurrency(rec.card.depositMax)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-slate-400">
-                          Rewards
-                        </p>
-                        <p className="font-semibold text-gray-900 dark:text-white">
-                          {rec.card.rewardsRate
-                            ? `${rec.card.rewardsRate}%`
-                            : "None"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-slate-400">
-                          Graduation
-                        </p>
-                        <p className="font-semibold text-gray-900 dark:text-white">
-                          {rec.card.graduationEligible
-                            ? `~${rec.card.graduationTimeMonths} months`
-                            : "N/A"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Reasons */}
-                    <div className="space-y-2">
-                      {rec.reasons.map((reason, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm text-gray-600 dark:text-slate-400">
-                            {reason}
-                          </span>
-                        </div>
-                      ))}
-                      {rec.warnings?.map((warning, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm text-amber-600 dark:text-amber-400">
-                            {warning}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
                   </div>
+                  {card.recommended && (
+                    <span className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                      <Star className="w-3 h-3" />
+                      Our pick
+                    </span>
+                  )}
+                </div>
 
-                  {/* Score & Apply */}
-                  <div className="flex flex-row lg:flex-col items-center gap-4 lg:min-w-[140px]">
-                    <div className="text-center">
-                      <div className="flex items-center gap-1 justify-center">
-                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                        <span className="font-semibold text-gray-900 dark:text-white">
-                          {rec.card.rating}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-slate-400">
-                        Rating
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="flex items-center gap-1 justify-center text-green-600">
-                        <TrendingUp className="w-4 h-4" />
-                        <span className="font-semibold">
-                          +{rec.projectedScoreImpact}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-slate-400">
-                        Score Impact
-                      </div>
-                    </div>
-                    <a
-                      href={rec.card.applicationUrl}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                    >
-                      Apply
-                      <ChevronRight className="w-4 h-4" />
-                    </a>
+                {/* Terms exactly as held. No derived scores. */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
+                      Deposit
+                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(card.minDeposit)}–
+                      {formatCurrency(card.maxDeposit)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
+                      Annual fee
+                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {card.annualFee === 0
+                        ? "None"
+                        : formatCurrency(card.annualFee)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
+                      APR
+                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {card.apr}%
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
+                      Upgrade path
+                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {card.graduationPath ? "Yes" : "No"}
+                    </p>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+
+                {card.rewards && (
+                  <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      Rewards:{" "}
+                    </span>
+                    {card.rewards}
+                  </p>
+                )}
+
+                {card.reporting.length > 0 && (
+                  <div className="flex items-center gap-2 mb-4 flex-wrap">
+                    <Shield className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+                    <span className="text-sm text-gray-600 dark:text-slate-300">
+                      Reports to
+                    </span>
+                    {card.reporting.map((bureau) => (
+                      <span
+                        key={bureau}
+                        className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300"
+                      >
+                        {bureau}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {card.benefits.length > 0 && (
+                  <ul className="space-y-1 mb-4">
+                    {card.benefits.map((benefit) => (
+                      <li
+                        key={benefit}
+                        className="flex items-start gap-2 text-sm text-gray-600 dark:text-slate-300"
+                      >
+                        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-500" />
+                        {benefit}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {card.creditLineIncrease && (
+                  <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300 mb-4">
+                    <TrendingUp className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+                    Credit line increases available
+                  </p>
+                )}
+
+                {/*
+                  Labelled as our view, not as analysis of this user:
+                  aiReasoning is a fixed string per card and no model writes it.
+                */}
+                {card.aiReasoning && (
+                  <div className="rounded-lg bg-gray-50 dark:bg-slate-700/40 p-3">
+                    <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                      Why we list it
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-slate-200">
+                      {card.aiReasoning}
+                    </p>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/*
+          These terms are held by Fynvita, not fetched from the issuer, and
+          carry no as-of date. Saying so is the honest handling until the
+          affiliate feed supplies them.
+        */}
+        {cards.length > 0 && (
+          <p className="mt-6 text-xs text-gray-500 dark:text-slate-400">
+            Rates and terms are shown as we hold them and can change. Confirm
+            the current terms with the card issuer before applying.
+          </p>
+        )}
 
         {/* Tips Section */}
         <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6">

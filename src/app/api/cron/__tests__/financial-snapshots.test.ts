@@ -20,12 +20,15 @@ jest.mock("@supabase/supabase-js", () => ({
   createClient: jest.fn(() => ({ from: mockFrom })),
 }));
 
-jest.mock("@/lib/security/timing-safe-equal", () => ({
-  timingSafeEqual: jest.fn(() => true),
-}));
+// The real comparison runs. Mocking timingSafeEqual to return true meant these
+// tests never exercised the auth path — and once the gate stopped being skipped
+// outside production, all five 401'd, which is how the mock's uselessness
+// surfaced. A test that mocks the gate it depends on proves nothing about it.
+const CRON_SECRET = "test-cron-secret-value";
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
+process.env.CRON_SECRET = CRON_SECRET;
 
 import { GET } from "../financial-snapshots/route";
 import { createClient } from "@supabase/supabase-js";
@@ -66,9 +69,9 @@ function wire(overrides: TableOverrides = {}, profiles = [{ id: "u1" }]) {
   return upserts;
 }
 
-function req() {
+function req(authorization = `Bearer ${CRON_SECRET}`) {
   return new Request("http://localhost:3000/api/cron/financial-snapshots", {
-    headers: { authorization: "Bearer test" },
+    headers: { authorization },
   });
 }
 
@@ -200,5 +203,41 @@ describe("cron: financial snapshots", () => {
     expect(body.failures).toBe(1);
     expect(body.success).toBe(false);
     expect(body.errors[0].userId).toBe("u1");
+  });
+
+  describe("authorization", () => {
+    // The gate used to run only when NODE_ENV === "production", so every
+    // non-production deploy served this route to anyone. These assert the gate
+    // holds in the test environment, which is the point of removing that guard.
+    it("rejects a request with no authorization header", async () => {
+      wire();
+      expect((await GET(req(""))).status).toBe(401);
+    });
+
+    it("rejects a wrong secret", async () => {
+      wire();
+      expect((await GET(req("Bearer not-the-secret"))).status).toBe(401);
+    });
+
+    it("rejects 'Bearer undefined' — the string an unset CRON_SECRET produced", async () => {
+      wire();
+      expect((await GET(req("Bearer undefined"))).status).toBe(401);
+    });
+
+    it("rejects every caller when CRON_SECRET is unset, rather than opening up", async () => {
+      wire();
+      delete process.env.CRON_SECRET;
+      try {
+        expect((await GET(req("Bearer undefined"))).status).toBe(401);
+      } finally {
+        process.env.CRON_SECRET = CRON_SECRET;
+      }
+    });
+
+    it("does not touch the database when authorization fails", async () => {
+      wire();
+      await GET(req("Bearer not-the-secret"));
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
   });
 });

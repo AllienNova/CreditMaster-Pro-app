@@ -3,14 +3,13 @@
  * Negotiate collection removal
  */
 
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -56,46 +55,34 @@ const STEPS = [
   },
 ];
 
-interface Collection {
-  id: string;
-  creditor: string;
-  originalCreditor: string;
-  balance: number;
-  dateOpened: string;
-  status: string;
-}
-
-const MOCK_COLLECTIONS: Collection[] = [
-  {
-    id: "1",
-    creditor: "ABC Collections",
-    originalCreditor: "Medical Center",
-    balance: 1250,
-    dateOpened: "2023-06-15",
-    status: "Open",
-  },
-  {
-    id: "2",
-    creditor: "XYZ Recovery",
-    originalCreditor: "Utility Company",
-    balance: 450,
-    dateOpened: "2023-09-20",
-    status: "Open",
-  },
-];
+/*
+ * A `Collection` interface and MOCK_COLLECTIONS lived here: invented debts in
+ * the user's own name — "ABC Collections, originally Medical Center, $1,250,
+ * opened 2023-06-15". The screen then offered to compute a settlement against
+ * them, at 40% of a balance nobody owed.
+ *
+ * There is NO SOURCE for a user's collection accounts. They come from a parsed
+ * credit report, and that data sits in `credit_reports.reportData`, typed
+ * `Record<string, unknown>` (src/lib/credit-repair/db-legacy.ts:27) — an
+ * untyped JSONB blob with no contract to read. The only `tradelines` table in
+ * the schema is the MARKETPLACE one (tradelines for sale), not the caller's
+ * accounts.
+ *
+ * So the list is gone and the screen says what is missing. The STEPS guide and
+ * the negotiation tips below stay: those are product content about how
+ * pay-for-delete works, not claims about this user.
+ */
 
 export default function PayForDeleteScreen() {
-  const [selectedCollection, setSelectedCollection] = useState<string | null>(
-    null,
-  );
-  const [offerAmount, setOfferAmount] = useState("");
-
-  const selectedItem = MOCK_COLLECTIONS.find(
-    (c) => c.id === selectedCollection,
-  );
-  const suggestedOffer = selectedItem
-    ? Math.round(selectedItem.balance * 0.4)
-    : 0;
+  /*
+   * The settlement calculator lived inside the collection-selection block and
+   * went with it: `selectedCollection`, `offerAmount` and a suggested offer of
+   * 40% of the selected balance. There is nothing to select and no balance to
+   * take a percentage of, and a calculator seeded from an invented debt is how
+   * this screen produced a settlement figure for a debt nobody owed.
+   *
+   * It comes back with the collections, not before.
+   */
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -159,74 +146,16 @@ export default function PayForDeleteScreen() {
           ))}
         </Card>
 
-        {/* Collections List */}
-        {MOCK_COLLECTIONS.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Your Collections</Text>
-            {MOCK_COLLECTIONS.map((collection) => (
-              <TouchableOpacity
-                key={collection.id}
-                onPress={() =>
-                  setSelectedCollection(
-                    selectedCollection === collection.id ? null : collection.id,
-                  )
-                }
-                activeOpacity={0.7}
-              >
-                <Card
-                  style={[
-                    styles.collectionCard,
-                    selectedCollection === collection.id &&
-                      styles.collectionCardSelected,
-                  ]}
-                >
-                  <View style={styles.collectionRow}>
-                    <View style={styles.collectionInfo}>
-                      <Text style={styles.collectionCreditor}>
-                        {collection.creditor}
-                      </Text>
-                      <Text style={styles.collectionOriginal}>
-                        Original: {collection.originalCreditor}
-                      </Text>
-                    </View>
-                    <View style={styles.collectionRight}>
-                      <Text style={styles.collectionBalance}>
-                        ${collection.balance.toLocaleString()}
-                      </Text>
-                      <Text style={styles.collectionDate}>
-                        {collection.dateOpened}
-                      </Text>
-                    </View>
-                  </View>
-                  {selectedCollection === collection.id && (
-                    <View style={styles.offerSection}>
-                      <Text style={styles.offerLabel}>
-                        Your Offer (suggested: ${suggestedOffer})
-                      </Text>
-                      <TextInput
-                        style={styles.offerInput}
-                        value={offerAmount}
-                        onChangeText={setOfferAmount}
-                        placeholder={`$${suggestedOffer}`}
-                        placeholderTextColor={theme.colors.textSecondary}
-                        keyboardType="numeric"
-                      />
-                      <TouchableOpacity
-                        style={styles.generateButton}
-                        onPress={() => router.push("/dispute/new")}
-                      >
-                        <Ionicons name="document-text" size={18} color="#fff" />
-                        <Text style={styles.generateButtonText}>
-                          Generate PFD Letter
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </Card>
-              </TouchableOpacity>
-            ))}
-          </>
-        )}
+        {/* A "Your Collections" list lived here, rendering MOCK_COLLECTIONS
+            and letting the user pick one to settle. */}
+        <Text style={styles.sectionTitle}>Your Collections</Text>
+        <Card style={styles.collectionCard}>
+          <Text style={styles.stateText}>
+            We cannot list your collection accounts yet. They come from a
+            parsed credit report, and that parsing is not available — so
+            nothing here would be yours.
+          </Text>
+        </Card>
 
         {/* Tips */}
         <Card style={styles.tipsCard}>
@@ -262,6 +191,11 @@ export default function PayForDeleteScreen() {
 }
 
 const styles = StyleSheet.create({
+  stateText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    lineHeight: 20,
+  },
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
   header: {
@@ -338,55 +272,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   collectionCard: { marginBottom: theme.spacing.sm },
-  collectionCardSelected: { borderColor: theme.colors.primary, borderWidth: 2 },
-  collectionRow: { flexDirection: "row", alignItems: "center" },
-  collectionInfo: { flex: 1 },
-  collectionCreditor: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: theme.colors.text,
-  },
-  collectionOriginal: { fontSize: 12, color: theme.colors.textSecondary },
-  collectionRight: { alignItems: "flex-end" },
-  collectionBalance: { fontSize: 16, fontWeight: "600", color: "#EF4444" },
-  collectionDate: { fontSize: 11, color: theme.colors.textSecondary },
-  offerSection: {
-    marginTop: theme.spacing.md,
-    paddingTop: theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-  offerLabel: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    marginBottom: 8,
-  },
-  offerInput: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 18,
-    fontWeight: "600",
-    color: theme.colors.text,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    marginBottom: theme.spacing.md,
-  },
-  generateButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 12,
-    borderRadius: theme.borderRadius.md,
-  },
-  generateButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#fff",
-    marginLeft: 8,
-  },
   tipsCard: { marginTop: theme.spacing.md },
   tipsTitle: {
     fontSize: 16,

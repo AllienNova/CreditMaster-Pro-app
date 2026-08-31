@@ -124,7 +124,18 @@ export default function RewardsScreen() {
         </View>
 
         {/* Level & XP Card */}
-        {progress && (
+        {/* Guards every field the block below dereferences, not just
+            truthiness of `progress`. `{progress && …}` passes for ANY object,
+            and the very next lines read progress.level.current, progress.xp.*
+            and progress.streak.* — so a payload missing any of them threw
+            "Cannot read property 'current' of undefined" and the ErrorBoundary
+            replaced the whole screen with "Something went wrong".
+
+            Found by deep-linking /rewards on a simulator; the error text was
+            read off the ErrorBoundary itself. Same defect as the Home tab's
+            gamification widget — the store shape is shared, so the guard has to
+            be too. */}
+        {progress?.level && progress?.xp && progress?.streak && (
           <Card style={styles.levelCard}>
             <View style={styles.levelHeader}>
               <View style={styles.levelBadge}>
@@ -264,7 +275,11 @@ export default function RewardsScreen() {
             <View style={styles.statItem}>
               <Ionicons name="star" size={24} color="#F59E0B" />
               <Text style={styles.statValue}>
-                {progress?.xp.totalEarned?.toLocaleString() || "0"}
+                {/* `progress?.xp?.totalEarned` guards only `progress` — the
+                    `.xp` hop is still a hard dereference, so a payload with no
+                    `xp` threw "Cannot read property 'totalEarned' of
+                    undefined". The chain has to be optional at every hop. */}
+                {progress?.xp?.totalEarned?.toLocaleString() ?? "0"}
               </Text>
               <Text style={styles.statLabel}>Total XP</Text>
             </View>
@@ -276,7 +291,7 @@ export default function RewardsScreen() {
             <View style={styles.statItem}>
               <Ionicons name="flame" size={24} color="#EF4444" />
               <Text style={styles.statValue}>
-                {progress?.streak.longestStreak || 0}
+                {progress?.streak?.longestStreak ?? 0}
               </Text>
               <Text style={styles.statLabel}>Best Streak</Text>
             </View>

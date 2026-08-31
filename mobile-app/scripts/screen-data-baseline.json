@@ -1,0 +1,360 @@
+{
+  "frozen": "2026-08-17",
+  "why": "Screens rendering a module-level constant data set. Each must be classified `catalogue` (product content: plans offered, bureaus, filter chips) or `fabrication` (invented user data that must be replaced by a real read). UNCLASSIFIED entries are debt someone has not looked at yet. This list may only shrink.",
+  "entries": {
+    "app/activity/index.tsx: FILTERS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/admin/config.tsx: CONFIG_ITEMS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/admin/features.tsx: FEATURES": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/admin/index.tsx: QUICK_ACTIONS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The admin navigation menu — titles, icons and routes for the admin sections. Product content, not user data. The METRICS fixture that shared this file WAS a fabrication and is gone; this is what remains."
+    },
+    "app/admin/metrics.tsx: PERIODS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The period selector's config: three labels mapped to the analytics ranges the route accepts (7d/30d/1y). Product content, and the thing that makes the selector actually drive the query — it changed nothing before. The DISPUTE_DATA and REVENUE_DATA fixtures that shared this file WERE fabrications and are gone."
+    },
+    "app/analytics/credit-score.tsx: PERIOD_MONTHS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The period selector's label->months map. Configuration, not a measurement — flagged only because ALL maps to 120 months, which trips the magnitude heuristic. Exactly the sort of entry a human is meant to clear."
+    },
+    "app/analytics/trends.tsx: PERIOD_MONTHS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The period selector's label->months map, identical to the one in analytics/credit-score.tsx. Configuration, not a measurement — flagged only because ALL: 120 crosses the detector's >=100 magnitude heuristic. Drives the `days` argument to the history route; it is not rendered."
+    },
+    "app/billing/invoices.tsx: FILTERS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/budgeting/index.tsx: FEATURES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "FEATURES is the list of budgeting tools this hub links to — product content. QUICK_STATS, which shared this entry, invented the caller's bill/subscription/save-rule COUNTS and is gone; a per-file key could not carry one catalogue and one fabrication, which is how it sat inside an entry marked safe."
+    },
+    "app/chat/index.tsx: INITIAL_MESSAGES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The assistant's opening greeting and its suggested prompts. Product copy shown before any exchange, not a claim about the user."
+    },
+    "app/coach/goals.tsx: GOAL_TYPES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The goal types the product offers (emergency_fund, debt_payoff...), each with a label and icon. Options to choose from, identical for every user."
+    },
+    "app/coach/recommendations.tsx: FILTER_OPTIONS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Filter chips mapped to the RecommendationType union. UI configuration."
+    },
+    "app/credit-builder/authorized-user.tsx: BENEFITS, REQUIREMENTS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/budget.tsx: BUDGET_CATEGORIES, CREDIT_IMPACT_TIPS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/freeze.tsx: BENEFITS, BUREAUS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/goodwill.tsx: LETTER_TEMPLATES": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/identity-theft.tsx: IMPORTANT_CONTACTS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/index.tsx: TOOL_CATEGORIES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The credit-builder tool menu, grouped by category. Navigation content."
+    },
+    "app/credit-builder/loan.tsx: CREDIT_BUILDER_LOANS, CREDIT_IMPACT_DATA, HOW_IT_WORKS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Third-party credit-builder products (Self, $1000 / $48 per month) plus educational content on how they work. A marketplace listing, same family as the secured-card catalogue. The terms are claims about real vendors and belong under a content review, not a data read."
+    },
+    "app/credit-builder/mix.tsx: CREDIT_TYPES": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/pay-for-delete.tsx: STEPS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "STEPS is a 6-step guide to how pay-for-delete works, not a claim about this user. MOCK_COLLECTIONS -- invented debts in the user's own name -- is gone."
+    },
+    "app/credit-builder/reports/upload.tsx: BUREAUS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-builder/secured-card.tsx: SECURED_CARDS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-repair/building.tsx: STRATEGIES": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/credit-repair/cards.tsx: CARDS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "A catalogue of real card PRODUCTS to apply for — Discover it Secured, Capital One Quicksilver — with issuer, APR and annual fee. Not the user's own cards. CAVEAT: each row carries `approval: excellent|good`, which is a per-user likelihood presented as a property of the card. That field is a fabrication inside an otherwise legitimate catalogue, and the APRs are real-world facts that go stale with no refresh path."
+    },
+    "app/credit-repair/index.tsx: TOOLS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The credit-repair tool menu — Dispute Center and siblings, each with a route. Navigation content."
+    },
+    "app/credit/history.tsx: DATE_RANGES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The 3M/6M/1Y range selector and the month count each maps to. UI configuration."
+    },
+    "app/credit/score-detail.tsx: SCORE_RANGES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "FICO band definitions — 300-579 Poor, and so on. Published scoring bands: product knowledge about the scale, not a measurement of this user."
+    },
+    "app/dashboard/subscriptions.tsx: mockSubscriptions": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "The caller's own recurring charges — Netflix at $15.99 monthly with a next billing date — with no request in the file. Claims about this user's money."
+    },
+    "app/dispute/create.tsx: BUREAUS, DISPUTE_TYPES": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/dispute/new.tsx: INITIAL_MESSAGES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The dispute assistant's opening greeting. Product copy, not a claim about the user."
+    },
+    "app/dispute/templates.tsx: CATEGORIES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The category filter chips for the templates list. Configuration, not a measurement. LOCAL_TEMPLATES beside it is gone — the server serves the letters and a second divergent copy on the client is what SF-22 is about."
+    },
+    "app/dispute/use-template.tsx: BUREAUS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/documents/index.tsx: FILTER_TYPES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Document-type filter chips keyed off Document['type']. UI configuration."
+    },
+    "app/financial-intelligence/index.tsx: QUICK_ACTIONS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/financial/budgets.tsx: BUDGET_CATEGORIES, RECOMMENDATIONS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/financial/holdings.tsx: ASSET_TYPES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The asset types a holding can be (stock, etf, crypto). Options, not holdings."
+    },
+    "app/financial/reports.tsx: REPORT_TEMPLATES, SAVED_REPORTS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/help/contact.tsx: CONTACT_OPTIONS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Support channels. Product content. NOTE: carries support@creditpro.com — a pre-rebrand address that should be Fynvita's. Stale content, not a fabrication."
+    },
+    "app/help/faq.tsx: FAQ_ITEMS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "FAQ questions and answers. Editorial content, identical for every user."
+    },
+    "app/help/guides.tsx: GUIDES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Educational guides. Editorial content."
+    },
+    "app/identity/index.tsx: FEATURES": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/investments/add-holding.tsx: assetTypes": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "Form options: the AssetType enum mapped to labels (stock -> Stocks). Configuration for a picker, not a claim about the caller's holdings."
+    },
+    "app/investments/analyze/fundamental.tsx: PEER_COMPARISON, REVENUE_BREAKDOWN": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Hardcoded peer comparison (AAPL 85, MSFT 78, GOOGL 72) and revenue breakdown, rendered for whichever ticker the user opened. Same family as SF-17."
+    },
+    "app/investments/analyze/recommendation.tsx: PRICE_PROJECTION, PRICE_TARGETS, RISK_ASSESSMENT, RISK_FACTORS, SCORE_BREAKDOWN": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Invented investment advice presented as analysis of a real ticker: price targets (current 180.25, target 210.0, stopLoss 160.0), a risk score, volatility 28.5, beta 1.24, maxDrawdown -18.5. A user acting on these would be trading on numbers nobody computed."
+    },
+    "app/investments/analyze/sentiment.tsx: ANALYST_CONSENSUS, ANALYST_RATINGS, INSIDER_TRADES, INSTITUTIONAL_ACTIVITY, NEWS_ITEMS, SENTIMENT_TREND, SOCIAL_SENTIMENT": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Invented market sentiment for a real ticker: 32 buy / 8 hold / 2 sell analyst consensus, named insider trades, institutional activity and news items. Same class as the recommendation screen and equally actionable."
+    },
+    "app/investments/analyze/technical.tsx: CHART_PATTERNS, MOVING_AVERAGES, OSCILLATORS, PRICE_DATA, SUPPORT_RESISTANCE": {
+      "classification": "fabrication",
+      "offline": true,
+      "why": "Invented technical analysis for a real ticker: 'Bullish Flag, confidence 78, target 188.5', moving averages, oscillators, support and resistance levels. Actionable trading signals nobody computed. Same family as SF-17, and blocked on the same audit."
+    },
+    "app/loans/programs.tsx: FEDERAL_PROGRAMS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The real federal student-loan repayment programs (Income-Driven Repayment and siblings). Public facts about the programs, not a claim about this user's eligibility — contrast SF-11's fabricated per-user eligibility flags."
+    },
+    "app/marketplace/calculators.tsx: CALCULATOR_OPTIONS": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The calculators on offer. Navigation content."
+    },
+    "app/marketplace/index.tsx: SERVICES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The marketplace service menu, each with a route. Navigation content."
+    },
+    "app/monitoring/alerts.tsx: FILTERS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/monitoring/index.tsx: BUREAUS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/monitoring/settings.tsx: ALERT_TYPES, BUREAUS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/onboarding/complete.tsx: NEXT_STEPS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/onboarding/connect.tsx: BUREAUS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/onboarding/goals.tsx: GOALS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The goals a new user can pick during onboarding. Options presented, not goals held."
+    },
+    "app/onboarding/index.tsx: ONBOARDING_SLIDES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Onboarding carousel copy. Editorial content."
+    },
+    "app/profile/help.tsx: CONTACT_OPTIONS, FAQ_ITEMS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Support channels and FAQ content on the profile tab. Editorial; duplicates app/help/* and is worth deduplicating, but neither copy fabricates."
+    },
+    "app/profile/settings.tsx: SETTINGS_SECTIONS": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The settings menu structure. Navigation content."
+    },
+    "app/profile/subscription.tsx: PLANS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/recommendations/credit-cards.tsx: CARD_TYPES, CREDIT_CARDS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/recommendations/loans.tsx: LOAN_OFFERS, LOAN_TYPES": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/reports/index.tsx: REPORT_CONFIGS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/reports/upload.tsx: BUREAUS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/search/index.tsx: CATEGORY_TABS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/settings/billing.tsx: PLANS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "app/settings/notification-preferences.tsx: DEFAULT_CATEGORIES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "The notification categories the app offers and their default states. Configuration the user then edits, not a measurement."
+    },
+    "app/student-loans/add.tsx: statusOptions": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Form options: the LoanStatus enum mapped to labels (in_grace -> Grace Period). Configuration for a picker, not a claim about the caller's loans."
+    },
+    "app/tax/calendar.tsx: TAX_EVENTS_2026": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/tax/deductions.tsx: DEDUCTION_CATEGORIES": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/tax/documents.tsx: FILTER_CATEGORIES, UPLOAD_DOCUMENT_TYPES": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/trading/index.tsx: QUICK_ACTIONS": {
+      "classification": "catalogue",
+      "offline": false
+    },
+    "app/trading/strategies/index.tsx: RISK_FILTERS": {
+      "classification": "catalogue",
+      "offline": true
+    },
+    "src/hooks/useCoaching.ts: COACHING_SESSIONS, INITIAL_MESSAGES": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Written coaching content (the 50/30/20 rule and its steps) plus a single opening greeting from the coach with suggested prompts. Product copy we authored; neither asserts anything about this user, and INITIAL_MESSAGES is an opening line, not a fabricated conversation history."
+    },
+    "app/dashboard/reports.tsx: REPORT_TYPES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The kinds of report the feature will produce — name, description and icon per type. Product copy about a capability, not a claim about this user. MOCK_REPORTS, which listed documents the reader supposedly had, was removed in the same commit; this is what is left."
+    },
+    "app/analytics/reports.tsx: REPORT_TEMPLATES": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The kinds of report the feature will produce — name, description, icon and estimated time per kind. A true statement of intent and the surface to wire when generation exists. GENERATED_REPORTS, which listed files the reader supposedly had, was removed in the same commit."
+    },
+    "app/settings/notifications.tsx: groups": {
+      "classification": "catalogue",
+      "offline": true,
+      "why": "The notification categories the app offers and their toggle labels, seeded into state so the switches are controlled. Settings the reader edits, not a claim about them. NOTE: with no request in the file, whatever they toggle is not persisted — that is a separate defect from fabrication and is not what this gate decides."
+    },
+    "app/tax/scenarios.tsx: scenarios": {
+      "classification": "catalogue",
+      "offline": false,
+      "why": "Named what-if templates the reader edits (contribution limits, not their contributions). Same verdict as the web twin src/app/tax/scenarios/page.tsx."
+    }
+  }
+}

@@ -5,6 +5,7 @@
  */
 
 import { create } from "zustand";
+import { toArray } from "./toArray";
 import marketplaceApi, {
   MarketplaceProduct,
   MarketplaceProvider,
@@ -70,7 +71,7 @@ export const useMarketplaceStore = create<MarketplaceState & MarketplaceActions>
         const response = await marketplaceApi.getProducts(category, search);
         if (response.success && response.data) {
           set({
-            products: response.data,
+            products: toArray(response.data),
             lastUpdated: new Date().toISOString(),
           });
         } else {
@@ -98,7 +99,7 @@ export const useMarketplaceStore = create<MarketplaceState & MarketplaceActions>
         const response = await marketplaceApi.getProviders(category, verified);
         if (response.success && response.data) {
           set({
-            providers: response.data,
+            providers: toArray(response.data),
             lastUpdated: new Date().toISOString(),
           });
         } else {
@@ -126,7 +127,7 @@ export const useMarketplaceStore = create<MarketplaceState & MarketplaceActions>
         const response = await marketplaceApi.getTradelines();
         if (response.success && response.data) {
           set({
-            tradelines: response.data,
+            tradelines: toArray(response.data),
             lastUpdated: new Date().toISOString(),
           });
         } else {
@@ -154,7 +155,7 @@ export const useMarketplaceStore = create<MarketplaceState & MarketplaceActions>
         const response = await marketplaceApi.getCategories();
         if (response.success && response.data) {
           set({
-            categories: response.data,
+            categories: toArray(response.data),
             lastUpdated: new Date().toISOString(),
           });
         }

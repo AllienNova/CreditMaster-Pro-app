@@ -150,7 +150,7 @@ export default function GoalsScreen() {
             />
           </View>
           <Text style={[styles.progressText, { color: colors.textSecondary }]}>
-            {goal.progress.toFixed(0)}%
+            {(goal.progress ?? 0).toFixed(0)}%
           </Text>
         </View>
 
@@ -176,7 +176,7 @@ export default function GoalsScreen() {
               Monthly
             </Text>
             <Text style={[styles.detailValue, { color: colors.text }]}>
-              ${goal.monthlyContribution.toFixed(0)}
+              ${(goal.monthlyContribution ?? 0).toFixed(0)}
             </Text>
           </View>
         </View>

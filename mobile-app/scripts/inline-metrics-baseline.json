@@ -1,0 +1,30 @@
+{
+  "frozen": "2026-08-18",
+  "why": "Screens rendering a hardcoded measurement as inline JSX text. Each must be classified `catalogue` (a price, a published rate, product copy) or `fabrication` (a number presented as this user's). /analytics told every user their score moved +45 and their dispute success was 87%, on a screen that makes no request. This list may only shrink.",
+  "entries": {
+    "app/credit/factors.tsx: 35%, 30%, 15%, 10%, 10%": {
+      "classification": "catalogue",
+      "why": "The five FICO factor weights (35/30/15/10/10). Published, universal, and not a claim about the caller."
+    },
+    "app/credit/score-detail.tsx: 300, 579, 669, 739, 799, 850": {
+      "classification": "catalogue",
+      "why": "Credit-score band boundaries (300/579/669/739/799/850). Published scale, not this user's score."
+    },
+    "app/credit-builder/utilization.tsx: 100%": {
+      "classification": "catalogue",
+      "why": "Axis legend for the utilization bar: 0% / 10% ideal / 100%."
+    },
+    "app/investments/analyze/fundamental.tsx: $160.50, $180.25": {
+      "classification": "fabrication",
+      "why": "Price literals on a screen already baselined as a fabrication in screen-data; blocked behind SF-28, not fixed here."
+    },
+    "app/marketplace/calculators.tsx: 10%, 30%, 100%": {
+      "classification": "catalogue",
+      "why": "Utilization band markers 0/10/30/100% on the calculator scale."
+    },
+    "app/trading/chart.tsx: 54.32, +0.45, $175.50, $168.25, $2.35": {
+      "classification": "fabrication",
+      "why": "IndicatorPanel hardcodes a full technical read for whatever symbol is open: RSI 54.32 Neutral, MACD +0.45 Bullish, SMA20 $175.50 Above, SMA50 $168.25 Above, ATR $2.35. Trading signals, invented. Related to SF-28."
+    }
+  }
+}

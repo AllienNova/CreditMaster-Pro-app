@@ -81,6 +81,18 @@ import { createClient } from "@/lib/supabase/server";
 import { withAuth } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
 import { retirementAccountOptimizer } from "@/lib/tax/services/RetirementAccountOptimizer";
+// Was a LOCAL copy of fetchTaxProfile / mapDatabaseToProfile /
+// ACCOUNT_LEVEL_DATA_AVAILABLE. The copies had ALREADY drifted — this one also
+// mapped age, targetRetirementAge and expectedAnnualReturnRate, none of which
+// are columns in tax_profiles (checked: 0 of 3 present), so they were always
+// undefined and nothing is lost by sharing one implementation. The duplicate
+// also carried the cookie-versus-bearer defect fixed in the repository, which
+// is exactly the drift its header warned a second copy would cause.
+import {
+  fetchTaxProfile,
+  mapDatabaseToProfile,
+  ACCOUNT_LEVEL_DATA_AVAILABLE,
+} from "@/lib/tax/tax-profile-repository";
 import {
   FilingStatus,
   OptimizationGoal,
@@ -188,7 +200,7 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
     const taxYear = parseInt(searchParams.get("taxYear") || String(new Date().getFullYear()), 10);
 
     // 4. Fetch tax profile
-    const profile = await fetchTaxProfile(supabase, user.id, taxYear);
+    const profile = await fetchTaxProfile(user.id, taxYear);
 
     if (!profile) {
       return NextResponse.json(
@@ -286,7 +298,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
     const taxYear = (body.taxYear as number) || new Date().getFullYear();
 
     // Check if stored profile exists to merge with
-    const storedProfile = await fetchTaxProfile(supabase, user.id, taxYear);
+    const storedProfile = await fetchTaxProfile(user.id, taxYear);
     const profile = buildProfileFromBody(user.id, taxYear, body, storedProfile);
 
     // 5. Run retirement optimization
@@ -338,102 +350,6 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
 // profile until that data model is built. This constant surfaces that
 // structural gap explicitly in API responses instead of letting it look like
 // a user-specific "no accounts" state.
-const ACCOUNT_LEVEL_DATA_AVAILABLE = false;
-
-async function fetchTaxProfile(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  taxYear: number,
-): Promise<TaxProfile | null> {
-  const { data, error } = await supabase
-    .from("tax_profiles")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("tax_year", taxYear)
-    .single();
-
-  if (error || !data) {
-    return null;
-  }
-
-  return mapDatabaseToProfile(data);
-}
-
-function mapDatabaseToProfile(dbProfile: Record<string, unknown>): TaxProfile {
-  return {
-    id: dbProfile.id as string,
-    userId: dbProfile.user_id as string,
-    taxYear: dbProfile.tax_year as number,
-
-    filingStatus:
-      (dbProfile.filing_status as FilingStatus) || FilingStatus.SINGLE,
-    stateOfResidence: (dbProfile.state_of_residence as string) || "CA",
-
-    grossIncome: Number(dbProfile.gross_income) || 0,
-    w2Income: Number(dbProfile.w2_income) || 0,
-    selfEmploymentIncome: Number(dbProfile.self_employment_income) || 0,
-    investmentIncome: Number(dbProfile.investment_income) || 0,
-    dividendIncome: Number(dbProfile.dividend_income) || 0,
-    interestIncome: Number(dbProfile.interest_income) || 0,
-    capitalGainsShortTerm: Number(dbProfile.capital_gains_short_term) || 0,
-    capitalGainsLongTerm: Number(dbProfile.capital_gains_long_term) || 0,
-    rentalIncome: Number(dbProfile.rental_income) || 0,
-    retirementIncome: Number(dbProfile.retirement_income) || 0,
-    otherIncome: Number(dbProfile.other_income) || 0,
-
-    federalWithheld: Number(dbProfile.federal_withheld) || 0,
-    stateWithheld: Number(dbProfile.state_withheld) || 0,
-    estimatedPayments: Number(dbProfile.estimated_payments) || 0,
-
-    dependents: (dbProfile.dependents_data as TaxProfile["dependents"]) || [],
-
-    isEmployed: (dbProfile.is_employed as boolean) ?? true,
-    isSelfEmployed: (dbProfile.is_self_employed as boolean) ?? false,
-    businessType:
-      (dbProfile.business_type as BusinessType) || BusinessType.NONE,
-    homeOfficeSqft: dbProfile.home_office_sqft as number,
-    totalHomeSqft: dbProfile.total_home_sqft as number,
-
-    mortgageInterest: Number(dbProfile.mortgage_interest) || 0,
-    propertyTaxes: Number(dbProfile.property_taxes) || 0,
-    stateTaxesPaid: Number(dbProfile.state_taxes_paid) || 0,
-    charitableDonations: Number(dbProfile.charitable_donations) || 0,
-    medicalExpenses: Number(dbProfile.medical_expenses) || 0,
-    studentLoanInterest: Number(dbProfile.student_loan_interest) || 0,
-    educatorExpenses: Number(dbProfile.educator_expenses) || 0,
-
-    hasHdhp: (dbProfile.has_hdhp as boolean) ?? false,
-    healthInsuranceType:
-      (dbProfile.health_insurance_type as TaxProfile["healthInsuranceType"]) ||
-      "employer",
-
-    // See ACCOUNT_LEVEL_DATA_AVAILABLE above — no account-level data source
-    // exists, so this is always empty rather than fabricated.
-    accounts: [],
-
-    ytd401kContribution: Number(dbProfile.ytd_401k_contribution) || 0,
-    ytdIraContribution: Number(dbProfile.ytd_ira_contribution) || 0,
-    ytdRothIraContribution: Number(dbProfile.ytd_roth_ira_contribution) || 0,
-    ytdHsaContribution: Number(dbProfile.ytd_hsa_contribution) || 0,
-    ytdCharitableGiving: Number(dbProfile.ytd_charitable_giving) || 0,
-
-    age: dbProfile.age as number | undefined,
-    targetRetirementAge: dbProfile.target_retirement_age as number | undefined,
-    expectedAnnualReturnRate: dbProfile.expected_annual_return_rate as number | undefined,
-
-    optimizationGoal:
-      (dbProfile.optimization_goal as OptimizationGoal) ||
-      OptimizationGoal.BALANCED,
-    riskTolerance:
-      (dbProfile.risk_tolerance as TaxProfile["riskTolerance"]) || "moderate",
-
-    createdAt: new Date(dbProfile.created_at as string),
-    updatedAt: new Date(dbProfile.updated_at as string),
-    lastAnalyzedAt: dbProfile.last_analyzed_at
-      ? new Date(dbProfile.last_analyzed_at as string)
-      : undefined,
-  };
-}
 
 function buildProfileFromBody(
   userId: string,

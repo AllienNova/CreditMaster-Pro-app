@@ -554,6 +554,12 @@ export default function VitalityScreen() {
       <Stack.Screen
         options={{
           title: "Financial Vitality",
+          // This screen configured a header — title, styling, on
+          // subscriptions even a headerRight button — but never set
+          // headerShown, so app/dashboard/_layout.tsx's `false` won and
+          // NONE of it rendered. Turning it on makes the declared intent
+          // real and gives a pushed screen its back button.
+          headerShown: true,
           headerStyle: { backgroundColor: "#F9FAFB" },
           headerTitleStyle: { fontWeight: "600", color: "#111827" },
         }}

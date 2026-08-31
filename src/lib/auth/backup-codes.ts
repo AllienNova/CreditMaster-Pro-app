@@ -1,4 +1,19 @@
 /**
+ * SUPERSEDED 2026-08-14 — DELETE-RECOMMENDED, awaiting owner approval.
+ *
+ * Replaced by src/lib/auth/backup-codes-server.ts and the routes under
+ * /api/auth/backup-codes. Zero importers remain (the settings screen was
+ * rewired in this same change).
+ *
+ * It could never have worked from the browser: `backup_codes` has RLS enabled
+ * with zero policies, and its redemption RPC was granted to `service_role`
+ * alone. Worse, `verifyBackupCode` below calls `redeem_backup_code`, a function
+ * DROPPED in 20260810000000 — per-code salts made deterministic hash-matching
+ * impossible, so redemption now matches by row id.
+ *
+ * Not deleted here only because DELETE is gated on owner approval per batch
+ * (see remediation-plan.md M1). It is dead code either way; do not build on it.
+ *
  * Backup Codes Service
  *
  * Provides backup codes for 2FA recovery:

@@ -27,10 +27,12 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenError } from "../../src/components/ScreenError";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { userAnalyticsApi } from "../../src/services/api/user";
 import type { UserAnalytics } from "../../src/services/api/user";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 export default function DashboardAnalyticsScreen() {
   const [loading, setLoading] = useState(true);
@@ -51,8 +53,14 @@ export default function DashboardAnalyticsScreen() {
 
   const loadAnalytics = useCallback(async () => {
     setLoading(true);
-    await fetchAnalytics();
-    setLoading(false);
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      await fetchAnalytics();
+    } finally {
+      setLoading(false);
+    }
   }, [fetchAnalytics]);
 
   useEffect(() => {
@@ -66,31 +74,17 @@ export default function DashboardAnalyticsScreen() {
   };
 
   if (loading && !data) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="dashboard-analytics-loading">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Loading analytics...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="Credit Analytics" message="Loading analytics..." testID="dashboard-analytics-loading" />;
   }
 
   if (error && !data) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="dashboard-analytics-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.stateText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadAnalytics}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="Credit Analytics"
+        message={error}
+        onRetry={loadAnalytics}
+        testID="dashboard-analytics-error"
+      />
     );
   }
 

@@ -1,6 +1,41 @@
 "use client";
 
-import { useState } from "react";
+/**
+ * Portfolio Rebalancing.
+ *
+ * WHAT THIS PAGE USED TO TELL EVERY VISITOR, WITH NO FETCH IN THE FILE.
+ *
+ *   that they held $27,500 of US Stocks, 55% against a 50% target, 5% adrift
+ *   and then, as instructions:
+ *     sell US Stocks      $2,500
+ *     buy International   $1,000
+ *     buy Bonds           $1,500
+ *
+ * That is not a misleading summary, it is a trade list. Someone who trusted it
+ * would have placed orders against a portfolio they do not own. It is the
+ * highest-consequence fabrication found in the web tree: the other screens
+ * misinform, this one instructs.
+ *
+ * WHAT IT DOES NOW.
+ *   GET  /api/investments/portfolio            -> { success, data: Portfolio }
+ *   POST /api/investments/allocation-analysis  -> { success, data: AssetAllocationAnalysis }
+ *
+ * `AssetAllocationService.analyzeAllocation` (AssetAllocationService.ts:211)
+ * computes current allocations, drift and rebalancing recommendations from the
+ * portfolio it is given. It contains no `Math.random` and does real
+ * arithmetic, so what appears here is derived from the user's own holdings.
+ *
+ * RISK TOLERANCE IS ASKED, NOT ASSUMED. The target model depends on it, and
+ * nothing in the profile records it. Rather than defaulting silently to
+ * "moderate" and presenting the resulting targets as though they were the
+ * user's plan, the selector is on screen, its default is labelled, and the
+ * analysis re-runs when it changes.
+ *
+ * WITH NO HOLDINGS THERE IS NO ANALYSIS. An empty portfolio produces an empty
+ * state, not a model allocation shown as though it were a position.
+ */
+
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   PieChart,
@@ -9,386 +44,337 @@ import {
   CheckCircle,
   TrendingUp,
   TrendingDown,
-  ArrowRight,
-  Settings,
   Info,
-  BarChart3,
 } from "lucide-react";
 
-type AssetClass =
-  | "us_stocks"
-  | "international_stocks"
-  | "bonds"
-  | "real_estate"
-  | "cash";
+const RISK_OPTIONS = [
+  { value: "very_conservative", label: "Very conservative" },
+  { value: "conservative", label: "Conservative" },
+  { value: "moderate", label: "Moderate" },
+  { value: "aggressive", label: "Aggressive" },
+  { value: "very_aggressive", label: "Very aggressive" },
+] as const;
 
-interface Allocation {
-  assetClass: AssetClass;
-  name: string;
-  targetPercent: number;
-  currentPercent: number;
+type RiskValue = (typeof RISK_OPTIONS)[number]["value"];
+
+/** Mirrors AssetAllocation in asset-allocation.types.ts:54. */
+interface AssetAllocation {
+  assetClass: string;
+  percentage: number;
+  value: number;
+  targetPercentage?: number;
+  deviation?: number;
+}
+
+/** Mirrors RebalancingRecommendation in asset-allocation.types.ts:98. */
+interface RebalancingRecommendation {
+  symbol: string;
   currentValue: number;
-  drift: number;
-  color: string;
+  currentPercentage: number;
+  targetPercentage: number;
+  action: "buy" | "sell" | "hold";
+  sharesToTrade: number;
+  valueToTrade: number;
+  reason: string;
+  priority: "high" | "medium" | "low";
 }
 
-interface RebalanceTrade {
-  assetClass: AssetClass;
-  name: string;
-  action: "buy" | "sell";
-  amount: number;
-  shares?: number;
+interface Analysis {
+  currentAllocations: AssetAllocation[];
+  deviationFromTarget: number;
+  needsRebalancing: boolean;
+  rebalancingRecommendations: RebalancingRecommendation[];
+  diversificationScore?: number;
 }
 
-const MOCK_ALLOCATIONS: Allocation[] = [
-  {
-    assetClass: "us_stocks",
-    name: "US Stocks",
-    targetPercent: 50,
-    currentPercent: 55,
-    currentValue: 27500,
-    drift: 5,
-    color: "bg-blue-500",
-  },
-  {
-    assetClass: "international_stocks",
-    name: "International Stocks",
-    targetPercent: 20,
-    currentPercent: 18,
-    currentValue: 9000,
-    drift: -2,
-    color: "bg-green-500",
-  },
-  {
-    assetClass: "bonds",
-    name: "Bonds",
-    targetPercent: 20,
-    currentPercent: 17,
-    currentValue: 8500,
-    drift: -3,
-    color: "bg-blue-500",
-  },
-  {
-    assetClass: "real_estate",
-    name: "Real Estate",
-    targetPercent: 5,
-    currentPercent: 6,
-    currentValue: 3000,
-    drift: 1,
-    color: "bg-orange-500",
-  },
-  {
-    assetClass: "cash",
-    name: "Cash",
-    targetPercent: 5,
-    currentPercent: 4,
-    currentValue: 2000,
-    drift: -1,
-    color: "bg-gray-500",
-  },
-];
+interface Portfolio {
+  holdings?: unknown[];
+  totalValue?: number;
+}
 
-const MOCK_TRADES: RebalanceTrade[] = [
-  { assetClass: "us_stocks", name: "US Stocks", action: "sell", amount: 2500 },
-  {
-    assetClass: "international_stocks",
-    name: "International Stocks",
-    action: "buy",
-    amount: 1000,
-  },
-  { assetClass: "bonds", name: "Bonds", action: "buy", amount: 1500 },
-];
-
-const formatCurrency = (amount: number) => {
+function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(amount);
-};
+}
 
-export default function PortfolioRebalancePage() {
-  const [allocations] = useState<Allocation[]>(MOCK_ALLOCATIONS);
-  const [trades] = useState<RebalanceTrade[]>(MOCK_TRADES);
-  const [driftThreshold] = useState(5);
+function titleCase(value: string): string {
+  return value
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
-  const totalValue = allocations.reduce((sum, a) => sum + a.currentValue, 0);
-  const maxDrift = Math.max(...allocations.map((a) => Math.abs(a.drift)));
-  const needsRebalance = maxDrift > driftThreshold;
+export default function RebalancePage() {
+  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [risk, setRisk] = useState<RiskValue>("moderate");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const outOfBoundsCount = allocations.filter(
-    (a) => Math.abs(a.drift) > driftThreshold,
-  ).length;
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/investments/portfolio");
+      const json = await res.json().catch(() => null);
+      const p = json?.data as Portfolio | undefined;
+
+      if (!res.ok || !p) {
+        setPortfolio(null);
+        setAnalysis(null);
+        setError(
+          "We could not load your portfolio. Nothing here is filled in for you — try again in a moment.",
+        );
+        setLoading(false);
+        return;
+      }
+
+      setPortfolio(p);
+
+      // No holdings, no analysis. A model allocation is not a position.
+      if (!Array.isArray(p.holdings) || p.holdings.length === 0) {
+        setAnalysis(null);
+        setLoading(false);
+        return;
+      }
+
+      const aRes = await fetch("/api/investments/allocation-analysis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ portfolio: p, riskTolerance: risk }),
+      });
+      const aJson = await aRes.json().catch(() => null);
+      if (!aRes.ok || !aJson?.data) {
+        setAnalysis(null);
+        setError(
+          "We could not analyse your allocation. We are not going to show you trades we did not compute.",
+        );
+      } else {
+        setAnalysis(aJson.data as Analysis);
+      }
+    } catch {
+      setPortfolio(null);
+      setAnalysis(null);
+      setError("We could not reach the portfolio service.");
+    }
+    setLoading(false);
+  }, [risk]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const trades = (analysis?.rebalancingRecommendations ?? []).filter(
+    (r) => r.action !== "hold",
+  );
+  const hasHoldings =
+    Array.isArray(portfolio?.holdings) && portfolio!.holdings!.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                <PieChart className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Portfolio Rebalance
-              </h1>
-            </div>
-            <p className="text-gray-600 dark:text-slate-400">
-              Keep your portfolio aligned with your target allocation
-            </p>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+            <PieChart className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
-
-          <div className="flex items-center gap-3 mt-4 sm:mt-0">
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-              <Settings className="w-4 h-4" />
-              Settings
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-              <RefreshCw className="w-4 h-4" />
-              Rebalance Now
-            </button>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Portfolio Rebalancing
+          </h1>
         </div>
+        <p className="text-gray-600 dark:text-slate-400 mb-8">
+          How your holdings sit against a target model.
+        </p>
 
-        {/* Status Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`rounded-xl p-6 mb-8 ${needsRebalance ? "bg-amber-100 border border-amber-300" : "bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700"}`}
-        >
-          <div className="flex items-start gap-4">
-            {needsRebalance ? (
-              <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-            ) : (
-              <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-            )}
-            <div>
-              <h2
-                className={`font-semibold text-lg ${needsRebalance ? "text-amber-800" : "text-green-800 dark:text-green-200"}`}
-              >
-                {needsRebalance
-                  ? "Rebalancing Recommended"
-                  : "Portfolio is Balanced"}
-              </h2>
-              <p
-                className={`mt-1 ${needsRebalance ? "text-amber-700" : "text-green-700 dark:text-green-300"}`}
-              >
-                {needsRebalance
-                  ? `${outOfBoundsCount} asset class${outOfBoundsCount !== 1 ? "es are" : " is"} outside your target allocation. Maximum drift: ${maxDrift.toFixed(1)}%`
-                  : "All asset classes are within your target allocation range."}
-              </p>
-            </div>
+        {error && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 mb-6 border border-amber-200 dark:border-amber-900/50">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              Rebalancing is unavailable
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">{error}</p>
           </div>
-        </motion.div>
+        )}
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-slate-400">
-              Portfolio Value
-            </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(totalValue)}
-            </p>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-slate-400">
-              Max Drift
-            </p>
-            <p
-              className={`text-2xl font-bold ${maxDrift > driftThreshold ? "text-amber-600" : "text-green-600"}`}
-            >
-              {maxDrift.toFixed(1)}%
-            </p>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-slate-400">
-              Drift Threshold
-            </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {driftThreshold}%
-            </p>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-slate-400">
-              Last Rebalanced
-            </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              45 days
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Current Allocation */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-blue-500" />
-              Current Allocation
-            </h2>
-            <div className="space-y-4">
-              {allocations.map((alloc) => (
-                <div key={alloc.assetClass}>
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${alloc.color}`} />
-                      <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
-                        {alloc.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm text-gray-500 dark:text-slate-400">
-                        {formatCurrency(alloc.currentValue)}
-                      </span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white w-12 text-right">
-                        {alloc.currentPercent}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="relative h-2 bg-gray-100 dark:bg-slate-700 rounded-full">
-                    <div
-                      className={`absolute h-full rounded-full ${alloc.color}`}
-                      style={{ width: `${alloc.currentPercent}%` }}
-                    />
-                    <div
-                      className="absolute w-0.5 h-4 bg-gray-400 -top-1"
-                      style={{ left: `${alloc.targetPercent}%` }}
-                      title={`Target: ${alloc.targetPercent}%`}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-xs text-gray-500 dark:text-slate-400">
-                      Target: {alloc.targetPercent}%
-                    </span>
-                    <span
-                      className={`text-xs font-medium ${
-                        alloc.drift > 0
-                          ? "text-amber-600"
-                          : alloc.drift < 0
-                            ? "text-blue-600"
-                            : "text-gray-500 dark:text-slate-400"
-                      }`}
-                    >
-                      {alloc.drift > 0 ? "+" : ""}
-                      {alloc.drift}% drift
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recommended Trades */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <RefreshCw className="w-5 h-5 text-green-500" />
-              Recommended Trades
-            </h2>
-            {trades.length === 0 ? (
-              <div className="text-center py-8">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-slate-400">
-                  No trades needed. Your portfolio is balanced!
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {trades.map((trade, index) => (
-                  <div
-                    key={index}
-                    className={`p-4 rounded-lg ${trade.action === "sell" ? "bg-red-50 border border-red-200" : "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {trade.action === "sell" ? (
-                          <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
-                        ) : (
-                          <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
-                        )}
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {trade.action === "sell" ? "Sell" : "Buy"}{" "}
-                            {trade.name}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-slate-400">
-                            {trade.action === "sell"
-                              ? "Overweight"
-                              : "Underweight"}
-                          </p>
-                        </div>
-                      </div>
-                      <span
-                        className={`text-lg font-semibold ${
-                          trade.action === "sell"
-                            ? "text-red-600"
-                            : "text-green-600"
-                        }`}
-                      >
-                        {trade.action === "sell" ? "-" : "+"}
-                        {formatCurrency(trade.amount)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-
-                <div className="pt-4 border-t border-gray-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-slate-400 mb-4">
-                    <span>Total trade value</span>
-                    <span className="font-medium">
-                      {formatCurrency(
-                        trades.reduce((sum, t) => sum + t.amount, 0),
-                      )}
-                    </span>
-                  </div>
-                  <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                    Execute Rebalance
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Info Section */}
-        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6">
-          <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
-            <Info className="w-5 h-5" />
-            About Portfolio Rebalancing
-          </h3>
-          <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
-            Rebalancing keeps your portfolio aligned with your risk tolerance
-            and investment goals. Over time, some assets grow faster than
-            others, causing your allocation to drift from its target.
+        {/* Asked, not assumed: the target model depends on this and nothing
+            records it against the account. */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-5 mb-6 shadow-sm border border-gray-200 dark:border-slate-700">
+          <label
+            htmlFor="risk"
+            className="block text-sm font-medium text-gray-900 dark:text-white mb-1"
+          >
+            Risk tolerance
+          </label>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+            We have not recorded yours, so this starts at Moderate. The targets
+            below follow whatever you pick.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-            <div className="bg-white dark:bg-slate-800/50 rounded-lg p-3">
-              <p className="font-medium text-blue-900 dark:text-blue-100">
-                Threshold-Based
-              </p>
-              <p className="text-blue-700 dark:text-blue-300">
-                Rebalance when drift exceeds {driftThreshold}%
-              </p>
-            </div>
-            <div className="bg-white dark:bg-slate-800/50 rounded-lg p-3">
-              <p className="font-medium text-blue-900 dark:text-blue-100">
-                Tax-Efficient
-              </p>
-              <p className="text-blue-700 dark:text-blue-300">
-                Consider using new contributions first
-              </p>
-            </div>
-            <div className="bg-white dark:bg-slate-800/50 rounded-lg p-3">
-              <p className="font-medium text-blue-900 dark:text-blue-100">
-                Automated Monitoring
-              </p>
-              <p className="text-blue-700 dark:text-blue-300">
-                Get alerts when rebalancing is needed
-              </p>
-            </div>
-          </div>
+          <select
+            id="risk"
+            value={risk}
+            onChange={(e) => setRisk(e.target.value as RiskValue)}
+            className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
+          >
+            {RISK_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
+
+        {loading ? (
+          <div className="space-y-4 animate-pulse">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-40 bg-gray-200 dark:bg-slate-700 rounded-xl"
+              />
+            ))}
+          </div>
+        ) : !hasHoldings ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-10 text-center border border-gray-200 dark:border-slate-700">
+            <PieChart className="w-8 h-8 text-gray-400 dark:text-slate-500 mx-auto mb-3" />
+            <p className="font-medium text-gray-900 dark:text-white">
+              No holdings to rebalance
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
+              There is nothing in your portfolio yet, so there is nothing to
+              compare against a target.
+            </p>
+          </div>
+        ) : (
+          analysis && (
+            <>
+              <div
+                className={`rounded-xl p-5 mb-6 border ${
+                  analysis.needsRebalancing
+                    ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900/50"
+                    : "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/50"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {analysis.needsRebalancing ? (
+                    <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                  ) : (
+                    <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                  )}
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {analysis.needsRebalancing
+                        ? "Your allocation has drifted from the target"
+                        : "Your allocation is close to the target"}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-slate-300">
+                      Overall deviation{" "}
+                      {analysis.deviationFromTarget.toFixed(1)}%.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Current allocation */}
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-6 mb-6 shadow-sm border border-gray-200 dark:border-slate-700">
+                <h2 className="font-semibold text-gray-900 dark:text-white mb-4">
+                  Current allocation
+                </h2>
+                <div className="space-y-4">
+                  {analysis.currentAllocations.map((allocation) => (
+                    <motion.div
+                      key={allocation.assetClass}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {titleCase(allocation.assetClass)}
+                        </span>
+                        <span className="text-sm text-gray-600 dark:text-slate-300">
+                          {allocation.percentage.toFixed(1)}%
+                          {typeof allocation.targetPercentage === "number" && (
+                            <span className="text-gray-400 dark:text-slate-500">
+                              {" "}
+                              / {allocation.targetPercentage.toFixed(1)}% target
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full"
+                          style={{
+                            width: `${Math.min(100, allocation.percentage)}%`,
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                        {formatCurrency(allocation.value)}
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recommended trades */}
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700">
+                <h2 className="font-semibold text-gray-900 dark:text-white mb-1">
+                  Suggested trades
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mb-4 flex items-start gap-1">
+                  <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                  Computed from your holdings against the model for the risk
+                  level above. Fynvita does not place these for you.
+                </p>
+                {trades.length === 0 ? (
+                  <p className="text-sm text-gray-600 dark:text-slate-400">
+                    Nothing to trade — your holdings already sit within the
+                    target range.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-gray-100 dark:divide-slate-700">
+                    {trades.map((trade) => (
+                      <li
+                        key={trade.symbol}
+                        className="py-3 flex items-center gap-3"
+                      >
+                        {trade.action === "sell" ? (
+                          <TrendingDown className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                        ) : (
+                          <TrendingUp className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        )}
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900 dark:text-white capitalize">
+                            {trade.action} {trade.symbol}
+                          </p>
+                          {trade.reason && (
+                            <p className="text-xs text-gray-500 dark:text-slate-400">
+                              {trade.reason}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {formatCurrency(trade.valueToTrade)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </>
+          )
+        )}
+
+        <button
+          onClick={load}
+          disabled={loading}
+          className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm font-medium text-gray-700 dark:text-slate-300 disabled:opacity-50"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh
+        </button>
       </div>
     </div>
   );

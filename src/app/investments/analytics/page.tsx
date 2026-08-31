@@ -22,6 +22,7 @@ import {
   BarChartComponent,
 } from "@/components/charts";
 import { RiskGauge } from "./risk-gauge";
+import Link from "next/link";
 
 // ============================================================================
 // MAIN PAGE COMPONENT
@@ -30,6 +31,13 @@ import { RiskGauge } from "./risk-gauge";
 export default function PortfolioAnalyticsPage() {
   const router = useRouter();
   const [portfolioId, setPortfolioId] = useState<string>("");
+  /**
+   * null = still looking, false = the user genuinely has no portfolio.
+   *
+   * Distinguished so the page can say "you have no portfolio yet" instead of
+   * asking four analytics endpoints about one.
+   */
+  const [hasPortfolio, setHasPortfolio] = useState<boolean | null>(null);
   const [riskMetrics, setRiskMetrics] = useState<RiskMetrics | null>(null);
   const [diversification, setDiversification] =
     useState<DiversificationScore | null>(null);
@@ -95,22 +103,32 @@ export default function PortfolioAnalyticsPage() {
 
   // Load portfolio ID from user's default portfolio
   useEffect(() => {
-    // Fetch user's default portfolio ID from their profile
+    /*
+     * The all-zeroes UUID fallback that used to live here was the single worst
+     * request pattern in the app. This endpoint did not exist, so the fallback
+     * fired for EVERY user, and the effect below then asked risk,
+     * diversification, correlation and rebalance about a portfolio that cannot
+     * exist — one absent route producing five failed requests, four of them
+     * looking like separate bugs.
+     *
+     * No portfolio is now a state, not a placeholder id.
+     */
     const loadDefaultPortfolio = async () => {
       try {
         const response = await fetch("/api/investments/portfolio/default");
         if (response.ok) {
           const data = await response.json();
-          setPortfolioId(
-            data.portfolioId || "00000000-0000-0000-0000-000000000000",
-          );
+          if (data.portfolioId) {
+            setPortfolioId(data.portfolioId);
+            setHasPortfolio(true);
+          } else {
+            setHasPortfolio(false);
+          }
         } else {
-          // Use placeholder when no portfolio exists
-          setPortfolioId("00000000-0000-0000-0000-000000000000");
+          setHasPortfolio(false);
         }
       } catch {
-        // Fallback to placeholder on error
-        setPortfolioId("00000000-0000-0000-0000-000000000000");
+        setHasPortfolio(false);
       }
     };
     void loadDefaultPortfolio();
@@ -160,10 +178,36 @@ export default function PortfolioAnalyticsPage() {
         </div>
 
         {/* Loading State */}
-        {loading && <LoadingState />}
+        {/*
+          Checked BEFORE loading: with no portfolio there is nothing to load,
+          and the four analytics fetches below are never issued. This is what
+          the all-zeroes UUID used to paper over — the page appeared to be
+          loading analytics while every request 404'd.
+        */}
+        {hasPortfolio === false && (
+          <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 text-center">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              No portfolio yet
+            </h2>
+            <p className="mt-2 text-gray-600 dark:text-slate-400">
+              Risk, diversification and correlation analysis need a portfolio
+              with holdings. Add one to see them.
+            </p>
+            <Link
+              href="/investments/add-holding"
+              className="mt-4 inline-block rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700"
+            >
+              Add a holding
+            </Link>
+          </div>
+        )}
+
+        {hasPortfolio !== false && loading && <LoadingState />}
 
         {/* Error State */}
-        {error && <ErrorState message={error} onRetry={fetchAnalytics} />}
+        {hasPortfolio !== false && error && (
+          <ErrorState message={error} onRetry={fetchAnalytics} />
+        )}
 
         {/* Analytics Content */}
         {!loading && !error && riskMetrics && diversification && (

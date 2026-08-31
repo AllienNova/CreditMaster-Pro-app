@@ -65,9 +65,15 @@ export const GET = withRole(
 
     const offset = (params.page - 1) * params.limit;
 
+    // `subscriptions.plan` does not exist. 001_initial_schema.sql:63 declares
+    // stripe_price_id, and 20260110000002 only ever ADDs tracker columns; no
+    // migration creates `plan`. PostgREST rejects the unknown column, `if
+    // (error) throw error` below caught it, and this route answered 500 for
+    // every request. The real column is selected instead; the caller resolves
+    // the plan name from it via lookupPlanByPriceId.
     let query = supabase
       .from("profiles")
-      .select("*, subscriptions(plan, status)", { count: "exact" });
+      .select("*, subscriptions(stripe_price_id, status)", { count: "exact" });
 
     if (params.search) {
       query = query.or(
@@ -76,7 +82,10 @@ export const GET = withRole(
     }
 
     if (params.status) {
-      query = query.eq("status", params.status);
+      // `profiles` has no `status` column either — the column that holds this
+      // is `subscription_status` (001_initial_schema.sql:15). Filtering on
+      // `status` made every filtered request a 500.
+      query = query.eq("subscription_status", params.status);
     }
 
     const {

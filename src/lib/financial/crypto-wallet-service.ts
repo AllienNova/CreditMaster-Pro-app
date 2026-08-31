@@ -550,6 +550,7 @@ export class CryptoWalletService {
     };
 
     const { data, error } = await this.supabase
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("crypto_price_alerts")
       .insert({
         id: newAlert.id,

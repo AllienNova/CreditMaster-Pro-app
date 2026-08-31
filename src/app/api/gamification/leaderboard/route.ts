@@ -5,6 +5,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
+import type { LeaderboardResponse } from "@/lib/gamification/types";
 
 export type LeaderboardType =
   | "weekly_xp"
@@ -20,66 +22,15 @@ export interface LeaderboardEntry {
   isCurrentUser?: boolean;
 }
 
-export interface LeaderboardResponse {
-  type: LeaderboardType;
-  periodStart: string;
-  periodEnd: string;
-  entries: LeaderboardEntry[];
-  userRank?: number;
-  userPercentile?: number;
-}
-
-// Mock leaderboard data for demonstration
-const MOCK_LEADERBOARD: Record<LeaderboardType, LeaderboardEntry[]> = {
-  weekly_xp: [
-    { rank: 1, userId: "user_1", displayName: "FinanceWhiz", value: 2450 },
-    { rank: 2, userId: "user_2", displayName: "BudgetBoss", value: 2100 },
-    { rank: 3, userId: "user_3", displayName: "SavingsStar", value: 1890 },
-    { rank: 4, userId: "user_4", displayName: "CreditKing", value: 1650 },
-    { rank: 5, userId: "user_5", displayName: "DebtDestroyer", value: 1420 },
-    { rank: 6, userId: "user_6", displayName: "InvestorPro", value: 1350 },
-    { rank: 7, userId: "user_7", displayName: "WealthBuilder", value: 1200 },
-    { rank: 8, userId: "user_8", displayName: "MoneyMaven", value: 1100 },
-    { rank: 9, userId: "user_9", displayName: "FinanceFit", value: 980 },
-    { rank: 10, userId: "user_10", displayName: "BudgetBuddy", value: 850 },
-  ],
-  monthly_xp: [
-    { rank: 1, userId: "user_3", displayName: "SavingsStar", value: 8500 },
-    { rank: 2, userId: "user_1", displayName: "FinanceWhiz", value: 7890 },
-    { rank: 3, userId: "user_2", displayName: "BudgetBoss", value: 7200 },
-    { rank: 4, userId: "user_5", displayName: "DebtDestroyer", value: 6800 },
-    { rank: 5, userId: "user_4", displayName: "CreditKing", value: 6200 },
-    { rank: 6, userId: "user_7", displayName: "WealthBuilder", value: 5500 },
-    { rank: 7, userId: "user_6", displayName: "InvestorPro", value: 5100 },
-    { rank: 8, userId: "user_8", displayName: "MoneyMaven", value: 4800 },
-    { rank: 9, userId: "user_10", displayName: "BudgetBuddy", value: 4200 },
-    { rank: 10, userId: "user_9", displayName: "FinanceFit", value: 3900 },
-  ],
-  streak: [
-    { rank: 1, userId: "user_7", displayName: "WealthBuilder", value: 156 },
-    { rank: 2, userId: "user_3", displayName: "SavingsStar", value: 98 },
-    { rank: 3, userId: "user_1", displayName: "FinanceWhiz", value: 72 },
-    { rank: 4, userId: "user_2", displayName: "BudgetBoss", value: 45 },
-    { rank: 5, userId: "user_5", displayName: "DebtDestroyer", value: 38 },
-    { rank: 6, userId: "user_4", displayName: "CreditKing", value: 30 },
-    { rank: 7, userId: "user_8", displayName: "MoneyMaven", value: 21 },
-    { rank: 8, userId: "user_6", displayName: "InvestorPro", value: 14 },
-    { rank: 9, userId: "user_9", displayName: "FinanceFit", value: 10 },
-    { rank: 10, userId: "user_10", displayName: "BudgetBuddy", value: 7 },
-  ],
-  challenge: [
-    { rank: 1, userId: "user_5", displayName: "DebtDestroyer", value: 5 },
-    { rank: 2, userId: "user_1", displayName: "FinanceWhiz", value: 4 },
-    { rank: 3, userId: "user_3", displayName: "SavingsStar", value: 4 },
-    { rank: 4, userId: "user_2", displayName: "BudgetBoss", value: 3 },
-    { rank: 5, userId: "user_7", displayName: "WealthBuilder", value: 3 },
-    { rank: 6, userId: "user_4", displayName: "CreditKing", value: 2 },
-    { rank: 7, userId: "user_6", displayName: "InvestorPro", value: 2 },
-    { rank: 8, userId: "user_8", displayName: "MoneyMaven", value: 1 },
-    { rank: 9, userId: "user_9", displayName: "FinanceFit", value: 1 },
-    { rank: 10, userId: "user_10", displayName: "BudgetBuddy", value: 0 },
-  ],
-};
+/**
+ * Re-exported from the canonical definition in @/lib/gamification/types.
+ *
+ * This route previously declared its OWN copy of the shape. Two interfaces for
+ * one payload is the same hazard that let the dispute detail page ship broken:
+ * the compiler happily checks each side against a different declaration, so a
+ * field present in one and absent in the other is invisible until runtime.
+ */
+export type { LeaderboardResponse } from "@/lib/gamification/types";
 
 function getWeekRange(): { start: string; end: string } {
   const now = new Date();
@@ -126,43 +77,76 @@ export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
     // Get period range based on type
     const period = type === "monthly_xp" ? getMonthRange() : getWeekRange();
 
-    // Get mock entries and mark current user
-    const entries = MOCK_LEADERBOARD[type].map((entry) => ({
-      ...entry,
-      isCurrentUser: false,
-    }));
+    // Reads the real leaderboard_snapshots table.
+    //
+    // This block used to build the entire response from MOCK_LEADERBOARD plus
+    // `Math.floor(Math.random() * 50) + 10` for the caller's own rank and a
+    // percentile computed against a hardcoded "totalUsers = 100". The user was
+    // shown a competitive standing that was invented on each request — a
+    // different rank every refresh, all of it presented as fact.
+    //
+    // leaderboard_snapshots exists for precisely this (leaderboard_type,
+    // period_start, period_end, rankings jsonb) and is currently unpopulated:
+    // no job writes it yet. An empty leaderboard is the truthful answer until
+    // one does. `pending` tells the client to render "not ranked yet" rather
+    // than a zero that looks like last place.
+    const { data: snapshot, error: snapshotError } = await getServiceRoleClient()
+      .from("leaderboard_snapshots")
+      // idor-audit: cross-user — a leaderboard is a ranking ACROSS users; that is the feature
+      .select("rankings")
+      .eq("leaderboard_type", type)
+      .gte("period_end", period.start)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    // Simulate current user being on the leaderboard
-    // In production, this would query the database
-    const mockUserRank = Math.floor(Math.random() * 50) + 10;
-    const mockUserValue =
-      type === "streak" ? 14 : Math.floor(Math.random() * 1000) + 500;
-
-    // Add current user if not in top 10
-    if (mockUserRank > 10) {
-      entries.push({
-        rank: mockUserRank,
-        userId: user.id,
-        displayName: "You",
-        value: mockUserValue,
-        isCurrentUser: true,
-      });
-    } else {
-      // Mark one of the existing entries as current user for demo
-      entries[mockUserRank - 1].isCurrentUser = true;
+    // A read failure is NOT an empty leaderboard. Leaving `error` unchecked
+    // meant a database outage produced null data, which fell through to
+    // `pending: true` and rendered as the cheerful "not ranked yet — earn XP"
+    // empty state. Users would read that as "my XP was never counted" and
+    // support would get no signal at all. Degrade loudly instead.
+    if (snapshotError) {
+      console.error("Leaderboard snapshot read failed:", snapshotError);
+      return NextResponse.json(
+        { error: "Leaderboard temporarily unavailable" },
+        { status: 503 },
+      );
     }
 
-    // Calculate percentile
-    const totalUsers = 100; // Mock total users
-    const userPercentile = ((totalUsers - mockUserRank) / totalUsers) * 100;
+    const rankings: LeaderboardEntry[] = Array.isArray(snapshot?.rankings)
+      ? (snapshot!.rankings as LeaderboardEntry[])
+      : [];
+
+    const entries = rankings.map((entry) => ({
+      ...entry,
+      isCurrentUser: entry.userId === user.id,
+    }));
+
+    const mine = entries.find((e) => e.isCurrentUser);
+    const userRank = mine?.rank;
+
+    // The denominator is the snapshot's own row count, which is only a valid
+    // population size if the snapshot holds EVERY ranked user. No job writes
+    // this table yet, so that contract is being set here rather than
+    // discovered later: a writer that stores only a top-N would give a user
+    // ranked below N a rank greater than entries.length and this would emit a
+    // NEGATIVE percentile straight to the UI. The guard makes that case return
+    // no percentile instead of a wrong one — a missing number is honest, a
+    // negative percentile is not.
+    const rankIsWithinSnapshot =
+      userRank !== undefined && userRank >= 1 && userRank <= entries.length;
+    const userPercentile = rankIsWithinSnapshot
+      ? Math.round(((entries.length - userRank!) / entries.length) * 100)
+      : undefined;
 
     const response: LeaderboardResponse = {
       type,
       periodStart: period.start,
       periodEnd: period.end,
-      entries: entries.slice(0, 11), // Return top 10 + current user if needed
-      userRank: mockUserRank,
-      userPercentile: Math.round(userPercentile),
+      entries: entries.slice(0, 10),
+      userRank,
+      userPercentile,
+      pending: entries.length === 0,
     };
 
     return NextResponse.json(response);

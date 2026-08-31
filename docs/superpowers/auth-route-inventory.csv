@@ -16,6 +16,7 @@ src/app/api/admin/settings/route.ts,GET;POST,requireRole,inline admin role via r
 src/app/api/admin/stats/route.ts,GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
 src/app/api/admin/subscriptions/route.ts,DELETE;GET,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
 src/app/api/admin/users/route.ts,GET;PATCH,requireRole,inline admin role via requireRole,withRole(admin),a,deprecated requireRole path - rewrap withRole(admin)
+src/app/api/admin/users/[id]/route.ts,GET,withRole,withRole(admin),withRole(admin),a,admin member-detail read; UUID-validated id; no credit score and no dispute letter body
 src/app/api/affiliate/offers/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),f,promote inline permission check to withPermission
 src/app/api/affiliate/webhooks/route.ts,POST,webhook-signature,none,PUBLIC,f,webhook - signature verification stays as the auth
 src/app/api/ai/chat/message/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
@@ -46,6 +47,9 @@ src/app/api/analytics/reports/route.ts,GET;POST,validateFromHeaders,"rbac.hasPer
 src/app/api/analytics/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withAuth,f,"mixed route - 6 per-user sub-types scoped to user.id; `system` sub-type has an inline `rbac.hasPermission('admin:analytics')` check on the DB-resolved role."
 src/app/api/analytics/strategies/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
 src/app/api/analytics/timeseries/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""admin:analytics"")",withRole(admin),f,admin analytics - promote to withRole(admin)
+src/app/api/auth/backup-codes/redeem/route.ts,POST,withAuthAllowingAal1,own-rows,withAuthAllowingAal1,f,added 2026-08-10 (R-006) - MFA recovery. DELIBERATELY exempt from the AAL2 gate: a user who lost their authenticator is stuck at aal1 by definition. Rate limited per user; the only route permitted to use this guard
+src/app/api/auth/backup-codes/route.ts,GET;POST,withAuth,own-rows,withAuth,f,added 2026-08-10 (R-006) - server-side backup code management. aal2 is implicit: withAuth already refuses aal1 from a user holding a verified factor
+src/app/api/auth/sessions/route.ts,GET;DELETE,withAuth,own-rows,withAuth,f,added 2026-08-15 - replaced a browser anon-client query against public.sessions that 403d on every call (sessions grants authenticated no privilege). Runs under the service role so user.id from the guard is the only scoping - both GET and DELETE carry .eq("user_id" user.id)
 src/app/api/auth/webauthn/authenticate/route.ts,POST,none,none,PUBLIC,f,pre-auth webauthn challenge - genuinely public
 src/app/api/auth/webauthn/authenticate/verify/route.ts,POST,none,none,PUBLIC,f,pre-auth webauthn verify - genuinely public
 src/app/api/auth/webauthn/credentials/route.ts,DELETE;GET;PATCH,getUser,none,withAuth,f,bare session read - wrap in withAuth
@@ -57,9 +61,11 @@ src/app/api/chat/financial/route.ts,POST,getUser,none,withAuth,f,bare session re
 src/app/api/chat/financial/sessions/[id]/messages/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/chat/financial/sessions/[id]/route.ts,DELETE;GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/chat/financial/sessions/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/credit-builder/debts/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session; replaced a client-side fallback that invented 3 debts and ran a payoff simulation on them
 src/app/api/credit-builder/loans/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
 src/app/api/credit-builder/progress/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
 src/app/api/credit-builder/recommendations/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/credit-builder/rent-payments/route.ts,GET,withPermission,"withPermission(""credit:read"")",withPermission(credit:read),c,"added 2026-08-17 - first route into rent reporting, which had tables and a full service and no way in (docs/qa/triage-financial.md graded it UNREACHABLE). Service filters both reads on user_id; the client is service-role so that filter is load-bearing, not decorative"
 src/app/api/credit-builder/score/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
 src/app/api/credit-builder/secured-cards/route.ts,GET,getUser,none,withAuth,c,bare session read - wrap in withAuth
 src/app/api/credit-bureau/analyze/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""credit:analyze"")",withPermission(credit:analyze),c,promote inline permission check to withPermission
@@ -106,18 +112,26 @@ src/app/api/disputes/[id]/send/route.ts,PATCH,validateFromHeaders,inline user.id
 src/app/api/disputes/generate-student-loan/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""disputes:create"")",withPermission(disputes:create),f,promote inline permission check to withPermission
 src/app/api/disputes/generate/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/disputes/reasons/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation; static reference data - wrap in withAuth
+src/app/api/disputes/recommend-strategy/route.ts,POST,withAuth,none,withAuth,g,added 2026-08-17 - pure scenario-to-strategy mapping over a static catalogue; reads no user rows so there is nothing to scope. authn required because it is a product feature not a public API
 src/app/api/disputes/route.ts,DELETE;GET;PATCH;POST,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
 src/app/api/disputes/stats/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
+src/app/api/disputes/strategies/[id]/route.ts,GET,withAuth,none,withAuth,g,added 2026-08-17 - reads a STATIC strategy catalogue by id; no user rows involved so there is nothing to scope. authn required as a product feature
 src/app/api/disputes/strategies/route.ts,GET,validateFromHeaders,none,withAuth,f,inline JWT validation - wrap in withAuth
+src/app/api/disputes/templates/[id]/route.ts,GET,withAuth,none,withAuth,f,added 2026-08-17 - one dispute letter template from the shared catalogue in lib/disputes/letter-templates.ts. No user-scoped data: every caller sees the same templates, so authz is none beyond requiring a session (the letter bodies are product IP). Slug ids only; path traversal is normalised away by URL parsing before the lookup
 src/app/api/disputes/templates/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - static templates but POST mutates; wrap in withAuth
+src/app/api/documents/[id]/download/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-17 - short-lived (5 min) presigned S3 download link for one of the caller's own documents. Ownership enforced in documentServiceDB.getDocument (filters id AND user_id); null becomes 404 so ids cannot be probed. Deliberately NOT the 7-day URL cached in s3_url and served by /api/documents/[id] - a week-long bearer credential to a tax return should not be what a download button mints
+src/app/api/documents/[id]/route.ts,GET;DELETE,withAuth,own-rows,withAuth,g,"added 2026-08-17 - path-segment wrapper over documentServiceDB.getDocument/deleteDocument which each take (documentId,userId) and filter on both; the collection serves the same operations via ?documentId= for the web client"
 src/app/api/documents/route.ts,DELETE;GET;PATCH,getUser,inline user.id ownership check,withAuth,c,bare session read + ownership - wrap in withAuth; keep ownership check
 src/app/api/documents/share/route.ts,DELETE;GET;POST,validateFromHeaders,"rbac.hasPermission(""documents:share""); inline ownership check",withPermission(documents:share),c,promote inline permission check; keep ownership check
 src/app/api/documents/upload/route.ts,GET;POST,none,none,withAuth,c,unauthenticated - accepts userId from formData (IDOR) - wrap in withAuth
 src/app/api/email/unsubscribe/route.ts,GET;POST,none,token in query,PUBLIC,f,unsubscribe via signed token in email link - token is the auth; genuinely public
+src/app/api/experts/route.ts,GET,withAuth,none,withAuth,f,added 2026-08-18 - new route exposing the orphaned expert-sessions-service; directory of verified experts not per-user rows so no ownership check applies; service filters status=verified
 src/app/api/federal-programs/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - wrap in withAuth
 src/app/api/federal/check-eligibility/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""federal_programs:check_eligibility"")",withPermission(federal_programs:check_eligibility),f,promote inline permission check to withPermission
 src/app/api/federal/submit-application/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""federal_programs:submit_application"")",withPermission(federal_programs:submit_application),f,promote inline permission check to withPermission
 src/app/api/federal/track-application/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""federal_programs:track_application"")",withPermission(federal_programs:track_application),f,promote inline permission check to withPermission
+src/app/api/financial/accounts/[accountId]/route.ts,GET,withPermission,own-rows,withPermission,g,"added 2026-08-17 - single linked account; service-role read filtered by user_id AND id so a guessed accountId cannot reach another user. DELETE deliberately NOT added here - the revocable unit is the CONNECTION, not the account: Plaid /item/remove ends the whole Item. See src/app/api/financial/connections/[connectionId]/route.ts, added 2026-08-17"
+src/app/api/financial/accounts/[accountId]/sync/route.ts,POST,withAuth,own-rows,withAuth,g,added 2026-08-17 - accountId read from pathname (withAuth does not forward params); item resolved from the account scoped to user_id so a guessed id cannot sync another user's connection
 src/app/api/financial/accounts/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/aggregated/route.ts,DELETE;GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/ai-insights/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
@@ -132,9 +146,10 @@ src/app/api/financial/bills/optimizations/route.ts,GET,validateFromHeaders,"rbac
 src/app/api/financial/bills/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""financial:read"");rbac.hasPermission(""financial:write"")",withPermission(financial:read),c,multiple inline perms - GET financial:read POST financial:write
 src/app/api/financial/bills/summary/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/budgets/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,"rbac.hasPermission(""financial:read"");rbac.hasPermission(""financial:create_budgets"")",withPermission(financial:read),c,multiple inline perms - GET financial:read mutations financial:create_budgets
-src/app/api/financial/budgets/adjust/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/budgets/adjust/route.ts,GET;POST,withPermission,"rbac.hasPermission(""financial:read"");rbac.hasPermission(""financial:write"")",withPermission,g,"POST added 2026-08-17 - applies suggested adjustments to the CALLER own budgets via budgetService scoped by user.id; never creates a budget, reports every before/after "and every skip. GET unchanged (financial:read)."
 src/app/api/financial/budgets/alerts/route.ts,GET;PATCH,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/budgets/analyze/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/budgets/apply-recommendation/route.ts,POST,withAuth,own-rows,withAuth,g,added 2026-08-17 - applies ONE recommendation to the caller own budget in that category; getBudgetsByUser is scoped by user.id and no budget is ever created
 src/app/api/financial/budgets/generate/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""financial:create_budgets"")",withPermission(financial:create_budgets),c,promote inline permission check to withPermission
 src/app/api/financial/budgets/generate/zero-based/route.ts,POST,withPermission,financial:write,withPermission,f,added 2026-08-09 - already wrapped
 src/app/api/financial/budgets/predict/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
@@ -142,17 +157,22 @@ src/app/api/financial/budgets/recommendations/route.ts,GET,validateFromHeaders,"
 src/app/api/financial/budgets/rollover/route.ts,GET;PATCH;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/financial/budgets/route.ts,GET;POST,withPermission,"withPermission(""financial:read""/""financial:create_budgets"")",withPermission(financial:read),c,already wrapped with withPermission - no change (AUTH-01 reference impl)
 src/app/api/financial/budgets/summary/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/connections/[connectionId]/route.ts,DELETE,withPermission,"withPermission(""financial:write"")",withPermission(financial:write),c,new route - revokes a Plaid Item via /item/remove then deletes its rows
+src/app/api/financial/connections/route.ts,GET,withPermission,"withPermission(""financial:read"")",withPermission(financial:read),c,new route - connections list for the mobile Connected Accounts screen
 src/app/api/financial/context/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""financial:read"");rbac.hasPermission(""financial:write"")",withPermission(financial:read),c,multiple inline perms - GET financial:read POST financial:write
 src/app/api/financial/context/summary/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/credit-builder/ai-roadmap/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/credit-repair/ai-strategy/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/credit/ai-insights/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/credit/simulator/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""credit:read"")",withPermission(credit:read),c,promote inline permission check to withPermission
+src/app/api/financial/crypto/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-18 - new route exposing the orphaned crypto-wallet-service; getUserWallets/getPortfolioSummary take user.id from the guard never the request
 src/app/api/financial/dashboard/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/debt/[id]/route.ts,PATCH;DELETE,withAuth,own-rows,withAuth,g,"added 2026-08-17 - thin over debtService.updateDebt/deleteDebt which take (debtId,userId) and filter on both. DELETE checks getDebt first because deleting 0 rows is not a Postgres error, so the service cannot report whether anything was removed"
 src/app/api/financial/debt/calculate/route.ts,POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/financial/debt/route.ts,GET;POST,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/financial/disputes/ai-strategy/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/export/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
+src/app/api/financial/goals/[id]/contribute/route.ts,POST,withPermission,own-rows,withPermission,g,"added 2026-08-17 - adds a contribution to the caller own goal; reads current_amount scoped by user_id+id then calls updateGoalProgress with the SUM, because that service takes an absolute total and forwarding the delta would erase prior progress"
 src/app/api/financial/goals/[id]/investment/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:create_goals"")",withPermission(financial:create_goals),c,promote inline permission check to withPermission
 src/app/api/financial/goals/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,"rbac.hasPermission(""financial:create_goals""); inline ownership check",withPermission(financial:create_goals),c,promote inline permission check; keep ownership check
 src/app/api/financial/goals/optimizations/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
@@ -174,6 +194,7 @@ src/app/api/financial/plaid/investments/route.ts,GET;POST,validateFromHeaders,"r
 src/app/api/financial/plaid/liabilities/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/plaid/link-token/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""financial:link_accounts"")",withPermission(financial:link_accounts),c,promote inline permission check to withPermission
 src/app/api/financial/plaid/webhooks/route.ts,POST,webhook-signature,none,PUBLIC,c,Plaid webhook - signature verification stays as the auth
+src/app/api/financial/real-estate/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-18 - new route exposing the orphaned real-estate-tracking-service; getUserProperties/getPortfolioSummary take user.id from the guard never the request
 src/app/api/financial/savings/analyze/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/savings/goal-recommendations/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/savings/goals/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
@@ -192,15 +213,25 @@ src/app/api/financial/spending/route.ts,GET,validateFromHeaders,"rbac.hasPermiss
 src/app/api/financial/spending/summary/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
 src/app/api/financial/spending/trends/route.ts,GET,validateFromHeaders,none,withAuth,c,inline JWT validation - wrap in withAuth
 src/app/api/financial/subscriptions/cancellation-info/route.ts,GET,none,none,withAuth,c,unauthenticated - wrap in withAuth
+src/app/api/financial/subscriptions/insights/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session
+src/app/api/financial/subscriptions/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session
+src/app/api/financial/subscriptions/stats/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session
 src/app/api/financial/tax/retirement/route.ts,GET;POST,getUser,none,withAuth,c,bare session read - wrap in withAuth
+src/app/api/financial/transaction-rules/[id]/route.ts,DELETE;PATCH,withAuth,owner-scoped,withAuth,new,new route - updateRule/deleteRule take userId FIRST and scope by it; without these the screen's toggle and delete were local-only
+src/app/api/financial/transaction-rules/route.ts,GET;POST,withAuth,owner-scoped,withAuth,new,new route - service scopes every query by the guard's user.id; no route existed so the mobile screen shipped INITIAL_RULES
+src/app/api/financial/transactions/[id]/route.ts,PATCH,withPermission,own-rows,withPermission,g,"added 2026-08-17 - recategorise one transaction; update filtered by id AND user_id with .select() after, so a non-owned id returns no row and answers 404 rather than a false success"
+src/app/api/financial/transactions/categories/route.ts,GET,withPermission,own-rows,withPermission,g,"added 2026-08-17 - distinct categories present on the CALLER's own transactions; category is free text in the schema so there is no canonical vocabulary to serve"
 src/app/api/financial/transactions/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""financial:read"")",withPermission(financial:read),c,promote inline permission check to withPermission
+src/app/api/financial/transactions/search/route.ts,GET,withPermission,own-rows,withPermission,g,"added 2026-08-17 - ilike over name/merchant_name scoped by user_id; wildcards in the query are escaped so a query of % is a literal search not a match-all"
 src/app/api/gamification/achievements/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/badges/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/challenges/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/gamification/challenges/[id]/join/route.ts,POST,withAuth,withAuth,withAuth,a,join a community challenge; user id from the guard never the body; 409 on UNIQUE(user_id,challenge_id)
 src/app/api/gamification/events/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/leaderboard/route.ts,GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/progress/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/gamification/quests/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/goals/shared/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-18 - new route exposing shared-goals-service which nothing called; getUserGoals takes user.id from the guard never the request - returning another user's goal would leak members' contribution amounts
 src/app/api/health/route.ts,GET,none,none,PUBLIC,f,health check - genuinely public
 src/app/api/investments/alerts/route.ts,DELETE;GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
 src/app/api/investments/allocation-analysis/route.ts,GET;POST,none,none,withAuth,e,unauthenticated - wrap in withAuth
@@ -219,15 +250,21 @@ src/app/api/investments/crypto/[coinId]/route.ts,GET,getUser,none,withAuth,e,bar
 src/app/api/investments/crypto/[coinId]/sentiment/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/investments/crypto/trending/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/investments/dividends/route.ts,GET,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/historical/[symbol]/route.ts,GET,withAuth,none,withAuth,g,added 2026-08-17 - MARKET DATA: no user-owned rows to scope (see quote/[symbol])
 src/app/api/investments/holdings/[id]/route.ts,DELETE;GET;PATCH,validateFromHeaders,inline user.id ownership check,withAuth,e,inline JWT validation + ownership - wrap in withAuth; keep ownership check
 src/app/api/investments/holdings/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
 src/app/api/investments/patterns/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
 src/app/api/investments/portfolio-analysis/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
 src/app/api/investments/portfolio/analyze/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
+src/app/api/investments/portfolio/default/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session; replaced a fabricated portfolio id that cascaded into 4 further 404s
+src/app/api/investments/portfolio/performance/route.ts,GET,withAuth,own-rows,withAuth,g,added 2026-08-17 - built this session; replaced generateMockPerformanceData (invented returns/Sharpe/alpha)
 src/app/api/investments/portfolio/route.ts,GET,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth; portfolio-service omits user_id filter (FND-030 IDOR) - verify ownership in AUTH-03
+src/app/api/investments/quote/[symbol]/route.ts,GET,withAuth,none,withAuth,g,added 2026-08-17 - MARKET DATA: no user-owned rows to scope. authn required to keep the provider quota behind a login; authz none is correct not missing
+src/app/api/investments/quotes/route.ts,GET,withAuth,none,withAuth,g,added 2026-08-17 - MARKET DATA batch: no user-owned rows to scope; MAX_SYMBOLS=50 caps provider fan-out
 src/app/api/investments/recommendations/route.ts,GET;POST,validateFromHeaders,none,withAuth,e,inline JWT validation - wrap in withAuth
 src/app/api/investments/signals/[id]/route.ts,GET;PATCH,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/investments/signals/active/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/investments/signals/generate/route.ts,POST,withAuth,own-rows,withAuth,g,added 2026-08-17 - generates a trading signal for the CALLER (user.id passed to generateSignal); rate-limited to 30/hour separately from the 100/hour read budget because each generation runs an analysis plus an AI pass
 src/app/api/investments/signals/performance/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/investments/signals/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/marketplace/products/[id]/route.ts,GET,none,none,PUBLIC,f,public product catalog - read-only browse; genuinely public
@@ -254,6 +291,7 @@ src/app/api/notifications/push/send/route.ts,POST,none,userId/userIds from body 
 src/app/api/notifications/push/subscribe/route.ts,DELETE;GET;POST,none,userId from body (untrusted),withAuth,b,unauthenticated - accepts userId from body (IDOR FND-041..044) - wrap in withAuth
 src/app/api/notifications/push/vapid-key/route.ts,GET,none,none,PUBLIC,b,returns VAPID public key - needed pre-subscribe; genuinely public
 src/app/api/notifications/route.ts,DELETE;GET;PATCH;POST,none,userId from query (untrusted),withAuth,b,unauthenticated - accepts userId from query (IDOR FND-041..044) - wrap in withAuth
+src/app/api/onboarding/complete/route.ts,POST,withAuth,own-rows,withAuth,g,added 2026-08-17 - writes the CALLER's own profile only; no id accepted from the body
 src/app/api/onboarding/progress/route.ts,GET;POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/payment/billing/plan/route.ts,POST,validateFromHeaders,"rbac.hasPermission(""billing:update"")",withPermission(billing:update),f,promote inline permission check to withPermission
 src/app/api/payment/billing/route.ts,GET,validateFromHeaders,"rbac.hasPermission(""billing:read"")",withPermission(billing:read),f,promote inline permission check to withPermission
@@ -268,12 +306,27 @@ src/app/api/servicers/analyze/route.ts,GET;POST,validateFromHeaders,"rbac.hasPer
 src/app/api/servicers/detect-errors/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""servicers:detect_errors"")",withPermission(servicers:detect_errors),f,promote inline permission check to withPermission
 src/app/api/settings/route.ts,GET;PATCH,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/strategies/recommend/route.ts,GET;POST,none,none,withAuth,d,unauthenticated - wrap in withAuth
+src/app/api/student-loans/[id]/route.ts,GET;PATCH;DELETE,withAuth,own-rows,withAuth,f,added 2026-08-17 - one tracked student loan. Every query filtered by BOTH id and user_id (service-role bypasses RLS); 404 covers not-found and not-yours alike. Selects an explicit column list that EXCLUDES account_number (NOT NULL, stored in the clear) and the four *_eligible flags (written by a service that has never contacted NSLDS). PATCH refuses monthlyPayment/repaymentPlan rather than accepting fields no column stores
 src/app/api/student-loans/analyze/route.ts,GET;POST,validateFromHeaders,"rbac.hasPermission(""student_loans:analyze"")",withPermission(student_loans:analyze),f,promote inline permission check to withPermission
 src/app/api/student-loans/route.ts,GET,none,none,withAuth,f,unauthenticated - accepts userId from query (IDOR) - wrap in withAuth
 src/app/api/student-loans/strategy/route.ts,GET;POST,none,none,withAuth,f,unauthenticated - wrap in withAuth
 src/app/api/tax/analyze/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/tax/brackets/route.ts,POST,withAuth,none,withAuth,f,added 2026-08-15 - bracket visualisation over TaxBracketCalculator. Stateless arithmetic (no user rows read) but authed: an unauthenticated compute endpoint is a free CPU faucet
+src/app/api/tax/calendar/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - estimated-tax deadlines computed from the caller's profile via getQuarterlyPaymentSchedule. No calendar table exists; deadlines are statutory and amounts derive from profile income. Absent profile returns an empty state rather than invented amounts
+src/app/api/tax/deductions/[id]/route.ts,PATCH;DELETE,withAuth,own-rows,withAuth,f,added 2026-08-15 - amend/remove one deduction. Update built from an ALLOWLIST so user_id and is_verified cannot be set by the caller; both queries filtered by id AND user_id
+src/app/api/tax/deductions/categories/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - fixed category vocabulary with the CALLER'S totals and items
+src/app/api/tax/deductions/route.ts,GET;POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - list/create itemised deductions. INSERT sets user_id from the SESSION and forces is_verified=false; a user_id in the body is never read
+src/app/api/tax/deductions/summary/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - itemise-vs-standard recommendation. Threshold read from the profile's filing status; a read failure errors rather than recommending from missing data
+src/app/api/tax/documents/[id]/route.ts,GET;DELETE,withAuth,own-rows,withAuth,f,added 2026-08-15 - read/delete one tax document (W-2/1099 + extracted contents). Service-role queries filtered by BOTH id and user_id; 404 rather than 403 for another user's row
+src/app/api/tax/documents/[id]/verify/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - confirms an extraction. verified_by is stamped from the SESSION, never the body, so the audit trail cannot name a different verifier
+src/app/api/tax/documents/checklist/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - which tax forms the caller still needs. REQUIRED is derived from their own profile income, not a fixed list; uploads looked up by user_id + tax_year. A read failure errors rather than rendering as 'you have uploaded nothing'
 src/app/api/tax/documents/route.ts,DELETE;GET,getUser,none,withAuth,f,bare session read - wrap in withAuth
 src/app/api/tax/documents/upload/route.ts,POST,getUser,none,withAuth,f,bare session read - wrap in withAuth
+src/app/api/tax/recommendations/[id]/complete/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - marks the caller's own recommendation complete. Service-role UPDATE filtered by BOTH id and user_id; 404 (not 403) when the row belongs to someone else so uuid probing cannot confirm existence
+src/app/api/tax/recommendations/[id]/dismiss/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-17 - hides the caller's own recommendation without marking it done. Sibling of /complete; sets status "dismissed" not "completed" so the optimizer is not told the user acted on advice they rejected. Service-role UPDATE filtered by BOTH id and user_id; 404 (not 403) for another user's row
+src/app/api/tax/recommendations/route.ts,GET,withAuth,own-rows,withAuth,f,added 2026-08-15 - TaxOptimizationEngine recommendations for the caller's stored profile. Profile loaded by user.id only; a userId query param is never read. Absent profile returns an explicit empty state, never advice computed from defaults
+src/app/api/tax/scenarios/calculate/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - what-if calculator over the caller's own tax profile. Profile loaded by user.id; a userId in the body is never read. Scenario applied to a COPY and never persisted. 409 when no profile exists rather than computing from a default income
+src/app/api/tax/scenarios/compare/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-15 - ranks what-if scenarios by total tax against the caller's own profile. Capped at 20 per request since each is a full computation. All scenarios validated before any is computed
 src/app/api/test-db/route.ts,GET,getUser,none,withAuth,f,diagnostic DB-test route - SECURITY: should be removed before launch; gate with withRole(admin) at minimum
 src/app/api/trading/agents/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/trading/backtest/route.ts,GET;POST,withAuth,none,withAuth,e,already wrapped with withAuth - no change
@@ -293,6 +346,7 @@ src/app/api/trading/modes/route.ts,GET,getUser,none,withAuth,e,bare session read
 src/app/api/trading/orders/route.ts,DELETE;GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/trading/paper/orders/route.ts,DELETE;GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/trading/paper/performance/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
+src/app/api/trading/paper/positions/close/route.ts,POST,withAuth,own-rows,withAuth,f,added 2026-08-17 - flattens one of the caller's own paper positions. Account resolved from the authenticated user; engine.closePosition filters on account_id so another user's positionId finds nothing. 404 covers not-yours/no-such/already-flat alike so uuids cannot be probed. Sells through the ordinary order pipeline, so realized P&L is the engine's not the route's
 src/app/api/trading/paper/positions/route.ts,GET,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/trading/paper/reset/route.ts,POST,getUser,none,withAuth,e,bare session read - wrap in withAuth
 src/app/api/trading/paper/route.ts,GET;POST,getUser,none,withAuth,e,bare session read - wrap in withAuth

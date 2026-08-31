@@ -65,13 +65,24 @@ export default function BillingScreen() {
   const loadBilling = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const res = await subscriptionApi.getBillingOverview();
-    if (res.success && res.data) {
-      setBilling(res.data);
-    } else {
-      setError(res.error?.message ?? "Unable to load billing right now.");
+    // try/finally, not a bare await. If getBillingOverview() REJECTS rather
+    // than returning { success: false }, the old code never reached
+    // setLoading(false) and the screen sat on "Loading billing..." forever —
+    // which is what a simulator sweep of /billing showed: 3 elements, a
+    // spinner, and no way out. A permanent spinner is worse than an error,
+    // because the user cannot tell it from a slow network.
+    try {
+      const res = await subscriptionApi.getBillingOverview();
+      if (res.success && res.data) {
+        setBilling(res.data);
+      } else {
+        setError(res.error?.message ?? "Unable to load billing right now.");
+      }
+    } catch {
+      setError("Unable to load billing right now.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {

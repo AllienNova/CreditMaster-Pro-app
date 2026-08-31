@@ -40,8 +40,6 @@ interface SubscriptionStats {
   activeCount: number;
   pendingCancellationCount: number;
   cancelledCount: number;
-  potentialMonthlySavings: number;
-  potentialAnnualSavings: number;
 }
 
 type FilterStatus = "all" | "active" | "pending_cancellation" | "cancelled";
@@ -51,114 +49,13 @@ type SortBy = "name" | "amount" | "nextBillingDate" | "category";
 // Mock Data
 // ============================================================================
 
-const mockSubscriptions: Subscription[] = [
-  {
-    id: "1",
-    name: "Netflix",
-    merchantName: "Netflix Inc",
-    amount: 15.99,
-    frequency: "monthly",
-    category: "Entertainment",
-    status: "active",
-    nextBillingDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
-    logoUrl: "/logos/netflix.png",
-    annualCost: 191.88,
-  },
-  {
-    id: "2",
-    name: "Spotify Premium",
-    merchantName: "Spotify AB",
-    amount: 10.99,
-    frequency: "monthly",
-    category: "Entertainment",
-    status: "active",
-    nextBillingDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
-    logoUrl: "/logos/spotify.png",
-    annualCost: 131.88,
-  },
-  {
-    id: "3",
-    name: "Adobe Creative Cloud",
-    merchantName: "Adobe Inc",
-    amount: 54.99,
-    frequency: "monthly",
-    category: "Software",
-    status: "active",
-    nextBillingDate: new Date(Date.now() + 22 * 24 * 60 * 60 * 1000),
-    logoUrl: "/logos/adobe.png",
-    annualCost: 659.88,
-  },
-  {
-    id: "4",
-    name: "Planet Fitness",
-    merchantName: "Planet Fitness",
-    amount: 24.99,
-    frequency: "monthly",
-    category: "Health & Fitness",
-    status: "pending_cancellation",
-    nextBillingDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-    logoUrl: "/logos/planet-fitness.png",
-    annualCost: 299.88,
-  },
-  {
-    id: "5",
-    name: "Amazon Prime",
-    merchantName: "Amazon.com",
-    amount: 139.0,
-    frequency: "yearly",
-    category: "Shopping",
-    status: "active",
-    nextBillingDate: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000),
-    logoUrl: "/logos/amazon.png",
-    annualCost: 139.0,
-  },
-  {
-    id: "6",
-    name: "Disney+",
-    merchantName: "Disney Plus",
-    amount: 7.99,
-    frequency: "monthly",
-    category: "Entertainment",
-    status: "active",
-    nextBillingDate: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000),
-    logoUrl: "/logos/disney.png",
-    annualCost: 95.88,
-  },
-  {
-    id: "7",
-    name: "Hulu",
-    merchantName: "Hulu LLC",
-    amount: 12.99,
-    frequency: "monthly",
-    category: "Entertainment",
-    status: "cancelled",
-    nextBillingDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    logoUrl: "/logos/hulu.png",
-    annualCost: 155.88,
-  },
-  {
-    id: "8",
-    name: "iCloud+",
-    merchantName: "Apple Inc",
-    amount: 2.99,
-    frequency: "monthly",
-    category: "Storage",
-    status: "active",
-    nextBillingDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000),
-    logoUrl: "/logos/icloud.png",
-    annualCost: 35.88,
-  },
-];
+/*
+ * `mockSubscriptions` (eight invented subscriptions) and `mockStats`
+ * (totals, counts and $563.15 of "potential annual savings") lived here.
+ * Both are gone: the list comes from GET /api/financial/subscriptions and the
+ * stats are computed from those same rows. See loadData below.
+ */
 
-const mockStats: SubscriptionStats = {
-  totalMonthlySpend: 156.43,
-  totalAnnualSpend: 1877.16,
-  activeCount: 7,
-  pendingCancellationCount: 1,
-  cancelledCount: 1,
-  potentialMonthlySavings: 46.93,
-  potentialAnnualSavings: 563.15,
-};
 
 // ============================================================================
 // Helper Functions
@@ -400,10 +297,16 @@ function SubscriptionsEmptyState() {
 // ============================================================================
 
 export default function SubscriptionsPage() {
-  const [subscriptions, setSubscriptions] =
-    useState<Subscription[]>(mockSubscriptions);
-  const [stats, setStats] = useState<SubscriptionStats>(mockStats);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [stats, setStats] = useState<SubscriptionStats>({
+    totalMonthlySpend: 0,
+    totalAnnualSpend: 0,
+    activeCount: 0,
+    pendingCancellationCount: 0,
+    cancelledCount: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [sortBy, setSortBy] = useState<SortBy>("nextBillingDate");
   const [searchQuery, setSearchQuery] = useState("");
@@ -411,15 +314,65 @@ export default function SubscriptionsPage() {
     useState<Subscription | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
+  /*
+   * WHAT THIS REPLACED. `mockSubscriptions` and `mockStats` seeded the page,
+   * and loadData was `await new Promise(setTimeout 800)` followed by setting
+   * both — eight hundred milliseconds of spinner over no request.
+   *
+   * The stats are now COMPUTED FROM THE SAME ROWS the list renders, so the
+   * summary and the list cannot disagree — the failure mode that gave
+   * financial/transactions a spending chart contradicting its own ledger.
+   *
+   * Potential Savings is GONE rather than estimated. Both the tile and the
+   * banner ("We found $X in potential savings!") asserted the result of an
+   * analysis that does not exist: nothing here decides which subscriptions a
+   * user does not need. Claiming a finding no analysis produced is the same
+   * shape as the dark-web breach card removed earlier today.
+   */
   const loadData = useCallback(async () => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setSubscriptions(mockSubscriptions);
-    setStats(mockStats);
+    setIsLoading(true);
+    setLoadFailed(false);
+    try {
+      const res = await fetch("/api/financial/subscriptions");
+      if (!res.ok) throw new Error(String(res.status));
+      const json = await res.json();
+      const rows: Subscription[] = Array.isArray(json.subscriptions)
+        ? json.subscriptions
+        : [];
+      setSubscriptions(rows);
+
+      const monthlyOf = (sub: Subscription) => {
+        switch (sub.frequency) {
+          case "weekly":
+            return sub.amount * (52 / 12);
+          case "quarterly":
+            return sub.amount / 3;
+          case "yearly":
+            return sub.amount / 12;
+          default:
+            return sub.amount;
+        }
+      };
+      const active = rows.filter((r) => r.status === "active");
+      const monthly = active.reduce((sum, r) => sum + monthlyOf(r), 0);
+      setStats({
+        totalMonthlySpend: monthly,
+        totalAnnualSpend: monthly * 12,
+        activeCount: active.length,
+        pendingCancellationCount: rows.filter(
+          (r) => r.status === "pending_cancellation",
+        ).length,
+        cancelledCount: rows.filter((r) => r.status === "cancelled").length,
+      });
+    } catch {
+      // A failed read is not "you have no subscriptions".
+      setLoadFailed(true);
+    }
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
-    loadData().then(() => setIsLoading(false));
+    loadData();
   }, [loadData]);
 
   // Filter and sort subscriptions
@@ -541,13 +494,6 @@ export default function SubscriptionsPage() {
             iconColor="#8B5CF6"
           />
           <StatCard
-            title="Potential Savings"
-            value={formatCurrency(stats.potentialMonthlySavings)}
-            subtitle="/month"
-            icon={SparklesIcon}
-            iconColor="#22C55E"
-          />
-          <StatCard
             title="Pending Cancellation"
             value={stats.pendingCancellationCount.toString()}
             subtitle="subscriptions"
@@ -556,31 +502,14 @@ export default function SubscriptionsPage() {
           />
         </div>
 
-        {/* AI Savings Banner */}
-        {stats.potentialAnnualSavings > 100 && (
-          <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl p-5 mb-6 text-white">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white dark:bg-slate-800/20 rounded-lg">
-                  <SparklesIcon className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">
-                    We found {formatCurrency(stats.potentialAnnualSavings)} in
-                    potential savings!
-                  </h3>
-                  <p className="text-white/80 text-sm">
-                    Get AI-powered cancellation assistance for subscriptions you
-                    don't need
-                  </p>
-                </div>
-              </div>
-              <button className="px-4 py-2 bg-white text-emerald-600 rounded-lg font-medium hover:bg-white dark:bg-slate-800/90 transition-colors">
-                Review Suggestions
-              </button>
-            </div>
-          </div>
-        )}
+        {/*
+          An "AI Savings Banner" lived here: "We found $X in potential
+          savings!" over a Review Suggestions button, gated on
+          stats.potentialAnnualSavings > 100 — a threshold on an invented
+          number. Nothing in this app decides which subscriptions a user does
+          not need, so there was no analysis to have found anything, and the
+          button led to no suggestions. Removed with the constant it read.
+        */}
 
         {/* Filters */}
         <div className="flex flex-col gap-4 mb-6">

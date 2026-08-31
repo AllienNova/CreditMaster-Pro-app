@@ -34,7 +34,13 @@ export default function FinancialIntelligenceLayout() {
         name="index"
         options={{
           title: "Financial Intelligence",
-          headerLeft: undefined,
+        // headerShown: false — this is the stack ROOT, and React Navigation
+        // draws no back button on a root. Leaving the default on gave a
+        // titled bar with nothing to press, above the screen's own header.
+          // `headerLeft: undefined` used to sit here — someone saw the
+          // back button and tried to remove it. Turning the bar off is the
+          // actual fix; the screen supplies its own header.
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -52,6 +58,7 @@ export default function FinancialIntelligenceLayout() {
       <Stack.Screen
         name="spending-insights"
         options={{
+          headerShown: false,
           title: "Spending Insights",
         }}
       />

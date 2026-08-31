@@ -13,13 +13,13 @@ import {
   ActivityIndicator,
   RefreshControl,
   Dimensions,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LineChart, PieChart } from "react-native-chart-kit";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 const { width } = Dimensions.get("window");
 
@@ -618,6 +618,7 @@ const Insights: React.FC<InsightsProps> = ({ insights }) => {
  */
 export default function SpendingInsightsScreen() {
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   const [analysis, setAnalysis] = useState<SpendingAnalysis | null>(null);
@@ -627,6 +628,7 @@ export default function SpendingInsightsScreen() {
       setLoading(true);
 
       // Parallel API calls
+      setLoadFailed(false);
       const [analysisRes, trendsRes, insightsRes, anomaliesRes] =
         await Promise.all([
           fetch(`/api/financial/spending/analysis?timeRange=${timeRange}`),
@@ -656,10 +658,12 @@ export default function SpendingInsightsScreen() {
       setAnalysis(combinedAnalysis);
     } catch (error) {
       if (__DEV__) console.error("Error fetching spending data:", error);
-      Alert.alert(
-        "Error",
-        "Failed to load spending insights. Please try again.",
-      );
+      // NOT Alert.alert. This runs on mount, and a native alert is a separate
+      // window: it covers the whole screen, offers only "OK" with no retry,
+      // and stays up until dismissed. It also masked every route measured
+      // after this one in the 2026-08-18 device sweep, which is how a 57-route
+      // run reported 0 FAIL over 31 screens nobody had looked at.
+      setLoadFailed(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -705,6 +709,21 @@ export default function SpendingInsightsScreen() {
     }
   };
 
+  if (loadFailed && !analysis) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.emptyText}>
+            We could not load your spending insights.
+          </Text>
+          <TouchableOpacity onPress={fetchSpendingData}>
+            <Text style={styles.retryText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (loading && !analysis) {
     return (
       <SafeAreaView style={styles.container}>
@@ -718,8 +737,8 @@ export default function SpendingInsightsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <ScreenHeader title="Spending Insights" />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Spending Insights</Text>
         {analysis && (
           <View style={styles.headerStats}>
             <Text style={styles.headerStatLabel}>Total Spent</Text>
@@ -774,6 +793,12 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    marginTop: 12,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -790,12 +815,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
   },
   headerStats: {
     flexDirection: "row",

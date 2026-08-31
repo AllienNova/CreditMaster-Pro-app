@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { timingSafeEqual } from "@/lib/security/timing-safe-equal";
+import { verifyCronRequest } from "@/lib/security/cron-auth";
 
 // Lazy initialization to avoid build-time errors
 function getSupabase(): SupabaseClient {
@@ -14,16 +14,14 @@ function getSupabase(): SupabaseClient {
   return createClient(url, key);
 }
 
-// Verify cron secret to prevent unauthorized access
-function verifyCronSecret(request: Request): boolean {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) return false;
-  return timingSafeEqual(authHeader, `Bearer ${process.env.CRON_SECRET}`);
-}
 
 export async function GET(request: Request) {
   // Verify this is a legitimate cron request
-  if (process.env.NODE_ENV === "production" && !verifyCronSecret(request)) {
+  // Gated in EVERY environment, not just production. These jobs mutate data
+  // for all users, and a staging or preview deploy running with any other
+  // NODE_ENV was previously wide open. Local runs set CRON_SECRET like any
+  // other credential.
+  if (!verifyCronRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -34,6 +32,7 @@ export async function GET(request: Request) {
 
     // Find disputes sent more than 30 days ago still pending
     const { data: overdueDisputes, error } = await supabase
+      // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
       .from("disputes")
       .select("id, user_id, bureau, item_type, sent_at")
       .eq("status", "sent")
@@ -51,6 +50,7 @@ export async function GET(request: Request) {
     for (const dispute of overdueDisputes || []) {
       // Update status to "no_response" after 30 days
       await supabase
+        // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
         .from("disputes")
         .update({
           status: "no_response",
@@ -63,6 +63,7 @@ export async function GET(request: Request) {
       results.updated++;
 
       // Create notification for user
+      // idor-audit: cross-user — system batch job over all users; no user session exists and the route is gated by CRON_SECRET
       const { error: notifyError } = await supabase.from("notifications").insert({
         user_id: dispute.user_id,
         type: "dispute_overdue",

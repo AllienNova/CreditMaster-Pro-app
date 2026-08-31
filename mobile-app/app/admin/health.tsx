@@ -27,6 +27,7 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenError } from "../../src/components/ScreenError";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { adminHealthApi } from "../../src/services/api/admin";
@@ -34,6 +35,7 @@ import type {
   ServiceHealthStatus,
   SystemHealth,
 } from "../../src/services/api/admin";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 // Overall headline per status. "All Systems Operational" appears ONLY when the
 // route's worst-component-wins overall is genuinely `healthy` (every probe
@@ -86,8 +88,14 @@ export default function AdminHealthScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    await fetchHealth();
-    setLoading(false);
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      await fetchHealth();
+    } finally {
+      setLoading(false);
+    }
   }, [fetchHealth]);
 
   useEffect(() => {
@@ -101,31 +109,17 @@ export default function AdminHealthScreen() {
   };
 
   if (loading && !health) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="admin-health-loading">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Checking system health...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="System Health" message="Checking system health..." testID="admin-health-loading" />;
   }
 
   if (error && !health) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="admin-health-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.stateText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={load}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="System Health"
+        message={error}
+        onRetry={load}
+        testID="admin-health-error"
+      />
     );
   }
 

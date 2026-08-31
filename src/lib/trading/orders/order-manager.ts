@@ -9,7 +9,23 @@
  * - Order history and audit logging
  */
 
-import { createClient } from "@/lib/supabase/server";
+/**
+ * Service-role client, NOT the request-scoped `createClient()`.
+ *
+ * `orders` deliberately grants `authenticated` no table privilege, so every
+ * query here returned Postgres 42501 "permission denied for table orders" and
+ * /api/trading/orders answered 500 for every caller. Rationale for the missing
+ * grant is documented in
+ * supabase/migrations/20260731000009_financial_accounts_revoke_authenticated.sql:
+ * no grant means a mis-scoped read fails LOUDLY instead of silently returning
+ * zero rows. Granting `authenticated` SELECT here would "fix" the 500 by
+ * reintroducing exactly the silent-empty-read class that migration closed.
+ *
+ * The service role bypasses RLS, so user scoping is now this module's own
+ * responsibility — see the unconditional `.eq("user_id", …)` in getOrders and
+ * the required `OrderFilter.userId`.
+ */
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import { logger } from "@/lib/monitoring/logger";
 import {
   Order,
@@ -466,17 +482,31 @@ export class OrderManager {
     return this.openOrders.get(orderId);
   }
 
-  async getOrders(filter: OrderFilter): Promise<Order[]> {
-    const supabase = await createClient();
+  /**
+   * `userId` is a required positional argument, not a field on `filter`.
+   *
+   * This query runs under the service role, which bypasses RLS, so the
+   * `.eq("user_id", …)` below is the only thing separating one user's orders
+   * from every other user's. As a filter field it was optional and applied
+   * behind `if (filter.userId)` — survivable while RLS was doing the work,
+   * an enumeration hole without it. As a parameter, omitting it will not
+   * compile.
+   */
+  async getOrders(userId: string, filter: OrderFilter = {}): Promise<Order[]> {
+    const supabase = getServiceRoleClient();
 
+    // The user filter is CHAINED here, not applied on a later line.
+    //
+    // It is unconditional either way, but audit:idor reads the query chain from
+    // `.from(` to the end of the statement — a `query = query.eq("user_id", …)`
+    // on its own line is invisible to it, so the scoping cannot be verified by
+    // the tool that exists to verify it. Keeping it in the chain means the
+    // guarantee is checkable, not just true.
     let query = supabase
       .from("orders")
       .select("*")
+      .eq("user_id", userId)
       .order("created_at", { ascending: false });
-
-    if (filter.userId) {
-      query = query.eq("user_id", filter.userId);
-    }
 
     if (filter.status && filter.status.length > 0) {
       query = query.in("status", filter.status);
@@ -700,9 +730,10 @@ export class OrderManager {
   // @supabase/postgrest-js/src/PostgrestBuilder.ts), and the old code never
   // even read `error` off the result, so the try/catch had nothing to catch.
   private async persistOrder(order: Order): Promise<void> {
-    const supabase = await createClient();
+    const supabase = getServiceRoleClient();
 
     const { error } = await (
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       supabase.from("orders") as unknown as OrdersTableClient
     ).upsert({
       id: order.id,
@@ -748,10 +779,20 @@ export class OrderManager {
   // still folds into null, since this is a single-record lookup used as a
   // fallback for an order missing from the in-memory Map; the caller already
   // treats null as "order not found" and handles it accordingly.
+  //
+  // NO user_id filter here, deliberately, and this is the one place in the
+  // module where that is correct. The only callers are handleOrderUpdate's
+  // internal state transitions and the broker realtime subscription
+  // (realtime/order-execution-engine.ts:219) — machine-to-machine paths whose
+  // orderId comes from the broker for an order this system placed, with no user
+  // session in scope. No HTTP route reaches it with a client-supplied id;
+  // /api/trading/orders does its own `ownsOrder` checks. Do not "harden" this by
+  // adding a filter it has no userId to supply — check the call chain first.
   private async loadOrderFromDb(orderId: string): Promise<Order | null> {
     try {
-      const supabase = await createClient();
+      const supabase = getServiceRoleClient();
       const { data, error } = await supabase
+        // idor-audit: pk-owner-checked — orderId comes from the broker realtime callback for an order this system placed; no HTTP route reaches this with a client-supplied id
         .from("orders")
         .select("*")
         .eq("id", orderId)

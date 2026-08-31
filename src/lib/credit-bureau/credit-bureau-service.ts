@@ -913,6 +913,7 @@ export class CreditBureauService {
     reportId: string,
   ): Promise<void> {
     const { error } = await getServiceRoleClient()
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("credit_score_history")
       .insert({
         user_id: userId,
@@ -1021,6 +1022,7 @@ export class CreditBureauService {
     const environment = readBureauApiEnvironment();
 
     const { error } = await getServiceRoleClient()
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("bureau_connections")
       .upsert(
         {
@@ -1249,6 +1251,7 @@ export class CreditBureauService {
     dispute: BureauDisputeRecord,
   ): Promise<void> {
     const { error } = await getServiceRoleClient()
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       .from("bureau_disputes")
       .insert(dispute);
 

@@ -30,10 +30,12 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenError } from "../../src/components/ScreenError";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { billsApi } from "../../src/services/api/financial";
 import type { BillItem } from "../../src/services/api/financial";
+import { toArray } from "../../src/store/toArray";
 
 // dueDate arrives as an ISO string; render a compact locale date.
 function formatDate(iso?: string): string {
@@ -58,7 +60,7 @@ export default function PaymentsScreen() {
   const fetchBills = useCallback(async () => {
     const res = await billsApi.getBills();
     if (res.success && res.data) {
-      setBills(res.data.bills);
+      setBills(toArray<BillItem>(res?.data?.bills));
       setError(null);
     } else {
       setError(res.error?.message ?? "Unable to load bills.");
@@ -67,8 +69,14 @@ export default function PaymentsScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    await fetchBills();
-    setLoading(false);
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      await fetchBills();
+    } finally {
+      setLoading(false);
+    }
   }, [fetchBills]);
 
   useEffect(() => {
@@ -99,19 +107,12 @@ export default function PaymentsScreen() {
 
   if (error && bills.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="credit-repair-payments-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.stateText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={load}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="Bills"
+        message={error}
+        onRetry={load}
+        testID="credit-repair-payments-error"
+      />
     );
   }
 

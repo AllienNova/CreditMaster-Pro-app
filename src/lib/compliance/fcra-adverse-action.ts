@@ -115,6 +115,7 @@ export class FCRAAdverseActionService {
       freeReportDeadline,
     };
 
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await this.dbClient.from("adverse_action_notices").insert({
       id: notice.id,
       user_id: notice.userId,
@@ -128,6 +129,7 @@ export class FCRAAdverseActionService {
       created_at: new Date().toISOString(),
     });
 
+    // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
     await this.dbClient.from("audit_logs").insert({
       user_id: params.userId,
       action: "fcra_adverse_action_notice",

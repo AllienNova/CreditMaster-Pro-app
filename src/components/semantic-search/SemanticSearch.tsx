@@ -1,10 +1,35 @@
 "use client";
 
 /**
- * Semantic Search Component
+ * Semantic Search.
  *
- * Provides semantic search functionality using text embeddings and vector similarity.
- * Integrates with AIML API for embedding generation.
+ * WHAT THIS COMPONENT DID WITHOUT A BACKEND.
+ *
+ * `SAMPLE_RESULTS` held four documents with similarity scores — "FCRA Rights
+ * and Dispute Process, 95% match" — and the search handler ended:
+ *
+ *     setResults(filtered.length > 0 ? filtered : SAMPLE_RESULTS);
+ *
+ * So a query matching nothing returned EVERYTHING, at full confidence. Any
+ * string typed into the box produced four confident results about the reader's
+ * legal rights. An 800 ms `setTimeout` sat in front of it, whose only purpose
+ * was to make the fabrication feel like work being done.
+ *
+ * `SAMPLE_INDEXES` claimed a corpus to go with it: "All Documents (1250)",
+ * "Credit Laws & Regulations (120)". There is no document index, no embedding
+ * store, and no semantic search route anywhere in this codebase — the only
+ * three search routes are transactions, marketplace products and marketplace
+ * providers, none of them this.
+ *
+ * WHAT IT DOES NOW. `onSearch` is the only way results appear. Without it the
+ * component says search is unavailable instead of simulating it, and the index
+ * list defaults to empty rather than to invented document counts.
+ *
+ * THIS COMPONENT IS MOUNTED NOWHERE. Nothing outside its own barrel and test
+ * imports it, so none of the above ever reached a reader. It is left in place
+ * rather than deleted because removing a module is the owner's call; what is
+ * removed here is its ability to invent, so that whoever mounts it next gets
+ * an honest empty state rather than four fake legal documents.
  */
 
 import { useState, useCallback } from "react";
@@ -32,71 +57,8 @@ interface SemanticSearchProps {
   className?: string;
 }
 
-// Sample results for demonstration
-const SAMPLE_RESULTS: SearchResult[] = [
-  {
-    id: "1",
-    title: "FCRA Rights and Dispute Process",
-    content:
-      "The Fair Credit Reporting Act (FCRA) gives you the right to dispute inaccurate information on your credit report...",
-    similarity: 0.95,
-    highlights: ["dispute", "credit report"],
-  },
-  {
-    id: "2",
-    title: "How to Write an Effective Dispute Letter",
-    content:
-      "When writing a dispute letter to a credit bureau, be specific about the item you are disputing...",
-    similarity: 0.89,
-    highlights: ["dispute letter", "credit bureau"],
-  },
-  {
-    id: "3",
-    title: "Understanding Credit Score Factors",
-    content:
-      "Your credit score is calculated based on five main factors: payment history, credit utilization...",
-    similarity: 0.82,
-    highlights: ["credit score", "payment history"],
-  },
-  {
-    id: "4",
-    title: "Dealing with Collection Agencies",
-    content:
-      "If you have a collection account on your credit report, you have several options for dispute and removal...",
-    similarity: 0.78,
-    highlights: ["collection", "removal"],
-  },
-];
-
-const SAMPLE_INDEXES: DocumentIndex[] = [
-  {
-    id: "all",
-    name: "All Documents",
-    documentCount: 1250,
-    lastUpdated: "2024-01-15",
-  },
-  {
-    id: "disputes",
-    name: "Dispute Templates",
-    documentCount: 45,
-    lastUpdated: "2024-01-14",
-  },
-  {
-    id: "laws",
-    name: "Credit Laws & Regulations",
-    documentCount: 120,
-    lastUpdated: "2024-01-10",
-  },
-  {
-    id: "guides",
-    name: "User Guides",
-    documentCount: 85,
-    lastUpdated: "2024-01-12",
-  },
-];
-
 export default function SemanticSearch({
-  indexes = SAMPLE_INDEXES,
+  indexes = [],
   onSearch,
   placeholder = "Search documents using natural language...",
   className = "",
@@ -106,30 +68,32 @@ export default function SemanticSearch({
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
 
-    setIsSearching(true);
     setHasSearched(true);
 
+    // No backend, no results. The previous branch here fell back to a fixed
+    // set of documents whenever the query matched nothing, so every search
+    // succeeded whatever was typed.
+    if (!onSearch) {
+      setResults([]);
+      setUnavailable(true);
+      return;
+    }
+
+    setUnavailable(false);
+    setFailed(false);
+    setIsSearching(true);
     try {
-      if (onSearch) {
-        const searchResults = await onSearch(query, selectedIndex);
-        setResults(searchResults);
-      } else {
-        // Simulate search with sample data
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        const filtered = SAMPLE_RESULTS.filter(
-          (r) =>
-            r.title.toLowerCase().includes(query.toLowerCase()) ||
-            r.content.toLowerCase().includes(query.toLowerCase()),
-        );
-        setResults(filtered.length > 0 ? filtered : SAMPLE_RESULTS);
-      }
+      setResults(await onSearch(query, selectedIndex));
     } catch (error) {
       console.error("Search error:", error);
       setResults([]);
+      setFailed(true);
     } finally {
       setIsSearching(false);
     }
@@ -199,8 +163,29 @@ export default function SemanticSearch({
         </button>
       </div>
 
+      {unavailable && (
+        <div className="p-4 border border-amber-200 dark:border-amber-900/50 rounded-lg">
+          <p className="font-medium text-gray-900 dark:text-white mb-1">
+            Search is not connected
+          </p>
+          <p className="text-sm text-gray-600 dark:text-slate-300">
+            There is no document index behind this yet, so there is nothing to
+            search. We would rather tell you that than return documents we made
+            up.
+          </p>
+        </div>
+      )}
+
+      {failed && (
+        <div className="p-4 border border-amber-200 dark:border-amber-900/50 rounded-lg">
+          <p className="text-sm text-gray-600 dark:text-slate-300">
+            The search failed. No results are shown in its place.
+          </p>
+        </div>
+      )}
+
       {/* Results */}
-      {hasSearched && (
+      {hasSearched && !unavailable && !failed && (
         <div className="space-y-4">
           <p className="text-sm text-gray-500 dark:text-slate-400">
             {isSearching

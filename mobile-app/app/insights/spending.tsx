@@ -33,6 +33,7 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenError } from "../../src/components/ScreenError";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { financialOverviewApi } from "../../src/services/api/financial";
@@ -41,6 +42,7 @@ import type {
   SpendingPatternKind,
   SpendingSeverity,
 } from "../../src/services/api/financial";
+import { ScreenLoading } from "../../src/components/ScreenLoading";
 
 type Period = "7d" | "30d" | "90d";
 const PERIOD_DAYS: Record<Period, number> = { "7d": 7, "30d": 30, "90d": 90 };
@@ -146,8 +148,14 @@ export default function SpendingAnalysisScreen() {
 
   const loadAnalysis = useCallback(async () => {
     setLoading(true);
-    await fetchAnalysis();
-    setLoading(false);
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      await fetchAnalysis();
+    } finally {
+      setLoading(false);
+    }
   }, [fetchAnalysis]);
 
   // Fetch on mount and whenever the period filter changes (fetchAnalysis depends on it).
@@ -166,31 +174,17 @@ export default function SpendingAnalysisScreen() {
     (analysis.categories.length > 0 || analysis.patterns.length > 0);
 
   if (loading && !analysis) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="insights-spending-loading">
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Analyzing your spending...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <ScreenLoading title="Spending Analysis" message="Analyzing your spending..." testID="insights-spending-loading" />;
   }
 
   if (error && !analysis) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="insights-spending-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.stateText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadAnalysis}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="Spending Analysis"
+        message={error}
+        onRetry={loadAnalysis}
+        testID="insights-spending-error"
+      />
     );
   }
 

@@ -22,6 +22,7 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenError } from "../../src/components/ScreenError";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { useGoalStore } from "../../src/store/goalStore";
@@ -88,19 +89,12 @@ export default function SavingsScreen() {
 
   if (error && !hasData) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="savings-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={load}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="Savings Tracker"
+        message={error}
+        onRetry={load}
+        testID="savings-error"
+      />
     );
   }
 
@@ -141,7 +135,14 @@ export default function SavingsScreen() {
                 color={theme.colors.success}
               />
               <Text style={styles.interestText}>
-                {dashboard.savingsRate.toFixed(0)}% savings rate
+                {/* `dashboard &&` above only proves the object exists, not that
+                    this field does — the same truthiness-guard gap that crashed
+                    the Home tab on `gamification.level.current`. A payload
+                    without `savingsRate` makes `.toFixed` throw and the
+                    ErrorBoundary replaces the screen. dashboardStore already
+                    treats the field as optional (`?.savingsRate || 0`, :121),
+                    so the type's `savingsRate: number` is not a guarantee. */}
+                {(dashboard.savingsRate ?? 0).toFixed(0)}% savings rate
               </Text>
             </View>
             <View style={styles.statsRow}>

@@ -50,6 +50,7 @@ function bill(over: Partial<BillItem> = {}): BillItem {
     dueDate: "2026-03-20T00:00:00.000Z",
     category: "utilities",
     isAutoPay: true,
+    frequency: "monthly",
     ...over,
   };
 }

@@ -99,7 +99,7 @@ describe("HealthScoreCard", () => {
 
     await waitFor(() => {
       const link = screen.getByText(/View Details/);
-      expect(link.closest("a")).toHaveAttribute("href", "/financial/health");
+      expect(link.closest("a")).toHaveAttribute("href", "/financial-hub");
     });
   });
 

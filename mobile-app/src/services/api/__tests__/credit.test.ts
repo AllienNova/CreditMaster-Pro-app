@@ -40,7 +40,7 @@ describe("Credit Score API", () => {
 
       const result = await creditScoreApi.getScores();
 
-      expect(api.get).toHaveBeenCalledWith("/credit/scores", {
+      expect(api.get).toHaveBeenCalledWith("/credit-monitoring/scores", {
         enableCache: true,
         cacheTime: 300000,
       });
@@ -49,18 +49,34 @@ describe("Credit Score API", () => {
   });
 
   describe("getScoreByBureau", () => {
-    it("should fetch score for specific bureau", async () => {
-      const mockScore = { bureau: "experian", score: 720 };
+    // There is no per-bureau route. The collection endpoint returns every
+    // bureau ("Get current credit scores for all bureaus", scores/route.ts:8)
+    // and the selection happens client-side. The old assertion pinned
+    // /credit/scores/experian, which 404'd for all three bureaus.
+    it("reads the collection and selects the requested bureau", async () => {
+      const experian = { bureau: "experian", score: 720 };
+      const equifax = { bureau: "equifax", score: 705 };
 
       (api.get as jest.Mock).mockResolvedValueOnce({
         success: true,
-        data: mockScore,
+        data: [equifax, experian],
       });
 
       const result = await creditScoreApi.getScoreByBureau("experian");
 
-      expect(api.get).toHaveBeenCalledWith("/credit/scores/experian");
-      expect(result.data).toEqual(mockScore);
+      expect(api.get).toHaveBeenCalledWith("/credit-monitoring/scores");
+      expect(result.data).toEqual(experian);
+    });
+
+    it("returns undefined rather than the wrong bureau when absent", async () => {
+      (api.get as jest.Mock).mockResolvedValueOnce({
+        success: true,
+        data: [{ bureau: "equifax", score: 705 }],
+      });
+
+      const result = await creditScoreApi.getScoreByBureau("experian");
+
+      expect(result.data).toBeUndefined();
     });
   });
 
@@ -73,17 +89,25 @@ describe("Credit Score API", () => {
         data: mockHistory,
       });
 
-      await creditScoreApi.getHistory(6);
+      await creditScoreApi.getHistory("experian", 180);
 
-      expect(api.get).toHaveBeenCalledWith("/credit/scores/history?months=6");
+      // The route reads `bureau` and `days`. It reads no `months` at all, and
+      // answers 400 without a bureau — so the previous assertion here
+      // (`?months=6`, and a second case with NO params) was pinning a call
+      // that failed every single time it was made.
+      expect(api.get).toHaveBeenCalledWith(
+        "/credit-monitoring/history?bureau=experian&days=180",
+      );
     });
 
-    it("should fetch score history without params", async () => {
+    it("defaults to a year when no window is given", async () => {
       (api.get as jest.Mock).mockResolvedValueOnce({ success: true, data: {} });
 
-      await creditScoreApi.getHistory();
+      await creditScoreApi.getHistory("transunion");
 
-      expect(api.get).toHaveBeenCalledWith("/credit/scores/history");
+      expect(api.get).toHaveBeenCalledWith(
+        "/credit-monitoring/history?bureau=transunion&days=365",
+      );
     });
   });
 
@@ -153,7 +177,7 @@ describe("Credit Monitoring API", () => {
 
       const result = await creditMonitoringApi.getStatus();
 
-      expect(api.get).toHaveBeenCalledWith("/credit/monitoring/status");
+      expect(api.get).toHaveBeenCalledWith("/credit-monitoring");
       expect(result.data).toEqual(mockStatus);
     });
   });
@@ -171,36 +195,39 @@ describe("Credit Monitoring API", () => {
         unreadOnly: true,
       });
 
+      // These three assertions previously pinned the paths the client USED
+      // rather than the ones the server SERVES, so they passed while every one
+      // of these calls 404'd. They now encode the real contract in
+      // src/app/api/credit-monitoring/alerts/route.ts.
       expect(api.get).toHaveBeenCalledWith(
-        "/credit/monitoring/alerts?page=1&limit=10&unread=true",
+        "/credit-monitoring/alerts?page=1&limit=10&unreadOnly=true",
       );
     });
   });
 
   describe("acknowledgeAlert", () => {
-    it("should acknowledge single alert", async () => {
+    it("PATCHes the collection with the alert id in the body", async () => {
       (api.patch as jest.Mock).mockResolvedValueOnce({ success: true });
 
       await creditMonitoringApi.acknowledgeAlert("alert-123");
 
-      expect(api.patch).toHaveBeenCalledWith(
-        "/credit/monitoring/alerts/alert-123/acknowledge",
-      );
+      // No per-alert sub-route exists; route.ts:63 reads `alertId` from the body.
+      expect(api.patch).toHaveBeenCalledWith("/credit-monitoring/alerts", {
+        alertId: "alert-123",
+      });
     });
   });
 
   describe("acknowledgeAllAlerts", () => {
-    it("should acknowledge all alerts", async () => {
-      (api.post as jest.Mock).mockResolvedValueOnce({
-        success: true,
-        data: { acknowledged: 5 },
-      });
+    it("PATCHes the collection with markAllAsRead", async () => {
+      (api.patch as jest.Mock).mockResolvedValueOnce({ success: true });
 
       await creditMonitoringApi.acknowledgeAllAlerts();
 
-      expect(api.post).toHaveBeenCalledWith(
-        "/credit/monitoring/alerts/acknowledge-all",
-      );
+      // route.ts:61 branches on `markAllAsRead`.
+      expect(api.patch).toHaveBeenCalledWith("/credit-monitoring/alerts", {
+        markAllAsRead: true,
+      });
     });
   });
 });
@@ -215,22 +242,19 @@ describe("Credit Report API", () => {
 
       await creditReportApi.getReports();
 
-      expect(api.get).toHaveBeenCalledWith("/credit/reports");
+      expect(api.get).toHaveBeenCalledWith("/credit-bureau/report");
     });
   });
 
-  describe("getReport", () => {
-    it("should fetch single report", async () => {
-      (api.get as jest.Mock).mockResolvedValueOnce({
-        success: true,
-        data: { id: "report-1" },
-      });
-
-      await creditReportApi.getReport("report-1");
-
-      expect(api.get).toHaveBeenCalledWith("/credit/reports/report-1");
-    });
-  });
+  /*
+   * The getReport suite is gone with the method.
+   *
+   * It asserted `api.get("/credit/reports/report-1")` — a route that has never
+   * existed — so it locked in the '/' vs '-' drift rather than catching it: the
+   * real route is /credit-repair/reports/:id. The method had no callers either;
+   * app/reports/[id].tsx uses creditRepairApi.getReport, which fetches the
+   * correct path and is covered by ReportDetailScreen.test.tsx.
+   */
 
   describe("analyzeReport", () => {
     it("should request AI analysis", async () => {
@@ -241,7 +265,9 @@ describe("Credit Report API", () => {
 
       await creditReportApi.analyzeReport("report-1");
 
-      expect(api.post).toHaveBeenCalledWith("/credit/reports/report-1/analyze");
+      expect(api.post).toHaveBeenCalledWith("/credit-bureau/analyze", {
+        reportId: "report-1",
+      });
     });
   });
 });

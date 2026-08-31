@@ -30,7 +30,10 @@ export default function LoginScreen() {
     clearError();
     const success = await login(email, password);
     if (success) {
-      router.replace("/(tabs)");
+      // Back through the root, which owns the signed-in/onboarded decision.
+      // Jumping straight to the tabs skipped the setup wizard for anyone who
+      // had abandoned it, and put a third copy of this branch in the app.
+      router.replace("/");
     }
   };
 

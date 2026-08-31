@@ -19,9 +19,9 @@ export default function CreditLayout() {
         name="index"
         options={{ title: "Credit Score", headerShown: false }}
       />
-      <Stack.Screen name="score-detail" options={{ title: "Score Details" }} />
-      <Stack.Screen name="history" options={{ title: "Score History" }} />
-      <Stack.Screen name="factors" options={{ title: "Credit Factors" }} />
+      <Stack.Screen name="score-detail" options={{ headerShown: false, title: "Score Details" }} />
+      <Stack.Screen name="history" options={{ headerShown: false, title: "Score History" }} />
+      <Stack.Screen name="factors" options={{ headerShown: false, title: "Credit Factors" }} />
       <Stack.Screen
         name="bureau-comparison"
         options={{ title: "Bureau Comparison" }}

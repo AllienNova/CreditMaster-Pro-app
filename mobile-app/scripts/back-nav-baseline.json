@@ -1,0 +1,5 @@
+{
+  "frozen": "2026-08-17",
+  "why": "Screens with no way back, recorded so the count can only shrink. Reported from a device screenshot of /marketplace. These are the screens left AFTER modelling layout inheritance: a nested group layout that only styles the header leaves the native one on, and those pushed screens already have a back button (verified against native-stack@7.13.0 types.d.ts:234). Each remaining one is fixed by hand — the header shapes vary too much to script. Anything NEW fails the gate.",
+  "screens": []
+}

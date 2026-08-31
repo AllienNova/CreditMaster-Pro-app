@@ -24,8 +24,14 @@ jest.mock("@/lib/auth/jwt-validation", () => ({
 jest.mock("@/lib/auth/resolve-role", () => ({
   resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
+// supabaseAdmin as well as createClient. fetchTaxProfile moved off the
+// cookie-scoped client — it 404'd/emptied for every bearer-token caller under
+// RLS — so the profile read now goes through supabaseAdmin. The assertion these
+// tests exist for is unchanged and still enforced: tax_accounts is a phantom
+// table and must never be queried, whichever client does the querying.
 jest.mock("@/lib/supabase/server", () => ({
   createClient: jest.fn(),
+  supabaseAdmin: { from: jest.fn() },
 }));
 jest.mock("@/lib/tax", () => ({
   taxOptimizationEngine: {
@@ -35,7 +41,7 @@ jest.mock("@/lib/tax", () => ({
 }));
 
 import { POST } from "../route";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, supabaseAdmin } from "@/lib/supabase/server";
 import { taxOptimizationEngine } from "@/lib/tax";
 
 const mockUser = { id: "user-123", email: "test@example.com" };
@@ -151,6 +157,7 @@ describe("POST /api/tax/analyze – tax_accounts regression", () => {
   it("never queries the phantom tax_accounts table for a stored profile", async () => {
     const client = buildMockClient({ data: mockTaxProfileRow, error: null });
     (createClient as jest.Mock).mockResolvedValue(client);
+    (supabaseAdmin.from as jest.Mock).mockImplementation(client.from);
 
     const response = await POST(createMockRequest({ taxYear: 2026 }));
     const body = await response.json();
@@ -174,6 +181,7 @@ describe("POST /api/tax/analyze – tax_accounts regression", () => {
       error: { message: "no rows", code: "PGRST116" },
     });
     (createClient as jest.Mock).mockResolvedValue(client);
+    (supabaseAdmin.from as jest.Mock).mockImplementation(client.from);
 
     const response = await POST(
       createMockRequest({ taxYear: 2026, grossIncome: 80000 }),

@@ -317,35 +317,37 @@ export default function OnboardingCompletePage() {
         </div>
       )}
 
-      {/* Summary Stats */}
-      <div className="grid md:grid-cols-3 gap-6 mb-8 max-w-4xl mx-auto">
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border-2 border-gray-200 dark:border-slate-700 hover:border-emerald-300 transition">
-          <p className="text-4xl font-bold bg-gradient-to-r from-emerald-500 to-blue-500 bg-clip-text text-transparent">
-            675
+      {/*
+        A "Summary Stats" grid lived here, shown to EVERY user the moment they
+        finished onboarding:
+
+          675  Credit Score        "Based on Experian data"
+          12   Items to Dispute    "Errors & negative items found"
+          +85  Potential Points    "Estimated credit improvement"
+
+        None of it was real, and the captions made it worse than the numbers.
+        "Based on Experian data" attributes an invented score to a named
+        bureau, and "Errors & negative items found" asserts that twelve
+        specific problems were discovered on a report nobody had pulled — at
+        the exact moment a new user has the most reason to believe us.
+
+        Nothing replaces it here because at this point in onboarding there is
+        nothing to report: a bureau connection may not exist yet, and the first
+        pull has certainly not happened. The card now says what happens next
+        instead of what was supposedly found.
+
+        ("12" was below the inline-metrics threshold — bare integers under 100
+        are counters — so the gate flagged 675 and +85 and not the claim about
+        twelve errors. Found by reading the block the gate pointed at.)
+      */}
+      <div className="mb-8 max-w-4xl mx-auto">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border-2 border-gray-200 dark:border-slate-700">
+          <p className="font-semibold text-gray-900 dark:text-white mb-1">
+            Your report has not been pulled yet
           </p>
-          <p className="text-gray-500 dark:text-slate-400 text-sm">
-            Credit Score
-          </p>
-          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
-            Based on Experian data
-          </p>
-        </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border-2 border-gray-200 dark:border-slate-700 hover:border-emerald-300 transition">
-          <p className="text-4xl font-bold text-emerald-500">12</p>
-          <p className="text-gray-500 dark:text-slate-400 text-sm">
-            Items to Dispute
-          </p>
-          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
-            Errors & negative items found
-          </p>
-        </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border-2 border-gray-200 dark:border-slate-700 hover:border-emerald-300 transition">
-          <p className="text-4xl font-bold text-blue-500">+85</p>
-          <p className="text-gray-500 dark:text-slate-400 text-sm">
-            Potential Points
-          </p>
-          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
-            Estimated credit improvement
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            Once a bureau is connected we will show your real score, the items
+            we can actually see, and what they are worth — not an estimate.
           </p>
         </div>
       </div>

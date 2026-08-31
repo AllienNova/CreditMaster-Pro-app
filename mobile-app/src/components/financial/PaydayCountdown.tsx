@@ -169,7 +169,7 @@ export function PaydayCountdown({
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => router.push("/dashboard/income" as Href)}
+      onPress={() => router.push("/financial/income" as Href)}
       activeOpacity={0.7}
     >
       <View style={styles.content}>

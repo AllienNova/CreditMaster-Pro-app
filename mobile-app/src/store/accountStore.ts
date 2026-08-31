@@ -5,9 +5,14 @@
  */
 
 import { create } from "zustand";
+import { toArray } from "./toArray";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { bankAccountApi } from "../services/api";
+import {
+  bankAccountApi,
+  bankConnectionApi,
+  flattenConnectionsToAccounts,
+} from "../services/api";
 import type { BankAccount } from "../services/api/types";
 
 interface AccountState {
@@ -31,7 +36,14 @@ interface AccountState {
     metadata?: Record<string, unknown>,
   ) => Promise<boolean>;
   refreshAccount: (accountId: string) => Promise<void>;
-  disconnectAccount: (accountId: string) => Promise<boolean>;
+  /**
+   * Revoke a bank CONNECTION, not an account: Plaid's /item/remove ends the
+   * whole Item, so there is no such thing as disconnecting one account and
+   * keeping its sibling. Was disconnectAccount(accountId), which sent DELETE
+   * to /financial/accounts/[id] — a route that exports only GET, so every call
+   * answered 405 while the caller removed the account from local state anyway.
+   */
+  disconnectConnection: (connectionId: string) => Promise<boolean>;
   selectAccount: (accountId: string | null) => void;
 
   // Utility
@@ -58,7 +70,17 @@ export const useAccountStore = create<AccountState>()(
         try {
           const response = await bankAccountApi.getAccounts();
           if (response.success && response.data) {
-            set({ accounts: response.data.accounts, isLoadingAccounts: false });
+            // `connections`, not `accounts`. The old read was
+            // response.data.accounts against a route that answers with a bare
+            // array, so it was undefined on every call and toArray turned it
+            // into [] — the financial tab said "0 connected" no matter how
+            // many banks the user had linked.
+            set({
+              accounts: flattenConnectionsToAccounts(
+                toArray(response.data.connections),
+              ),
+              isLoadingAccounts: false,
+            });
           } else {
             set({
               error: response.error?.message || "Failed to fetch accounts",
@@ -158,33 +180,33 @@ export const useAccountStore = create<AccountState>()(
         }
       },
 
-      disconnectAccount: async (accountId: string) => {
+      disconnectConnection: async (connectionId: string) => {
         set({ isLoadingAccounts: true, error: null });
         try {
-          const response = await bankAccountApi.disconnectAccount(accountId);
+          const response = await bankConnectionApi.disconnect(connectionId);
           if (response.success) {
-            // Remove account from local state
-            set({
-              accounts: get().accounts.filter((a) => a.id !== accountId),
-              selectedAccountId:
-                get().selectedAccountId === accountId
-                  ? null
-                  : get().selectedAccountId,
-              isLoadingAccounts: false,
-            });
+            // Re-read rather than filtering locally. One connection owns
+            // several accounts, and which ones is the server's answer, not a
+            // guess this store can make from an id. The previous code removed
+            // exactly one account from local state on a response it had not
+            // actually received (the request 405'd), which is how a screen
+            // ends up showing a disconnection that never happened.
+            await get().fetchAccounts();
+            set({ selectedAccountId: null, isLoadingAccounts: false });
             return true;
           }
           set({
-            error: response.error?.message || "Failed to disconnect account",
+            // The route answers 502 with "nothing was changed" when the
+            // provider refuses. Surfacing that verbatim matters: the bank is
+            // still connected and retrying is the right next step.
+            error: response.error?.message || "Failed to disconnect",
             isLoadingAccounts: false,
           });
           return false;
         } catch (error) {
           set({
             error:
-              error instanceof Error
-                ? error.message
-                : "Failed to disconnect account",
+              error instanceof Error ? error.message : "Failed to disconnect",
             isLoadingAccounts: false,
           });
           return false;

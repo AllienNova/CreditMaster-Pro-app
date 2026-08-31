@@ -168,6 +168,7 @@ export const DELETE = withAuth(
       }
 
       // Log deletion
+      // idor-audit: pk-owner-checked — INSERT writes `user_id` from the caller-supplied id; there is no prior row to filter on
       await supabase.from("tax_audit_log").insert({
         user_id: user.id,
         action_type: "document_deleted",

@@ -470,68 +470,71 @@ export const handlers = [
   }),
 
   // 6b. Credit Factors
+  /**
+   * Mirrors GET /api/credit/factors as it really answers.
+   *
+   * This handler used to return a FLAT array of five factors, including
+   * payment_history at "98% on-time payments" and credit_utilization at "32%".
+   * Both are wrong twice over: the route nests its two lists under `data`, and
+   * those are two of the three factors it reports as UNCOMPUTABLE — utilization
+   * because financial_accounts.credit_limit is never written, payment history
+   * because it needs a linked credit report.
+   *
+   * A shared mock that answers a question the real route refuses is worse than
+   * no mock: it is the thing every consumer's test is written against.
+   */
   rest.get(`${BASE_URL}/api/credit/factors`, (req, res, ctx) => {
     return res(
       ctx.json({
         success: true,
-        data: [
-          {
-            id: "payment_history",
-            name: "Payment History",
-            impact: "positive",
-            category: "payment_history",
-            status: "good",
-            value: "98% on-time payments",
-            description: "You have a strong payment history.",
-            recommendation: "Continue making payments on time.",
-            percentImpact: 35,
-          },
-          {
-            id: "credit_utilization",
-            name: "Credit Utilization",
-            impact: "neutral",
-            category: "credit_utilization",
-            status: "fair",
-            value: "32% utilization",
-            description: "Your utilization is slightly above 30%.",
-            recommendation: "Pay down balances to below 30%.",
-            percentImpact: 30,
-          },
-          {
-            id: "credit_age",
-            name: "Credit Age",
-            impact: "positive",
-            category: "credit_age",
-            status: "good",
-            value: "7 years average",
-            description: "Your credit history length is good.",
-            recommendation: "Keep old accounts open to maintain average age.",
-            percentImpact: 15,
-          },
-          {
-            id: "credit_mix",
-            name: "Credit Mix",
-            impact: "positive",
-            category: "credit_mix",
-            status: "good",
-            value: "4 account types",
-            description: "You have a diverse mix of credit accounts.",
-            recommendation: "Maintain your current mix of credit types.",
-            percentImpact: 10,
-          },
-          {
-            id: "new_credit",
-            name: "New Credit",
-            impact: "neutral",
-            category: "new_credit",
-            status: "fair",
-            value: "2 inquiries (6 months)",
-            description: "You have a moderate number of recent inquiries.",
-            recommendation:
-              "Avoid applying for new credit in the next 6 months.",
-            percentImpact: 10,
-          },
-        ],
+        data: {
+          factors: [
+            {
+              id: "credit_age",
+              name: "Credit Age",
+              impact: "positive",
+              category: "credit_age",
+              status: "good",
+              value: "7 year average across your linked accounts",
+              description: "Your credit history length is good.",
+              recommendation: "Keep old accounts open to maintain average age.",
+              percentImpact: 15,
+            },
+            {
+              id: "credit_mix",
+              name: "Credit Mix",
+              impact: "positive",
+              category: "credit_mix",
+              status: "good",
+              value: "2 of 3 account types",
+              description: "You have a diverse mix of credit accounts.",
+              recommendation: "Maintain your current mix of credit types.",
+              percentImpact: 10,
+            },
+          ],
+          unavailable: [
+            {
+              id: "payment_history",
+              name: "Payment History",
+              percentImpact: 35,
+              blockedBy:
+                "Needs a linked credit report. Rent payments reported through Fynvita appear under Payment History in Credit Builder.",
+            },
+            {
+              id: "credit_utilization",
+              name: "Credit Utilization",
+              percentImpact: 30,
+              blockedBy:
+                "Needs credit limits from your linked cards, which are not captured yet.",
+            },
+            {
+              id: "new_credit",
+              name: "New Credit",
+              percentImpact: 10,
+              blockedBy: "Needs a linked credit report.",
+            },
+          ],
+        },
       }),
     );
   }),

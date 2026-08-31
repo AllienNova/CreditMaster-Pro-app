@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../src/hooks/useTheme";
 import { useAuthStore } from "../../src/store/authStore";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 
 export default function SettingsScreen() {
   const { colors, spacing, borderRadius, fontSize, fontWeight } = useTheme();
@@ -167,9 +168,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={s.container} edges={["top"]}>
       <ScrollView style={s.scrollView}>
-        <View style={s.header}>
-          <Text style={s.title}>Settings</Text>
-        </View>
+        <ScreenHeader title="Settings" />
 
         {settingsGroups.map((group, groupIndex) => (
           <View key={groupIndex} style={s.settingsGroup}>

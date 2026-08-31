@@ -30,6 +30,7 @@ import {
 import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenError } from "../../src/components/ScreenError";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
 import { debtApi } from "../../src/services/api/financial";
@@ -103,8 +104,14 @@ export default function DebtScreen() {
   // data exists, the full-screen loader is suppressed so slider changes update in place.
   const loadPlan = useCallback(async () => {
     setLoading(true);
-    await fetchPlan();
-    setLoading(false);
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      await fetchPlan();
+    } finally {
+      setLoading(false);
+    }
   }, [fetchPlan]);
 
   useEffect(() => {
@@ -146,19 +153,12 @@ export default function DebtScreen() {
 
   if (error && !data) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.centered} testID="financial-debt-error">
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.colors.textSecondary}
-          />
-          <Text style={styles.stateText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadPlan}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <ScreenError
+        title="Debt Payoff"
+        message={error}
+        onRetry={loadPlan}
+        testID="financial-debt-error"
+      />
     );
   }
 
@@ -185,7 +185,7 @@ export default function DebtScreen() {
           </TouchableOpacity>
           <Text style={styles.title}>Debt Payoff</Text>
           <TouchableOpacity
-            onPress={() => router.push("/financial/add-debt" as Href)}
+            onPress={() => router.push("/financial/debt" as Href)}
           >
             <Ionicons
               name="add-circle-outline"

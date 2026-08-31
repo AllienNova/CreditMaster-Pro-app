@@ -278,8 +278,8 @@ export default function ModeStatusScreen() {
 
   const handleGraduate = useCallback(async () => {
     if (
-      !modeStatus?.graduationProgress.allCriteriaMet ||
-      !modeStatus?.graduationProgress.nextMode
+      !modeStatus?.graduationProgress?.allCriteriaMet ||
+      !modeStatus?.graduationProgress?.nextMode
     ) {
       return;
     }

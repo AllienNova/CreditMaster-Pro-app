@@ -15,6 +15,8 @@ import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isPublicApiRoute } from "@/lib/auth/PUBLIC_ROUTES";
 import { isFlagEnabledEdge } from "@/lib/flags/edge";
+import { resolveRoleFromDb } from "@/lib/auth/resolve-role";
+import { supabaseConnectSrc } from "@/lib/security/csp";
 
 // Define public routes that don't require authentication
 const publicRoutes = [
@@ -68,7 +70,33 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https: blob:",
-    "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.plaid.com https://api.aimlapi.com wss://*.supabase.co",
+    // Supabase is allowed by its CONFIGURED ORIGIN, not by wildcard.
+    //
+    // This read `https://*.supabase.co`, which is both too wide and too narrow.
+    // Too wide: that pattern permits every other tenant's project on
+    // supabase.co, so an injected script could exfiltrate to a Supabase project
+    // the attacker controls and still satisfy the policy. Too narrow: a
+    // self-hosted Supabase, or one behind a custom domain, is refused outright
+    // — a browser pointed at a local stack could not even sign in, every auth
+    // call being refused before it left the page:
+    //
+    //   Connecting to 'http://127.0.0.1:54321/auth/v1/token?grant_type=password'
+    //   violates the following Content Security Policy directive: "connect-src…"
+    //
+    // That silently made browser dogfooding of EVERY authenticated feature
+    // impossible locally, which is why the curl-based scripts/dogfood.sh could
+    // pass while the real UI could not log in at all.
+    //
+    // Deriving from NEXT_PUBLIC_SUPABASE_URL fixes both: the app can only ever
+    // talk to the origin it is configured with, so allowing exactly that origin
+    // is the tightest policy that still works — and it works wherever Supabase
+    // is hosted. The dev-only loopback entries remain for the case where the
+    // variable is unset.
+    `connect-src 'self' ${supabaseConnectSrc()} https://api.stripe.com https://*.plaid.com https://api.aimlapi.com${
+      isDevelopment
+        ? " http://127.0.0.1:54321 http://localhost:54321 ws://127.0.0.1:54321 ws://localhost:54321"
+        : ""
+    }`,
     "frame-src 'self' https://js.stripe.com https://cdn.plaid.com",
     "object-src 'none'",
     "base-uri 'self'",
@@ -224,13 +252,34 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Check for auth token in cookies
-    const token =
-      request.cookies.get("sb-access-token")?.value ||
-      request.cookies.get("supabase-auth-token")?.value;
+    // Resolve the session through @supabase/ssr, NOT by guessing a cookie name.
+    //
+    // This block used to read:
+    //
+    //   request.cookies.get("sb-access-token") ||
+    //   request.cookies.get("supabase-auth-token")
+    //
+    // Neither cookie is ever written. @supabase/ssr names its cookie
+    // `sb-<project-ref>-auth-token` — `sb-127-auth-token` against a local stack,
+    // `sb-<ref>-auth-token` against a hosted one — so the lookup returned
+    // undefined for every signed-in user and EVERY protected page redirected to
+    // /auth/login. Not environment-specific: no deployment writes those two
+    // names.
+    //
+    // Observed: signed in through the real login form, cookie
+    // `sb-127-auth-token` present in the browser, and /settings/security still
+    // bounced to login.
+    //
+    // The correct client was already being constructed fifteen lines below for
+    // the admin-role check; this now uses the same one. getUser() validates the
+    // token rather than merely observing that some cookie exists, so it is also
+    // a stronger check than the string it replaces.
+    const supabase = createEdgeSupabaseClient(request);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    // If no token, redirect to login
-    if (!token) {
+    if (!user) {
       const loginUrl = new URL("/auth/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
@@ -243,23 +292,24 @@ export async function middleware(request: NextRequest) {
     // Edge-safe @supabase/ssr cookie client) is the only source of truth.
     if (adminRoutes.some((route) => pathname.startsWith(route))) {
       try {
-        const supabase = createEdgeSupabaseClient(request);
-
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-          return NextResponse.redirect(new URL("/auth/login", request.url));
-        }
-
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-        const role = profile?.role ?? "user";
+        // THROUGH resolveRoleFromDb, not the cookie client (FND-072).
+        //
+        // This used to query profiles with the @supabase/ssr client above —
+        // i.e. as the `authenticated` role. public.profiles grants that role
+        // no SELECT, and Postgres checks table privileges BEFORE RLS, so the
+        // query returned nothing whatever the policies said, `role` fell back
+        // to "user", and EVERY admin was redirected here. All 12 admin screens
+        // were dark for everyone, and the catch below swallowed it, so the
+        // logs showed nothing either.
+        //
+        // api-guard.ts, which guards all 284 API routes, had always resolved
+        // the same question through resolveRoleFromDb — the module that calls
+        // itself "the one trusted source for a user's authorization role" —
+        // and worked. One app, one question, two implementations, and only one
+        // of them was reachable. Consolidating on the declared source is the
+        // fix; it also drops the per-request round-trip, since that module
+        // caches for 15s.
+        const role = await resolveRoleFromDb(user.id);
 
         if (role !== "admin" && role !== "super_admin") {
           // Redirect non-admins to dashboard
@@ -268,7 +318,9 @@ export async function middleware(request: NextRequest) {
           );
         }
       } catch {
-        // Admin role check failed - redirect to dashboard
+        // Fail CLOSED: a lookup that throws must not admit anyone. Same
+        // posture as resolveRoleFromDb's own — a DB blip demotes, never
+        // escalates.
         return NextResponse.redirect(
           new URL("/dashboard?error=unauthorized", request.url),
         );

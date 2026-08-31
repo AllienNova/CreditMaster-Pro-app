@@ -10,232 +10,15 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
-import { disputesAPI, DisputeStrategy } from "../../services/api";
+// The main client (98 screens use it). The parallel mobile-app/services/api.ts
+// does NOT unwrap the { success, data } envelope, so `data.strategies` was
+// always undefined and this screen never once rendered a server strategy —
+// it fell back silently on every load. See SF-22.
+import { disputeResourcesApi } from "../../src/services/api/disputes";
+import type { DisputeStrategy } from "../../src/services/api/types";
+import { toArray } from "../../src/store/toArray";
 
 // Local strategy data (fallback when API unavailable)
-const LOCAL_STRATEGIES: DisputeStrategy[] = [
-  {
-    id: "escalation_tactics",
-    name: "Multi-Level Escalation",
-    description:
-      "Progressive escalation through regulatory channels including CFPB, state AG, and legal demand letters",
-    successRate: 72,
-    difficulty: "intermediate",
-    riskLevel: "medium",
-    timeline: "60-90 days",
-    legalBasis: [
-      "FCRA §611",
-      "FCRA §616",
-      "FCRA §617",
-      "State consumer protection laws",
-    ],
-    steps: [
-      {
-        step: 1,
-        title: "File CFPB Complaint",
-        description:
-          "Submit formal complaint to Consumer Financial Protection Bureau",
-      },
-      {
-        step: 2,
-        title: "State AG Complaint",
-        description: "File complaint with your state Attorney General",
-      },
-      {
-        step: 3,
-        title: "Legal Demand Letter",
-        description: "Send attorney-drafted demand letter",
-      },
-    ],
-    expectedOutcomes: [
-      { outcome: "Item removed after CFPB", probability: 45 },
-      { outcome: "Item removed after AG complaint", probability: 20 },
-      { outcome: "Settlement offer", probability: 15 },
-    ],
-    whenToUse: [
-      "Multiple failed standard disputes",
-      "Clear FCRA violations",
-      "Time-sensitive situations",
-    ],
-    whenNotToUse: [
-      "First dispute attempt",
-      "No documentation of previous disputes",
-    ],
-  },
-  {
-    id: "mov_challenge",
-    name: "Method of Verification Challenge",
-    description:
-      "Challenge how bureaus verified disputed information under FCRA §611(a)(6)(B)(iii)",
-    successRate: 58,
-    difficulty: "advanced",
-    riskLevel: "low",
-    timeline: "30-45 days",
-    legalBasis: [
-      "FCRA §611(a)(6)(B)(iii)",
-      "FCRA §611(a)(7)",
-      "FTC Opinion Letters",
-    ],
-    steps: [
-      {
-        step: 1,
-        title: "Request MOV Details",
-        description:
-          "Send letter requesting specific verification procedures used",
-      },
-      {
-        step: 2,
-        title: "Analyze Response",
-        description: "Review bureau response for procedural failures",
-      },
-      {
-        step: 3,
-        title: "Challenge Deficiencies",
-        description: "File follow-up citing specific procedural violations",
-      },
-    ],
-    expectedOutcomes: [
-      { outcome: "Item deleted due to verification failure", probability: 35 },
-      { outcome: "Bureau provides detailed MOV", probability: 40 },
-      { outcome: "Basis for legal action", probability: 15 },
-    ],
-    whenToUse: [
-      "Bureau claims verification without details",
-      "Furnisher non-responsive",
-      "Building legal case",
-    ],
-    whenNotToUse: ["First dispute", "Accurate information"],
-  },
-  {
-    id: "furnisher_direct",
-    name: "Furnisher Direct Dispute",
-    description:
-      "Dispute directly with the data furnisher under FCRA §623 for more thorough investigation",
-    successRate: 62,
-    difficulty: "intermediate",
-    riskLevel: "low",
-    timeline: "30-45 days",
-    legalBasis: ["FCRA §623(a)(8)", "FCRA §623(b)", "12 CFR 1022.43"],
-    steps: [
-      {
-        step: 1,
-        title: "Identify Furnisher",
-        description: "Get furnisher contact information from credit report",
-      },
-      {
-        step: 2,
-        title: "Send Direct Dispute",
-        description:
-          "Mail dispute letter directly to creditor/collection agency",
-      },
-      {
-        step: 3,
-        title: "Follow Up",
-        description: "Track response and follow up if needed",
-      },
-    ],
-    expectedOutcomes: [
-      { outcome: "Furnisher corrects/deletes", probability: 40 },
-      { outcome: "Furnisher verifies accuracy", probability: 35 },
-      { outcome: "Furnisher non-responsive", probability: 20 },
-    ],
-    whenToUse: [
-      "Bureau disputes unsuccessful",
-      "Need more thorough investigation",
-      "Relationship with creditor",
-    ],
-    whenNotToUse: [
-      "Already disputed with furnisher",
-      "Debt collector harassment concerns",
-    ],
-  },
-  {
-    id: "debt_validation",
-    name: "FDCPA Debt Validation",
-    description:
-      "Request complete debt validation from collection agencies under FDCPA §809(b)",
-    successRate: 48,
-    difficulty: "beginner",
-    riskLevel: "low",
-    timeline: "30-45 days",
-    legalBasis: ["FDCPA §809(a)", "FDCPA §809(b)", "15 U.S.C. §1692g"],
-    steps: [
-      {
-        step: 1,
-        title: "Send Validation Request",
-        description:
-          "Send within 30 days of first contact for strongest protection",
-      },
-      {
-        step: 2,
-        title: "Review Validation",
-        description: "Check if validation meets legal requirements",
-      },
-      {
-        step: 3,
-        title: "Challenge Insufficiency",
-        description: "Dispute if validation is incomplete",
-      },
-    ],
-    expectedOutcomes: [
-      { outcome: "Debt cannot be validated - deleted", probability: 25 },
-      { outcome: "Validation reveals errors", probability: 15 },
-      { outcome: "Full validation provided", probability: 50 },
-    ],
-    whenToUse: [
-      "Unknown collection accounts",
-      "Recently contacted by collector",
-      "Suspicious debt",
-    ],
-    whenNotToUse: [
-      "Debt is clearly yours",
-      "Older than statute of limitations",
-    ],
-  },
-  {
-    id: "hybrid_goodwill",
-    name: "Hybrid Dispute + Goodwill",
-    description:
-      "Combine dispute rights with goodwill appeal for maximum effectiveness",
-    successRate: 55,
-    difficulty: "beginner",
-    riskLevel: "low",
-    timeline: "30-60 days",
-    legalBasis: [
-      "FCRA §611",
-      "Creditor discretion",
-      "Customer relationship policies",
-    ],
-    steps: [
-      {
-        step: 1,
-        title: "Send Goodwill Letter",
-        description: "Appeal to creditor's discretion citing positive history",
-      },
-      {
-        step: 2,
-        title: "Follow Up with Dispute",
-        description: "If goodwill fails, file formal dispute",
-      },
-      {
-        step: 3,
-        title: "Escalate if Needed",
-        description: "Use executive email carpet bomb technique",
-      },
-    ],
-    expectedOutcomes: [
-      { outcome: "Goodwill adjustment granted", probability: 25 },
-      { outcome: "Dispute removes item", probability: 20 },
-      { outcome: "Partial adjustment", probability: 15 },
-    ],
-    whenToUse: [
-      "Good payment history except one issue",
-      "Long-standing customer",
-      "Extenuating circumstances",
-    ],
-    whenNotToUse: ["Multiple delinquencies", "No relationship with creditor"],
-  },
-];
 
 const getDifficultyColor = (difficulty: string) => {
   switch (difficulty) {
@@ -267,8 +50,8 @@ const getRiskColor = (risk: string) => {
 
 export default function StrategiesScreen() {
   const router = useRouter();
-  const [strategies, setStrategies] =
-    useState<DisputeStrategy[]>(LOCAL_STRATEGIES);
+  const [strategies, setStrategies] = useState<DisputeStrategy[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(
     null,
@@ -281,13 +64,23 @@ export default function StrategiesScreen() {
 
   const fetchStrategies = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const { data, error } = await disputesAPI.getStrategies();
-      if (data?.strategies && !error) {
-        setStrategies(data.strategies);
+      const res = await disputeResourcesApi.getStrategies();
+      if (!res.success || !res.data?.strategies) {
+        // No silent fallback. This used to keep LOCAL_STRATEGIES — five
+        // strategies with success rates — so a failed read was
+        // indistinguishable from a successful one, and the user chose a
+        // dispute tactic from a list the server never sent.
+        setError("We could not load dispute strategies.");
+        setStrategies([]);
+        setLoading(false);
+        return;
       }
+      setStrategies(toArray<DisputeStrategy>(res.data.strategies));
     } catch {
-      // Use local strategies
+      setError("We could not load dispute strategies.");
+      setStrategies([]);
     }
     setLoading(false);
   };
@@ -369,6 +162,16 @@ export default function StrategiesScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={lightTheme.colors.primary} />
         </View>
+      ) : error ? (
+        // The list used to fall back to five hardcoded strategies here, so a
+        // failed read looked exactly like a successful one — and the user
+        // picked a dispute tactic from a list the server never sent.
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={fetchStrategies}>
+            <Text style={styles.retryText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <ScrollView style={styles.strategiesList}>
           {filteredStrategies.map((strategy) => (
@@ -382,16 +185,28 @@ export default function StrategiesScreen() {
             >
               <View style={styles.strategyHeader}>
                 <Text style={styles.strategyName}>{strategy.name}</Text>
-                <Text
-                  style={[
-                    styles.successRate,
-                    {
-                      color: strategy.successRate >= 60 ? "#16A34A" : "#D97706",
-                    },
-                  ]}
-                >
-                  {strategy.successRate}%
-                </Text>
+                {/*
+                  Labelled, because a bare colour-coded "72%" reads as this
+                  user's measured outcome. It is not: the number is a constant
+                  in src/lib/disputes/advanced-strategies.ts, editorial
+                  guidance about the tactic in general. Nothing measures it —
+                  `disputes.outcome` exists and could, once there are resolved
+                  disputes to count.
+                */}
+                <View style={styles.rateBlock}>
+                  <Text
+                    style={[
+                      styles.successRate,
+                      {
+                        color:
+                          strategy.successRate >= 60 ? "#16A34A" : "#D97706",
+                      },
+                    ]}
+                  >
+                    {strategy.successRate}%
+                  </Text>
+                  <Text style={styles.rateCaption}>typical</Text>
+                </View>
               </View>
 
               <Text
@@ -462,14 +277,16 @@ export default function StrategiesScreen() {
                     </View>
                   ))}
 
-                  <Text style={styles.sectionTitle}>Legal Basis:</Text>
-                  <View style={styles.legalList}>
-                    {strategy.legalBasis.map((law, i) => (
-                      <Text key={i} style={styles.legalItem}>
-                        • {law}
-                      </Text>
-                    ))}
-                  </View>
+                  {/*
+                    "Legal Basis" used to render strategy.legalBasis here. The
+                    server never sends that field — DisputeStrategyDTO carries
+                    id, name, description, successRate, difficulty, riskLevel,
+                    timeline and steps, and nothing else
+                    (src/lib/disputes/strategy-dto.ts:36-46). It existed only
+                    on the deleted LOCAL_STRATEGIES fixture, so the section is
+                    gone rather than rendering an empty list under a heading
+                    that promises statute citations.
+                  */}
 
                   <TouchableOpacity
                     style={styles.useButton}
@@ -559,6 +376,23 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: lightTheme.colors.text,
     flex: 1,
+  },
+  errorText: {
+    fontSize: 14,
+    color: lightTheme.colors.error,
+    textAlign: "center",
+  },
+  retryText: {
+    fontSize: 14,
+    color: lightTheme.colors.primary,
+    fontWeight: "600",
+    marginTop: 8,
+  },
+  rateBlock: { alignItems: "flex-end" },
+  rateCaption: {
+    fontSize: 10,
+    color: lightTheme.colors.textSecondary,
+    marginTop: -2,
   },
   successRate: { fontSize: 16, fontWeight: "700" },
   strategyDesc: {

@@ -34,6 +34,7 @@ import { useNudges } from "../../src/hooks/useNudges";
 import { useCoaching } from "../../src/hooks/useCoaching";
 import { financialOverviewApi } from "../../src/services/api/financial";
 import type { Insight, InsightType } from "../../src/services/api/financial";
+import { toArray } from "../../src/store/toArray";
 
 // Explore grid — pure navigation to insight sub-screens (all four routes exist).
 const QUICK_ACTIONS: {
@@ -99,14 +100,20 @@ export default function FinancialInsightsScreen() {
 
   const loadInsights = useCallback(async () => {
     setLoading(true);
-    setError(null);
-    const res = await financialOverviewApi.getInsights();
-    if (res.success && res.data) {
-      setInsights(res.data.insights);
-    } else {
-      setError(res.error?.message ?? "Unable to load insights right now.");
+      // try/finally: a REJECTED request used to skip setLoading(false)
+      // entirely, leaving a permanent spinner the user cannot escape —
+      // indistinguishable from a slow network. See G-033.
+    try {
+      setError(null);
+      const res = await financialOverviewApi.getInsights();
+      if (res.success && res.data) {
+        setInsights(toArray<Insight>(res?.data?.insights));
+      } else {
+        setError(res.error?.message ?? "Unable to load insights right now.");
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {

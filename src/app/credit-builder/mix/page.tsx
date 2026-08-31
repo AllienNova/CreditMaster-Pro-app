@@ -11,6 +11,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { useCreditAccounts } from "@/hooks/useCreditAccounts";
 
 interface AccountType {
   name: string;
@@ -18,6 +19,57 @@ interface AccountType {
   ideal: number;
   icon: string;
   color: string;
+}
+
+/**
+ * Our published guidance on a healthy credit mix, plus which
+ * `credit_accounts.account_type` values count toward each row.
+ *
+ * `ideal` is the same for every reader — it is advice about mixes in general,
+ * not a statement about this person — so it lives here as catalogue. `current`
+ * is counted per reader in the component.
+ */
+const MIX_GUIDANCE: (Omit<AccountType, "current"> & { matches: string[] })[] = [
+  {
+    name: "Credit Cards",
+    ideal: 3,
+    icon: "credit-card",
+    color: "bg-blue-500",
+    matches: ["credit_card", "revolving", "charge_card"],
+  },
+  {
+    name: "Installment Loans",
+    ideal: 2,
+    icon: "banknotes",
+    color: "bg-blue-500",
+    matches: ["installment", "personal_loan", "loan"],
+  },
+  {
+    name: "Mortgage",
+    ideal: 1,
+    icon: "home",
+    color: "bg-green-500",
+    matches: ["mortgage", "real_estate"],
+  },
+  {
+    name: "Auto Loan",
+    ideal: 1,
+    icon: "truck",
+    color: "bg-red-500",
+    matches: ["auto", "auto_loan", "vehicle"],
+  },
+  {
+    name: "Student Loan",
+    ideal: 0,
+    icon: "academic-cap",
+    color: "bg-yellow-500",
+    matches: ["student", "student_loan", "education"],
+  },
+];
+
+/** Bureau feeds vary in case and spacing; compare on one normal form. */
+function normaliseType(accountType: string): string {
+  return accountType.trim().toLowerCase().replace(/[\s-]+/g, "_");
 }
 
 interface Recommendation {
@@ -33,43 +85,20 @@ interface Recommendation {
 
 export default function CreditMixPage() {
   const { user, loading: authLoading } = useAuth();
-  const [accountTypes, setAccountTypes] = useState<AccountType[]>([
-    {
-      name: "Credit Cards",
-      current: 2,
-      ideal: 3,
-      icon: "credit-card",
-      color: "bg-blue-500",
-    },
-    {
-      name: "Installment Loans",
-      current: 1,
-      ideal: 2,
-      icon: "banknotes",
-      color: "bg-blue-500",
-    },
-    {
-      name: "Mortgage",
-      current: 0,
-      ideal: 1,
-      icon: "home",
-      color: "bg-green-500",
-    },
-    {
-      name: "Auto Loan",
-      current: 0,
-      ideal: 1,
-      icon: "truck",
-      color: "bg-red-500",
-    },
-    {
-      name: "Student Loan",
-      current: 0,
-      ideal: 0,
-      icon: "academic-cap",
-      color: "bg-yellow-500",
-    },
-  ]);
+  // `current` is COUNTED from the reader's own tradelines; `ideal` is our
+  // published guidance about a healthy mix, which is true for everyone and
+  // stays constant. Only the first was ever a claim about this person, and it
+  // used to be a useState initialiser asserting 2 cards, 1 installment loan
+  // and no mortgage — invisible to audit:screen-data until da4323a.
+  const { accounts, loading: loadingAccounts, error: accountsError } =
+    useCreditAccounts();
+
+  const accountTypes: AccountType[] = MIX_GUIDANCE.map((guide) => ({
+    ...guide,
+    current: accounts.filter((account) =>
+      guide.matches.includes(normaliseType(account.accountType)),
+    ).length,
+  }));
 
   const totalCurrent = accountTypes.reduce(
     (sum, type) => sum + type.current,
@@ -137,11 +166,6 @@ export default function CreditMixPage() {
     }
   };
 
-  const updateAccountCount = (index: number, newCount: number) => {
-    const updated = [...accountTypes];
-    updated[index].current = Math.max(0, Math.min(10, newCount));
-    setAccountTypes(updated);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -165,7 +189,35 @@ export default function CreditMixPage() {
 
       {/* Score Banner */}
       <div className="bg-gradient-to-r from-blue-500 to-blue-500 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {accountsError && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-amber-200 dark:border-amber-900/50">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              Your accounts could not be loaded
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              {accountsError}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!accountsError && !loadingAccounts && accounts.length === 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700">
+            <p className="font-medium text-gray-900 dark:text-white mb-1">
+              No accounts on your report yet
+            </p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              Your mix is counted from the tradelines on your report. Every
+              count below is zero because we found none — not because you have
+              none of that kind.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">{mixScore}</div>
@@ -276,50 +328,15 @@ export default function CreditMixPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() =>
-                        updateAccountCount(index, type.current - 1)
-                      }
-                      className="w-8 h-8 bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 flex items-center justify-center"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M20 12H4"
-                        />
-                      </svg>
-                    </button>
+                  {/* The counts are COUNTED from the reader's tradelines, so
+                      they are not editable here. Hand-editing them would blend
+                      what they have with what they might add, without marking
+                      which is which — a what-if belongs in its own clearly
+                      labelled control, not on top of the real figure. */}
+                  <div className="flex items-center">
                     <span className="w-12 text-center text-xl font-bold text-gray-900 dark:text-white">
                       {type.current}
                     </span>
-                    <button
-                      onClick={() =>
-                        updateAccountCount(index, type.current + 1)
-                      }
-                      className="w-8 h-8 bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 flex items-center justify-center"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                    </button>
                   </div>
                 </div>
 

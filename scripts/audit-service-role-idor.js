@@ -45,7 +45,8 @@
  *   node scripts/audit-service-role-idor.js /tmp/uid.txt
  */
 
-const { readFileSync, readdirSync, statSync } = require("fs");
+const { createHash } = require("crypto");
+const { readFileSync, readdirSync, statSync, writeFileSync } = require("fs");
 const { join, relative } = require("path");
 
 const ROOT = process.cwd();
@@ -53,6 +54,30 @@ const SRC = join(ROOT, "src");
 
 const FROM_PATTERN = /\.from\(\s*["'`]([a-z0-9_]+)["'`]\s*\)/g;
 const OWNER_FILTER = /\.(eq|in)\(\s*["'`]user_id["'`]/;
+
+/**
+ * An INSERT/UPSERT that WRITES the owner column.
+ *
+ * An owner FILTER is the defence for a select/update/delete: it stops the
+ * statement reaching another user's row. An insert has no prior row to filter,
+ * so `.eq("user_id", …)` cannot exist and never will — the defence is that the
+ * row being written carries an owner, and that is what this matches.
+ *
+ * This is deliberately NOT a blanket exemption for inserts. An insert into a
+ * user-scoped table with NO owner column in its payload stays flagged, because
+ * that is a genuine defect: a row nobody owns, in a table whose whole access
+ * model is ownership. The narrowing removes a false-positive class (140 of the
+ * flagged sites were inserts; 106 demonstrably carry an owner column) without
+ * letting a single real one through.
+ *
+ * Why not park these in idor-baseline.json instead: that file is defined as
+ * tracked debt that does NOT pass review, and its own contract says it may only
+ * shrink — "if it ever needs to grow, that is a new unscoped query and it should
+ * be fixed instead." These inserts are not unscoped, so recording them as debt
+ * would be a false entry in the one file the ratchet depends on being true.
+ */
+const OWNER_WRITE = /\.(insert|upsert)\(/;
+const OWNER_COLUMN_IN_PAYLOAD = /\b(user_id|owner_id)\s*:/;
 const PK_FILTER = /\.(eq|in)\(\s*["'`]id["'`]/;
 /**
  * Scoping by a parent key rather than user_id directly — e.g.
@@ -86,6 +111,29 @@ function walk(dir, acc = []) {
     }
   }
   return acc;
+}
+
+/**
+ * Does this file talk to Postgres with RLS bypassed?
+ *
+ * This used to be `raw.includes("getServiceRoleClient")` — the shared helper's
+ * name. That made the gate a FALSE GREEN over any file that reaches the
+ * service role another way, and 22 of the 34 modules restored in 8e5481d do
+ * exactly that: a raw `createClient(url, SUPABASE_SERVICE_ROLE_KEY)` or the
+ * typed `supabaseAdmin` from @/lib/supabase/server. The audit reported
+ * "0 findings" while never opening any of them.
+ *
+ * Detecting the CAPABILITY rather than one spelling of it is the point: any
+ * client constructed with the service-role key bypasses RLS, so the
+ * `.eq("user_id", ...)` filters in that file are load-bearing regardless of
+ * which import produced the client.
+ */
+function usesServiceRole(text) {
+  return (
+    text.includes("getServiceRoleClient") ||
+    text.includes("SUPABASE_SERVICE_ROLE_KEY") ||
+    /\bsupabaseAdmin\b/.test(text)
+  );
 }
 
 function operationOf(chain) {
@@ -227,6 +275,7 @@ function audit(text, rel, userScoped, findings, marked) {
         table,
         op: operationOf(chain),
         kind: fk ? "fk" : pk ? "pk" : "none",
+        sig: sigOf(chain),
         via: fk ? fk[2] : pk ? "id" : null,
       });
     }
@@ -245,6 +294,9 @@ function audit(text, rel, userScoped, findings, marked) {
     // `profiles` is keyed BY the user id, so `.eq("id", userId)` is true owner
     // scoping there, not merely a single-row lookup.
     if (OWNER_FILTER.test(chain)) continue;
+    // An insert that writes the owner column establishes ownership; see
+    // OWNER_WRITE above. An insert WITHOUT one stays flagged.
+    if (OWNER_WRITE.test(chain) && OWNER_COLUMN_IN_PAYLOAD.test(chain)) continue;
     if (table === "profiles" && PK_FILTER.test(chain)) continue;
     if (isMarked(marked.crossUser, text.slice(0, at).split("\n").length)) continue;
 
@@ -256,11 +308,59 @@ function audit(text, rel, userScoped, findings, marked) {
       table,
       op: operationOf(chain),
       kind: fk ? "fk" : pk ? "pk" : "none",
+      sig: sigOf(chain),
       via: fk ? fk[2] : pk ? "id" : null,
       cleared: isMarked(marked.pkChecked, text.slice(0, at).split("\n").length),
     });
   }
 }
+
+/**
+ * Known-unfixed findings, frozen 2026-08-09. A RATCHET, not an exemption.
+ *
+ * Widening usesServiceRole() from one helper name to the service-role
+ * CAPABILITY took the audit's coverage from 63 files to 185 — it had never
+ * looked at two thirds of the service-role code, including 22 of the modules
+ * restored in 8e5481d. The findings that appeared are pre-existing debt, not a
+ * regression, and are tracked in docs/specs/remediation-plan.md.
+ *
+ * The gate therefore fails on any finding NOT in this list. The list may only
+ * shrink; scripts/idor-baseline.json is regenerated only by removing entries.
+ * If it ever needs to grow, that is a new unscoped query and it should be
+ * fixed instead.
+ */
+function loadBaseline() {
+  const p = join(ROOT, "scripts", "idor-baseline.json");
+  try {
+    return JSON.parse(readFileSync(p, "utf8")).counts || {};
+  } catch {
+    return {};
+  }
+}
+
+// The baseline key MUST identify the query by its CONTENT, not merely count
+// findings per file/table/op/kind. A count-keyed baseline is launderable and
+// this was proven with a reproduction: in a file baselined at
+// `analytics_events|select|none = 3`, scoping one existing query while adding a
+// brand-new fully-unscoped `.select("*")` leaves the count at 3, so the gate
+// exits 0 and a read of every user's rows never surfaces. Neither `n > allowed`
+// nor a shortfall check catches that — the totals are identical.
+//
+// `sig` is a hash of the whitespace-normalised query chain, so a NEW query is a
+// NEW key regardless of what else in the file was fixed, and a FIXED query's key
+// simply disappears (caught by the staleness check).
+//
+// Trade-off, accepted deliberately: reformatting or editing a baselined query
+// changes its signature and blocks until the baseline is regenerated. That is
+// the safe direction to fail — it forces a human to re-look at a query that is
+// still unscoped, rather than silently re-blessing it.
+const sigOf = (chain) =>
+  createHash("sha1")
+    .update(chain.replace(/\s+/g, " ").trim())
+    .digest("hex")
+    .slice(0, 12);
+
+const key = (f) => `${f.file}|${f.table}|${f.op}|${f.kind}|${f.sig}`;
 
 function main() {
   const tablesPath = process.argv[2];
@@ -277,7 +377,7 @@ function main() {
 
   for (const file of walk(SRC)) {
     const raw = readFileSync(file, "utf8");
-    if (!raw.includes("getServiceRoleClient")) continue; // not converted yet
+    if (!usesServiceRole(raw)) continue;
     const rel = relative(ROOT, file);
     converted.push(rel);
     audit(stripComments(raw), rel, userScoped, findings, markedLines(raw));
@@ -320,10 +420,118 @@ function main() {
   // PK-scoped reads DO fail unless individually cleared. They were once
   // treated as safe-because-single-row; GoalPlanner.simulateGoal disproved
   // that, and this audit passed it clean at the time.
-  const blocking = [
+  const baseline = loadBaseline();
+  const candidate = [
     ...unscoped.filter((f) => f.op !== "insert"),
     ...pkScoped.filter((f) => !f.cleared),
   ];
+
+  if (process.argv.includes("--write-baseline")) {
+    // SHRINK-ONLY, and that is the whole point of the flag existing at all.
+    //
+    // The first version regenerated from whatever was on disk. That made it a
+    // one-command bypass of the very hole the content-addressed key closes:
+    // with a paid-down finding and a NEW unscoped query coexisting, the gate
+    // correctly exited 1 — and running this flag blessed the new query and
+    // returned the gate to green. Worse, the shortfall message USED TO
+    // RECOMMEND running it, so the documented remedy was the exploit.
+    //
+    // Totals hid it too: 79 keys / 83 findings before and after, so a reviewer
+    // checking counts rather than keys would see nothing in the diff.
+    //
+    // Now: a key absent from the current baseline can never be written. The
+    // baseline may lose entries, never gain them. Adding one is a deliberate
+    // act that has to go through the file, in a reviewable diff, with a human
+    // saying why.
+    const existing = loadBaseline();
+    const counts = {};
+    for (const f of candidate) counts[key(f)] = (counts[key(f)] || 0) + 1;
+
+    const added = Object.keys(counts).filter((k) => !(k in existing));
+    if (added.length > 0) {
+      console.error(
+        `\nREFUSING to write: ${added.length} key(s) are NOT in the current baseline.` +
+          `\n${added.map((k) => `  + ${k}`).join("\n")}` +
+          `\n\nThis flag is shrink-only. A key that is not already baselined is a NEW` +
+          `\nfinding — fix the query, or add the entry to scripts/idor-baseline.json by` +
+          `\nhand so the addition shows up in review with a reason attached.`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+    for (const k of Object.keys(counts)) {
+      if (counts[k] > existing[k]) {
+        console.error(
+          `\nREFUSING to write: ${k} would grow from ${existing[k]} to ${counts[k]}.`,
+        );
+        process.exitCode = 1;
+        return;
+      }
+    }
+    writeFileSync(
+      join(ROOT, "scripts", "idor-baseline.json"),
+      JSON.stringify(
+        {
+          frozen: new Date().toISOString().slice(0, 10),
+          why:
+            "Pre-existing unscoped/PK-scoped service-role queries, held as tracked debt " +
+            "so the gate can block NEW ones from line one. Keys are content-addressed " +
+            "(file|table|op|kind|sha1-of-normalised-chain): a new query is a new key, " +
+            "and a fixed query's key disappears. This list may only shrink.",
+          counts,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    console.log(
+      `wrote scripts/idor-baseline.json — ${Object.keys(counts).length} keys, ${candidate.length} findings`,
+    );
+    return;
+  }
+
+
+  // COUNT-based, not key-membership. A key is file|table|op|kind, which is
+  // stable across line drift but collapses several findings in one file into
+  // one key — so plain membership let a NEW unscoped query hide behind an
+  // already-baselined one in the same file. Verified: deleting a user_id
+  // filter from bill-calendar-service.ts passed a membership check. Comparing
+  // COUNTS catches the increment.
+  const seen = new Map();
+  for (const f of candidate) seen.set(key(f), (seen.get(key(f)) || 0) + 1);
+
+  // A count-only comparison is STILL launderable, and this was proven with a
+  // reproduction rather than reasoned about: in a file baselined at
+  // `analytics_events|select|none = 3`, adding `.eq("user_id", …)` to one query
+  // AND introducing a brand-new fully-unscoped `.select("*")` leaves the count
+  // at 3. `n > allowed` is false, exit 0, and a query returning every user's
+  // rows never surfaces. Fixing one finding silently buys a slot for the next.
+  //
+  // So a SHORTFALL is now a failure too. If a key comes in under its baseline,
+  // the debt was paid down and the baseline is stale — regenerate it, which
+  // re-freezes the real remaining set and closes the slot. Noisy by design:
+  // the alternative is a gate that quietly rewards leaving debt in place.
+  const blocking = [];
+  const stale = [];
+  for (const [k, n] of seen) {
+    const allowed = baseline[k] || 0;
+    if (n > allowed) {
+      const f = candidate.find((c) => key(c) === k);
+      for (let i = 0; i < n - allowed; i++) blocking.push(f);
+    } else if (n < allowed) {
+      stale.push(`${k}: baseline ${allowed}, now ${n}`);
+    }
+  }
+  for (const k of Object.keys(baseline)) {
+    if (!seen.has(k)) stale.push(`${k}: baseline ${baseline[k]}, now 0`);
+  }
+  const grandfathered = candidate.length - blocking.length;
+  if (grandfathered > 0) {
+    console.log(
+      `\n${grandfathered} pre-existing finding(s) held in scripts/idor-baseline.json (frozen 2026-08-09).` +
+        `\nThey do NOT pass review — they are tracked debt. The list may only shrink.`,
+    );
+  }
   if (blocking.length > 0) {
     console.log(
       `\n${blocking.length} queries are neither owner-scoped nor cleared.` +
@@ -332,7 +540,20 @@ function main() {
         `\n  // idor-audit: cross-user — <why this must span users>`,
     );
   }
-  process.exitCode = blocking.length > 0 ? 1 : 0;
+  if (stale.length > 0) {
+    console.log(
+      `\n${stale.length} baseline key(s) are now BELOW their frozen count:` +
+        `\n  ${stale.slice(0, 10).join("\n  ")}` +
+        (stale.length > 10 ? `\n  ... +${stale.length - 10} more` : "") +
+        `\n\nDebt was paid down. PRUNE EXACTLY THE KEYS LISTED ABOVE from` +
+        `\nscripts/idor-baseline.json — do not regenerate the file wholesale.` +
+        `\nRegenerating rewrites every entry from whatever is on disk, which is` +
+        `\nhow a paid-down finding and a NEW hole get blessed in one step while` +
+        `\nthe totals stay identical. --write-baseline is shrink-only for that` +
+        `\nreason and will refuse to add a key.`,
+    );
+  }
+  process.exitCode = blocking.length > 0 || stale.length > 0 ? 1 : 0;
 }
 
 main();

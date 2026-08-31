@@ -130,7 +130,7 @@ export const studentLoansApi = {
   getLoans: async (): Promise<{ data: StudentLoan[]; error?: string }> => {
     try {
       const response = await api.get<{ loans: StudentLoan[] }>(
-        "/api/student-loans",
+        "/student-loans",
       );
       return { data: response.data?.loans || [] };
     } catch (error) {
@@ -149,7 +149,7 @@ export const studentLoansApi = {
     id: string,
   ): Promise<{ data: StudentLoan | null; error?: string }> => {
     try {
-      const response = await api.get<StudentLoan>(`/api/student-loans/${id}`);
+      const response = await api.get<StudentLoan>(`/student-loans/${id}`);
       return { data: response.data || null };
     } catch (error) {
       if (__DEV__) console.error("Get loan error:", error);
@@ -167,7 +167,7 @@ export const studentLoansApi = {
     loan: CreateLoanInput,
   ): Promise<{ data: StudentLoan | null; error?: string }> => {
     try {
-      const response = await api.post<StudentLoan>("/api/student-loans", loan);
+      const response = await api.post<StudentLoan>("/student-loans", loan);
       return { data: response.data || null };
     } catch (error) {
       if (__DEV__) console.error("Add loan error:", error);
@@ -187,7 +187,7 @@ export const studentLoansApi = {
   ): Promise<{ data: StudentLoan | null; error?: string }> => {
     try {
       const response = await api.patch<StudentLoan>(
-        `/api/student-loans/${id}`,
+        `/student-loans/${id}`,
         data,
       );
       return { data: response.data || null };
@@ -207,7 +207,7 @@ export const studentLoansApi = {
     id: string,
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      await api.delete(`/api/student-loans/${id}`);
+      await api.delete(`/student-loans/${id}`);
       return { success: true };
     } catch (error) {
       if (__DEV__) console.error("Delete loan error:", error);
@@ -226,7 +226,7 @@ export const studentLoansApi = {
   ): Promise<{ data: PortfolioStats | null; error?: string }> => {
     try {
       const response = await api.post<PortfolioStats>(
-        "/api/student-loans/analyze",
+        "/student-loans/analyze",
         { loans },
       );
       return { data: response.data || null };
@@ -252,7 +252,7 @@ export const studentLoansApi = {
     try {
       const response = await api.post<{
         strategies: AIStrategyRecommendation[];
-      }>("/api/student-loans/strategy", { loans, financialSituation });
+      }>("/student-loans/strategy", { loans, financialSituation });
       return { data: response.data?.strategies || [] };
     } catch (error) {
       if (__DEV__) console.error("Generate strategies error:", error);
@@ -276,7 +276,7 @@ export const studentLoansApi = {
   ): Promise<{ data: string | null; error?: string }> => {
     try {
       const response = await api.post<{ letter: string }>(
-        "/api/disputes/generate-student-loan",
+        "/disputes/generate-student-loan",
         { loanId, disputeType, details },
       );
       return { data: response.data?.letter || null };
@@ -298,7 +298,7 @@ export const studentLoansApi = {
     financialSituation: FinancialSituation,
   ): Promise<{ data: any; error?: string }> => {
     try {
-      const response = await api.post("/api/federal/check-eligibility", {
+      const response = await api.post("/federal/check-eligibility", {
         loans,
         financialSituation,
       });
