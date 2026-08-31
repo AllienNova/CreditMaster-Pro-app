@@ -1,17 +1,31 @@
 /**
  * Voice Synthesis API
- * 
+ *
  * Converts text to speech using AIML API's voice models
  * (OpenAI TTS-1 HD or ElevenLabs)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAIMLService } from '@/lib/aiml-service';
+import { jwtValidation } from '@/lib/auth/jwt-validation';
+import { rbac } from '@/lib/auth/rbac';
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate JWT token
+    const validation = await jwtValidation.validateFromHeaders(request.headers);
+
+    if (!validation.valid || !validation.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check permissions (premium feature)
+    if (!rbac.hasPermission(validation.user, 'voice:synthesize')) {
+      return NextResponse.json({ error: 'Forbidden - Premium feature' }, { status: 403 });
+    }
+
     const body = await request.json();
-    
+
     // Validate required fields
     const { text } = body;
     

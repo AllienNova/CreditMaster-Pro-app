@@ -8,7 +8,7 @@
  * - Document categorization
  */
 
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Initialize S3 client
@@ -43,15 +43,29 @@ export interface Document {
   s3Key: string;
   uploadedAt: Date;
   expiresAt?: Date;
-  metadata?: Record<string, any>;
+  metadata?: DocumentMetadata;
   tags?: string[];
 }
+
+type DocumentMetadata = Record<string, string>;
 
 /**
  * Document Service Class
  */
+export interface DocumentShareLink {
+  id: string;
+  documentId: string;
+  sharedBy: string;
+  recipients: string[];
+  permissions: 'view' | 'download';
+  expiresAt: Date;
+  createdAt: Date;
+  url: string;
+}
+
 class DocumentService {
   private documents: Map<string, Document> = new Map();
+  private shareLinks: Map<string, DocumentShareLink> = new Map();
   
   /**
    * Upload document to S3
@@ -62,7 +76,7 @@ class DocumentService {
     fileName: string,
     mimeType: string,
     documentType: DocumentType,
-    metadata?: Record<string, any>
+    metadata?: DocumentMetadata
   ): Promise<Document> {
     const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const fileExtension = fileName.split('.').pop();
@@ -137,7 +151,66 @@ class DocumentService {
     
     return document;
   }
-  
+
+  /**
+   * Create share link
+   */
+  createShareLink(
+    documentId: string,
+    sharedBy: string,
+    recipients: string[],
+    permissions: 'view' | 'download' = 'view',
+    expiresInHours = 24
+  ): DocumentShareLink {
+    const document = this.documents.get(documentId);
+    if (!document) {
+      throw new Error('Document not found');
+    }
+
+    if (document.userId !== sharedBy) {
+      throw new Error('You do not have permission to share this document');
+    }
+
+    const shareId = `share_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
+    const url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.creditmaster.pro'}/documents/${documentId}?share=${shareId}`;
+
+    const shareLink: DocumentShareLink = {
+      id: shareId,
+      documentId,
+      sharedBy,
+      recipients,
+      permissions,
+      expiresAt,
+      createdAt: new Date(),
+      url,
+    };
+
+    this.shareLinks.set(shareId, shareLink);
+    return shareLink;
+  }
+
+  listShareLinks(documentId: string, userId: string): DocumentShareLink[] {
+    const document = this.documents.get(documentId);
+    if (!document || document.userId !== userId) {
+      return [];
+    }
+
+    return Array.from(this.shareLinks.values()).filter(
+      (link) => link.documentId === documentId && link.sharedBy === userId
+    );
+  }
+
+  revokeShareLink(shareId: string, userId: string): boolean {
+    const link = this.shareLinks.get(shareId);
+    if (!link || link.sharedBy !== userId) {
+      return false;
+    }
+
+    this.shareLinks.delete(shareId);
+    return true;
+  }
+
   /**
    * Get user documents
    */
@@ -180,7 +253,7 @@ class DocumentService {
    */
   updateDocumentMetadata(
     documentId: string,
-    metadata: Record<string, any>
+    metadata: DocumentMetadata
   ): Document | null {
     const document = this.documents.get(documentId);
     if (!document) return null;
@@ -283,7 +356,7 @@ class DocumentService {
     size: number,
     mimeType: string,
     documentType: DocumentType,
-    metadata?: Record<string, any>
+    metadata?: DocumentMetadata
   ): Document {
     const document: Document = {
       id: documentId,

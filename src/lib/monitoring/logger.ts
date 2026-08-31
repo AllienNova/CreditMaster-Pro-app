@@ -12,7 +12,7 @@
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
-export interface LogContext {
+export interface LogContext extends Record<string, unknown> {
   userId?: string;
   sessionId?: string;
   requestId?: string;
@@ -22,7 +22,6 @@ export interface LogContext {
   duration?: number;
   cost?: number;
   tokens?: number;
-  [key: string]: any;
 }
 
 export interface LogEntry {
@@ -89,7 +88,7 @@ class Logger {
     return JSON.stringify(formatted);
   }
   
-  private prettyPrint(entry: any): string {
+  private prettyPrint(entry: LogEntry & Record<string, unknown>): string {
     const level = entry.level.toUpperCase().padEnd(5);
     const timestamp = new Date(entry.timestamp).toLocaleTimeString();
     const message = entry.message;
@@ -127,11 +126,12 @@ class Logger {
     };
     
     if (error) {
+      const errorWithCode = error as Error & { code?: string };
       entry.error = {
         name: error.name,
         message: error.message,
         stack: error.stack,
-        code: (error as any).code,
+        code: errorWithCode.code,
       };
     }
     
@@ -239,7 +239,7 @@ class Logger {
     severity: 'low' | 'medium' | 'high' | 'critical';
     userId?: string;
     ipAddress?: string;
-    details?: any;
+    details?: Record<string, unknown>;
   }): void {
     const level = data.severity === 'critical' || data.severity === 'high' ? 'error' : 'warn';
     
@@ -292,13 +292,20 @@ export function createRequestLogger(requestId: string, userId?: string): Logger 
  * Performance tracking decorator
  */
 export function trackPerformance(operation: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    _target: object,
+    _propertyKey: string | symbol,
+    descriptor: TypedPropertyDescriptor<(...args: unknown[]) => Promise<unknown>>
+  ): TypedPropertyDescriptor<(...args: unknown[]) => Promise<unknown>> {
     const originalMethod = descriptor.value;
+    if (!originalMethod) {
+      return descriptor;
+    }
     
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = (async function (this: unknown, ...args: unknown[]): Promise<unknown> {
       const start = Date.now();
       try {
-        const result = await originalMethod.apply(this, args);
+        const result = await Promise.resolve(originalMethod.apply(this as never, args as never[]));
         const duration = Date.now() - start;
         logger.performance(operation, duration);
         return result;
@@ -307,7 +314,7 @@ export function trackPerformance(operation: string) {
         logger.error(`${operation} failed`, error as Error, { duration });
         throw error;
       }
-    };
+    }) as (...args: unknown[]) => Promise<unknown>;
     
     return descriptor;
   };

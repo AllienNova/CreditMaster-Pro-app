@@ -2,14 +2,21 @@
 
 import { useState } from 'react';
 
-interface DisputeGeneratorProps {
-  onGenerate?: (disputeLetter: string) => void;
-}
-
 interface UserInfo {
   name: string;
   address: string;
   accountNumber?: string;
+}
+
+interface ComplianceReview {
+  compliant: boolean;
+  issues: string[];
+  recommendations: string[];
+  risk_level: 'low' | 'medium' | 'high';
+}
+
+interface DisputeGeneratorProps {
+  onGenerate?: (disputeLetter: string) => void;
 }
 
 export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) {
@@ -23,7 +30,7 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [disputeLetter, setDisputeLetter] = useState('');
-  const [complianceReview, setComplianceReview] = useState<any>(null);
+  const [complianceReview, setComplianceReview] = useState<ComplianceReview | null>(null);
 
   const handleGenerate = async () => {
     setLoading(true);

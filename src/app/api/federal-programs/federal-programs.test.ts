@@ -6,11 +6,37 @@ import { createRequest } from "node-mocks-http";
 // Mock the FederalIntegrationService
 jest.mock("@/lib/federal-integration-service");
 
+// Mock authentication
+jest.mock('@/lib/auth/jwt-validation', () => ({
+  jwtValidation: {
+    validateFromHeaders: jest.fn(),
+  },
+}));
+
+jest.mock('@/lib/auth/rbac', () => ({
+  rbac: {
+    hasPermission: jest.fn(),
+  },
+}));
+
+import { jwtValidation } from '@/lib/auth/jwt-validation';
+import { rbac } from '@/lib/auth/rbac';
+
 describe("/api/federal-programs", () => {
-  let req: any;
+  let req: ReturnType<typeof createRequest>;
+  const mockUser = { id: 'user-123', email: 'test@example.com', name: 'Test User', role: 'user' };
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Mock authentication
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+      valid: true,
+      user: mockUser,
+    });
+
+    // Mock authorization
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
   });
 
   describe("POST", () => {

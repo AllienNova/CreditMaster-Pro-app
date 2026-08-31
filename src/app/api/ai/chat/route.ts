@@ -1,16 +1,30 @@
 /**
  * AI Chat API
- * 
+ *
  * General purpose chat endpoint using AIML API
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAIMLService, ChatMessage } from '@/lib/aiml-service';
+import { jwtValidation } from '@/lib/auth/jwt-validation';
+import { rbac } from '@/lib/auth/rbac';
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate JWT token
+    const validation = await jwtValidation.validateFromHeaders(request.headers);
+
+    if (!validation.valid || !validation.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check permissions
+    if (!rbac.hasPermission(validation.user, 'ai:chat')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await request.json();
-    
+
     // Validate required fields
     const { model, messages } = body;
     

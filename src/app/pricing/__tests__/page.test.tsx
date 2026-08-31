@@ -14,7 +14,7 @@ jest.mock('next/navigation', () => ({
 describe('PricingPage', () => {
   it('should render the pricing page', () => {
     render(<PricingPage />);
-    expect(screen.getByText(/Choose Your AI Credit Repair Plan/i)).toBeInTheDocument();
+    expect(screen.getByText(/Choose Your Credit Intelligence Plan/i)).toBeInTheDocument();
   });
 
   it('should display all three pricing tiers', () => {

@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
+import type { OnboardingAnalysis } from '@/types/student-loan-agent';
 
-export const StudentLoanOnboarding = ({ onOnboardingComplete }: { onOnboardingComplete: (analysis: any) => void }) => {
+interface StudentLoanOnboardingProps {
+  onOnboardingComplete: (analysis: OnboardingAnalysis) => void;
+}
+
+export const StudentLoanOnboarding = ({ onOnboardingComplete }: StudentLoanOnboardingProps) => {
   const [step, setStep] = useState(1);
   const [files, setFiles] = useState<File[]>([]);
 

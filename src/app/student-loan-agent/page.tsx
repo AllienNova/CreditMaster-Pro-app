@@ -5,15 +5,42 @@ import { StudentLoanOnboarding } from '@/components/student-loan-agent/StudentLo
 import { StrategyDashboard } from '@/components/student-loan-agent/StrategyDashboard';
 import { FederalRegulationEngine } from '@/lib/student-loan-agent/FederalRegulationEngine';
 import { StrategyEngine } from '@/lib/student-loan-agent/StrategyEngine';
+import type { OnboardingAnalysis, StrategySummary } from '@/types/student-loan-agent';
 
 const StudentLoanAgentPage = () => {
   const [onboardingComplete, setOnboardingComplete] = React.useState(false);
-  const [strategies, setStrategies] = React.useState<any[]>([]);
+  const [strategies, setStrategies] = React.useState<StrategySummary[]>([]);
 
-  const handleOnboardingComplete = (analysis: any) => {
+  const summarizeRegulation = (
+    regulation?: ReturnType<FederalRegulationEngine['getRegulation']>
+  ): StrategySummary['regulation'] => {
+    if (!regulation) {
+      return {
+        name: 'General Guidance',
+        summary: 'No specific regulation reference provided.',
+      };
+    }
+
+    return {
+      name: regulation.name,
+      summary: regulation.description,
+      key_provisions: regulation.key_provisions,
+      eligibility: regulation.eligibility,
+      requirements: regulation.requirements,
+      protections: regulation.protections,
+    };
+  };
+
+  const handleOnboardingComplete = (analysis: OnboardingAnalysis) => {
     const regulationEngine = new FederalRegulationEngine();
     const strategyEngine = new StrategyEngine(regulationEngine);
-    const generatedStrategies = strategyEngine.generateStrategies(analysis);
+    const generatedStrategies = strategyEngine.generateStrategies(analysis).map<StrategySummary>((strategy) => ({
+      name: strategy.name,
+      description: strategy.description,
+      regulation: summarizeRegulation(strategy.regulation),
+      priority: strategy.priority,
+      complexity: strategy.complexity,
+    }));
     setStrategies(generatedStrategies);
     setOnboardingComplete(true);
   };

@@ -26,6 +26,9 @@ export type EventType =
   | 'api_error'
   | 'system_error';
 
+type LogMetadata = Record<string, unknown>;
+type StructuredRecord = Record<string, unknown>;
+
 export interface LogEntry {
   id: string;
   timestamp: Date;
@@ -36,7 +39,7 @@ export interface LogEntry {
   sessionId?: string;
   ipAddress?: string;
   userAgent?: string;
-  metadata?: Record<string, any>;
+  metadata?: LogMetadata;
   duration?: number; // milliseconds
   cost?: number; // dollars
   tokens?: number;
@@ -131,7 +134,7 @@ export function createLogEntry(
   level: LogLevel,
   eventType: EventType,
   message: string,
-  metadata?: Record<string, any>
+  metadata?: LogMetadata
 ): LogEntry {
   return {
     id: generateLogId(),
@@ -201,7 +204,7 @@ export function logSecurityEvent(data: {
   action: 'blocked' | 'allowed' | 'flagged';
   userId?: string;
   ipAddress?: string;
-  metadata?: Record<string, any>;
+  metadata?: LogMetadata;
 }): void {
   const entry: SecurityEventLog = {
     id: generateLogId(),
@@ -239,6 +242,7 @@ export function logAuthEvent(data: {
   ipAddress?: string;
   userAgent?: string;
   reason?: string;
+  metadata?: LogMetadata;
 }): void {
   const entry: LogEntry = {
     id: generateLogId(),
@@ -254,6 +258,7 @@ export function logAuthEvent(data: {
     metadata: {
       email: data.email,
       reason: data.reason,
+      ...data.metadata,
     },
   };
   
@@ -266,7 +271,7 @@ export function logAuthEvent(data: {
 export function logError(error: Error, context?: {
   userId?: string;
   eventType?: EventType;
-  metadata?: Record<string, any>;
+  metadata?: LogMetadata;
 }): void {
   const entry: LogEntry = {
     id: generateLogId(),
@@ -290,7 +295,7 @@ export function logError(error: Error, context?: {
 /**
  * Log info message
  */
-export function logInfo(message: string, metadata?: Record<string, any>): void {
+export function logInfo(message: string, metadata?: LogMetadata): void {
   const entry = createLogEntry('info', 'ai_request', message, metadata);
   logStore.add(entry);
 }
@@ -298,7 +303,7 @@ export function logInfo(message: string, metadata?: Record<string, any>): void {
 /**
  * Log warning
  */
-export function logWarning(message: string, metadata?: Record<string, any>): void {
+export function logWarning(message: string, metadata?: LogMetadata): void {
   const entry = createLogEntry('warn', 'ai_request', message, metadata);
   logStore.add(entry);
 }
@@ -451,3 +456,76 @@ export function getLogCount(): number {
   return logStore.count();
 }
 
+/**
+ * Audit Logger Object (for convenience)
+ * Provides a unified interface for logging
+ */
+export const auditLogger = {
+  logAIInteraction: async (log: {
+    userId: string;
+    action: string;
+    input: StructuredRecord;
+    output: StructuredRecord;
+    success: boolean;
+  }) => {
+    logAIInteraction({
+      userId: log.userId,
+      model: 'api',
+      prompt: JSON.stringify(log.input),
+      response: JSON.stringify(log.output),
+      tokens: 0,
+      cost: 0,
+      duration: 0,
+      inputValid: true,
+      outputValid: log.success,
+      issues: log.success ? [] : ['Action failed'],
+    });
+  },
+
+  logSecurityEvent: async (log: {
+    type: string;
+    message: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    userId?: string;
+    metadata?: LogMetadata;
+  }) => {
+    logSecurityEvent({
+      eventType: log.type as SecurityEventLog['eventType'],
+      message: log.message,
+      severity: log.severity,
+      action: 'flagged',
+      userId: log.userId,
+      metadata: log.metadata,
+    });
+  },
+
+  logAuthEvent: async (
+    userId: string,
+    event: 'login' | 'logout' | 'token_refresh' | 'password_change',
+    success: boolean
+  ) => {
+    logAuthEvent({
+      success,
+      userId,
+      reason: event,
+    });
+  },
+
+  logAPIRequest: async (
+    method: string,
+    path: string,
+    userId?: string,
+    statusCode?: number,
+    duration?: number
+  ) => {
+    logInfo(`${method} ${path}`, {
+      method,
+      path,
+      userId,
+      statusCode,
+      duration,
+    });
+  },
+};
+
+export default auditLogger;

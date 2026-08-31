@@ -2,10 +2,6 @@
 
 import { useState } from 'react';
 
-interface CreditAnalyzerProps {
-  onAnalyze?: (analysis: any) => void;
-}
-
 interface CreditAnalysisOutput {
   score_factors: string[];
   negative_items: Array<{
@@ -23,6 +19,10 @@ interface CreditAnalysisOutput {
   }>;
   timeline_estimate: string;
   estimated_score_improvement: number;
+}
+
+interface CreditAnalyzerProps {
+  onAnalyze?: (analysis: CreditAnalysisOutput) => void;
 }
 
 export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {

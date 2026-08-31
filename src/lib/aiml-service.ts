@@ -1,13 +1,15 @@
 /**
  * AIML API Service
- * 
+ *
  * Unified service wrapper for AIML API providing access to 300+ AI models
  * including GPT-5, Claude 4.5, DeepSeek R1, Gemini 2.5, and more.
- * 
+ *
  * @see https://aimlapi.com
  * @see https://docs.aimlapi.com
  */
 
+// Import OpenAI shims for Node environment (required for tests)
+import 'openai/shims/node';
 import OpenAI from 'openai';
 
 export interface AIMLConfig {

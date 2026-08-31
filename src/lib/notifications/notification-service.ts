@@ -12,6 +12,8 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build');
 
+type NotificationPayload = Record<string, unknown>;
+
 export type NotificationType = 
   | 'dispute_created'
   | 'dispute_updated'
@@ -22,6 +24,7 @@ export type NotificationType =
   | 'subscription_renewed'
   | 'subscription_canceled'
   | 'document_uploaded'
+  | 'document_shared'
   | 'welcome'
   | 'password_reset';
 
@@ -33,7 +36,7 @@ export interface Notification {
   message: string;
   read: boolean;
   createdAt: Date;
-  data?: Record<string, any>;
+  data?: NotificationPayload;
 }
 
 export interface EmailTemplate {
@@ -80,7 +83,7 @@ class NotificationService {
     type: NotificationType,
     title: string,
     message: string,
-    data?: Record<string, any>
+    data?: NotificationPayload
   ): Notification {
     const notification: Notification = {
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -363,6 +366,69 @@ class NotificationService {
     `;
     
     await this.sendEmail(to, subject, html);
+  }
+
+  async notifyDocumentShareLink(params: {
+    ownerUserId: string;
+    ownerEmail?: string | null;
+    documentName: string;
+    recipients: string[];
+    shareUrl: string;
+    expiresAt: Date;
+  }): Promise<void> {
+    this.createNotification(
+      params.ownerUserId,
+      'document_shared',
+      'Secure link created',
+      `You shared "${params.documentName}" with ${params.recipients.join(', ')}`,
+      {
+        documentName: params.documentName,
+        recipients: params.recipients,
+        shareUrl: params.shareUrl,
+        expiresAt: params.expiresAt,
+      }
+    );
+
+    const renderShareHtml = (audience: 'owner' | 'recipient', recipientList?: string[]) => `
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
+        <h1 style="color:#4F46E5;">Secure document ${audience === 'owner' ? 'shared' : 'received'}</h1>
+        <p>${audience === 'owner'
+          ? `You shared <strong>${params.documentName}</strong> with ${recipientList?.join(', ')}.`
+          : `You now have access to <strong>${params.documentName}</strong>.`}
+        </p>
+        <p>The link expires on <strong>${params.expiresAt.toLocaleString()}</strong>.</p>
+        <p style="margin-top: 24px;">
+          <a href="${params.shareUrl}" style="background-color:#4F46E5;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;">
+            Open secure link
+          </a>
+        </p>
+      </div>
+    `;
+
+    const sendPromises: Promise<void>[] = [];
+    if (params.ownerEmail) {
+      sendPromises.push(
+        this.sendEmail(
+          params.ownerEmail,
+          `Document shared: ${params.documentName}`,
+          renderShareHtml('owner', params.recipients)
+        )
+      );
+    }
+
+    params.recipients.forEach((recipient) => {
+      sendPromises.push(
+        this.sendEmail(
+          recipient,
+          `Secure document: ${params.documentName}`,
+          renderShareHtml('recipient')
+        )
+      );
+    });
+
+    if (sendPromises.length > 0) {
+      await Promise.allSettled(sendPromises);
+    }
   }
 }
 

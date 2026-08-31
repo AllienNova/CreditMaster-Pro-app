@@ -1,16 +1,21 @@
-export class NextResponse {
-  constructor(body, init) {
-    this.body = body;
-    this.status = init?.status || 200;
+export class NextResponse<T = unknown> {
+  body: string;
+  status: number;
+
+  constructor(body: T, init?: { status?: number }) {
+    this.body = typeof body === 'string' ? body : JSON.stringify(body);
+    this.status = init?.status ?? 200;
   }
 
-  static json(body, init) {
-    return new NextResponse(JSON.stringify(body), init);
+  static json<T>(body: T, init?: { status?: number }): NextResponse<T> {
+    return new NextResponse(body, init);
   }
 
-  json() {
-    return Promise.resolve(JSON.parse(this.body));
+  async json(): Promise<T> {
+    return JSON.parse(this.body) as T;
   }
 }
 
-export class NextRequest {}
+export class NextRequest {
+  constructor(public readonly url: string = 'http://localhost') {}
+}

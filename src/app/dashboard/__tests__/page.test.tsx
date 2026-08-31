@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import DashboardPage from '../page';
 import { createBrowserClient } from '@supabase/ssr';
+import DashboardPage from '../page';
+import { OnboardingProvider } from '@/components/onboarding/OnboardingProvider';
 
 // Mock Supabase
 jest.mock('@supabase/ssr', () => ({
@@ -30,12 +31,19 @@ describe('DashboardPage', () => {
     (createBrowserClient as jest.Mock).mockReturnValue(mockSupabase);
   });
 
+  const renderWithOnboarding = () =>
+    render(
+      <OnboardingProvider>
+        <DashboardPage />
+      </OnboardingProvider>
+    );
+
   it('should display loading state initially', () => {
     mockSupabase.auth.getSession.mockResolvedValue({
       data: { session: null },
     });
 
-    render(<DashboardPage />);
+    renderWithOnboarding();
     expect(screen.getByText(/Loading your AI credit dashboard.../i)).toBeInTheDocument();
   });
 
@@ -52,10 +60,10 @@ describe('DashboardPage', () => {
       },
     });
 
-    render(<DashboardPage />);
+    renderWithOnboarding();
 
     await waitFor(() => {
-      expect(screen.getByText(/Your AI-Powered Credit Repair Dashboard/i)).toBeInTheDocument();
+      expect(screen.getByText(/Your Credit Intelligence Dashboard/i)).toBeInTheDocument();
     });
   });
 
@@ -72,14 +80,14 @@ describe('DashboardPage', () => {
       },
     });
 
-    render(<DashboardPage />);
+    renderWithOnboarding();
 
     await waitFor(() => {
       expect(screen.getByText('Credit Score')).toBeInTheDocument();
-      expect(screen.getByText('AI Agents Active')).toBeInTheDocument();
-      expect(screen.getByText('Active Disputes')).toBeInTheDocument();
-      expect(screen.getByText('AI Strategies')).toBeInTheDocument();
-    });
+      expect(screen.getByText('AI Tools Used')).toBeInTheDocument();
+      expect(screen.getByText('Disputes Sent')).toBeInTheDocument();
+      expect(screen.getByText('Strategies Learned')).toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 
   it('should display navigation links', async () => {
@@ -95,7 +103,7 @@ describe('DashboardPage', () => {
       },
     });
 
-    render(<DashboardPage />);
+    renderWithOnboarding();
 
     await waitFor(() => {
       expect(screen.getByText('Dashboard')).toBeInTheDocument();

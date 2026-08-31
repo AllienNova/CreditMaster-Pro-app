@@ -1,20 +1,34 @@
 /**
  * Enhanced Dispute Generation API
- * 
+ *
  * Generates professional credit dispute letters using AIML API's best models
  * (Claude 4.5 Sonnet for legal writing quality)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAIOrchestrator, DisputeGenerationInput } from '@/lib/ai-orchestrator';
+import { jwtValidation } from '@/lib/auth/jwt-validation';
+import { rbac } from '@/lib/auth/rbac';
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate JWT token
+    const validation = await jwtValidation.validateFromHeaders(request.headers);
+
+    if (!validation.valid || !validation.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check permissions
+    if (!rbac.hasPermission(validation.user, 'disputes:generate_letter')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await request.json();
-    
+
     // Validate required fields
     const { creditReport, disputeReason, userInfo } = body;
-    
+
     if (!creditReport || !disputeReason || !userInfo) {
       return NextResponse.json(
         {
@@ -67,7 +81,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Dispute generation error:', error);
-    
+
     return NextResponse.json(
       {
         success: false,

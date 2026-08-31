@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,7 +9,6 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, showNavigation = true }) => {
-  const router = useRouter();
   const pathname = usePathname();
 
   const navigationItems = [

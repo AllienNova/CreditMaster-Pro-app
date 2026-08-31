@@ -12,7 +12,7 @@ export interface User {
   id: string;
   email: string;
   name?: string;
-  role: 'user' | 'admin' | 'premium' | 'enterprise';
+  role: 'user' | 'premium' | 'admin' | 'super_admin' | 'enterprise';
   permissions: string[];
   createdAt: Date;
   lastLogin?: Date;
@@ -114,9 +114,10 @@ export async function requireAuth(request: Request): Promise<AuthResult> {
       user,
     };
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Authentication failed';
     return {
       authenticated: false,
-      error: 'Authentication failed',
+      error: `Authentication failed: ${message}`,
     };
   }
 }
@@ -174,31 +175,33 @@ export async function requirePermission(
 
 /**
  * Validate JWT token
- * In production, this would use a proper JWT library
+ *
+ * NOTE: This is a legacy function kept for backward compatibility.
+ * New code should use jwtValidation service from @/lib/auth/jwt-validation
+ *
+ * @deprecated Use jwtValidation.validateToken() instead
  */
 async function validateToken(token: string): Promise<User | null> {
   try {
-    // This is a placeholder - in production, use proper JWT validation
-    // with jsonwebtoken or jose library
-    
-    // For now, return a mock user for development
-    if (token === 'dev-token') {
-      return {
-        id: 'dev-user-1',
-        email: 'dev@example.com',
-        name: 'Dev User',
-        role: 'premium',
-        permissions: [],
-        createdAt: new Date(),
-        lastLogin: new Date(),
-      };
+    // Import the proper JWT validation service
+    const { jwtValidation } = await import('@/lib/auth/jwt-validation');
+
+    const result = await jwtValidation.validateToken(token);
+
+    if (!result.valid || !result.user) {
+      return null;
     }
-    
-    // In production, decode and verify JWT:
-    // const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // return getUserFromDatabase(decoded.userId);
-    
-    return null;
+
+    // Convert to legacy User format
+    return {
+      id: result.user.id,
+      email: result.user.email,
+      name: result.user.name || undefined,
+      role: result.user.role,
+      permissions: [], // Permissions are handled by RBAC service
+      createdAt: new Date(result.user.createdAt || Date.now()),
+      lastLogin: new Date(),
+    };
   } catch (error) {
     console.error('Token validation error:', error);
     return null;
@@ -232,9 +235,10 @@ export async function validateAPIKey(apiKey: string): Promise<AuthResult> {
       error: 'Invalid API key',
     };
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Validation error';
     return {
       authenticated: false,
-      error: 'API key validation failed',
+      error: `API key validation failed: ${message}`,
     };
   }
 }

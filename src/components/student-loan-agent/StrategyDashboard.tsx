@@ -1,6 +1,11 @@
 import React from 'react';
+import type { StrategySummary } from '@/types/student-loan-agent';
 
-export const StrategyDashboard = ({ strategies }: { strategies: any[] }) => {
+interface StrategyDashboardProps {
+  strategies: StrategySummary[];
+}
+
+export const StrategyDashboard = ({ strategies }: StrategyDashboardProps) => {
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">Strategy Dashboard</h2>

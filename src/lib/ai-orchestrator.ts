@@ -15,8 +15,10 @@
 import { AIMLService, ChatMessage, ChatOptions } from './aiml-service';
 import { ModelRouter, TaskType } from './model-router';
 
+type GenericCreditReport = Record<string, unknown>;
+
 export interface DisputeGenerationInput {
-  creditReport: any;
+  creditReport: GenericCreditReport;
   disputeReason: string;
   userInfo: {
     name: string;
@@ -28,7 +30,7 @@ export interface DisputeGenerationInput {
 }
 
 export interface CreditAnalysisInput {
-  creditReport: any;
+  creditReport: GenericCreditReport;
   creditScore?: number;
   goals?: string[];
 }
@@ -95,9 +97,12 @@ export interface LoanStrategyOutput {
   recommendations: string[];
 }
 
-export interface ConsensusResult<T = any> {
+export interface ConsensusResult<T = unknown> {
   consensus: T;
-  individual_responses: any[];
+  individual_responses: Array<{
+    model: string;
+    content: string | null;
+  }>;
   models_used: string[];
   confidence_score: number;
 }
@@ -431,7 +436,7 @@ Provide only the JSON output.`;
    * @param options - Optional chat parameters
    * @returns Consensus result with individual responses
    */
-  async getConsensus<T = any>(
+  async getConsensus<T = unknown>(
     taskType: TaskType,
     prompt: string,
     options?: ChatOptions
@@ -506,7 +511,9 @@ Provide a comprehensive synthesis that represents the best combined answer. If t
     const consensusContent = synthesisResponse.choices[0].message.content;
 
     // Calculate confidence score based on agreement
-    const confidence_score = this.calculateConfidenceScore(successfulResponses.map((r) => r.content!));
+    const confidence_score = this.calculateConfidenceScore(
+      successfulResponses.map((r) => r.content ?? '')
+    );
 
     return {
       consensus: consensusContent as T,

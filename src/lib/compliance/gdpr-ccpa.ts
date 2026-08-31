@@ -11,15 +11,17 @@
  * - Data breach notification
  */
 
+type GenericRecord = Record<string, unknown>;
+
 export interface UserDataExport {
   userId: string;
   exportDate: Date;
   data: {
-    profile: any;
-    creditReports: any[];
-    disputes: any[];
-    aiInteractions: any[];
-    logs: any[];
+    profile: GenericRecord;
+    creditReports: GenericRecord[];
+    disputes: GenericRecord[];
+    aiInteractions: GenericRecord[];
+    logs: GenericRecord[];
   };
   format: 'json' | 'csv' | 'xml';
 }
@@ -81,7 +83,7 @@ class GDPRComplianceService {
    * Right to Rectification (GDPR Art. 16)
    * User can request correction of inaccurate data
    */
-  async rectifyUserData(userId: string, corrections: Record<string, any>): Promise<boolean> {
+  async rectifyUserData(userId: string, corrections: Record<string, unknown>): Promise<boolean> {
     // In production, update database
     console.log(`Rectifying data for user ${userId}:`, corrections);
     return true;
@@ -174,44 +176,43 @@ class GDPRComplianceService {
   
   // Helper methods
   
-  private async getUserProfile(userId: string): Promise<any> {
+  private async getUserProfile(userId: string): Promise<GenericRecord> {
     // In production, fetch from database
     return { userId, name: '[User Name]', email: '[User Email]' };
   }
   
-  private async getUserCreditReports(userId: string): Promise<any[]> {
-    // In production, fetch from database
+  private async getUserCreditReports(userId: string): Promise<GenericRecord[]> {
+    console.log(`Fetching credit reports for user ${userId}`);
     return [];
   }
   
-  private async getUserDisputes(userId: string): Promise<any[]> {
-    // In production, fetch from database
+  private async getUserDisputes(userId: string): Promise<GenericRecord[]> {
+    console.log(`Fetching disputes for user ${userId}`);
     return [];
   }
   
-  private async getUserAIInteractions(userId: string): Promise<any[]> {
-    // In production, fetch from database
+  private async getUserAIInteractions(userId: string): Promise<GenericRecord[]> {
+    console.log(`Fetching AI interactions for user ${userId}`);
     return [];
   }
   
-  private async getUserLogs(userId: string): Promise<any[]> {
-    // In production, fetch from database
+  private async getUserLogs(userId: string): Promise<GenericRecord[]> {
+    console.log(`Fetching audit logs for user ${userId}`);
     return [];
   }
   
-  private convertToCSV(data: any): string {
+  private convertToCSV(data: unknown): string {
     // Simple CSV conversion
     return JSON.stringify(data);
   }
   
-  private convertToXML(data: any): string {
+  private convertToXML(data: unknown): string {
     // Simple XML conversion
     return `<?xml version="1.0"?><data>${JSON.stringify(data)}</data>`;
   }
   
   private async sendBreachNotification(userId: string, notification: DataBreachNotification): Promise<void> {
-    // In production, send email
-    console.log(`Sending breach notification to user ${userId}`);
+    console.log(`Sending breach notification to user ${userId}`, { notification });
   }
 }
 
@@ -229,6 +230,7 @@ class CCPAComplianceService {
     categoriesOfSources: string[];
     thirdPartiesSharedWith: string[];
   }> {
+    console.log(`Providing CCPA data collection info for user ${userId}`);
     return {
       categoriesCollected: [
         'Personal identifiers (name, email, phone)',
@@ -285,7 +287,7 @@ class CCPAComplianceService {
    * Cannot discriminate against users who exercise their rights
    */
   async ensureNonDiscrimination(userId: string): Promise<boolean> {
-    // In production, verify no discriminatory practices
+    console.log(`Ensuring non-discrimination for user ${userId}`);
     return true;
   }
   

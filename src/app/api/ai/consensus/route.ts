@@ -1,6 +1,6 @@
 /**
  * Multi-Model Consensus API
- * 
+ *
  * Gets consensus from multiple AI models for critical decisions
  * Uses GPT-5 Pro as meta-model to synthesize responses
  */
@@ -8,11 +8,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAIOrchestrator } from '@/lib/ai-orchestrator';
 import { TaskType } from '@/lib/model-router';
+import { jwtValidation } from '@/lib/auth/jwt-validation';
+import { rbac } from '@/lib/auth/rbac';
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate JWT token
+    const validation = await jwtValidation.validateFromHeaders(request.headers);
+
+    if (!validation.valid || !validation.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check permissions (premium feature)
+    if (!rbac.hasPermission(validation.user, 'ai:consensus')) {
+      return NextResponse.json({ error: 'Forbidden - Premium feature' }, { status: 403 });
+    }
+
     const body = await request.json();
-    
+
     // Validate required fields
     const { taskType, prompt } = body;
     

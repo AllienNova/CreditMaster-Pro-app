@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import type { LoanStrategyOutput } from '@/lib/ai-orchestrator';
 
 interface LoanStrategyCalculatorProps {
-  onCalculate?: (strategy: any) => void;
+  onCalculate?: (strategy: LoanStrategyOutput) => void;
 }
 
 interface LoanData {
@@ -40,7 +41,7 @@ export default function LoanStrategyCalculator({ onCalculate }: LoanStrategyCalc
   const [goals, setGoals] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [strategy, setStrategy] = useState<any>(null);
+  const [strategy, setStrategy] = useState<LoanStrategyOutput | null>(null);
 
   const handleCalculate = async () => {
     setLoading(true);
@@ -318,7 +319,7 @@ export default function LoanStrategyCalculator({ onCalculate }: LoanStrategyCalc
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-xl font-semibold mb-4">Alternative Plans</h3>
                   <div className="space-y-4">
-                    {strategy.alternative_plans.map((plan: any, i: number) => (
+                  {strategy.alternative_plans.map((plan: LoanStrategyOutput['alternative_plans'][number], i: number) => (
                       <div key={i} className="border rounded-lg p-4">
                         <h4 className="font-semibold mb-2">{plan.name}</h4>
                         <div className="grid grid-cols-2 gap-4 mb-3">

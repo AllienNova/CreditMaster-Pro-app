@@ -9,7 +9,14 @@
  * - GDPR/CCPA compliance
  */
 
-import { createHash, createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import {
+  createHash,
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  CipherGCM,
+  DecipherGCM,
+} from 'crypto';
 
 export interface PIIField {
   type: 'ssn' | 'credit_card' | 'email' | 'phone' | 'address' | 'name' | 'dob' | 'ip_address';
@@ -35,18 +42,49 @@ export interface AnonymizationOptions {
 class EncryptionService {
   private algorithm = 'aes-256-gcm';
   private keyLength = 32; // 256 bits
-  
+  private cachedKey: Buffer | null = null;
+
+  /**
+   * Validate encryption key
+   */
+  private validateKey(key: string): void {
+    // Check minimum length
+    if (key.length < 32) {
+      throw new Error('ENCRYPTION_KEY must be at least 32 characters long');
+    }
+
+    // Check for weak keys
+    if (key === 'your_encryption_key_here' || key === 'test' || key === 'dev') {
+      throw new Error('ENCRYPTION_KEY is using a weak/default value. Please use a strong random key.');
+    }
+
+    // Check for sufficient entropy (basic check)
+    const uniqueChars = new Set(key).size;
+    if (uniqueChars < 16) {
+      console.warn('⚠️  ENCRYPTION_KEY has low entropy. Consider using a more random key.');
+    }
+  }
+
   /**
    * Get encryption key from environment
    */
   private getKey(): Buffer {
+    // Return cached key if available
+    if (this.cachedKey) {
+      return this.cachedKey;
+    }
+
     const key = process.env.ENCRYPTION_KEY;
     if (!key) {
       throw new Error('ENCRYPTION_KEY environment variable not set');
     }
-    
+
+    // Validate key
+    this.validateKey(key);
+
     // Derive a 256-bit key from the environment variable
-    return createHash('sha256').update(key).digest();
+    this.cachedKey = createHash('sha256').update(key).digest();
+    return this.cachedKey;
   }
   
   /**
@@ -55,7 +93,7 @@ class EncryptionService {
   encrypt(data: string): EncryptionResult {
     const key = this.getKey();
     const iv = randomBytes(16);
-    const cipher = createCipheriv(this.algorithm, key, iv) as any;
+    const cipher = createCipheriv(this.algorithm, key, iv) as CipherGCM;
     
     let encrypted = cipher.update(data, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -78,7 +116,7 @@ class EncryptionService {
       this.algorithm,
       key,
       Buffer.from(iv, 'hex')
-    ) as any;
+    ) as DecipherGCM;
     
     decipher.setAuthTag(Buffer.from(tag, 'hex'));
     
@@ -242,39 +280,42 @@ export function anonymizePII(
 /**
  * Encrypt PII fields in an object
  */
-export function encryptPIIFields<T extends Record<string, any>>(
+type GenericRecord = Record<string, unknown>;
+type EncryptedRecord<T extends GenericRecord> = T & { _encrypted: Record<string, EncryptionResult> };
+
+export function encryptPIIFields<T extends GenericRecord>(
   data: T,
   piiFields: (keyof T)[]
-): T & { _encrypted: Record<string, EncryptionResult> } {
+): EncryptedRecord<T> {
   const encrypted: Record<string, EncryptionResult> = {};
-  const result = { ...data } as any;
+  const sanitized: GenericRecord = { ...data };
   
   for (const field of piiFields) {
     const value = data[field];
-    if (value && typeof value === 'string') {
+    if (typeof value === 'string' && value.length > 0) {
       const encryptionResult = encryption.encrypt(value);
       encrypted[field as string] = encryptionResult;
-      result[field] = '[ENCRYPTED]';
+      sanitized[field as string] = '[ENCRYPTED]';
     }
   }
   
-  result._encrypted = encrypted;
-  return result;
+  return { ...(sanitized as T), _encrypted: encrypted };
 }
 
 /**
  * Decrypt PII fields in an object
  */
-export function decryptPIIFields<T extends Record<string, any>>(
-  data: T & { _encrypted: Record<string, EncryptionResult> },
+export function decryptPIIFields<T extends GenericRecord>(
+  data: EncryptedRecord<T>,
   piiFields: (keyof T)[]
 ): T {
-  const result = { ...data } as any;
+  const { _encrypted, ...rest } = data;
+  const restored: GenericRecord = { ...rest };
   
   for (const field of piiFields) {
-    const encryptionResult = data._encrypted[field as string];
+    const encryptionResult = _encrypted[field as string];
     if (encryptionResult) {
-      result[field] = encryption.decrypt(
+      restored[field as string] = encryption.decrypt(
         encryptionResult.encrypted,
         encryptionResult.iv,
         encryptionResult.tag!
@@ -282,24 +323,26 @@ export function decryptPIIFields<T extends Record<string, any>>(
     }
   }
   
-  delete result._encrypted;
-  return result;
+  return restored as T;
 }
 
 /**
  * Secure data deletion (overwrite before delete)
  */
-export function secureDelete(data: any): void {
-  if (typeof data === 'object' && data !== null) {
-    for (const key in data) {
-      if (typeof data[key] === 'string') {
-        // Overwrite with random data
-        data[key] = encryption.generateToken(data[key].length);
-      } else if (typeof data[key] === 'object') {
-        secureDelete(data[key]);
-      }
-    }
+export function secureDelete(data: unknown): void {
+  if (typeof data !== 'object' || data === null) {
+    return;
   }
+
+  const target = data as Record<string, unknown>;
+  Object.keys(target).forEach((key) => {
+    const value = target[key];
+    if (typeof value === 'string') {
+      target[key] = encryption.generateToken(value.length);
+    } else if (typeof value === 'object' && value !== null) {
+      secureDelete(value);
+    }
+  });
 }
 
 /**
@@ -338,12 +381,12 @@ export function shouldDelete(
 /**
  * Pseudonymization (replace identifiable data with pseudonyms)
  */
-export function pseudonymize(data: Record<string, any>): {
-  pseudonymized: Record<string, any>;
+export function pseudonymize<T extends GenericRecord>(data: T): {
+  pseudonymized: T;
   mapping: Record<string, string>;
 } {
   const mapping: Record<string, string> = {};
-  const pseudonymized = { ...data };
+  const pseudonymized: GenericRecord = { ...data };
   
   // Pseudonymize common PII fields
   const piiFields = ['name', 'email', 'phone', 'ssn', 'address'];
@@ -356,13 +399,13 @@ export function pseudonymize(data: Record<string, any>): {
     }
   }
   
-  return { pseudonymized, mapping };
+  return { pseudonymized: pseudonymized as T, mapping };
 }
 
 /**
  * Data minimization (remove unnecessary fields)
  */
-export function minimizeData<T extends Record<string, any>>(
+export function minimizeData<T extends GenericRecord>(
   data: T,
   requiredFields: (keyof T)[]
 ): Partial<T> {
